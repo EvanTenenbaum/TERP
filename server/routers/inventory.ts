@@ -309,6 +309,81 @@ export const inventoryRouter = router({
       const before = inventoryUtils.createAuditSnapshot(
         batch as unknown as Record<string, unknown>
       );
+
+      // Quarantine-quantity synchronization:
+      // When changing TO QUARANTINED, move onHandQty to quarantineQty
+      // When changing FROM QUARANTINED to LIVE, move quarantineQty back to onHandQty
+      const currentStatus = batch.batchStatus;
+      const newStatus = input.status;
+
+      if (currentStatus !== "QUARANTINED" && newStatus === "QUARANTINED") {
+        // Moving TO quarantine: transfer onHandQty to quarantineQty
+        const onHandQty = inventoryUtils.parseQty(batch.onHandQty);
+        const currentQuarantineQty = inventoryUtils.parseQty(batch.quarantineQty);
+        if (onHandQty > 0) {
+          await inventoryDb.updateBatchQty(
+            input.id,
+            "quarantineQty",
+            inventoryUtils.formatQty(currentQuarantineQty + onHandQty)
+          );
+          await inventoryDb.updateBatchQty(
+            input.id,
+            "onHandQty",
+            "0"
+          );
+
+          // Record the quarantine movement
+          const { inventoryMovements } = await import("../../drizzle/schema");
+          const { getDb } = await import("../db");
+          const db = await getDb();
+          if (db) {
+            await db.insert(inventoryMovements).values({
+              batchId: input.id,
+              inventoryMovementType: "QUARANTINE",
+              quantityChange: `-${onHandQty}`,
+              quantityBefore: onHandQty.toString(),
+              quantityAfter: "0",
+              referenceType: "STATUS_CHANGE",
+              notes: `Status changed to QUARANTINED: ${input.reason}`,
+              performedBy: ctx.user?.id || 0,
+            });
+          }
+        }
+      } else if (currentStatus === "QUARANTINED" && newStatus === "LIVE") {
+        // Moving FROM quarantine to LIVE: transfer quarantineQty back to onHandQty
+        const currentOnHandQty = inventoryUtils.parseQty(batch.onHandQty);
+        const quarantineQty = inventoryUtils.parseQty(batch.quarantineQty);
+        if (quarantineQty > 0) {
+          await inventoryDb.updateBatchQty(
+            input.id,
+            "onHandQty",
+            inventoryUtils.formatQty(currentOnHandQty + quarantineQty)
+          );
+          await inventoryDb.updateBatchQty(
+            input.id,
+            "quarantineQty",
+            "0"
+          );
+
+          // Record the release from quarantine movement
+          const { inventoryMovements } = await import("../../drizzle/schema");
+          const { getDb } = await import("../db");
+          const db = await getDb();
+          if (db) {
+            await db.insert(inventoryMovements).values({
+              batchId: input.id,
+              inventoryMovementType: "RELEASE_FROM_QUARANTINE",
+              quantityChange: `+${quarantineQty}`,
+              quantityBefore: currentOnHandQty.toString(),
+              quantityAfter: (currentOnHandQty + quarantineQty).toString(),
+              referenceType: "STATUS_CHANGE",
+              notes: `Status changed from QUARANTINED to LIVE: ${input.reason}`,
+              performedBy: ctx.user?.id || 0,
+            });
+          }
+        }
+      }
+
       await inventoryDb.updateBatchStatus(
         input.id,
         input.status,
@@ -375,6 +450,54 @@ export const inventoryRouter = router({
         input.field,
         inventoryUtils.formatQty(newQty)
       );
+
+      // Quarantine-status synchronization:
+      // When quarantineQty changes, check if we need to update batch status
+      if (input.field === "quarantineQty") {
+        const onHandQty = inventoryUtils.parseQty(batch.onHandQty);
+        const currentStatus = batch.batchStatus;
+
+        // If all inventory is now quarantined (onHand = 0, quarantine > 0)
+        // and we're increasing quarantine, auto-set status to QUARANTINED
+        if (
+          newQty > 0 &&
+          onHandQty === 0 &&
+          currentStatus !== "QUARANTINED" &&
+          currentStatus !== "CLOSED" &&
+          currentStatus !== "SOLD_OUT"
+        ) {
+          await inventoryDb.updateBatchStatus(input.id, "QUARANTINED");
+        }
+
+        // If quarantine is being reduced to 0 from QUARANTINED status,
+        // and there's on-hand inventory available, release to LIVE
+        if (
+          newQty === 0 &&
+          currentStatus === "QUARANTINED" &&
+          onHandQty > 0
+        ) {
+          await inventoryDb.updateBatchStatus(input.id, "LIVE");
+        }
+
+        // Record inventory movement for quarantine changes
+        const { inventoryMovements } = await import("../../drizzle/schema");
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const movementType = input.adjustment > 0 ? "QUARANTINE" : "RELEASE_FROM_QUARANTINE";
+          await db.insert(inventoryMovements).values({
+            batchId: input.id,
+            inventoryMovementType: movementType,
+            quantityChange: input.adjustment > 0 ? `+${input.adjustment}` : input.adjustment.toString(),
+            quantityBefore: currentQty.toString(),
+            quantityAfter: newQty.toString(),
+            referenceType: "MANUAL_ADJUSTMENT",
+            notes: input.reason,
+            performedBy: ctx.user?.id || 0,
+          });
+        }
+      }
+
       const after = await inventoryDb.getBatchById(input.id);
 
       // Create audit log

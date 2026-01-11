@@ -31,6 +31,7 @@ import {
   type InsertBatchLocation,
   type InsertAuditLog,
 } from "../drizzle/schema";
+import { isValidStatusTransition, type BatchStatus } from "./inventoryUtils";
 
 // ============================================================================
 // VENDOR QUERIES (DEPRECATED - Use Supplier functions below)
@@ -1553,7 +1554,8 @@ export async function deleteInventoryView(viewId: number, _userId: number) {
 
 /**
  * Bulk update batch status
- * Updates multiple batches at once with validation
+ * Updates multiple batches at once with proper status transition validation
+ * Includes quarantine-quantity synchronization for QUARANTINED status changes
  */
 export async function bulkUpdateBatchStatus(
   batchIds: number[],
@@ -1565,13 +1567,18 @@ export async function bulkUpdateBatchStatus(
     | "QUARANTINED"
     | "SOLD_OUT"
     | "CLOSED",
-  _userId: number
-): Promise<{ success: boolean; updated: number }> {
+  userId: number
+): Promise<{ success: boolean; updated: number; skipped: number; errors: string[] }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Import inventoryMovements for quarantine tracking
+  const { inventoryMovements } = await import("../drizzle/schema");
+
   return await db.transaction(async tx => {
     let updated = 0;
+    let skipped = 0;
+    const errors: string[] = [];
 
     for (const batchId of batchIds) {
       // Get current batch
@@ -1579,11 +1586,80 @@ export async function bulkUpdateBatchStatus(
         .select()
         .from(batches)
         .where(eq(batches.id, batchId));
-      if (!batch) continue;
-
-      // Skip if already SOLD_OUT or CLOSED
-      if (batch.batchStatus === "SOLD_OUT" || batch.batchStatus === "CLOSED") {
+      if (!batch) {
+        skipped++;
+        errors.push(`Batch ${batchId} not found`);
         continue;
+      }
+
+      const currentStatus = batch.batchStatus as BatchStatus;
+
+      // Validate status transition using the same logic as individual updates
+      if (!isValidStatusTransition(currentStatus, newStatus)) {
+        skipped++;
+        errors.push(
+          `Batch ${batchId}: Invalid transition from ${currentStatus} to ${newStatus}`
+        );
+        continue;
+      }
+
+      // Skip if already in the target status
+      if (currentStatus === newStatus) {
+        skipped++;
+        continue;
+      }
+
+      // Quarantine-quantity synchronization:
+      // When changing TO QUARANTINED, move onHandQty to quarantineQty
+      // When changing FROM QUARANTINED to LIVE, move quarantineQty back to onHandQty
+      if (currentStatus !== "QUARANTINED" && newStatus === "QUARANTINED") {
+        const onHandQty = parseFloat(batch.onHandQty || "0");
+        const currentQuarantineQty = parseFloat(batch.quarantineQty || "0");
+        if (onHandQty > 0) {
+          await tx
+            .update(batches)
+            .set({
+              quarantineQty: (currentQuarantineQty + onHandQty).toString(),
+              onHandQty: "0",
+            })
+            .where(eq(batches.id, batchId));
+
+          // Record quarantine movement
+          await tx.insert(inventoryMovements).values({
+            batchId,
+            inventoryMovementType: "QUARANTINE",
+            quantityChange: `-${onHandQty}`,
+            quantityBefore: onHandQty.toString(),
+            quantityAfter: "0",
+            referenceType: "BULK_STATUS_CHANGE",
+            notes: `Bulk status change to QUARANTINED`,
+            performedBy: userId,
+          });
+        }
+      } else if (currentStatus === "QUARANTINED" && newStatus === "LIVE") {
+        const currentOnHandQty = parseFloat(batch.onHandQty || "0");
+        const quarantineQty = parseFloat(batch.quarantineQty || "0");
+        if (quarantineQty > 0) {
+          await tx
+            .update(batches)
+            .set({
+              onHandQty: (currentOnHandQty + quarantineQty).toString(),
+              quarantineQty: "0",
+            })
+            .where(eq(batches.id, batchId));
+
+          // Record release from quarantine movement
+          await tx.insert(inventoryMovements).values({
+            batchId,
+            inventoryMovementType: "RELEASE_FROM_QUARANTINE",
+            quantityChange: `+${quarantineQty}`,
+            quantityBefore: currentOnHandQty.toString(),
+            quantityAfter: (currentOnHandQty + quarantineQty).toString(),
+            referenceType: "BULK_STATUS_CHANGE",
+            notes: `Bulk status change from QUARANTINED to LIVE`,
+            performedBy: userId,
+          });
+        }
       }
 
       // Update status
@@ -1598,7 +1674,7 @@ export async function bulkUpdateBatchStatus(
       updated++;
     }
 
-    return { success: true, updated };
+    return { success: true, updated, skipped, errors };
   });
 }
 
