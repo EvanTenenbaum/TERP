@@ -446,11 +446,13 @@ export const salesSheetsRouter = router({
 
   /**
    * Load a specific view by ID
+   * FIX: Now passes userId for authorization check
    */
   loadView: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ viewId: z.number().positive() }))
-    .query(async ({ input }) => {
-      return await salesSheetsDb.loadViewById(input.viewId);
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await salesSheetsDb.loadViewById(input.viewId, userId);
     }),
 
   /**

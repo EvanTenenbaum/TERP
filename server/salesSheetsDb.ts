@@ -915,10 +915,11 @@ export async function saveView(data: SavedViewData): Promise<number> {
 
 /**
  * Get all saved views for a client (includes universal views)
+ * FIX: Now properly filters by userId - users can only see their own views or universal views
  */
 export async function getViews(
   clientId?: number,
-  _userId?: number
+  userId?: number
 ): Promise<Array<{
   id: number;
   name: string;
@@ -934,15 +935,29 @@ export async function getViews(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get views: either for this client specifically or universal (clientId is null)
+  // FIX: Build query conditions - users can only see:
+  // 1. Their own views for the specific client
+  // 2. Universal views (clientId is null) they created
+  // 3. Universal views from any user (shared across all users)
+  const conditions = [];
+
+  if (clientId) {
+    // Client-specific views owned by user OR universal views
+    conditions.push(
+      sql`(
+        (${salesSheetTemplates.clientId} = ${clientId} AND ${salesSheetTemplates.createdBy} = ${userId ?? 0})
+        OR ${salesSheetTemplates.clientId} IS NULL
+      )`
+    );
+  } else {
+    // Only universal views
+    conditions.push(isNull(salesSheetTemplates.clientId));
+  }
+
   const templates = await db
     .select()
     .from(salesSheetTemplates)
-    .where(
-      clientId
-        ? sql`(${salesSheetTemplates.clientId} = ${clientId} OR ${salesSheetTemplates.clientId} IS NULL)`
-        : isNull(salesSheetTemplates.clientId)
-    )
+    .where(conditions.length > 0 ? conditions[0] : undefined)
     .orderBy(desc(salesSheetTemplates.createdAt));
 
   return templates.map((t) => {
@@ -982,8 +997,9 @@ export async function getViews(
 
 /**
  * Load a specific view by ID
+ * FIX: Added userId for authorization - users can only load their own views or universal views
  */
-export async function loadViewById(viewId: number): Promise<{
+export async function loadViewById(viewId: number, userId?: number): Promise<{
   id: number;
   name: string;
   description: string | null;
@@ -1003,6 +1019,18 @@ export async function loadViewById(viewId: number): Promise<{
     .limit(1);
 
   if (result.length === 0) return null;
+
+  const view = result[0];
+
+  // FIX: Authorization check - user can only load:
+  // 1. Their own views (createdBy matches userId)
+  // 2. Universal views (clientId is null) - shared with everyone
+  const isOwner = view.createdBy === userId;
+  const isUniversal = view.clientId === null;
+
+  if (!isOwner && !isUniversal) {
+    throw new Error("View not found or you don't have permission to access it");
+  }
 
   const t = result[0];
   const filtersData = t.filters as any;

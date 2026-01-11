@@ -4,7 +4,7 @@
  * SALES-SHEET-IMPROVEMENTS: New component for advanced filtering capabilities
  */
 
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,21 +78,28 @@ export function AdvancedFilters({
   // FIX: Local state for search with debouncing to prevent excessive re-filtering
   const [localSearch, setLocalSearch] = useState(filters.search);
 
+  // FIX: Use ref to get current filters without adding to dependency array
+  const filtersRef = useRef(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
   // Sync local search with external filters when they change
   useEffect(() => {
     setLocalSearch(filters.search);
   }, [filters.search]);
 
-  // Debounce search updates
+  // FIX: Debounce search updates - only depend on localSearch and filters.search
+  // Using ref to get current filters avoids resetting timer on other filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (localSearch !== filters.search) {
-        onFiltersChange({ ...filters, search: localSearch });
+      if (localSearch !== filtersRef.current.search) {
+        onFiltersChange({ ...filtersRef.current, search: localSearch });
       }
     }, SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [localSearch, filters, onFiltersChange]);
+  }, [localSearch, onFiltersChange]);
 
   // Extract unique filter options from inventory
   const filterOptions = useMemo<FilterOptions>(() => {
