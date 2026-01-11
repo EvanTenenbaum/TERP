@@ -262,7 +262,7 @@ export function UserPreferencesSettings() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Default</SelectItem>
-              {warehouses.map((warehouse: { id: number; site: string; zone?: string }) => (
+              {warehouses.map((warehouse) => (
                 <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
                   {warehouse.site}
                   {warehouse.zone && ` - ${warehouse.zone}`}
@@ -494,7 +494,7 @@ export function UnitTypesManager() {
                   />
                   <Select
                     value={editData?.category || "COUNT"}
-                    onValueChange={(v) => setEditData({ ...editData!, category: v as typeof editData.category })}
+                    onValueChange={(v) => editData && setEditData({ ...editData, category: v as typeof editData.category })}
                   >
                     <SelectTrigger>
                       <SelectValue />
