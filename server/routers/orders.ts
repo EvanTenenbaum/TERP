@@ -17,7 +17,7 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
-import { orders, orderLineItems, batches } from "../../drizzle/schema";
+import { orders, orderLineItems, batches, products } from "../../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -323,7 +323,7 @@ export const ordersRouter = router({
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          // Get batch info for original COGS
+          // Get batch info for COGS
           const batch = await db.query.batches.findFirst({
             where: eq(batches.id, item.batchId),
           });
@@ -331,6 +331,12 @@ export const ordersRouter = router({
           if (!batch) {
             throw new Error(`Batch ${item.batchId} not found`);
           }
+
+          // Get product info for category lookup
+          const product = await db.query.products.findFirst({
+            where: eq(products.id, batch.productId),
+            columns: { category: true },
+          });
 
           const originalCogs = parseFloat(batch.unitCogs || "0");
           const cogsPerUnit = item.isCogsOverridden
@@ -345,8 +351,8 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
-            // Try to get margin using batch's product category or fallback to "OTHER"
-            const productCategory = batch.productCategory || "OTHER";
+            // Try to get margin using product category or fallback to "OTHER"
+            const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
               productCategory

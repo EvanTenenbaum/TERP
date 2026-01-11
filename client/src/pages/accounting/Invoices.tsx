@@ -47,6 +47,7 @@ import {
   CheckCircle,
   Mail,
   Download,
+  CreditCard,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
@@ -57,6 +58,8 @@ import {
 } from "@/components/ui/pagination-controls";
 import { toast } from "sonner";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
+// FEAT-007: Import Record Payment Dialog
+import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
 
 type Invoice = {
   id: number;
@@ -77,6 +80,9 @@ export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   // BUG-089 fix: Add state for create invoice dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // FEAT-007: State for record payment dialog
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // PERF-003: Pagination state
   const { page, pageSize, offset, setPage, setPageSize } = usePagination(50);
@@ -108,6 +114,14 @@ export default function Invoices() {
 
   const handleDownloadPDF = (invoice: Invoice) => {
     toast.success(`Downloading PDF for ${invoice.invoiceNumber}`);
+  };
+
+  // FEAT-007: Handle record payment action
+  const handleRecordPayment = (invoice: Invoice) => {
+    setPaymentInvoice(invoice);
+    setShowPaymentDialog(true);
+    // Close the detail sheet if open
+    setSelectedInvoice(null);
   };
 
   const handleExportAll = () => {
@@ -416,6 +430,14 @@ export default function Invoices() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {/* FEAT-007: Record Payment action */}
+                                <DropdownMenuItem
+                                  onClick={() => handleRecordPayment(invoice)}
+                                  disabled={invoice.status === "PAID" || invoice.status === "VOID"}
+                                >
+                                  <CreditCard className="h-4 w-4 mr-2" />
+                                  Record Payment
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => handleMarkPaid(invoice)}
                                   disabled={invoice.status === "PAID"}
@@ -528,13 +550,23 @@ export default function Invoices() {
               {/* Quick Actions */}
               <div className="space-y-2">
                 <h3 className="font-semibold mb-3">Quick Actions</h3>
+                {/* FEAT-007: Primary action - Record Payment */}
                 <Button
+                  className="w-full"
+                  onClick={() => handleRecordPayment(selectedInvoice)}
+                  disabled={selectedInvoice.status === "PAID" || selectedInvoice.status === "VOID"}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Record Payment
+                </Button>
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => handleMarkPaid(selectedInvoice)}
                   disabled={selectedInvoice.status === "PAID"}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark as Paid
+                  Mark as Paid (Full)
                 </Button>
                 <Button
                   variant="outline"
@@ -617,6 +649,16 @@ export default function Invoices() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* FEAT-007: Record Payment Dialog */}
+      <RecordPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        invoice={paymentInvoice}
+        onSuccess={() => {
+          setPaymentInvoice(null);
+        }}
+      />
     </div>
     </PageErrorBoundary>
   );

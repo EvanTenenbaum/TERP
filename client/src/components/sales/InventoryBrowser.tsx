@@ -1,11 +1,6 @@
-/**
- * InventoryBrowser Component
- * Browse and select inventory items for sales sheets with advanced filtering
- * SALES-SHEET-IMPROVEMENTS: Integrated advanced filtering and sorting
- */
-
-import { useState, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -15,125 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CheckSquare, Square, Package } from "lucide-react";
+import { Search, Plus, CheckSquare, Square } from "lucide-react";
 import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
-import { AdvancedFilters } from "./AdvancedFilters";
-import type {
-  PricedInventoryItem,
-  InventoryFilters,
-  InventorySortConfig,
-} from "./types";
-import { DEFAULT_FILTERS, DEFAULT_SORT } from "./types";
 
 interface InventoryBrowserProps {
-  inventory: PricedInventoryItem[];
+  inventory: any[];
   isLoading: boolean;
-  onAddItems: (items: PricedInventoryItem[]) => void;
-  selectedItems: PricedInventoryItem[];
-  // Optional: external filter/sort control for saved views
-  filters?: InventoryFilters;
-  sort?: InventorySortConfig;
-  onFiltersChange?: (filters: InventoryFilters) => void;
-  onSortChange?: (sort: InventorySortConfig) => void;
-}
-
-// Apply filters to inventory
-function applyFilters(
-  item: PricedInventoryItem,
-  filters: InventoryFilters
-): boolean {
-  // Search filter
-  if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
-    const matchesSearch =
-      item.name?.toLowerCase().includes(searchLower) ||
-      item.category?.toLowerCase().includes(searchLower) ||
-      item.strain?.toLowerCase().includes(searchLower) ||
-      item.strainFamily?.toLowerCase().includes(searchLower) ||
-      item.vendor?.toLowerCase().includes(searchLower) ||
-      item.grade?.toLowerCase().includes(searchLower);
-    if (!matchesSearch) return false;
-  }
-
-  // Category filter
-  if (filters.categories.length > 0) {
-    if (!item.category || !filters.categories.includes(item.category)) {
-      return false;
-    }
-  }
-
-  // Grade filter
-  if (filters.grades.length > 0) {
-    if (!item.grade || !filters.grades.includes(item.grade)) {
-      return false;
-    }
-  }
-
-  // Strain family filter
-  if (filters.strainFamilies.length > 0) {
-    if (
-      !item.strainFamily ||
-      !filters.strainFamilies.includes(item.strainFamily)
-    ) {
-      return false;
-    }
-  }
-
-  // Vendor filter
-  if (filters.vendors.length > 0) {
-    if (!item.vendor || !filters.vendors.includes(item.vendor)) {
-      return false;
-    }
-  }
-
-  // Price range filter
-  if (filters.priceMin !== null && item.retailPrice < filters.priceMin) {
-    return false;
-  }
-  if (filters.priceMax !== null && item.retailPrice > filters.priceMax) {
-    return false;
-  }
-
-  // In stock filter
-  if (filters.inStockOnly && item.quantity <= 0) {
-    return false;
-  }
-
-  return true;
-}
-
-// Apply sorting to inventory
-function applySorting(
-  a: PricedInventoryItem,
-  b: PricedInventoryItem,
-  sort: InventorySortConfig
-): number {
-  const direction = sort.direction === "asc" ? 1 : -1;
-
-  switch (sort.field) {
-    case "name":
-      return direction * (a.name || "").localeCompare(b.name || "");
-    case "category":
-      return direction * (a.category || "").localeCompare(b.category || "");
-    case "retailPrice":
-      return direction * (a.retailPrice - b.retailPrice);
-    case "quantity":
-      return direction * (a.quantity - b.quantity);
-    case "basePrice":
-      return direction * (a.basePrice - b.basePrice);
-    case "grade":
-      return direction * (a.grade || "").localeCompare(b.grade || "");
-    default:
-      return 0;
-  }
+  onAddItems: (items: any[]) => void;
+  selectedItems: any[];
 }
 
 export function InventoryBrowser({
@@ -141,107 +27,82 @@ export function InventoryBrowser({
   isLoading,
   onAddItems,
   selectedItems,
-  filters: externalFilters,
-  sort: externalSort,
-  onFiltersChange: externalOnFiltersChange,
-  onSortChange: externalOnSortChange,
 }: InventoryBrowserProps) {
-  // Internal state for when not controlled externally
-  const [internalFilters, setInternalFilters] =
-    useState<InventoryFilters>(DEFAULT_FILTERS);
-  const [internalSort, setInternalSort] =
-    useState<InventorySortConfig>(DEFAULT_SORT);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  // FEAT-003: Quick add quantity state - tracks quantity for each item
+  const [quickQuantities, setQuickQuantities] = useState<Record<number, string>>({});
 
-  // Use external or internal state
-  const filters = externalFilters ?? internalFilters;
-  const sort = externalSort ?? internalSort;
-  const onFiltersChange = externalOnFiltersChange ?? setInternalFilters;
-  const onSortChange = externalOnSortChange ?? setInternalSort;
-
-  // Filter and sort inventory
-  const filteredInventory = useMemo(() => {
-    // First, filter out invalid items
-    const validItems = inventory.filter(
-      (item) => item && item.id !== undefined && item.id !== null && item.name
+  // Filter inventory by search, ensuring items have valid data
+  const filteredInventory = inventory.filter((item) => {
+    // Skip items without valid id or name
+    if (!item || item.id === undefined || item.id === null || !item.name) {
+      return false;
+    }
+    return (
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.category?.toLowerCase().includes(search.toLowerCase()) ||
+      item.strain?.toLowerCase().includes(search.toLowerCase())
     );
-
-    // Apply filters
-    const filtered = validItems.filter((item) => applyFilters(item, filters));
-
-    // Apply sorting
-    return filtered.sort((a, b) => applySorting(a, b, sort));
-  }, [inventory, filters, sort]);
+  });
 
   // Check if item is already in sheet
-  const isInSheet = useCallback(
-    (itemId: number) => {
-      return selectedItems.some((item) => item.id === itemId);
-    },
-    [selectedItems]
-  );
+  const isInSheet = (itemId: number) => {
+    return selectedItems.some((item) => item.id === itemId);
+  };
 
   // Toggle item selection
-  const toggleSelection = useCallback((itemId: number) => {
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  }, []);
+  const toggleSelection = (itemId: number) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedIds(newSelected);
+  };
 
-  // Select all visible items (that aren't already in sheet)
-  const selectAll = useCallback(() => {
-    const selectableIds = filteredInventory
-      .filter((item) => !isInSheet(item.id))
-      .map((item) => item.id);
-    setSelectedIds(new Set(selectableIds));
-  }, [filteredInventory, isInSheet]);
+  // Select all visible items
+  const selectAll = () => {
+    const allIds = new Set(filteredInventory.map((item) => item.id));
+    setSelectedIds(allIds);
+  };
 
   // Clear selection
-  const clearSelection = useCallback(() => {
+  const clearSelection = () => {
     setSelectedIds(new Set());
-  }, []);
+  };
 
   // Add selected items to sheet
-  const addSelectedToSheet = useCallback(() => {
+  const addSelectedToSheet = () => {
     const itemsToAdd = inventory.filter((item) => selectedIds.has(item.id));
     onAddItems(itemsToAdd);
     setSelectedIds(new Set());
-  }, [inventory, selectedIds, onAddItems]);
+  };
 
-  // Add single item to sheet
-  const addSingleItem = useCallback(
-    (item: PricedInventoryItem) => {
-      onAddItems([item]);
-    },
-    [onAddItems]
-  );
+  // FEAT-003: Add single item with optional quick quantity
+  const addSingleItem = (item: any, customQuantity?: number) => {
+    const qty = customQuantity || parseFloat(quickQuantities[item.id]) || 1;
+    const itemWithQuantity = { ...item, orderQuantity: qty };
+    onAddItems([itemWithQuantity]);
+    // Clear the quick quantity input after adding
+    setQuickQuantities((prev) => {
+      const updated = { ...prev };
+      delete updated[item.id];
+      return updated;
+    });
+  };
+
+  // FEAT-003: Update quick quantity for an item
+  const updateQuickQuantity = (itemId: number, value: string) => {
+    setQuickQuantities((prev) => ({ ...prev, [itemId]: value }));
+  };
 
   // Calculate markup percentage
   const calculateMarkup = (basePrice: number, retailPrice: number) => {
     if (basePrice === 0) return 0;
     return ((retailPrice - basePrice) / basePrice) * 100;
   };
-
-  // Calculate stats for filtered inventory
-  const stats = useMemo(() => {
-    const totalValue = filteredInventory.reduce(
-      (sum, item) => sum + item.retailPrice * item.quantity,
-      0
-    );
-    const avgPrice =
-      filteredInventory.length > 0
-        ? filteredInventory.reduce((sum, item) => sum + item.retailPrice, 0) /
-          filteredInventory.length
-        : 0;
-    return { totalValue, avgPrice };
-  }, [filteredInventory]);
 
   if (isLoading) {
     return (
@@ -263,10 +124,7 @@ export function InventoryBrowser({
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Inventory
-            </CardTitle>
+            <CardTitle>Inventory</CardTitle>
             <CardDescription>
               Browse and select items to add to the sales sheet
             </CardDescription>
@@ -280,19 +138,16 @@ export function InventoryBrowser({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Advanced Filters */}
-        <AdvancedFilters
-          filters={filters}
-          sort={sort}
-          onFiltersChange={onFiltersChange}
-          onSortChange={onSortChange}
-          inventory={inventory}
-          isOpen={filtersOpen}
-          onOpenChange={setFiltersOpen}
-        />
-
-        {/* Bulk Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search inventory..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Button variant="outline" size="sm" onClick={selectAll}>
             <CheckSquare className="mr-2 h-4 w-4" />
             Select All
@@ -303,7 +158,6 @@ export function InventoryBrowser({
           </Button>
         </div>
 
-        {/* Inventory Table */}
         <div className="rounded-md border max-h-[600px] overflow-y-auto">
           <Table>
             <TableHeader>
@@ -311,35 +165,29 @@ export function InventoryBrowser({
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Qty</TableHead>
+                <TableHead>Stock</TableHead>
                 <TableHead>Base Price</TableHead>
                 <TableHead>Retail Price</TableHead>
                 <TableHead>Markup</TableHead>
+                <TableHead className="w-24">Quick Qty</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center text-muted-foreground"
-                  >
-                    {inventory.length === 0
-                      ? "No inventory items available"
-                      : "No items match the current filters"}
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
+                    No inventory items found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredInventory.map((item) => {
                   const markup = calculateMarkup(item.basePrice, item.retailPrice);
                   const alreadyInSheet = isInSheet(item.id);
+                  const quickQty = quickQuantities[item.id] || "";
 
                   return (
-                    <TableRow
-                      key={item.id}
-                      className={alreadyInSheet ? "opacity-50" : ""}
-                    >
+                    <TableRow key={item.id} className={alreadyInSheet ? "opacity-50" : ""}>
                       <TableCell>
                         <Checkbox
                           checked={selectedIds.has(item.id)}
@@ -360,22 +208,13 @@ export function InventoryBrowser({
                           {item.strainId && (
                             <StrainFamilyIndicator strainId={item.strainId} />
                           )}
-                          {item.quantity <= 0 && (
-                            <span className="text-xs text-destructive">
-                              Out of stock
-                            </span>
-                          )}
-                          {item.vendor && (
-                            <span className="text-xs text-muted-foreground">
-                              {item.vendor}
-                            </span>
+                          {item.quantity <= 0 && item.strainId && (
+                            <span className="text-xs text-destructive">Out of stock</span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {item.category || "N/A"}
-                        </Badge>
+                        <Badge variant="outline">{item.category || "N/A"}</Badge>
                       </TableCell>
                       <TableCell>{item.quantity.toFixed(2)}</TableCell>
                       <TableCell>${item.basePrice.toFixed(2)}</TableCell>
@@ -384,9 +223,27 @@ export function InventoryBrowser({
                       </TableCell>
                       <TableCell>
                         <Badge variant={markup > 0 ? "default" : "secondary"}>
-                          {markup > 0 ? "+" : ""}
-                          {markup.toFixed(1)}%
+                          {markup > 0 ? "+" : ""}{markup.toFixed(1)}%
                         </Badge>
+                      </TableCell>
+                      {/* FEAT-003: Quick Add Quantity Field */}
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="1"
+                          value={quickQty}
+                          onChange={(e) => updateQuickQuantity(item.id, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !alreadyInSheet) {
+                              e.preventDefault();
+                              addSingleItem(item);
+                            }
+                          }}
+                          disabled={alreadyInSheet}
+                          className="w-20 h-8 text-center"
+                        />
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -394,8 +251,10 @@ export function InventoryBrowser({
                           size="sm"
                           onClick={() => addSingleItem(item)}
                           disabled={alreadyInSheet}
+                          title={quickQty ? `Add ${quickQty}` : "Add 1"}
                         >
                           <Plus className="h-4 w-4" />
+                          {quickQty && <span className="ml-1 text-xs">{quickQty}</span>}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -406,17 +265,11 @@ export function InventoryBrowser({
           </Table>
         </div>
 
-        {/* Stats Bar */}
-        <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-3">
-          <span>
-            Showing {filteredInventory.length} of {inventory.length} items
-          </span>
-          <div className="flex gap-4">
-            <span>Total Value: ${stats.totalValue.toLocaleString()}</span>
-            <span>Avg Price: ${stats.avgPrice.toFixed(2)}</span>
-          </div>
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredInventory.length} of {inventory.length} items
         </div>
       </CardContent>
     </Card>
   );
 }
+

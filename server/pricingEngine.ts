@@ -373,7 +373,11 @@ export async function calculateRetailPrice(
   // Ensure price doesn't go negative
   currentPrice = Math.max(0, currentPrice);
 
-  const priceMarkup = ((currentPrice - item.basePrice) / item.basePrice) * 100;
+  // BUG-040 FIX: Handle zero base price to prevent division by zero (NaN/Infinity)
+  // When basePrice is 0, priceMarkup should be 0 (no markup calculable)
+  const priceMarkup = item.basePrice > 0
+    ? ((currentPrice - item.basePrice) / item.basePrice) * 100
+    : 0;
 
   return {
     ...item,

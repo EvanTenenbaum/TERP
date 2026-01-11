@@ -150,7 +150,7 @@ export function OrderAdjustmentPanel({
             />
           </div>
 
-          {/* Calculated Amount */}
+          {/* FEAT-004: Enhanced Calculated Amount with percentage equivalent */}
           {parseFloat(amount) > 0 && (
             <div className="p-3 bg-muted rounded-lg">
               <div className="flex items-center justify-between">
@@ -164,6 +164,12 @@ export function OrderAdjustmentPanel({
               {type === "PERCENT" && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {amount}% of ${subtotal.toFixed(2)} subtotal
+                </p>
+              )}
+              {/* FEAT-004: Show percentage equivalent for dollar amounts */}
+              {type === "DOLLAR" && subtotal > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Equivalent to {((parseFloat(amount) / subtotal) * 100).toFixed(2)}% of ${subtotal.toFixed(2)} subtotal
                 </p>
               )}
             </div>

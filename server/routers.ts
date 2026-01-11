@@ -53,6 +53,7 @@ import { adminSchemaRouter } from "./routers/adminSchema";
 import { adminDataAugmentRouter } from "./routers/adminDataAugment";
 import { vipPortalRouter } from "./routers/vipPortal";
 import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
+import { vipTiersRouter } from "./routers/vipTiers";
 // ordersEnhancedV2Router consolidated into ordersRouter (RF-001)
 import { pricingDefaultsRouter } from "./routers/pricingDefaults";
 import { dashboardPreferencesRouter } from "./routers/dashboardPreferences";
@@ -100,6 +101,7 @@ import { featureFlagsRouter } from "./routers/featureFlags";
 import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
 import { catalogRouter } from "./routers/catalog";
+import { organizationSettingsRouter } from "./routers/organizationSettings";
 
 import { healthRouter } from "./routers/health";
 
@@ -173,6 +175,7 @@ export const appRouter = router({
   adminDataAugment: adminDataAugmentRouter,
   vipPortal: vipPortalRouter,
   vipPortalAdmin: vipPortalAdminRouter,
+  vipTiers: vipTiersRouter, // FEAT-019: VIP Tier System
   // ordersEnhancedV2: Consolidated into orders router (RF-001)
   pricingDefaults: pricingDefaultsRouter,
   dashboardPreferences: dashboardPreferencesRouter,
@@ -220,6 +223,7 @@ export const appRouter = router({
   adminSetup: adminSetupRouter, // Feature Flag System
   spreadsheet: spreadsheetRouter,
   catalog: catalogRouter, // INV-4: Catalog Publishing
+  organizationSettings: organizationSettingsRouter, // FEAT-010 to FEAT-015: Organization Settings & Preferences
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 

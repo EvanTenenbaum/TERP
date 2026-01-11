@@ -1,5 +1,7 @@
 name: Swarm Manual Start
 
+# INFRA-007: Updated Swarm Manager Configuration
+
 on:
   workflow_dispatch: # Manual trigger only
     inputs:
@@ -25,6 +27,11 @@ on:
         description: 'Comma-separated task IDs (e.g., "BUG-002,BUG-003") - Required if mode is batch'
         required: false
         type: string
+      max_concurrent:
+        description: 'Maximum concurrent agents (default: 3)'
+        required: false
+        type: number
+        default: 3
 
 jobs:
   swarm-execution:

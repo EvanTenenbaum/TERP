@@ -113,10 +113,15 @@ export const LineItemRow = memo(function LineItemRow({
         {index + 1}
       </TableCell>
 
-      {/* Product */}
+      {/* FEAT-006: Product Name Primary, SKU/Batch Secondary */}
       <TableCell>
-        <div className="flex flex-col">
-          <span className="font-medium">{item.productDisplayName || `Batch ${item.batchId}`}</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-medium">
+            {item.productDisplayName || "Unknown Product"}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ID: {item.batchId}
+          </span>
           {item.isSample && (
             <Badge variant="secondary" className="w-fit mt-1">Sample</Badge>
           )}

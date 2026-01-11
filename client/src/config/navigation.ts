@@ -15,6 +15,7 @@ import {
   BarChart3,
   Table,
   Video,
+  Flag,
   Layers,
   type LucideIcon,
 } from "lucide-react";
@@ -104,8 +105,17 @@ export const navigationItems: NavigationItem[] = [
 
   // QA-W2-008: Use UserCog icon to avoid duplicate with Clients
   { name: "Users", path: "/users", icon: UserCog, group: "admin" },
-  { name: "Settings", path: "/settings", icon: Settings, group: "admin" },
+  // UX-010: Renamed "Settings" to "System Settings" to distinguish from personal account settings
+  { name: "System Settings", path: "/settings", icon: Settings, group: "admin" },
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "admin" },
+  // FEAT-017: Direct access to Feature Flags for improved discoverability
+  {
+    name: "Feature Flags",
+    path: "/settings/feature-flags",
+    icon: Flag,
+    group: "admin",
+    ariaLabel: "Manage feature flags and rollouts",
+  },
 ];
 
 export type NavigationGroup = {

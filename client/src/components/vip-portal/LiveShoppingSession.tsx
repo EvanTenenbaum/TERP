@@ -629,11 +629,12 @@ const ItemCard: React.FC<ItemCardProps> = ({
   // Note: showActions state reserved for future mobile interaction enhancements
   const [_showActions, _setShowActions] = useState(false);
 
+  // UX-013: Fixed undefined priceChange variable - should use priceAnimation prop
   return (
     <div
       className={`bg-white rounded-lg shadow-sm p-3 border transition-all ${
         item.isHighlighted ? "ring-2 ring-indigo-400 border-indigo-300" : "border-gray-200"
-      } ${priceChange ? "animate-pulse bg-yellow-50" : ""}`}
+      } ${priceAnimation ? "animate-pulse bg-yellow-50" : ""}`}
     >
       {/* Product Info */}
       <div className="flex justify-between items-start mb-2">

@@ -353,7 +353,8 @@ describe("Pricing Engine", () => {
       const result = await calculateRetailPrice(item, rules);
 
       expect(result.retailPrice).toBe(0);
-      expect(result.priceMarkup).toBeNaN(); // Division by zero results in NaN
+      // BUG-040 FIX: Zero base price should return 0 markup (not NaN from division by zero)
+      expect(result.priceMarkup).toBe(0);
     });
   });
 

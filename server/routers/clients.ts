@@ -91,6 +91,7 @@ export const clientsRouter = router({
 
   // Create new client
   // BLOCK-001: Enhanced error handling for duplicate TERI codes
+  // FEAT-001: Added wishlist/notes field support
   create: protectedProcedure
     .use(requirePermission("clients:create"))
     .input(
@@ -106,6 +107,7 @@ export const clientsRouter = router({
         isReferee: z.boolean().optional(),
         isContractor: z.boolean().optional(),
         tags: z.array(z.string()).optional(),
+        wishlist: z.string().optional(), // FEAT-001: Notes/additional info field
       })
     )
     .mutation(async ({ input, ctx }) => {

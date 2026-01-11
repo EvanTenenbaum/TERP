@@ -141,6 +141,41 @@ export const sessionCartItems = mysqlTable(
     // TO_PURCHASE: Customer intends to buy
     itemStatus: cartItemStatusEnum.default("INTERESTED"),
 
+    // FEATURE-003: Price Negotiation fields
+    // Status of price negotiation for this item
+    negotiationStatus: mysqlEnum("negotiationStatus", [
+      "PENDING",        // Awaiting response
+      "COUNTER_OFFERED", // Seller made counter-offer
+      "ACCEPTED",       // Price agreed
+      "REJECTED",       // Negotiation rejected
+    ]),
+    // JSON field to store negotiation history and details
+    negotiationData: json("negotiationData").$type<{
+      status: string;
+      originalPrice: number;
+      proposedPrice: number;
+      proposedQuantity?: number;
+      counterPrice?: number;
+      counterQuantity?: number;
+      finalPrice?: number;
+      reason?: string;
+      requestedBy?: number;
+      requestedAt?: string;
+      acceptedAt?: string;
+      acceptedBy?: number;
+      rejectedAt?: string;
+      rejectedBy?: number;
+      rejectionReason?: string;
+      history: Array<{
+        action: string;
+        price?: number | null;
+        quantity?: number;
+        by: number;
+        at: string;
+        reason?: string;
+      }>;
+    }>(),
+
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     deletedAt: timestamp("deleted_at"), // snake_case to match legacy TERP schema

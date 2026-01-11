@@ -16,6 +16,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Search, Plus, Loader2, Package, TrendingUp, Construction } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { DataCardSection } from "@/components/data-cards";
+// UX-012: Import centralized date formatting utility
+import { formatDate } from "@/lib/utils";
 
 /**
  * Vendor Supply Page
@@ -173,11 +175,12 @@ export default function VendorSupplyPage() {
                       <p className="font-medium">${item.pricePerUnit}/unit</p>
                     </div>
                   )}
+                  {/* UX-012: Use standardized date formatting */}
                   {item.availableUntil && (
                     <div>
                       <p className="text-muted-foreground">Available Until</p>
                       <p className="font-medium">
-                        {new Date(item.availableUntil).toLocaleDateString()}
+                        {formatDate(item.availableUntil)}
                       </p>
                     </div>
                   )}
@@ -185,7 +188,7 @@ export default function VendorSupplyPage() {
                     <div>
                       <p className="text-muted-foreground">Added</p>
                       <p className="font-medium">
-                        {new Date(item.createdAt).toLocaleDateString()}
+                        {formatDate(item.createdAt)}
                       </p>
                     </div>
                   )}

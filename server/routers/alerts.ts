@@ -23,6 +23,90 @@ const alertTypeEnum = z.enum([
 
 export const alertsRouter = router({
   /**
+   * List alerts with pagination
+   * BUG-034: Standardized .list procedure for API consistency
+   */
+  list: adminProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(1000).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        type: alertTypeEnum.optional(),
+        acknowledged: z.boolean().optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+
+      const alerts: Array<{
+        id: string;
+        type: string;
+        title: string;
+        description: string;
+        severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+        entityType: string;
+        entityId: number;
+        createdAt: Date;
+        acknowledgedAt?: Date;
+        acknowledgedBy?: number;
+      }> = [];
+
+      // Get client needs alerts (status=ACTIVE is the pending state)
+      if (!input?.type || input.type === "CLIENT_NEED") {
+        const activeNeeds = await db
+          .select({
+            id: clientNeeds.id,
+            clientId: clientNeeds.clientId,
+            clientName: clients.name,
+            category: clientNeeds.category,
+            productName: clientNeeds.productName,
+            strain: clientNeeds.strain,
+            quantityMin: clientNeeds.quantityMin,
+            quantityMax: clientNeeds.quantityMax,
+            createdAt: clientNeeds.createdAt,
+          })
+          .from(clientNeeds)
+          .leftJoin(clients, eq(clientNeeds.clientId, clients.id))
+          .where(eq(clientNeeds.status, "ACTIVE"))
+          .orderBy(desc(clientNeeds.createdAt))
+          .limit(limit + offset);
+
+        for (const need of activeNeeds) {
+          const qtyDisplay =
+            need.quantityMin && need.quantityMax
+              ? `${need.quantityMin}-${need.quantityMax}`
+              : need.quantityMin || need.quantityMax || "TBD";
+          const itemDisplay =
+            need.strain || need.productName || need.category || "Item";
+
+          alerts.push({
+            id: `CLIENT_NEED-${need.id}`,
+            type: "CLIENT_NEED",
+            title: `Client Need: ${need.clientName}`,
+            description: `${itemDisplay} - ${qtyDisplay}`,
+            severity: "MEDIUM",
+            entityType: "clientNeed",
+            entityId: need.id,
+            createdAt: need.createdAt || new Date(),
+          });
+        }
+      }
+
+      // Apply pagination
+      const total = alerts.length;
+      const paginatedAlerts = alerts.slice(offset, offset + limit);
+
+      return {
+        data: paginatedAlerts,
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total,
+      };
+    }),
+
+  /**
    * Get all active alerts
    * NOTE: LOW_STOCK alerts disabled until schema supports stock thresholds
    */

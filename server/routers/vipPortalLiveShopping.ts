@@ -482,7 +482,7 @@ export const vipPortalLiveShoppingRouter = router({
               like(products.nameCanonical, `%${trimmedQuery}%`),
               like(batches.code, `%${trimmedQuery}%`)
             ),
-            gt(batches.onHandQty, 0) // Only show in-stock items
+            gt(batches.onHandQty, "0") // Only show in-stock items (onHandQty is varchar)
           )
         )
         .limit(15);

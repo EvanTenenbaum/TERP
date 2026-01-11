@@ -11,6 +11,40 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const todoListsRouter = router({
+  // List todo lists with pagination
+  // BUG-034: Standardized .list procedure for API consistency
+  list: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(1000).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        search: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+
+      let lists = await todoListsDb.getUserLists(ctx.user.id);
+
+      // Apply search filter if provided
+      if (input?.search) {
+        const searchLower = input.search.toLowerCase();
+        lists = lists.filter(
+          (list) =>
+            list.name?.toLowerCase().includes(searchLower) ||
+            list.description?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Apply pagination
+      const paginatedLists = lists.slice(offset, offset + limit);
+
+      return createSafeUnifiedResponse(paginatedLists, lists.length, limit, offset);
+    }),
+
   // Get all lists accessible by current user
   // BUG-034: Standardized pagination response
   getMyLists: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {

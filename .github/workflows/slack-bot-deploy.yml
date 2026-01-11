@@ -1,0 +1,100 @@
+name: Slack Bot Deploy
+
+# INFRA-012: TERP Commander Slack Bot Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - 'start'
+          - 'stop'
+          - 'restart'
+          - 'status'
+        default: 'status'
+
+jobs:
+  manage-bot:
+    name: Manage Slack Bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Slack Credentials
+        id: validate
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_APP_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ]; then
+            echo "WARNING: SLACK_BOT_TOKEN not configured"
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Bot Action
+        if: steps.validate.outputs.configured == 'true'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_APP_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
+          SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+        run: |
+          ACTION="${{ github.event.inputs.action }}"
+
+          case "$ACTION" in
+            start)
+              echo "Starting Slack bot..."
+              pnpm tsx scripts/slack-bot-ai.ts &
+              sleep 5
+              curl -s http://localhost:3001/health || echo "Bot may be starting..."
+              ;;
+            status)
+              echo "Checking bot status..."
+              curl -s http://localhost:3001/health || echo "Bot is not running locally"
+              ;;
+            stop)
+              echo "Stop command - bot stops when workflow ends"
+              ;;
+            restart)
+              echo "Restart command - stopping and starting..."
+              ;;
+          esac
+
+      - name: Report Status
+        run: |
+          echo "## Slack Bot Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Action: ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "Configured: ${{ steps.validate.outputs.configured }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send Notification
+        if: always() && steps.validate.outputs.configured == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"TERP Commander Slack Bot: ${{ github.event.inputs.action }} completed"}' \
+              "$SLACK_WEBHOOK_URL" || true
+          fi
