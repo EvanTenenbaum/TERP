@@ -137,7 +137,7 @@ export function EditInvoiceDialog({
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
       notes: formData.notes || undefined,
       paymentTerms: formData.paymentTerms || undefined,
-      status: formData.status,
+      // Note: status is updated via separate updateStatus endpoint
     });
   };
 

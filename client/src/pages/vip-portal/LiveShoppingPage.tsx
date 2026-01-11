@@ -65,7 +65,7 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
           id: data.session.id,
           roomCode: data.session.roomCode,
           title: data.session.title,
-          hostName: data.session.hostName,
+          hostName: data.session.hostName || "Host",
           status: data.session.status,
         });
         setIsSessionActive(true);
