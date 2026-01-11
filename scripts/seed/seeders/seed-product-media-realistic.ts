@@ -152,7 +152,7 @@ async function main() {
 
     // Get all products with their categories
     const [products] = await connection.query(
-      "SELECT id, category, nameCanonical FROM products WHERE deletedAt IS NULL ORDER BY id"
+      "SELECT id, category, nameCanonical FROM products WHERE deleted_at IS NULL ORDER BY id"
     ) as any;
 
     if (products.length === 0) {
