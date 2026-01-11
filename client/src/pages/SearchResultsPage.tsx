@@ -156,10 +156,10 @@ export default function SearchResultsPage() {
                                     {quote.description}
                                   </p>
                                 )}
-                                {quote.metadata?.total && (
+                                {(quote.metadata as Record<string, unknown>)?.total && (
                                   <p className="text-sm text-muted-foreground mt-1">
                                     Total: $
-                                    {Number(quote.metadata.total).toFixed(2)}
+                                    {Number((quote.metadata as Record<string, unknown>).total).toFixed(2)}
                                   </p>
                                 )}
                               </div>
@@ -203,9 +203,9 @@ export default function SearchResultsPage() {
                                     {customer.description}
                                   </p>
                                 )}
-                                {customer.metadata?.phone && (
+                                {(customer.metadata as Record<string, unknown>)?.phone && (
                                   <p className="text-sm text-muted-foreground mt-1">
-                                    Phone: {customer.metadata.phone}
+                                    Phone: {String((customer.metadata as Record<string, unknown>).phone)}
                                   </p>
                                 )}
                               </div>
@@ -250,20 +250,20 @@ export default function SearchResultsPage() {
                                   </p>
                                 )}
                                 <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                                  {product.metadata?.quantityAvailable !==
+                                  {(product.metadata as Record<string, unknown>)?.quantityAvailable !==
                                     undefined && (
                                     <span>
                                       Qty:{" "}
                                       {Number(
-                                        product.metadata.quantityAvailable
+                                        (product.metadata as Record<string, unknown>).quantityAvailable
                                       )}
                                     </span>
                                   )}
-                                  {product.metadata?.unitPrice && (
+                                  {(product.metadata as Record<string, unknown>)?.unitPrice && (
                                     <span>
                                       Price: $
                                       {Number(
-                                        product.metadata.unitPrice
+                                        (product.metadata as Record<string, unknown>).unitPrice
                                       ).toFixed(2)}
                                     </span>
                                   )}

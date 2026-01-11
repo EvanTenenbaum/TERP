@@ -81,7 +81,6 @@ export function EditInvoiceDialog({
     paymentTerms: "NET_30",
     status: "DRAFT" as InvoiceData["status"],
   });
-  const [_isLoading, _setIsLoading] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -94,15 +93,22 @@ export function EditInvoiceDialog({
   // Update form when invoice data loads
   useEffect(() => {
     if (invoice) {
-      const dueDate = typeof invoice.dueDate === "string"
-        ? invoice.dueDate.split("T")[0]
-        : format(new Date(invoice.dueDate), "yyyy-MM-dd");
+      // Handle date conversion - could be string, Date, or null
+      let dueDateStr = "";
+      if (invoice.dueDate) {
+        const dateValue = invoice.dueDate as unknown;
+        if (typeof dateValue === "string") {
+          dueDateStr = dateValue.split("T")[0];
+        } else if (dateValue instanceof Date) {
+          dueDateStr = format(dateValue, "yyyy-MM-dd");
+        }
+      }
 
       setFormData({
-        dueDate,
-        notes: invoice.notes || "",
-        paymentTerms: invoice.paymentTerms || "NET_30",
-        status: invoice.status,
+        dueDate: dueDateStr,
+        notes: (invoice.notes as string) || "",
+        paymentTerms: (invoice.paymentTerms as string) || "NET_30",
+        status: invoice.status as InvoiceData["status"],
       });
     }
   }, [invoice]);
@@ -128,7 +134,7 @@ export function EditInvoiceDialog({
 
     updateInvoiceMutation.mutate({
       id: invoiceId,
-      dueDate: formData.dueDate,
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
       notes: formData.notes || undefined,
       paymentTerms: formData.paymentTerms || undefined,
       status: formData.status,
