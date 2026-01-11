@@ -323,9 +323,14 @@ export const ordersRouter = router({
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          // Get batch info for original COGS
+          // Get batch info with product category for COGS and margin lookup
           const batch = await db.query.batches.findFirst({
             where: eq(batches.id, item.batchId),
+            with: {
+              product: {
+                columns: { category: true },
+              },
+            },
           });
 
           if (!batch) {
@@ -345,8 +350,8 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
-            // Try to get margin using batch's product category or fallback to "OTHER"
-            const productCategory = batch.productCategory || "OTHER";
+            // Try to get margin using product category or fallback to "OTHER"
+            const productCategory = batch.product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
               productCategory

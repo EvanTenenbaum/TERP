@@ -961,11 +961,10 @@ export const liveShoppingRouter = router({
       return items.map((item) => {
         let negotiation = null;
         if (item.negotiationData) {
-          try {
-            negotiation = JSON.parse(item.negotiationData as string);
-          } catch {
-            negotiation = null;
-          }
+          // Drizzle returns JSON as parsed object, but handle string case for safety
+          negotiation = typeof item.negotiationData === "string"
+            ? JSON.parse(item.negotiationData)
+            : item.negotiationData;
         }
         return {
           ...item,
