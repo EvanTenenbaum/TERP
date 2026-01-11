@@ -14,11 +14,12 @@
  * - Customer product search
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
-import { Search, ChevronDown, ChevronUp, Plus, X, Loader2 } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Plus, X, Loader2, Wifi, WifiOff } from "lucide-react";
+import { useVIPPortalAuth } from "@/hooks/useVIPPortalAuth";
 
 // Types
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
@@ -64,11 +65,125 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   roomCode,
   onClose,
 }) => {
+  const { sessionToken } = useVIPPortalAuth();
+
+  // SSE connection state
+  const [sseConnected, setSseConnected] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track price changes for visual feedback
+  const [priceAnimations, setPriceAnimations] = useState<Record<number, "up" | "down">>({});
+  const prevPricesRef = useRef<Record<number, string>>({});
+
   // Queries
   const { data: itemsByStatus, isLoading, refetch } = trpc.vipPortalLiveShopping.getMyItemsByStatus.useQuery(
     { sessionId },
-    { refetchInterval: 3000 } // Poll every 3 seconds for real-time updates
+    { refetchInterval: 10000 } // Fallback polling every 10 seconds (SSE is primary)
   );
+
+  // SSE Connection for real-time updates
+  useEffect(() => {
+    if (!roomCode || !sessionToken) return;
+
+    const connect = () => {
+      const url = `/api/sse/vip/live-shopping/${roomCode}?token=${encodeURIComponent(sessionToken)}`;
+      const evtSource = new EventSource(url);
+      eventSourceRef.current = evtSource;
+
+      evtSource.onopen = () => {
+        setSseConnected(true);
+        console.log("[Customer SSE] Connected");
+      };
+
+      // Handle cart updates from staff
+      evtSource.addEventListener("CART_UPDATED", () => {
+        // Refetch to get accurate grouped data
+        refetch();
+      });
+
+      // Handle session status changes
+      evtSource.addEventListener("SESSION_STATUS", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.status === "ENDED" || data.status === "CONVERTED") {
+            toast.info("Session has ended");
+            onClose?.();
+          } else if (data.status === "PAUSED") {
+            toast.info("Session paused by staff");
+          }
+        } catch (e) {
+          console.error("[SSE] Status parse error", e);
+        }
+      });
+
+      // Handle highlighted products
+      evtSource.addEventListener("HIGHLIGHTED", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          toast.info(`Staff is highlighting a product!`, {
+            duration: 3000,
+          });
+          refetch();
+        } catch (e) {
+          console.error("[SSE] Highlight parse error", e);
+        }
+      });
+
+      evtSource.onerror = () => {
+        setSseConnected(false);
+        evtSource.close();
+        // Reconnect after 3 seconds
+        retryTimeoutRef.current = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, [roomCode, sessionToken, refetch, onClose]);
+
+  // Track price changes for visual animation
+  useEffect(() => {
+    if (!itemsByStatus) return;
+
+    const allItems = [
+      ...(itemsByStatus.sampleRequests || []),
+      ...(itemsByStatus.interested || []),
+      ...(itemsByStatus.toPurchase || []),
+    ];
+
+    const newAnimations: Record<number, "up" | "down"> = {};
+
+    allItems.forEach((item: any) => {
+      const prevPrice = prevPricesRef.current[item.id];
+      const currentPrice = item.unitPrice;
+
+      if (prevPrice && prevPrice !== currentPrice) {
+        const prev = parseFloat(prevPrice);
+        const curr = parseFloat(currentPrice);
+        if (curr > prev) {
+          newAnimations[item.id] = "up";
+        } else if (curr < prev) {
+          newAnimations[item.id] = "down";
+        }
+      }
+      prevPricesRef.current[item.id] = currentPrice;
+    });
+
+    if (Object.keys(newAnimations).length > 0) {
+      setPriceAnimations(newAnimations);
+      // Clear animations after 2 seconds
+      setTimeout(() => setPriceAnimations({}), 2000);
+    }
+  }, [itemsByStatus]);
 
   // Mutations
   const updateStatusMutation = trpc.vipPortalLiveShopping.updateItemStatus.useMutation({
@@ -91,8 +206,6 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
     },
   });
 
-  // State for price change animations
-  const [priceChanges, _setPriceChanges] = useState<Record<number, { oldPrice: string; newPrice: string }>>({});
 
   // BUG-007: State for remove confirmation dialog (replaces window.confirm)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -203,11 +316,33 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Live Shopping</h1>
-              <p className="text-sm text-gray-500">
-                Session: {roomCode?.slice(0, 8)}...
-              </p>
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Live Shopping</h1>
+                <p className="text-sm text-gray-500">
+                  Session: {roomCode?.slice(0, 8)}...
+                </p>
+              </div>
+              {/* SSE Connection Status */}
+              <span
+                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                  sseConnected
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {sseConnected ? (
+                  <>
+                    <Wifi className="h-3 w-3" />
+                    Live
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3" />
+                    Connecting...
+                  </>
+                )}
+              </span>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
@@ -350,7 +485,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
             count={totals?.sampleRequestCount || 0}
             onStatusChange={handleStatusChange}
             onRemove={handleRemoveItem}
-            priceChanges={priceChanges}
+            priceAnimations={priceAnimations}
           />
 
           {/* Interested Column */}
@@ -360,7 +495,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
             count={totals?.interestedCount || 0}
             onStatusChange={handleStatusChange}
             onRemove={handleRemoveItem}
-            priceChanges={priceChanges}
+            priceAnimations={priceAnimations}
           />
 
           {/* To Purchase Column */}
@@ -370,7 +505,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
             count={totals?.toPurchaseCount || 0}
             onStatusChange={handleStatusChange}
             onRemove={handleRemoveItem}
-            priceChanges={priceChanges}
+            priceAnimations={priceAnimations}
           />
         </div>
       </div>
@@ -420,7 +555,7 @@ interface StatusColumnProps {
   count: number;
   onStatusChange: (cartItemId: number, newStatus: ItemStatus) => void;
   onRemove: (cartItemId: number) => void;
-  priceChanges: Record<number, { oldPrice: string; newPrice: string }>;
+  priceAnimations: Record<number, "up" | "down">;
 }
 
 const StatusColumn: React.FC<StatusColumnProps> = ({
@@ -429,7 +564,7 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
   count,
   onStatusChange,
   onRemove,
-  priceChanges,
+  priceAnimations,
 }) => {
   const config = STATUS_CONFIG[status];
   const otherStatuses = (Object.keys(STATUS_CONFIG) as ItemStatus[]).filter(
@@ -464,7 +599,7 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
               otherStatuses={otherStatuses}
               onStatusChange={onStatusChange}
               onRemove={onRemove}
-              priceChange={priceChanges[item.id]}
+              priceAnimation={priceAnimations[item.id]}
             />
           ))
         )}
@@ -480,7 +615,7 @@ interface ItemCardProps {
   otherStatuses: ItemStatus[];
   onStatusChange: (cartItemId: number, newStatus: ItemStatus) => void;
   onRemove: (cartItemId: number) => void;
-  priceChange?: { oldPrice: string; newPrice: string };
+  priceAnimation?: "up" | "down";
 }
 
 const ItemCard: React.FC<ItemCardProps> = ({
@@ -489,7 +624,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
   otherStatuses,
   onStatusChange,
   onRemove,
-  priceChange,
+  priceAnimation,
 }) => {
   // Note: showActions state reserved for future mobile interaction enhancements
   const [_showActions, _setShowActions] = useState(false);
@@ -521,20 +656,19 @@ const ItemCard: React.FC<ItemCardProps> = ({
           <span className="font-medium">{parseFloat(item.quantity).toFixed(0)}</span>
         </div>
         <div className="text-right">
-          {priceChange ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm line-through text-gray-400">
-                ${parseFloat(priceChange.oldPrice).toFixed(2)}
-              </span>
-              <span className="text-lg font-bold text-green-600 animate-bounce">
-                ${parseFloat(priceChange.newPrice).toFixed(2)}
-              </span>
-            </div>
-          ) : (
-            <span className="text-lg font-bold text-gray-900">
-              ${parseFloat(item.unitPrice).toFixed(2)}
-            </span>
-          )}
+          <span
+            className={`text-lg font-bold transition-all duration-300 ${
+              priceAnimation === "down"
+                ? "text-green-600 animate-pulse"
+                : priceAnimation === "up"
+                ? "text-red-600 animate-pulse"
+                : "text-gray-900"
+            }`}
+          >
+            {priceAnimation === "down" && "↓ "}
+            {priceAnimation === "up" && "↑ "}
+            ${parseFloat(item.unitPrice).toFixed(2)}
+          </span>
           <div className="text-xs text-gray-500">
             Total: ${parseFloat(item.subtotal).toFixed(2)}
           </div>

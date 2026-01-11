@@ -7,7 +7,7 @@
  * - INTERESTED: Customer is interested, may negotiate price
  * - TO_PURCHASE: Customer intends to buy
  */
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { trpc } from "../../utils/trpc";
@@ -59,14 +59,35 @@ export default function LiveSessionConsole() {
 
   const { data: itemsByStatus, refetch: refetchItems } = trpc.liveShopping.getItemsByStatus.useQuery(
     { sessionId: sessionId! },
-    { 
+    {
       enabled: !!sessionId,
-      refetchInterval: 2000, // Poll for updates until SSE is fully integrated
+      refetchInterval: 5000, // Fallback polling every 5 seconds (SSE is primary)
     }
   );
 
-  // SSE for real-time updates
-  const { sessionStatus: sseStatus, connectionStatus } = useLiveSessionSSE(sessionId!);
+  // SSE for real-time updates - use cart data to trigger refetch
+  const { cart: sseCart, sessionStatus: sseStatus, connectionStatus, highlightedBatchId: sseHighlight } = useLiveSessionSSE(sessionId!);
+
+  // Track previous cart state to detect changes
+  const prevCartRef = useRef<string | null>(null);
+
+  // When SSE cart updates, immediately refetch for accurate data
+  useEffect(() => {
+    if (sseCart) {
+      const cartKey = JSON.stringify(sseCart.items.map(i => ({ id: i.id, qty: i.quantity, price: i.unitPrice })));
+      if (prevCartRef.current !== cartKey) {
+        prevCartRef.current = cartKey;
+        refetchItems();
+      }
+    }
+  }, [sseCart, refetchItems]);
+
+  // Track SSE session status changes
+  useEffect(() => {
+    if (sseStatus && sseStatus !== session?.status) {
+      refetchSession();
+    }
+  }, [sseStatus, session?.status, refetchSession]);
   
   // Mutations
   const updateStatusMutation = trpc.liveShopping.updateItemStatus.useMutation({
