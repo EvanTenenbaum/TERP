@@ -6,7 +6,7 @@ import {
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { batches, products, productMedia } from "../../drizzle/schema";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, like, gt } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
@@ -123,7 +123,7 @@ export const vipPortalLiveShoppingRouter = router({
           id: session.id,
           title: session.title,
           status: session.status,
-          hostName: session.host.name,
+          hostName: session.host?.name || "Staff",
           roomCode: session.roomCode,
         },
         cart,
@@ -465,7 +465,6 @@ export const vipPortalLiveShoppingRouter = router({
       }
 
       // Search for available products - only show basic info to clients
-      const { like, gt } = await import("drizzle-orm");
       const results = await db
         .select({
           batchId: batches.id,

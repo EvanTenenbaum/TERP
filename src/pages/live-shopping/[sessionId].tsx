@@ -66,7 +66,7 @@ export default function LiveSessionConsole() {
   );
 
   // SSE for real-time updates - use cart data to trigger refetch
-  const { cart: sseCart, sessionStatus: sseStatus, connectionStatus, highlightedBatchId: sseHighlight } = useLiveSessionSSE(sessionId!);
+  const { cart: sseCart, sessionStatus: sseStatus, connectionStatus } = useLiveSessionSSE(sessionId!);
 
   // Track previous cart state to detect changes
   const prevCartRef = useRef<string | null>(null);
