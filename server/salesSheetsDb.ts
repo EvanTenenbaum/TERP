@@ -1,14 +1,18 @@
 import { getDb } from "./db";
-import { eq, desc, inArray, and } from "drizzle-orm";
+import { eq, desc, inArray, and, sql, isNull } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import {
   salesSheetHistory,
   salesSheetTemplates,
   salesSheetDrafts,
   batches,
+  clients,
+  orders,
   type SalesSheetHistory,
   type SalesSheetTemplate,
   type SalesSheetDraft,
 } from "../drizzle/schema";
+import { liveShoppingSessions, sessionCartItems } from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
 
@@ -241,7 +245,11 @@ export async function deleteSalesSheet(sheetId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(salesSheetHistory).where(eq(salesSheetHistory.id, sheetId));
+  // Use soft delete to match schema pattern (deletedAt column exists)
+  await db
+    .update(salesSheetHistory)
+    .set({ deletedAt: new Date() })
+    .where(eq(salesSheetHistory.id, sheetId));
 }
 
 // ============================================================================
@@ -512,9 +520,9 @@ export async function listSalesSheets(
   const baseQuery = clientId
     ? and(
         eq(salesSheetHistory.clientId, clientId),
-        eq(salesSheetHistory.deletedAt, null)
+        isNull(salesSheetHistory.deletedAt)
       )
-    : eq(salesSheetHistory.deletedAt, null);
+    : isNull(salesSheetHistory.deletedAt);
 
   const sheets = await db
     .select()
@@ -581,9 +589,6 @@ export async function getSalesSheetByToken(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Import clients table for join
-  const { clients } = await import("../drizzle/schema");
-
   const result = await db
     .select({
       sheet: salesSheetHistory,
@@ -613,19 +618,17 @@ export async function getSalesSheetByToken(
 
 /**
  * Increment view count for a sales sheet
+ * Uses atomic SQL increment to avoid race conditions
  */
 export async function incrementViewCount(sheetId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get current count
-  const current = await getSalesSheetById(sheetId);
-  if (!current) return;
-
+  // Use atomic SQL increment to avoid race conditions
   await db
     .update(salesSheetHistory)
     .set({
-      viewCount: (current.viewCount || 0) + 1,
+      viewCount: sql`${salesSheetHistory.viewCount} + 1`,
       lastViewedAt: new Date(),
     })
     .where(eq(salesSheetHistory.id, sheetId));
@@ -651,9 +654,6 @@ export async function convertToOrder(
   if (!sheet) {
     throw new Error("Sales sheet not found");
   }
-
-  // Import orders table
-  const { orders } = await import("../drizzle/schema");
 
   // Generate order number
   const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
@@ -707,14 +707,7 @@ export async function convertToLiveSession(
     throw new Error("Sales sheet not found");
   }
 
-  // Import live shopping tables
-  const { liveShoppingSessions, sessionCartItems } = await import(
-    "../drizzle/schema-live-shopping"
-  );
-  const { batches: batchesTable } = await import("../drizzle/schema");
-
   // Generate unique room code
-  const { randomBytes } = await import("crypto");
   const roomCode = randomBytes(16).toString("hex");
 
   // Create the session
@@ -736,8 +729,8 @@ export async function convertToLiveSession(
     const batchIds = items.map((item) => item.id).filter(Boolean);
     const batchesData = await db
       .select()
-      .from(batchesTable)
-      .where(inArray(batchesTable.id, batchIds));
+      .from(batches)
+      .where(inArray(batches.id, batchIds));
 
     // Create a map for quick lookup
     const batchMap = new Map(batchesData.map((b) => [b.id, b]));
