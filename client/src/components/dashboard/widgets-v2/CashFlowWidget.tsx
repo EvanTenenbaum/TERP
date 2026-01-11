@@ -40,7 +40,7 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">CashFlow</CardTitle>
+          <CardTitle className="text-lg font-semibold">Cash Flow</CardTitle>
           <div className="flex items-center gap-2">
             <Select
               value={timePeriod}

@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { userDashboardPreferences, type WidgetConfig } from "../../drizzle/schema";
+import {
+  userDashboardPreferences,
+  type WidgetConfig,
+} from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Dashboard Preferences Router
- * 
+ *
  * Manages user-specific dashboard customization preferences for cross-device sync.
  * Endpoints handle CRUD operations for widget visibility, layout presets, and settings.
  */
@@ -53,66 +56,67 @@ const preferencesInputSchema = z.object({
 export const dashboardPreferencesRouter = router({
   /**
    * Get User's Dashboard Preferences
-   * 
+   *
    * Fetches the user's saved dashboard preferences from the database.
    * Returns default preferences if no saved preferences exist.
-   * 
+   *
    * @returns UserDashboardPreferences or default preferences
    */
-  getPreferences: protectedProcedure.use(requirePermission("dashboard:read")).query(async ({ ctx }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) {
-      throw new Error("Database not available");
-    }
-
-    try {
-      // Query for user's preferences
-      const preferences = await db.query.userDashboardPreferences.findFirst({
-        where: eq(userDashboardPreferences.userId, ctx.user.id),
-      });
-
-      // Return saved preferences or defaults
-      if (preferences) {
-        return {
-          id: preferences.id,
-          userId: preferences.userId,
-          activeLayout: preferences.activeLayout,
-          widgetConfig: preferences.widgetConfig,
-          createdAt: preferences.createdAt,
-          updatedAt: preferences.updatedAt,
-        };
-      } else {
-        // Return default preferences (not saved to DB yet)
-        return {
-          ...getDefaultPreferences(),
-          id: 0, // Indicates not yet saved
-          userId: ctx.user.id,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+  getPreferences: protectedProcedure
+    .use(requirePermission("dashboard:read"))
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new Error("Database not available");
       }
-    } catch (error) {
-      console.error("Error fetching dashboard preferences:", error);
-      throw new Error("Failed to fetch dashboard preferences");
-    }
-  }),
+
+      try {
+        // Query for user's preferences
+        const preferences = await db.query.userDashboardPreferences.findFirst({
+          where: eq(userDashboardPreferences.userId, ctx.user.id),
+        });
+
+        // Return saved preferences or defaults
+        if (preferences) {
+          return {
+            id: preferences.id,
+            userId: preferences.userId,
+            activeLayout: preferences.activeLayout,
+            widgetConfig: preferences.widgetConfig,
+            createdAt: preferences.createdAt,
+            updatedAt: preferences.updatedAt,
+          };
+        } else {
+          // Return default preferences (not saved to DB yet)
+          return {
+            ...getDefaultPreferences(),
+            id: 0, // Indicates not yet saved
+            userId: ctx.user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard preferences:", error);
+        throw new Error("Failed to fetch dashboard preferences");
+      }
+    }),
 
   /**
    * Update User's Dashboard Preferences
-   * 
+   *
    * Creates or updates the user's dashboard preferences in the database.
    * Performs an upsert operation: updates if exists, inserts if new.
-   * 
+   *
    * @param input.activeLayout - Selected layout preset
    * @param input.widgetConfig - Array of widget visibility/settings
    * @returns Success status
    */
-  updatePreferences: protectedProcedure.use(requirePermission("dashboard:read"))
+  updatePreferences: protectedProcedure
+    .use(requirePermission("dashboard:read"))
     .input(preferencesInputSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
@@ -161,44 +165,47 @@ export const dashboardPreferencesRouter = router({
 
   /**
    * Reset User's Dashboard Preferences
-   * 
+   *
    * Deletes the user's saved preferences from the database.
    * The frontend will fall back to default preferences after reset.
-   * 
+   *
    * @returns Success status
    */
-  resetPreferences: protectedProcedure.use(requirePermission("dashboard:read")).mutation(async ({ ctx }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) {
-      throw new Error("Database not available");
-    }
+  resetPreferences: protectedProcedure
+    .use(requirePermission("dashboard:read"))
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new Error("Database not available");
+      }
 
-    try {
-      // Delete user's preferences
-      await db
-        .delete(userDashboardPreferences)
-        .where(eq(userDashboardPreferences.userId, ctx.user.id));
+      try {
+        // Delete user's preferences
+        await db
+          .delete(userDashboardPreferences)
+          .where(eq(userDashboardPreferences.userId, ctx.user.id));
 
-      return {
-        success: true,
-        message: "Dashboard preferences reset to defaults",
-      };
-    } catch (error) {
-      console.error("Error resetting dashboard preferences:", error);
-      throw new Error("Failed to reset dashboard preferences");
-    }
-  }),
+        return {
+          success: true,
+          message: "Dashboard preferences reset to defaults",
+        };
+      } catch (error) {
+        console.error("Error resetting dashboard preferences:", error);
+        throw new Error("Failed to reset dashboard preferences");
+      }
+    }),
 
   /**
    * Get Default Preferences
-   * 
+   *
    * Returns the default dashboard preferences without saving to database.
    * Useful for preview or comparison purposes.
-   * 
+   *
    * @returns Default preferences object
    */
-  getDefaults: protectedProcedure.use(requirePermission("dashboard:read")).query(async () => {
-    return getDefaultPreferences();
-  }),
+  getDefaults: protectedProcedure
+    .use(requirePermission("dashboard:read"))
+    .query(async () => {
+      return getDefaultPreferences();
+    }),
 });

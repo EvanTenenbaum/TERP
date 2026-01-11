@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, DollarSign, Percent, Package } from "lucide-react";
 
@@ -11,8 +13,18 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
   if (isLoading) {
     return (
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Profitability Analysis</h3>
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-green-600" />
+          Profitability Analysis
+        </h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        </div>
       </Card>
     );
   }
@@ -20,18 +32,16 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
   if (!summary) {
     return (
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Profitability Analysis</h3>
-        <div className="text-center py-8 space-y-2">
-          <p className="text-muted-foreground">
-            No profitability data available
-          </p>
-          <p className="text-xs text-muted-foreground">
-            To see data here, seed the database with:{" "}
-            <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-              pnpm seed
-            </code>
-          </p>
-        </div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-green-600" />
+          Profitability Analysis
+        </h3>
+        <EmptyState
+          variant="analytics"
+          size="sm"
+          title="No profitability data"
+          description="Profitability analysis will appear once sales are recorded"
+        />
       </Card>
     );
   }
