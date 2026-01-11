@@ -29,17 +29,17 @@ const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 export default function SalesSheetCreatorPage() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<PricedInventoryItem[]>([]);
-  
+
   // Draft state
   const [currentDraftId, setCurrentDraftId] = useState<number | null>(null);
   const [draftName, setDraftName] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
-  
+
   // Track initial load to prevent auto-save on first render
   const isInitialLoad = useRef(true);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch clients
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -52,22 +52,25 @@ export default function SalesSheetCreatorPage() {
     );
 
   // Fetch drafts
-  const { data: drafts, isLoading: draftsLoading, refetch: refetchDrafts } =
-    trpc.salesSheets.getDrafts.useQuery(
-      { clientId: selectedClientId ?? undefined },
-      { enabled: true }
-    );
+  const {
+    data: drafts,
+    isLoading: draftsLoading,
+    refetch: refetchDrafts,
+  } = trpc.salesSheets.getDrafts.useQuery(
+    { clientId: selectedClientId ?? undefined },
+    { enabled: true }
+  );
 
   // Save draft mutation
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setCurrentDraftId(data.draftId);
       setLastSaveTime(new Date());
       setHasUnsavedChanges(false);
       refetchDrafts();
       toast.success("Draft saved");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to save draft: " + error.message);
     },
   });
@@ -78,7 +81,7 @@ export default function SalesSheetCreatorPage() {
       refetchDrafts();
       toast.success("Draft deleted");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to delete draft: " + error.message);
     },
   });
@@ -99,7 +102,12 @@ export default function SalesSheetCreatorPage() {
 
   // Auto-save functionality
   useEffect(() => {
-    if (!hasUnsavedChanges || !selectedClientId || selectedItems.length === 0 || !draftName.trim()) {
+    if (
+      !hasUnsavedChanges ||
+      !selectedClientId ||
+      selectedItems.length === 0 ||
+      !draftName.trim()
+    ) {
       return;
     }
 
@@ -118,6 +126,7 @@ export default function SalesSheetCreatorPage() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleSaveDraft intentionally omitted to avoid infinite loop
   }, [hasUnsavedChanges, selectedClientId, selectedItems, draftName]);
 
   // Handle save draft
@@ -138,39 +147,51 @@ export default function SalesSheetCreatorPage() {
       items: selectedItems,
       totalValue,
     });
-  }, [selectedClientId, selectedItems, draftName, currentDraftId, saveDraftMutation]);
+  }, [
+    selectedClientId,
+    selectedItems,
+    draftName,
+    currentDraftId,
+    saveDraftMutation,
+  ]);
 
   // Handle load draft
-  const handleLoadDraft = useCallback(async (draftId: number) => {
-    try {
-      // Use the utils to fetch the draft
-      const result = await utils.salesSheets.getDraftById.fetch({ draftId });
-      
-      if (result) {
-        setSelectedClientId(result.clientId);
-        setSelectedItems(result.items as PricedInventoryItem[]);
-        setCurrentDraftId(result.id);
-        setDraftName(result.name);
-        setLastSaveTime(result.updatedAt ? new Date(result.updatedAt) : null);
-        setHasUnsavedChanges(false);
-        isInitialLoad.current = true;
-        setShowDraftDialog(false);
-        toast.success("Draft loaded");
+  const handleLoadDraft = useCallback(
+    async (draftId: number) => {
+      try {
+        // Use the utils to fetch the draft
+        const result = await utils.salesSheets.getDraftById.fetch({ draftId });
+
+        if (result) {
+          setSelectedClientId(result.clientId);
+          setSelectedItems(result.items as PricedInventoryItem[]);
+          setCurrentDraftId(result.id);
+          setDraftName(result.name);
+          setLastSaveTime(result.updatedAt ? new Date(result.updatedAt) : null);
+          setHasUnsavedChanges(false);
+          isInitialLoad.current = true;
+          setShowDraftDialog(false);
+          toast.success("Draft loaded");
+        }
+      } catch (_error) {
+        toast.error("Failed to load draft");
       }
-    } catch (error) {
-      toast.error("Failed to load draft");
-    }
-  }, [utils.salesSheets.getDraftById]);
+    },
+    [utils.salesSheets.getDraftById]
+  );
 
   // Handle delete draft
-  const handleDeleteDraft = useCallback((draftId: number) => {
-    deleteDraftMutation.mutate({ draftId });
-    if (draftId === currentDraftId) {
-      setCurrentDraftId(null);
-      setDraftName("");
-      setLastSaveTime(null);
-    }
-  }, [currentDraftId, deleteDraftMutation]);
+  const handleDeleteDraft = useCallback(
+    (draftId: number) => {
+      deleteDraftMutation.mutate({ draftId });
+      if (draftId === currentDraftId) {
+        setCurrentDraftId(null);
+        setDraftName("");
+        setLastSaveTime(null);
+      }
+    },
+    [currentDraftId, deleteDraftMutation]
+  );
 
   // Handle add items to sheet
   const handleAddItems = useCallback((items: PricedInventoryItem[]) => {
@@ -192,21 +213,13 @@ export default function SalesSheetCreatorPage() {
     setSelectedItems([]);
   }, []);
 
-  // Handle save sheet (finalize)
-  const handleSaveSheet = useCallback(() => {
-    if (!selectedClientId || selectedItems.length === 0) return;
-
-    const totalValue = selectedItems.reduce(
-      (sum, item) => sum + item.retailPrice,
-      0
-    );
-
-    console.log("Save sheet:", {
-      clientId: selectedClientId,
-      items: selectedItems,
-      totalValue,
-    });
-  }, [selectedClientId, selectedItems]);
+  // Handle reorder items (drag-and-drop)
+  const handleReorderItems = useCallback(
+    (reorderedItems: PricedInventoryItem[]) => {
+      setSelectedItems(reorderedItems);
+    },
+    []
+  );
 
   // Reset draft state when client changes
   const handleClientChange = useCallback((clientId: number | null) => {
@@ -307,7 +320,7 @@ export default function SalesSheetCreatorPage() {
                   items={selectedItems}
                   onRemoveItem={handleRemoveItem}
                   onClearAll={handleClearAll}
-                  onSave={handleSaveSheet}
+                  onReorderItems={handleReorderItems}
                   clientId={selectedClientId}
                 />
               </div>
