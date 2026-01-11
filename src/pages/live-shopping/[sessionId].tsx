@@ -1,6 +1,6 @@
 /**
  * Live Shopping Staff Console
- * 
+ *
  * Staff-facing interface for managing live shopping sessions.
  * Implements three-status workflow:
  * - SAMPLE_REQUEST: Customer wants to see a sample
@@ -12,6 +12,8 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { trpc } from "../../utils/trpc";
 import { useLiveSessionSSE } from "../../hooks/useLiveSessionSSE";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
 
@@ -93,6 +95,12 @@ export default function LiveSessionConsole() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
+  // Dialog state for ConfirmDialog (replacing window.confirm)
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<number | null>(null);
+  const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
+  const [convertOnEnd, setConvertOnEnd] = useState(false);
+
   // Handlers
   const handleStatusChange = useCallback(
     (cartItemId: number, newStatus: ItemStatus) => {
@@ -121,54 +129,64 @@ export default function LiveSessionConsole() {
   const handleRemove = useCallback(
     (cartItemId: number) => {
       if (!sessionId) return;
-      if (confirm("Remove this item from the session?")) {
-        removeItemMutation.mutate({ sessionId, cartItemId });
-      }
+      setItemToRemove(cartItemId);
+      setRemoveDialogOpen(true);
     },
-    [sessionId, removeItemMutation]
+    [sessionId]
   );
+
+  const confirmRemoveItem = useCallback(() => {
+    if (sessionId && itemToRemove !== null) {
+      removeItemMutation.mutate({ sessionId, cartItemId: itemToRemove });
+    }
+    setItemToRemove(null);
+  }, [sessionId, itemToRemove, removeItemMutation]);
 
   const handleSessionAction = useCallback(
     (action: "start" | "pause" | "end" | "convert") => {
       if (!sessionId) return;
-      
+
       if (action === "start") {
         updateSessionStatusMutation.mutate({ sessionId, status: "ACTIVE" });
       } else if (action === "pause") {
         updateSessionStatusMutation.mutate({ sessionId, status: "PAUSED" });
       } else if (action === "end") {
-        if (confirm("End session without creating an order?")) {
-          endSessionMutation.mutate(
-            { sessionId, convertToOrder: false },
-            { onSuccess: () => router.push("/live-shopping") }
-          );
-        }
+        setConvertOnEnd(false);
+        setEndSessionDialogOpen(true);
       } else if (action === "convert") {
         const toPurchaseCount = itemsByStatus?.totals?.toPurchaseCount || 0;
         if (toPurchaseCount === 0) {
-          alert("Cannot convert to order: No items marked 'To Purchase'. Please have the customer mark items they want to buy.");
+          toast.error(
+            "Cannot convert to order: No items marked 'To Purchase'. Please have the customer mark items they want to buy."
+          );
           return;
         }
-        if (confirm(`Convert ${toPurchaseCount} items to order?`)) {
-          endSessionMutation.mutate(
-            { sessionId, convertToOrder: true },
-            {
-              onSuccess: (data) => {
-                if ('orderId' in data && data.orderId) {
-                  alert(`Order #${data.orderId} created successfully!`);
-                }
-                router.push("/live-shopping");
-              },
-              onError: (error) => {
-                alert(`Error: ${error.message}`);
-              },
-            }
-          );
-        }
+        setConvertOnEnd(true);
+        setEndSessionDialogOpen(true);
       }
     },
-    [sessionId, updateSessionStatusMutation, endSessionMutation, itemsByStatus, router]
+    [sessionId, updateSessionStatusMutation, itemsByStatus]
   );
+
+  const confirmEndSession = useCallback(() => {
+    if (!sessionId) return;
+    endSessionMutation.mutate(
+      { sessionId, convertToOrder: convertOnEnd },
+      {
+        onSuccess: (data) => {
+          if (convertOnEnd && "orderId" in data && data.orderId) {
+            toast.success(`Order #${data.orderId} created successfully!`);
+          } else {
+            toast.success("Session ended.");
+          }
+          router.push("/live-shopping");
+        },
+        onError: (error) => {
+          toast.error(`Error: ${error.message}`);
+        },
+      }
+    );
+  }, [sessionId, convertOnEnd, endSessionMutation, router]);
 
   // Loading state
   if (!sessionId || sessionLoading || !session) {
@@ -356,6 +374,37 @@ export default function LiveSessionConsole() {
           />
         </div>
       </div>
+
+      {/* Remove Item Confirmation Dialog */}
+      <ConfirmDialog
+        open={removeDialogOpen}
+        onOpenChange={(open) => {
+          setRemoveDialogOpen(open);
+          if (!open) setItemToRemove(null);
+        }}
+        title="Remove Item"
+        description="Are you sure you want to remove this item from the session?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveItem}
+        isLoading={removeItemMutation.isPending}
+      />
+
+      {/* End Session Confirmation Dialog */}
+      <ConfirmDialog
+        open={endSessionDialogOpen}
+        onOpenChange={setEndSessionDialogOpen}
+        title={convertOnEnd ? "Convert to Order" : "End Session"}
+        description={
+          convertOnEnd
+            ? `Convert ${itemsByStatus?.totals?.toPurchaseCount || 0} items to an order?`
+            : "Are you sure you want to end this session without creating an order?"
+        }
+        confirmLabel={convertOnEnd ? "Convert to Order" : "End Session"}
+        variant={convertOnEnd ? "default" : "destructive"}
+        onConfirm={confirmEndSession}
+        isLoading={endSessionMutation.isPending}
+      />
     </div>
   );
 }

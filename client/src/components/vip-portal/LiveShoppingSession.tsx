@@ -1,22 +1,24 @@
 /**
  * Live Shopping Session - Customer Experience
- * 
+ *
  * Three-status workflow for products:
  * 1. SAMPLE_REQUEST - Customer wants to see a sample brought out
  * 2. INTERESTED - Customer is interested, may want to negotiate price
  * 3. TO_PURCHASE - Customer intends to buy this item
- * 
+ *
  * Features:
  * - Real-time price updates from staff
  * - Drag-and-drop or click to move items between statuses
  * - Visual feedback for price changes
  * - Mobile-optimized interface
+ * - Customer product search
  */
 
 import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { Search, ChevronDown, ChevronUp, Plus, X, Loader2 } from "lucide-react";
 
 // Types
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
@@ -96,6 +98,30 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<number | null>(null);
 
+  // Product search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedAddStatus, setSelectedAddStatus] = useState<ItemStatus>("INTERESTED");
+
+  // Product search query
+  const { data: searchResults, isLoading: searchLoading } =
+    trpc.vipPortalLiveShopping.searchProducts.useQuery(
+      { sessionId, query: searchTerm },
+      { enabled: searchTerm.length >= 2 }
+    );
+
+  // Add item mutation
+  const addItemMutation = trpc.vipPortalLiveShopping.addItemWithStatus.useMutation({
+    onSuccess: () => {
+      toast.success("Item added to session");
+      refetch();
+      setSearchTerm("");
+    },
+    onError: (error) => {
+      toast.error(`Failed to add item: ${error.message}`);
+    },
+  });
+
   // Handle status change
   const handleStatusChange = useCallback(
     (cartItemId: number, newStatus: ItemStatus) => {
@@ -145,6 +171,19 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
     );
   }, [sessionId, requestCheckoutMutation]);
 
+  // Handle adding item from search
+  const handleAddItem = useCallback(
+    (batchId: number) => {
+      addItemMutation.mutate({
+        sessionId,
+        batchId,
+        quantity: 1,
+        status: selectedAddStatus,
+      });
+    },
+    [sessionId, selectedAddStatus, addItemMutation]
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -189,6 +228,117 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
           </div>
         </div>
       </header>
+
+      {/* Product Search Panel */}
+      <div className="max-w-7xl mx-auto px-4 pt-4">
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-gray-500" />
+              <span className="font-medium text-gray-700">
+                Find & Add Products
+              </span>
+            </div>
+            {showSearch ? (
+              <ChevronUp className="h-4 w-4 text-gray-400" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-gray-400" />
+            )}
+          </button>
+
+          {showSearch && (
+            <div className="px-4 pb-4 border-t">
+              {/* Status selector */}
+              <div className="flex items-center gap-2 py-3">
+                <span className="text-sm text-gray-500">Add items as:</span>
+                {(Object.keys(STATUS_CONFIG) as ItemStatus[]).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setSelectedAddStatus(status)}
+                    className={`text-xs px-3 py-1.5 rounded-full transition-all ${
+                      selectedAddStatus === status
+                        ? `${STATUS_CONFIG[status].buttonColor} text-white`
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {STATUS_CONFIG[status].icon} {STATUS_CONFIG[status].shortLabel}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search products by name or code..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search results */}
+              {searchTerm.length >= 2 && (
+                <div className="mt-3 max-h-64 overflow-y-auto">
+                  {searchLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    </div>
+                  ) : searchResults && searchResults.length > 0 ? (
+                    <div className="space-y-2">
+                      {searchResults.map((product: any) => (
+                        <div
+                          key={product.batchId}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {product.productName}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono">
+                              {product.batchCode}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Available: {product.available}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleAddItem(product.batchId)}
+                            disabled={addItemMutation.isPending}
+                            className={`ml-3 p-2 rounded-lg text-white ${STATUS_CONFIG[selectedAddStatus].buttonColor} disabled:opacity-50`}
+                          >
+                            {addItemMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Plus className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-gray-500 text-sm">
+                      No products found
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Status Columns */}
       <div className="max-w-7xl mx-auto px-4 py-6">
