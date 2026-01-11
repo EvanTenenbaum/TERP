@@ -493,3 +493,274 @@ export async function convertDraftToSheet(
 
   return sheetId;
 }
+
+// ============================================================================
+// LIST & SHARING
+// ============================================================================
+
+/**
+ * List sales sheets with pagination
+ */
+export async function listSalesSheets(
+  clientId?: number,
+  limit: number = 20,
+  offset: number = 0
+): Promise<{ sheets: SalesSheetHistory[]; total: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const baseQuery = clientId
+    ? and(
+        eq(salesSheetHistory.clientId, clientId),
+        eq(salesSheetHistory.deletedAt, null)
+      )
+    : eq(salesSheetHistory.deletedAt, null);
+
+  const sheets = await db
+    .select()
+    .from(salesSheetHistory)
+    .where(baseQuery as any)
+    .orderBy(desc(salesSheetHistory.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  // Get total count
+  const countResult = await db
+    .select()
+    .from(salesSheetHistory)
+    .where(baseQuery as any);
+
+  return {
+    sheets,
+    total: countResult.length,
+  };
+}
+
+/**
+ * Set share token for a sales sheet
+ */
+export async function setShareToken(
+  sheetId: number,
+  token: string,
+  expiresAt: Date
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(salesSheetHistory)
+    .set({
+      shareToken: token,
+      shareExpiresAt: expiresAt,
+    })
+    .where(eq(salesSheetHistory.id, sheetId));
+}
+
+/**
+ * Revoke share token for a sales sheet
+ */
+export async function revokeShareToken(sheetId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(salesSheetHistory)
+    .set({
+      shareToken: null,
+      shareExpiresAt: null,
+    })
+    .where(eq(salesSheetHistory.id, sheetId));
+}
+
+/**
+ * Get a sales sheet by share token (for public access)
+ */
+export async function getSalesSheetByToken(
+  token: string
+): Promise<(SalesSheetHistory & { clientName: string }) | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Import clients table for join
+  const { clients } = await import("../drizzle/schema");
+
+  const result = await db
+    .select({
+      sheet: salesSheetHistory,
+      clientName: clients.companyName,
+    })
+    .from(salesSheetHistory)
+    .innerJoin(clients, eq(salesSheetHistory.clientId, clients.id))
+    .where(eq(salesSheetHistory.shareToken, token))
+    .limit(1);
+
+  if (result.length === 0) {
+    return null;
+  }
+
+  const { sheet, clientName } = result[0];
+
+  // Check if link has expired
+  if (sheet.shareExpiresAt && new Date(sheet.shareExpiresAt) < new Date()) {
+    return null;
+  }
+
+  return {
+    ...sheet,
+    clientName: clientName || "Unknown Client",
+  };
+}
+
+/**
+ * Increment view count for a sales sheet
+ */
+export async function incrementViewCount(sheetId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get current count
+  const current = await getSalesSheetById(sheetId);
+  if (!current) return;
+
+  await db
+    .update(salesSheetHistory)
+    .set({
+      viewCount: (current.viewCount || 0) + 1,
+      lastViewedAt: new Date(),
+    })
+    .where(eq(salesSheetHistory.id, sheetId));
+}
+
+// ============================================================================
+// CONVERSION
+// ============================================================================
+
+/**
+ * Convert a sales sheet to an order
+ */
+export async function convertToOrder(
+  sheetId: number,
+  userId: number,
+  orderType: "DRAFT" | "QUOTE" | "ORDER"
+): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get the sales sheet
+  const sheet = await getSalesSheetById(sheetId);
+  if (!sheet) {
+    throw new Error("Sales sheet not found");
+  }
+
+  // Import orders table
+  const { orders } = await import("../drizzle/schema");
+
+  // Generate order number
+  const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
+
+  // Map order type to isDraft flag
+  const isDraft = orderType === "DRAFT" ? 1 : 0;
+  const dbOrderType = orderType === "QUOTE" ? "QUOTE" : "ORDER";
+
+  // Create the order
+  const result = await db.insert(orders).values({
+    orderNumber,
+    orderType: dbOrderType,
+    isDraft,
+    clientId: sheet.clientId,
+    items: sheet.items,
+    subtotal: sheet.totalValue,
+    total: sheet.totalValue,
+    totalCogs: "0",
+    totalMargin: "0",
+    avgMarginPercent: "0",
+    createdBy: userId,
+    origin: "SALES_SHEET",
+  });
+
+  const orderId = Number(result[0].insertId);
+
+  // Update the sales sheet with the converted order ID
+  await db
+    .update(salesSheetHistory)
+    .set({
+      convertedToOrderId: orderId,
+    })
+    .where(eq(salesSheetHistory.id, sheetId));
+
+  return orderId;
+}
+
+/**
+ * Convert a sales sheet to a live shopping session
+ */
+export async function convertToLiveSession(
+  sheetId: number,
+  userId: number
+): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get the sales sheet
+  const sheet = await getSalesSheetById(sheetId);
+  if (!sheet) {
+    throw new Error("Sales sheet not found");
+  }
+
+  // Import live shopping tables
+  const { liveShoppingSessions, sessionCartItems } = await import(
+    "../drizzle/schema-live-shopping"
+  );
+  const { batches: batchesTable } = await import("../drizzle/schema");
+
+  // Generate unique room code
+  const { randomBytes } = await import("crypto");
+  const roomCode = randomBytes(16).toString("hex");
+
+  // Create the session
+  const sessionResult = await db.insert(liveShoppingSessions).values({
+    hostUserId: userId,
+    clientId: sheet.clientId,
+    status: "ACTIVE",
+    roomCode,
+    startedAt: new Date(),
+    title: `Sales Sheet #${sheetId}`,
+  });
+
+  const sessionId = Number(sessionResult[0].insertId);
+
+  // Add items from the sales sheet to the session
+  const items = sheet.items as any[];
+  if (items && items.length > 0) {
+    for (const item of items) {
+      // Get the batch to find the productId
+      const batch = await db
+        .select()
+        .from(batchesTable)
+        .where(eq(batchesTable.id, item.id))
+        .limit(1);
+
+      if (batch.length > 0) {
+        await db.insert(sessionCartItems).values({
+          sessionId,
+          batchId: item.id,
+          productId: batch[0].productId || 1, // Use productId from batch
+          quantity: item.quantity?.toString() || "1",
+          unitPrice: (item.finalPrice || item.retailPrice || item.basePrice)?.toString() || "0",
+          addedByRole: "HOST",
+          itemStatus: "TO_PURCHASE",
+        });
+      }
+    }
+  }
+
+  // Update the sales sheet with the converted session ID
+  await db
+    .update(salesSheetHistory)
+    .set({
+      convertedToSessionId: sessionId.toString(),
+    })
+    .where(eq(salesSheetHistory.id, sheetId));
+
+  return sessionId;
+}
