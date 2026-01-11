@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as salesSheetsDb from "../salesSheetsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { randomBytes } from "crypto";
 
 // Sales sheet item schema with full validation
 const salesSheetItemSchema = z.object({
@@ -107,7 +108,7 @@ export const salesSheetsRouter = router({
     }),
 
   // History
-  save: protectedProcedure.use(requirePermission("orders:read"))
+  save: protectedProcedure.use(requirePermission("orders:create"))
     .input(
       z.object({
         clientId: z.number().positive(),
@@ -153,7 +154,7 @@ export const salesSheetsRouter = router({
       return await salesSheetsDb.getSalesSheetById(input.sheetId);
     }),
 
-  delete: protectedProcedure.use(requirePermission("orders:read"))
+  delete: protectedProcedure.use(requirePermission("orders:create"))
     .input(z.object({ sheetId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteSalesSheet(input.sheetId);
@@ -199,7 +200,7 @@ export const salesSheetsRouter = router({
       return await salesSheetsDb.loadTemplate(input.templateId);
     }),
 
-  deleteTemplate: protectedProcedure.use(requirePermission("orders:read"))
+  deleteTemplate: protectedProcedure.use(requirePermission("orders:create"))
     .input(z.object({ templateId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteTemplate(input.templateId);
@@ -265,7 +266,7 @@ export const salesSheetsRouter = router({
   /**
    * Delete a draft
    */
-  deleteDraft: protectedProcedure.use(requirePermission("orders:read"))
+  deleteDraft: protectedProcedure.use(requirePermission("orders:create"))
     .input(z.object({ draftId: z.number().positive() }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -282,5 +283,236 @@ export const salesSheetsRouter = router({
       const userId = getAuthenticatedUserId(ctx);
       const sheetId = await salesSheetsDb.convertDraftToSheet(input.draftId, userId);
       return { sheetId };
+    }),
+
+  // ============================================================================
+  // LIST & SHARING
+  // ============================================================================
+
+  /**
+   * List sales sheets with pagination
+   */
+  list: protectedProcedure.use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        clientId: z.number().positive().optional(),
+        limit: z.number().positive().max(100).default(20),
+        offset: z.number().nonnegative().default(0),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      return await salesSheetsDb.listSalesSheets(
+        input?.clientId,
+        input?.limit ?? 20,
+        input?.offset ?? 0
+      );
+    }),
+
+  /**
+   * Generate a shareable link for a sales sheet
+   */
+  generateShareLink: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        sheetId: z.number().positive(),
+        expiresInDays: z.number().min(1).max(90).default(7),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
+
+      await salesSheetsDb.setShareToken(input.sheetId, token, expiresAt);
+
+      return {
+        token,
+        expiresAt,
+        shareUrl: `/shared/sales-sheet/${token}`,
+      };
+    }),
+
+  /**
+   * Revoke a share link
+   */
+  revokeShareLink: protectedProcedure.use(requirePermission("orders:create"))
+    .input(z.object({ sheetId: z.number().positive() }))
+    .mutation(async ({ input }) => {
+      await salesSheetsDb.revokeShareToken(input.sheetId);
+      return { success: true };
+    }),
+
+  /**
+   * Get a sales sheet by share token (public - no auth required)
+   */
+  getByToken: publicProcedure
+    .input(z.object({ token: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const sheet = await salesSheetsDb.getSalesSheetByToken(input.token);
+
+      if (!sheet) {
+        throw new Error("Sales sheet not found or link has expired");
+      }
+
+      // Increment view count
+      await salesSheetsDb.incrementViewCount(sheet.id);
+
+      // Return sanitized data (no COGS, no margin info)
+      return {
+        id: sheet.id,
+        clientName: sheet.clientName,
+        items: (sheet.items as any[]).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          quantity: item.quantity,
+          price: item.finalPrice || item.retailPrice,
+        })),
+        totalValue: sheet.totalValue,
+        itemCount: sheet.itemCount,
+        createdAt: sheet.createdAt,
+        expiresAt: sheet.shareExpiresAt,
+      };
+    }),
+
+  // ============================================================================
+  // CONVERSION
+  // ============================================================================
+
+  /**
+   * Convert a sales sheet to an order
+   */
+  convertToOrder: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        sheetId: z.number().positive(),
+        orderType: z.enum(["DRAFT", "QUOTE", "ORDER"]).default("DRAFT"),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const orderId = await salesSheetsDb.convertToOrder(
+        input.sheetId,
+        userId,
+        input.orderType
+      );
+      return { orderId };
+    }),
+
+  /**
+   * Convert a sales sheet to a live shopping session
+   */
+  convertToLiveSession: protectedProcedure.use(requirePermission("orders:create"))
+    .input(z.object({ sheetId: z.number().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const sessionId = await salesSheetsDb.convertToLiveSession(
+        input.sheetId,
+        userId
+      );
+      return { sessionId };
+    }),
+
+  // ============================================================================
+  // SAVED VIEWS (SALES-SHEET-IMPROVEMENTS)
+  // ============================================================================
+
+  /**
+   * Save a view configuration (filters, sort, columns)
+   * Reuses the templates table with filters/columnVisibility JSON fields
+   */
+  saveView: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        id: z.number().positive().optional(), // For updates
+        name: z.string().min(1).max(255),
+        description: z.string().max(500).optional(),
+        clientId: z.number().positive().optional(), // null = universal view
+        filters: z.object({
+          search: z.string(),
+          categories: z.array(z.string()),
+          grades: z.array(z.string()),
+          priceMin: z.number().nullable(),
+          priceMax: z.number().nullable(),
+          strainFamilies: z.array(z.string()),
+          vendors: z.array(z.string()),
+          inStockOnly: z.boolean(),
+        }),
+        sort: z.object({
+          field: z.enum(['name', 'category', 'retailPrice', 'quantity', 'basePrice', 'grade']),
+          direction: z.enum(['asc', 'desc']),
+        }),
+        columnVisibility: z.object({
+          category: z.boolean(),
+          quantity: z.boolean(),
+          basePrice: z.boolean(),
+          retailPrice: z.boolean(),
+          markup: z.boolean(),
+          grade: z.boolean(),
+          vendor: z.boolean(),
+          strain: z.boolean(),
+        }),
+        isDefault: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const viewId = await salesSheetsDb.saveView({
+        ...input,
+        createdBy: userId,
+      });
+      return { viewId };
+    }),
+
+  /**
+   * Get saved views for a client (includes universal views)
+   */
+  getViews: protectedProcedure.use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        clientId: z.number().positive().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await salesSheetsDb.getViews(input?.clientId, userId);
+    }),
+
+  /**
+   * Load a specific view by ID
+   * FIX: Now passes userId for authorization check
+   */
+  loadView: protectedProcedure.use(requirePermission("orders:read"))
+    .input(z.object({ viewId: z.number().positive() }))
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await salesSheetsDb.loadViewById(input.viewId, userId);
+    }),
+
+  /**
+   * Set a view as the default for a client
+   */
+  setDefaultView: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        viewId: z.number().positive(),
+        clientId: z.number().positive(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      await salesSheetsDb.setDefaultView(input.viewId, input.clientId, userId);
+      return { success: true };
+    }),
+
+  /**
+   * Delete a saved view
+   */
+  deleteView: protectedProcedure.use(requirePermission("orders:create"))
+    .input(z.object({ viewId: z.number().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      await salesSheetsDb.deleteView(input.viewId, userId);
+      return { success: true };
     }),
 });

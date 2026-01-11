@@ -2178,10 +2178,18 @@ export const salesSheetHistory = mysqlTable(
 
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow(),
-    
+
+    // Sharing: Public share token and expiration
+    shareToken: varchar("share_token", { length: 64 }),
+    shareExpiresAt: timestamp("share_expires_at"),
+    viewCount: int("view_count").notNull().default(0),
+    lastViewedAt: timestamp("last_viewed_at"),
+
     // USP: Link to converted order (when sales sheet becomes a quote/order)
     // Note: FK constraint added via migration, not inline reference (avoids circular dependency)
     convertedToOrderId: int("converted_to_order_id"),
+    // USP: Link to converted live shopping session
+    convertedToSessionId: varchar("converted_to_session_id", { length: 36 }),
     // USP: Soft delete support for sales sheets
     deletedAt: timestamp("deleted_at"),
   },
@@ -2189,6 +2197,8 @@ export const salesSheetHistory = mysqlTable(
     clientIdIdx: index("idx_client_id").on(table.clientId),
     createdByIdx: index("idx_created_by").on(table.createdBy),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    // Sharing: Index for share token lookups
+    shareTokenIdx: index("idx_sales_sheet_share_token").on(table.shareToken),
     // USP: Index for converted order lookups
     convertedToOrderIdIdx: index("idx_converted_to_order_id").on(table.convertedToOrderId),
     // USP: Index for soft delete filtering
