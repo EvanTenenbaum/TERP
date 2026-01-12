@@ -17,6 +17,31 @@ import {
 } from "../_core/pagination";
 
 export const inboxRouter = router({
+  // API-008: Alias for getMyItems for API consistency
+  list: protectedProcedure.use(requirePermission("todos:read"))
+    .input(
+      z
+        .object({
+          includeArchived: z.boolean().optional().default(false),
+          limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+          offset: z.number().min(0).default(0).optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
+      const offset = input?.offset ?? 0;
+
+      return await inboxDb.getUserInboxItems(
+        ctx.user.id,
+        input?.includeArchived ?? false,
+        limit,
+        offset
+      );
+    }),
+
   // Get all inbox items for current user with pagination
   // PERF-003: Added pagination support
   getMyItems: protectedProcedure.use(requirePermission("todos:read"))

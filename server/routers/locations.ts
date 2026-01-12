@@ -11,6 +11,44 @@ import { eq, sql } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const locationsRouter = router({
+  // API-009: Alias for getAll for API consistency
+  list: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(
+      z
+        .object({
+          site: z.string().optional(),
+          isActive: z.boolean().optional(),
+          limit: z.number().min(1).max(1000).default(100),
+          offset: z.number().min(0).default(0),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const limit = input?.limit ?? 100;
+      const offset = input?.offset ?? 0;
+
+      let query = db
+        .select()
+        .from(locations)
+        .orderBy(locations.site, locations.zone, locations.rack, locations.shelf, locations.bin)
+        .limit(limit)
+        .offset(offset);
+
+      if (input?.site) {
+        query = query.where(eq(locations.site, input.site)) as typeof query;
+      }
+
+      if (input?.isActive !== undefined) {
+        query = query.where(eq(locations.isActive, input.isActive ? 1 : 0)) as typeof query;
+      }
+
+      return await query;
+    }),
+
   // Get all locations
   getAll: protectedProcedure
     .use(requirePermission("inventory:read"))
