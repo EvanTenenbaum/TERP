@@ -2,10 +2,14 @@
 
 ## Specification for MEET-064 to MEET-066
 
-**Status:** DRAFT - Requires Product Review
+**Status:** ✅ APPROVED (2026-01-12)
 **Priority:** CRITICAL (Wave 1)
 **Estimate:** 34h (18h Backend + 16h Frontend)
 **Source:** Customer Meeting 2026-01-11
+
+### Approval Notes
+- Discrepancy notifications must go to the person RESPONSIBLE for that transaction (not generic admin)
+- System must track who created the intake receipt to determine notification target
 
 ---
 
@@ -250,8 +254,10 @@ CREATE INDEX idx_intake_receipt_items_receipt ON intake_receipt_items(receipt_id
 |-------|------------|---------|
 | Receipt created | Supplier (farmer) | Email + In-app |
 | Farmer verified | Stacker (warehouse) | In-app |
-| Discrepancy found | Admin | In-app + Email |
+| Discrepancy found | **Person responsible for transaction** (receipt creator) | In-app + Email |
 | Receipt finalized | Creator | In-app |
+
+**Note:** Discrepancy notifications go to whoever created the intake receipt (the responsible party), NOT a generic admin role.
 
 ---
 
@@ -287,6 +293,6 @@ CREATE INDEX idx_intake_receipt_items_receipt ON intake_receipt_items(receipt_id
 
 ---
 
-**Spec Status:** DRAFT
+**Spec Status:** ✅ APPROVED
 **Created:** 2026-01-12
-**Requires:** Product Owner approval before implementation
+**Approved:** 2026-01-12 by Product Owner

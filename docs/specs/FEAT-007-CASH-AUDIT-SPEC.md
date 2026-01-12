@@ -2,10 +2,15 @@
 
 ## Specification for MEET-001 to MEET-004
 
-**Status:** DRAFT - Requires Product Review
+**Status:** ✅ APPROVED (2026-01-12)
 **Priority:** CRITICAL (Wave 1)
 **Estimate:** 48h (24h Backend + 24h Frontend)
 **Source:** Customer Meeting 2026-01-11
+
+### Approval Notes
+- Locations must be dynamic (not hardcoded "Z" / "Doc")
+- Use "Location 1", "Location 2" as defaults
+- Admin can add, rename, or deactivate locations
 
 ---
 
@@ -17,7 +22,7 @@
 Weekly cash audits are failing due to:
 1. Multiple error points in spreadsheet tracking
 2. Copy/paste errors during data entry
-3. No distinction between cash locations (Z's vs Doc's)
+3. No distinction between cash locations (multiple physical locations)
 4. Manual reconciliation prone to mistakes
 
 ---
@@ -47,21 +52,25 @@ type CashDashboardResponse = {
 
 ### MEET-002: Multi-Location Cash Tracking
 
-**User Story:** As a manager, I want to track cash at multiple locations (Z's place, Doc's place) separately.
+**User Story:** As a manager, I want to track cash at multiple locations separately.
 
 **Acceptance Criteria:**
-- [ ] Support multiple cash locations
+- [ ] Support multiple cash locations (dynamic, not hardcoded)
 - [ ] Each location has independent balance
-- [ ] Transfers between locations tracked
-- [ ] Admin can add/remove locations
+- [ ] Transfers between locations tracked with audit trail
+- [ ] Admin can add new locations
+- [ ] Admin can rename existing locations
+- [ ] Admin can deactivate (soft delete) locations
+- [ ] Default seed: "Location 1", "Location 2"
 
 **Data Model:**
 ```typescript
 // New table: cash_locations
 type CashLocation = {
   id: number;
-  name: string;          // "Z's Cash", "Doc's Cash"
+  name: string;          // "Location 1", "Location 2", or custom names
   currentBalance: number;
+  isActive: boolean;     // Soft delete support
   createdAt: Date;
   updatedAt: Date;
 };
@@ -80,10 +89,10 @@ type CashLocationTransaction = {
 
 ### MEET-003: In/Out Ledger
 
-**User Story:** As a manager, I want a simple in/out ledger for Z's cash that automatically reconciles.
+**User Story:** As a manager, I want a simple in/out ledger for each location that automatically reconciles.
 
 **Acceptance Criteria:**
-- [ ] Single view showing all ins and outs
+- [ ] Single view showing all ins and outs per location
 - [ ] Running balance calculation
 - [ ] Filter by date range
 - [ ] Export to CSV/PDF
@@ -92,12 +101,12 @@ type CashLocationTransaction = {
 **UI Wireframe:**
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Z's Cash Ledger                           Balance: $XXX │
+│ Location 1 Ledger                         Balance: $XXX │
 ├─────────────────────────────────────────────────────────┤
-│ Date       │ Description      │ In      │ Out    │ Bal │
-│ 01/10/2026 │ Client Payment   │ $500    │        │ $500│
-│ 01/10/2026 │ Vendor Payment   │         │ $200   │ $300│
-│ 01/11/2026 │ Transfer from Doc│ $1000   │        │$1300│
+│ Date       │ Description           │ In      │ Out    │ Bal │
+│ 01/10/2026 │ Client Payment        │ $500    │        │ $500│
+│ 01/10/2026 │ Vendor Payment        │         │ $200   │ $300│
+│ 01/11/2026 │ Transfer from Loc 2   │ $1000   │        │$1300│
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -234,6 +243,6 @@ CREATE TABLE shift_audits (
 
 ---
 
-**Spec Status:** DRAFT
+**Spec Status:** ✅ APPROVED
 **Created:** 2026-01-12
-**Requires:** Product Owner approval before implementation
+**Approved:** 2026-01-12 by Product Owner

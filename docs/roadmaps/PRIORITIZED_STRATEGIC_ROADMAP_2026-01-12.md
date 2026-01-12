@@ -2,10 +2,19 @@
 
 ## Frontend-First Execution with Parallel Agent QA
 
-**Version:** 1.0
+**Version:** 1.1
 **Created:** 2026-01-12
+**Updated:** 2026-01-12 (Product Owner approvals incorporated)
 **Status:** ACTIVE - Supersedes all other roadmaps
 **Methodology:** Frontend-focused with required infrastructure, designed for parallel agent execution
+
+### Product Owner Approvals (2026-01-12)
+- ✅ FEAT-007 (Cash Audit): Approved with dynamic locations (Location 1/2, admin can add/rename)
+- ✅ FEAT-008 (Intake Verification): Approved - notifications go to responsible person
+- ✅ FEAT-009 (Client Ledger): Approved with real-time queries and full system integration
+- ✅ RBAC: Grant all permissions to Sales Manager (samples:read, Pick & Pack, accounting:reports:view)
+- ✅ Execution: Bugs first (Sprint 0), parallel agents approved, QA gates approved
+- ✅ Backlog: Moved MEET-015, 019, 022, 034, 036, 048 to MVP; only 060, 073, 074 remain in Beta
 
 ---
 
@@ -13,15 +22,15 @@
 
 ## Critical Gaps Found in Current Roadmap System
 
-### GAP-001: Missing Specifications for Wave 1 Critical Items
+### GAP-001: Missing Specifications for Wave 1 Critical Items ✅ RESOLVED
 
 | MEET Item | Description | Impact | Status |
 |-----------|-------------|--------|--------|
-| MEET-001 to MEET-004 | Cash Audit System | **CRITICAL** - Weekly audit failures | NO SPEC EXISTS |
-| MEET-064 to MEET-066 | Intake Verification | **CRITICAL** - "Off by 12 pounds" | NO SPEC EXISTS |
-| MEET-010 | Simple Client Ledger | HIGH - Foundation for payment tracking | NO SPEC EXISTS |
+| MEET-001 to MEET-004 | Cash Audit System | **CRITICAL** - Weekly audit failures | ✅ FEAT-007-CASH-AUDIT-SPEC.md APPROVED |
+| MEET-064 to MEET-066 | Intake Verification | **CRITICAL** - "Off by 12 pounds" | ✅ FEAT-008-INTAKE-VERIFICATION-SPEC.md APPROVED |
+| MEET-010 | Simple Client Ledger | HIGH - Foundation for payment tracking | ✅ FEAT-009-CLIENT-LEDGER-SPEC.md APPROVED |
 
-**Resolution Required:** Create FEAT-007-CASH-AUDIT-SPEC.md, FEAT-008-INTAKE-VERIFICATION-SPEC.md before Wave 1 execution.
+**Resolution:** All three specs created and approved (2026-01-12).
 
 ### GAP-002: Duplicate Bug Tracking
 
@@ -674,14 +683,14 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 | MEET-012 | Client Tagging with Referrer | 4 | B | TODO |
 | MEET-013 | Referrer Lookup | 4 | B | TODO |
 | MEET-014 | Variable Markups (Age/Quantity) | 3 | B | TODO |
-| MEET-015 | Sales Sheet Creator | BACKLOG | - | LOW |
+| MEET-015 | Sales Sheet Creator | 5 | C | TODO |
 | MEET-016 | Live Sales Now Primary Method | - | - | CONTEXT |
 | MEET-017 | Invoice History (Debt Disputes) | 5 | D | TODO |
 | MEET-018 | Transaction Fee Per Client | 5 | D | TODO |
-| MEET-019 | Crypto Payment Tracking | BACKLOG | - | FUTURE |
+| MEET-019 | Crypto Payment Tracking | 5 | D | TODO |
 | MEET-020 | Suggested Buyer (Purchase History) | 4 | B | TODO |
 | MEET-021 | Client Wants/Needs Tracking | 4 | B | TODO |
-| MEET-022 | Reverse Lookup (Product Connections) | BACKLOG | - | FUTURE |
+| MEET-022 | Reverse Lookup (Product Connections) | 4 | B | TODO |
 | MEET-023 | Batch Tracking for Inventory | 4 | A | TODO |
 | MEET-024 | Aging Inventory Visual | 4 | A | TODO |
 | MEET-025 | Dashboard Aging Quick View | 4 | A | TODO |
@@ -693,9 +702,9 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 | MEET-031 | Hide SKU Field | 4 | C | TODO |
 | MEET-032 | Customizable Categories | 5 | D | TODO |
 | MEET-033 | Searchable Supplier Dropdown | 4 | C | TODO |
-| MEET-034 | Expected Delivery Date | BACKLOG | - | LOW |
+| MEET-034 | Expected Delivery Date | 4 | D | TODO |
 | MEET-035 | Payment Terms (Consignment/Cash/COD) | 5 | D | TODO |
-| MEET-036 | Installment Payments | BACKLOG | - | FUTURE |
+| MEET-036 | Installment Payments | 5 | D | TODO |
 | MEET-037 | Editable Product Names | 4 | C | TODO |
 | MEET-038 | Notes on Product Pricing | 3 | B | TODO |
 | MEET-039 | Quick Action Pricing Visibility | 3 | B | TODO |
@@ -707,7 +716,7 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 | MEET-045 | Rewards System (Medals, Markup %) | 5 | B | TODO |
 | MEET-046 | Live Appointments | 4 | D | TODO |
 | MEET-047 | Multiple Rooms (2 meeting + 2 loading) | 4 | D | TODO |
-| MEET-048 | Hour Tracking | BACKLOG | - | LOW |
+| MEET-048 | Hour Tracking | 5 | E | TODO |
 | MEET-049 | Calendar Navigation Bug | 1 | - | TODO |
 | MEET-050 | Shift/Vacation Tracking | 4 | D | TODO |
 | MEET-051 | User Roles & Permissions | 5 | - | TODO |
@@ -741,14 +750,16 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 | Category | Count | Status |
 |----------|-------|--------|
 | Sprint 0 (Foundation) | 0 MEET | Bugs/API only |
-| Sprint 1 (UI Fixes) | 1 MEET | BUG-049 = MEET-049 |
+| Sprint 1 (UI Fixes) | 1 MEET | MEET-049 |
 | Sprint 2 (Wave 1) | 7 MEET | MEET-001-004, 010, 064-066 |
 | Sprint 3 (Wave 2) | 17 MEET | MEET-005-006, 014, 026-030, etc |
-| Sprint 4 (Wave 3) | 21 MEET | MEET-007-008, 012-013, 020-021, etc |
-| Sprint 5 (Wave 4) | 23 MEET | MEET-017-018, 035, 041-058, etc |
-| Backlog | 6 MEET | MEET-015, 019, 022, 034, 036, 048, 060, 073, 074 |
+| Sprint 4 (Wave 3) | 25 MEET | MEET-007-008, 012-013, 020-022, 034, etc |
+| Sprint 5 (Wave 4) | 29 MEET | MEET-015, 017-019, 035-036, 041-058, 048, etc |
+| Backlog (Beta) | 3 MEET | MEET-060, 073, 074 |
 | Context/Constraint | 3 MEET | MEET-011, 016, 059 |
 | **TOTAL** | **75** | **✅ 100% Accounted** |
+
+> **Note (2026-01-12):** Per Product Owner approval, moved MEET-015, 019, 022, 034, 036, 048 from Backlog into MVP sprints. Only MEET-060, 073, 074 remain in Backlog/Beta.
 
 ---
 
@@ -772,7 +783,7 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 
 | Risk ID | Description | Severity | Mitigation |
 |---------|-------------|----------|------------|
-| RISK-001 | Missing specs for Wave 1 | CRITICAL | Create FEAT-007, FEAT-008, FEAT-009 before Sprint 2 |
+| RISK-001 | Missing specs for Wave 1 | ~~CRITICAL~~ ✅ RESOLVED | FEAT-007, FEAT-008, FEAT-009 created and approved |
 | RISK-002 | Database fixes incomplete | HIGH | Sprint 0 has QA gate - cannot proceed if fails |
 | RISK-003 | RBAC blocks QA testing | HIGH | Sprint 0 Track C fixes all RBAC |
 | RISK-004 | Parallel agents cause merge conflicts | MEDIUM | Each track owns different files |

@@ -6,23 +6,26 @@ This directory contains detailed product specifications for all major features a
 
 | Status | Count |
 |--------|-------|
-| Approved | 24 |
+| Approved | 27 |
 | In Review | 0 |
-| Draft | 17 |
+| Draft | 14 |
 
 ## NEW: Critical Wave 1 Specs (2026-01-12)
 
 The following specs were identified as **MISSING** during strategic roadmap review and are required for Wave 1 "Stop the Bleeding" execution.
 
-### Wave 1: Stop the Bleeding Specs (CRITICAL)
+### Wave 1: Stop the Bleeding Specs (CRITICAL) ✅ ALL APPROVED
 
-| Task ID | Title | Spec | Priority | Estimate | Source |
-|---------|-------|------|----------|----------|--------|
-| FEAT-007 | Cash Audit System | [FEAT-007-CASH-AUDIT-SPEC.md](./FEAT-007-CASH-AUDIT-SPEC.md) | **CRITICAL** | 48h | MEET-001 to MEET-004 |
-| FEAT-008 | Intake Verification System | [FEAT-008-INTAKE-VERIFICATION-SPEC.md](./FEAT-008-INTAKE-VERIFICATION-SPEC.md) | **CRITICAL** | 34h | MEET-064 to MEET-066 |
-| FEAT-009 | Simple Client Ledger | [FEAT-009-CLIENT-LEDGER-SPEC.md](./FEAT-009-CLIENT-LEDGER-SPEC.md) | **CRITICAL** | 16h | MEET-010 |
+| Task ID | Title | Spec | Priority | Estimate | Source | Status |
+|---------|-------|------|----------|----------|--------|--------|
+| FEAT-007 | Cash Audit System | [FEAT-007-CASH-AUDIT-SPEC.md](./FEAT-007-CASH-AUDIT-SPEC.md) | **CRITICAL** | 48h | MEET-001 to MEET-004 | ✅ APPROVED |
+| FEAT-008 | Intake Verification System | [FEAT-008-INTAKE-VERIFICATION-SPEC.md](./FEAT-008-INTAKE-VERIFICATION-SPEC.md) | **CRITICAL** | 34h | MEET-064 to MEET-066 | ✅ APPROVED |
+| FEAT-009 | Simple Client Ledger | [FEAT-009-CLIENT-LEDGER-SPEC.md](./FEAT-009-CLIENT-LEDGER-SPEC.md) | **CRITICAL** | 16h | MEET-010 | ✅ APPROVED |
 
-> **Note:** These specs are in DRAFT status and require Product Owner approval before implementation.
+> **Approval Notes (2026-01-12):**
+> - FEAT-007: Use dynamic locations (Location 1, Location 2), admin can add/rename
+> - FEAT-008: Discrepancy notifications go to responsible person (not generic admin)
+> - FEAT-009: Use real-time queries, integrate with all system tracking/calculations
 
 ---
 

@@ -2,10 +2,15 @@
 
 ## Specification for MEET-010
 
-**Status:** DRAFT - Requires Product Review
+**Status:** ✅ APPROVED (2026-01-12)
 **Priority:** CRITICAL (Wave 1)
 **Estimate:** 16h (8h Backend + 8h Frontend)
 **Source:** Customer Meeting 2026-01-11
+
+### Approval Notes
+- **Data Approach:** Real-time query (NOT materialized view) - always current data
+- **System Integration:** Must integrate with ALL tracking and calculations system-wide
+- **Display:** Keep display simple as per user feedback (in/out with running balance)
 
 ---
 
@@ -167,7 +172,7 @@ The ledger aggregates data from multiple sources:
 
 ## Database Changes
 
-### Option A: Materialized View (Recommended)
+### Option A: Materialized View (NOT SELECTED)
 
 ```sql
 -- Create a materialized view for fast ledger queries
@@ -228,9 +233,25 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-### Option B: Real-time Query
+### Option B: Real-time Query ✅ APPROVED
 
-If materialized view performance is acceptable, use a complex query that joins all sources at runtime.
+Use a complex query that joins all sources at runtime. This ensures data is always 100% current.
+
+**Implementation:**
+```typescript
+// Real-time query approach - joins all source tables live
+async function getClientLedger(clientId: number, filters: LedgerFilters): Promise<ClientLedgerResponse> {
+  // Query orders, payments, purchases, adjustments in real-time
+  // Calculate running balance on the fly
+  // Return unified view
+}
+```
+
+**Trade-offs:**
+- ✅ Always 100% accurate (no stale data)
+- ✅ No refresh management needed
+- ⚠️ Slightly slower queries (500ms-2s depending on transaction volume)
+- ⚠️ May need pagination for clients with large transaction history
 
 ### Manual Adjustments Table
 
@@ -255,8 +276,9 @@ CREATE TABLE client_ledger_adjustments (
 | Flag | Default | Description |
 |------|---------|-------------|
 | `client_ledger_enabled` | true | Enable client ledger feature |
-| `ledger_realtime_refresh` | false | Real-time vs scheduled refresh |
 | `ledger_export_enabled` | true | Enable CSV/PDF export |
+
+> **Note:** No `ledger_realtime_refresh` flag needed - always using real-time queries per approval.
 
 ---
 
@@ -295,14 +317,38 @@ CREATE TABLE client_ledger_adjustments (
 
 ---
 
+## System-Wide Integration (CRITICAL)
+
+The client ledger MUST integrate with all existing tracking and calculations:
+
+### Data Sources (All must flow into ledger)
+- Orders (sales to client)
+- Payments received (from client)
+- Invoices (AR items)
+- Purchases (from client as supplier)
+- Payments sent (to client as supplier)
+- Service credits (shipping, consulting)
+- Manual adjustments
+- Consignment settlements
+
+### Systems That Use Ledger Balance
+- Dashboard (Available Money calculation)
+- Order creation (credit warnings)
+- Payables tracking
+- Cash audit reconciliation
+- VIP tier calculations (if based on spend)
+
+---
+
 ## UI Components
 
 ### Integration Points
 
 1. **Client Detail Page**: Add "Ledger" tab
 2. **Client List**: Show current balance column
-3. **Order Creation**: Show client balance warning if negative
+3. **Order Creation**: Show client balance warning if balance exceeds threshold
 4. **Dashboard**: Show top debtors widget
+5. **Payables Module**: Reference ledger for supplier payments due
 
 ### Balance Warning
 
@@ -319,6 +365,6 @@ type BalanceWarning = {
 
 ---
 
-**Spec Status:** DRAFT
+**Spec Status:** ✅ APPROVED
 **Created:** 2026-01-12
-**Requires:** Product Owner approval before implementation
+**Approved:** 2026-01-12 by Product Owner
