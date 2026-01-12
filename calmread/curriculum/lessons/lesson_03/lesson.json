@@ -1,0 +1,329 @@
+{
+  "lessonId": "lesson_03",
+  "version": "1.0.0",
+  "title": "Short A - First Words",
+  "lessonNumber": 3,
+  "type": "instruction",
+  "estimatedDuration": 10,
+  "objectives": [
+    "Identify short a sound /æ/",
+    "Blend CVC words: mat, sat, tam",
+    "Read first decodable sentences"
+  ],
+  "prerequisites": ["lesson_01", "lesson_02"],
+  "graphemeConstraints": {
+    "allowedGraphemes": ["m", "s", "t", "a"],
+    "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+    "taughtPatterns": [
+      {"grapheme": "a", "phoneme": "/æ/", "isNew": true},
+      {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+      {"grapheme": "s", "phoneme": "/s/", "isNew": false},
+      {"grapheme": "t", "phoneme": "/t/", "isNew": false}
+    ],
+    "sightWords": ["the"]
+  },
+  "steps": [
+    {
+      "stepId": "step_01",
+      "stepNumber": 1,
+      "type": "review",
+      "title": "Review M, S, T",
+      "instruction": "Let's review our sounds. M says /m/. S says /s/. T says /t/.",
+      "audioAssetId": "instruction_review_mst",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "M → /m/\nS → /s/\nT → /t/",
+        "visualElements": [
+          {"type": "letter_display", "content": "M S T", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_02",
+      "stepNumber": 2,
+      "type": "explicit_phonics",
+      "title": "Meet the Letter A",
+      "instruction": "This is the letter A. It makes the sound /æ/, like in apple. Watch and listen.",
+      "audioAssetId": "instruction_a_intro",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "A a",
+        "targetGrapheme": "a",
+        "targetPhoneme": "/æ/",
+        "visualElements": [
+          {"type": "letter_display", "content": "A a", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_03",
+      "stepNumber": 3,
+      "type": "phonemic_awareness",
+      "title": "Hear the /æ/ Sound",
+      "instruction": "Listen to the /æ/ sound. /æ/ ... /æ/ ... /æ/. Open your mouth wide.",
+      "audioAssetId": "instruction_a_sound",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "/æ/",
+        "targetPhoneme": "/æ/",
+        "visualElements": [
+          {"type": "phoneme_display", "content": "/æ/", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_04",
+      "stepNumber": 4,
+      "type": "practice",
+      "title": "Say the /æ/ Sound",
+      "instruction": "Now you try. Say /æ/. Open your mouth wide.",
+      "audioAssetId": "prompt_try_a",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "Your turn: /æ/",
+        "targetPhoneme": "/æ/",
+        "recordingPrompt": "Say /æ/",
+        "maxRecordingDuration": 5
+      }
+    },
+    {
+      "stepId": "step_05",
+      "stepNumber": 5,
+      "type": "blending_practice",
+      "title": "Blend: mat",
+      "instruction": "Now we can make words! Watch me blend. /m/ ... /æ/ ... /t/ ... mat.",
+      "audioAssetId": "instruction_blend_mat",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "m - a - t → mat",
+        "targetWord": "mat",
+        "blendingSequence": ["/m/", "/æ/", "/t/"],
+        "visualElements": [
+          {"type": "word_display", "content": "mat", "size": "large", "segmented": true}
+        ]
+      }
+    },
+    {
+      "stepId": "step_06",
+      "stepNumber": 6,
+      "type": "practice",
+      "title": "You Blend: mat",
+      "instruction": "Now you blend. /m/ ... /æ/ ... /t/ ... What word?",
+      "audioAssetId": "prompt_blend_mat",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "m - a - t → ?",
+        "targetWord": "mat",
+        "recordingPrompt": "Blend and say the word",
+        "maxRecordingDuration": 8
+      }
+    },
+    {
+      "stepId": "step_07",
+      "stepNumber": 7,
+      "type": "blending_practice",
+      "title": "Blend: sat",
+      "instruction": "Let's blend another word. /s/ ... /æ/ ... /t/ ... sat.",
+      "audioAssetId": "instruction_blend_sat",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "s - a - t → sat",
+        "targetWord": "sat",
+        "blendingSequence": ["/s/", "/æ/", "/t/"],
+        "visualElements": [
+          {"type": "word_display", "content": "sat", "size": "large", "segmented": true}
+        ]
+      }
+    },
+    {
+      "stepId": "step_08",
+      "stepNumber": 8,
+      "type": "practice",
+      "title": "You Blend: sat",
+      "instruction": "Now you blend. /s/ ... /æ/ ... /t/ ... What word?",
+      "audioAssetId": "prompt_blend_sat",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "s - a - t → ?",
+        "targetWord": "sat",
+        "recordingPrompt": "Blend and say the word",
+        "maxRecordingDuration": 8
+      }
+    },
+    {
+      "stepId": "step_09",
+      "stepNumber": 9,
+      "type": "blending_practice",
+      "title": "More Words",
+      "instruction": "Here are more words with short a. Listen: at, am, Sam, Tam.",
+      "audioAssetId": "instruction_more_words",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "at   am   Sam   Tam",
+        "words": ["at", "am", "Sam", "Tam"],
+        "visualElements": [
+          {"type": "word_list", "content": ["at", "am", "Sam", "Tam"], "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_10",
+      "stepNumber": 10,
+      "type": "sight_word",
+      "title": "Sight Word: the",
+      "instruction": "This word is 'the'. We will see it often. Say 'the'.",
+      "audioAssetId": "instruction_sight_the",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "the",
+        "sightWord": "the",
+        "visualElements": [
+          {"type": "sight_word_display", "content": "the", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_11",
+      "stepNumber": 11,
+      "type": "decodable_read",
+      "title": "Read a Story",
+      "instruction": "Now let's read! Touch each word as I read.",
+      "audioAssetId": "instruction_read_intro",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "Sam sat.\nSam sat at the mat.\nTam sat.\nTam sat at the mat.",
+        "passage": "Sam sat. Sam sat at the mat. Tam sat. Tam sat at the mat.",
+        "highlightingEnabled": true,
+        "highlightGranularity": "line"
+      }
+    },
+    {
+      "stepId": "step_12",
+      "stepNumber": 12,
+      "type": "record_read_aloud",
+      "title": "Your Turn to Read",
+      "instruction": "Now you read. Touch each word and read aloud.",
+      "audioAssetId": "prompt_your_turn_read",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "Sam sat.\nSam sat at the mat.\nTam sat.\nTam sat at the mat.",
+        "passage": "Sam sat. Sam sat at the mat. Tam sat. Tam sat at the mat.",
+        "recordingPrompt": "Read the story aloud",
+        "maxRecordingDuration": 30
+      }
+    },
+    {
+      "stepId": "step_13",
+      "stepNumber": 13,
+      "type": "comprehension_prompt",
+      "title": "Story Question",
+      "instruction": "Who sat at the mat?",
+      "audioAssetId": "prompt_comprehension",
+      "interactionType": "select",
+      "requiredAction": "select_answer",
+      "content": {
+        "question": "Who sat at the mat?",
+        "questionType": "literal",
+        "options": [
+          {"id": "opt_sam", "display": "Sam", "correct": true},
+          {"id": "opt_mat", "display": "Mat", "correct": false}
+        ]
+      }
+    },
+    {
+      "stepId": "step_14",
+      "stepNumber": 14,
+      "type": "review",
+      "title": "Review",
+      "instruction": "Great reading! Today you learned the short a sound and read your first words.",
+      "audioAssetId": "instruction_review_final",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "A says /æ/\n\nWords: mat, sat, at, am",
+        "visualElements": [
+          {"type": "letter_display", "content": "A → /æ/", "size": "medium"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_15",
+      "stepNumber": 15,
+      "type": "completion",
+      "title": "All Done",
+      "instruction": "All done. You learned short a and read your first story.",
+      "audioAssetId": "prompt_completion",
+      "interactionType": "listen",
+      "requiredAction": "tap_finish",
+      "content": {
+        "displayText": "All Done",
+        "completionMessage": "You learned short a and read your first story."
+      }
+    }
+  ],
+  "wordList": [
+    {"word": "mat", "graphemes": ["m", "a", "t"], "phonemes": ["/m/", "/æ/", "/t/"], "isTargetPattern": true, "isReview": false},
+    {"word": "sat", "graphemes": ["s", "a", "t"], "phonemes": ["/s/", "/æ/", "/t/"], "isTargetPattern": true, "isReview": false},
+    {"word": "at", "graphemes": ["a", "t"], "phonemes": ["/æ/", "/t/"], "isTargetPattern": true, "isReview": false},
+    {"word": "am", "graphemes": ["a", "m"], "phonemes": ["/æ/", "/m/"], "isTargetPattern": true, "isReview": false},
+    {"word": "Sam", "graphemes": ["s", "a", "m"], "phonemes": ["/s/", "/æ/", "/m/"], "isTargetPattern": true, "isReview": false},
+    {"word": "Tam", "graphemes": ["t", "a", "m"], "phonemes": ["/t/", "/æ/", "/m/"], "isTargetPattern": true, "isReview": false}
+  ],
+  "decodableText": {
+    "title": "Sam and Tam",
+    "sentences": [
+      {"text": "Sam sat.", "words": ["Sam", "sat"]},
+      {"text": "Sam sat at the mat.", "words": ["Sam", "sat", "at", "the", "mat"]},
+      {"text": "Tam sat.", "words": ["Tam", "sat"]},
+      {"text": "Tam sat at the mat.", "words": ["Tam", "sat", "at", "the", "mat"]}
+    ],
+    "totalWords": 14,
+    "decodableWords": 12,
+    "sightWords": 2,
+    "decodablePercentage": 85.7
+  },
+  "audioAssets": [
+    {"assetId": "instruction_review_mst", "path": "prompts/instruction_review_mst.mp3", "type": "instruction", "transcript": "Let's review our sounds. M says /m/. S says /s/. T says /t/.", "duration": 5.0},
+    {"assetId": "instruction_a_intro", "path": "prompts/instruction_a_intro.mp3", "type": "instruction", "transcript": "This is the letter A. It makes the sound /æ/, like in apple. Watch and listen.", "duration": 5.0},
+    {"assetId": "instruction_a_sound", "path": "prompts/instruction_a_sound.mp3", "type": "instruction", "transcript": "Listen to the /æ/ sound. /æ/ ... /æ/ ... /æ/. Open your mouth wide.", "duration": 5.5},
+    {"assetId": "prompt_try_a", "path": "prompts/prompt_try_a.mp3", "type": "prompt", "transcript": "Now you try. Say /æ/. Open your mouth wide.", "duration": 3.5},
+    {"assetId": "instruction_blend_mat", "path": "prompts/instruction_blend_mat.mp3", "type": "instruction", "transcript": "Now we can make words! Watch me blend. /m/ ... /æ/ ... /t/ ... mat.", "duration": 6.0},
+    {"assetId": "prompt_blend_mat", "path": "prompts/prompt_blend_mat.mp3", "type": "prompt", "transcript": "Now you blend. /m/ ... /æ/ ... /t/ ... What word?", "duration": 5.0},
+    {"assetId": "instruction_blend_sat", "path": "prompts/instruction_blend_sat.mp3", "type": "instruction", "transcript": "Let's blend another word. /s/ ... /æ/ ... /t/ ... sat.", "duration": 5.0},
+    {"assetId": "prompt_blend_sat", "path": "prompts/prompt_blend_sat.mp3", "type": "prompt", "transcript": "Now you blend. /s/ ... /æ/ ... /t/ ... What word?", "duration": 5.0},
+    {"assetId": "instruction_more_words", "path": "prompts/instruction_more_words.mp3", "type": "instruction", "transcript": "Here are more words with short a. Listen: at, am, Sam, Tam.", "duration": 5.0},
+    {"assetId": "instruction_sight_the", "path": "prompts/instruction_sight_the.mp3", "type": "instruction", "transcript": "This word is 'the'. We will see it often. Say 'the'.", "duration": 4.0},
+    {"assetId": "instruction_read_intro", "path": "prompts/instruction_read_intro.mp3", "type": "instruction", "transcript": "Now let's read! Touch each word as I read.", "duration": 3.5},
+    {"assetId": "prompt_your_turn_read", "path": "prompts/prompt_your_turn_read.mp3", "type": "prompt", "transcript": "Now you read. Touch each word and read aloud.", "duration": 3.5},
+    {"assetId": "prompt_comprehension", "path": "prompts/prompt_comprehension.mp3", "type": "prompt", "transcript": "Who sat at the mat?", "duration": 2.0},
+    {"assetId": "instruction_review_final", "path": "prompts/instruction_review_final.mp3", "type": "instruction", "transcript": "Great reading! Today you learned the short a sound and read your first words.", "duration": 4.5},
+    {"assetId": "prompt_completion", "path": "prompts/prompt_completion.mp3", "type": "prompt", "transcript": "All done. You learned short a and read your first story.", "duration": 3.5},
+    {"assetId": "word_mat", "path": "words/word_mat.mp3", "type": "word", "transcript": "mat", "duration": 1.0},
+    {"assetId": "word_sat", "path": "words/word_sat.mp3", "type": "word", "transcript": "sat", "duration": 1.0},
+    {"assetId": "word_at", "path": "words/word_at.mp3", "type": "word", "transcript": "at", "duration": 0.8},
+    {"assetId": "word_am", "path": "words/word_am.mp3", "type": "word", "transcript": "am", "duration": 0.8},
+    {"assetId": "word_sam", "path": "words/word_sam.mp3", "type": "word", "transcript": "Sam", "duration": 1.0},
+    {"assetId": "word_tam", "path": "words/word_tam.mp3", "type": "word", "transcript": "Tam", "duration": 1.0},
+    {"assetId": "blend_mat", "path": "words/blend_mat.mp3", "type": "blending", "transcript": "/m/ ... /æ/ ... /t/ ... mat", "duration": 4.0},
+    {"assetId": "blend_sat", "path": "words/blend_sat.mp3", "type": "blending", "transcript": "/s/ ... /æ/ ... /t/ ... sat", "duration": 4.0}
+  ],
+  "metadata": {
+    "createdAt": "2026-01-11T00:00:00Z",
+    "updatedAt": "2026-01-11T00:00:00Z",
+    "author": "CalmRead Content Generator",
+    "reviewStatus": "approved",
+    "qaReportId": "qa_lesson_03_v1"
+  }
+}

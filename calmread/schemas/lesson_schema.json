@@ -1,0 +1,627 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://calmread.com/schemas/lesson/v1.0.0",
+  "title": "CalmRead Lesson Schema",
+  "description": "Schema for CalmRead lesson bundles. Version 1.0.0",
+  "type": "object",
+  "required": [
+    "lessonId",
+    "title",
+    "version",
+    "targetPatterns",
+    "allowedGraphemes",
+    "bannedGraphemes",
+    "wordList",
+    "steps",
+    "audioAssets",
+    "highlightPolicy",
+    "calmComplianceChecklist"
+  ],
+  "properties": {
+    "lessonId": {
+      "type": "string",
+      "pattern": "^lesson_[0-9]{2}$",
+      "description": "Unique lesson identifier in format lesson_XX"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Human-readable lesson title"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the lesson content"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Brief description of lesson content and goals"
+    },
+    "targetPatterns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "description": "Phonics patterns/graphemes being taught in this lesson"
+    },
+    "allowedGraphemes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "description": "Complete list of graphemes the child has learned (cumulative)"
+    },
+    "bannedGraphemes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Graphemes that must NOT appear in decodable content"
+    },
+    "sightWords": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "High-frequency words taught as whole words (not decodable)"
+    },
+    "wordList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/word"
+      },
+      "minItems": 1,
+      "description": "Controlled words for practice in this lesson"
+    },
+    "decodableText": {
+      "$ref": "#/definitions/decodableText",
+      "description": "Connected text passage for reading practice"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "minItems": 1,
+      "description": "Ordered sequence of lesson steps"
+    },
+    "audioAssets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/audioAsset"
+      },
+      "description": "Audio files required for this lesson"
+    },
+    "highlightPolicy": {
+      "$ref": "#/definitions/highlightPolicy",
+      "description": "Karaoke highlighting configuration"
+    },
+    "calmComplianceChecklist": {
+      "$ref": "#/definitions/calmComplianceChecklist",
+      "description": "Auto-filled calm design compliance verification"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "author": {
+          "type": "string"
+        },
+        "reviewedBy": {
+          "type": "string"
+        },
+        "qaStatus": {
+          "type": "string",
+          "enum": ["draft", "review", "approved", "rejected"]
+        }
+      }
+    }
+  },
+  "definitions": {
+    "word": {
+      "type": "object",
+      "required": ["word", "graphemes"],
+      "properties": {
+        "word": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The word itself"
+        },
+        "graphemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Grapheme breakdown of the word"
+        },
+        "isTargetPattern": {
+          "type": "boolean",
+          "description": "Whether this word demonstrates the target pattern"
+        },
+        "isReview": {
+          "type": "boolean",
+          "description": "Whether this word reviews previously learned patterns"
+        },
+        "audioFile": {
+          "type": "string",
+          "description": "Path to pronunciation audio file"
+        }
+      }
+    },
+    "decodableText": {
+      "type": "object",
+      "required": ["title", "sentences"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the decodable passage"
+        },
+        "sentences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Sentence text"
+              },
+              "audioFile": {
+                "type": "string",
+                "description": "Path to sentence audio file"
+              },
+              "pageNumber": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Page this sentence appears on"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "wordCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total word count"
+        },
+        "comprehensionQuestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/comprehensionQuestion"
+          }
+        }
+      }
+    },
+    "comprehensionQuestion": {
+      "type": "object",
+      "required": ["question", "type", "options", "correctAnswer"],
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "The question text"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["literal_recall", "sequence", "main_idea"],
+          "description": "Type of comprehension question"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "maxItems": 4,
+          "description": "Answer options"
+        },
+        "correctAnswer": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index of correct answer in options array"
+        },
+        "audioFile": {
+          "type": "string",
+          "description": "Path to question audio file"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["stepId", "type", "title"],
+      "properties": {
+        "stepId": {
+          "type": "string",
+          "pattern": "^step_[0-9]{2}$",
+          "description": "Unique step identifier within lesson"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "phonemic_awareness",
+            "explicit_phonics",
+            "blending_practice",
+            "decodable_read",
+            "record_read_aloud",
+            "comprehension_prompt",
+            "review"
+          ],
+          "description": "Type of instructional step"
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title for the step"
+        },
+        "instructions": {
+          "type": "string",
+          "description": "Instructions for the child (read aloud or displayed)"
+        },
+        "instructionAudio": {
+          "type": "string",
+          "description": "Path to instruction audio file"
+        },
+        "content": {
+          "oneOf": [
+            { "$ref": "#/definitions/phonemicAwarenessContent" },
+            { "$ref": "#/definitions/explicitPhonicsContent" },
+            { "$ref": "#/definitions/blendingPracticeContent" },
+            { "$ref": "#/definitions/decodableReadContent" },
+            { "$ref": "#/definitions/recordReadAloudContent" },
+            { "$ref": "#/definitions/comprehensionPromptContent" },
+            { "$ref": "#/definitions/reviewContent" }
+          ]
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 300,
+          "description": "Expected duration in seconds"
+        }
+      }
+    },
+    "phonemicAwarenessContent": {
+      "type": "object",
+      "required": ["activity", "targetSound"],
+      "properties": {
+        "activity": {
+          "type": "string",
+          "enum": ["sound_identification", "blending", "segmenting", "rhyming"],
+          "description": "Type of phonemic awareness activity"
+        },
+        "targetSound": {
+          "type": "string",
+          "description": "The phoneme being practiced"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string"
+              },
+              "promptAudio": {
+                "type": "string"
+              },
+              "correctResponse": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "explicitPhonicsContent": {
+      "type": "object",
+      "required": ["grapheme", "phoneme"],
+      "properties": {
+        "grapheme": {
+          "type": "string",
+          "description": "The letter(s) being taught"
+        },
+        "phoneme": {
+          "type": "string",
+          "description": "The sound the grapheme makes"
+        },
+        "keyPhrase": {
+          "type": "string",
+          "description": "Memory phrase (e.g., 'm says /m/ like in mat')"
+        },
+        "modelWord": {
+          "type": "string",
+          "description": "Example word demonstrating the pattern"
+        },
+        "visualAsset": {
+          "type": "string",
+          "description": "Path to visual representation"
+        },
+        "audioAsset": {
+          "type": "string",
+          "description": "Path to pronunciation model audio"
+        }
+      }
+    },
+    "blendingPracticeContent": {
+      "type": "object",
+      "required": ["words"],
+      "properties": {
+        "words": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["word", "graphemes"],
+            "properties": {
+              "word": {
+                "type": "string"
+              },
+              "graphemes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "audioSegments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Audio files for each grapheme sound"
+              },
+              "blendedAudio": {
+                "type": "string",
+                "description": "Audio of the whole word"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "includeNonsenseWords": {
+          "type": "boolean",
+          "description": "Whether to include nonsense words for decoding practice"
+        }
+      }
+    },
+    "decodableReadContent": {
+      "type": "object",
+      "required": ["pages"],
+      "properties": {
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pageNumber", "text"],
+            "properties": {
+              "pageNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string"
+              },
+              "imageAsset": {
+                "type": "string"
+              },
+              "audioAsset": {
+                "type": "string"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "highlightingEnabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "recordReadAloudContent": {
+      "type": "object",
+      "required": ["textToRead"],
+      "properties": {
+        "textToRead": {
+          "type": "string",
+          "description": "Text the child should read aloud"
+        },
+        "modelAudio": {
+          "type": "string",
+          "description": "Optional model reading for reference"
+        },
+        "maxRecordingDuration": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 180,
+          "description": "Maximum recording length in seconds"
+        }
+      }
+    },
+    "comprehensionPromptContent": {
+      "type": "object",
+      "required": ["questions"],
+      "properties": {
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/comprehensionQuestion"
+          },
+          "minItems": 1,
+          "maxItems": 3
+        }
+      }
+    },
+    "reviewContent": {
+      "type": "object",
+      "required": ["reviewType", "items"],
+      "properties": {
+        "reviewType": {
+          "type": "string",
+          "enum": ["grapheme_review", "word_review", "mixed_review"]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "string"
+              },
+              "audioFile": {
+                "type": "string"
+              },
+              "fromLesson": {
+                "type": "string",
+                "description": "Lesson ID where this was first taught"
+              }
+            }
+          }
+        }
+      }
+    },
+    "audioAsset": {
+      "type": "object",
+      "required": ["assetId", "path", "type"],
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "description": "Unique identifier for the audio asset"
+        },
+        "path": {
+          "type": "string",
+          "description": "Relative path to audio file"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["instruction", "word", "sentence", "prompt", "model_reading"],
+          "description": "Type of audio content"
+        },
+        "transcript": {
+          "type": "string",
+          "description": "Text transcript of the audio"
+        },
+        "duration": {
+          "type": "number",
+          "description": "Duration in seconds"
+        }
+      }
+    },
+    "highlightPolicy": {
+      "type": "object",
+      "required": ["enabled", "granularity"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether highlighting is enabled for this lesson"
+        },
+        "granularity": {
+          "type": "string",
+          "enum": ["none", "line", "phrase"],
+          "description": "Level of highlighting granularity"
+        },
+        "cadence": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["fixed", "audio_sync"],
+              "description": "How highlighting timing is determined"
+            },
+            "minDurationMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "description": "Minimum highlight duration in milliseconds"
+            },
+            "maxDurationMs": {
+              "type": "integer",
+              "maximum": 10000,
+              "description": "Maximum highlight duration in milliseconds"
+            }
+          }
+        },
+        "style": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["background", "underline"],
+              "description": "Visual style of highlight"
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "description": "Highlight color in hex"
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 0.5,
+              "description": "Highlight opacity (must be subtle)"
+            }
+          }
+        }
+      }
+    },
+    "calmComplianceChecklist": {
+      "type": "object",
+      "required": [
+        "noScrolling",
+        "noAnimations",
+        "noVariableRewards",
+        "noPressureMechanics",
+        "clearEndpoint",
+        "singlePrimaryAction"
+      ],
+      "properties": {
+        "noScrolling": {
+          "type": "boolean",
+          "description": "Confirms no scrolling in lesson"
+        },
+        "noAnimations": {
+          "type": "boolean",
+          "description": "Confirms no celebratory animations"
+        },
+        "noVariableRewards": {
+          "type": "boolean",
+          "description": "Confirms no variable reward mechanics"
+        },
+        "noPressureMechanics": {
+          "type": "boolean",
+          "description": "Confirms no streaks, timers, or pressure"
+        },
+        "clearEndpoint": {
+          "type": "boolean",
+          "description": "Confirms lesson has clear 'All Done' ending"
+        },
+        "singlePrimaryAction": {
+          "type": "boolean",
+          "description": "Confirms each screen has max one primary action"
+        },
+        "highlightingCompliant": {
+          "type": "boolean",
+          "description": "Confirms highlighting follows calm policy"
+        },
+        "validatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When compliance was last validated"
+        },
+        "validatedBy": {
+          "type": "string",
+          "description": "Who/what validated compliance"
+        }
+      }
+    }
+  }
+}

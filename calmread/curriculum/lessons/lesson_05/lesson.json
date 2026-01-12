@@ -1,0 +1,343 @@
+{
+  "lessonId": "lesson_05",
+  "version": "1.0.0",
+  "title": "Short A Review",
+  "lessonNumber": 5,
+  "type": "review",
+  "estimatedDuration": 10,
+  "objectives": [
+    "Comprehensive review of m, s, t, a",
+    "Fluent reading of all learned words",
+    "Introduction of sight words 'a' and 'is'"
+  ],
+  "prerequisites": ["lesson_04"],
+  "graphemeConstraints": {
+    "allowedGraphemes": ["m", "s", "t", "a"],
+    "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+    "taughtPatterns": [
+      {"grapheme": "a", "phoneme": "/æ/", "isNew": false},
+      {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+      {"grapheme": "s", "phoneme": "/s/", "isNew": false},
+      {"grapheme": "t", "phoneme": "/t/", "isNew": false}
+    ],
+    "sightWords": ["the", "a", "is"]
+  },
+  "steps": [
+    {
+      "stepId": "step_01",
+      "stepNumber": 1,
+      "type": "review",
+      "title": "Sound Review",
+      "instruction": "Today we review everything! Let's start with our sounds.",
+      "audioAssetId": "instruction_intro",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "Review Day!",
+        "visualElements": []
+      }
+    },
+    {
+      "stepId": "step_02",
+      "stepNumber": 2,
+      "type": "discrimination",
+      "title": "Sound Check",
+      "instruction": "I will say a sound. Point to the letter.",
+      "audioAssetId": "instruction_sound_check",
+      "interactionType": "select",
+      "requiredAction": "select_letter",
+      "content": {
+        "displayText": "Which letter?",
+        "options": [
+          {"id": "opt_m", "display": "M", "grapheme": "m"},
+          {"id": "opt_s", "display": "S", "grapheme": "s"},
+          {"id": "opt_t", "display": "T", "grapheme": "t"},
+          {"id": "opt_a", "display": "A", "grapheme": "a"}
+        ],
+        "trials": [
+          {"audioAssetId": "phoneme_a", "correctOption": "opt_a"},
+          {"audioAssetId": "phoneme_m", "correctOption": "opt_m"},
+          {"audioAssetId": "phoneme_t", "correctOption": "opt_t"},
+          {"audioAssetId": "phoneme_s", "correctOption": "opt_s"},
+          {"audioAssetId": "phoneme_a", "correctOption": "opt_a"},
+          {"audioAssetId": "phoneme_t", "correctOption": "opt_t"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_03",
+      "stepNumber": 3,
+      "type": "practice",
+      "title": "Say All Sounds",
+      "instruction": "Say all four sounds: /m/ ... /s/ ... /t/ ... /æ/.",
+      "audioAssetId": "prompt_all_sounds",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "M  S  T  A",
+        "recordingPrompt": "Say all four sounds",
+        "maxRecordingDuration": 12
+      }
+    },
+    {
+      "stepId": "step_04",
+      "stepNumber": 4,
+      "type": "blending_practice",
+      "title": "Word Review",
+      "instruction": "Let's read all our words. Listen first.",
+      "audioAssetId": "instruction_word_review",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "mat  sat  tam\nat  am\nSam  Tam",
+        "words": ["mat", "sat", "tam", "at", "am", "Sam", "Tam"],
+        "visualElements": [
+          {"type": "word_list", "content": ["mat", "sat", "tam", "at", "am", "Sam", "Tam"], "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_05",
+      "stepNumber": 5,
+      "type": "practice",
+      "title": "Read All Words",
+      "instruction": "Now you read all the words.",
+      "audioAssetId": "prompt_read_all",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "mat  sat  tam\nat  am\nSam  Tam",
+        "words": ["mat", "sat", "tam", "at", "am", "Sam", "Tam"],
+        "recordingPrompt": "Read all the words",
+        "maxRecordingDuration": 20
+      }
+    },
+    {
+      "stepId": "step_06",
+      "stepNumber": 6,
+      "type": "sight_word",
+      "title": "Review: the",
+      "instruction": "Here is our sight word 'the'. Say 'the'.",
+      "audioAssetId": "instruction_the",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "the",
+        "sightWord": "the",
+        "visualElements": [
+          {"type": "sight_word_display", "content": "the", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_07",
+      "stepNumber": 7,
+      "type": "sight_word",
+      "title": "New Sight Word: a",
+      "instruction": "Here is a new sight word. This word is 'a'. Say 'a'.",
+      "audioAssetId": "instruction_sight_a",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "a",
+        "sightWord": "a",
+        "visualElements": [
+          {"type": "sight_word_display", "content": "a", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_08",
+      "stepNumber": 8,
+      "type": "sight_word",
+      "title": "New Sight Word: is",
+      "instruction": "Here is another new sight word. This word is 'is'. Say 'is'.",
+      "audioAssetId": "instruction_sight_is",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "is",
+        "sightWord": "is",
+        "visualElements": [
+          {"type": "sight_word_display", "content": "is", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_09",
+      "stepNumber": 9,
+      "type": "practice",
+      "title": "Read Sight Words",
+      "instruction": "Read all three sight words: the, a, is.",
+      "audioAssetId": "prompt_sight_words",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "the    a    is",
+        "sightWords": ["the", "a", "is"],
+        "recordingPrompt": "Read: the, a, is",
+        "maxRecordingDuration": 8
+      }
+    },
+    {
+      "stepId": "step_10",
+      "stepNumber": 10,
+      "type": "decodable_read",
+      "title": "Story Time",
+      "instruction": "Now let's read a longer story. Listen first.",
+      "audioAssetId": "instruction_story",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "Sam is at the mat.\nTam is at the mat.\nSam sat.\nTam sat.\nA mat! A mat!\nSam sat at a mat.\nTam sat at a mat.",
+        "passage": "Sam is at the mat. Tam is at the mat. Sam sat. Tam sat. A mat! A mat! Sam sat at a mat. Tam sat at a mat.",
+        "highlightingEnabled": true,
+        "highlightGranularity": "line"
+      }
+    },
+    {
+      "stepId": "step_11",
+      "stepNumber": 11,
+      "type": "record_read_aloud",
+      "title": "Your Turn to Read",
+      "instruction": "Now you read the story. Take your time.",
+      "audioAssetId": "prompt_your_read",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "Sam is at the mat.\nTam is at the mat.\nSam sat.\nTam sat.\nA mat! A mat!\nSam sat at a mat.\nTam sat at a mat.",
+        "passage": "Sam is at the mat. Tam is at the mat. Sam sat. Tam sat. A mat! A mat! Sam sat at a mat. Tam sat at a mat.",
+        "recordingPrompt": "Read the whole story",
+        "maxRecordingDuration": 60
+      }
+    },
+    {
+      "stepId": "step_12",
+      "stepNumber": 12,
+      "type": "comprehension_prompt",
+      "title": "Question 1",
+      "instruction": "Where is Sam?",
+      "audioAssetId": "prompt_q1",
+      "interactionType": "select",
+      "requiredAction": "select_answer",
+      "content": {
+        "question": "Where is Sam?",
+        "questionType": "literal",
+        "options": [
+          {"id": "opt_mat", "display": "at the mat", "correct": true},
+          {"id": "opt_tam", "display": "at Tam", "correct": false}
+        ]
+      }
+    },
+    {
+      "stepId": "step_13",
+      "stepNumber": 13,
+      "type": "comprehension_prompt",
+      "title": "Question 2",
+      "instruction": "Who sat at a mat?",
+      "audioAssetId": "prompt_q2",
+      "interactionType": "select",
+      "requiredAction": "select_answer",
+      "content": {
+        "question": "Who sat at a mat?",
+        "questionType": "literal",
+        "options": [
+          {"id": "opt_both", "display": "Sam and Tam", "correct": true},
+          {"id": "opt_mat", "display": "The mat", "correct": false}
+        ]
+      }
+    },
+    {
+      "stepId": "step_14",
+      "stepNumber": 14,
+      "type": "review",
+      "title": "Great Work",
+      "instruction": "Great work! You know all these sounds and words now.",
+      "audioAssetId": "instruction_great_work",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "Sounds: M S T A\n\nWords: mat, sat, tam, at, am\n\nSight Words: the, a, is",
+        "visualElements": []
+      }
+    },
+    {
+      "stepId": "step_15",
+      "stepNumber": 15,
+      "type": "completion",
+      "title": "All Done",
+      "instruction": "All done. You completed the short a review.",
+      "audioAssetId": "prompt_completion",
+      "interactionType": "listen",
+      "requiredAction": "tap_finish",
+      "content": {
+        "displayText": "All Done",
+        "completionMessage": "You completed the short a review. Great reading!"
+      }
+    }
+  ],
+  "wordList": [
+    {"word": "mat", "graphemes": ["m", "a", "t"], "phonemes": ["/m/", "/æ/", "/t/"], "isTargetPattern": true, "isReview": true},
+    {"word": "sat", "graphemes": ["s", "a", "t"], "phonemes": ["/s/", "/æ/", "/t/"], "isTargetPattern": true, "isReview": true},
+    {"word": "tam", "graphemes": ["t", "a", "m"], "phonemes": ["/t/", "/æ/", "/m/"], "isTargetPattern": true, "isReview": true},
+    {"word": "at", "graphemes": ["a", "t"], "phonemes": ["/æ/", "/t/"], "isTargetPattern": true, "isReview": true},
+    {"word": "am", "graphemes": ["a", "m"], "phonemes": ["/æ/", "/m/"], "isTargetPattern": true, "isReview": true},
+    {"word": "Sam", "graphemes": ["s", "a", "m"], "phonemes": ["/s/", "/æ/", "/m/"], "isTargetPattern": true, "isReview": true},
+    {"word": "Tam", "graphemes": ["t", "a", "m"], "phonemes": ["/t/", "/æ/", "/m/"], "isTargetPattern": true, "isReview": true}
+  ],
+  "decodableText": {
+    "title": "Sam and Tam at the Mat",
+    "sentences": [
+      {"text": "Sam is at the mat.", "words": ["Sam", "is", "at", "the", "mat"]},
+      {"text": "Tam is at the mat.", "words": ["Tam", "is", "at", "the", "mat"]},
+      {"text": "Sam sat.", "words": ["Sam", "sat"]},
+      {"text": "Tam sat.", "words": ["Tam", "sat"]},
+      {"text": "A mat!", "words": ["A", "mat"]},
+      {"text": "A mat!", "words": ["A", "mat"]},
+      {"text": "Sam sat at a mat.", "words": ["Sam", "sat", "at", "a", "mat"]},
+      {"text": "Tam sat at a mat.", "words": ["Tam", "sat", "at", "a", "mat"]}
+    ],
+    "totalWords": 32,
+    "decodableWords": 24,
+    "sightWords": 8,
+    "decodablePercentage": 75.0
+  },
+  "audioAssets": [
+    {"assetId": "instruction_intro", "path": "prompts/instruction_intro.mp3", "type": "instruction", "transcript": "Today we review everything! Let's start with our sounds.", "duration": 3.5},
+    {"assetId": "instruction_sound_check", "path": "prompts/instruction_sound_check.mp3", "type": "instruction", "transcript": "I will say a sound. Point to the letter.", "duration": 3.0},
+    {"assetId": "phoneme_m", "path": "words/phoneme_m.mp3", "type": "phoneme", "transcript": "/m/", "duration": 1.0},
+    {"assetId": "phoneme_s", "path": "words/phoneme_s.mp3", "type": "phoneme", "transcript": "/s/", "duration": 1.0},
+    {"assetId": "phoneme_t", "path": "words/phoneme_t.mp3", "type": "phoneme", "transcript": "/t/", "duration": 1.0},
+    {"assetId": "phoneme_a", "path": "words/phoneme_a.mp3", "type": "phoneme", "transcript": "/æ/", "duration": 1.0},
+    {"assetId": "prompt_all_sounds", "path": "prompts/prompt_all_sounds.mp3", "type": "prompt", "transcript": "Say all four sounds: /m/ ... /s/ ... /t/ ... /æ/.", "duration": 5.0},
+    {"assetId": "instruction_word_review", "path": "prompts/instruction_word_review.mp3", "type": "instruction", "transcript": "Let's read all our words. Listen first.", "duration": 3.0},
+    {"assetId": "prompt_read_all", "path": "prompts/prompt_read_all.mp3", "type": "prompt", "transcript": "Now you read all the words.", "duration": 2.5},
+    {"assetId": "instruction_the", "path": "prompts/instruction_the.mp3", "type": "instruction", "transcript": "Here is our sight word 'the'. Say 'the'.", "duration": 3.0},
+    {"assetId": "instruction_sight_a", "path": "prompts/instruction_sight_a.mp3", "type": "instruction", "transcript": "Here is a new sight word. This word is 'a'. Say 'a'.", "duration": 4.0},
+    {"assetId": "instruction_sight_is", "path": "prompts/instruction_sight_is.mp3", "type": "instruction", "transcript": "Here is another new sight word. This word is 'is'. Say 'is'.", "duration": 4.5},
+    {"assetId": "prompt_sight_words", "path": "prompts/prompt_sight_words.mp3", "type": "prompt", "transcript": "Read all three sight words: the, a, is.", "duration": 3.5},
+    {"assetId": "instruction_story", "path": "prompts/instruction_story.mp3", "type": "instruction", "transcript": "Now let's read a longer story. Listen first.", "duration": 3.0},
+    {"assetId": "prompt_your_read", "path": "prompts/prompt_your_read.mp3", "type": "prompt", "transcript": "Now you read the story. Take your time.", "duration": 3.0},
+    {"assetId": "prompt_q1", "path": "prompts/prompt_q1.mp3", "type": "prompt", "transcript": "Where is Sam?", "duration": 1.5},
+    {"assetId": "prompt_q2", "path": "prompts/prompt_q2.mp3", "type": "prompt", "transcript": "Who sat at a mat?", "duration": 2.0},
+    {"assetId": "instruction_great_work", "path": "prompts/instruction_great_work.mp3", "type": "instruction", "transcript": "Great work! You know all these sounds and words now.", "duration": 3.5},
+    {"assetId": "prompt_completion", "path": "prompts/prompt_completion.mp3", "type": "prompt", "transcript": "All done. You completed the short a review.", "duration": 3.0},
+    {"assetId": "word_mat", "path": "words/word_mat.mp3", "type": "word", "transcript": "mat", "duration": 1.0},
+    {"assetId": "word_sat", "path": "words/word_sat.mp3", "type": "word", "transcript": "sat", "duration": 1.0},
+    {"assetId": "word_tam", "path": "words/word_tam.mp3", "type": "word", "transcript": "tam", "duration": 1.0},
+    {"assetId": "word_at", "path": "words/word_at.mp3", "type": "word", "transcript": "at", "duration": 0.8},
+    {"assetId": "word_am", "path": "words/word_am.mp3", "type": "word", "transcript": "am", "duration": 0.8},
+    {"assetId": "word_sam", "path": "words/word_sam.mp3", "type": "word", "transcript": "Sam", "duration": 1.0},
+    {"assetId": "word_tam_name", "path": "words/word_tam_name.mp3", "type": "word", "transcript": "Tam", "duration": 1.0},
+    {"assetId": "sight_the", "path": "words/sight_the.mp3", "type": "sight_word", "transcript": "the", "duration": 0.8},
+    {"assetId": "sight_a", "path": "words/sight_a.mp3", "type": "sight_word", "transcript": "a", "duration": 0.5},
+    {"assetId": "sight_is", "path": "words/sight_is.mp3", "type": "sight_word", "transcript": "is", "duration": 0.6}
+  ],
+  "metadata": {
+    "createdAt": "2026-01-11T00:00:00Z",
+    "updatedAt": "2026-01-11T00:00:00Z",
+    "author": "CalmRead Content Generator",
+    "reviewStatus": "approved",
+    "qaReportId": "qa_lesson_05_v1"
+  }
+}

@@ -1,0 +1,400 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://calmread.com/schemas/scope-sequence/v1.0.0",
+  "title": "CalmRead Scope and Sequence Schema",
+  "description": "Schema for curriculum scope and sequence. Version 1.0.0",
+  "type": "object",
+  "required": [
+    "version",
+    "title",
+    "description",
+    "targetAgeRange",
+    "totalLessons",
+    "phases",
+    "lessons"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the scope and sequence"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title of the curriculum"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the curriculum scope"
+    },
+    "targetAgeRange": {
+      "type": "object",
+      "required": ["min", "max"],
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 10
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 10
+        }
+      }
+    },
+    "totalLessons": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Total number of lessons in the sequence"
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/phase"
+      },
+      "minItems": 1,
+      "description": "Major phases of the curriculum"
+    },
+    "graphemeProgression": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/graphemeIntroduction"
+      },
+      "description": "Order in which graphemes are introduced"
+    },
+    "sightWordProgression": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/sightWordSet"
+      },
+      "description": "High-frequency words introduced by lesson"
+    },
+    "reviewCadence": {
+      "$ref": "#/definitions/reviewCadence",
+      "description": "Rules for spaced review"
+    },
+    "lessons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/lessonEntry"
+      },
+      "minItems": 1,
+      "description": "Complete lesson sequence"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "author": {
+          "type": "string"
+        },
+        "researchBasis": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Research citations supporting sequence"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "phase": {
+      "type": "object",
+      "required": ["phaseId", "title", "lessonRange", "focus"],
+      "properties": {
+        "phaseId": {
+          "type": "string",
+          "pattern": "^phase_[0-9]{2}$",
+          "description": "Unique phase identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Phase title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Phase description and goals"
+        },
+        "lessonRange": {
+          "type": "object",
+          "required": ["start", "end"],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "focus": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Primary instructional focus areas"
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Skills assumed before this phase"
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Expected outcomes after this phase"
+        }
+      }
+    },
+    "graphemeIntroduction": {
+      "type": "object",
+      "required": ["grapheme", "phoneme", "lessonId", "order"],
+      "properties": {
+        "grapheme": {
+          "type": "string",
+          "description": "The letter(s)"
+        },
+        "phoneme": {
+          "type": "string",
+          "description": "The sound (IPA or simplified)"
+        },
+        "lessonId": {
+          "type": "string",
+          "description": "Lesson where introduced"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Order of introduction"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "consonant_continuous",
+            "consonant_stop",
+            "short_vowel",
+            "long_vowel",
+            "digraph",
+            "blend",
+            "r_controlled",
+            "vowel_team",
+            "silent_e"
+          ],
+          "description": "Phonics category"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why introduced at this point"
+        }
+      }
+    },
+    "sightWordSet": {
+      "type": "object",
+      "required": ["lessonId", "words"],
+      "properties": {
+        "lessonId": {
+          "type": "string",
+          "description": "Lesson where words are introduced"
+        },
+        "words": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Sight words introduced"
+        },
+        "cumulativeCount": {
+          "type": "integer",
+          "description": "Total sight words known after this lesson"
+        }
+      }
+    },
+    "reviewCadence": {
+      "type": "object",
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["lessonsAgo", "reviewIntensity"],
+            "properties": {
+              "lessonsAgo": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "reviewIntensity": {
+                "type": "string",
+                "enum": ["heavy", "moderate", "maintenance"],
+                "description": "How much review to include"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "reviewLessonFrequency": {
+          "type": "integer",
+          "description": "How often dedicated review lessons occur"
+        }
+      }
+    },
+    "lessonEntry": {
+      "type": "object",
+      "required": [
+        "lessonId",
+        "lessonNumber",
+        "title",
+        "type",
+        "taughtPatterns",
+        "allowedGraphemes"
+      ],
+      "properties": {
+        "lessonId": {
+          "type": "string",
+          "pattern": "^lesson_[0-9]{2}$",
+          "description": "Unique lesson identifier"
+        },
+        "lessonNumber": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Sequential lesson number"
+        },
+        "title": {
+          "type": "string",
+          "description": "Lesson title"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["instruction", "review", "assessment"],
+          "description": "Primary lesson type"
+        },
+        "phaseId": {
+          "type": "string",
+          "description": "Phase this lesson belongs to"
+        },
+        "taughtPatterns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["grapheme", "phoneme"],
+            "properties": {
+              "grapheme": {
+                "type": "string"
+              },
+              "phoneme": {
+                "type": "string"
+              },
+              "isNew": {
+                "type": "boolean",
+                "description": "Whether this is newly introduced"
+              }
+            }
+          },
+          "description": "Patterns taught or reviewed in this lesson"
+        },
+        "allowedGraphemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "All graphemes allowed in decodable content (cumulative)"
+        },
+        "bannedGraphemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Graphemes that must not appear"
+        },
+        "newSightWords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "New sight words introduced"
+        },
+        "cumulativeSightWords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "All sight words known (cumulative)"
+        },
+        "reviewOf": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lesson IDs being reviewed"
+        },
+        "decodableConstraints": {
+          "type": "object",
+          "properties": {
+            "maxWordLength": {
+              "type": "integer",
+              "description": "Maximum syllables per word"
+            },
+            "allowedStructures": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["CVC", "VC", "CV", "CVCC", "CCVC", "CCVCC"]
+              },
+              "description": "Allowed word structures"
+            },
+            "targetSuccessRate": {
+              "type": "number",
+              "minimum": 0.8,
+              "maximum": 1.0,
+              "description": "Target accuracy rate"
+            }
+          }
+        },
+        "objectives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Learning objectives for this lesson"
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Required prior knowledge"
+        },
+        "estimatedDuration": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 15,
+          "description": "Expected duration in minutes"
+        }
+      }
+    }
+  }
+}

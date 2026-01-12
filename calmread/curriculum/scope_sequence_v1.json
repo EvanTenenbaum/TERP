@@ -1,0 +1,611 @@
+{
+  "version": "1.0.0",
+  "title": "CalmRead Foundational Reading Curriculum",
+  "description": "A 20-lesson structured literacy curriculum focusing on CVC words and short vowels for early readers ages 4-8.",
+  "targetAgeRange": {
+    "min": 4,
+    "max": 8
+  },
+  "totalLessons": 20,
+  "phases": [
+    {
+      "phaseId": "phase_01",
+      "title": "Consonant Introduction",
+      "description": "Introduce high-frequency continuous consonants that are easy to blend.",
+      "lessonRange": {
+        "start": 1,
+        "end": 2
+      },
+      "focus": ["consonant sounds", "letter recognition", "sound production"],
+      "prerequisites": ["letter name knowledge helpful but not required"],
+      "outcomes": ["identify m, s, t sounds", "produce m, s, t sounds in isolation"]
+    },
+    {
+      "phaseId": "phase_02",
+      "title": "First Vowel and CVC Words",
+      "description": "Introduce short 'a' and begin blending CVC words.",
+      "lessonRange": {
+        "start": 3,
+        "end": 5
+      },
+      "focus": ["short vowel a", "CVC blending", "decodable reading"],
+      "prerequisites": ["m, s, t sounds mastered"],
+      "outcomes": ["blend CVC words with short a", "read simple decodable sentences"]
+    },
+    {
+      "phaseId": "phase_03",
+      "title": "Expanding Consonants",
+      "description": "Add more consonants while maintaining short 'a' focus.",
+      "lessonRange": {
+        "start": 6,
+        "end": 8
+      },
+      "focus": ["new consonants p, n, c", "expanded word families", "fluency building"],
+      "prerequisites": ["CVC blending with m, s, t, a"],
+      "outcomes": ["blend CVC words with expanded consonant set", "increased reading fluency"]
+    },
+    {
+      "phaseId": "phase_04",
+      "title": "Second Vowel Introduction",
+      "description": "Introduce short 'i' and practice vowel discrimination.",
+      "lessonRange": {
+        "start": 9,
+        "end": 12
+      },
+      "focus": ["short vowel i", "vowel discrimination", "mixed CVC practice"],
+      "prerequisites": ["short a mastery", "consonants m, s, t, p, n, c"],
+      "outcomes": ["distinguish short a from short i", "read CVC words with both vowels"]
+    },
+    {
+      "phaseId": "phase_05",
+      "title": "Consolidation and Review",
+      "description": "Comprehensive review and fluency building with all learned patterns.",
+      "lessonRange": {
+        "start": 13,
+        "end": 15
+      },
+      "focus": ["cumulative review", "fluency", "confidence building"],
+      "prerequisites": ["all prior patterns"],
+      "outcomes": ["automatic recognition of learned patterns", "smooth oral reading"]
+    },
+    {
+      "phaseId": "phase_06",
+      "title": "Third Vowel and Expansion",
+      "description": "Introduce short 'o' and additional consonants.",
+      "lessonRange": {
+        "start": 16,
+        "end": 20
+      },
+      "focus": ["short vowel o", "new consonants", "three-vowel discrimination"],
+      "prerequisites": ["short a and i mastery"],
+      "outcomes": ["read CVC words with a, i, o", "decode novel words independently"]
+    }
+  ],
+  "graphemeProgression": [
+    {"grapheme": "m", "phoneme": "/m/", "lessonId": "lesson_01", "order": 1, "category": "consonant_continuous", "rationale": "High frequency, continuous sound easy to blend"},
+    {"grapheme": "s", "phoneme": "/s/", "lessonId": "lesson_01", "order": 2, "category": "consonant_continuous", "rationale": "High frequency, continuous sound"},
+    {"grapheme": "t", "phoneme": "/t/", "lessonId": "lesson_02", "order": 3, "category": "consonant_stop", "rationale": "High frequency, common in CVC words"},
+    {"grapheme": "a", "phoneme": "/æ/", "lessonId": "lesson_03", "order": 4, "category": "short_vowel", "rationale": "Most common short vowel, enables first CVC words"},
+    {"grapheme": "p", "phoneme": "/p/", "lessonId": "lesson_06", "order": 5, "category": "consonant_stop", "rationale": "Expands word possibilities"},
+    {"grapheme": "n", "phoneme": "/n/", "lessonId": "lesson_07", "order": 6, "category": "consonant_continuous", "rationale": "High frequency, continuous sound"},
+    {"grapheme": "c", "phoneme": "/k/", "lessonId": "lesson_08", "order": 7, "category": "consonant_stop", "rationale": "Common consonant, hard c sound only"},
+    {"grapheme": "i", "phoneme": "/ɪ/", "lessonId": "lesson_09", "order": 8, "category": "short_vowel", "rationale": "Second vowel enables vowel discrimination"},
+    {"grapheme": "d", "phoneme": "/d/", "lessonId": "lesson_11", "order": 9, "category": "consonant_stop", "rationale": "Common consonant, pairs with t"},
+    {"grapheme": "o", "phoneme": "/ɒ/", "lessonId": "lesson_16", "order": 10, "category": "short_vowel", "rationale": "Third vowel expands reading ability"},
+    {"grapheme": "g", "phoneme": "/ɡ/", "lessonId": "lesson_17", "order": 11, "category": "consonant_stop", "rationale": "Hard g sound only"},
+    {"grapheme": "h", "phoneme": "/h/", "lessonId": "lesson_18", "order": 12, "category": "consonant_continuous", "rationale": "Common initial consonant"}
+  ],
+  "sightWordProgression": [
+    {"lessonId": "lesson_03", "words": ["the"], "cumulativeCount": 1},
+    {"lessonId": "lesson_05", "words": ["a", "is"], "cumulativeCount": 3},
+    {"lessonId": "lesson_09", "words": ["I"], "cumulativeCount": 4},
+    {"lessonId": "lesson_13", "words": ["to", "and"], "cumulativeCount": 6},
+    {"lessonId": "lesson_16", "words": ["on"], "cumulativeCount": 7}
+  ],
+  "reviewCadence": {
+    "rules": [
+      {"lessonsAgo": {"min": 1, "max": 3}, "reviewIntensity": "heavy", "description": "Recent content needs heavy review"},
+      {"lessonsAgo": {"min": 4, "max": 10}, "reviewIntensity": "moderate", "description": "Older content needs moderate review"},
+      {"lessonsAgo": {"min": 11, "max": null}, "reviewIntensity": "maintenance", "description": "Mastered content needs maintenance"}
+    ],
+    "reviewLessonFrequency": 5
+  },
+  "lessons": [
+    {
+      "lessonId": "lesson_01",
+      "lessonNumber": 1,
+      "title": "Meet M and S",
+      "type": "instruction",
+      "phaseId": "phase_01",
+      "taughtPatterns": [
+        {"grapheme": "m", "phoneme": "/m/", "isNew": true},
+        {"grapheme": "s", "phoneme": "/s/", "isNew": true}
+      ],
+      "allowedGraphemes": ["m", "s"],
+      "bannedGraphemes": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "t", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": [],
+      "reviewOf": [],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": [],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Identify the letter m and its sound /m/", "Identify the letter s and its sound /s/", "Produce /m/ and /s/ sounds in isolation"],
+      "prerequisites": [],
+      "estimatedDuration": 8
+    },
+    {
+      "lessonId": "lesson_02",
+      "lessonNumber": 2,
+      "title": "Meet T",
+      "type": "instruction",
+      "phaseId": "phase_01",
+      "taughtPatterns": [
+        {"grapheme": "t", "phoneme": "/t/", "isNew": true},
+        {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+        {"grapheme": "s", "phoneme": "/s/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t"],
+      "bannedGraphemes": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": [],
+      "reviewOf": ["lesson_01"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": [],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Identify the letter t and its sound /t/", "Review m and s sounds", "Distinguish between m, s, and t"],
+      "prerequisites": ["lesson_01"],
+      "estimatedDuration": 8
+    },
+    {
+      "lessonId": "lesson_03",
+      "lessonNumber": 3,
+      "title": "Short A - First Words",
+      "type": "instruction",
+      "phaseId": "phase_02",
+      "taughtPatterns": [
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": true},
+        {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+        {"grapheme": "s", "phoneme": "/s/", "isNew": false},
+        {"grapheme": "t", "phoneme": "/t/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a"],
+      "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": ["the"],
+      "cumulativeSightWords": ["the"],
+      "reviewOf": ["lesson_01", "lesson_02"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify short a sound /æ/", "Blend CVC words: mat, sat, tam", "Read first decodable sentences"],
+      "prerequisites": ["lesson_01", "lesson_02"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_04",
+      "lessonNumber": 4,
+      "title": "Short A Practice",
+      "type": "instruction",
+      "phaseId": "phase_02",
+      "taughtPatterns": [
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false},
+        {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+        {"grapheme": "s", "phoneme": "/s/", "isNew": false},
+        {"grapheme": "t", "phoneme": "/t/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a"],
+      "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the"],
+      "reviewOf": ["lesson_03"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Practice blending CVC words with short a", "Build fluency with mat, sat, tam, at, am", "Read decodable passage"],
+      "prerequisites": ["lesson_03"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_05",
+      "lessonNumber": 5,
+      "title": "Short A Review",
+      "type": "review",
+      "phaseId": "phase_02",
+      "taughtPatterns": [
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false},
+        {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+        {"grapheme": "s", "phoneme": "/s/", "isNew": false},
+        {"grapheme": "t", "phoneme": "/t/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a"],
+      "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": ["a", "is"],
+      "cumulativeSightWords": ["the", "a", "is"],
+      "reviewOf": ["lesson_01", "lesson_02", "lesson_03", "lesson_04"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Comprehensive review of m, s, t, a", "Fluent reading of all learned words", "Introduction of sight words 'a' and 'is'"],
+      "prerequisites": ["lesson_04"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_06",
+      "lessonNumber": 6,
+      "title": "Meet P",
+      "type": "instruction",
+      "phaseId": "phase_03",
+      "taughtPatterns": [
+        {"grapheme": "p", "phoneme": "/p/", "isNew": true},
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p"],
+      "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is"],
+      "reviewOf": ["lesson_03", "lesson_04", "lesson_05"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify the letter p and its sound /p/", "Blend new CVC words: pat, tap, map, sap", "Read expanded decodable text"],
+      "prerequisites": ["lesson_05"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_07",
+      "lessonNumber": 7,
+      "title": "Meet N",
+      "type": "instruction",
+      "phaseId": "phase_03",
+      "taughtPatterns": [
+        {"grapheme": "n", "phoneme": "/n/", "isNew": true},
+        {"grapheme": "p", "phoneme": "/p/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n"],
+      "bannedGraphemes": ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is"],
+      "reviewOf": ["lesson_05", "lesson_06"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify the letter n and its sound /n/", "Blend new CVC words: nap, tan, pan, man", "Distinguish n from m"],
+      "prerequisites": ["lesson_06"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_08",
+      "lessonNumber": 8,
+      "title": "Meet C (Hard Sound)",
+      "type": "instruction",
+      "phaseId": "phase_03",
+      "taughtPatterns": [
+        {"grapheme": "c", "phoneme": "/k/", "isNew": true},
+        {"grapheme": "n", "phoneme": "/n/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c"],
+      "bannedGraphemes": ["b", "d", "e", "f", "g", "h", "i", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is"],
+      "reviewOf": ["lesson_06", "lesson_07"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify the letter c and its hard sound /k/", "Blend new CVC words: cat, can, cap", "Read longer decodable passage"],
+      "prerequisites": ["lesson_07"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_09",
+      "lessonNumber": 9,
+      "title": "Short I Introduction",
+      "type": "instruction",
+      "phaseId": "phase_04",
+      "taughtPatterns": [
+        {"grapheme": "i", "phoneme": "/ɪ/", "isNew": true},
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i"],
+      "bannedGraphemes": ["b", "d", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": ["I"],
+      "cumulativeSightWords": ["the", "a", "is", "I"],
+      "reviewOf": ["lesson_07", "lesson_08"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify short i sound /ɪ/", "Distinguish short i from short a", "Blend CVC words: sit, tip, pin, mit"],
+      "prerequisites": ["lesson_08"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_10",
+      "lessonNumber": 10,
+      "title": "Short I Practice",
+      "type": "instruction",
+      "phaseId": "phase_04",
+      "taughtPatterns": [
+        {"grapheme": "i", "phoneme": "/ɪ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i"],
+      "bannedGraphemes": ["b", "d", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I"],
+      "reviewOf": ["lesson_09"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Practice short i words", "Build fluency with i words", "Mixed a and i word reading"],
+      "prerequisites": ["lesson_09"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_11",
+      "lessonNumber": 11,
+      "title": "Meet D",
+      "type": "instruction",
+      "phaseId": "phase_04",
+      "taughtPatterns": [
+        {"grapheme": "d", "phoneme": "/d/", "isNew": true},
+        {"grapheme": "i", "phoneme": "/ɪ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d"],
+      "bannedGraphemes": ["b", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I"],
+      "reviewOf": ["lesson_09", "lesson_10"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify the letter d and its sound /d/", "Distinguish d from t", "Blend new words: dad, did, dip, dim"],
+      "prerequisites": ["lesson_10"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_12",
+      "lessonNumber": 12,
+      "title": "A and I Mixed Practice",
+      "type": "instruction",
+      "phaseId": "phase_04",
+      "taughtPatterns": [
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false},
+        {"grapheme": "i", "phoneme": "/ɪ/", "isNew": false},
+        {"grapheme": "d", "phoneme": "/d/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d"],
+      "bannedGraphemes": ["b", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I"],
+      "reviewOf": ["lesson_09", "lesson_10", "lesson_11"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Discriminate between short a and short i", "Read mixed vowel passages", "Build automaticity"],
+      "prerequisites": ["lesson_11"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_13",
+      "lessonNumber": 13,
+      "title": "Cumulative Review 1",
+      "type": "review",
+      "phaseId": "phase_05",
+      "taughtPatterns": [
+        {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+        {"grapheme": "s", "phoneme": "/s/", "isNew": false},
+        {"grapheme": "t", "phoneme": "/t/", "isNew": false},
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false},
+        {"grapheme": "p", "phoneme": "/p/", "isNew": false},
+        {"grapheme": "n", "phoneme": "/n/", "isNew": false},
+        {"grapheme": "c", "phoneme": "/k/", "isNew": false},
+        {"grapheme": "i", "phoneme": "/ɪ/", "isNew": false},
+        {"grapheme": "d", "phoneme": "/d/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d"],
+      "bannedGraphemes": ["b", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": ["to", "and"],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and"],
+      "reviewOf": ["lesson_01", "lesson_02", "lesson_03", "lesson_04", "lesson_05", "lesson_06", "lesson_07", "lesson_08", "lesson_09", "lesson_10", "lesson_11", "lesson_12"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Review all graphemes learned", "Fluent reading of all word types", "Introduction of sight words 'to' and 'and'"],
+      "prerequisites": ["lesson_12"],
+      "estimatedDuration": 12
+    },
+    {
+      "lessonId": "lesson_14",
+      "lessonNumber": 14,
+      "title": "Fluency Building 1",
+      "type": "instruction",
+      "phaseId": "phase_05",
+      "taughtPatterns": [],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d"],
+      "bannedGraphemes": ["b", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and"],
+      "reviewOf": ["lesson_13"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Build reading fluency", "Practice connected text reading", "Develop automaticity"],
+      "prerequisites": ["lesson_13"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_15",
+      "lessonNumber": 15,
+      "title": "Fluency Building 2",
+      "type": "instruction",
+      "phaseId": "phase_05",
+      "taughtPatterns": [],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d"],
+      "bannedGraphemes": ["b", "e", "f", "g", "h", "j", "k", "l", "o", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and"],
+      "reviewOf": ["lesson_13", "lesson_14"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Continue fluency building", "Longer passages", "Confidence building"],
+      "prerequisites": ["lesson_14"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_16",
+      "lessonNumber": 16,
+      "title": "Short O Introduction",
+      "type": "instruction",
+      "phaseId": "phase_06",
+      "taughtPatterns": [
+        {"grapheme": "o", "phoneme": "/ɒ/", "isNew": true}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d", "o"],
+      "bannedGraphemes": ["b", "e", "f", "g", "h", "j", "k", "l", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": ["on"],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and", "on"],
+      "reviewOf": ["lesson_13", "lesson_14", "lesson_15"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify short o sound /ɒ/", "Distinguish o from a and i", "Blend CVC words: pot, top, mop, cot"],
+      "prerequisites": ["lesson_15"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_17",
+      "lessonNumber": 17,
+      "title": "Meet G (Hard Sound)",
+      "type": "instruction",
+      "phaseId": "phase_06",
+      "taughtPatterns": [
+        {"grapheme": "g", "phoneme": "/ɡ/", "isNew": true},
+        {"grapheme": "o", "phoneme": "/ɒ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d", "o", "g"],
+      "bannedGraphemes": ["b", "e", "f", "h", "j", "k", "l", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and", "on"],
+      "reviewOf": ["lesson_16"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify the letter g and its hard sound /ɡ/", "Blend new words: got, gap, gig, dig", "Practice three-vowel discrimination"],
+      "prerequisites": ["lesson_16"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_18",
+      "lessonNumber": 18,
+      "title": "Meet H",
+      "type": "instruction",
+      "phaseId": "phase_06",
+      "taughtPatterns": [
+        {"grapheme": "h", "phoneme": "/h/", "isNew": true},
+        {"grapheme": "g", "phoneme": "/ɡ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d", "o", "g", "h"],
+      "bannedGraphemes": ["b", "e", "f", "j", "k", "l", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and", "on"],
+      "reviewOf": ["lesson_16", "lesson_17"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Identify the letter h and its sound /h/", "Blend new words: hat, hit, hot, hip, hop", "Read expanded passages"],
+      "prerequisites": ["lesson_17"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_19",
+      "lessonNumber": 19,
+      "title": "Three Vowel Practice",
+      "type": "instruction",
+      "phaseId": "phase_06",
+      "taughtPatterns": [
+        {"grapheme": "a", "phoneme": "/æ/", "isNew": false},
+        {"grapheme": "i", "phoneme": "/ɪ/", "isNew": false},
+        {"grapheme": "o", "phoneme": "/ɒ/", "isNew": false}
+      ],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d", "o", "g", "h"],
+      "bannedGraphemes": ["b", "e", "f", "j", "k", "l", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and", "on"],
+      "reviewOf": ["lesson_16", "lesson_17", "lesson_18"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.90
+      },
+      "objectives": ["Discriminate between all three short vowels", "Read mixed vowel passages fluently", "Build confidence with novel words"],
+      "prerequisites": ["lesson_18"],
+      "estimatedDuration": 10
+    },
+    {
+      "lessonId": "lesson_20",
+      "lessonNumber": 20,
+      "title": "Cumulative Review 2",
+      "type": "review",
+      "phaseId": "phase_06",
+      "taughtPatterns": [],
+      "allowedGraphemes": ["m", "s", "t", "a", "p", "n", "c", "i", "d", "o", "g", "h"],
+      "bannedGraphemes": ["b", "e", "f", "j", "k", "l", "q", "r", "u", "v", "w", "x", "y", "z"],
+      "newSightWords": [],
+      "cumulativeSightWords": ["the", "a", "is", "I", "to", "and", "on"],
+      "reviewOf": ["lesson_01", "lesson_02", "lesson_03", "lesson_04", "lesson_05", "lesson_06", "lesson_07", "lesson_08", "lesson_09", "lesson_10", "lesson_11", "lesson_12", "lesson_13", "lesson_14", "lesson_15", "lesson_16", "lesson_17", "lesson_18", "lesson_19"],
+      "decodableConstraints": {
+        "maxWordLength": 1,
+        "allowedStructures": ["CVC", "VC"],
+        "targetSuccessRate": 0.95
+      },
+      "objectives": ["Comprehensive review of all content", "Demonstrate mastery of all patterns", "Celebrate learning progress calmly"],
+      "prerequisites": ["lesson_19"],
+      "estimatedDuration": 12
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-01-11T00:00:00Z",
+    "updatedAt": "2026-01-11T00:00:00Z",
+    "author": "CalmRead System Architect",
+    "researchBasis": [
+      "National Reading Panel (2000)",
+      "National Early Literacy Panel (2008)",
+      "Scarborough's Reading Rope",
+      "Simple View of Reading"
+    ]
+  }
+}

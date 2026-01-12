@@ -1,0 +1,205 @@
+{
+  "lessonId": "lesson_02",
+  "version": "1.0.0",
+  "title": "Meet T",
+  "lessonNumber": 2,
+  "type": "instruction",
+  "estimatedDuration": 8,
+  "objectives": [
+    "Identify the letter t and its sound /t/",
+    "Review m and s sounds",
+    "Distinguish between m, s, and t"
+  ],
+  "prerequisites": ["lesson_01"],
+  "graphemeConstraints": {
+    "allowedGraphemes": ["m", "s", "t"],
+    "bannedGraphemes": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "n", "o", "p", "q", "r", "u", "v", "w", "x", "y", "z"],
+    "taughtPatterns": [
+      {"grapheme": "t", "phoneme": "/t/", "isNew": true},
+      {"grapheme": "m", "phoneme": "/m/", "isNew": false},
+      {"grapheme": "s", "phoneme": "/s/", "isNew": false}
+    ],
+    "sightWords": []
+  },
+  "steps": [
+    {
+      "stepId": "step_01",
+      "stepNumber": 1,
+      "type": "review",
+      "title": "Review M and S",
+      "instruction": "Let's start by reviewing the sounds we learned. M says /m/. S says /s/.",
+      "audioAssetId": "instruction_review_ms",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "M says /m/\nS says /s/",
+        "visualElements": [
+          {"type": "letter_display", "content": "M → /m/", "size": "medium"},
+          {"type": "letter_display", "content": "S → /s/", "size": "medium"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_02",
+      "stepNumber": 2,
+      "type": "practice",
+      "title": "Say /m/ and /s/",
+      "instruction": "Say the sounds with me. First /m/, then /s/.",
+      "audioAssetId": "prompt_review_sounds",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "Say: /m/ ... /s/",
+        "recordingPrompt": "Say /m/ then /s/",
+        "maxRecordingDuration": 6
+      }
+    },
+    {
+      "stepId": "step_03",
+      "stepNumber": 3,
+      "type": "explicit_phonics",
+      "title": "Meet the Letter T",
+      "instruction": "This is the letter T. It makes the sound /t/. Watch and listen.",
+      "audioAssetId": "instruction_t_intro",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "T t",
+        "targetGrapheme": "t",
+        "targetPhoneme": "/t/",
+        "visualElements": [
+          {"type": "letter_display", "content": "T t", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_04",
+      "stepNumber": 4,
+      "type": "phonemic_awareness",
+      "title": "Hear the /t/ Sound",
+      "instruction": "Listen to the /t/ sound. /t/ ... /t/ ... /t/. Your tongue taps the roof of your mouth.",
+      "audioAssetId": "instruction_t_sound",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "/t/",
+        "targetPhoneme": "/t/",
+        "visualElements": [
+          {"type": "phoneme_display", "content": "/t/", "size": "large"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_05",
+      "stepNumber": 5,
+      "type": "practice",
+      "title": "Say the /t/ Sound",
+      "instruction": "Now you try. Say /t/. Tap your tongue on the roof of your mouth.",
+      "audioAssetId": "prompt_try_t",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "Your turn: /t/",
+        "targetPhoneme": "/t/",
+        "recordingPrompt": "Say /t/",
+        "maxRecordingDuration": 5
+      }
+    },
+    {
+      "stepId": "step_06",
+      "stepNumber": 6,
+      "type": "discrimination",
+      "title": "M, S, or T?",
+      "instruction": "Now let's practice with all three sounds. I will say a sound. Point to the letter.",
+      "audioAssetId": "instruction_discrimination_mst",
+      "interactionType": "select",
+      "requiredAction": "select_letter",
+      "content": {
+        "displayText": "Which letter?",
+        "options": [
+          {"id": "opt_m", "display": "M", "grapheme": "m"},
+          {"id": "opt_s", "display": "S", "grapheme": "s"},
+          {"id": "opt_t", "display": "T", "grapheme": "t"}
+        ],
+        "trials": [
+          {"audioAssetId": "phoneme_t", "correctOption": "opt_t"},
+          {"audioAssetId": "phoneme_m", "correctOption": "opt_m"},
+          {"audioAssetId": "phoneme_s", "correctOption": "opt_s"},
+          {"audioAssetId": "phoneme_t", "correctOption": "opt_t"},
+          {"audioAssetId": "phoneme_m", "correctOption": "opt_m"},
+          {"audioAssetId": "phoneme_s", "correctOption": "opt_s"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_07",
+      "stepNumber": 7,
+      "type": "practice",
+      "title": "Say All Three Sounds",
+      "instruction": "Say all three sounds: /m/ ... /s/ ... /t/.",
+      "audioAssetId": "prompt_all_three",
+      "interactionType": "record",
+      "requiredAction": "record_audio",
+      "content": {
+        "displayText": "Say: /m/ ... /s/ ... /t/",
+        "recordingPrompt": "Say /m/, /s/, /t/",
+        "maxRecordingDuration": 8
+      }
+    },
+    {
+      "stepId": "step_08",
+      "stepNumber": 8,
+      "type": "review",
+      "title": "Review All Sounds",
+      "instruction": "Great work! Now you know three sounds. M says /m/. S says /s/. T says /t/.",
+      "audioAssetId": "instruction_review_all",
+      "interactionType": "listen",
+      "requiredAction": "tap_continue",
+      "content": {
+        "displayText": "M says /m/\nS says /s/\nT says /t/",
+        "visualElements": [
+          {"type": "letter_display", "content": "M → /m/", "size": "medium"},
+          {"type": "letter_display", "content": "S → /s/", "size": "medium"},
+          {"type": "letter_display", "content": "T → /t/", "size": "medium"}
+        ]
+      }
+    },
+    {
+      "stepId": "step_09",
+      "stepNumber": 9,
+      "type": "completion",
+      "title": "All Done",
+      "instruction": "All done. You learned the sound for T and reviewed M and S.",
+      "audioAssetId": "prompt_completion",
+      "interactionType": "listen",
+      "requiredAction": "tap_finish",
+      "content": {
+        "displayText": "All Done",
+        "completionMessage": "You learned the sound for T and reviewed M and S."
+      }
+    }
+  ],
+  "wordList": [],
+  "decodableText": null,
+  "audioAssets": [
+    {"assetId": "instruction_review_ms", "path": "prompts/instruction_review_ms.mp3", "type": "instruction", "transcript": "Let's start by reviewing the sounds we learned. M says /m/. S says /s/.", "duration": 5.0},
+    {"assetId": "prompt_review_sounds", "path": "prompts/prompt_review_sounds.mp3", "type": "prompt", "transcript": "Say the sounds with me. First /m/, then /s/.", "duration": 3.5},
+    {"assetId": "instruction_t_intro", "path": "prompts/instruction_t_intro.mp3", "type": "instruction", "transcript": "This is the letter T. It makes the sound /t/. Watch and listen.", "duration": 4.0},
+    {"assetId": "instruction_t_sound", "path": "prompts/instruction_t_sound.mp3", "type": "instruction", "transcript": "Listen to the /t/ sound. /t/ ... /t/ ... /t/. Your tongue taps the roof of your mouth.", "duration": 6.0},
+    {"assetId": "prompt_try_t", "path": "prompts/prompt_try_t.mp3", "type": "prompt", "transcript": "Now you try. Say /t/. Tap your tongue on the roof of your mouth.", "duration": 4.0},
+    {"assetId": "instruction_discrimination_mst", "path": "prompts/instruction_discrimination_mst.mp3", "type": "instruction", "transcript": "Now let's practice with all three sounds. I will say a sound. Point to the letter.", "duration": 4.5},
+    {"assetId": "phoneme_m", "path": "words/phoneme_m.mp3", "type": "phoneme", "transcript": "/m/", "duration": 1.0},
+    {"assetId": "phoneme_s", "path": "words/phoneme_s.mp3", "type": "phoneme", "transcript": "/s/", "duration": 1.0},
+    {"assetId": "phoneme_t", "path": "words/phoneme_t.mp3", "type": "phoneme", "transcript": "/t/", "duration": 1.0},
+    {"assetId": "prompt_all_three", "path": "prompts/prompt_all_three.mp3", "type": "prompt", "transcript": "Say all three sounds: /m/ ... /s/ ... /t/.", "duration": 4.0},
+    {"assetId": "instruction_review_all", "path": "prompts/instruction_review_all.mp3", "type": "instruction", "transcript": "Great work! Now you know three sounds. M says /m/. S says /s/. T says /t/.", "duration": 6.0},
+    {"assetId": "prompt_completion", "path": "prompts/prompt_completion.mp3", "type": "prompt", "transcript": "All done. You learned the sound for T and reviewed M and S.", "duration": 3.5}
+  ],
+  "metadata": {
+    "createdAt": "2026-01-11T00:00:00Z",
+    "updatedAt": "2026-01-11T00:00:00Z",
+    "author": "CalmRead Content Generator",
+    "reviewStatus": "approved",
+    "qaReportId": "qa_lesson_02_v1"
+  }
+}

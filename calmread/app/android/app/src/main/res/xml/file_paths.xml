@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path
+        name="calmread_recordings"
+        path="CalmRead/recordings/" />
+    <external-path
+        name="calmread_lessons"
+        path="CalmRead/lessons/" />
+</paths>
