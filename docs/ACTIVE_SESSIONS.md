@@ -20,10 +20,11 @@
 | ---------- | ---- | ------ | ------ | --------- | ----------- |
 | _(none)_   | -    | -      | -      | -         | -           |
 
-## ✅ Completed/Archived (2026-01-08)
+## ✅ Completed/Archived (2026-01-12)
 
 | Session ID                              | Task                                         | Status      |
 | --------------------------------------- | -------------------------------------------- | ----------- |
+| Session-20260112-SPRINT0-a10540         | Sprint 0 Foundation (All Tracks)             | ✅ Complete |
 | Session-20260102-SPRINT-B-f0b134        | Sprint B Frontend UX                         | ✅ Archived |
 | Session-20260103-FEATURE-021-ef9784     | FEATURE-021                                  | ✅ Archived |
 | Session-20260103-SAMPLE-001-005-0f896c  | Sample Management UI                         | ✅ Archived |

@@ -513,11 +513,17 @@ export async function getAllOrders(filters?: {
     }
   }
   
+  // BUG-078: Explicitly select columns from both tables to avoid ambiguous column names
+  // When using leftJoin, bare .select() causes MySQL column name conflicts (both tables have 'id', 'created_at', etc.)
+  // This fix ensures result structure is { orders: {...}, clients: {...} }
   let results;
-  
+
   if (conditions.length > 0) {
     results = await db
-      .select()
+      .select({
+        orders: orders,
+        clients: clients,
+      })
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
       .where(and(...conditions))
@@ -526,7 +532,10 @@ export async function getAllOrders(filters?: {
       .offset(offset);
   } else {
     results = await db
-      .select()
+      .select({
+        orders: orders,
+        clients: clients,
+      })
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
       .orderBy(desc(orders.createdAt))
