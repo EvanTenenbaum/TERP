@@ -195,8 +195,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 1):
 | 1.C.3 | BUG-094 | Fix Live Shopping session creation | 3h | None |
 | 1.C.4 | BUG-095 | Fix Batches "New Purchase" button | 2h | None |
 | 1.C.5 | BUG-046 | Fix Settings Users tab auth error | 2h | 0.C.1-3 |
+| 1.C.6 | MEET-049 | Fix Calendar Navigation Bug | 2h | None |
 
-**Track C Total:** 12h
+**Track C Total:** 14h
 
 ### Sprint 1 QA Gate
 
@@ -214,7 +215,7 @@ VALIDATION CHECKLIST (Must all pass before Sprint 2):
 [ ] Run full E2E test suite: 0 FAIL, <5 BLOCKED
 ```
 
-**Sprint 1 Total:** 33h (parallel: ~12h elapsed)
+**Sprint 1 Total:** 35h (parallel: ~14h elapsed)
 
 ---
 
@@ -320,8 +321,13 @@ VALIDATION CHECKLIST (Must all pass before Sprint 3):
 | 3.B.2 | ENH-004 | On-the-Fly Pricing UI | 20h | 3.B.1 | ENH-004-SPEC |
 | 3.B.3 | MEET-014 | Variable Markups (Age/Quantity) | 8h | 3.B.2 | - |
 | 3.B.4 | MEET-026 | Real-time Price Negotiation | 8h | 3.B.3 | - |
+| 3.B.5 | MEET-038 | Notes on Product Pricing | 4h | 3.B.2 | - |
+| 3.B.6 | MEET-039 | Quick Action Pricing Visibility | 4h | 3.B.2 | - |
+| 3.B.7 | MEET-061 | Suggested Purchase Price (History) | 8h | 3.B.1 | - |
+| 3.B.8 | MEET-062 | Last Sale Price Lookup | 4h | 3.B.7 | - |
+| 3.B.9 | MEET-063 | Farmer Receipt History Link | 4h | 3.B.2 | - |
 
-**Track B Total:** 64h
+**Track B Total:** 96h
 
 ### Track C: Vendor/Brand Clarity (Agent 3)
 
@@ -362,7 +368,7 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 [ ] E2E test: Complete sales flow with negotiated pricing
 ```
 
-**Sprint 3 Total:** 176h (parallel: ~64h elapsed with 4 agents)
+**Sprint 3 Total:** 208h (parallel: ~96h elapsed with 4 agents)
 
 ---
 
@@ -381,8 +387,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.A.3 | MEET-024 | Aging Inventory Visual (Red >2 weeks) | 8h | 4.A.2 | - |
 | 4.A.4 | MEET-025 | Dashboard Aging Quick View | 4h | 4.A.3 | - |
 | 4.A.5 | ENH-008 | Image Toggle for Inventory Views | 16h | 4.A.2 | ENH-008-SPEC |
+| 4.A.6 | MEET-023 | Batch Tracking for Inventory | 12h | 4.A.1 | - |
 
-**Track A Total:** 60h
+**Track A Total:** 72h
 
 ### Track B: Client 360 View (Agent 2)
 
@@ -394,8 +401,11 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.B.4 | MEET-012 | Client Tagging with Referrer | 4h | 4.B.1 | - |
 | 4.B.5 | MEET-013 | Referrer Lookup | 8h | 4.B.4 | - |
 | 4.B.6 | MEET-021 | Client Wants/Needs Tracking | 8h | 4.B.1 | - |
+| 4.B.7 | MEET-020 | Suggested Buyer (Purchase History) | 8h | 4.B.1 | - |
+| 4.B.8 | MEET-022 | Reverse Lookup (Product Connections) | 8h | 4.B.1 | - |
+| 4.B.9 | MEET-055 | Office Needs Auto-Population | 8h | 4.B.6 | - |
 
-**Track B Total:** 52h
+**Track B Total:** 76h
 
 ### Track C: In-line Product Creation (Agent 3)
 
@@ -406,8 +416,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.C.3 | MEET-031 | Hide SKU Field | 2h | 4.C.2 | - |
 | 4.C.4 | MEET-037 | Editable Product Names | 2h | 4.C.2 | - |
 | 4.C.5 | MEET-033 | Searchable Supplier Dropdown | 4h | 4.C.2 | - |
+| 4.C.6 | MEET-040 | Product: Name, Category, Brand Fields | 4h | 4.C.2 | - |
 
-**Track C Total:** 48h
+**Track C Total:** 52h
 
 ### Track D: Scheduling System (Agent 4)
 
@@ -418,8 +429,10 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.D.3 | MEET-046 | Live Appointments | 8h | 4.D.2 | - |
 | 4.D.4 | MEET-047 | Multiple Rooms (2 meeting + 2 loading) | 4h | 4.D.3 | - |
 | 4.D.5 | MEET-072 | Notification System for Tagging | 8h | 4.D.2 | - |
+| 4.D.6 | MEET-034 | Expected Delivery Date | 4h | 4.D.1 | - |
+| 4.D.7 | MEET-050 | Shift/Vacation Tracking | 8h | 4.D.1 | - |
 
-**Track D Total:** 60h
+**Track D Total:** 72h
 
 ### Sprint 4 QA Gate
 
@@ -443,7 +456,7 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 [ ] Notifications fire for tagged users
 ```
 
-**Sprint 4 Total:** 220h (parallel: ~60h elapsed with 4 agents)
+**Sprint 4 Total:** 272h (parallel: ~76h elapsed with 4 agents)
 
 ---
 
@@ -488,8 +501,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 | 5.C.4 | UX-011 | Fix Two Export Buttons Issue | 2h | None | - |
 | 5.C.5 | UX-012 | Fix Period Display Formatting | 2h | None | - |
 | 5.C.6 | UX-013 | Fix Mirrored Elements Issue | 2h | None | - |
+| 5.C.7 | MEET-015 | Sales Sheet Creator | 12h | 3.B.1 | - |
 
-**Track C Total:** 16h
+**Track C Total:** 28h
 
 ### Track D: Transaction & Product Features (Agent 4)
 
@@ -500,8 +514,11 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 | 5.D.3 | MEET-035 | Payment Terms (Consignment/Cash/COD) | 12h | 3.D.3 | - |
 | 5.D.4 | MEET-032 | Customizable Categories | 8h | 4.C.1 | - |
 | 5.D.5 | MEET-070 | Product Grades (AAAA/AAA/AA/B/C) | 4h | 5.D.4 | - |
+| 5.D.6 | MEET-009 | Billing for Services (Shipping, Consulting) | 8h | 2.D.1 | - |
+| 5.D.7 | MEET-019 | Crypto Payment Tracking | 8h | 3.D.3 | - |
+| 5.D.8 | MEET-036 | Installment Payments | 12h | 5.D.3 | - |
 
-**Track D Total:** 40h
+**Track D Total:** 68h
 
 ### Track E: Storage & Location (Agent 5 or follows D)
 
@@ -510,8 +527,11 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 | 5.E.1 | MEET-067 | Storage Zones (A, B, C, D) | 8h | None | - |
 | 5.E.2 | MEET-068 | Three Sites (Samples, Storage, Shipping) | 4h | 5.E.1 | - |
 | 5.E.3 | MEET-069 | Category/Subcategory Data Flow | 4h | 5.D.4 | - |
+| 5.E.4 | MEET-048 | Hour Tracking | 8h | 4.D.7 | - |
+| 5.E.5 | MEET-051 | User Roles & Permissions Enhancement | 8h | 0.C.1-3 | - |
+| 5.E.6 | MEET-058 | Copy-Paste Office Needs | 4h | 4.B.9 | - |
 
-**Track E Total:** 16h
+**Track E Total:** 40h
 
 ### Sprint 5 QA Gate
 
@@ -538,7 +558,7 @@ VALIDATION CHECKLIST (Must all pass for MVP Complete):
 [ ] Full E2E test suite: 0 FAIL, 0 BLOCKED
 ```
 
-**Sprint 5 Total:** 192h (parallel: ~72h elapsed with 4 agents)
+**Sprint 5 Total:** 256h (parallel: ~72h elapsed with 5 agents)
 
 ---
 
@@ -548,14 +568,15 @@ VALIDATION CHECKLIST (Must all pass for MVP Complete):
 
 ### Recommended Agent Configuration
 
-| Sprint | Agents | Parallel Tracks | Elapsed Time |
-|--------|--------|-----------------|--------------|
-| 0 | 3 | A, B, C | ~9h |
-| 1 | 3 | A, B, C | ~12h |
-| 2 | 3-4 | A→B sequential, C, D | ~48h |
-| 3 | 4 | A, B, C, D | ~64h |
-| 4 | 4 | A, B, C, D | ~60h |
-| 5 | 4-5 | A, B, C, D, E | ~72h |
+| Sprint | Agents | Parallel Tracks | Total Hours | Elapsed Time |
+|--------|--------|-----------------|-------------|--------------|
+| 0 | 3 | A, B, C | 22h | ~9h |
+| 1 | 3 | A, B, C | 35h | ~14h |
+| 2 | 4 | A→B sequential, C, D | 98h | ~48h |
+| 3 | 4 | A, B, C, D | 208h | ~96h |
+| 4 | 4 | A, B, C, D | 272h | ~76h |
+| 5 | 5 | A, B, C, D, E | 256h | ~72h |
+| **TOTAL** | | | **891h** | **~315h** |
 
 ### Agent Assignment Rules
 
@@ -768,14 +789,14 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 | Sprint | Total Hours | Parallel Hours | Agents | Focus |
 |--------|-------------|----------------|--------|-------|
 | 0 | 22h | 9h | 3 | Foundation |
-| 1 | 33h | 12h | 3 | Critical UI Fixes |
-| 2 | 98h | 48h | 3-4 | Wave 1: Stop Bleeding |
-| 3 | 176h | 64h | 4 | Wave 2: Core Ops |
-| 4 | 220h | 60h | 4 | Wave 3: Enhanced |
-| 5 | 192h | 72h | 4-5 | Wave 4: VIP & Polish |
-| **TOTAL** | **741h** | **265h** | - | - |
+| 1 | 35h | 14h | 3 | Critical UI Fixes |
+| 2 | 98h | 48h | 4 | Wave 1: Stop Bleeding |
+| 3 | 208h | 96h | 4 | Wave 2: Core Ops |
+| 4 | 272h | 76h | 4 | Wave 3: Enhanced |
+| 5 | 256h | 72h | 5 | Wave 4: VIP & Polish |
+| **TOTAL** | **891h** | **315h** | - | - |
 
-**Note:** 265h elapsed time assumes optimal parallel execution with 4 agents average.
+**Note:** 315h elapsed time assumes optimal parallel execution with 4-5 agents. Updated 2026-01-12 to include all 75 MEET items with detailed task breakdowns.
 
 ---
 
@@ -792,8 +813,209 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 
 ---
 
+# PART 8: COOPER RD SPRINT SPECS (WS-001 to WS-014) STATUS
+
+The WS-001 to WS-014 specifications were created during the Cooper Rd Sprint and represent Quick Actions and core workflows. Here is their integration status:
+
+## Already Integrated (Via MEET Items)
+
+| WS Spec | Description | Covered By | Sprint |
+|---------|-------------|------------|--------|
+| WS-001 | Quick Action: Receive Client Payment | MEET-010 (Client Ledger) | 2 |
+| WS-002 | Quick Action: Pay Vendor | MEET-005 (Payables) | 3 |
+| WS-003 | Pick & Pack: Group Bagging | ENH-005 (Scheduling UI) | 4 |
+| WS-004 | Multi-Order & Referral Credit | FEAT-006 (Referral Workflow) | 5 |
+| WS-005 | No Black Box Audit Trail | FEAT-007 (Cash Audit) | 2 |
+| WS-007 | Complex Flower Intake Flow | FEAT-008 (Intake Verification) | 2 |
+
+## Requires Separate Tasks (Add to Sprints)
+
+| WS Spec | Description | Recommended Sprint | Est |
+|---------|-------------|-------------------|-----|
+| WS-006 | Immediate Tab Screenshot/Receipt | 4 (Track C) | 12h |
+| WS-008 | Low Stock & Needs-Based Alerts | 4 (Track A) | 16h |
+| WS-009 | Inventory Movement & Shrinkage Tracking | 4 (Track A) | 20h |
+| WS-010 | Photography Module | 5 (Track C) | 16h |
+| WS-011 | Quick Customer Creation | 4 (Track B) | 4h |
+| WS-012 | Customer Preferences & Purchase History | 4 (Track B) - covered by MEET-020 | 0h |
+| WS-013 | Simple Task Management | 5 (Track E) | 12h |
+| WS-014 | Vendor Harvest Reminders | 5 (Track E) | 8h |
+
+> **Action Required:** Add WS-006, WS-008, WS-009, WS-010, WS-011, WS-013, WS-014 to appropriate sprint task tables if these features are required for MVP. Estimated additional effort: 88h.
+
+---
+
+# PART 9: MASTER TRACKING CHECKLIST
+
+## Pre-Implementation Verification
+
+Before starting ANY sprint, verify:
+
+```
+SPECIFICATION COMPLETENESS
+[ ] All specs referenced in sprint tasks exist and are approved
+[ ] Each spec has acceptance criteria documented
+[ ] API contracts defined for all backend tasks
+[ ] UI wireframes exist for all frontend tasks
+[ ] Database changes documented (tables, indexes, migrations)
+
+DEPENDENCY VERIFICATION
+[ ] All dependency chains are valid (no circular dependencies)
+[ ] Blocking bugs are resolved before dependent tasks start
+[ ] Required APIs are registered before frontend work
+[ ] Test data is seeded for QA validation
+```
+
+## Per-Sprint Tracking
+
+### Sprint 0: Foundation
+| Task ID | Description | Status | Verified |
+|---------|-------------|--------|----------|
+| BUG-084 | Seed pricing_defaults | ☐ | ☐ |
+| BUG-078 | Fix orders.getAll | ☐ | ☐ |
+| BUG-079 | Fix quotes.list | ☐ | ☐ |
+| BUG-080 | Fix invoices.getSummary | ☐ | ☐ |
+| API-010 | Register accounting.* | ☐ | ☐ |
+| API-001-009 | Register remaining procedures | ☐ | ☐ |
+| BLOCKED-001 | Add samples:read to Sales Manager | ☐ | ☐ |
+| BLOCKED-002 | Add Pick & Pack permission | ☐ | ☐ |
+| BLOCKED-003 | Add accounting:reports:view | ☐ | ☐ |
+| ST-026 | Concurrent Edit Detection | ☐ | ☐ |
+
+### Sprint 1: Critical UI Fixes
+| Task ID | Description | Status | Verified |
+|---------|-------------|--------|----------|
+| BUG-086 | Order finalization | ☐ | ☐ |
+| BUG-093 | finalizeMutation | ☐ | ☐ |
+| BUG-040 | Order Creator inventory | ☐ | ☐ |
+| BUG-045 | Order Creator form reset | ☐ | ☐ |
+| BUG-091 | Spreadsheet View grid | ☐ | ☐ |
+| BUG-092 | AR/AP widgets | ☐ | ☐ |
+| BUG-087 | Products pagination | ☐ | ☐ |
+| BUG-088 | Spreadsheet Clients | ☐ | ☐ |
+| BUG-089 | New Invoice button | ☐ | ☐ |
+| BUG-090 | Client edit save | ☐ | ☐ |
+| BUG-094 | Live Shopping session | ☐ | ☐ |
+| BUG-095 | Batches New Purchase | ☐ | ☐ |
+| BUG-046 | Settings Users tab | ☐ | ☐ |
+| MEET-049 | Calendar Navigation Bug | ☐ | ☐ |
+
+### Sprint 2: Wave 1 - Stop the Bleeding
+| MEET ID | Description | Backend | Frontend | QA |
+|---------|-------------|---------|----------|-----|
+| MEET-001 | Dashboard Available Money | ☐ | ☐ | ☐ |
+| MEET-002 | Multi-Location Cash | ☐ | ☐ | ☐ |
+| MEET-003 | In/Out Ledger | ☐ | ☐ | ☐ |
+| MEET-004 | Shift Payment Tracking | ☐ | ☐ | ☐ |
+| MEET-064 | Intake Receipt Tool | ☐ | ☐ | ☐ |
+| MEET-065 | Verification Process | ☐ | ☐ | ☐ |
+| MEET-066 | Intake Terminology | ☐ | - | ☐ |
+| MEET-010 | Client Ledger | ☐ | ☐ | ☐ |
+
+### Sprint 3: Wave 2 - Core Operations
+| MEET ID | Description | Backend | Frontend | QA |
+|---------|-------------|---------|----------|-----|
+| MEET-075 | Live Shopping | ☐ | ☐ | ☐ |
+| MEET-014 | Variable Markups | ☐ | ☐ | ☐ |
+| MEET-026 | Real-time Price Negotiation | ☐ | ☐ | ☐ |
+| MEET-038 | Notes on Product Pricing | ☐ | ☐ | ☐ |
+| MEET-039 | Quick Action Pricing | ☐ | ☐ | ☐ |
+| MEET-061 | Suggested Purchase Price | ☐ | ☐ | ☐ |
+| MEET-062 | Last Sale Price Lookup | ☐ | ☐ | ☐ |
+| MEET-063 | Farmer Receipt History | ☐ | ☐ | ☐ |
+| MEET-027 | Vendor vs Brand | ☐ | ☐ | ☐ |
+| MEET-028 | Brand → Farmer Code | ☐ | - | ☐ |
+| MEET-029 | Vendor Tied to Farmer | ☐ | ☐ | ☐ |
+| MEET-030 | Vendor Search | ☐ | ☐ | ☐ |
+| MEET-005 | Payables Due on SKU Zero | ☐ | ☐ | ☐ |
+| MEET-006 | Office Owned Inventory | ☐ | ☐ | ☐ |
+
+### Sprint 4: Wave 3 - Enhanced Capability
+| MEET ID | Description | Backend | Frontend | QA |
+|---------|-------------|---------|----------|-----|
+| MEET-024 | Aging Inventory Visual | ☐ | ☐ | ☐ |
+| MEET-025 | Dashboard Aging | ☐ | ☐ | ☐ |
+| MEET-023 | Batch Tracking | ☐ | ☐ | ☐ |
+| MEET-007 | Clients: Buyer AND Supplier | ☐ | ☐ | ☐ |
+| MEET-008 | Complex Tab | ☐ | ☐ | ☐ |
+| MEET-012 | Client Tagging | ☐ | ☐ | ☐ |
+| MEET-013 | Referrer Lookup | ☐ | ☐ | ☐ |
+| MEET-021 | Wants/Needs Tracking | ☐ | ☐ | ☐ |
+| MEET-020 | Suggested Buyer | ☐ | ☐ | ☐ |
+| MEET-022 | Reverse Lookup | ☐ | ☐ | ☐ |
+| MEET-055 | Office Needs Auto-Pop | ☐ | ☐ | ☐ |
+| MEET-031 | Hide SKU Field | - | ☐ | ☐ |
+| MEET-037 | Editable Product Names | ☐ | ☐ | ☐ |
+| MEET-033 | Searchable Supplier | ☐ | ☐ | ☐ |
+| MEET-040 | Product Metadata | ☐ | ☐ | ☐ |
+| MEET-046 | Live Appointments | ☐ | ☐ | ☐ |
+| MEET-047 | Multiple Rooms | ☐ | ☐ | ☐ |
+| MEET-072 | Notification Tagging | ☐ | ☐ | ☐ |
+| MEET-034 | Expected Delivery | ☐ | ☐ | ☐ |
+| MEET-050 | Shift/Vacation | ☐ | ☐ | ☐ |
+
+### Sprint 5: Wave 4 - VIP & Polish
+| MEET ID | Description | Backend | Frontend | QA |
+|---------|-------------|---------|----------|-----|
+| MEET-043 | VIP Status Tiers | ☐ | ☐ | ☐ |
+| MEET-041 | VIP Debt Aging Notifications | ☐ | ☐ | ☐ |
+| MEET-042 | Credit Usage Display | ☐ | ☐ | ☐ |
+| MEET-052 | VIP Purchase History | ☐ | ☐ | ☐ |
+| MEET-054 | VIP Needs/Wants Entry | ☐ | ☐ | ☐ |
+| MEET-056 | Centralized VIP Requests | ☐ | ☐ | ☐ |
+| MEET-057 | Matchmaking | ☐ | ☐ | ☐ |
+| MEET-071 | VIP Client Management | ☐ | ☐ | ☐ |
+| MEET-044 | Anonymized Leaderboard | ☐ | ☐ | ☐ |
+| MEET-045 | Rewards System | ☐ | ☐ | ☐ |
+| MEET-053 | User-Friendly Terminology | - | ☐ | ☐ |
+| MEET-015 | Sales Sheet Creator | ☐ | ☐ | ☐ |
+| MEET-017 | Invoice History | ☐ | ☐ | ☐ |
+| MEET-018 | Transaction Fee Per Client | ☐ | ☐ | ☐ |
+| MEET-035 | Payment Terms | ☐ | ☐ | ☐ |
+| MEET-032 | Customizable Categories | ☐ | ☐ | ☐ |
+| MEET-070 | Product Grades | ☐ | ☐ | ☐ |
+| MEET-009 | Billing for Services | ☐ | ☐ | ☐ |
+| MEET-019 | Crypto Payment | ☐ | ☐ | ☐ |
+| MEET-036 | Installment Payments | ☐ | ☐ | ☐ |
+| MEET-067 | Storage Zones | ☐ | ☐ | ☐ |
+| MEET-068 | Three Sites | ☐ | ☐ | ☐ |
+| MEET-069 | Category/Subcategory Flow | ☐ | ☐ | ☐ |
+| MEET-048 | Hour Tracking | ☐ | ☐ | ☐ |
+| MEET-051 | User Roles Enhancement | ☐ | ☐ | ☐ |
+| MEET-058 | Copy-Paste Office Needs | ☐ | ☐ | ☐ |
+
+---
+
+## Final MVP Verification
+
+Before marking MVP complete:
+
+```
+ALL FEATURES VERIFIED
+[ ] All 72 MVP MEET items have status: COMPLETE
+[ ] All Sprint QA gates passed with 0 FAIL
+[ ] Full E2E test suite: 0 FAIL, 0 BLOCKED
+[ ] Product Owner sign-off on each wave
+
+DOCUMENTATION COMPLETE
+[ ] All specs updated with final implementation notes
+[ ] API documentation generated
+[ ] User guide sections written for new features
+[ ] Release notes compiled
+
+DEPLOYMENT READY
+[ ] Staging environment tested
+[ ] Production migration plan approved
+[ ] Rollback plan documented
+[ ] Monitoring alerts configured
+```
+
+---
+
 **Document Status:** ACTIVE
+**Version:** 1.2
 **Created:** 2026-01-12
+**Updated:** 2026-01-12 (Added all missing MEET items to sprint tasks, added master tracking)
 **Author:** Claude AI Strategic Analysis
 **Next Review:** After Sprint 0 completion
 
