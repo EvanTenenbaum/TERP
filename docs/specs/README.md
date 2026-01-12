@@ -6,13 +6,48 @@ This directory contains detailed product specifications for all major features a
 
 | Status | Count |
 |--------|-------|
-| ✅ Approved | 24 |
-| 🔄 In Review | 0 |
-| 📝 Draft | 0 |
+| Approved | 24 |
+| In Review | 0 |
+| Draft | 14 |
 
-## Specifications by Priority
+## NEW: User Flow Gap Analysis Specs (2026-01-12)
 
-### CRITICAL Priority (Cooper Rd Sprint)
+The following specs were generated from the Strategic Implementation Plan to address gaps identified in the user flow analysis.
+
+### Backend API Specs (Phase 1)
+
+| Task ID | Title | Spec | Priority | Estimate |
+|---------|-------|------|----------|----------|
+| FEAT-001 | Enhanced Inventory Data API | [FEAT-001-SPEC.md](./FEAT-001-SPEC.md) | CRITICAL | 16h |
+| FEAT-002 | Vendor Context API | [FEAT-002-SPEC.md](./FEAT-002-SPEC.md) | HIGH | 20h |
+| FEAT-003-INLINE | In-line Product Creation API | [FEAT-003-INLINE-PRODUCT-SPEC.md](./FEAT-003-INLINE-PRODUCT-SPEC.md) | HIGH | 24h |
+| FEAT-004 | Pricing & Credit Logic Backend | [FEAT-004-SPEC.md](./FEAT-004-SPEC.md) | HIGH | 28h |
+| FEAT-005 | Scheduling & Referral APIs | [FEAT-005-SPEC.md](./FEAT-005-SPEC.md) | MEDIUM | 24h |
+| FEAT-006 | Full Referral (Couch Tax) Workflow | [FEAT-006-SPEC.md](./FEAT-006-SPEC.md) | MEDIUM | 20h |
+
+### Frontend Integration Specs (Phase 2)
+
+| Task ID | Title | Spec | Priority | Estimate |
+|---------|-------|------|----------|----------|
+| ENH-001 | Update Inventory Browser Table | [ENH-001-SPEC.md](./ENH-001-SPEC.md) | CRITICAL | 16h |
+| ENH-002 | Build Client Info Pod | [ENH-002-SPEC.md](./ENH-002-SPEC.md) | HIGH | 12h |
+| ENH-003 | Integrate In-line Product Creation UI | [ENH-003-SPEC.md](./ENH-003-SPEC.md) | HIGH | 16h |
+| ENH-004 | On-the-Fly Pricing UI | [ENH-004-SPEC.md](./ENH-004-SPEC.md) | HIGH | 20h |
+| ENH-005 | Full Scheduling Workflow UI | [ENH-005-SPEC.md](./ENH-005-SPEC.md) | MEDIUM | 16h |
+
+### UI Polish Specs (Phase 3)
+
+| Task ID | Title | Spec | Priority | Estimate |
+|---------|-------|------|----------|----------|
+| ENH-006 | Relocate Order Preview | [ENH-006-SPEC.md](./ENH-006-SPEC.md) | LOW | 4h |
+| ENH-007 | Apply Nomenclature Changes (Brand→Farmer) | [ENH-007-SPEC.md](./ENH-007-SPEC.md) | LOW | 8h |
+| ENH-008 | Image Toggle for Inventory Views | [ENH-008-SPEC.md](./ENH-008-SPEC.md) | MEDIUM | 16h |
+
+---
+
+## Cooper Rd Sprint Specs (Approved)
+
+### CRITICAL Priority
 
 | Task ID | Title | Spec | Estimate |
 |---------|-------|------|----------|
@@ -50,18 +85,33 @@ This directory contains detailed product specifications for all major features a
 | FEATURE-010 | Accounting-Calendar Integration | [FEATURE-010-SPEC.md](./FEATURE-010-SPEC.md) | 120-180h |
 | FEATURE-020 | Tags System Revamp | [FEATURE-020-SPEC.md](./FEATURE-020-SPEC.md) | 20h |
 
+---
+
+## Strategic Roadmap Integration
+
+See **[UNIFIED_STRATEGIC_ROADMAP_2026-01-12.md](../roadmaps/UNIFIED_STRATEGIC_ROADMAP_2026-01-12.md)** for:
+- Task merging analysis (overlap with existing roadmap)
+- Dependency graph
+- Execution priority recommendations
+- Conflict identification
+
+---
+
 ## Specification Template
 
 All new specifications should follow the standard template: [SPEC_TEMPLATE.md](./SPEC_TEMPLATE.md)
 
+---
+
 ## Total Estimated Development Time
 
-| Priority | Hours (Low) | Hours (High) |
+| Category | Hours (Low) | Hours (High) |
 |----------|-------------|--------------|
-| CRITICAL | 110h | 110h |
-| HIGH | 216h | 256h |
-| MEDIUM | 384h | 504h |
-| **TOTAL** | **710h** | **870h** |
+| Cooper Rd Sprint (Approved) | 710h | 870h |
+| User Flow Gap Analysis (New) | 220h | 220h |
+| **TOTAL** | **930h** | **1,090h** |
+
+---
 
 ## How to Use These Specs
 
@@ -69,6 +119,8 @@ All new specifications should follow the standard template: [SPEC_TEMPLATE.md](.
 2. **During Development:** Reference the API contracts and data models
 3. **Testing:** Use the acceptance criteria as your test checklist
 4. **Questions:** Raise issues if spec is unclear or needs updating
+
+---
 
 ## Spec Approval Process
 
@@ -80,4 +132,4 @@ All new specifications should follow the standard template: [SPEC_TEMPLATE.md](.
 
 ---
 
-*Last Updated: December 30, 2025*
+*Last Updated: 2026-01-12*
