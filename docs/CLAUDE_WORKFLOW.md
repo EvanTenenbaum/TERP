@@ -2,15 +2,85 @@
 
 ## The Perfect System for Working with AI Agents on TERP
 
-**Version:** 2.1
-**Last Updated:** November 30, 2025
+**Version:** 2.2
+**Last Updated:** January 12, 2026
 
 ---
-
 
 ## Core Principle: Test-Driven Quality
 
 TERP operates on a **test-first** principle. Every feature, fix, and component is tracked not just for its development status, but for its **test coverage**. This is managed through a **Testing Roadmap System** that is fully integrated into our development workflow.
+
+---
+
+## Requirement Traceability Protocol (RTP)
+
+> **Purpose:** Prevent loss of requirements when transforming source data (meetings, transcripts, specs) into roadmap tasks.
+
+### Core Rule: Every Item Gets an ID
+
+**When analyzing source material (meetings, transcripts, specs, user requests):**
+
+1. **Assign unique IDs** to every extractable requirement
+   - Format: `{SOURCE}-{NUMBER}` (e.g., `MEET-001`, `REQ-042`, `SPEC-015`)
+   - Source prefixes: `MEET` (meeting), `REQ` (user request), `SPEC` (specification), `BUG` (bug report)
+
+2. **Track in traceability matrix** at the end of every roadmap document
+   - Every ID must appear exactly once
+   - Include: Wave/Phase, Section, Priority, Status
+
+3. **Validate before finalizing** (Simple Count Check)
+   ```
+   □ Source items counted: ___ items
+   □ Roadmap items listed: ___ items
+   □ Match? YES/NO
+   ```
+
+### Roadmap Deliverable Requirements
+
+**Every roadmap document MUST include:**
+
+1. **Executive Summary** with item counts by category/wave
+2. **Full task listings** with IDs in each section
+3. **Appendix: Traceability Matrix** - Complete list of ALL source items with wave/section assignment
+4. **Validation Summary** showing source count = roadmap count
+
+### Quick Validation (Run Before Commit)
+
+```bash
+# Count source items (adjust grep pattern for your source format)
+SOURCE_COUNT=$(grep -c "MEET-[0-9]" source_analysis.md)
+
+# Count roadmap items
+ROADMAP_COUNT=$(grep -c "MEET-[0-9]" roadmap.md | head -1)
+
+# Should match (allowing for multiple references per item)
+echo "Source: $SOURCE_COUNT, Roadmap unique items: check Appendix A"
+```
+
+### Example Traceability Matrix (Appendix A format)
+
+```markdown
+| Item ID | Description | Wave | Section | Status |
+|---------|-------------|------|---------|--------|
+| MEET-001 | Dashboard cash display | 1 | 1.1 | 🔴 TODO |
+| MEET-002 | Multi-location tracking | 1 | 1.1 | 🔴 TODO |
+| ... | ... | ... | ... | ... |
+
+**Validation:** 75/75 items accounted for ✅
+```
+
+### When to Apply RTP
+
+| Scenario | Apply RTP? |
+|----------|------------|
+| Creating roadmap from meeting notes | ✅ Yes |
+| Creating roadmap from user requests | ✅ Yes |
+| Creating specs from requirements | ✅ Yes |
+| Simple bug fix | ❌ No (use existing BUG-xxx) |
+| Code refactoring | ❌ No |
+
+**Key Principle:** If you're transforming 10+ items from source → deliverable, use RTP to ensure nothing is lost.
 
 ---
 
