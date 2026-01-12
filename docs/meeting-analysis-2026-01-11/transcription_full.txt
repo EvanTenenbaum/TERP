@@ -1,0 +1,1228 @@
+[00:00.0 - 00:01.0] It really is.
+[00:01.0 - 00:06.8] That's what I was thinking about that on Friday when I was working on this, like this is not
+[00:06.8 - 00:13.7] what I expected to be doing.
+[00:13.7 - 00:14.7] So I think...
+[00:14.7 - 00:15.7] If we sell this to like large distributors, you should charge them.
+[00:15.7 - 00:16.7] I don't know what.
+[00:16.7 - 00:17.7] We'll see how good it is.
+[00:17.7 - 00:18.7] We'll see how good it is.
+[00:18.7 - 00:19.7] I mean, honestly, I think the biggest...
+[00:19.7 - 00:20.7] Part of me is like, I want this to be my secret sauce, but on the other part, it's like, it's
+[00:20.7 - 00:21.7] such a fucking pain in the ass.
+[00:21.7 - 00:37.7] I feel like you might also be able to sell little modules of it.
+[00:37.7 - 00:43.8] Like most people probably don't need most of this, you know, like they need like...
+[00:43.8 - 00:44.8] I don't need most of this, probably.
+[00:44.8 - 00:45.8] Yeah.
+[00:45.8 - 00:50.1] I mean, I feel like we've specced it out in a way that like you certainly don't need most
+[00:50.1 - 00:51.1] of it.
+[00:51.1 - 00:53.0] But you could also do some things like the live shopping or whatever.
+[00:53.0 - 00:56.6] Like, I think that could actually really add value, right?
+[00:56.6 - 00:57.6] Fucking dope.
+[00:57.6 - 00:58.6] And like make money.
+[00:58.6 - 00:59.6] But also in terms of like...
+[00:59.6 - 01:00.6] Live shopping is someone that has the app?
+[01:00.6 - 01:01.6] No, that's somebody like sitting in your...
+[01:01.6 - 01:02.6] Oh, sitting in your...
+[01:02.6 - 01:03.6] Yeah.
+[01:03.6 - 01:04.6] Yeah, yeah, yeah.
+[01:04.6 - 01:05.6] We can change the nomenclature, whatever, but...
+[01:05.6 - 01:06.6] That makes perfect...
+[01:06.6 - 01:07.6] Live shopping is great.
+[01:07.6 - 01:08.6] It doesn't need to be any different.
+[01:08.6 - 01:09.6] And I'll probably...
+[01:09.6 - 01:20.2] I'm going to let Clawd keep running and not implement its fixes yet.
+[01:20.2 - 01:24.2] Because it might take a minute to do its thing.
+[01:24.2 - 01:25.2] I don't know.
+[01:25.2 - 01:28.2] You want to walk and come back in two minutes if you want to?
+[01:28.2 - 01:29.2] Cool.
+[01:29.2 - 01:30.2] Well, let's...
+[01:30.2 - 01:31.2] I think it's still working.
+[01:31.2 - 01:32.2] Let's run through it once.
+[01:32.2 - 01:33.2] Let's do it.
+[01:33.2 - 01:34.2] Okay.
+[01:34.2 - 01:36.2] And what I would like most is just...
+[01:36.2 - 01:39.2] You want to just do a day?
+[01:39.2 - 01:40.2] Feedback.
+[01:40.2 - 01:43.7] Well, first I'm going to run you through all the modules and just like toss out ideas or
+[01:43.7 - 01:47.8] things you want different because I'll be able to...
+[01:47.8 - 01:49.9] Like you don't have to, but...
+[01:50.6 - 01:52.6] And then we can kind of go through some of the flows.
+[01:52.6 - 01:53.6] I'm excited.
+[01:53.6 - 01:54.6] All right.
+[01:54.6 - 02:02.7] So you've seen the dashboard before.
+[02:02.7 - 02:08.5] Is this something that feels like you want more investment in, in terms of like when
+[02:08.5 - 02:15.0] you show up, are there specific widgets or specific pieces of data that...
+[02:15.0 - 02:18.0] My current dashboard, you probably know what's on it.
+[02:18.0 - 02:19.0] I'm going to just look at it.
+[02:19.2 - 02:20.2] Perfect.
+[02:20.2 - 02:21.2] Yeah.
+[02:21.2 - 02:22.2] That'd be helpful.
+[02:22.2 - 02:25.6] So my current dashboard says how much money I have available right now.
+[02:25.6 - 02:28.1] Like total across locations or...
+[02:28.1 - 02:29.1] Locations.
+[02:29.1 - 02:30.1] There's only...
+[02:30.1 - 02:31.1] What do you mean?
+[02:31.1 - 02:32.1] There's only one location.
+[02:32.1 - 02:37.1] Like here, this is how much, this is how much I have in available money.
+[02:37.1 - 02:42.6] This is how much money I actually have, but there's this number is available, which is
+[02:42.6 - 02:43.6] after payable scheduled.
+[02:43.6 - 02:44.6] Okay.
+[02:44.6 - 02:45.6] Okay.
+[02:45.6 - 02:47.9] So I got 30 grand in payables.
+[02:47.9 - 02:49.9] This is how much I actually have.
+[02:49.9 - 02:51.9] So that number is a little lower.
+[02:51.9 - 02:53.5] I have two locations with cash.
+[02:53.5 - 02:56.7] I have what Z has and what I have.
+[02:56.7 - 03:02.4] I recently made, this is a tangent, because I kept my audit tipping off every fucking
+[03:02.4 - 03:03.5] week and it's driving me crazy.
+[03:03.5 - 03:08.7] So now I have something, a new tab that keeps track and it's been perfect so far, which
+[03:08.7 - 03:15.6] is I have how much she has, how much money she has.
+[03:15.6 - 03:18.2] Anytime she pulls money out, it just goes in here.
+[03:18.2 - 03:22.6] She keeps writing as a positive, so I keep just typing it to make it negative.
+[03:22.6 - 03:26.2] And then there's the, then I handed her some more files.
+[03:26.2 - 03:29.7] I make sure to only hand her money that I know how much is there.
+[03:29.7 - 03:31.7] So then I always know how much fucking money she has.
+[03:31.7 - 03:33.1] And then that's the total.
+[03:33.1 - 03:37.0] And then this is her audit, which is exactly the same, or it's like off 400 bucks, so it's
+[03:37.0 - 03:38.0] fine.
+[03:38.0 - 03:41.0] What's the difference between what this is doing versus what was happening before?
+[03:41.0 - 03:50.6] What was happening before was this number is, it could be a mistake in a lot of places.
+[03:50.6 - 03:53.3] It could be a mistake in money coming in.
+[03:53.3 - 03:56.4] Like maybe I forget to write something down or forget to take something out.
+[03:56.4 - 03:58.7] It could be a mistake in expenses.
+[03:58.7 - 04:03.0] It could be a mistake in payments where we, because we have these huge payments all the
+[04:03.0 - 04:07.0] time when you copy that and then you paste it down here.
+[04:07.0 - 04:11.8] Sometimes it gets, it pastes over somebody else's payment and you just never really know
+[04:11.8 - 04:19.2] if it's off and you know, there's just, there's just many areas for air versus just in and
+[04:19.2 - 04:20.2] out.
+[04:20.2 - 04:21.2] Great.
+[04:21.2 - 04:22.2] Like this is just super easy.
+[04:22.2 - 04:25.2] And because of that, now we can start it back to 33.
+[04:25.2 - 04:26.5] She takes out all the money.
+[04:26.5 - 04:28.6] I add her, give her another 200.
+[04:28.6 - 04:30.0] I always know exactly what she has.
+[04:30.0 - 04:31.0] Oh, it's starting for it.
+[04:31.0 - 04:32.0] I see.
+[04:32.0 - 04:33.0] Okay.
+[04:33.0 - 04:34.0] Okay.
+[04:34.0 - 04:35.0] Because every week we're going to do this.
+[04:35.0 - 04:36.0] You know, she started 271.
+[04:36.0 - 04:37.0] Gave her another 200.
+[04:37.0 - 04:38.0] She ended at 233.
+[04:38.0 - 04:39.0] Boom.
+[04:39.0 - 04:40.0] Start a new week.
+[04:40.0 - 04:41.0] 112.
+[04:41.0 - 04:42.0] Starts tomorrow.
+[04:42.0 - 04:43.0] 233.
+[04:43.0 - 04:44.0] Everything's going to come out.
+[04:44.0 - 04:45.0] Um, good.
+[04:45.0 - 04:48.3] But anyway, get back to dashboard.
+[04:48.3 - 04:51.5] We have how much we've paid in the shift.
+[04:51.5 - 04:53.0] We reset this every shift change.
+[04:53.0 - 04:56.0] So on my shift, we did 2.7.
+[04:56.0 - 04:57.0] Cool.
+[04:57.0 - 04:58.0] How much you've paid.
+[04:58.0 - 04:59.0] Okay.
+[04:59.0 - 05:00.0] We have payables due.
+[05:00.0 - 05:05.9] That's like, that becomes, I don't know how Ryan managed it, but I think basically that
+[05:06.9 - 05:09.0] there's some magic in the spreadsheet that adds up.
+[05:09.0 - 05:13.0] I don't even understand how it works, frankly, of like all this.
+[05:13.0 - 05:16.1] When it hits zero, it becomes due.
+[05:16.1 - 05:18.1] When the inventory hits zero.
+[05:18.1 - 05:19.1] The live inventory.
+[05:19.1 - 05:20.1] Okay.
+[05:20.1 - 05:21.1] Yeah.
+[05:21.1 - 05:22.1] So, and this I'm pretty used to.
+[05:22.1 - 05:25.8] I'm used to this number always being kind of huge because I have so much inventory.
+[05:25.8 - 05:31.0] If I have sold half, I don't really tend to pay people until I hit zero.
+[05:31.0 - 05:33.3] So that's just kind of vaguely nice to know.
+[05:33.3 - 05:35.4] Payable schedules, how much money, that's always good.
+[05:35.4 - 05:37.6] Sorry, just going back real quick.
+[05:37.6 - 05:42.8] Is that something that feels important is, well, so you have like a payables bucket overall
+[05:42.8 - 05:50.4] and then payables due and payables due is only when the inventory for that like batch
+[05:50.4 - 05:53.2] of what you've taken in hits zero.
+[05:53.2 - 05:54.2] When that flower hits zero.
+[05:54.2 - 05:55.2] Okay.
+[05:55.2 - 05:56.2] Yeah.
+[05:56.2 - 05:57.2] That batch of flower.
+[05:57.2 - 05:58.2] Yeah.
+[05:58.2 - 05:59.2] Somebody has 10 things, five of them are at zero.
+[05:59.2 - 06:00.2] Yeah.
+[06:00.2 - 06:01.2] I get it.
+[06:01.2 - 06:02.2] Those five are due now.
+[06:02.2 - 06:03.2] So, oh, I see.
+[06:03.2 - 06:04.2] So when a specific skew hits zero.
+[06:05.0 - 06:09.8] Because if someone has 10 skews, I think it just, it's not, yeah, it's nice to just kind
+[06:09.8 - 06:15.1] of keep that number under like 500-ish, like you don't want it creeping up because you're
+[06:15.1 - 06:16.1] getting lazy and busy.
+[06:16.1 - 06:20.6] You're like, oh my God, you know, you're just like, oh, spend money, like get rid of it,
+[06:20.6 - 06:21.6] you know?
+[06:21.6 - 06:25.0] And then there's a total number of units on hand, which is useful.
+[06:25.0 - 06:28.8] And there's the office owned, which is useful just to make sure that you're not buying too
+[06:28.8 - 06:31.5] much weed, which we don't tend to buy much anyway.
+[06:31.5 - 06:32.5] Right.
+[06:32.5 - 06:33.5] Yeah.
+[06:33.5 - 06:34.5] So, yeah.
+[06:34.5 - 06:35.5] So, I mean, it's just a non-consignment, basically.
+[06:35.5 - 06:36.5] That I've cashed out.
+[06:36.5 - 06:37.5] Any cashed out inventory that's still live.
+[06:37.5 - 06:38.5] Mm-hmm.
+[06:38.5 - 06:39.5] Cool.
+[06:39.5 - 06:40.5] Okay.
+[06:40.5 - 06:41.5] I think that's, that's all that's on my dashboard.
+[06:41.5 - 06:42.5] Okay.
+[06:42.5 - 06:45.5] And then obviously there's like just money going in and out, which is nice to be, you
+[06:45.5 - 06:49.5] know, be able to kind of scroll through and be like, oh shit, I forgot to write that thing
+[06:49.5 - 06:50.5] down.
+[06:50.5 - 06:57.0] Like I can kind of basically like look at my day on, I don't know, whatever, this day
+[06:57.0 - 07:04.0] and be like, oh shit, I forgot to write down that I paid Smoggy, you know, like, oh, is
+[07:04.0 - 07:05.0] that in there?
+[07:05.0 - 07:06.0] You know?
+[07:06.0 - 07:07.0] Yeah.
+[07:07.0 - 07:08.0] And then I can just scroll and be like, yes, it's in there.
+[07:08.0 - 07:09.0] Okay.
+[07:09.0 - 07:10.0] So it's kind of just like.
+[07:10.0 - 07:11.0] Cool.
+[07:11.0 - 07:12.0] The ins and outs.
+[07:12.0 - 07:21.0] Do you, would it, it would be nice to have that all consolidated into one place, I would
+[07:21.0 - 07:22.0] imagine.
+[07:22.0 - 07:23.0] We'll see.
+[07:23.0 - 07:24.0] Okay.
+[07:24.0 - 07:25.0] It's how it is now.
+[07:25.0 - 07:26.0] Great.
+[07:26.0 - 07:27.0] All right.
+[07:27.0 - 07:28.0] Cool.
+[07:28.0 - 07:43.0] So, um, right now we have, tarry codes are basically going to be changed to just like
+[07:43.0 - 07:44.0] your vendor code.
+[07:44.0 - 07:45.0] Essentially.
+[07:45.0 - 07:46.0] Yeah.
+[07:46.0 - 07:47.0] Whatever it is.
+[07:47.0 - 07:54.0] Do you have many clients that are buyers and suppliers?
+[07:54.0 - 07:55.0] Yes.
+[07:55.0 - 07:56.0] Okay.
+[07:56.0 - 07:57.0] Cool.
+[07:57.0 - 07:58.0] Good.
+[07:58.0 - 07:59.0] That's one thing.
+[07:59.0 - 08:00.0] I mean, not a ton, but I have.
+[08:00.0 - 08:01.0] You have enough?
+[08:01.0 - 08:02.0] I have probably half a dozen.
+[08:02.0 - 08:12.0] Me mostly being my buddy, Jesse, where his tab is the most annoying just in that, like,
+[08:12.0 - 08:15.3] we credit his tab for shipping.
+[08:15.3 - 08:17.0] We credit his tab for products.
+[08:17.0 - 08:19.7] We credit his tab for flowers that he's brought in.
+[08:19.7 - 08:22.5] We credit his shipping products.
+[08:22.5 - 08:23.5] Then he took product.
+[08:23.5 - 08:24.5] He took two flowers.
+[08:24.5 - 08:25.5] Then we credit him for all the shit he dropped off.
+[08:25.5 - 08:26.5] Shit he dropped off.
+[08:26.5 - 08:27.5] He took a small order.
+[08:27.5 - 08:28.5] He bought some babes.
+[08:28.5 - 08:29.5] Okay.
+[08:29.5 - 08:30.5] You know, like it goes back and forth and then it's like, then I throw on here, Oh, I gave
+[08:30.5 - 08:41.5] him 150 grand, you know, like it's kind of a lot of in and out.
+[08:41.5 - 08:42.5] Okay.
+[08:42.5 - 08:43.5] Cool.
+[08:43.5 - 08:44.5] Um, that makes sense.
+[08:44.5 - 08:45.5] And it's something that we have a functionality for.
+[08:45.5 - 08:46.5] Amazing.
+[08:46.5 - 08:47.5] Yeah.
+[08:47.5 - 08:51.5] Um, a client can be any of these, but that's good to know specifically.
+[08:51.5 - 08:58.5] I'm not sure if I have built in a billing for, uh, services in the right way.
+[08:58.5 - 09:06.5] So like shipping for instance, um, it can just be for BX services.
+[09:06.5 - 09:07.5] It doesn't need to say shipping.
+[09:07.5 - 09:12.5] No, but just like just some way of being able to create an invoice basically.
+[09:12.5 - 09:18.5] It just goes as a credit, just credit them 2,700 for consulting on 36 units.
+[09:18.5 - 09:19.5] Okay.
+[09:20.5 - 09:21.5] Okay.
+[09:21.5 - 09:22.5] Cool.
+[09:22.5 - 09:28.5] Um, I mean, we're skipping around a little bit, but, um, in terms of the ins and out
+[09:28.5 - 09:33.5] of cash, basically I've created what you said, basically, which is just like a super simple
+[09:33.5 - 09:34.5] ledger.
+[09:34.5 - 09:38.5] Um, that also tells you how much they owe.
+[09:44.5 - 09:45.5] Oh, okay.
+[09:45.5 - 09:48.5] So, um, I'm paying him a hundred thousand dollars.
+[09:48.5 - 09:49.5] Yeah.
+[09:49.5 - 09:50.5] Because he, yeah, he owes.
+[09:50.5 - 09:51.5] Got it.
+[09:51.5 - 09:52.5] Okay.
+[09:52.5 - 09:53.5] So he paid us, received client payment.
+[09:53.5 - 09:54.5] Yeah.
+[09:54.5 - 09:57.5] So this is what your Z would be doing and similarly.
+[09:57.6 - 10:04.6] This also should tell you how much you owe.
+[10:04.6 - 10:05.6] Great.
+[10:05.6 - 10:06.6] Okay.
+[10:06.6 - 10:07.6] We'll go back.
+[10:07.6 - 10:15.6] So, adding clients doesn't happen that often, right?
+[10:15.6 - 10:16.6] No.
+[10:16.6 - 10:17.6] Okay.
+[10:17.6 - 10:18.6] So, my only question here is...
+[10:18.6 - 10:23.6] I mean, that's going to happen two or three times a year.
+[10:23.6 - 10:24.6] Oh, yeah.
+[10:24.6 - 10:25.6] That's like, okay.
+[10:25.6 - 10:26.6] Yeah.
+[10:27.6 - 10:28.6] We'll go through that flow.
+[10:28.6 - 10:30.6] I just want to make sure it didn't need to be much faster.
+[10:30.6 - 10:34.6] Like, you can...
+[10:34.6 - 10:38.6] When you add a client, are they sitting in front of you and you're basically just like,
+[10:38.6 - 10:41.6] we'll create a new line or row or something like that?
+[10:41.6 - 10:42.6] Mm-hmm.
+[10:42.6 - 10:43.6] It's just all under others.
+[10:43.6 - 10:44.6] Oh, okay.
+[10:44.6 - 10:45.6] All under others.
+[10:45.6 - 10:46.6] I see.
+[10:46.6 - 10:47.6] Like, here's the latest client I made.
+[10:47.6 - 10:48.6] Okay.
+[10:48.6 - 10:51.6] I tagged him his name and then the person that brought him in.
+[10:51.6 - 10:53.6] And then I throw him in.
+[10:53.6 - 10:54.6] Nice.
+[10:54.6 - 10:55.6] And then you have him in the refer.
+[10:55.6 - 10:56.6] Okay.
+[10:56.6 - 10:57.6] Cool.
+[10:57.6 - 10:58.6] We'll also...
+[10:58.6 - 10:59.6] We'll run through some flows still.
+[10:59.6 - 11:00.6] I just want to know.
+[11:00.6 - 11:01.6] Yeah.
+[11:01.6 - 11:02.6] I'm excited.
+[11:02.6 - 11:10.6] I want to get your thought on orders and POs and things like that.
+[11:10.6 - 11:19.6] Because typically, like, what this has is, like, you create...
+[11:19.6 - 11:20.6] It went through best practices.
+[11:21.6 - 11:24.6] And, like, you'll create a sales order and it tags it as...
+[11:24.6 - 11:27.6] Creating a sales order is someone sitting there buying weed right now?
+[11:27.6 - 11:28.6] Mm-hmm.
+[11:28.6 - 11:29.6] Okay.
+[11:29.6 - 11:30.6] Yeah.
+[11:30.6 - 11:39.6] And I did build in the referrer thing based on...
+[11:39.6 - 11:40.6] Oh, God.
+[11:40.6 - 11:41.6] Because...
+[11:41.6 - 11:45.6] It's easier to look somebody up because I won't necessarily remember.
+[11:45.6 - 11:47.6] Mikey brings in four different buyers.
+[11:47.6 - 11:48.6] I don't remember all their fucking names.
+[11:48.6 - 11:51.6] I can look up Mikey, and then I can see all the people he brings in,
+[11:51.6 - 11:53.6] and then find them that way.
+[11:53.6 - 11:54.6] Ooh.
+[11:54.6 - 11:55.6] Okay.
+[11:55.6 - 11:56.6] Got it.
+[11:56.6 - 11:57.6] So, basically, yeah.
+[11:57.6 - 12:02.6] The referred by needs to actually map to whoever the customer is,
+[12:02.6 - 12:03.6] or vice versa.
+[12:03.6 - 12:08.6] Just so I can find them, or I need to have a place to scroll to find...
+[12:08.6 - 12:10.6] I mean, right now you can scroll, but it's...
+[12:10.6 - 12:11.6] I think that's not the way.
+[12:11.6 - 12:12.6] I think it's going to be too long.
+[12:12.6 - 12:13.6] Yeah, for sure.
+[12:13.6 - 12:14.6] Because we have, like, 40 people.
+[12:14.6 - 12:15.6] Right.
+[12:15.6 - 12:20.6] So, when you bring in a customer, or when they bring in a customer,
+[12:20.6 - 12:21.6] whether they're new or not,
+[12:21.6 - 12:25.6] you need to basically be able to very quickly see who is already associated
+[12:25.6 - 12:26.6] with them.
+[12:26.6 - 12:27.6] I can search.
+[12:27.6 - 12:28.6] I can just go M-I-K.
+[12:28.6 - 12:31.6] And I can just tag the end of their name, the shortcut for them, too.
+[12:31.6 - 12:33.6] Like, it doesn't have to be anything fancy.
+[12:33.6 - 12:34.6] Sure.
+[12:34.6 - 12:35.6] I can just...
+[12:35.6 - 12:36.6] As long as I can type...
+[12:36.6 - 12:37.6] Like, as long as...
+[12:37.6 - 12:38.6] Like, I can go right now.
+[12:38.6 - 12:43.6] I can go Cha, and then pop up all the Cha clients, you know?
+[12:43.6 - 12:44.6] Yep.
+[12:46.6 - 12:47.6] Okay.
+[12:47.6 - 12:48.6] That's great.
+[12:48.6 - 12:50.6] You shouldn't have to do anything like that.
+[12:50.6 - 12:52.6] I mean, it'll be very easy to just say, basically,
+[12:52.6 - 12:58.6] only list here the clients or the people that are associated with this other
+[12:58.6 - 12:59.6] client.
+[12:59.6 - 13:00.6] Great.
+[13:00.6 - 13:01.6] It creates a map anyway.
+[13:01.6 - 13:02.6] All right.
+[13:14.6 - 13:16.6] And markups don't have to be fixed, I'm assuming, right?
+[13:16.6 - 13:17.6] Just to say it out loud.
+[13:17.6 - 13:20.6] But markups are generally based upon how long I've had the product,
+[13:20.6 - 13:22.6] how much of it I have.
+[13:22.6 - 13:23.6] Sometimes...
+[13:23.6 - 13:24.6] Yeah.
+[13:24.6 - 13:25.6] So, basically...
+[13:25.6 - 13:26.6] It's easy to change.
+[13:26.6 - 13:27.6] It's lower.
+[13:27.6 - 13:28.6] Very easy to change.
+[13:28.6 - 13:33.6] And you should be able to do it on an order level, too.
+[13:33.6 - 13:37.6] So, if, like, you see a whole...
+[13:37.6 - 13:39.6] You know, if, like, at the end, they're like,
+[13:39.6 - 13:41.6] Hey, I'll take all this, but, honestly,
+[13:41.6 - 13:44.6] I need a couple thousand bucks knocked off or something,
+[13:44.6 - 13:46.6] as opposed to doing it on a...
+[13:46.6 - 13:48.6] I've never had anybody say that, but, yeah.
+[13:48.6 - 13:49.6] Oh, really?
+[13:49.6 - 13:50.6] Okay.
+[13:50.6 - 13:51.6] Cool.
+[13:51.6 - 13:52.6] Great.
+[13:52.6 - 13:55.6] It's more like, I'll take all hundred flowers,
+[13:55.6 - 13:59.6] but I need them at, you know, a $10 margin, not a $15 margin.
+[13:59.6 - 14:00.6] Yeah.
+[14:00.6 - 14:01.6] Okay.
+[14:01.6 - 14:02.6] Yeah.
+[14:02.6 - 14:03.6] All right.
+[14:03.6 - 14:08.6] The Sales Sheet Creator is something that's actually getting fixed right
+[14:08.6 - 14:11.6] now, but, basically, it's what it sounds like.
+[14:11.6 - 14:13.6] I have a virus sitting in front of me.
+[14:13.6 - 14:15.6] No, this is actually more of, like,
+[14:15.6 - 14:18.6] somebody wants you to send them a list of, like...
+[14:18.6 - 14:20.6] Oh, this is your list generator.
+[14:20.6 - 14:21.6] Yeah, basically.
+[14:21.6 - 14:22.6] Cool.
+[14:22.6 - 14:24.6] I don't use that as much anymore,
+[14:24.6 - 14:25.6] come to think of it.
+[14:25.6 - 14:27.6] Because of the website?
+[14:27.6 - 14:31.6] No, because of the website, and also because, like,
+[14:31.6 - 14:34.6] we just do so much live sales now.
+[14:34.6 - 14:35.6] Cool.
+[14:35.6 - 14:40.6] Like, we only do, like, list shops maybe, like, once a week.
+[14:40.6 - 14:43.6] I still use it multiple times a week, but it's not, like,
+[14:43.6 - 14:44.6] multiple times a day anymore.
+[14:44.6 - 14:45.6] Okay.
+[14:45.6 - 14:46.6] Cool.
+[14:46.6 - 14:47.6] Yeah.
+[14:47.6 - 14:50.6] Just do so much more live shopping in person.
+[14:50.6 - 14:52.6] Interesting.
+[14:52.6 - 14:53.6] I wonder, I mean...
+[14:53.6 - 14:56.6] Because the margins are so small.
+[14:56.6 - 15:00.6] More people shop off the website.
+[15:01.6 - 15:02.6] It's also getting fixed.
+[15:02.6 - 15:07.6] Okay.
+[15:07.6 - 15:12.6] Do you care much about invoices other than how it relates to ARIP?
+[15:12.6 - 15:14.6] Like, do you often, I mean, obviously not really,
+[15:14.6 - 15:21.6] but, like, do you often have to go into records to, like, be like,
+[15:21.6 - 15:26.6] no, dude, like, this is how much you owe me because it was this day,
+[15:26.6 - 15:28.6] and it was, like, these SKUs or whatever?
+[15:29.6 - 15:30.6] Okay.
+[15:30.6 - 15:34.6] But do you need to do it often by either, like,
+[15:34.6 - 15:38.6] what I'm trying to figure out is how important it is to be able to say,
+[15:38.6 - 15:43.6] like, you owe this much because of these three interactions,
+[15:43.6 - 15:44.6] like these three transactions.
+[15:44.6 - 15:49.6] Yeah, so, like, that happens most with, let's go to a live example,
+[15:49.6 - 15:55.6] Sean SF.
+[15:55.6 - 15:57.6] Okay, so this guy all the time.
+[15:57.6 - 16:03.6] He pays me, and he's like, what did I owe you before I sent you this much
+[16:03.6 - 16:06.6] in Bitcoin, and what did I owe you after?
+[16:06.6 - 16:07.6] Can you tell me?
+[16:07.6 - 16:10.6] And then I just have to just, like, go back and, like, delete it.
+[16:10.6 - 16:14.6] I'm like, okay, well, bro, before you paid me, you owed me 256,
+[16:14.6 - 16:17.6] and then you paid me, and it's 206, and that's because...
+[16:17.6 - 16:18.6] And I can just do that by hand.
+[16:18.6 - 16:19.6] Like, it's easy.
+[16:19.6 - 16:22.6] No, no, it's, I mean, it's auto-calculated.
+[16:22.6 - 16:24.6] Like, yeah.
+[16:24.6 - 16:26.6] Say out loud any of the things that you...
+[16:26.6 - 16:31.6] That amount is based upon this payment after, you know,
+[16:31.6 - 16:37.6] because that transaction costs 4%, and you pay 2.5% of that transaction fee.
+[16:37.6 - 16:38.6] Okay, that's good to know.
+[16:38.6 - 16:40.6] So this number is 50K.
+[16:40.6 - 16:44.6] He was trying to send 50K, and he sent 51,283,
+[16:44.6 - 16:49.6] which is 50K plus that 2.5% transaction fee.
+[16:49.6 - 16:51.6] And everybody has different transaction fees.
+[16:51.6 - 16:53.6] Some people pay all of it, some people pay none of it,
+[16:53.6 - 16:55.6] some people pay 4%.
+[16:55.6 - 16:58.6] Okay, that's a good one to know about if you don't have that.
+[16:58.6 - 17:00.6] Okay, so transaction fees.
+[17:00.6 - 17:02.6] Not hugely important because...
+[17:02.6 - 17:04.6] Well, I mean, you might as well build it in.
+[17:04.6 - 17:05.6] If you're doing it...
+[17:05.6 - 17:07.6] Yeah, and then I have a tab where I...
+[17:07.6 - 17:09.6] Once a month, then you should be...
+[17:09.6 - 17:11.6] Oh, I'm doing it a couple times a week.
+[17:11.6 - 17:17.6] And I have a tab where, here it is, the crypto tab.
+[17:17.6 - 17:19.6] So, like, these are crypto payments.
+[17:19.6 - 17:24.6] These are the dates of the crypto payments from all the different clients.
+[17:24.6 - 17:27.6] This is what they sent, and this is after 4%,
+[17:27.6 - 17:32.6] and then this is what this person just gave me in LA,
+[17:32.6 - 17:34.6] and then it came up, and then it's here.
+[17:34.6 - 17:37.6] So then I start a new set of receipts.
+[17:37.6 - 17:38.6] Got it.
+[17:38.6 - 17:40.6] And so it's not just crypto.
+[17:40.6 - 17:42.6] It's any payment may have a transaction fee associated with it.
+[17:42.6 - 17:45.6] All payments have transaction fees, almost.
+[17:45.6 - 17:48.6] Unless they're handing any cash personally.
+[17:48.6 - 17:49.6] I guess that's, yeah.
+[17:49.6 - 17:53.6] Because if they're out of area, you're paying payment processing companies.
+[17:53.6 - 17:54.6] Yeah.
+[17:54.6 - 17:55.6] That's good to know.
+[17:55.6 - 17:57.6] And they're all different.
+[17:57.6 - 17:59.6] Yeah.
+[17:59.6 - 18:01.6] They vary from 2% to 4%.
+[18:01.6 - 18:07.6] Do they vary every time, like, if one client is paying multiple times,
+[18:07.6 - 18:09.6] is it typically the same percentage fee?
+[18:09.6 - 18:10.6] Yeah.
+[18:10.6 - 18:14.6] So it'd be nice to have, like, a default set per client,
+[18:14.6 - 18:17.6] and then be able to edit it if you need to on a transaction level.
+[18:17.6 - 18:18.6] Yeah.
+[18:18.6 - 18:22.6] And some clients will also pay it on the other side,
+[18:22.6 - 18:27.6] like this person chips in.
+[18:29.6 - 18:32.6] I gave him a discount he asked for, chip in this.
+[18:32.6 - 18:35.6] So he pays his 3% on the side.
+[18:35.6 - 18:38.6] He gives this person $140K, and he's like,
+[18:38.6 - 18:43.6] here is my $3,700 in payment processing fees,
+[18:43.6 - 18:45.6] and then I chip in 1%.
+[18:45.6 - 18:47.6] Okay.
+[18:49.6 - 18:50.6] Cool.
+[18:50.6 - 18:54.6] And some people I pay the whole thing for, and some people I pay none of it.
+[18:54.6 - 18:55.6] Cool.
+[18:55.6 - 18:56.6] And sometimes it's different.
+[18:56.6 - 19:01.6] Sometimes people will show up, fly with some money, and hand it to me,
+[19:01.6 - 19:06.6] and then also send some via wire, as they would call it.
+[19:06.6 - 19:07.6] Cool.
+[19:07.6 - 19:08.6] Okay.
+[19:08.6 - 19:10.6] That's good to know.
+[19:12.6 - 19:15.6] Quick searches for inventory.
+[19:15.6 - 19:17.6] Right now –
+[19:17.6 - 19:19.6] But that's all pretty solvable with the Sheets version.
+[19:19.6 - 19:22.6] You just kind of manually plop it in.
+[19:22.6 - 19:24.6] The transaction piece and stuff?
+[19:24.6 - 19:25.6] Yeah.
+[19:25.6 - 19:26.6] Yeah.
+[19:26.6 - 19:29.6] I mean, it's not – it won't be complicated at all.
+[19:29.6 - 19:33.6] It's mostly just – I'm just making sure that I understand it fully,
+[19:33.6 - 19:36.6] so that when I go back later and I'm listening to this, I'm like –
+[19:36.6 - 19:37.6] Yeah.
+[19:37.6 - 19:38.6] Not just –
+[19:38.6 - 19:39.6] Please.
+[19:39.6 - 19:41.6] Trying to remember.
+[19:42.6 - 19:52.6] Do you, at this point, care about ratings showing up in a product category?
+[19:52.6 - 19:54.6] I like the – I really got excited.
+[19:55.2 - 19:58.4] About like let's say when I get some trop cherries
+[19:58.4 - 20:04.5] I'm like who the fuck one of these things you know like who likes them, and then it like automatically tags
+[20:04.5 - 20:10.4] Like who took those products last yeah, yeah, I like them like the suggested buyer. Yeah, cool
+[20:10.4 - 20:15.2] That's really cool. That is the foundation is definitely late for that already
+[20:16.6 - 20:18.6] In like the matchmaking
+[20:18.7 - 20:24.6] Service whatever you want to call it. It has also like the suggested buyer thing. I didn't include that in that VP
+[20:25.0 - 20:29.0] But I built a filter for it, but but some people are always like
+[20:30.1 - 20:34.4] Next time you know it'd be really great to be able to go to someone's tab and be like
+[20:35.4 - 20:41.1] One it's like next time you get sour diesels from p4 make sure to let me know nice, okay, okay?
+[20:41.1 - 20:45.3] But I can write it on this tab, but I'm not necessarily gonna remember. Yeah for sure
+[20:46.3 - 20:48.3] Great, that's gonna be something that
+[20:48.3 - 20:51.4] In the wants-and-needs section maybe yeah, I mean in in the
+[20:52.6 - 20:59.1] Short medium term I would say like that is gonna be massively helpful because this thing will be able to pop it up so fast
+[20:59.1 - 21:01.1] yeah, or
+[21:01.1 - 21:06.9] Like somebody just asked me for 4,000 sodas. I'm like oh fuck to ask for sodas. It'd be nice for
+[21:07.4 - 21:11.0] TW to be like oh, I can ask these eight people they always have connections
+[21:12.2 - 21:17.0] Yep, ooh, okay, just like a product. Yeah interesting, okay, okay?
+[21:17.0 - 21:23.9] Yeah, interesting a vendor. That's not a slow-moving scooter or one day take over the products. He well actually he him and I are
+[21:24.7 - 21:30.3] Splitting it and he's sending me the all the file like the actual digital file so that I can upload it to the website cool
+[21:30.3 - 21:35.7] Yeah, I mean he has to also make sure they're like real and he can get them and you know like all that
+[21:35.7 - 21:37.8] Yeah, yeah, we should talk about it later
+[21:37.8 - 21:44.0] but the only question that we had we he we is around minimum orders and stuff because
+[21:44.9 - 21:46.9] Make sense yeah
+[21:47.4 - 21:49.0] the shipping
+[21:49.0 - 21:51.0] component of that
+[21:51.1 - 21:55.6] He's just gotta get tied into all the products people in LA which I can connect them to some of the ones
+[21:55.6 - 22:00.1] I know honestly. I mean based on the the things that he was listing out like it sounds
+[22:00.9 - 22:03.0] Like he has most of them great. Yeah
+[22:03.7 - 22:05.7] I'll bug him to send me the
+[22:05.8 - 22:08.8] The catalog again, and I'll share with you maybe before we put it up
+[22:08.8 - 22:10.8] Mm-hmm
+[22:12.5 - 22:14.5] Batches
+[22:18.2 - 22:20.9] Do you care that much right now like
+[22:21.6 - 22:24.7] everything's kind of like on a skew level, but a
+[22:25.2 - 22:30.2] Batch is basically a bunch of different skews brought in at once right so like this Bob brings in
+[22:30.5 - 22:32.5] Oh
+[22:32.6 - 22:33.8] Exactly
+[22:33.8 - 22:41.4] How important is that for you to be is important? How important is it for that to be tracked and surfaced?
+[22:42.7 - 22:44.7] in something like this
+[22:45.5 - 22:49.9] Relatively because I want to know when I because that person's like hey, how am I doing on my flowers?
+[22:49.9 - 22:55.2] I need to be able to pull up that client and be like I have this transaction a year blue dreams
+[22:55.3 - 23:00.9] And to your smalls left, do you want me to buy them for $50 less I can buy them now
+[23:01.9 - 23:06.2] They might be like no, let's hold up for a little bit longer, but you can drop the smalls by 50 bucks
+[23:07.0 - 23:09.0] Mmm, okay
+[23:09.0 - 23:11.0] Yeah
+[23:11.4 - 23:16.0] Got it, okay, and I can know when to pay out that person to
+[23:17.4 - 23:19.4] Because they're all at zero or something
+[23:19.4 - 23:19.6] Yeah
+[23:19.6 - 23:25.3] So it's nice to just kind of I can right now quickly scroll through inventory and see what I should pay
+[23:26.2 - 23:30.2] Based upon how long I've had it and how many zeros I see
+[23:31.5 - 23:32.7] nice
+[23:32.7 - 23:38.5] You know like yeah the experiences. Yeah, you know I'm sure you probably understand what I just said, but you know
+[23:38.5 - 23:41.6] I'm just like scrolling. I'm like oh, okay. This is red
+[23:42.3 - 23:46.7] This is all zeros. I should pay this person. This is not that old
+[23:46.7 - 23:49.1] I don't need to pay this person, but it's all zeros
+[23:51.8 - 23:57.1] Looking for chunks of zeros. Oh, those are all zeros. I could pay this person except he's out of town. I don't need to
+[23:58.0 - 24:00.0] this is
+[24:00.2 - 24:06.6] Nice zero I can delete this from inventory because I don't have any and this person's gone and the office owns it
+[24:07.8 - 24:12.6] Okay, scrolling scrolling scrolling see peas mean it's in payments already
+[24:13.8 - 24:15.8] scrolling scrolling
+[24:16.9 - 24:18.4] This person
+[24:18.4 - 24:24.3] Not all done. Oh, let's look for some red. Let's look for some red pretty fresh inventory and read you're saying is
+[24:24.9 - 24:26.9] Red means I've had it for more than two weeks
+[24:28.2 - 24:29.7] And is that
+[24:29.7 - 24:35.2] Because you're at that point you're like I need to move this or because it's more of a payment tracking thing both
+[24:35.2 - 24:39.1] Yeah, because this one I made a mistake in buying these lemon beans for 900
+[24:40.8 - 24:42.8] And I
+[24:43.8 - 24:45.8] Just need to flush these of the loss
+[24:46.7 - 24:49.7] You're right. So aging inventory. It's all I don't need to worry about these
+[24:49.7 - 24:57.2] I can delete this farmers intake because I own it and it's all zeros. How often are you scrolling in kind of while you're
+[24:59.0 - 25:04.6] In the midst of trying to sell something to look for red stuff or is it something that you do in the beginning of
+[25:04.6 - 25:06.1] the day, so you just have like
+[25:06.1 - 25:08.6] You just have an idea of kind of what's aging what's not
+[25:08.6 - 25:10.6] I mean ideally kind of on the dashboard you
+[25:10.8 - 25:15.8] You just have a quick view of like the aging stuff for like I mostly go back and forth to like let's say I had
+[25:15.8 - 25:17.2] This huge sale the other day
+[25:17.2 - 25:22.6] So I was going back and forth and back and forth because I'm taking things out of inventory writing the margin
+[25:23.0 - 25:28.4] Contacting the farmer. Maybe I'm at zero so I can delete it. Maybe I'm not at zero
+[25:28.4 - 25:33.3] So I pay for it, you know, or maybe I'm negotiating a price adjustment, you know on the fly
+[25:33.5 - 25:36.8] Like I did with this box of Browns here, you know
+[25:36.8 - 25:39.6] So I had to go back and forth and like how do I fit in for $10?
+[25:39.6 - 25:42.8] You know, I'm back and forth to the farmer and then changing the prices
+[25:43.3 - 25:44.7] Right
+[25:44.7 - 25:49.9] Because you're changing the price and then needing to change your margin. Yeah, and then how do I fit in for 10 bucks?
+[25:50.7 - 25:52.7] right, so the experience is
+[25:53.1 - 25:56.5] You have a shopper in front of you and they're like I'll take these for 20
+[25:56.5 - 26:01.4] But you have them for 20 you've listed them for 25 and so you need to talk to the farmer about dropping their price
+[26:01.4 - 26:03.4] Enough so that you can fit in. Yeah
+[26:03.7 - 26:08.4] So you're adjusting the sale price. Yeah, and so that's your margin
+[26:08.4 - 26:10.4] And so like here's
+[26:11.1 - 26:13.6] TT12 so I can scroll up to
+[26:14.4 - 26:21.4] T12 and find his Browns. Yeah, seven seventy five seventy five or seven seventy five seventy five
+[26:21.4 - 26:28.7] So that should line up. I should have made like ten dollars on all those. Yeah, ten seventy five ten dollars ten dollars and
+[26:30.2 - 26:32.7] Supers I mean fifteen bucks. Okay. Yeah
+[26:33.7 - 26:35.7] cool
+[26:35.7 - 26:41.1] That's also very helpful. So really batches of products need to be merged I think is what I'm hearing
+[26:44.4 - 26:50.3] Yeah, that's just I mean if I can just if I can just click the farmer name like t12
+[26:51.2 - 26:56.8] Mm-hmm. Okay, you know, yeah, I can just see all the flowers from the brand name that brand name
+[26:56.8 - 27:03.8] But then also a lot of people like to 12 will bring in a buddy's flower and will list it under t23, right?
+[27:03.8 - 27:05.9] So that's the brand still cool
+[27:06.7 - 27:10.0] Yeah, vendor and brand are two different things at this moment
+[27:12.6 - 27:16.5] Is something like this is which one is gonna be farmer code
+[27:18.0 - 27:24.6] That's brand. Yeah, those are all gonna change the farmer codes. Yeah, this is just all this is just placeholder. Oh, yeah
+[27:24.6 - 27:29.5] Oh my god, I just I'd love to start putting the kind of data I would use so it makes sense. Yeah
+[27:30.5 - 27:37.9] Yeah, that's part of what I would say this is about actually so great anything that you see so so brands are changing to farmer
+[27:37.9 - 27:42.7] Codes. Mm-hmm. Let's change those all to farmer codes and then vendors are the person who's dropping it off
+[27:42.7 - 27:46.7] Mm-hmm. And then do you want the vendor code?
+[27:48.3 - 27:53.3] To match the farmer code if it's the same person or do you want it to be?
+[27:54.2 - 27:56.5] You know what? I mean? Like it depends upon
+[27:57.3 - 28:04.0] It's sometimes n21 brings in his own flowers we call them n20s sometimes he brings in friends flowers, which are n21s
+[28:04.8 - 28:09.9] Right, so I don't think they necessarily match. I think we can just say the vendor is the farmers name
+[28:09.9 - 28:15.6] yeah, and the brand and sometimes it's the farmers name or sometimes the different like if
+[28:16.5 - 28:21.8] N25 brings in something or brings in two things. He might bring in some n25 and then some n24
+[28:21.8 - 28:26.4] So it could be like you're okay with the vendor being like Bob's buddy. Mm-hmm. Yeah, okay
+[28:26.5 - 28:28.8] We'll just change it to it almost to it
+[28:29.6 - 28:34.6] It'll still want to type Bob. It'll pop up Bob, but it'll also they'll be Bob or Bob's buddy
+[28:34.6 - 28:36.9] And then I can click on Bob's buddy. I see
+[28:37.0 - 28:41.6] I'm just trying to think of how it'd be easy like when I search my phone exactly search Evan
+[28:41.6 - 28:45.1] I see all of your friends pop up because I've saved them under your name also
+[28:45.7 - 28:51.7] Nice. Alright, so what I'm hearing is actually having the vendor tied to the brand
+[28:52.3 - 28:55.8] because you would just basically what you're saying is you would type in Evan and
+[28:56.5 - 28:59.1] That would at least all of your friends. Yeah, so
+[28:59.9 - 29:03.0] Everything I bring in basically. Yeah. Mm-hmm. Yeah, cool
+[29:03.0 - 29:09.6] So you want to yeah, and I don't really need to see skew. I'm not sure what skew is gonna do for me
+[29:09.6 - 29:13.9] Um, I think it's great. Yeah, there's all I'm saying, right?
+[29:14.4 - 29:20.2] Because that's basically like this number over here that I've just discovered that relates to the website
+[29:21.0 - 29:23.0] Yeah, that's funny
+[29:25.1 - 29:27.1] Okay, great
+[29:29.5 - 29:31.5] No, okay great
+[29:33.8 - 29:35.4] Don't need skew
+[29:35.4 - 29:43.2] Do you like the way that the product is currently shown here? Which is it's basically then just strain and
+[29:44.1 - 29:45.2] then
+[29:45.2 - 29:47.2] product category and then
+[29:47.2 - 29:53.0] It's gonna be it's gonna I'm gonna want to be able to just organize it by the category
+[29:52.8 - 29:57.1] or is that I have now. Yep, we'll be able to customize all these ones.
+[29:58.8 - 30:06.8] In, actually I don't need some of these, they're by mistake, so Sativa. Oh yeah, so we could go,
+[30:08.4 - 30:15.0] I don't know. I mean probably, Deps, Inns, Inns Candy, Sativa,
+[30:15.0 - 30:25.2] uh, stuff. What about Smalls? Smalls, we could have a category, but we always forget about that,
+[30:25.2 - 30:30.1] so yeah, it could be Smalls. We usually just call them Smalls, and then we just know them,
+[30:30.1 - 30:33.6] but there's so few Smalls in the market that it's kind of hard, but yeah, we should have Smalls as
+[30:33.6 - 30:39.5] a category. Cool, I mean we'll be able to edit category and stuff, you can customize it whenever
+[30:39.5 - 30:44.6] you want, but just for the purpose of getting us to a place so it matches your brain. Smalls,
+[30:44.6 - 30:48.8] I have a feeling that actually what we're doing right, what we're doing today is getting this
+[30:48.8 - 30:53.6] into a state where actually it matches your brain, so then you'll be able to actually use this. I
+[30:53.6 - 30:58.9] think that's probably the best way to do this. I love it. And we'll run through some flows really
+[30:58.9 - 31:03.6] quickly so that I can change them to match what your natural flows feel like. Love that. Okay,
+[31:05.1 - 31:10.3] this might be something that's, yeah, on the fixed list that hopefully the robots are doing.
+[31:11.0 - 31:17.4] Um, this samples out. I've given samples to people. Or samples that you're holding.
+[31:17.4 - 31:19.5] For someone else. Yeah. Okay, great, love that.
+[31:21.2 - 31:30.0] Um, this is intake. Do you want... Intake? Yeah, like when you're buying. Okay, cool.
+[31:30.0 - 31:36.4] What do you want intake to be called for purchasing? Um, so a farmer's sitting down in
+[31:36.4 - 31:41.6] front of me and has a bunch of weed. I'm typing up their order. I'm typing up what they're dropping
+[31:41.6 - 31:47.3] off. Exactly. Okay. So yeah, let's actually look at this. Great, let's do it. So there's COD.
+[31:48.0 - 31:55.5] There's, um, uh, we've got to get rid of the expected. There should be a way to search or type
+[31:55.5 - 32:00.9] in a supplier name. Like I should be able to type in that box. Okay. Because, because I have 100
+[32:00.9 - 32:06.8] suppliers and I can't scroll through 100 things. Great. Yep. Awesome. And then, um, we'll get rid
+[32:06.8 - 32:13.5] of the expected. Well, do you want an expected delivery date? Yeah. I mean, generally it should
+[32:13.5 - 32:18.4] just automatically be, it's here now. It should match. But default should be matching. Default
+[32:18.4 - 32:25.1] should be matching, but sometimes it'll be like there tomorrow. Great. Or next week. Yeah. All
+[32:25.1 - 32:28.8] right. And then we need to make sure that the expected delivery date is tied in somewhere that,
+[32:28.9 - 32:37.4] um, bubbles up expected deliveries for the day. Um, yeah. Sometimes I basically pay for things
+[32:37.4 - 32:42.8] before I get them, but that's pretty rare. That's like a once a month thing. Great. Um,
+[32:42.8 - 32:49.3] and almost everything is on net 15. There's, it's either, it's either net 15 or it's,
+[32:50.4 - 32:55.6] it's, if it's not net 15, it's just paid for when it's gone. Okay. So that should be,
+[32:55.6 - 33:03.0] I think the two options got it. Great. Like when it hits zero, it's do, uh, do on sale.
+[33:03.0 - 33:08.9] Do on sale. Yeah, I have that actually. Okay, cool. So we need to figure out the payment terms
+[33:08.9 - 33:14.8] because doing receipt is different than it should be different than COD. Also,
+[33:14.8 - 33:22.7] these are all customizable too. Um, yeah, so it should be due on
+[33:23.5 - 33:29.5] when it hits zero. And that's not necessarily for an entire purchase order. That's on a line
+[33:29.5 - 33:34.7] item by line item. No, I do it for mostly for an entire purchase order because I'm not going to
+[33:34.7 - 33:39.4] see, I'm not going to pay someone eight times for one drop. I'm going to try to pay them for once
+[33:39.4 - 33:43.8] per drop. But I thought that you said that when you're looking through stuff and you see zeros on
+[33:43.8 - 33:50.4] an individual like image where all zeros, all zeros, all zeros. Occasionally if someone drops
+[33:50.4 - 33:56.0] off like a hundred grand, they'll want a payment in the middle. Okay. So I'd say 25% of the time
+[33:56.0 - 34:04.4] someone wants a payment, uh, a, what do you call it? A payment for what's done so far. Yeah. Okay.
+[34:04.4 - 34:09.2] An installment payment. A payment for what's hit zero already. Yep. And then there's also
+[34:09.2 - 34:13.3] one thing we do all the time is put down payments when people are bringing in flowers. That's a,
+[34:13.3 - 34:15.9] this should also have down payment. Okay, cool. That's something that we do
+[34:15.9 - 34:25.2] a third of the time. Okay, great. Yeah. Um, I'm curious whether this is also already being
+[34:25.2 - 34:31.7] worked on by the robot, but obviously this needs to be not already, um, created inventory, but you
+[34:31.7 - 34:37.0] should be able to quickly because we make up most names that I'd say most of the product that comes
+[34:37.0 - 34:44.1] in, we have to change the name for. So we're constantly making up new names like gingerbread
+[34:44.1 - 34:51.5] runs aren't a thing or sweet potato, which is not a thing. It should be. Yeah. Um, okay. Uh,
+[34:51.5 - 34:57.2] and then the unit cost here also, yeah, I think that this just needs to get, I have the specs.
+[34:57.2 - 35:05.7] There's obviously a upper range and the low end and, or like ask. And sometimes we just take notes
+[35:05.7 - 35:14.3] like ask for flex or, um, best we can, like we have to be able to just write that kind of note
+[35:14.3 - 35:20.2] and see it next to the item when we're like, when we're going to sell it, you know? So when I'm
+[35:20.2 - 35:25.6] scrolling through inventory or looking up an item that someone might want to buy, it should say to
+[35:25.6 - 35:35.5] me best we can do or best we can do, you know, not just arrange because got it. So if you're
+[35:35.5 - 35:49.3] right here, basically you need to see, um, notes in a range. Yeah. Okay. Do you need to see skill
+[35:50.0 - 35:54.9] category? It's important. Well, this should be retail price. Items should actually be,
+[35:54.9 - 35:59.4] this should be showing you. I don't really care what the retail price is because the retail price
+[35:59.4 - 36:04.3] only matters to the person that I'm selling it to. Well, retail price, actually what it means
+[36:04.4 - 36:12.9] is all of these are at zero right now. But, um, if you have Nolan, Nolan actually has a, um,
+[36:12.9 - 36:22.0] a built in default margin. And so the retail price is actually your price, the cogs plus
+[36:22.0 - 36:29.5] whatever the margin is. So like $10 on outs or whatever, whatever this should, this would then
+[36:29.5 - 36:35.0] say, got it. Because Nolan would be looking at this on his iPad or this is for you. This is
+[36:35.0 - 36:40.3] internal. Okay. So, um, the live shopping is where they're looking at it and they would not. So why
+[36:40.3 - 36:46.0] would I need two prices facing me? That's what I'm talking. Yeah. Good question. Um, I only need
+[36:46.0 - 36:53.7] to know the cost and the notes about the product. Got it. You don't. Well, so this is like a quick
+[36:53.7 - 37:00.7] action thing basically. And so what this would be showing you is how much actually they're going to
+[37:00.7 - 37:05.3] be seeing, like what the price is that they're going to be seeing. Who's they? Nolan, your
+[37:05.3 - 37:11.3] customer. Uh, okay. But there's Nolan sitting in front of, Nolan's looking at his iPad and I'm
+[37:11.3 - 37:16.9] looking at the inventory sheet. Yeah, exactly. Got it. Exactly. Okay, cool. Um, also this,
+[37:16.9 - 37:21.7] and he's like, can I take that for, and then I know what price he's looking at. Exactly. Oh,
+[37:22.2 - 37:26.8] it's like battleship. I love that. Yeah. That's actually pretty funny. But yeah,
+[37:26.8 - 37:31.8] I do need to have notes. I don't need to see skill. You need to be able to add when you,
+[37:31.8 - 37:36.7] before you press quick ad, you need to be able to put in how many units actually you want to add
+[37:36.7 - 37:42.0] there because I'm selling to Nolan right now. Yeah, exactly. Got it. Yeah. I need to be able
+[37:42.0 - 37:48.8] to know how many units I'm adding and what I can add them for. Let's do it this way just to make
+[37:48.8 - 37:54.4] sure that we're actually looking at the same thing. Yeah. Okay. How many units you can add?
+[37:55.0 - 38:00.1] Yeah. And what you can add it for, um, four units, four units
+[38:02.9 - 38:10.1] right now. Yeah. Um, yeah. The product needs to be actually not the skew, but the,
+[38:10.2 - 38:21.4] uh, the straight name and, and then category and a brand. Yeah.
+[38:28.3 - 38:33.3] All right. That needs to get fixed. You'd be able to add dollars. So many little things.
+[38:33.6 - 38:38.1] So then you have it here. You can save it as a draft. How often do you do that?
+[38:39.9 - 38:42.9] I just pretty much sit with the buyer till they're done. Okay.
+[38:45.7 - 38:51.7] Well, yeah, I mean, I guess I'd want to save it as a draft to text it to someone to have them walk
+[38:51.7 - 38:56.0] around the room and look at their order to make sure they like it. Nice. Okay. That happens.
+[38:56.5 - 39:02.1] That's different than live shopping too. Okay, cool. Yeah. But then they have the iPad
+[39:02.1 - 39:05.3] in their hand and they're walking around and being like, yes, this all looks good. We don't
+[39:05.3 - 39:09.2] do it as much, but it probably happens two or three times a week where we have someone that
+[39:09.2 - 39:13.9] like just wants to make sure he doesn't have a bunch of Duffy flowers and kind of just like
+[39:13.9 - 39:19.1] grok what he's about to take. That makes sense. Cool. Yes. All right. That's good to know. So
+[39:19.1 - 39:23.9] the live shopping is one, like for them to actually be like choosing the right product.
+[39:23.9 - 39:30.4] To actually be like choosing stuff, but also be able to review an order that may be a saved
+[39:31.0 - 39:36.9] sales order. Or it could just also just be, I think live shopping, it can just be like
+[39:37.6 - 39:40.6] where they're at so far. They can just pick up the iPad and walk around and be like, yes.
+[39:41.2 - 39:45.3] Yeah. Nice. But I'm not even sure how much that'll happen anymore because
+[39:46.1 - 39:50.4] we're going to have things so efficiently packed.
+[39:50.4 - 39:51.9] That was all over the room as much,
+[39:51.9 - 39:54.8] so people would just be packing it.
+[39:54.8 - 39:57.0] Yeah, I thought about that.
+[39:57.0 - 39:58.9] How often do people like to be able to look
+[39:58.9 - 40:00.8] at their whole order before?
+[40:00.8 - 40:03.1] Just new people, small shoppers.
+[40:03.1 - 40:03.6] Yeah.
+[40:06.5 - 40:09.4] People like to pack things into their own bags.
+[40:09.4 - 40:10.5] Oh.
+[40:10.5 - 40:12.5] Because they have their own carbon duffel bags,
+[40:12.5 - 40:14.6] so they want to vac seal them.
+[40:14.6 - 40:17.0] Not vac seal them, but put it into their thing,
+[40:17.0 - 40:19.0] whatever their process is.
+[40:19.0 - 40:20.7] Whatever the security is.
+[40:20.7 - 40:21.7] OK.
+[40:21.7 - 40:22.6] Cool.
+[40:22.6 - 40:23.8] This is super helpful.
+[40:27.9 - 40:28.9] All right.
+[40:28.9 - 40:35.2] I'm going to move on from purchase orders,
+[40:35.2 - 40:38.2] because I think we already did most of that.
+[40:41.1 - 40:44.4] Spreadsheet view, we'll see if I can click
+[40:44.4 - 40:48.6] and implement here in a minute.
+[40:48.6 - 40:49.1] Accounting.
+[40:57.0 - 41:04.8] I imagine this view is only going to be for you.
+[41:04.8 - 41:07.2] Who do you think is going to be using the full accounting
+[41:07.2 - 41:10.1] view that's different than just being able to do the?
+[41:10.1 - 41:11.2] Just me and TW.
+[41:11.2 - 41:14.0] OK.
+[41:14.0 - 41:15.6] Are there things?
+[41:15.6 - 41:19.2] I'm mostly excited for people like Hippo or Danny
+[41:19.2 - 41:22.5] to be able to be like, your debt is aging badly.
+[41:22.5 - 41:25.3] You need to bring in more money, and here
+[41:25.3 - 41:28.0] are the top 20 flowers that you are most excited about
+[41:28.0 - 41:30.4] are available right now.
+[41:30.4 - 41:32.5] The ones that they're like, let me know whenever
+[41:32.5 - 41:34.3] P10 and COO come in.
+[41:34.3 - 41:36.9] You know, like their phone dings, or whatever.
+[41:39.8 - 41:41.8] I can't imagine there'll be an app that'll ding.
+[41:41.8 - 41:42.5] That'd be crazy.
+[41:42.5 - 41:45.4] But they can click and check, and they
+[41:45.5 - 41:47.6] can see at the top, they'll see notifications.
+[41:47.6 - 41:50.6] Here are all your favorite things.
+[41:50.6 - 41:53.2] So, OK, great.
+[41:53.2 - 41:54.5] Oh, motherfucker.
+[41:54.5 - 41:55.3] OK, cool.
+[41:55.3 - 41:57.1] Hopefully that's going to be fixed.
+[41:57.1 - 42:00.9] So this is a VIP portal.
+[42:00.9 - 42:02.7] What it'll show is how much of their credit
+[42:02.7 - 42:03.6] is already being used.
+[42:03.6 - 42:07.6] It should also probably have just a dollar amount.
+[42:07.6 - 42:08.9] Love it.
+[42:08.9 - 42:11.8] I just made up this VIP status, but really what it.
+[42:11.8 - 42:14.9] How well are you paying your debt down?
+[42:15.0 - 42:17.1] It should be just how healthy their debt is cycling.
+[42:17.1 - 42:18.6] Are they cycling it?
+[42:18.6 - 42:23.7] For me, healthy debt is cycling like every two to three weeks
+[42:23.7 - 42:25.4] would be like platinum.
+[42:25.4 - 42:32.6] And four weeks is still gold, but as soon as they touch five,
+[42:32.6 - 42:36.0] then it's like bronze.
+[42:36.0 - 42:37.1] OK.
+[42:37.1 - 42:37.8] OK, cool.
+[42:37.8 - 42:38.3] Yeah.
+[42:41.3 - 42:42.3] They should be able to.
+[42:42.6 - 42:46.0] Or like diamond is like a week.
+[42:46.0 - 42:47.2] Where they're coming in.
+[42:47.2 - 42:50.9] Just like basically zero, and either cashing everything out
+[42:50.9 - 42:52.4] or just paying everything.
+[42:52.4 - 42:54.4] Their tab is rotating once a week.
+[42:54.4 - 42:57.6] Do you care about, so you're talking about debt right now.
+[42:57.6 - 43:01.5] Previously, it's also, you've mentioned how much revenue.
+[43:01.5 - 43:04.1] They're all like a combination, like a weighted combination
+[43:04.1 - 43:04.6] of like.
+[43:04.6 - 43:05.9] That's leaderboard, yeah.
+[43:05.9 - 43:06.4] OK.
+[43:06.4 - 43:07.8] That's what a lot of people are.
+[43:07.8 - 43:11.8] I guess that's what I'm hoping this turns
+[43:11.8 - 43:15.4] into is more of a leaderboard, but like a anonymized one,
+[43:15.4 - 43:18.0] obviously, so they don't see the names of whoever they're with.
+[43:18.0 - 43:20.6] Yeah, they'll just know what position they're in.
+[43:20.6 - 43:22.7] And it would be nice to have it have
+[43:22.7 - 43:25.5] some very simple but smart recommendations of like.
+[43:25.5 - 43:27.0] What to do to climb the leaderboard.
+[43:27.0 - 43:27.6] Yeah.
+[43:27.6 - 43:31.4] Like if you bring in another 50, 80K this week,
+[43:31.4 - 43:33.0] you'll go up to number two.
+[43:33.0 - 43:35.6] People will be like, what the fuck do I get once I get to number
+[43:35.6 - 43:36.1] two?
+[43:36.1 - 43:37.8] You should have medals.
+[43:37.8 - 43:38.7] We can have medals.
+[43:38.7 - 43:39.7] We can have medals.
+[43:39.7 - 43:46.1] We can also have markup percent.
+[43:48.8 - 43:50.0] Whoa.
+[43:50.0 - 43:50.9] Or like.
+[43:50.9 - 43:54.0] Because the number one spot gets 50 on ends.
+[43:54.0 - 43:55.8] And the number of the top three spots
+[43:55.8 - 43:57.9] get 50 on ends and 25 on depths.
+[43:57.9 - 44:00.7] And then once you hit four, five, six,
+[44:00.7 - 44:06.7] you know, then you're like $100 and $35 or $75 and $35.
+[44:06.7 - 44:07.7] You know, like.
+[44:07.7 - 44:08.6] That would be wild.
+[44:08.6 - 44:10.7] That'd be real competitive.
+[44:10.7 - 44:14.0] I think people would love that shit.
+[44:14.0 - 44:16.2] Or I mean, we'd just probably have to do more of just
+[44:16.2 - 44:17.6] like a discount.
+[44:17.6 - 44:18.1] Yeah.
+[44:18.1 - 44:19.3] But that's kind of sick.
+[44:19.3 - 44:21.4] Or even like a credit system.
+[44:21.4 - 44:24.0] Like, well, yeah, a discount could be cool.
+[44:27.2 - 44:28.4] OK.
+[44:28.4 - 44:29.5] We'll figure that out.
+[44:29.5 - 44:32.8] Start to gamify this a little bit.
+[44:32.8 - 44:36.5] They'll also be able to see like the live appointments there.
+[44:36.5 - 44:37.1] And you'll be.
+[44:37.1 - 44:37.9] Live appointments?
+[44:37.9 - 44:41.6] Or what appointments are booked or what they can book,
+[44:41.6 - 44:42.4] basically.
+[44:42.4 - 44:43.3] I love that.
+[44:43.3 - 44:45.0] Keep looking at my phone because.
+[44:45.0 - 44:47.2] I don't know how the fuck's that going to work.
+[44:47.2 - 44:49.4] Oh, because our schedule will be in this program.
+[44:49.4 - 44:50.2] Yeah, exactly.
+[44:50.2 - 44:50.7] OK, got it.
+[44:50.7 - 44:52.3] I was like, what the fuck's it going to look like?
+[44:52.3 - 44:52.8] Yeah.
+[44:52.8 - 44:55.7] That's great.
+[44:55.7 - 44:57.3] And I'll be able to see Z's schedule.
+[44:57.3 - 44:58.9] And she can say I'll have multiple rooms
+[44:58.9 - 45:00.0] and all that kind of stuff.
+[45:00.0 - 45:02.7] Yeah, exactly.
+[45:02.7 - 45:03.2] Right.
+[45:03.2 - 45:05.1] The multiple rooms is something that we still
+[45:05.1 - 45:05.8] need to build into.
+[45:08.0 - 45:09.2] Back to this.
+[45:09.2 - 45:10.7] OK.
+[45:10.7 - 45:13.9] And it'd be nice to be able to, for people, I don't know,
+[45:13.9 - 45:16.9] if people can track their hours in here, too.
+[45:16.9 - 45:20.4] Not completely unnecessary, but like right now everybody's
+[45:20.4 - 45:22.2] tracking them on an iPad or something.
+[45:22.2 - 45:23.1] You know what I mean?
+[45:23.1 - 45:25.7] Are they paid hourly?
+[45:25.7 - 45:27.2] Two people are paid hourly.
+[45:27.2 - 45:29.9] Everybody else is on salary.
+[45:29.9 - 45:31.1] Not that it matters much.
+[45:31.1 - 45:31.8] Doesn't matter.
+[45:31.8 - 45:32.4] Doesn't matter.
+[45:32.4 - 45:33.0] Just keep going.
+[45:33.0 - 45:34.3] Forget about it.
+[45:34.3 - 45:34.8] OK.
+[45:34.8 - 45:36.1] It's so not important.
+[45:36.1 - 45:40.3] I do have on the calendar, which I'll probably
+[45:40.3 - 45:41.9] send you a little update later today,
+[45:41.9 - 45:43.1] because there's a few things.
+[45:43.1 - 45:47.0] And when I do work on something, sometimes it
+[45:47.0 - 45:48.8] bumps it off the navigation.
+[45:48.8 - 45:50.4] And even while I was coming over here,
+[45:50.4 - 45:52.3] I made a change to the calendar.
+[45:52.3 - 45:54.8] And so now we can't see it on here.
+[45:54.8 - 45:55.6] So I'll probably.
+[45:55.6 - 45:57.6] Calendar's right there on the bottom.
+[45:57.6 - 46:00.3] Oh, it moved it.
+[46:00.3 - 46:05.7] So it has, yeah.
+[46:05.7 - 46:10.6] It should have requests.
+[46:10.6 - 46:14.2] And that is coming in from the VIP portal of people.
+[46:14.2 - 46:15.2] A wall of appointments.
+[46:15.2 - 46:16.3] Yeah, exactly.
+[46:16.3 - 46:18.3] And then, do you want time off here?
+[46:18.3 - 46:19.9] That should show, it basically shifts.
+[46:19.9 - 46:23.3] It's showing who's on what shifts.
+[46:23.3 - 46:25.8] I don't want time off there.
+[46:25.8 - 46:27.4] Who's on what shifts?
+[46:27.4 - 46:29.8] Like when people just put in for vacation.
+[46:29.8 - 46:31.8] It's like vacation, basically.
+[46:31.8 - 46:33.3] And you'll be able to have a view.
+[46:33.3 - 46:33.8] Yeah.
+[46:33.8 - 46:34.3] OK.
+[46:34.3 - 46:34.6] Why not?
+[46:34.9 - 46:37.2] It's nice to know if Momo's there or not there,
+[46:37.2 - 46:41.4] and who's covering for her, and when Z's not available.
+[46:41.4 - 46:44.8] Not super important, but vaguely important.
+[46:44.8 - 46:45.3] Cool.
+[46:45.3 - 46:46.8] Yeah.
+[46:46.8 - 46:48.8] All right.
+[46:48.8 - 46:51.1] This starts to get a little bit more technical,
+[46:51.1 - 46:53.9] but I just at least want to show it to you, which is,
+[46:53.9 - 46:56.2] so user roles, basically.
+[46:56.2 - 46:59.0] So you would have a photographer role.
+[46:59.0 - 47:01.8] And they could only really see.
+[47:01.8 - 47:02.6] Inventory.
+[47:02.6 - 47:03.9] Exactly.
+[47:03.9 - 47:07.4] And so you create the role type, and then in roles,
+[47:07.4 - 47:09.3] you start to give it permissions, basically.
+[47:09.3 - 47:09.8] Great.
+[47:14.9 - 47:18.7] I'm going back and forth between whether or not,
+[47:18.7 - 47:20.1] I just don't know how important this
+[47:20.1 - 47:24.9] is going to be to make it super user-friendly to change or not.
+[47:24.9 - 47:26.7] Probably it's not going to get edited much.
+[47:26.7 - 47:27.5] I don't think so.
+[47:27.5 - 47:29.3] If it needs to, I'll probably have you do it.
+[47:29.3 - 47:31.1] Yeah.
+[47:31.1 - 47:32.4] OK, cool.
+[47:32.4 - 47:33.8] Because it does get, I mean, I did
+[47:33.8 - 47:36.0] it by literally feature by feature,
+[47:36.0 - 47:37.8] so that we can just turn things on and off.
+[47:37.8 - 47:40.6] It would be nice for someone to be able to log in and see
+[47:40.6 - 47:44.2] how much money I owe them, or they owe me, or whatever.
+[47:44.2 - 47:46.2] But that's also not that important.
+[47:46.2 - 47:46.7] Oh, yeah.
+[47:46.7 - 47:48.3] So this is for team members.
+[47:48.3 - 47:48.8] Cool.
+[47:48.8 - 47:49.4] This is for-
+[47:49.4 - 47:52.5] Well, I mean, some people are vaguely team members
+[47:52.5 - 47:56.0] that we have money going back and forth with all the time.
+[47:56.0 - 47:56.9] It's just nice.
+[47:56.9 - 47:58.6] I get asked all the time, what did I
+[47:58.6 - 48:00.9] take from you on January 6th?
+[48:00.9 - 48:03.8] Oh, you mean like pick, like?
+[48:03.8 - 48:05.9] Like what flowers did I pick up on January 6th?
+[48:05.9 - 48:06.6] I don't remember.
+[48:06.6 - 48:09.2] Can you send me that?
+[48:09.2 - 48:10.6] Oh, from customers, you mean?
+[48:10.6 - 48:11.4] Yeah, buyers.
+[48:11.4 - 48:13.8] Like a buyer is like, what did I pick up on January 6th?
+[48:13.8 - 48:14.7] I forgot.
+[48:14.7 - 48:17.1] And so I'm hoping their VIP portal will show them
+[48:17.1 - 48:18.4] all their recent purchases.
+[48:25.7 - 48:30.2] So right now, it has it by invoice.
+[48:30.9 - 48:31.7] OK, cool.
+[48:31.7 - 48:35.2] They can go to their date, and they can see what they got.
+[48:35.2 - 48:36.5] That's all that's needed.
+[48:36.5 - 48:38.2] And how much money they owe us.
+[48:38.2 - 48:39.4] And how much they owe on it.
+[48:39.4 - 48:40.3] I don't know where.
+[48:40.3 - 48:41.9] No, how much money they owe us in total,
+[48:41.9 - 48:43.4] because people don't pay by invoice.
+[48:43.4 - 48:46.5] People just give me chunks.
+[48:46.5 - 48:47.9] Payables.
+[48:47.9 - 48:50.6] Payables, that's how much they owe.
+[48:50.6 - 48:54.2] Receivables is how much you owe them.
+[48:54.2 - 48:55.5] And I guess-
+[48:55.5 - 48:57.2] I think they'll just want a total number.
+[48:57.2 - 48:59.0] Like those words are a little confusing.
+[48:59.0 - 48:59.6] Cool.
+[48:59.7 - 49:02.0] So how much I owe, how much you owe me.
+[49:02.0 - 49:03.7] I barely know what those words know.
+[49:03.7 - 49:04.2] Great.
+[49:04.2 - 49:05.8] So 98% of other people won't.
+[49:05.8 - 49:06.8] This is super helpful.
+[49:06.8 - 49:09.8] OK.
+[49:09.8 - 49:11.2] Be able to add my needs.
+[49:11.2 - 49:12.6] Sweet, that's like, I-
+[49:12.6 - 49:13.1] I want this.
+[49:13.1 - 49:14.9] Will it automatically look at the sheets
+[49:14.9 - 49:16.4] and be like, wow, you seem-
+[49:16.4 - 49:18.0] I can set the categories of like,
+[49:18.0 - 49:21.5] I need to always have 300 things under $100.
+[49:21.5 - 49:24.9] I need to always have 300 things between six and seven.
+[49:24.9 - 49:26.7] And so I set those, and then that's
+[49:26.7 - 49:28.5] going to auto-populate my needs.
+[49:28.5 - 49:30.2] Or how is my needs going to populate?
+[49:34.0 - 49:36.2] Wait, what do you mean I want to always have?
+[49:36.2 - 49:39.4] So in inventory, like let's say I, for some reason,
+[49:39.4 - 49:41.8] have no smalls.
+[49:41.8 - 49:44.4] And I know that my business does best
+[49:44.4 - 49:49.0] if I have 200 pounds of smalls between 75 and 125.
+[49:48.1 - 49:52.1] Can you tell me about you or you as a user using the VIP portal?
+[49:52.1 - 50:00.7] As a VIP portal, I can say, hey, Doc needs 300 pounds of inns at $600 right now.
+[50:00.7 - 50:05.5] And that is going to populate from the fact that I told it that I always need to have
+[50:05.5 - 50:13.4] 300 inns between 6 and 7, 200 things between 5 and 6, 100 things between 75 and 125.
+[50:13.4 - 50:18.0] And then it's looking at my inventory and so it sees the inventory and it's like, wow,
+[50:18.0 - 50:19.6] you don't actually have those things.
+[50:19.6 - 50:20.6] And then my needs pops up.
+[50:20.6 - 50:21.6] Whoa, Doc is really low on quads right now.
+[50:21.6 - 50:27.1] He doesn't have any flowers between 1,000 and 12, I should bring him some.
+[50:27.1 - 50:28.1] Got it.
+[50:28.1 - 50:37.3] So what this is right now is my needs is if I'm Joe, your client, basically, this is where
+[50:37.3 - 50:44.5] they can type, I want 100, I need 100 inns at this price.
+[50:44.5 - 50:48.1] For my supplies, I have this in case somebody needs it.
+[50:48.1 - 50:49.1] Got it.
+[50:49.1 - 50:56.2] But what you're saying is you actually, it would be helpful to have an office ask list
+[50:56.2 - 50:57.2] or something.
+[50:57.2 - 50:59.8] The office is low on- Yeah, cool.
+[50:59.8 - 51:04.4] That should be really pretty simple to build in based on the data that we have.
+[51:04.4 - 51:05.9] Otherwise, how do I see what they need?
+[51:05.9 - 51:10.0] Do I have one portal where I see all of the VIPs and what they're asking?
+[51:10.0 - 51:11.0] Yeah.
+[51:11.0 - 51:12.0] Okay, great.
+[51:12.0 - 51:13.0] Amazing.
+[51:13.0 - 51:19.3] So if I have his needs and what he has supplied, it should be like the office is-
+[51:19.3 - 51:20.3] It's a matchmaking thing.
+[51:20.3 - 51:21.3] It's a matchmaking thing.
+[51:21.3 - 51:25.1] But it should just all, basically, it should just always be looking at, because people
+[51:25.1 - 51:26.6] always ask me, what do you need right now?
+[51:26.6 - 51:27.6] Nice.
+[51:27.6 - 51:28.6] And I'm like, I don't know.
+[51:28.6 - 51:29.6] I roughly need this.
+[51:29.6 - 51:30.6] Cool.
+[51:30.6 - 51:31.6] You know?
+[51:31.6 - 51:32.6] Nice.
+[51:32.6 - 51:33.6] So office needs, it's kind of a separate thing.
+[51:33.6 - 51:36.8] But actually, now we're talking about one of the most powerful things probably.
+[51:36.8 - 51:37.8] I think so.
+[51:37.8 - 51:38.8] Yeah.
+[51:38.8 - 51:40.7] So people can stalk us without having to talk to us.
+[51:40.7 - 51:41.7] Nice.
+[51:41.7 - 51:42.7] And that shouldn't just be in a VIP portal.
+[51:43.3 - 51:46.6] That should probably be somewhere that you can also quickly copy and paste to send people
+[51:46.6 - 51:47.6] if they ask.
+[51:47.6 - 51:48.6] Because not everyone is probably going to-
+[51:48.6 - 51:49.6] Yeah, totally.
+[51:49.6 - 51:50.6] Have one of these-
+[51:50.6 - 51:51.6] I mean, I'm going to give a bunch of people portals.
+[51:51.6 - 51:52.6] Yeah.
+[51:52.6 - 51:53.6] I don't know how many people are going to use them.
+[51:53.6 - 51:54.6] But I guess you could be like, bro, just click the link.
+[51:54.6 - 51:55.6] Yeah.
+[51:55.6 - 51:56.6] Yeah.
+[51:56.6 - 51:57.6] Okay.
+[51:57.6 - 51:58.6] Cool.
+[51:58.6 - 51:59.6] But yeah, there should be, and there should be parameters because different times of year
+[51:59.6 - 52:00.6] all want different things.
+[52:00.6 - 52:01.6] And then I'm assuming-
+[52:01.6 - 52:02.6] Cool.
+[52:02.6 - 52:03.6] Eventually the AI will start to algorithmically be like, wow, you seem to know a lot more
+[52:03.6 - 52:04.6] than I do.
+[52:04.6 - 52:05.6] Why aren't you purchasing more?
+[52:05.6 - 52:18.5] And then it's going to be telling me what to buy.
+[52:18.5 - 52:21.5] Just to be clear for the recording, we're not doing AI yet.
+[52:21.5 - 52:26.6] And the reason I say that is because this fucking, every AI that I use is constantly
+[52:26.6 - 52:29.9] trying to push me to like, use AI.
+[52:29.9 - 52:30.9] Yeah.
+[52:30.9 - 52:31.9] Like, integrate AI.
+[52:31.9 - 52:32.9] And every time I say like-
+[52:32.9 - 52:33.9] That's fine.
+[52:34.1 - 52:35.1] That's fine.
+[52:35.1 - 52:38.7] I want to set all the parameters, but it'll just be interesting to be like, it'll see
+[52:38.7 - 52:43.7] my data history of what's buying and selling and be like, why the fuck aren't you buying
+[52:43.7 - 52:44.7] 200 candy bars?
+[52:44.7 - 52:45.7] Nice.
+[52:45.7 - 52:46.7] Stop buying 30.
+[52:46.7 - 52:47.7] Yep.
+[52:47.7 - 52:48.7] Great.
+[52:48.7 - 52:49.7] You sell out in five days.
+[52:49.7 - 52:50.7] Yeah.
+[52:50.7 - 52:51.7] Buy more.
+[52:51.7 - 52:52.7] Here's the optimal amount you should buy from this farmer.
+[52:52.7 - 52:53.7] That's really, yeah.
+[52:53.7 - 52:57.7] You know, you keep losing money on the last 18, stop buying 50.
+[52:57.7 - 52:58.7] Buy 30.
+[52:58.7 - 52:59.7] Interesting.
+[52:59.7 - 53:00.7] You know.
+[53:00.7 - 53:03.7] Can you think of any other ones like that?
+[53:04.5 - 53:06.5] I mean, I guess like-
+[53:08.5 - 53:13.5] Here's a suggested purchase price for this product based upon what you paid last time.
+[53:13.5 - 53:14.5] That's always important.
+[53:14.5 - 53:15.5] Yep.
+[53:15.5 - 53:17.5] Because I'm always getting into it with farmers.
+[53:17.5 - 53:19.5] Like, farmer, I want fucking 900.
+[53:19.5 - 53:21.5] And I'm like, how about eight?
+[53:21.5 - 53:24.5] And then we said we want 850 and they sell out too quick.
+[53:24.5 - 53:25.5] And then I feel sheepish.
+[53:25.5 - 53:29.5] Or maybe they age for two months because they were $50 too high.
+[53:30.5 - 53:31.5] Nice.
+[53:31.5 - 53:32.5] It should also probably-
+[53:33.3 - 53:36.3] Suggested what that item sold for last time is always useful.
+[53:36.3 - 53:37.3] Cool.
+[53:37.3 - 53:39.3] So I don't have to look it up because I do that all the time.
+[53:39.3 - 53:40.3] Right.
+[53:40.3 - 53:41.3] Of similar products.
+[53:41.3 - 53:44.3] Not just from the same vendor, but just similar products.
+[53:44.3 - 53:46.3] Probably just that vendor.
+[53:46.3 - 53:47.3] Just that vendor.
+[53:47.3 - 53:48.3] Yeah.
+[53:48.3 - 53:53.3] Because different vendors, you know, like I get LCGs from Bob that are 650 always and
+[53:53.3 - 53:56.3] I get them from Patty and they're always 1200.
+[53:56.3 - 53:58.3] So it shouldn't correlate.
+[53:58.3 - 54:01.3] The only thing it should correlate is what I paid last time.
+[54:02.1 - 54:06.1] So that also gets into the whole grading thing.
+[54:06.1 - 54:10.1] Not necessarily because farmers generally grow the same quality product.
+[54:10.1 - 54:17.1] Right, but wouldn't you have a different grade on the one that costs 650 versus the one that
+[54:17.1 - 54:18.1] costs 850?
+[54:18.1 - 54:19.1] Yeah, totally.
+[54:19.1 - 54:21.1] But it could just pop up a receipt of like-
+[54:21.1 - 54:26.1] It'd just be nice to almost just have a link of what I paid last time when I saw that farmer.
+[54:26.1 - 54:27.1] Oh.
+[54:27.1 - 54:28.1] What you paid and what you sold.
+[54:28.9 - 54:29.9] Yeah, what did it sell for last time?
+[54:29.9 - 54:33.9] When Patty comes in and brings her glues again, like I'm not necessarily, maybe I haven't
+[54:33.9 - 54:34.9] seen her in six months.
+[54:34.9 - 54:36.9] What did I get her last time?
+[54:36.9 - 54:40.9] Like pop up, you paid 775 last time.
+[54:40.9 - 54:43.9] Not what we agreed to pay, but what we actually paid.
+[54:43.9 - 54:46.9] Like the receipt from the last time I saw that farmer.
+[54:46.9 - 54:47.9] Nice.
+[54:47.9 - 54:48.9] Great.
+[54:48.9 - 54:49.9] Yeah.
+[54:49.9 - 54:54.9] Because we still need the receipt tool to save and send to the person every time, which
+[54:54.9 - 54:56.9] is what you made and we've gotten pretty good at.
+[54:56.9 - 54:57.9] Thanks.
+[54:58.7 - 55:02.7] So that someone can see what they brought in, I can send it to them and they can look
+[55:02.7 - 55:05.7] at the shelf and be like, yes, that is indeed what I'm dropping off and I send it to them.
+[55:05.7 - 55:10.7] Because the error that we're finding that we're doing sometimes is like we're typing
+[55:10.7 - 55:14.7] up into the computer, whereas we used to have the hard copy and we'd walk around and be
+[55:14.7 - 55:15.7] like tick, tick, tick, tick.
+[55:15.7 - 55:16.7] Yeah.
+[55:16.7 - 55:22.7] And we're not actually, we've made several mistakes where I type up the receipt, but
+[55:22.7 - 55:27.7] maybe the count is off and then I'm not walking over with my laptop to be like, yes, yes,
+[55:28.5 - 55:33.5] you know, so a couple of times we've been off by 12 pounds, you know, because, you know,
+[55:33.5 - 55:36.5] the person stacking the weed is not talking.
+[55:36.5 - 55:37.5] We're not ticking it up.
+[55:37.5 - 55:40.5] We're working on it, but it's not working out perfectly.
+[55:40.5 - 55:41.5] So this is really helpful.
+[55:41.5 - 55:44.5] It's like an intake flow basically, right?
+[55:44.5 - 55:51.5] So you need a process of doing the purchase order, which we can call something.
+[55:51.5 - 55:52.5] What would you like to call that?
+[55:52.5 - 55:53.5] Intake.
+[55:53.5 - 55:55.5] Intake and then intake receipt basically.
+[55:55.5 - 55:56.5] That's it.
+[55:57.3 - 56:03.3] So you need a process of doing the intake receipt and then validating that when the
+[56:03.3 - 56:06.3] actual product is going through the intake process.
+[56:06.3 - 56:09.3] When it's actually stickered and put away.
+[56:09.3 - 56:14.3] Like the person putting away needs to maybe just verify, yes, I'm putting 12.
+[56:14.3 - 56:15.3] Right.
+[56:15.3 - 56:16.3] Which is part of it.
+[56:16.3 - 56:17.3] Okay, cool.
+[56:17.3 - 56:18.3] That's really helpful.
+[56:18.3 - 56:19.3] Okay.
+[56:20.1 - 56:32.1] Have you thought about your shelving, like the storage strategy yet in terms of like
+[56:32.1 - 56:39.1] It's going to be trash bags in the one space and it's going to be trash bags and like
+[56:39.1 - 56:42.1] the overflow section on the back section on shelves.
+[56:42.1 - 56:45.1] Trash bags and on the trash bags will be the farmer code.
+[56:45.1 - 56:47.1] How much is in the bag?
+[56:47.1 - 56:48.1] And that's it.
+[56:48.9 - 56:51.9] And so we could roughly put what zone it's in.
+[56:51.9 - 56:52.9] Farmer's code.
+[56:52.9 - 56:58.9] It's going to say, how we do it now, it's going to say like T12 candy runs times 15.
+[56:58.9 - 57:01.9] So we know there's 15 candy runs.
+[57:01.9 - 57:02.9] And that's in the back storage.
+[57:02.9 - 57:03.9] And that's in the back storage.
+[57:03.9 - 57:08.9] And in the front storage, there'll be two samples of everything that's in the back storage.
+[57:08.9 - 57:09.9] Yeah.
+[57:09.9 - 57:10.9] Cool.
+[57:10.9 - 57:15.9] And then we sometimes have bins up top where we just throw things that move really quickly
+[57:16.7 - 57:18.7] so we can just grab them up and chuck them out of the bin.
+[57:18.7 - 57:19.7] Okay.
+[57:19.7 - 57:23.7] But again, it's because of the way Tigger reorganizes things all the time and we do
+[57:23.7 - 57:26.7] like, it's not going to be fixed in one bin.
+[57:26.7 - 57:30.7] It could be like, I think it might be useful to be like, it's going to be in zone A, B,
+[57:30.7 - 57:31.7] C, or D.
+[57:31.7 - 57:32.7] Yeah.
+[57:32.7 - 57:35.7] You know, just like, so we don't leave, things don't leave zones, you know.
+[57:35.7 - 57:41.7] And A would be like back left, back right, front left, front right.
+[57:42.5 - 57:43.5] All right.
+[57:43.5 - 57:46.5] So zones, but rack, shelf, bin, not important right now.
+[57:46.5 - 57:47.5] I don't think so.
+[57:47.5 - 57:48.5] Great.
+[57:48.5 - 57:49.5] Probably just zones.
+[57:49.5 - 57:50.5] Right.
+[57:50.5 - 57:51.5] Be plenty.
+[57:51.5 - 57:52.5] Okay.
+[57:52.5 - 57:53.5] Yeah.
+[57:53.5 - 57:57.5] Site is, site should be more at this, for you at least.
+[57:57.5 - 57:58.5] Site could be useful.
+[57:58.5 - 58:02.5] I mean, for browns, I think we'll be putting browns in like a shipping container because
+[58:02.5 - 58:05.5] they come in and go, like we're not going to store those inside.
+[58:05.5 - 58:06.5] Nice.
+[58:06.5 - 58:07.5] Okay.
+[58:07.5 - 58:10.5] So it could be like, you know, I think there'll be three sites.
+[58:11.3 - 58:16.3] There'll be samples, there'll be storage, and there'll be shipping.
+[58:16.3 - 58:17.3] Deep storage.
+[58:17.3 - 58:18.3] Deep storage, yeah.
+[58:18.3 - 58:19.3] Brown storage.
+[58:19.3 - 58:20.3] Mm-hmm.
+[58:20.3 - 58:22.3] Oh, site is required.
+[58:22.3 - 58:23.3] Okay.
+[58:23.3 - 58:24.3] Cool.
+[58:24.3 - 58:27.3] That is going to make this simpler.
+[58:27.3 - 58:31.3] I have a question about the bags versus bins.
+[58:31.3 - 58:32.3] Mm-hmm.
+[58:32.3 - 58:38.3] Trash bags work better because you don't have to unpack them again.
+[58:39.1 - 58:45.1] Because if someone orders 45 T-12 bags, you can just take three trash bags and put them
+[58:45.1 - 58:46.1] in the prep room.
+[58:46.1 - 58:47.1] Great.
+[58:47.1 - 58:48.1] Okay.
+[58:48.1 - 58:49.1] Cool.
+[58:49.1 - 58:52.1] Here are the categories.
+[58:52.1 - 58:59.1] You don't, it's basically category and subcategory, which, by the way, just for the recording,
+[58:59.1 - 59:02.1] you need to flow through correctly to the rest of this.
+[59:02.1 - 59:04.1] I don't know what's in there.
+[59:04.9 - 59:08.9] It seems like it might not be an MVP thing, but we can come back to.
+[59:08.9 - 59:09.9] Oh, yeah.
+[59:09.9 - 59:11.9] It just needs to be double, triple, and quad.
+[59:11.9 - 59:12.9] Yeah.
+[59:12.9 - 59:13.9] Okay.
+[59:13.9 - 59:14.9] A.
+[59:14.9 - 59:15.9] Quad A.
+[59:15.9 - 59:16.9] Yeah.
+[59:16.9 - 59:17.9] Yeah.
+[59:17.9 - 59:20.9] Triple A, quad A, double A, and then there's B and C.
+[59:20.9 - 59:21.9] Okay.
+[59:21.9 - 59:22.9] And you can kind of forget about everything else.
+[59:22.9 - 59:23.9] Nice.
+[59:23.9 - 59:24.9] Okay.
+[59:24.9 - 59:25.9] That's helpful.
+[59:26.7 - 59:34.7] This is just where you're going to be able to manage all the VIP clients, create them.
+[59:34.7 - 59:35.7] Notifications.
+[59:35.7 - 59:44.7] Do you want this concept of the notification where if you tag Tigger on something, it pops
+[59:44.7 - 59:45.7] up somewhere?
