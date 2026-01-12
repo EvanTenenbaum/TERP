@@ -1,0 +1,1738 @@
+{
+  "metadata": {
+    "meeting_date": "2026-01-11",
+    "duration_seconds": 3585,
+    "duration_formatted": "59:45",
+    "participants": ["Product Owner (Doc)", "Developer (Evan)"],
+    "subject": "TERP Cannabis ERP System - Feature Review and Requirements Gathering",
+    "analysis_version": "2.0 (QA Improved)",
+    "total_items": 75
+  },
+  "items": [
+    {
+      "id": "MEET-001",
+      "title": "Dashboard - Available Money Display",
+      "timestamp_range": "02:22.2 - 02:37.1",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "how much money I have available right now",
+        "This is how much I have in available money. This is how much money I actually have, but there's this number is available, which is after payable scheduled"
+      ],
+      "meaning": "Dashboard should show available cash (total minus scheduled payables)",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Dashboard displays: (1) Total cash on hand, (2) Scheduled payables, (3) Available cash after payables",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Dashboard",
+      "domain": "Reporting"
+    },
+    {
+      "id": "MEET-002",
+      "title": "Dashboard - Multi-Location Cash Tracking",
+      "timestamp_range": "02:53.5 - 03:02.4",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "I have two locations with cash. I have what Z has and what I have"
+      ],
+      "meaning": "Need to track cash across multiple locations/people (Z and Doc)",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Dashboard shows cash by location/person with ability to see individual and combined totals",
+      "dependencies": ["MEET-001"],
+      "validation": "Observed",
+      "ui_reference": "Dashboard",
+      "domain": "Accounting"
+    },
+    {
+      "id": "MEET-003",
+      "title": "Z's Cash Audit Tracking",
+      "timestamp_range": "03:02.4 - 04:19.2",
+      "category": "Bug/Pain Point",
+      "speaker_intent": "frustration",
+      "evidence": [
+        "I kept my audit tipping off every fucking week and it's driving me crazy",
+        "It could be a mistake in a lot of places. It could be a mistake in money coming in...It could be a mistake in payments where we copy that and then you paste it down here. Sometimes it gets, it pastes over somebody else's payment"
+      ],
+      "meaning": "Current audit system has multiple error points causing weekly discrepancies. New simple in/out tracking for Z's cash is working better.",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Audit tracking system with: (1) Simple in/out ledger per person, (2) Weekly reset capability, (3) Starting balance tracking, (4) No copy/paste errors possible",
+      "dependencies": ["MEET-002"],
+      "validation": "Observed",
+      "ui_reference": "Z's Cash Tab",
+      "domain": "Accounting"
+    },
+    {
+      "id": "MEET-004",
+      "title": "Dashboard - Shift Payment Tracking",
+      "timestamp_range": "04:48.3 - 04:59.0",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "We have how much we've paid in the shift. We reset this every shift change. So on my shift, we did 2.7"
+      ],
+      "meaning": "Track payments made during each shift with reset capability",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Dashboard shows payments made in current shift with ability to reset at shift change",
+      "dependencies": ["MEET-001"],
+      "validation": "Observed",
+      "ui_reference": "Dashboard",
+      "domain": "Reporting"
+    },
+    {
+      "id": "MEET-005",
+      "title": "Payables Due When SKU Hits Zero",
+      "timestamp_range": "05:00.0 - 06:09.8",
+      "category": "Business Rule",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "When it hits zero, it becomes due. When the inventory hits zero",
+        "When a specific skew hits zero",
+        "Somebody has 10 things, five of them are at zero. Those five are due now"
+      ],
+      "meaning": "Payables become due when specific SKU inventory reaches zero, not when entire batch is sold",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "System automatically flags payables as due when associated SKU inventory reaches zero",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Payables",
+      "domain": "Payments"
+    },
+    {
+      "id": "MEET-006",
+      "title": "Office Owned Inventory Tracking",
+      "timestamp_range": "06:20.6 - 06:37.5",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "office owned, which is useful just to make sure that you're not buying too much weed",
+        "it's just a non-consignment, basically. That I've cashed out. Any cashed out inventory that's still live"
+      ],
+      "meaning": "Track non-consignment inventory that has been paid for but not yet sold",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Dashboard shows total office-owned (non-consignment) inventory value",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Dashboard",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-007",
+      "title": "Clients as Both Buyers and Suppliers",
+      "timestamp_range": "07:54.0 - 08:02.0",
+      "category": "Business Rule",
+      "speaker_intent": "confirmation",
+      "evidence": [
+        "Do you have many clients that are buyers and suppliers? Yes",
+        "I have probably half a dozen"
+      ],
+      "meaning": "System must support clients who are both buyers and suppliers with unified tab",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Client can be flagged as buyer, supplier, or both with unified ledger view",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Clients",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-008",
+      "title": "Complex Tab for Jesse (Buyer/Supplier)",
+      "timestamp_range": "08:02.0 - 08:41.5",
+      "category": "Workflow Change",
+      "speaker_intent": "frustration",
+      "evidence": [
+        "Me mostly being my buddy, Jesse, where his tab is the most annoying",
+        "we credit his tab for shipping. We credit his tab for products. We credit his tab for flowers that he's brought in",
+        "it's kind of a lot of in and out"
+      ],
+      "meaning": "Jesse's tab has credits for shipping, products, flowers brought in, and debits for purchases - needs unified tracking",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Single ledger view showing all credits (shipping, products, consignment) and debits (purchases, payments) for complex clients",
+      "dependencies": ["MEET-007"],
+      "validation": "Observed",
+      "ui_reference": "Client Tab - Jesse",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-009",
+      "title": "Billing for Services (Shipping, Consulting)",
+      "timestamp_range": "08:51.5 - 09:18.5",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "I'm not sure if I have built in a billing for services in the right way",
+        "just some way of being able to create an invoice basically",
+        "just credit them 2,700 for consulting on 36 units"
+      ],
+      "meaning": "Need ability to create service invoices/credits for shipping, consulting, etc.",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Ability to create service credits/invoices with description and amount that appear on client ledger",
+      "dependencies": ["MEET-008"],
+      "validation": "Observed",
+      "ui_reference": "Invoices",
+      "domain": "Orders"
+    },
+    {
+      "id": "MEET-010",
+      "title": "Simple Client Ledger",
+      "timestamp_range": "09:28.5 - 09:57.5",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "I've created what you said, basically, which is just like a super simple ledger",
+        "That also tells you how much they owe",
+        "This also should tell you how much you owe"
+      ],
+      "meaning": "Simple ledger showing ins/outs and current balance for each client",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Client ledger shows: (1) All transactions in/out, (2) Running balance, (3) What they owe / what you owe them",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Client Ledger",
+      "domain": "Accounting"
+    },
+    {
+      "id": "MEET-011",
+      "title": "New Clients Added Infrequently",
+      "timestamp_range": "10:15.6 - 10:30.6",
+      "category": "Business Rule",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "adding clients doesn't happen that often, right?",
+        "that's going to happen two or three times a year"
+      ],
+      "meaning": "New client creation is rare (2-3x/year), doesn't need to be optimized for speed",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Client creation flow can be thorough rather than fast",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Clients",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-012",
+      "title": "Client Tagging with Referrer",
+      "timestamp_range": "10:43.6 - 10:58.6",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "I tagged him his name and then the person that brought him in",
+        "And then you have him in the refer"
+      ],
+      "meaning": "Clients should be tagged with who referred them",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Client record includes referrer field that links to another client",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Client Creation",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-013",
+      "title": "Referrer Lookup Like Phone Contacts",
+      "timestamp_range": "11:45.6 - 12:43.6",
+      "category": "Feature Request",
+      "speaker_intent": "frustration",
+      "evidence": [
+        "Mikey brings in four different buyers. I don't remember all their fucking names. I can look up Mikey, and then I can see all the people he brings in",
+        "The referred by needs to actually map to whoever the customer is",
+        "I need to have a place to scroll to find"
+      ],
+      "meaning": "Need to look up referrer and see all their referrals, like phone contacts",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Typing a client name shows them plus all clients they referred; can click referrer to see all their referrals",
+      "dependencies": ["MEET-012"],
+      "validation": "Observed",
+      "ui_reference": "Client Search",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-014",
+      "title": "Variable Markups Based on Age/Quantity",
+      "timestamp_range": "13:14.6 - 13:48.6",
+      "category": "Business Rule",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "markups are generally based upon how long I've had the product, how much of it I have",
+        "Very easy to change",
+        "you should be able to do it on an order level, too"
+      ],
+      "meaning": "Markups are variable, change based on product age and quantity, need to be editable at product and order level",
+      "priority": "Now",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Markups editable at: (1) Product level, (2) Order level; No fixed markup requirements",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Pricing",
+      "domain": "Pricing"
+    },
+    {
+      "id": "MEET-015",
+      "title": "Sales Sheet Creator / List Generator",
+      "timestamp_range": "14:06.6 - 14:46.6",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "Sales Sheet Creator is something that's actually getting fixed",
+        "somebody wants you to send them a list",
+        "I don't use that as much anymore...we just do so much live sales now"
+      ],
+      "meaning": "List generator for sending product lists to clients, used less now due to live sales shift",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Ability to generate and send product lists to clients",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Sales Sheet Creator",
+      "domain": "Orders"
+    },
+    {
+      "id": "MEET-016",
+      "title": "Live Sales Primary Method Now",
+      "timestamp_range": "14:34.6 - 14:52.6",
+      "category": "Business Context",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "we just do so much live sales now",
+        "we only do, like, list shops maybe, like, once a week",
+        "Just do so much more live shopping in person",
+        "Because the margins are so small"
+      ],
+      "meaning": "Business has shifted to primarily in-person live shopping due to small margins",
+      "priority": "N/A",
+      "severity": "N/A",
+      "acceptance_criteria": "System should optimize for live shopping workflow",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "N/A",
+      "domain": "General"
+    },
+    {
+      "id": "MEET-017",
+      "title": "Invoice History for Debt Disputes",
+      "timestamp_range": "15:07.6 - 16:19.6",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "He pays me, and he's like, what did I owe you before I sent you this much in Bitcoin, and what did I owe you after?",
+        "I just have to just, like, go back and, like, delete it"
+      ],
+      "meaning": "Need to show balance before and after payments for client verification",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Ledger shows running balance with ability to see balance at any point in time",
+      "dependencies": ["MEET-010"],
+      "validation": "Observed",
+      "ui_reference": "Client Ledger",
+      "domain": "Accounting"
+    },
+    {
+      "id": "MEET-018",
+      "title": "Transaction Fee Per Client (Default + Override)",
+      "timestamp_range": "16:31.6 - 18:17.6",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "Everybody has different transaction fees",
+        "It'd be nice to have, like, a default set per client, and then be able to edit it if you need to on a transaction level",
+        "Some people pay all of it, some people pay none of it, some people pay 4%"
+      ],
+      "meaning": "Transaction fees vary 2-4% per client, need default per client with per-transaction override",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Client record has default transaction fee %; each payment can override the default",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Client Settings / Payments",
+      "domain": "Payments"
+    },
+    {
+      "id": "MEET-019",
+      "title": "Crypto Payment Tracking Tab",
+      "timestamp_range": "17:00.6 - 17:45.6",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "I have a tab where, here it is, the crypto tab",
+        "These are the dates of the crypto payments from all the different clients",
+        "This is what they sent, and this is after 4%"
+      ],
+      "meaning": "Track crypto payments with date, client, amount sent, amount after fees",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Crypto payments tracked with: date, client, gross amount, fee %, net amount",
+      "dependencies": ["MEET-018"],
+      "validation": "Observed",
+      "ui_reference": "Crypto Tab",
+      "domain": "Payments"
+    },
+    {
+      "id": "MEET-020",
+      "title": "Suggested Buyer Based on Purchase History",
+      "timestamp_range": "19:52.2 - 20:45.3",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "when I get some trop cherries I'm like who the fuck one of these things",
+        "it like automatically tags Like who took those products last",
+        "the suggested buyer. Yeah, cool. That's really cool"
+      ],
+      "meaning": "When viewing a product, show which clients have purchased it before",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Product view shows list of clients who have purchased this product/strain before",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product View",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-021",
+      "title": "Client Wants/Needs Tracking",
+      "timestamp_range": "20:41.1 - 21:06.9",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "In the wants-and-needs section",
+        "Next time you get sour diesels from p4 make sure to let me know",
+        "I can write it on this tab, but I'm not necessarily gonna remember"
+      ],
+      "meaning": "Track what products each client wants to be notified about",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Client record has wants/needs list; system can match incoming inventory to wants",
+      "dependencies": ["MEET-020"],
+      "validation": "Observed",
+      "ui_reference": "Client Wants/Needs",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-022",
+      "title": "Reverse Lookup - Who Has Product Connections",
+      "timestamp_range": "21:06.9 - 21:17.0",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "somebody just asked me for 4,000 sodas. I'm like oh fuck to ask for sodas",
+        "It'd be nice for TW to be like oh, I can ask these eight people they always have connections"
+      ],
+      "meaning": "When looking for a product, show which suppliers/clients have provided it before",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product search shows suppliers who have provided this product before",
+      "dependencies": ["MEET-020"],
+      "validation": "Observed",
+      "ui_reference": "Product Search",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-023",
+      "title": "Batch Tracking for Inventory",
+      "timestamp_range": "22:18.2 - 23:19.4",
+      "category": "Feature Request",
+      "speaker_intent": "question",
+      "evidence": [
+        "How important is that for you to be is important?",
+        "I want to know when I because that person's like hey, how am I doing on my flowers? I need to be able to pull up that client and be like I have this transaction"
+      ],
+      "meaning": "Track batches of products by vendor to answer 'how am I doing on my flowers' questions",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Can view all products from a specific vendor intake with current status",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Vendor View",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-024",
+      "title": "Aging Inventory Visual Indicators",
+      "timestamp_range": "24:00.2 - 24:54.9",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "Red means I've had it for more than two weeks",
+        "I need to move this or because it's more of a payment tracking thing both",
+        "I made a mistake in buying these lemon beans for 900...Just need to flush these of the loss"
+      ],
+      "meaning": "Visual indicator (red) for inventory older than 2 weeks to prompt action",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Inventory items show color coding: green (<1 week), yellow (1-2 weeks), red (>2 weeks)",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Inventory",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-025",
+      "title": "Dashboard Quick View of Aging Inventory",
+      "timestamp_range": "25:04.6 - 25:28.4",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "ideally kind of on the dashboard you just have a quick view of like the aging stuff"
+      ],
+      "meaning": "Dashboard should show aging inventory at a glance",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Dashboard widget showing count/value of aging inventory (>2 weeks)",
+      "dependencies": ["MEET-024"],
+      "validation": "Observed",
+      "ui_reference": "Dashboard",
+      "domain": "Reporting"
+    },
+    {
+      "id": "MEET-026",
+      "title": "Real-time Price Negotiation with Farmers",
+      "timestamp_range": "25:50.7 - 26:08.4",
+      "category": "Workflow",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "I'm negotiating a price adjustment, you know on the fly",
+        "I had to go back and forth and like how do I fit in for $10?",
+        "back and forth to the farmer and then changing the prices"
+      ],
+      "meaning": "During sales, may need to negotiate with farmer to adjust price to make margin work",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Easy way to adjust farmer price and see impact on margin in real-time",
+      "dependencies": ["MEET-014"],
+      "validation": "Observed",
+      "ui_reference": "Sales / Pricing",
+      "domain": "Pricing"
+    },
+    {
+      "id": "MEET-027",
+      "title": "Vendor vs Brand (Farmer Code) Distinction",
+      "timestamp_range": "26:44.4 - 27:56.5",
+      "category": "Data Model",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "Vendor and brand are two different things at this moment",
+        "T12 will bring in a buddy's flower and will list it under T23",
+        "So that's the brand still"
+      ],
+      "meaning": "Vendor = person who drops off; Brand = farmer code (can be different)",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Product has separate Vendor (who dropped off) and Brand/Farmer Code fields",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-028",
+      "title": "Brands Changed to Farmer Codes",
+      "timestamp_range": "27:37.9 - 27:42.7",
+      "category": "Decision",
+      "speaker_intent": "decision",
+      "evidence": [
+        "brands are changing to farmer codes"
+      ],
+      "meaning": "Terminology decision: 'Brand' field will be called 'Farmer Code'",
+      "priority": "Now",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "UI shows 'Farmer Code' instead of 'Brand'",
+      "dependencies": ["MEET-027"],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-029",
+      "title": "Vendor Tied to Farmer Name",
+      "timestamp_range": "28:04.8 - 28:09.9",
+      "category": "Decision",
+      "speaker_intent": "decision",
+      "evidence": [
+        "I think we can just say the vendor is the farmer's name"
+      ],
+      "meaning": "Vendor field should use farmer's name for simplicity",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Vendor field accepts farmer names",
+      "dependencies": ["MEET-027"],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-030",
+      "title": "Vendor Search Shows Related Brands",
+      "timestamp_range": "28:37.0 - 29:03.0",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "It'll still want to type Bob. It'll pop up Bob, but it'll also they'll be Bob or Bob's buddy",
+        "I'm just trying to think of how it'd be easy like when I search my phone exactly search Evan I see all of your friends pop up because I've saved them under your name also"
+      ],
+      "meaning": "Typing vendor name shows that vendor plus all brands they've brought in",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Vendor search shows vendor and all associated farmer codes/brands",
+      "dependencies": ["MEET-027", "MEET-029"],
+      "validation": "Observed",
+      "ui_reference": "Vendor Search",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-031",
+      "title": "SKU Field Not Needed",
+      "timestamp_range": "29:03.0 - 29:21.6",
+      "category": "Decision",
+      "speaker_intent": "frustration",
+      "evidence": [
+        "I don't really need to see skew. I'm not sure what skew is gonna do for me",
+        "that's basically like this number over here that I've just discovered that relates to the website"
+      ],
+      "meaning": "SKU field is confusing and not useful for user, should be hidden or removed",
+      "priority": "Next",
+      "severity": "P3 minor",
+      "acceptance_criteria": "SKU field hidden from main UI or made optional/auto-generated",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-032",
+      "title": "Customizable Product Categories",
+      "timestamp_range": "29:47.2 - 30:39.5",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "I'm gonna want to be able to just organize it by the category",
+        "Deps, Inns, Inns Candy, Sativa, Smalls"
+      ],
+      "meaning": "Product categories should be customizable (Deps, Inns, Inns Candy, Sativa, Smalls, etc.)",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Admin can create/edit product categories; products can be assigned to categories",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Settings / Products",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-033",
+      "title": "Searchable Supplier Name Field",
+      "timestamp_range": "31:11.0 - 31:17.4",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "There should be a way to search or type in a supplier name",
+        "I should be able to type in that box. Because I have 100 suppliers and I can't scroll through 100 things"
+      ],
+      "meaning": "Supplier dropdown should be searchable/typeahead with 100+ suppliers",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Supplier field is searchable typeahead, not scroll-only dropdown",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-034",
+      "title": "Expected Delivery Date for Intake",
+      "timestamp_range": "32:00.9 - 32:25.1",
+      "category": "Feature Request",
+      "speaker_intent": "question",
+      "evidence": [
+        "do you want an expected delivery date? Yeah"
+      ],
+      "meaning": "Intake should have expected delivery date field",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Intake form has optional expected delivery date field",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-035",
+      "title": "Payment Terms (Consignment, Cash, COD)",
+      "timestamp_range": "32:42.8 - 33:34.7",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "COD",
+        "consignment",
+        "cash"
+      ],
+      "meaning": "Support multiple payment terms for intake",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Intake supports payment terms: Consignment, Cash, COD, etc.",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Payments"
+    },
+    {
+      "id": "MEET-036",
+      "title": "Installment and Down Payments",
+      "timestamp_range": "33:34.7 - 34:09.2",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "installment payments",
+        "down payments"
+      ],
+      "meaning": "Support installment payments and down payments for purchases",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Payment can be split into installments; down payment can be recorded",
+      "dependencies": ["MEET-035"],
+      "validation": "Observed",
+      "ui_reference": "Payments",
+      "domain": "Payments"
+    },
+    {
+      "id": "MEET-037",
+      "title": "Editable Product Names",
+      "timestamp_range": "34:25.2 - 34:44.1",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "editable product names"
+      ],
+      "meaning": "Product names should be editable after creation",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product name can be edited after initial creation",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-038",
+      "title": "Notes on Product Pricing",
+      "timestamp_range": "34:57.2 - 35:20.2",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "notes on product pricing"
+      ],
+      "meaning": "Ability to add notes/context to pricing decisions",
+      "priority": "Next",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Product pricing has notes field for context",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product Pricing",
+      "domain": "Pricing"
+    },
+    {
+      "id": "MEET-039",
+      "title": "Quick Action Pricing Visibility",
+      "timestamp_range": "37:00.7 - 37:05.3",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "quick pricing actions"
+      ],
+      "meaning": "Quick visibility into pricing for fast decision-making",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Pricing visible at a glance without drilling into product details",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Inventory",
+      "domain": "Pricing"
+    },
+    {
+      "id": "MEET-040",
+      "title": "Product Details: Name, Category, Brand (Not SKU)",
+      "timestamp_range": "38:10.2 - 38:21.4",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "The product needs to be actually not the skew, but the, uh, the straight name and, and then category and a brand"
+      ],
+      "meaning": "Product display should show: Name, Category, Brand/Farmer Code (not SKU)",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product list shows Name, Category, Farmer Code; SKU hidden",
+      "dependencies": ["MEET-031"],
+      "validation": "Observed",
+      "ui_reference": "Product List",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-041",
+      "title": "VIP Debt Aging Notifications",
+      "timestamp_range": "40:00.0 - 41:30.4",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "I'm mostly excited for people like Hippo or Danny to be able to be like, your debt is aging badly",
+        "You need to bring in more money, and here are the top 20 flowers that you are most excited about are available right now"
+      ],
+      "meaning": "VIP portal should notify clients when their debt is aging and show products they want",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "VIP portal shows: (1) Debt aging status, (2) Recommended action, (3) Available products from their wants list",
+      "dependencies": ["MEET-021"],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-042",
+      "title": "VIP Portal - Credit Usage Display",
+      "timestamp_range": "42:00.9 - 42:07.6",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "What it'll show is how much of their credit is already being used",
+        "It should also probably have just a dollar amount"
+      ],
+      "meaning": "VIP portal shows credit usage percentage and dollar amount",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "VIP portal displays: credit limit, credit used (%), credit used ($), available credit",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-043",
+      "title": "VIP Status Based on Debt Cycling",
+      "timestamp_range": "42:15.0 - 42:46.0",
+      "category": "Business Rule",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "How well are you paying your debt down?",
+        "It should be just how healthy their debt is cycling",
+        "healthy debt is cycling like every two to three weeks would be like platinum",
+        "four weeks is still gold, but as soon as they touch five, then it's like bronze",
+        "diamond is like a week"
+      ],
+      "meaning": "VIP status tiers based on debt cycling frequency: Diamond (1 week), Platinum (2-3 weeks), Gold (4 weeks), Bronze (5+ weeks)",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "VIP status calculated from debt cycling: Diamond (<1 week), Platinum (2-3 weeks), Gold (4 weeks), Bronze (5+ weeks)",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-044",
+      "title": "Leaderboard with Anonymized Rankings",
+      "timestamp_range": "43:05.9 - 43:27.0",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "I guess that's what I'm hoping this turns into is more of a leaderboard, but like a anonymized one",
+        "they don't see the names of whoever they're with",
+        "they'll just know what position they're in",
+        "it would be nice to have it have some very simple but smart recommendations"
+      ],
+      "meaning": "Anonymized leaderboard showing position with recommendations to climb",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Leaderboard shows: position, points/score, recommendations to improve ranking",
+      "dependencies": ["MEET-043"],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal / Leaderboard",
+      "domain": "Reporting"
+    },
+    {
+      "id": "MEET-045",
+      "title": "Leaderboard Rewards System (Medals, Markup %)",
+      "timestamp_range": "43:33.0 - 44:10.7",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "You should have medals. We can have medals",
+        "We can also have markup percent",
+        "the number one spot gets 50 on ends. And the number of the top three spots get 50 on ends and 25 on depths",
+        "Start to gamify this a little bit"
+      ],
+      "meaning": "Leaderboard rewards: medals and tiered pricing (top 3 get better margins)",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Leaderboard positions unlock: medals/badges, tiered pricing discounts",
+      "dependencies": ["MEET-044"],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal / Leaderboard",
+      "domain": "Reporting"
+    },
+    {
+      "id": "MEET-046",
+      "title": "Live Appointments and Scheduling",
+      "timestamp_range": "44:32.8 - 45:05.8",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "They'll also be able to see like the live appointments there",
+        "what appointments are booked or what they can book",
+        "our schedule will be in this program",
+        "I'll be able to see Z's schedule"
+      ],
+      "meaning": "VIP portal shows available appointments; internal view shows all schedules",
+      "priority": "Next",
+      "severity": "P1 major",
+      "acceptance_criteria": "VIP portal: view/book appointments. Internal: view all schedules including Z's",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Calendar / VIP Portal",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-047",
+      "title": "Multiple Rooms for Scheduling",
+      "timestamp_range": "44:57.3 - 45:05.8",
+      "category": "Feature Request",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "I'll have multiple rooms and all that kind of stuff",
+        "The multiple rooms is something that we still need to build into"
+      ],
+      "meaning": "Scheduling needs to support multiple rooms",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Calendar supports multiple rooms/locations for appointments",
+      "dependencies": ["MEET-046"],
+      "validation": "Observed",
+      "ui_reference": "Calendar",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-048",
+      "title": "Hour Tracking (Low Priority)",
+      "timestamp_range": "45:08.0 - 45:34.8",
+      "category": "Feature Request",
+      "speaker_intent": "suggestion",
+      "evidence": [
+        "it'd be nice to be able to, for people, I don't know, if people can track their hours in here, too",
+        "Two people are paid hourly. Everybody else is on salary",
+        "It's so not important"
+      ],
+      "meaning": "Hour tracking nice-to-have but low priority (only 2 hourly employees)",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Optional time tracking for hourly employees",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Calendar",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-049",
+      "title": "Calendar Navigation Bug",
+      "timestamp_range": "45:40.3 - 45:54.8",
+      "category": "Bug",
+      "speaker_intent": "bug report",
+      "evidence": [
+        "when I do work on something, sometimes it bumps it off the navigation",
+        "I made a change to the calendar. And so now we can't see it on here",
+        "Oh, it moved it"
+      ],
+      "meaning": "Developer changes to calendar sometimes cause it to disappear from navigation",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Calendar remains visible in navigation regardless of code changes",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Navigation / Calendar",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-050",
+      "title": "Shift/Vacation Tracking on Calendar",
+      "timestamp_range": "46:18.3 - 46:44.8",
+      "category": "Feature Request",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "It's showing who's on what shifts",
+        "Like when people just put in for vacation",
+        "It's nice to know if Momo's there or not there, and who's covering for her"
+      ],
+      "meaning": "Calendar shows shifts and vacation/time-off for staff",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Calendar shows: staff shifts, vacation/time-off, coverage",
+      "dependencies": ["MEET-046"],
+      "validation": "Observed",
+      "ui_reference": "Calendar",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-051",
+      "title": "User Roles and Permissions",
+      "timestamp_range": "46:48.8 - 47:31.1",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "user roles, basically",
+        "you would have a photographer role. And they could only really see. Inventory",
+        "you start to give it permissions, basically",
+        "Probably it's not going to get edited much"
+      ],
+      "meaning": "Role-based permissions (e.g., photographer sees only inventory)",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Admin can create roles with specific permissions; users assigned to roles",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Settings / Roles",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-052",
+      "title": "VIP Portal - Purchase History",
+      "timestamp_range": "47:40.6 - 48:00.9",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "I'm hoping their VIP portal will show them all their recent purchases",
+        "They can go to their date, and they can see what they got",
+        "And how much money they owe us"
+      ],
+      "meaning": "VIP portal shows purchase history by date and total owed",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "VIP portal shows: purchase history by date, items purchased, total owed",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-053",
+      "title": "User-Friendly Financial Terminology",
+      "timestamp_range": "48:50.6 - 49:05.8",
+      "category": "UX Issue",
+      "speaker_intent": "frustration",
+      "evidence": [
+        "Payables, that's how much they owe. Receivables is how much you owe them",
+        "I think they'll just want a total number. Like those words are a little confusing",
+        "So how much I owe, how much you owe me",
+        "I barely know what those words know"
+      ],
+      "meaning": "Replace accounting terms with plain language: 'How much I owe' / 'How much you owe me'",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "UI uses plain language: 'You owe us' / 'We owe you' instead of Payables/Receivables",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal / Ledger",
+      "domain": "Accounting"
+    },
+    {
+      "id": "MEET-054",
+      "title": "VIP Needs/Wants Entry",
+      "timestamp_range": "49:09.8 - 49:49.1",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "Be able to add my needs",
+        "I want this"
+      ],
+      "meaning": "VIP clients can enter their needs/wants in the portal",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "VIP portal has form to submit needs/wants",
+      "dependencies": ["MEET-021"],
+      "validation": "Observed",
+      "ui_reference": "VIP Portal",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-055",
+      "title": "Office Needs Auto-Population",
+      "timestamp_range": "49:16.4 - 50:27.1",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "I need to always have 300 things under $100",
+        "I need to always have 300 things between six and seven",
+        "I set those, and then that's going to auto-populate my needs",
+        "it's looking at my inventory and so it sees the inventory and it's like, wow, you don't actually have those things. And then my needs pops up"
+      ],
+      "meaning": "Set inventory thresholds; system auto-generates needs when below threshold",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Admin sets inventory thresholds by category/price; system generates 'Office Needs' list when inventory falls below",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Needs / Dashboard",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-056",
+      "title": "Centralized VIP Requests Portal",
+      "timestamp_range": "51:04.4 - 51:12.0",
+      "category": "Feature Request",
+      "speaker_intent": "question",
+      "evidence": [
+        "Do I have one portal where I see all of the VIPs and what they're asking?",
+        "Yeah"
+      ],
+      "meaning": "Single view showing all VIP requests/needs",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Admin view showing all VIP needs/requests in one place",
+      "dependencies": ["MEET-054"],
+      "validation": "Observed",
+      "ui_reference": "Admin / VIP Requests",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-057",
+      "title": "Matchmaking - Office Needs to VIP Supplies",
+      "timestamp_range": "51:19.3 - 51:36.8",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "It's a matchmaking thing",
+        "it should just always be looking at, because people always ask me, what do you need right now?",
+        "now we're talking about one of the most powerful things probably"
+      ],
+      "meaning": "System matches office needs with VIP supplies/offers",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "System shows matches between office needs and VIP supplies",
+      "dependencies": ["MEET-055", "MEET-054"],
+      "validation": "Observed",
+      "ui_reference": "Matchmaking",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-058",
+      "title": "Copy-Paste Office Needs for Non-VIP",
+      "timestamp_range": "51:41.7 - 51:55.6",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "that shouldn't just be in a VIP portal",
+        "That should probably be somewhere that you can also quickly copy and paste to send people if they ask",
+        "Because not everyone is probably going to Have one of these"
+      ],
+      "meaning": "Office needs should be easily shareable with non-VIP clients",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Office needs list has copy/share button for sending to non-VIP clients",
+      "dependencies": ["MEET-055"],
+      "validation": "Observed",
+      "ui_reference": "Needs",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-059",
+      "title": "No AI Integration (Constraint)",
+      "timestamp_range": "52:18.5 - 52:32.9",
+      "category": "Constraint/Decision",
+      "speaker_intent": "decision",
+      "evidence": [
+        "Just to be clear for the recording, we're not doing AI yet",
+        "every AI that I use is constantly trying to push me to like, use AI",
+        "I want to set all the parameters"
+      ],
+      "meaning": "No AI features in current phase; user wants manual control first",
+      "priority": "Now",
+      "severity": "N/A",
+      "acceptance_criteria": "No AI features implemented; all logic is rule-based and user-controlled",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "N/A",
+      "domain": "General"
+    },
+    {
+      "id": "MEET-060",
+      "title": "AI Future: Suggested Purchase Quantities",
+      "timestamp_range": "52:43.7 - 53:00.7",
+      "category": "Future Feature",
+      "speaker_intent": "vision",
+      "evidence": [
+        "it'll see my data history of what's buying and selling and be like, why the fuck aren't you buying 200 candy bars?",
+        "You sell out in five days. Buy more",
+        "Here's the optimal amount you should buy from this farmer"
+      ],
+      "meaning": "Future AI feature: suggest optimal purchase quantities based on sales history",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Future: AI suggests purchase quantities based on sales velocity",
+      "dependencies": ["MEET-059"],
+      "validation": "Inferred",
+      "ui_reference": "N/A",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-061",
+      "title": "Suggested Purchase Price from History",
+      "timestamp_range": "53:04.5 - 53:29.5",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "Here's a suggested purchase price for this product based upon what you paid last time",
+        "I'm always getting into it with farmers",
+        "maybe they age for two months because they were $50 too high"
+      ],
+      "meaning": "Show last purchase price when buying from same farmer",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Intake shows last purchase price for same product/farmer combination",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Pricing"
+    },
+    {
+      "id": "MEET-062",
+      "title": "Last Sale Price Lookup",
+      "timestamp_range": "53:36.3 - 53:56.9",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "Suggested what that item sold for last time is always useful",
+        "So I don't have to look it up because I do that all the time",
+        "Probably just that vendor"
+      ],
+      "meaning": "Show what product sold for last time (same vendor)",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product view shows last sale price for same vendor's product",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product / Intake",
+      "domain": "Pricing"
+    },
+    {
+      "id": "MEET-063",
+      "title": "Farmer Receipt History Link",
+      "timestamp_range": "54:02.1 - 54:17.9",
+      "category": "Feature Request",
+      "speaker_intent": "feature request",
+      "evidence": [
+        "it'd just be nice to almost just have a link of what I paid last time when I saw that farmer",
+        "What you paid and what you sold",
+        "pop up, you paid 775 last time. Not what we agreed to pay, but what we actually paid"
+      ],
+      "meaning": "Quick link to last receipt/transaction with farmer",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Farmer view has link to last receipt showing actual paid price and sale price",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Farmer / Intake",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-064",
+      "title": "Intake Receipt Tool",
+      "timestamp_range": "54:48.9 - 55:05.7",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "we still need the receipt tool to save and send to the person every time",
+        "someone can see what they brought in, I can send it to them and they can look at the shelf and be like, yes, that is indeed what I'm dropping off"
+      ],
+      "meaning": "Generate and send receipt to farmer during intake for verification",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Intake generates receipt that can be sent to farmer for verification",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-065",
+      "title": "Intake Verification Process (Off by 12 Pounds Issue)",
+      "timestamp_range": "55:05.7 - 55:44.5",
+      "category": "Process Issue",
+      "speaker_intent": "frustration",
+      "evidence": [
+        "we've made several mistakes where I type up the receipt, but maybe the count is off",
+        "we've been off by 12 pounds",
+        "the person stacking the weed is not talking",
+        "We're not ticking it up"
+      ],
+      "meaning": "Need verification step where person putting away confirms quantities",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "Intake flow has verification step: (1) Create receipt, (2) Person putting away confirms counts, (3) Finalize",
+      "dependencies": ["MEET-064"],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-066",
+      "title": "Intake Flow Terminology",
+      "timestamp_range": "55:44.5 - 55:55.5",
+      "category": "Decision",
+      "speaker_intent": "decision",
+      "evidence": [
+        "you need a process of doing the purchase order, which we can call something. What would you like to call that? Intake",
+        "Intake and then intake receipt basically"
+      ],
+      "meaning": "Terminology: 'Intake' for purchase order process, 'Intake Receipt' for the receipt",
+      "priority": "Now",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "UI uses 'Intake' and 'Intake Receipt' terminology",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Intake",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-067",
+      "title": "Storage Strategy - Zones (A, B, C, D)",
+      "timestamp_range": "56:20.1 - 57:48.5",
+      "category": "Business Rule",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "Trash bags work better because you don't have to unpack them again",
+        "I think it might be useful to be like, it's going to be in zone A, B, C, or D",
+        "things don't leave zones",
+        "Zones, but rack, shelf, bin, not important right now"
+      ],
+      "meaning": "Storage by zones (A, B, C, D) sufficient; no need for rack/shelf/bin detail",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product can be assigned to zone (A, B, C, D); no rack/shelf/bin required",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product / Inventory",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-068",
+      "title": "Three Storage Sites",
+      "timestamp_range": "58:02.5 - 58:20.3",
+      "category": "Business Rule",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "I think there'll be three sites",
+        "There'll be samples, there'll be storage, and there'll be shipping",
+        "Deep storage"
+      ],
+      "meaning": "Three storage sites: Samples, Storage (deep storage), Shipping",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product can be assigned to site: Samples, Storage, Shipping",
+      "dependencies": ["MEET-067"],
+      "validation": "Observed",
+      "ui_reference": "Product / Inventory",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-069",
+      "title": "Category and Subcategory Data Flow",
+      "timestamp_range": "58:52.1 - 59:02.1",
+      "category": "Data Requirement",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "it's basically category and subcategory, which, by the way, just for the recording, you need to flow through correctly to the rest of this"
+      ],
+      "meaning": "Category/subcategory must flow correctly through all parts of system",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Category and subcategory data propagates correctly to all views and reports",
+      "dependencies": ["MEET-032"],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-070",
+      "title": "Product Grades (AAA, AAAA, AA, B, C)",
+      "timestamp_range": "59:11.9 - 59:24.9",
+      "category": "Data Requirement",
+      "speaker_intent": "clarification",
+      "evidence": [
+        "It just needs to be double, triple, and quad",
+        "Triple A, quad A, double A, and then there's B and C",
+        "you can kind of forget about everything else"
+      ],
+      "meaning": "Product grades: AAAA (Quad A), AAA (Triple A), AA (Double A), B, C",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Product has grade field with options: AAAA, AAA, AA, B, C",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Product",
+      "domain": "Inventory"
+    },
+    {
+      "id": "MEET-071",
+      "title": "VIP Client Management",
+      "timestamp_range": "59:26.7 - 59:34.7",
+      "category": "Feature Request",
+      "speaker_intent": "workflow explanation",
+      "evidence": [
+        "This is just where you're going to be able to manage all the VIP clients, create them"
+      ],
+      "meaning": "Admin interface to manage and create VIP clients",
+      "priority": "Next",
+      "severity": "P1 major",
+      "acceptance_criteria": "Admin can create, edit, and manage VIP client accounts",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Admin / VIP",
+      "domain": "Customers"
+    },
+    {
+      "id": "MEET-072",
+      "title": "Notification System for Tagging",
+      "timestamp_range": "59:35.7 - 59:44.7",
+      "category": "Feature Request",
+      "speaker_intent": "question",
+      "evidence": [
+        "Do you want this concept of the notification where if you tag Tigger on something, it pops up somewhere?"
+      ],
+      "meaning": "Notification system when users are tagged",
+      "priority": "Next",
+      "severity": "P2 moderate",
+      "acceptance_criteria": "Users receive notifications when tagged; notifications appear in dedicated area",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Notifications",
+      "domain": "Admin"
+    },
+    {
+      "id": "MEET-073",
+      "title": "Large Distributor Pricing (Future)",
+      "timestamp_range": "00:14.7 - 00:21.7",
+      "category": "Business Idea",
+      "speaker_intent": "suggestion",
+      "evidence": [
+        "If we sell this to like large distributors, you should charge them"
+      ],
+      "meaning": "Future consideration: pricing model for large distributors",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Future: define pricing for large distributor customers",
+      "dependencies": [],
+      "validation": "Inferred",
+      "ui_reference": "N/A",
+      "domain": "General"
+    },
+    {
+      "id": "MEET-074",
+      "title": "Modular Sales Options (Future)",
+      "timestamp_range": "00:21.7 - 00:43.8",
+      "category": "Business Idea",
+      "speaker_intent": "suggestion",
+      "evidence": [
+        "I feel like you might also be able to sell little modules of it",
+        "Like most people probably don't need most of this"
+      ],
+      "meaning": "Future consideration: sell system as modular components",
+      "priority": "Later",
+      "severity": "P3 minor",
+      "acceptance_criteria": "Future: modular product packaging strategy",
+      "dependencies": [],
+      "validation": "Inferred",
+      "ui_reference": "N/A",
+      "domain": "General"
+    },
+    {
+      "id": "MEET-075",
+      "title": "Live Shopping Feature",
+      "timestamp_range": "00:50.1 - 01:06.6",
+      "category": "Feature Request",
+      "speaker_intent": "excitement",
+      "evidence": [
+        "But you could also do some things like the live shopping or whatever",
+        "I think that could actually really add value",
+        "Live shopping is someone that has the app? No, that's somebody like sitting in your..."
+      ],
+      "meaning": "Live shopping = in-person shopping experience (not e-commerce)",
+      "priority": "Now",
+      "severity": "P1 major",
+      "acceptance_criteria": "System optimized for in-person live shopping workflow",
+      "dependencies": [],
+      "validation": "Observed",
+      "ui_reference": "Sales",
+      "domain": "Orders"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "statement": "Brands are changing to Farmer Codes",
+      "timestamp": "27:37.9 - 27:42.7",
+      "rationale": "Better alignment with data structure and user mental model",
+      "source_items": ["MEET-028"]
+    },
+    {
+      "id": "DEC-002",
+      "statement": "Vendor will be tied to the farmer's name",
+      "timestamp": "28:04.8 - 28:09.9",
+      "rationale": "Simplifies vendor identification",
+      "source_items": ["MEET-029"]
+    },
+    {
+      "id": "DEC-003",
+      "statement": "SKU field not needed, should be hidden",
+      "timestamp": "29:03.0 - 29:09.6",
+      "rationale": "User doesn't understand what SKU does for them",
+      "source_items": ["MEET-031"]
+    },
+    {
+      "id": "DEC-004",
+      "statement": "Product categories will be customizable",
+      "timestamp": "29:47.2 - 30:39.5",
+      "rationale": "Allows users to organize products according to their needs",
+      "source_items": ["MEET-032"]
+    },
+    {
+      "id": "DEC-005",
+      "statement": "Start to gamify the leaderboard with rewards",
+      "timestamp": "44:08.6 - 44:10.7",
+      "rationale": "Will increase competitiveness and engagement",
+      "source_items": ["MEET-045"]
+    },
+    {
+      "id": "DEC-006",
+      "statement": "No AI integration at this stage",
+      "timestamp": "52:18.5 - 52:21.5",
+      "rationale": "User wants manual control first; AI keeps being pushed inappropriately",
+      "source_items": ["MEET-059"]
+    },
+    {
+      "id": "DEC-007",
+      "statement": "Hour tracking not important",
+      "timestamp": "45:25.7 - 45:34.8",
+      "rationale": "Only 2 people paid hourly, rest on salary",
+      "source_items": ["MEET-048"]
+    },
+    {
+      "id": "DEC-008",
+      "statement": "Zones (A,B,C,D) sufficient, not rack/shelf/bin",
+      "timestamp": "57:30.7 - 57:48.5",
+      "rationale": "Items move around too much for precise location tracking",
+      "source_items": ["MEET-067"]
+    },
+    {
+      "id": "DEC-009",
+      "statement": "Terminology: Intake and Intake Receipt",
+      "timestamp": "55:44.5 - 55:55.5",
+      "rationale": "User's preferred terminology for purchase order process",
+      "source_items": ["MEET-066"]
+    },
+    {
+      "id": "DEC-010",
+      "statement": "New clients added 2-3 times per year",
+      "timestamp": "10:15.6 - 10:26.6",
+      "rationale": "Low frequency means client creation doesn't need to be fast",
+      "source_items": ["MEET-011"]
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-001",
+      "category": "Data Integrity",
+      "statement": "Audit discrepancies causing weekly frustration",
+      "trigger": "Manual data entry errors across multiple areas (money in, expenses, payments)",
+      "impact": "Weekly audit failures, time wasted reconciling",
+      "mitigation": "Implement simple in/out ledger with weekly reset; reduce copy/paste operations",
+      "confidence": "High",
+      "source_items": ["MEET-003"]
+    },
+    {
+      "id": "RISK-002",
+      "category": "Operational",
+      "statement": "Intake process errors (off by 12 pounds)",
+      "trigger": "Person typing receipt not communicating with person stacking product",
+      "impact": "Inventory discrepancies, farmer disputes",
+      "mitigation": "Add verification step where person putting away confirms quantities",
+      "confidence": "High",
+      "source_items": ["MEET-065"]
+    },
+    {
+      "id": "RISK-003",
+      "category": "Usability",
+      "statement": "Users confused by financial terminology",
+      "trigger": "Complex accounting terms (payables/receivables)",
+      "impact": "User confusion, support requests",
+      "mitigation": "Use user-friendly language ('what I owe' / 'what you owe me')",
+      "confidence": "High",
+      "source_items": ["MEET-053"]
+    },
+    {
+      "id": "RISK-004",
+      "category": "Process",
+      "statement": "Multiple error points in current spreadsheet workflow",
+      "trigger": "Manual copying/pasting of payment data",
+      "impact": "Payment paste-over errors, lost data",
+      "mitigation": "Consolidate into single system with automated calculations",
+      "confidence": "High",
+      "source_items": ["MEET-003"]
+    },
+    {
+      "id": "RISK-005",
+      "category": "Financial",
+      "statement": "Aging inventory losses",
+      "trigger": "Products priced $50 too high",
+      "impact": "2+ months aging, loss on sale",
+      "mitigation": "Suggested pricing based on history; aging visual indicators",
+      "confidence": "Medium",
+      "source_items": ["MEET-024", "MEET-061"]
+    },
+    {
+      "id": "RISK-006",
+      "category": "Complexity",
+      "statement": "Complex client tabs for buyer/suppliers",
+      "trigger": "Clients who are both buyers and suppliers (like Jesse)",
+      "impact": "Tracking confusion, incorrect balances",
+      "mitigation": "Unified ledger view showing all credits and debits",
+      "confidence": "High",
+      "source_items": ["MEET-007", "MEET-008"]
+    }
+  ],
+  "followup_questions": [
+    {
+      "id": "Q-001",
+      "question": "What are the exact thresholds for VIP status tiers (Diamond, Platinum, Gold, Bronze)?",
+      "timestamp": "42:15.0 - 42:46.0",
+      "context": "User mentioned rough thresholds but exact cutoffs need confirmation",
+      "source_items": ["MEET-043"],
+      "status": "RESOLVED",
+      "answer": "Make it customizable - allow tiers to be set based on either comparison to other customers (relative ranking) OR specific numbers/figures (absolute thresholds). Admin should be able to configure either approach."
+    },
+    {
+      "id": "Q-002",
+      "question": "How many rooms will the scheduling system need to support?",
+      "timestamp": "44:57.3 - 45:05.8",
+      "context": "Multiple rooms mentioned but count not specified",
+      "source_items": ["MEET-047"],
+      "status": "RESOLVED",
+      "answer": "2 meeting rooms and 2 loading bays (4 schedulable spaces total)."
+    },
+    {
+      "id": "Q-003",
+      "question": "What are the exact markup percentages for each leaderboard tier?",
+      "timestamp": "43:50.0 - 44:06.7",
+      "context": "User mentioned $50 on ends, $25 on deps for top 3, but full tier structure unclear",
+      "source_items": ["MEET-045"],
+      "status": "RESOLVED",
+      "answer": "This is a reward system tied to specific tiers. Make it customizable so admin can define the markup/discount percentages for each tier."
+    },
+    {
+      "id": "Q-004",
+      "question": "Should the receipt tool integrate with the website or be standalone?",
+      "timestamp": "54:48.9 - 55:05.7",
+      "context": "Receipt tool mentioned but integration points unclear",
+      "source_items": ["MEET-064"],
+      "status": "RESOLVED",
+      "answer": "Keep as is in the product (standalone, no additional integration needed)."
+    },
+    {
+      "id": "Q-005",
+      "question": "What payment processing companies are used and what are their fee structures?",
+      "timestamp": "17:47.6 - 17:59.6",
+      "context": "Fees vary 2-4% but specific providers not mentioned",
+      "source_items": ["MEET-018"],
+      "status": "RESOLVED",
+      "answer": "Save transport company fee and payment split settings per client so users don't have to set it up every time. Also allow adding and using different providers, then editing them as needed."
+    },
+    {
+      "id": "Q-006",
+      "question": "What is the desired behavior when inventory thresholds are breached?",
+      "timestamp": "49:16.4 - 50:27.1",
+      "context": "Auto-populate needs, but should there be notifications?",
+      "source_items": ["MEET-055"],
+      "status": "RESOLVED",
+      "answer": "Use best decision (auto-populate needs when thresholds are breached) but make the behavior customizable so admin can configure notification preferences and threshold actions."
+    },
+    {
+      "id": "Q-007",
+      "question": "How should the system handle partial payments on installment plans?",
+      "timestamp": "33:34.7 - 34:09.2",
+      "context": "Installments mentioned but tracking details unclear",
+      "source_items": ["MEET-036"],
+      "status": "RESOLVED",
+      "answer": "RECOMMENDATION (based on industry best practices): Use FIFO (First-In-First-Out) allocation where payments are applied to the oldest due installment first. Implementation: (1) When creating intake with installment terms, system generates payment schedule with total amount, number of installments, and frequency. (2) Each partial payment is recorded with date, amount, method, and notes. (3) System auto-updates remaining balance and next due date. (4) Visual status indicators: On Track (green), Overdue (red), Paid in Full (blue). (5) Allow manual adjustments, skip/reschedule options, and early payoff. (6) All installment payments flow into the unified client ledger with clear distinction from other transactions."
+    },
+    {
+      "id": "Q-008",
+      "question": "What is the desired notification mechanism for VIP clients?",
+      "timestamp": "41:41.8 - 41:47.6",
+      "context": "User said 'I can't imagine there'll be an app that'll ding' - what's the alternative?",
+      "source_items": ["MEET-041"],
+      "status": "RESOLVED",
+      "answer": "Show a notification or new message alert when the VIP user logs in to the portal. No push notifications or external app alerts needed."
+    },
+    {
+      "id": "Q-009",
+      "question": "Should the referrer lookup show only direct referrals or the full referral chain?",
+      "timestamp": "11:45.6 - 12:43.6",
+      "context": "Phone contact analogy suggests direct only, but could be multi-level",
+      "source_items": ["MEET-013"],
+      "status": "RESOLVED",
+      "answer": "Direct referrals only. When searching for a client, show that client plus all clients they directly referred (like phone contacts). No need for multi-level referral chains."
+    },
+    {
+      "id": "Q-010",
+      "question": "What is the process for handling disputed intake quantities?",
+      "timestamp": "55:05.7 - 55:44.5",
+      "context": "Verification step added but dispute resolution unclear",
+      "source_items": ["MEET-065"],
+      "status": "RESOLVED",
+      "answer": "RECOMMENDATION: Implement a 3-step dispute resolution process: (1) FLAGGING: Person putting away inventory can flag a discrepancy with the original receipt, noting the difference (e.g., 'Receipt says 12 lbs, actual count is 10 lbs'). (2) REVIEW: Flag triggers a notification to admin/manager who reviews the discrepancy with both parties (receipt creator and verifier). (3) RESOLUTION: Admin can either (a) Adjust the receipt to match actual count with audit note, or (b) Confirm original receipt if error was in verification. All changes are logged with timestamp, user, and reason for audit trail. This prevents the '12 pounds off' scenario by catching discrepancies before they become disputes."
+    }
+  ],
+  "summary": {
+    "total_items": 75,
+    "by_priority": {
+      "Now": 22,
+      "Next": 40,
+      "Later": 10,
+      "N/A": 3
+    },
+    "by_category": {
+      "Feature Request": 42,
+      "Business Rule": 8,
+      "Decision": 6,
+      "Workflow": 5,
+      "UX Issue": 2,
+      "Bug": 2,
+      "Data Requirement": 3,
+      "Process Issue": 1,
+      "Business Context": 1,
+      "Business Idea": 2,
+      "Future Feature": 1,
+      "Constraint/Decision": 1,
+      "Data Model": 1
+    },
+    "by_domain": {
+      "Inventory": 20,
+      "Customers": 14,
+      "Accounting": 5,
+      "Payments": 6,
+      "Pricing": 5,
+      "Admin": 7,
+      "Reporting": 5,
+      "Orders": 4,
+      "General": 9
+    },
+    "decisions_count": 10,
+    "risks_count": 6,
+    "followup_questions_count": 10
+  }
+}
