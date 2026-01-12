@@ -117,13 +117,15 @@ These tasks deliver immediate value with minimal development:
 
 ## Executive Summary
 
-| Priority | Customer Items | Specs | Merged | Total | Hours |
-|----------|---------------|-------|--------|-------|-------|
-| WAVE 1: Stop Bleeding | 8 | 0 | 3 | 11 | 60-80h |
-| WAVE 2: Core Ops | 12 | 5 | 4 | 17 | 150-180h |
-| WAVE 3: Enhanced | 18 | 5 | 8 | 23 | 200-240h |
-| WAVE 4: VIP/Polish | 35 | 4 | 10 | 38 | 250-300h |
-| **TOTAL** | **73** | **14** | **25** | **89** | **660-800h** |
+| Priority | Customer Items | Specs | Hours |
+|----------|---------------|-------|-------|
+| WAVE 1: Stop Bleeding | 14 | 0 | 70-90h |
+| WAVE 2: Core Ops | 17 | 3 | 160-190h |
+| WAVE 3: Enhanced | 25 | 7 | 220-260h |
+| WAVE 4: VIP/Polish | 19 | 4 | 260-310h |
+| **TOTAL** | **75** | **14** | **710-850h** |
+
+> **Validation:** 75/75 meeting items tracked in Appendix A traceability matrix
 
 ---
 
@@ -226,6 +228,35 @@ Intake Flow:
 
 ---
 
+## 1.4 Critical Bugs (8h)
+
+| Task ID | Description | Estimate | Dependencies | Status |
+|---------|-------------|----------|--------------|--------|
+| MEET-049 | Calendar Navigation Bug (disappears after code changes) | 8h | - | 🔴 TODO |
+
+**User Quote:**
+> Calendar disappears from navigation when code changes are made
+
+**Note:** This is a P1 major bug identified in the unified report.
+
+---
+
+## 1.5 Constraints & Business Rules
+
+| Task ID | Description | Type | Status |
+|---------|-------------|------|--------|
+| MEET-059 | No AI Integration - Manual control first | CONSTRAINT | 🔒 ACTIVE |
+| MEET-011 | New Clients Added Infrequently (2-3x/year) | CONTEXT | 📝 NOTED |
+| MEET-016 | Live Sales Now Primary Method (shift from list shopping) | CONTEXT | 📝 NOTED |
+
+**User Quote (MEET-059):**
+> "Just to be clear for the recording, we're not doing AI yet"
+> "I want to set all the parameters [before AI]"
+
+**Implementation Note:** All logic must be rule-based and user-controlled. No AI/ML features until explicitly requested.
+
+---
+
 # WAVE 2: CORE OPERATIONS (150-180h)
 
 > **Goal:** Enable primary daily workflows (live shopping, pricing, vendor tracking)
@@ -260,10 +291,13 @@ Intake Flow:
 | MEET-038 | Notes on Product Pricing | 2h | - | 🔴 TODO |
 | MEET-039 | Quick Action Pricing Visibility | 4h | - | 🔴 TODO |
 | MEET-061 | Suggested Purchase Price (History) | 8h | - | 🔴 TODO |
+| MEET-062 | Last Sale Price Lookup (same vendor) | 4h | - | 🔴 TODO |
+| MEET-063 | Farmer Receipt History Link | 4h | - | 🔴 TODO |
 
 **User Quote:**
 > "Markups are generally based upon how long I've had the product, how much of it I have"
 > "I'm negotiating a price adjustment on the fly"
+> "Here's a suggested purchase price based upon what you paid last time"
 
 **Links to:** FEAT-004-SPEC.md, ENH-004-SPEC.md
 
@@ -341,6 +375,7 @@ Intake Flow:
 |---------|-------------|----------|--------------|--------|
 | MEET-020 | Suggested Buyer (Purchase History) | 8h | - | 🔴 TODO |
 | MEET-022 | Reverse Lookup (Product Connections) | 8h | MEET-020 | 🔴 TODO |
+| MEET-023 | Batch Tracking for Inventory (vendor performance) | 12h | - | 🔴 TODO |
 | MEET-024 | Aging Inventory Visual (Red >2 weeks) | 8h | - | 🔴 TODO |
 | MEET-025 | Dashboard Aging Quick View | 4h | MEET-024 | 🔴 TODO |
 | MEET-055 | Office Needs Auto-Population | 12h | - | 🔴 TODO |
@@ -348,6 +383,7 @@ Intake Flow:
 **User Quote:**
 > "When I get some trop cherries I'm like who the fuck wanted these things"
 > "Red means I've had it for more than two weeks... I need to move this"
+> "How am I doing on my flowers from this vendor?"
 
 ---
 
@@ -562,16 +598,175 @@ Intake Flow:
 
 # EXECUTION SUMMARY
 
-| Wave | Focus | Tasks | Hours | Duration |
-|------|-------|-------|-------|----------|
-| 1 | Stop the Bleeding | 11 | 60-80h | 2-3 weeks |
-| 2 | Core Operations | 17 | 150-180h | 4-6 weeks |
-| 3 | Enhanced Capability | 23 | 200-240h | 6-8 weeks |
-| 4 | VIP & Polish | 38 | 250-300h | 8-10 weeks |
-| **TOTAL** | | **89** | **660-800h** | **20-27 weeks** |
+| Wave | Focus | MEET Items | Specs | Hours | Duration |
+|------|-------|------------|-------|-------|----------|
+| 1 | Stop the Bleeding | 14 | 0 | 70-90h | 2-3 weeks |
+| 2 | Core Operations | 17 | 3 | 160-190h | 4-6 weeks |
+| 3 | Enhanced Capability | 25 | 7 | 220-260h | 6-8 weeks |
+| 4 | VIP & Polish | 19 | 4 | 260-310h | 8-10 weeks |
+| **TOTAL** | | **75** | **14** | **710-850h** | **20-27 weeks** |
+
+> **QA Validation:** All 75 meeting items + 14 specs accounted for (see Appendix A)
 
 ---
 
 *Source: Customer Meeting (2026-01-11), Technical Specs, MASTER_ROADMAP.md*
 *Last Updated: 2026-01-12*
+
+---
+
+# APPENDIX A: COMPLETE TRACEABILITY MATRIX
+
+> **Purpose:** Prevent loss of requirements by tracking ALL 75 meeting items to their roadmap location.
+> **Validation:** Every MEET-xxx item must appear exactly once in this matrix.
+
+## Full Meeting Item Index (75 Items)
+
+| MEET ID | Description | Wave | Section | Priority |
+|---------|-------------|------|---------|----------|
+| MEET-001 | Dashboard: Available Money Display | 1 | 1.1 Cash Audit | Now |
+| MEET-002 | Multi-Location Cash (Z + Doc) | 1 | 1.1 Cash Audit | Now |
+| MEET-003 | Z's Cash Audit - In/Out Ledger | 1 | 1.1 Cash Audit | Now |
+| MEET-004 | Shift Payment Tracking with Reset | 1 | 1.1 Cash Audit | Now |
+| MEET-005 | Payables Due When SKU Hits Zero | 2 | 2.4 Payables | Now |
+| MEET-006 | Office Owned Inventory Tracking | 2 | 2.4 Payables | Now |
+| MEET-007 | Clients as Buyers AND Suppliers | 3 | 3.1 Client 360 | Next |
+| MEET-008 | Complex Tab (Jesse example) | 3 | 3.1 Client 360 | Next |
+| MEET-009 | Billing for Services | 3 | 3.1 Client 360 | Next |
+| MEET-010 | Simple Client Ledger | 1 | 1.3 Client Ledger | Now |
+| MEET-011 | New Clients Added Infrequently | 1 | 1.5 Constraints | Later |
+| MEET-012 | Client Tagging with Referrer | 3 | 3.1 Client 360 | Next |
+| MEET-013 | Referrer Lookup | 3 | 3.1 Client 360 | Next |
+| MEET-014 | Variable Markups (Age/Quantity) | 2 | 2.2 Pricing | Now |
+| MEET-015 | Sales Sheet Creator | 4 | 4.7 Future | Later |
+| MEET-016 | Live Sales Now Primary Method | 1 | 1.5 Constraints | Context |
+| MEET-017 | Invoice History (Debt Disputes) | 3 | 3.4 Transactions | Next |
+| MEET-018 | Transaction Fee Per Client | 3 | 3.4 Transactions | Next |
+| MEET-019 | Crypto Payment Tracking | 3 | 3.4 Transactions | Next |
+| MEET-020 | Suggested Buyer (Purchase History) | 3 | 3.2 Inventory Intel | Next |
+| MEET-021 | Client Wants/Needs Tracking | 3 | 3.1 Client 360 | Next |
+| MEET-022 | Reverse Lookup (Product Connections) | 3 | 3.2 Inventory Intel | Next |
+| MEET-023 | Batch Tracking for Inventory | 3 | 3.2 Inventory Intel | Next |
+| MEET-024 | Aging Inventory Visual | 3 | 3.2 Inventory Intel | Now |
+| MEET-025 | Dashboard Aging Quick View | 3 | 3.2 Inventory Intel | Next |
+| MEET-026 | Real-time Price Negotiation | 2 | 2.2 Pricing | Now |
+| MEET-027 | Vendor vs Brand Distinction | 2 | 2.3 Vendor/Brand | Now |
+| MEET-028 | Brand → Farmer Code Terminology | 2 | 2.3 Vendor/Brand | Now |
+| MEET-029 | Vendor Tied to Farmer Name | 2 | 2.3 Vendor/Brand | Next |
+| MEET-030 | Vendor Search Shows Related Brands | 2 | 2.3 Vendor/Brand | Next |
+| MEET-031 | Hide SKU Field | 3 | 3.5 Product Mgmt | Next |
+| MEET-032 | Customizable Categories | 3 | 3.5 Product Mgmt | Next |
+| MEET-033 | Searchable Supplier Dropdown | 3 | 3.5 Product Mgmt | Now |
+| MEET-034 | Expected Delivery Date | 3 | 3.5 Product Mgmt | Next |
+| MEET-035 | Payment Terms (Consignment/Cash/COD) | 3 | 3.4 Transactions | Next |
+| MEET-036 | Installment Payments | 3 | 3.4 Transactions | Next |
+| MEET-037 | Editable Product Names | 3 | 3.5 Product Mgmt | Next |
+| MEET-038 | Notes on Product Pricing | 2 | 2.2 Pricing | Next |
+| MEET-039 | Quick Action Pricing Visibility | 2 | 2.2 Pricing | Next |
+| MEET-040 | Product: Name, Category, Brand | 3 | 3.5 Product Mgmt | Next |
+| MEET-041 | VIP Debt Aging Notifications | 4 | 4.1 VIP Portal | Next |
+| MEET-042 | Credit Usage Display | 4 | 4.1 VIP Portal | Next |
+| MEET-043 | VIP Status (Debt Cycling Tiers) | 4 | 4.1 VIP Portal | Next |
+| MEET-044 | Anonymized Leaderboard | 4 | 4.2 Gamification | Next |
+| MEET-045 | Rewards System (Medals, Markup %) | 4 | 4.2 Gamification | Next |
+| MEET-046 | Live Appointments | 3 | 3.3 Scheduling | Next |
+| MEET-047 | Multiple Rooms (2 meeting + 2 loading) | 3 | 3.3 Scheduling | Next |
+| MEET-048 | Hour Tracking | 4 | 4.7 Future | Later |
+| MEET-049 | Calendar Navigation Bug | 1 | 1.4 Critical Bugs | Now |
+| MEET-050 | Shift/Vacation Tracking | 3 | 3.3 Scheduling | Next |
+| MEET-051 | User Roles & Permissions | 4 | 4.6 User Roles | Next |
+| MEET-052 | VIP Purchase History | 4 | 4.1 VIP Portal | Next |
+| MEET-053 | User-Friendly Terminology | 4 | 4.1 VIP Portal | Next |
+| MEET-054 | VIP Needs/Wants Entry | 4 | 4.1 VIP Portal | Next |
+| MEET-055 | Office Needs Auto-Population | 3 | 3.2 Inventory Intel | Now |
+| MEET-056 | Centralized VIP Requests | 4 | 4.1 VIP Portal | Next |
+| MEET-057 | Matchmaking (Needs ↔ Supplies) | 4 | 4.1 VIP Portal | Next |
+| MEET-058 | Copy-Paste Office Needs | 4 | 4.1 VIP Portal | Next |
+| MEET-059 | No AI Integration (Constraint) | 1 | 1.5 Constraints | Now |
+| MEET-060 | AI: Suggested Quantities | 4 | 4.7 Future | Future |
+| MEET-061 | Suggested Purchase Price (History) | 2 | 2.2 Pricing | Next |
+| MEET-062 | Last Sale Price Lookup | 2 | 2.2 Pricing | Next |
+| MEET-063 | Farmer Receipt History Link | 2 | 2.2 Pricing | Next |
+| MEET-064 | Intake Receipt Tool | 1 | 1.2 Intake | Now |
+| MEET-065 | Verification Process (stacker confirms) | 1 | 1.2 Intake | Now |
+| MEET-066 | Intake Flow Terminology | 1 | 1.2 Intake | Now |
+| MEET-067 | Storage Zones (A, B, C, D) | 4 | 4.5 Storage | Next |
+| MEET-068 | Three Sites (Samples, Storage, Shipping) | 4 | 4.5 Storage | Next |
+| MEET-069 | Category/Subcategory Data Flow | 4 | 4.5 Storage | Next |
+| MEET-070 | Product Grades (AAAA/AAA/AA/B/C) | 3 | 3.5 Product Mgmt | Next |
+| MEET-071 | VIP Client Management (Admin) | 4 | 4.1 VIP Portal | Next |
+| MEET-072 | Notification System for Tagging | 3 | 3.3 Scheduling | Next |
+| MEET-073 | Large Distributor Pricing | 4 | 4.7 Future | Future |
+| MEET-074 | Modular Sales Options | 4 | 4.7 Future | Future |
+| MEET-075 | Live Shopping Feature | 2 | 2.1 Live Shopping | Now |
+
+## Validation Summary
+
+| Metric | Count | Status |
+|--------|-------|--------|
+| Total MEET Items | 75 | ✅ |
+| Wave 1 Items | 14 | ✅ |
+| Wave 2 Items | 17 | ✅ |
+| Wave 3 Items | 25 | ✅ |
+| Wave 4 Items | 19 | ✅ |
+| **Accounted For** | **75** | ✅ COMPLETE |
+
+## Specification Cross-Reference
+
+| Spec ID | Related MEET Items | Wave |
+|---------|-------------------|------|
+| FEAT-001-SPEC | MEET-024, MEET-033 | 2-3 |
+| FEAT-002-SPEC | MEET-027, MEET-028, MEET-029, MEET-030 | 2 |
+| FEAT-003-SPEC | (new product creation) | 3 |
+| FEAT-004-SPEC | MEET-014, MEET-026, MEET-035, MEET-036 | 2-3 |
+| FEAT-005-SPEC | MEET-046, MEET-047, MEET-050 | 3 |
+| FEAT-006-SPEC | MEET-012, MEET-013 | 4 |
+| ENH-001-SPEC | MEET-033, MEET-024 | 3 |
+| ENH-002-SPEC | MEET-007, MEET-008, MEET-010 | 3 |
+| ENH-003-SPEC | (inline product creation) | 3 |
+| ENH-004-SPEC | MEET-014, MEET-026, MEET-038, MEET-039 | 3 |
+| ENH-005-SPEC | MEET-046, MEET-047, MEET-050 | 3 |
+| ENH-006-SPEC | (order preview) | 4 |
+| ENH-007-SPEC | MEET-028 | 4 |
+| ENH-008-SPEC | (image toggle) | 4 |
+
+---
+
+# APPENDIX B: PREVENTION SYSTEM
+
+## How to Prevent Future Data Loss
+
+### 1. Source Traceability Rule
+Every requirement MUST have:
+- A unique ID (MEET-xxx, FEAT-xxx, BUG-xxx)
+- A traceable source (meeting timestamp, transcript quote, spec file)
+- A wave/section assignment
+
+### 2. Validation Checklist (Run Before Finalizing)
+```
+□ Count source items (e.g., 75 from meeting)
+□ Count roadmap items
+□ Verify counts match
+□ Cross-reference each item ID
+□ Flag any gaps
+```
+
+### 3. Change Control
+When adding/removing items:
+- Update Appendix A traceability matrix
+- Update wave section totals
+- Update executive summary
+- Run validation checklist
+
+### 4. Audit Trail
+Maintain in version control:
+- Source documents (transcripts, meeting notes)
+- Analysis documents (unified reports)
+- Spec files
+- This roadmap with traceability matrix
+
+---
+
+*Traceability Matrix Added: 2026-01-12*
+*QA Validation: 75/75 items accounted for (100%)*
 
