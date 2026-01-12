@@ -28,6 +28,7 @@ import * as readline from "readline";
 import {
   SEEDING_ORDER,
   type SeederResult,
+  seedPricingDefaults,
   seedVendors,
   seedClients,
   seedProducts,
@@ -225,6 +226,7 @@ async function promptConfirmation(message: string): Promise<boolean> {
 function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Record<string, number> {
   const baseCounts: Record<CLIFlags["size"], Record<string, number>> = {
     small: {
+      pricing_defaults: 12, // BUG-084: Fixed config table (category margins)
       clients: 10,
       vendors: 5,
       products: 20,
@@ -235,6 +237,7 @@ function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Rec
       payments: 30,
     },
     medium: {
+      pricing_defaults: 12, // BUG-084: Fixed config table (category margins)
       clients: 60,
       vendors: 15,
       products: 100,
@@ -245,6 +248,7 @@ function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Rec
       payments: 200,
     },
     large: {
+      pricing_defaults: 12, // BUG-084: Fixed config table (category margins)
       clients: 200,
       vendors: 50,
       products: 500,
@@ -322,6 +326,7 @@ async function cleanTables(tables: string[], dryRun: boolean): Promise<void> {
  * Requirements: 10.1
  */
 const SEEDERS: Record<string, (count: number, validator: SchemaValidator, masker: PIIMasker) => Promise<SeederResult>> = {
+  pricing_defaults: seedPricingDefaults, // BUG-084: Critical for order pricing
   vendors: seedVendors,
   clients: seedClients,
   products: seedProducts,

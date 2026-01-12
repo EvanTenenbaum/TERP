@@ -54,6 +54,7 @@
     "seed:rbac": "tsx scripts/seed-rbac.ts",
     "seed:test-accounts": "tsx server/db/seed/testAccounts.ts",
     "seed:qa-accounts": "tsx server/db/seed/qaAccounts.ts",
+    "seed:pricing": "tsx scripts/seed-pricing.ts",
     "setup:admin": "tsx scripts/setup-admin.ts",
     "get:auth-token": "tsx scripts/get-auth-token.ts",
     "prepare": "husky install || true",
