@@ -17,6 +17,11 @@ import {
   Video,
   Flag,
   Layers,
+  Heart,
+  PackageOpen,
+  CheckSquare,
+  Building2,
+  Camera,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +50,22 @@ export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, group: "sales" },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
   { name: "Orders", path: "/orders", icon: ShoppingCart, group: "sales" },
+  // NAV-001: Added Interest List for tracking client product interests
+  {
+    name: "Interest List",
+    path: "/interest-list",
+    icon: Heart,
+    group: "sales",
+    ariaLabel: "Track client product interests and convert to orders",
+  },
+  // NAV-002: Added Pick & Pack for order fulfillment workflow
+  {
+    name: "Pick & Pack",
+    path: "/pick-pack",
+    icon: PackageOpen,
+    group: "sales",
+    ariaLabel: "Order fulfillment and packing workflow",
+  },
   {
     name: "Sales Sheets",
     path: "/sales-sheets",
@@ -75,6 +96,14 @@ export const navigationItems: NavigationItem[] = [
     icon: PackageCheck,
     group: "inventory",
   },
+  // NAV-003: Added Photography Queue for product photography workflow
+  {
+    name: "Photography",
+    path: "/photography",
+    icon: Camera,
+    group: "inventory",
+    ariaLabel: "Product photography queue and workflow management",
+  },
   { name: "Samples", path: "/samples", icon: Beaker, group: "inventory" },
   {
     name: "Purchase Orders",
@@ -82,6 +111,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Truck,
     ariaLabel: "Purchase order queue",
     group: "inventory",
+  },
+  // NAV-004: Added Vendors for vendor management and inventory visibility
+  {
+    name: "Vendors",
+    path: "/vendors",
+    icon: Building2,
+    group: "inventory",
+    ariaLabel: "Vendor management with products and inventory",
   },
   {
     name: "Spreadsheet View",
@@ -108,6 +145,14 @@ export const navigationItems: NavigationItem[] = [
   // UX-010: Renamed "Settings" to "System Settings" to distinguish from personal account settings
   { name: "System Settings", path: "/settings", icon: Settings, group: "admin" },
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "admin" },
+  // NAV-005: Added Todo Lists for task management
+  {
+    name: "Todo Lists",
+    path: "/todos",
+    icon: CheckSquare,
+    group: "admin",
+    ariaLabel: "Personal task management and todo lists",
+  },
   // FEAT-017: Direct access to Feature Flags for improved discoverability
   {
     name: "Feature Flags",
