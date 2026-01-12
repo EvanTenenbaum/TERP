@@ -119,8 +119,12 @@ export const quotesRouter = router({
         conditions.push(eq(orders.clientId, input.clientId));
       }
 
+      // BUG-079: Explicitly select columns from both tables to avoid ambiguous column names
       const results = await db
-        .select()
+        .select({
+          orders: orders,
+          clients: clients,
+        })
         .from(orders)
         .leftJoin(clients, eq(orders.clientId, clients.id))
         .where(and(...conditions))
@@ -169,8 +173,12 @@ export const quotesRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      // BUG-079: Explicitly select columns from both tables to avoid ambiguous column names
       const [result] = await db
-        .select()
+        .select({
+          orders: orders,
+          clients: clients,
+        })
         .from(orders)
         .leftJoin(clients, eq(orders.clientId, clients.id))
         .where(
