@@ -2,9 +2,9 @@
 
 ## Frontend-First Execution with Parallel Agent QA
 
-**Version:** 1.1
+**Version:** 1.3 (FINAL)
 **Created:** 2026-01-12
-**Updated:** 2026-01-12 (Product Owner approvals incorporated)
+**Updated:** 2026-01-12 (All WS specs integrated, final audit complete)
 **Status:** ACTIVE - Supersedes all other roadmaps
 **Methodology:** Frontend-focused with required infrastructure, designed for parallel agent execution
 
@@ -388,8 +388,10 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.A.4 | MEET-025 | Dashboard Aging Quick View | 4h | 4.A.3 | - |
 | 4.A.5 | ENH-008 | Image Toggle for Inventory Views | 16h | 4.A.2 | ENH-008-SPEC |
 | 4.A.6 | MEET-023 | Batch Tracking for Inventory | 12h | 4.A.1 | - |
+| 4.A.7 | WS-008 | Low Stock & Needs-Based Alerts | 16h | 4.A.1 | WS-008-SPEC |
+| 4.A.8 | WS-009 | Inventory Movement & Shrinkage Tracking | 20h | 4.A.7 | WS-009-SPEC |
 
-**Track A Total:** 72h
+**Track A Total:** 108h
 
 ### Track B: Client 360 View (Agent 2)
 
@@ -404,8 +406,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.B.7 | MEET-020 | Suggested Buyer (Purchase History) | 8h | 4.B.1 | - |
 | 4.B.8 | MEET-022 | Reverse Lookup (Product Connections) | 8h | 4.B.1 | - |
 | 4.B.9 | MEET-055 | Office Needs Auto-Population | 8h | 4.B.6 | - |
+| 4.B.10 | WS-011 | Quick Customer Creation | 4h | 4.B.1 | WS-011-SPEC |
 
-**Track B Total:** 76h
+**Track B Total:** 80h
 
 ### Track C: In-line Product Creation (Agent 3)
 
@@ -417,8 +420,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 4):
 | 4.C.4 | MEET-037 | Editable Product Names | 2h | 4.C.2 | - |
 | 4.C.5 | MEET-033 | Searchable Supplier Dropdown | 4h | 4.C.2 | - |
 | 4.C.6 | MEET-040 | Product: Name, Category, Brand Fields | 4h | 4.C.2 | - |
+| 4.C.7 | WS-006 | Immediate Tab Screenshot/Receipt | 12h | None | WS-006-SPEC |
 
-**Track C Total:** 52h
+**Track C Total:** 64h
 
 ### Track D: Scheduling System (Agent 4)
 
@@ -442,21 +446,25 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 [ ] Aging indicator shows red for >2 week items
 [ ] Dashboard aging widget displays correctly
 [ ] Image toggle works in inventory views
+[ ] Low stock alerts fire when threshold reached (WS-008)
+[ ] Inventory movement tracked with shrinkage detection (WS-009)
 [ ] Client Info Pod displays unified context
 [ ] Clients work as both buyers AND suppliers
 [ ] Client tagging with referrer works
 [ ] Referrer lookup returns correct results
 [ ] Client wants/needs tracked and searchable
+[ ] Quick customer creation works (WS-011)
 [ ] In-line product creation works during order
 [ ] SKU field hidden per user request
 [ ] Product names are editable
 [ ] Supplier dropdown is searchable (100+ suppliers)
+[ ] Tab screenshot/receipt generation works (WS-006)
 [ ] Scheduling appointments work
 [ ] Multiple rooms can be booked
 [ ] Notifications fire for tagged users
 ```
 
-**Sprint 4 Total:** 272h (parallel: ~76h elapsed with 4 agents)
+**Sprint 4 Total:** 324h (parallel: ~108h elapsed with 4 agents)
 
 ---
 
@@ -502,8 +510,9 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 | 5.C.5 | UX-012 | Fix Period Display Formatting | 2h | None | - |
 | 5.C.6 | UX-013 | Fix Mirrored Elements Issue | 2h | None | - |
 | 5.C.7 | MEET-015 | Sales Sheet Creator | 12h | 3.B.1 | - |
+| 5.C.8 | WS-010 | Photography Module | 16h | None | WS-010-SPEC |
 
-**Track C Total:** 28h
+**Track C Total:** 44h
 
 ### Track D: Transaction & Product Features (Agent 4)
 
@@ -530,8 +539,10 @@ VALIDATION CHECKLIST (Must all pass before Sprint 5):
 | 5.E.4 | MEET-048 | Hour Tracking | 8h | 4.D.7 | - |
 | 5.E.5 | MEET-051 | User Roles & Permissions Enhancement | 8h | 0.C.1-3 | - |
 | 5.E.6 | MEET-058 | Copy-Paste Office Needs | 4h | 4.B.9 | - |
+| 5.E.7 | WS-013 | Simple Task Management | 12h | None | WS-013-SPEC |
+| 5.E.8 | WS-014 | Vendor Harvest Reminders | 8h | None | WS-014-SPEC |
 
-**Track E Total:** 40h
+**Track E Total:** 60h
 
 ### Sprint 5 QA Gate
 
@@ -549,16 +560,19 @@ VALIDATION CHECKLIST (Must all pass for MVP Complete):
 [ ] Referral (Couch Tax) workflow complete
 [ ] Order preview relocated as requested
 [ ] All terminology user-friendly
+[ ] Photography module captures/displays images (WS-010)
 [ ] All UX polish items resolved
 [ ] Invoice history searchable for disputes
 [ ] Transaction fees configurable per client
 [ ] Payment terms (consignment/cash/COD) work
 [ ] Product grades selectable
+[ ] Simple task management works (WS-013)
+[ ] Vendor harvest reminders fire correctly (WS-014)
 [ ] Storage zones functional
 [ ] Full E2E test suite: 0 FAIL, 0 BLOCKED
 ```
 
-**Sprint 5 Total:** 256h (parallel: ~72h elapsed with 5 agents)
+**Sprint 5 Total:** 292h (parallel: ~72h elapsed with 5 agents)
 
 ---
 
@@ -574,9 +588,9 @@ VALIDATION CHECKLIST (Must all pass for MVP Complete):
 | 1 | 3 | A, B, C | 35h | ~14h |
 | 2 | 4 | A→B sequential, C, D | 98h | ~48h |
 | 3 | 4 | A, B, C, D | 208h | ~96h |
-| 4 | 4 | A, B, C, D | 272h | ~76h |
-| 5 | 5 | A, B, C, D, E | 256h | ~72h |
-| **TOTAL** | | | **891h** | **~315h** |
+| 4 | 4 | A, B, C, D | 324h | ~108h |
+| 5 | 5 | A, B, C, D, E | 292h | ~72h |
+| **TOTAL** | | | **979h** | **~347h** |
 
 ### Agent Assignment Rules
 
@@ -792,11 +806,11 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 | 1 | 35h | 14h | 3 | Critical UI Fixes |
 | 2 | 98h | 48h | 4 | Wave 1: Stop Bleeding |
 | 3 | 208h | 96h | 4 | Wave 2: Core Ops |
-| 4 | 272h | 76h | 4 | Wave 3: Enhanced |
-| 5 | 256h | 72h | 5 | Wave 4: VIP & Polish |
-| **TOTAL** | **891h** | **315h** | - | - |
+| 4 | 324h | 108h | 4 | Wave 3: Enhanced |
+| 5 | 292h | 72h | 5 | Wave 4: VIP & Polish |
+| **TOTAL** | **979h** | **347h** | - | - |
 
-**Note:** 315h elapsed time assumes optimal parallel execution with 4-5 agents. Updated 2026-01-12 to include all 75 MEET items with detailed task breakdowns.
+**Note:** 347h elapsed time assumes optimal parallel execution with 4-5 agents. Updated 2026-01-12 to include all 75 MEET items + 7 WS specs with detailed task breakdowns.
 
 ---
 
@@ -813,35 +827,30 @@ SPRINT 5 (Wave 4 - VIP & Polish)
 
 ---
 
-# PART 8: COOPER RD SPRINT SPECS (WS-001 to WS-014) STATUS
+# PART 8: COOPER RD SPRINT SPECS (WS-001 to WS-014) STATUS ✅ ALL INTEGRATED
 
-The WS-001 to WS-014 specifications were created during the Cooper Rd Sprint and represent Quick Actions and core workflows. Here is their integration status:
+The WS-001 to WS-014 specifications were created during the Cooper Rd Sprint and represent Quick Actions and core workflows. **All 14 specs are now integrated into the MVP roadmap.**
 
-## Already Integrated (Via MEET Items)
+## Integration Summary
 
-| WS Spec | Description | Covered By | Sprint |
-|---------|-------------|------------|--------|
-| WS-001 | Quick Action: Receive Client Payment | MEET-010 (Client Ledger) | 2 |
-| WS-002 | Quick Action: Pay Vendor | MEET-005 (Payables) | 3 |
-| WS-003 | Pick & Pack: Group Bagging | ENH-005 (Scheduling UI) | 4 |
-| WS-004 | Multi-Order & Referral Credit | FEAT-006 (Referral Workflow) | 5 |
-| WS-005 | No Black Box Audit Trail | FEAT-007 (Cash Audit) | 2 |
-| WS-007 | Complex Flower Intake Flow | FEAT-008 (Intake Verification) | 2 |
+| WS Spec | Description | Integrated Via | Sprint | Status |
+|---------|-------------|----------------|--------|--------|
+| WS-001 | Quick Action: Receive Client Payment | MEET-010 (Client Ledger) | 2 | ✅ |
+| WS-002 | Quick Action: Pay Vendor | MEET-005 (Payables) | 3 | ✅ |
+| WS-003 | Pick & Pack: Group Bagging | ENH-005 (Scheduling UI) | 4 | ✅ |
+| WS-004 | Multi-Order & Referral Credit | FEAT-006 (Referral Workflow) | 5 | ✅ |
+| WS-005 | No Black Box Audit Trail | FEAT-007 (Cash Audit) | 2 | ✅ |
+| WS-006 | Immediate Tab Screenshot/Receipt | 4.C.7 (Direct) | 4 | ✅ |
+| WS-007 | Complex Flower Intake Flow | FEAT-008 (Intake Verification) | 2 | ✅ |
+| WS-008 | Low Stock & Needs-Based Alerts | 4.A.7 (Direct) | 4 | ✅ |
+| WS-009 | Inventory Movement & Shrinkage Tracking | 4.A.8 (Direct) | 4 | ✅ |
+| WS-010 | Photography Module | 5.C.8 (Direct) | 5 | ✅ |
+| WS-011 | Quick Customer Creation | 4.B.10 (Direct) | 4 | ✅ |
+| WS-012 | Customer Preferences & Purchase History | MEET-020 (Suggested Buyer) | 4 | ✅ |
+| WS-013 | Simple Task Management | 5.E.7 (Direct) | 5 | ✅ |
+| WS-014 | Vendor Harvest Reminders | 5.E.8 (Direct) | 5 | ✅ |
 
-## Requires Separate Tasks (Add to Sprints)
-
-| WS Spec | Description | Recommended Sprint | Est |
-|---------|-------------|-------------------|-----|
-| WS-006 | Immediate Tab Screenshot/Receipt | 4 (Track C) | 12h |
-| WS-008 | Low Stock & Needs-Based Alerts | 4 (Track A) | 16h |
-| WS-009 | Inventory Movement & Shrinkage Tracking | 4 (Track A) | 20h |
-| WS-010 | Photography Module | 5 (Track C) | 16h |
-| WS-011 | Quick Customer Creation | 4 (Track B) | 4h |
-| WS-012 | Customer Preferences & Purchase History | 4 (Track B) - covered by MEET-020 | 0h |
-| WS-013 | Simple Task Management | 5 (Track E) | 12h |
-| WS-014 | Vendor Harvest Reminders | 5 (Track E) | 8h |
-
-> **Action Required:** Add WS-006, WS-008, WS-009, WS-010, WS-011, WS-013, WS-014 to appropriate sprint task tables if these features are required for MVP. Estimated additional effort: 88h.
+**Total WS Specs:** 14 | **Integrated:** 14 (100%)
 
 ---
 
@@ -931,11 +940,13 @@ DEPENDENCY VERIFICATION
 | MEET-006 | Office Owned Inventory | ☐ | ☐ | ☐ |
 
 ### Sprint 4: Wave 3 - Enhanced Capability
-| MEET ID | Description | Backend | Frontend | QA |
+| Task ID | Description | Backend | Frontend | QA |
 |---------|-------------|---------|----------|-----|
 | MEET-024 | Aging Inventory Visual | ☐ | ☐ | ☐ |
 | MEET-025 | Dashboard Aging | ☐ | ☐ | ☐ |
 | MEET-023 | Batch Tracking | ☐ | ☐ | ☐ |
+| WS-008 | Low Stock & Needs-Based Alerts | ☐ | ☐ | ☐ |
+| WS-009 | Inventory Movement & Shrinkage | ☐ | ☐ | ☐ |
 | MEET-007 | Clients: Buyer AND Supplier | ☐ | ☐ | ☐ |
 | MEET-008 | Complex Tab | ☐ | ☐ | ☐ |
 | MEET-012 | Client Tagging | ☐ | ☐ | ☐ |
@@ -944,10 +955,12 @@ DEPENDENCY VERIFICATION
 | MEET-020 | Suggested Buyer | ☐ | ☐ | ☐ |
 | MEET-022 | Reverse Lookup | ☐ | ☐ | ☐ |
 | MEET-055 | Office Needs Auto-Pop | ☐ | ☐ | ☐ |
+| WS-011 | Quick Customer Creation | ☐ | ☐ | ☐ |
 | MEET-031 | Hide SKU Field | - | ☐ | ☐ |
 | MEET-037 | Editable Product Names | ☐ | ☐ | ☐ |
 | MEET-033 | Searchable Supplier | ☐ | ☐ | ☐ |
 | MEET-040 | Product Metadata | ☐ | ☐ | ☐ |
+| WS-006 | Immediate Tab Screenshot/Receipt | ☐ | ☐ | ☐ |
 | MEET-046 | Live Appointments | ☐ | ☐ | ☐ |
 | MEET-047 | Multiple Rooms | ☐ | ☐ | ☐ |
 | MEET-072 | Notification Tagging | ☐ | ☐ | ☐ |
@@ -955,7 +968,7 @@ DEPENDENCY VERIFICATION
 | MEET-050 | Shift/Vacation | ☐ | ☐ | ☐ |
 
 ### Sprint 5: Wave 4 - VIP & Polish
-| MEET ID | Description | Backend | Frontend | QA |
+| Task ID | Description | Backend | Frontend | QA |
 |---------|-------------|---------|----------|-----|
 | MEET-043 | VIP Status Tiers | ☐ | ☐ | ☐ |
 | MEET-041 | VIP Debt Aging Notifications | ☐ | ☐ | ☐ |
@@ -969,6 +982,7 @@ DEPENDENCY VERIFICATION
 | MEET-045 | Rewards System | ☐ | ☐ | ☐ |
 | MEET-053 | User-Friendly Terminology | - | ☐ | ☐ |
 | MEET-015 | Sales Sheet Creator | ☐ | ☐ | ☐ |
+| WS-010 | Photography Module | ☐ | ☐ | ☐ |
 | MEET-017 | Invoice History | ☐ | ☐ | ☐ |
 | MEET-018 | Transaction Fee Per Client | ☐ | ☐ | ☐ |
 | MEET-035 | Payment Terms | ☐ | ☐ | ☐ |
@@ -983,6 +997,8 @@ DEPENDENCY VERIFICATION
 | MEET-048 | Hour Tracking | ☐ | ☐ | ☐ |
 | MEET-051 | User Roles Enhancement | ☐ | ☐ | ☐ |
 | MEET-058 | Copy-Paste Office Needs | ☐ | ☐ | ☐ |
+| WS-013 | Simple Task Management | ☐ | ☐ | ☐ |
+| WS-014 | Vendor Harvest Reminders | ☐ | ☐ | ☐ |
 
 ---
 
@@ -993,6 +1009,7 @@ Before marking MVP complete:
 ```
 ALL FEATURES VERIFIED
 [ ] All 72 MVP MEET items have status: COMPLETE
+[ ] All 7 WS spec tasks have status: COMPLETE
 [ ] All Sprint QA gates passed with 0 FAIL
 [ ] Full E2E test suite: 0 FAIL, 0 BLOCKED
 [ ] Product Owner sign-off on each wave
@@ -1013,11 +1030,20 @@ DEPLOYMENT READY
 ---
 
 **Document Status:** ACTIVE
-**Version:** 1.2
+**Version:** 1.3 (FINAL)
 **Created:** 2026-01-12
-**Updated:** 2026-01-12 (Added all missing MEET items to sprint tasks, added master tracking)
+**Updated:** 2026-01-12 (All WS specs integrated into MVP, final audit complete)
 **Author:** Claude AI Strategic Analysis
 **Next Review:** After Sprint 0 completion
+
+## Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-01-12 | Initial creation with 6 sprints, parallel agent framework |
+| 1.1 | 2026-01-12 | Product Owner approvals incorporated |
+| 1.2 | 2026-01-12 | Added all 18 missing MEET items, master tracking checklists |
+| 1.3 | 2026-01-12 | Integrated 7 WS specs (WS-006/008/009/010/011/013/014) into MVP |
 
 ---
 

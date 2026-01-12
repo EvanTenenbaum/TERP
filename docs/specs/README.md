@@ -131,7 +131,7 @@ All new specifications should follow the standard template: [SPEC_TEMPLATE.md](.
 | Wave 1 Critical Specs (New) | 98h | 98h |
 | **TOTAL** | **1,028h** | **1,188h** |
 
-> **Note:** See [PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md](../roadmaps/PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md) for optimized execution plan that reduces elapsed time to ~265h with 4 parallel agents.
+> **Note:** See [PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md](../roadmaps/PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md) for optimized execution plan that reduces elapsed time to ~347h with 4-5 parallel agents. Total effort: 979h (includes all 75 MEET items + 7 WS specs).
 
 ---
 
