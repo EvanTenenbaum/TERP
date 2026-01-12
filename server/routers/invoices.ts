@@ -518,13 +518,14 @@ export const invoicesRouter = router({
         conditions.push(eq(invoices.customerId, input.clientId));
       }
 
-      // Get counts by status
+      // BUG-080: Fix column names - schema uses camelCase (totalAmount, amountDue)
+      // not snake_case (total_amount, amount_due)
       const statusCounts = await db
         .select({
           status: invoices.status,
           count: sql<number>`COUNT(*)`,
-          totalAmount: sql<string>`SUM(total_amount)`,
-          amountDue: sql<string>`SUM(amount_due)`,
+          totalAmount: sql<string>`SUM(${invoices.totalAmount})`,
+          amountDue: sql<string>`SUM(${invoices.amountDue})`,
         })
         .from(invoices)
         .where(and(...conditions))
