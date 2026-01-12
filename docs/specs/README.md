@@ -8,9 +8,25 @@ This directory contains detailed product specifications for all major features a
 |--------|-------|
 | Approved | 24 |
 | In Review | 0 |
-| Draft | 14 |
+| Draft | 17 |
 
-## NEW: User Flow Gap Analysis Specs (2026-01-12)
+## NEW: Critical Wave 1 Specs (2026-01-12)
+
+The following specs were identified as **MISSING** during strategic roadmap review and are required for Wave 1 "Stop the Bleeding" execution.
+
+### Wave 1: Stop the Bleeding Specs (CRITICAL)
+
+| Task ID | Title | Spec | Priority | Estimate | Source |
+|---------|-------|------|----------|----------|--------|
+| FEAT-007 | Cash Audit System | [FEAT-007-CASH-AUDIT-SPEC.md](./FEAT-007-CASH-AUDIT-SPEC.md) | **CRITICAL** | 48h | MEET-001 to MEET-004 |
+| FEAT-008 | Intake Verification System | [FEAT-008-INTAKE-VERIFICATION-SPEC.md](./FEAT-008-INTAKE-VERIFICATION-SPEC.md) | **CRITICAL** | 34h | MEET-064 to MEET-066 |
+| FEAT-009 | Simple Client Ledger | [FEAT-009-CLIENT-LEDGER-SPEC.md](./FEAT-009-CLIENT-LEDGER-SPEC.md) | **CRITICAL** | 16h | MEET-010 |
+
+> **Note:** These specs are in DRAFT status and require Product Owner approval before implementation.
+
+---
+
+## User Flow Gap Analysis Specs (2026-01-12)
 
 The following specs were generated from the Strategic Implementation Plan to address gaps identified in the user flow analysis.
 
@@ -109,7 +125,10 @@ All new specifications should follow the standard template: [SPEC_TEMPLATE.md](.
 |----------|-------------|--------------|
 | Cooper Rd Sprint (Approved) | 710h | 870h |
 | User Flow Gap Analysis (New) | 220h | 220h |
-| **TOTAL** | **930h** | **1,090h** |
+| Wave 1 Critical Specs (New) | 98h | 98h |
+| **TOTAL** | **1,028h** | **1,188h** |
+
+> **Note:** See [PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md](../roadmaps/PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md) for optimized execution plan that reduces elapsed time to ~265h with 4 parallel agents.
 
 ---
 
