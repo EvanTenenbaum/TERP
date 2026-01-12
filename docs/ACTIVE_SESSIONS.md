@@ -12,7 +12,7 @@
 
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 | ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session-20260112-SPRINT0-a10540 | Sprint 0 Foundation | claude/terp-sprint-0-foundation-pTDuX | All Tracks A/B/C | IN_PROGRESS | 2026-01-12 | ~8.5h |
 
 ## ⏸️ Paused / Waiting
 
