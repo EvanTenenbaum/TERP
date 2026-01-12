@@ -2,22 +2,55 @@
 
 **Purpose:** Central tracking of all implementation roadmaps for TERP development.
 
-**Last Updated:** January 11, 2026
+**Last Updated:** January 12, 2026
 
 ---
 
 ## Active Roadmap
 
-**Current Focus:** [Default Values Implementation](./defaults-implementation.md)
+**Current Focus:** [Prioritized Strategic Roadmap](./PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md)
 
-**Status:** 🟡 Ready to Start  
-**Estimated Effort:** 22-29 days  
-**Started:** Not yet  
-**Current Phase:** Phase 1 - Master Data & Foundation
+**Status:** 🟡 ACTIVE
+**Estimated Effort:** 741h total (265h with 4 parallel agents)
+**Started:** 2026-01-12
+**Current Phase:** Sprint 0 - Foundation (Bugs, API Registration, RBAC)
+
+> **This roadmap supersedes all others for execution purposes.** It consolidates:
+> - MASTER_ROADMAP.md (v4.9)
+> - TERP_STRATEGIC_ROADMAP_2026.md (Customer Meeting items)
+> - UNIFIED_STRATEGIC_ROADMAP_2026-01-12.md (Gap Analysis)
+> - QA Bug Fix Plans
 
 ---
 
 ## All Roadmaps
+
+### 0. Prioritized Strategic Roadmap (ACTIVE)
+
+**Status:** 🟡 ACTIVE
+**Priority:** Critical
+**Files:**
+
+- [Implementation Roadmap](./PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md) - 6-sprint execution plan
+- [Customer Meeting Roadmap](./TERP_STRATEGIC_ROADMAP_2026.md) - 75 MEET items source
+- [Unified Roadmap](./UNIFIED_STRATEGIC_ROADMAP_2026-01-12.md) - Gap analysis integration
+- [Master Roadmap](./MASTER_ROADMAP.md) - Historical task tracking
+
+**Summary:** Frontend-first execution plan with parallel agent support. Consolidates all 75 customer meeting items, bug fixes, API registration, and feature specs into a prioritized sprint structure with QA gates.
+
+**Key Features:**
+- 6 Sprints: Foundation → Critical UI → Wave 1-4
+- 4 parallel execution tracks per sprint
+- Mandatory QA gates between sprints
+- Complete dependency matrix
+- 100% MEET item traceability (75/75)
+
+**New Specs Created:**
+- [FEAT-007-CASH-AUDIT-SPEC.md](../specs/FEAT-007-CASH-AUDIT-SPEC.md) - MEET-001 to MEET-004
+- [FEAT-008-INTAKE-VERIFICATION-SPEC.md](../specs/FEAT-008-INTAKE-VERIFICATION-SPEC.md) - MEET-064 to MEET-066
+- [FEAT-009-CLIENT-LEDGER-SPEC.md](../specs/FEAT-009-CLIENT-LEDGER-SPEC.md) - MEET-010
+
+---
 
 ### 1. Default Values Implementation
 
