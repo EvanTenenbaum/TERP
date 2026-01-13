@@ -112,6 +112,8 @@ import { clientWantsRouter } from "./routers/clientWants"; // Sprint 4 Track B: 
 import { officeSupplyRouter } from "./routers/officeSupply"; // Sprint 4 Track B: Office Supply (MEET-055)
 import { storageRouter } from "./routers/storage"; // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
 import { productCategoriesRouter } from "./routers/productCategories"; // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
+import { hourTrackingRouter } from "./routers/hourTracking"; // Sprint 5 Track E: Hour Tracking (MEET-048)
+import { gamificationRouter } from "./routers/gamification"; // Sprint 5 Track B: Gamification (MEET-044, MEET-045, FEAT-006)
 
 // Sprint 5 Track D: Transaction & Product Features
 import { invoiceDisputesRouter } from "./routers/invoiceDisputes"; // MEET-017: Invoice History (Debt Disputes)
@@ -254,6 +256,8 @@ export const appRouter = router({
   officeSupply: officeSupplyRouter, // Sprint 4 Track B: Office Supply Needs (MEET-055)
   storage: storageRouter, // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
   productCategories: productCategoriesRouter, // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
+  hourTracking: hourTrackingRouter, // Sprint 5 Track E: Hour Tracking (MEET-048)
+  gamification: gamificationRouter, // Sprint 5 Track B: Gamification (MEET-044, MEET-045, FEAT-006)
 
   // Sprint 5 Track D: Transaction & Product Features
   invoiceDisputes: invoiceDisputesRouter, // MEET-017: Invoice History (Debt Disputes)

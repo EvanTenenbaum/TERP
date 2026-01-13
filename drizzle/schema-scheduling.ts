@@ -78,8 +78,10 @@ export const roomBookings = mysqlTable(
       .references(() => rooms.id, { onDelete: "cascade" }),
 
     // Can be linked to calendar event or standalone
-    calendarEventId: int("calendar_event_id")
-      .references(() => calendarEvents.id, { onDelete: "cascade" }),
+    calendarEventId: int("calendar_event_id").references(
+      () => calendarEvents.id,
+      { onDelete: "cascade" }
+    ),
 
     // Booking details (for standalone bookings)
     title: varchar("title", { length: 255 }),
@@ -97,14 +99,17 @@ export const roomBookings = mysqlTable(
       "in_progress",
       "completed",
       "cancelled",
-    ]).notNull().default("pending"),
+    ])
+      .notNull()
+      .default("pending"),
 
     // Booking owner
     bookedById: int("booked_by_id")
       .notNull()
       .references(() => users.id),
-    clientId: int("client_id")
-      .references(() => clients.id, { onDelete: "set null" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
 
     // Notes
     notes: text("notes"),
@@ -156,7 +161,9 @@ export const employeeShifts = mysqlTable(
       "overtime",
       "on_call",
       "training",
-    ]).notNull().default("regular"),
+    ])
+      .notNull()
+      .default("regular"),
 
     // Location
     locationId: int("location_id"),
@@ -168,7 +175,9 @@ export const employeeShifts = mysqlTable(
       "completed",
       "absent",
       "cancelled",
-    ]).notNull().default("scheduled"),
+    ])
+      .notNull()
+      .default("scheduled"),
 
     // Actual check-in/out times
     actualStartTime: timestamp("actual_start_time"),
@@ -178,8 +187,7 @@ export const employeeShifts = mysqlTable(
     notes: text("notes"),
 
     // Created by (manager who assigned shift)
-    createdById: int("created_by_id")
-      .references(() => users.id),
+    createdById: int("created_by_id").references(() => users.id),
 
     // Metadata
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -253,21 +261,26 @@ export const appointmentStatusHistory = mysqlTable(
 
     // Timing
     changedAt: timestamp("changed_at").defaultNow().notNull(),
-    changedById: int("changed_by_id")
-      .references(() => users.id),
+    changedById: int("changed_by_id").references(() => users.id),
 
     // Additional info
     notes: text("notes"),
     metadata: json("metadata"),
   },
   table => ({
-    eventIdx: index("idx_appointment_status_history_event").on(table.calendarEventId),
-    changedAtIdx: index("idx_appointment_status_history_changed").on(table.changedAt),
+    eventIdx: index("idx_appointment_status_history_event").on(
+      table.calendarEventId
+    ),
+    changedAtIdx: index("idx_appointment_status_history_changed").on(
+      table.changedAt
+    ),
   })
 );
 
-export type AppointmentStatusHistory = typeof appointmentStatusHistory.$inferSelect;
-export type InsertAppointmentStatusHistory = typeof appointmentStatusHistory.$inferInsert;
+export type AppointmentStatusHistory =
+  typeof appointmentStatusHistory.$inferSelect;
+export type InsertAppointmentStatusHistory =
+  typeof appointmentStatusHistory.$inferInsert;
 
 /**
  * Appointment Check-ins table
@@ -280,8 +293,9 @@ export const appointmentCheckIns = mysqlTable(
     calendarEventId: int("calendar_event_id")
       .notNull()
       .references(() => calendarEvents.id, { onDelete: "cascade" }),
-    clientId: int("client_id")
-      .references(() => clients.id, { onDelete: "set null" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
 
     // Check-in/out times
     checkInTime: timestamp("check_in_time"),
@@ -294,11 +308,12 @@ export const appointmentCheckIns = mysqlTable(
       "in_progress",
       "completed",
       "no_show",
-    ]).notNull().default("waiting"),
+    ])
+      .notNull()
+      .default("waiting"),
 
     // Staff member handling
-    handledById: int("handled_by_id")
-      .references(() => users.id),
+    handledById: int("handled_by_id").references(() => users.id),
 
     // Queue position (for waiting room)
     queuePosition: int("queue_position"),
@@ -311,7 +326,9 @@ export const appointmentCheckIns = mysqlTable(
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
   table => ({
-    eventIdx: index("idx_appointment_check_ins_event").on(table.calendarEventId),
+    eventIdx: index("idx_appointment_check_ins_event").on(
+      table.calendarEventId
+    ),
     clientIdx: index("idx_appointment_check_ins_client").on(table.clientId),
     statusIdx: index("idx_appointment_check_ins_status").on(table.status),
   })
@@ -368,9 +385,14 @@ export const userMentions = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   table => ({
-    mentionedUserIdx: index("idx_user_mentions_mentioned").on(table.mentionedUserId),
+    mentionedUserIdx: index("idx_user_mentions_mentioned").on(
+      table.mentionedUserId
+    ),
     mentionedByIdx: index("idx_user_mentions_by").on(table.mentionedById),
-    sourceIdx: index("idx_user_mentions_source").on(table.sourceType, table.sourceId),
+    sourceIdx: index("idx_user_mentions_source").on(
+      table.sourceType,
+      table.sourceId
+    ),
     isReadIdx: index("idx_user_mentions_read").on(table.isRead),
   })
 );
@@ -416,7 +438,9 @@ export const deliverySchedules = mysqlTable(
       "delivered",
       "delayed",
       "cancelled",
-    ]).notNull().default("pending"),
+    ])
+      .notNull()
+      .default("pending"),
 
     // Carrier/logistics info
     carrier: varchar("carrier", { length: 255 }),
@@ -431,8 +455,7 @@ export const deliverySchedules = mysqlTable(
     overdueAlertSent: boolean("overdue_alert_sent").notNull().default(false),
 
     // Metadata
-    createdById: int("created_by_id")
-      .references(() => users.id),
+    createdById: int("created_by_id").references(() => users.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
@@ -441,7 +464,9 @@ export const deliverySchedules = mysqlTable(
       table.referenceType,
       table.referenceId
     ),
-    expectedDateIdx: index("idx_delivery_schedules_expected").on(table.expectedDate),
+    expectedDateIdx: index("idx_delivery_schedules_expected").on(
+      table.expectedDate
+    ),
     statusIdx: index("idx_delivery_schedules_status").on(table.status),
   })
 );
@@ -477,12 +502,15 @@ export const appointmentReferrals = mysqlTable(
     ]).notNull(),
 
     // If referred by client
-    referringClientId: int("referring_client_id")
-      .references(() => clients.id, { onDelete: "set null" }),
+    referringClientId: int("referring_client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
 
     // If referred by employee
-    referringEmployeeId: int("referring_employee_id")
-      .references(() => users.id, { onDelete: "set null" }),
+    referringEmployeeId: int("referring_employee_id").references(
+      () => users.id,
+      { onDelete: "set null" }
+    ),
 
     // Additional info
     referralCode: varchar("referral_code", { length: 50 }),
@@ -497,15 +525,24 @@ export const appointmentReferrals = mysqlTable(
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
   table => ({
-    eventIdx: index("idx_appointment_referrals_event").on(table.calendarEventId),
-    referringClientIdx: index("idx_appointment_referrals_client").on(table.referringClientId),
-    referringEmployeeIdx: index("idx_appointment_referrals_employee").on(table.referringEmployeeId),
-    sourceIdx: index("idx_appointment_referrals_source").on(table.referralSource),
+    eventIdx: index("idx_appointment_referrals_event").on(
+      table.calendarEventId
+    ),
+    referringClientIdx: index("idx_appointment_referrals_client").on(
+      table.referringClientId
+    ),
+    referringEmployeeIdx: index("idx_appointment_referrals_employee").on(
+      table.referringEmployeeId
+    ),
+    sourceIdx: index("idx_appointment_referrals_source").on(
+      table.referralSource
+    ),
   })
 );
 
 export type AppointmentReferral = typeof appointmentReferrals.$inferSelect;
-export type InsertAppointmentReferral = typeof appointmentReferrals.$inferInsert;
+export type InsertAppointmentReferral =
+  typeof appointmentReferrals.$inferInsert;
 
 // ============================================================================
 // Relations
@@ -546,20 +583,23 @@ export const employeeShiftsRelations = relations(employeeShifts, ({ one }) => ({
   }),
 }));
 
-export const appointmentCheckInsRelations = relations(appointmentCheckIns, ({ one }) => ({
-  calendarEvent: one(calendarEvents, {
-    fields: [appointmentCheckIns.calendarEventId],
-    references: [calendarEvents.id],
-  }),
-  client: one(clients, {
-    fields: [appointmentCheckIns.clientId],
-    references: [clients.id],
-  }),
-  handledBy: one(users, {
-    fields: [appointmentCheckIns.handledById],
-    references: [users.id],
-  }),
-}));
+export const appointmentCheckInsRelations = relations(
+  appointmentCheckIns,
+  ({ one }) => ({
+    calendarEvent: one(calendarEvents, {
+      fields: [appointmentCheckIns.calendarEventId],
+      references: [calendarEvents.id],
+    }),
+    client: one(clients, {
+      fields: [appointmentCheckIns.clientId],
+      references: [clients.id],
+    }),
+    handledBy: one(users, {
+      fields: [appointmentCheckIns.handledById],
+      references: [users.id],
+    }),
+  })
+);
 
 export const userMentionsRelations = relations(userMentions, ({ one }) => ({
   mentionedUser: one(users, {
@@ -574,37 +614,342 @@ export const userMentionsRelations = relations(userMentions, ({ one }) => ({
   }),
 }));
 
-export const appointmentReferralsRelations = relations(appointmentReferrals, ({ one }) => ({
-  calendarEvent: one(calendarEvents, {
-    fields: [appointmentReferrals.calendarEventId],
-    references: [calendarEvents.id],
-  }),
-  referringClient: one(clients, {
-    fields: [appointmentReferrals.referringClientId],
-    references: [clients.id],
-  }),
-  referringEmployee: one(users, {
-    fields: [appointmentReferrals.referringEmployeeId],
-    references: [users.id],
-  }),
-}));
+export const appointmentReferralsRelations = relations(
+  appointmentReferrals,
+  ({ one }) => ({
+    calendarEvent: one(calendarEvents, {
+      fields: [appointmentReferrals.calendarEventId],
+      references: [calendarEvents.id],
+    }),
+    referringClient: one(clients, {
+      fields: [appointmentReferrals.referringClientId],
+      references: [clients.id],
+    }),
+    referringEmployee: one(users, {
+      fields: [appointmentReferrals.referringEmployeeId],
+      references: [users.id],
+    }),
+  })
+);
 
 // QA Fix: Add missing relations for deliverySchedules
-export const deliverySchedulesRelations = relations(deliverySchedules, ({ one }) => ({
-  createdBy: one(users, {
-    fields: [deliverySchedules.createdById],
+export const deliverySchedulesRelations = relations(
+  deliverySchedules,
+  ({ one }) => ({
+    createdBy: one(users, {
+      fields: [deliverySchedules.createdById],
+      references: [users.id],
+    }),
+  })
+);
+
+// QA Fix: Add missing relations for appointmentStatusHistory
+export const appointmentStatusHistoryRelations = relations(
+  appointmentStatusHistory,
+  ({ one }) => ({
+    calendarEvent: one(calendarEvents, {
+      fields: [appointmentStatusHistory.calendarEventId],
+      references: [calendarEvents.id],
+    }),
+    changedBy: one(users, {
+      fields: [appointmentStatusHistory.changedById],
+      references: [users.id],
+    }),
+  })
+);
+
+// ============================================================================
+// MEET-048: Hour Tracking (Sprint 5 Track E)
+// ============================================================================
+
+/**
+ * Time Entries table
+ * Tracks clock in/out for employees
+ */
+export const timeEntries = mysqlTable(
+  "time_entries",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Date of entry
+    entryDate: date("entry_date").notNull(),
+
+    // Clock in/out times
+    clockIn: timestamp("clock_in").notNull(),
+    clockOut: timestamp("clock_out"),
+
+    // Break tracking
+    breakStart: timestamp("break_start"),
+    breakEnd: timestamp("break_end"),
+    totalBreakMinutes: int("total_break_minutes").default(0),
+
+    // Calculated hours
+    regularHours: int("regular_hours_minutes").default(0), // in minutes
+    overtimeHours: int("overtime_hours_minutes").default(0), // in minutes
+    totalHours: int("total_hours_minutes").default(0), // in minutes
+
+    // Entry type
+    entryType: mysqlEnum("entry_type", [
+      "regular",
+      "overtime",
+      "holiday",
+      "sick",
+      "vacation",
+      "training",
+    ])
+      .notNull()
+      .default("regular"),
+
+    // Status
+    status: mysqlEnum("status", [
+      "active",
+      "completed",
+      "adjusted",
+      "approved",
+      "rejected",
+    ])
+      .notNull()
+      .default("active"),
+
+    // Linked to shift (optional)
+    shiftId: int("shift_id").references(() => employeeShifts.id, {
+      onDelete: "set null",
+    }),
+
+    // Notes and adjustments
+    notes: text("notes"),
+    adjustmentReason: text("adjustment_reason"),
+    adjustedById: int("adjusted_by_id").references(() => users.id),
+    adjustedAt: timestamp("adjusted_at"),
+
+    // Approval
+    approvedById: int("approved_by_id").references(() => users.id),
+    approvedAt: timestamp("approved_at"),
+
+    // IP/device tracking (optional)
+    clockInIp: varchar("clock_in_ip", { length: 45 }),
+    clockOutIp: varchar("clock_out_ip", { length: 45 }),
+    clockInDevice: varchar("clock_in_device", { length: 255 }),
+    clockOutDevice: varchar("clock_out_device", { length: 255 }),
+
+    // Metadata
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    userIdx: index("idx_time_entries_user").on(table.userId),
+    dateIdx: index("idx_time_entries_date").on(table.entryDate),
+    statusIdx: index("idx_time_entries_status").on(table.status),
+    typeIdx: index("idx_time_entries_type").on(table.entryType),
+    userDateIdx: index("idx_time_entries_user_date").on(
+      table.userId,
+      table.entryDate
+    ),
+  })
+);
+
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = typeof timeEntries.$inferInsert;
+
+/**
+ * Timesheet Periods table
+ * Defines pay periods for timesheet grouping
+ */
+export const timesheetPeriods = mysqlTable(
+  "timesheet_periods",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    // Period dates
+    periodStart: date("period_start").notNull(),
+    periodEnd: date("period_end").notNull(),
+
+    // Period type
+    periodType: mysqlEnum("period_type", ["weekly", "biweekly", "monthly"])
+      .notNull()
+      .default("biweekly"),
+
+    // Status
+    status: mysqlEnum("status", ["open", "closed", "locked"])
+      .notNull()
+      .default("open"),
+
+    // Closing info
+    closedById: int("closed_by_id").references(() => users.id),
+    closedAt: timestamp("closed_at"),
+
+    // Notes
+    notes: text("notes"),
+
+    // Metadata
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    periodStartIdx: index("idx_timesheet_periods_start").on(table.periodStart),
+    periodEndIdx: index("idx_timesheet_periods_end").on(table.periodEnd),
+    statusIdx: index("idx_timesheet_periods_status").on(table.status),
+  })
+);
+
+export type TimesheetPeriod = typeof timesheetPeriods.$inferSelect;
+export type InsertTimesheetPeriod = typeof timesheetPeriods.$inferInsert;
+
+/**
+ * Employee Timesheets table
+ * Aggregated timesheet data per employee per period
+ */
+export const employeeTimesheets = mysqlTable(
+  "employee_timesheets",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    periodId: int("period_id")
+      .notNull()
+      .references(() => timesheetPeriods.id, { onDelete: "cascade" }),
+
+    // Totals (in minutes)
+    totalRegularMinutes: int("total_regular_minutes").default(0),
+    totalOvertimeMinutes: int("total_overtime_minutes").default(0),
+    totalHolidayMinutes: int("total_holiday_minutes").default(0),
+    totalSickMinutes: int("total_sick_minutes").default(0),
+    totalVacationMinutes: int("total_vacation_minutes").default(0),
+    totalTrainingMinutes: int("total_training_minutes").default(0),
+
+    // Grand total
+    grandTotalMinutes: int("grand_total_minutes").default(0),
+
+    // Status
+    status: mysqlEnum("status", [
+      "draft",
+      "submitted",
+      "approved",
+      "rejected",
+      "paid",
+    ])
+      .notNull()
+      .default("draft"),
+
+    // Submission
+    submittedAt: timestamp("submitted_at"),
+
+    // Approval
+    approvedById: int("approved_by_id").references(() => users.id),
+    approvedAt: timestamp("approved_at"),
+    rejectionReason: text("rejection_reason"),
+
+    // Notes
+    employeeNotes: text("employee_notes"),
+    managerNotes: text("manager_notes"),
+
+    // Metadata
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    userIdx: index("idx_employee_timesheets_user").on(table.userId),
+    periodIdx: index("idx_employee_timesheets_period").on(table.periodId),
+    statusIdx: index("idx_employee_timesheets_status").on(table.status),
+    userPeriodIdx: index("idx_employee_timesheets_user_period").on(
+      table.userId,
+      table.periodId
+    ),
+  })
+);
+
+export type EmployeeTimesheet = typeof employeeTimesheets.$inferSelect;
+export type InsertEmployeeTimesheet = typeof employeeTimesheets.$inferInsert;
+
+/**
+ * Overtime Rules table
+ * Configures overtime thresholds
+ */
+export const overtimeRules = mysqlTable("overtime_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+
+  // Thresholds (in minutes)
+  dailyThresholdMinutes: int("daily_threshold_minutes").default(480), // 8 hours default
+  weeklyThresholdMinutes: int("weekly_threshold_minutes").default(2400), // 40 hours default
+
+  // Overtime multipliers (stored as percentage, e.g., 150 = 1.5x)
+  overtimeMultiplier: int("overtime_multiplier").default(150),
+  doubleOvertimeMultiplier: int("double_overtime_multiplier").default(200),
+
+  // Double overtime thresholds
+  dailyDoubleThresholdMinutes: int("daily_double_threshold_minutes").default(
+    720
+  ), // 12 hours default
+  weeklyDoubleThresholdMinutes: int("weekly_double_threshold_minutes"), // null = no weekly double OT
+
+  // Status
+  isActive: boolean("is_active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OvertimeRule = typeof overtimeRules.$inferSelect;
+export type InsertOvertimeRule = typeof overtimeRules.$inferInsert;
+
+// ============================================================================
+// Hour Tracking Relations
+// ============================================================================
+
+export const timeEntriesRelations = relations(timeEntries, ({ one }) => ({
+  user: one(users, {
+    fields: [timeEntries.userId],
     references: [users.id],
+  }),
+  shift: one(employeeShifts, {
+    fields: [timeEntries.shiftId],
+    references: [employeeShifts.id],
+  }),
+  adjustedBy: one(users, {
+    fields: [timeEntries.adjustedById],
+    references: [users.id],
+    relationName: "adjustedBy",
+  }),
+  approvedBy: one(users, {
+    fields: [timeEntries.approvedById],
+    references: [users.id],
+    relationName: "approvedBy",
   }),
 }));
 
-// QA Fix: Add missing relations for appointmentStatusHistory
-export const appointmentStatusHistoryRelations = relations(appointmentStatusHistory, ({ one }) => ({
-  calendarEvent: one(calendarEvents, {
-    fields: [appointmentStatusHistory.calendarEventId],
-    references: [calendarEvents.id],
-  }),
-  changedBy: one(users, {
-    fields: [appointmentStatusHistory.changedById],
-    references: [users.id],
-  }),
-}));
+export const timesheetPeriodsRelations = relations(
+  timesheetPeriods,
+  ({ one, many }) => ({
+    closedBy: one(users, {
+      fields: [timesheetPeriods.closedById],
+      references: [users.id],
+    }),
+    employeeTimesheets: many(employeeTimesheets),
+  })
+);
+
+export const employeeTimesheetsRelations = relations(
+  employeeTimesheets,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [employeeTimesheets.userId],
+      references: [users.id],
+    }),
+    period: one(timesheetPeriods, {
+      fields: [employeeTimesheets.periodId],
+      references: [timesheetPeriods.id],
+    }),
+    approvedBy: one(users, {
+      fields: [employeeTimesheets.approvedById],
+      references: [users.id],
+    }),
+  })
+);
