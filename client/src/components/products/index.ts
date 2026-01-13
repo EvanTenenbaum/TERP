@@ -8,3 +8,6 @@ export type {
   InlineProductCreateProps,
   CreatedProduct,
 } from "./InlineProductCreate";
+
+export { EditableProductName } from "./EditableProductName";
+export type { EditableProductNameProps } from "./EditableProductName";
