@@ -1,6 +1,7 @@
 /**
  * AdvancedFilters Component
  * Comprehensive filtering panel for inventory
+ * ENH-007: Uses dynamic Brand/Farmer terminology based on category filter
  */
 
 import { useState } from "react";
@@ -17,6 +18,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Filter, ChevronDown, ChevronUp } from "lucide-react";
 import type { InventoryFilters } from "@/hooks/useInventoryFilters";
+import { getBrandLabel } from "@/lib/nomenclature";
 
 interface AdvancedFiltersProps {
   filters: InventoryFilters;
@@ -196,10 +198,10 @@ export function AdvancedFilters({
             </div>
           )}
 
-          {/* Brand Filter */}
+          {/* Brand/Farmer Filter - ENH-007: Dynamic label based on category */}
           {brands.length > 0 && (
             <div className="space-y-2">
-              <Label>Brand</Label>
+              <Label>{getBrandLabel(filters.category)}</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {brands.map((brand) => (
                   <div key={brand} className="flex items-center space-x-2">
