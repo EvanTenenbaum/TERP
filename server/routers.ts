@@ -31,6 +31,7 @@ import { dashboardEnhancedRouter } from "./routers/dashboardEnhanced";
 import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
 import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
 import { productIntakeRouter } from "./routers/productIntake";
+import { intakeReceiptsRouter } from "./routers/intakeReceipts"; // FEAT-008: Intake Verification System
 import { orderEnhancementsRouter } from "./routers/orderEnhancements";
 import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
@@ -155,6 +156,7 @@ export const appRouter = router({
   salesSheetEnhancements: salesSheetEnhancementsRouter,
   advancedTagFeatures: advancedTagFeaturesRouter,
   productIntake: productIntakeRouter,
+  intakeReceipts: intakeReceiptsRouter, // FEAT-008: Intake Verification System (MEET-064 to MEET-066)
   orderEnhancements: orderEnhancementsRouter,
   clientNeeds: clientNeedsEnhancedRouter,
   vendorSupply: vendorSupplyRouter,

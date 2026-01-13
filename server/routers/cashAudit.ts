@@ -19,7 +19,7 @@ import {
   bills,
   users,
 } from "../../drizzle/schema";
-import { eq, and, sql, inArray, desc } from "drizzle-orm";
+import { eq, and, sql, inArray, desc, gte, lte } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 
@@ -432,6 +432,381 @@ export const cashAuditRouter = router({
           in: Number(inResult[0].insertId),
         },
         timestamp: new Date(),
+      };
+    }),
+
+  // ============================================================================
+  // MEET-003: In/Out Ledger API
+  // ============================================================================
+
+  /**
+   * Get transaction ledger for a location with filters
+   */
+  getLocationLedger: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(
+      z.object({
+        locationId: z.number(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        transactionType: z.enum(["IN", "OUT", "TRANSFER"]).optional(),
+        limit: z.number().min(1).max(500).default(100),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({
+        msg: "[CashAudit] Getting location ledger",
+        locationId: input.locationId,
+        filters: {
+          startDate: input.startDate,
+          endDate: input.endDate,
+          transactionType: input.transactionType,
+        },
+      });
+
+      // Verify location exists
+      const [location] = await db
+        .select({ id: cashLocations.id, name: cashLocations.name })
+        .from(cashLocations)
+        .where(eq(cashLocations.id, input.locationId));
+
+      if (!location) {
+        throw new Error("Location not found");
+      }
+
+      // Build conditions
+      const conditions = [eq(cashLocationTransactions.locationId, input.locationId)];
+
+      if (input.startDate) {
+        conditions.push(gte(cashLocationTransactions.createdAt, input.startDate));
+      }
+      if (input.endDate) {
+        conditions.push(lte(cashLocationTransactions.createdAt, input.endDate));
+      }
+      if (input.transactionType) {
+        conditions.push(eq(cashLocationTransactions.transactionType, input.transactionType));
+      }
+
+      // Get transactions with user info
+      const transactions = await db
+        .select({
+          id: cashLocationTransactions.id,
+          locationId: cashLocationTransactions.locationId,
+          transactionType: cashLocationTransactions.transactionType,
+          amount: cashLocationTransactions.amount,
+          description: cashLocationTransactions.description,
+          referenceType: cashLocationTransactions.referenceType,
+          referenceId: cashLocationTransactions.referenceId,
+          transferToLocationId: cashLocationTransactions.transferToLocationId,
+          transferFromLocationId: cashLocationTransactions.transferFromLocationId,
+          createdBy: cashLocationTransactions.createdBy,
+          createdByName: users.name,
+          createdAt: cashLocationTransactions.createdAt,
+        })
+        .from(cashLocationTransactions)
+        .leftJoin(users, eq(cashLocationTransactions.createdBy, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(cashLocationTransactions.createdAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      // Get count
+      const countResult = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(cashLocationTransactions)
+        .where(and(...conditions));
+
+      // Calculate running balance (for display purposes)
+      // Note: This is a simplified calculation - in production, you might want
+      // to calculate this more precisely based on actual transaction order
+      const balanceResult = await db
+        .select({
+          totalIn: sql<string>`COALESCE(SUM(CASE WHEN ${cashLocationTransactions.transactionType} = 'IN' OR (${cashLocationTransactions.transactionType} = 'TRANSFER' AND ${cashLocationTransactions.transferFromLocationId} IS NOT NULL) THEN CAST(${cashLocationTransactions.amount} AS DECIMAL(15,2)) ELSE 0 END), 0)`,
+          totalOut: sql<string>`COALESCE(SUM(CASE WHEN ${cashLocationTransactions.transactionType} = 'OUT' OR (${cashLocationTransactions.transactionType} = 'TRANSFER' AND ${cashLocationTransactions.transferToLocationId} IS NOT NULL) THEN CAST(${cashLocationTransactions.amount} AS DECIMAL(15,2)) ELSE 0 END), 0)`,
+        })
+        .from(cashLocationTransactions)
+        .where(and(...conditions));
+
+      const totalIn = Number(balanceResult[0]?.totalIn || 0);
+      const totalOut = Number(balanceResult[0]?.totalOut || 0);
+
+      return {
+        location: {
+          id: location.id,
+          name: location.name,
+        },
+        transactions: createSafeUnifiedResponse(
+          transactions.map((tx) => ({
+            ...tx,
+            amount: Number(tx.amount || 0),
+          })),
+          Number(countResult[0]?.count || 0),
+          input.limit,
+          input.offset
+        ),
+        summary: {
+          totalIn,
+          totalOut,
+          netChange: totalIn - totalOut,
+        },
+      };
+    }),
+
+  /**
+   * Record an IN or OUT transaction
+   */
+  recordTransaction: protectedProcedure
+    .use(requirePermission("accounting:create"))
+    .input(
+      z.object({
+        locationId: z.number(),
+        transactionType: z.enum(["IN", "OUT"]),
+        amount: z.number().positive(),
+        description: z.string().min(1),
+        referenceType: z
+          .enum(["ORDER", "VENDOR_PAYMENT", "MANUAL"])
+          .optional()
+          .default("MANUAL"),
+        referenceId: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({
+        msg: "[CashAudit] Recording transaction",
+        locationId: input.locationId,
+        type: input.transactionType,
+        amount: input.amount,
+        userId: ctx.user.id,
+      });
+
+      // Verify location exists and is active
+      const [location] = await db
+        .select()
+        .from(cashLocations)
+        .where(
+          and(eq(cashLocations.id, input.locationId), eq(cashLocations.isActive, true))
+        );
+
+      if (!location) {
+        throw new Error("Location not found or inactive");
+      }
+
+      const currentBalance = Number(location.currentBalance || 0);
+
+      // For OUT transactions, check sufficient balance
+      if (input.transactionType === "OUT" && currentBalance < input.amount) {
+        throw new Error(
+          `Insufficient balance. Available: $${currentBalance.toFixed(2)}, Requested: $${input.amount.toFixed(2)}`
+        );
+      }
+
+      // Calculate new balance
+      const newBalance =
+        input.transactionType === "IN"
+          ? currentBalance + input.amount
+          : currentBalance - input.amount;
+
+      // Update location balance
+      await db
+        .update(cashLocations)
+        .set({
+          currentBalance: newBalance.toFixed(2),
+        })
+        .where(eq(cashLocations.id, input.locationId));
+
+      // Record transaction
+      const result = await db.insert(cashLocationTransactions).values({
+        locationId: input.locationId,
+        transactionType: input.transactionType,
+        amount: input.amount.toFixed(2),
+        description: input.description,
+        referenceType: input.referenceType,
+        referenceId: input.referenceId,
+        createdBy: ctx.user.id,
+      });
+
+      const transactionId = Number(result[0].insertId);
+
+      logger.info({
+        msg: "[CashAudit] Transaction recorded",
+        transactionId,
+        locationId: input.locationId,
+        type: input.transactionType,
+        amount: input.amount,
+      });
+
+      return {
+        id: transactionId,
+        locationId: input.locationId,
+        locationName: location.name,
+        transactionType: input.transactionType,
+        amount: input.amount,
+        description: input.description,
+        referenceType: input.referenceType,
+        referenceId: input.referenceId,
+        previousBalance: currentBalance,
+        newBalance,
+        timestamp: new Date(),
+      };
+    }),
+
+  /**
+   * Export ledger to CSV format
+   */
+  exportLedger: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(
+      z.object({
+        locationId: z.number(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        transactionType: z.enum(["IN", "OUT", "TRANSFER"]).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({
+        msg: "[CashAudit] Exporting ledger",
+        locationId: input.locationId,
+        filters: {
+          startDate: input.startDate,
+          endDate: input.endDate,
+          transactionType: input.transactionType,
+        },
+      });
+
+      // Verify location exists
+      const [location] = await db
+        .select({ id: cashLocations.id, name: cashLocations.name })
+        .from(cashLocations)
+        .where(eq(cashLocations.id, input.locationId));
+
+      if (!location) {
+        throw new Error("Location not found");
+      }
+
+      // Build conditions
+      const conditions = [eq(cashLocationTransactions.locationId, input.locationId)];
+
+      if (input.startDate) {
+        conditions.push(gte(cashLocationTransactions.createdAt, input.startDate));
+      }
+      if (input.endDate) {
+        conditions.push(lte(cashLocationTransactions.createdAt, input.endDate));
+      }
+      if (input.transactionType) {
+        conditions.push(eq(cashLocationTransactions.transactionType, input.transactionType));
+      }
+
+      // Get all transactions for export (no pagination limit for export)
+      const transactions = await db
+        .select({
+          id: cashLocationTransactions.id,
+          transactionType: cashLocationTransactions.transactionType,
+          amount: cashLocationTransactions.amount,
+          description: cashLocationTransactions.description,
+          referenceType: cashLocationTransactions.referenceType,
+          referenceId: cashLocationTransactions.referenceId,
+          createdByName: users.name,
+          createdAt: cashLocationTransactions.createdAt,
+        })
+        .from(cashLocationTransactions)
+        .leftJoin(users, eq(cashLocationTransactions.createdBy, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(cashLocationTransactions.createdAt));
+
+      // Build CSV content
+      const csvHeaders = [
+        "ID",
+        "Date",
+        "Type",
+        "In",
+        "Out",
+        "Description",
+        "Reference Type",
+        "Reference ID",
+        "Created By",
+      ];
+
+      const csvRows = transactions.map((tx) => {
+        const amount = Number(tx.amount || 0);
+        const inAmount = tx.transactionType === "IN" ||
+          (tx.transactionType === "TRANSFER" && tx.referenceType === "TRANSFER")
+          ? amount : "";
+        const outAmount = tx.transactionType === "OUT" ||
+          (tx.transactionType === "TRANSFER" && tx.referenceType === "TRANSFER")
+          ? amount : "";
+
+        // For transfers, determine if it's IN or OUT based on context
+        let displayIn = "";
+        let displayOut = "";
+        if (tx.transactionType === "IN") {
+          displayIn = amount.toFixed(2);
+        } else if (tx.transactionType === "OUT") {
+          displayOut = amount.toFixed(2);
+        } else if (tx.transactionType === "TRANSFER") {
+          // In the ledger context, transfers are recorded as both sides
+          // The amount field shows the transfer value
+          displayIn = amount.toFixed(2);
+          displayOut = amount.toFixed(2);
+        }
+
+        return [
+          tx.id,
+          tx.createdAt ? new Date(tx.createdAt).toISOString() : "",
+          tx.transactionType,
+          tx.transactionType === "IN" ? amount.toFixed(2) : "",
+          tx.transactionType === "OUT" ? amount.toFixed(2) : "",
+          `"${(tx.description || "").replace(/"/g, '""')}"`,
+          tx.referenceType || "",
+          tx.referenceId || "",
+          tx.createdByName || "",
+        ];
+      });
+
+      // Generate CSV string
+      const csvContent = [
+        csvHeaders.join(","),
+        ...csvRows.map((row) => row.join(",")),
+      ].join("\n");
+
+      // Calculate summary
+      let totalIn = 0;
+      let totalOut = 0;
+      transactions.forEach((tx) => {
+        const amount = Number(tx.amount || 0);
+        if (tx.transactionType === "IN") {
+          totalIn += amount;
+        } else if (tx.transactionType === "OUT") {
+          totalOut += amount;
+        }
+      });
+
+      return {
+        location: {
+          id: location.id,
+          name: location.name,
+        },
+        filename: `ledger_${location.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`,
+        csv: csvContent,
+        summary: {
+          totalIn,
+          totalOut,
+          netChange: totalIn - totalOut,
+          transactionCount: transactions.length,
+        },
+        exportedAt: new Date(),
       };
     }),
 });
