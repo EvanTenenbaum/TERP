@@ -1,19 +1,27 @@
 /**
  * VIP Tiers Router (FEAT-019)
+ * Enhanced for Sprint 5 Track A - Task 5.A.1: MEET-043 - VIP Status (Debt Cycling Tiers)
+ *
  * Handles VIP tier management, client tier status, and tier calculations
+ * Includes debt cycling behavior-based tier calculations
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  adminProcedure,
+  vipPortalProcedure,
+} from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import {
   vipTiers,
   clientVipStatus,
-  vipTierHistory
+  vipTierHistory,
 } from "../../drizzle/schema-vip-portal";
-import { clients } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import * as vipTierService from "../services/vipTierService";
 
 export const vipTiersRouter = router({
   /**
@@ -21,7 +29,11 @@ export const vipTiersRouter = router({
    */
   list: protectedProcedure.query(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
     const tiers = await db
       .select()
       .from(vipTiers)
@@ -35,11 +47,12 @@ export const vipTiersRouter = router({
    */
   listAll: adminProcedure.query(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-    const tiers = await db
-      .select()
-      .from(vipTiers)
-      .orderBy(vipTiers.level);
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
+    const tiers = await db.select().from(vipTiers).orderBy(vipTiers.level);
     return tiers;
   }),
 
@@ -50,7 +63,11 @@ export const vipTiersRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       const [tier] = await db
         .select()
         .from(vipTiers)
@@ -80,17 +97,25 @@ export const vipTiersRouter = router({
         earlyAccessToProducts: z.boolean().optional(),
         freeShipping: z.boolean().optional(),
         dedicatedRep: z.boolean().optional(),
-        customBenefits: z.array(z.object({
-          name: z.string(),
-          description: z.string(),
-          value: z.string().optional(),
-        })).optional(),
+        customBenefits: z
+          .array(
+            z.object({
+              name: z.string(),
+              description: z.string(),
+              value: z.string().optional(),
+            })
+          )
+          .optional(),
         isDefault: z.boolean().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       // If this tier is set as default, unset other defaults
       if (input.isDefault) {
         await db
@@ -118,7 +143,10 @@ export const vipTiersRouter = router({
         displayName: z.string().min(1).max(100).optional(),
         description: z.string().optional(),
         level: z.number().int().min(0).optional(),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
         icon: z.string().optional(),
         minSpendYtd: z.string().optional(),
         minOrdersYtd: z.number().int().optional(),
@@ -130,18 +158,26 @@ export const vipTiersRouter = router({
         earlyAccessToProducts: z.boolean().optional(),
         freeShipping: z.boolean().optional(),
         dedicatedRep: z.boolean().optional(),
-        customBenefits: z.array(z.object({
-          name: z.string(),
-          description: z.string(),
-          value: z.string().optional(),
-        })).optional(),
+        customBenefits: z
+          .array(
+            z.object({
+              name: z.string(),
+              description: z.string(),
+              value: z.string().optional(),
+            })
+          )
+          .optional(),
         isActive: z.boolean().optional(),
         isDefault: z.boolean().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       const { id, ...updates } = input;
 
       // If this tier is set as default, unset other defaults
@@ -149,7 +185,9 @@ export const vipTiersRouter = router({
         await db
           .update(vipTiers)
           .set({ isDefault: false })
-          .where(and(eq(vipTiers.isDefault, true), sql`${vipTiers.id} != ${id}`));
+          .where(
+            and(eq(vipTiers.isDefault, true), sql`${vipTiers.id} != ${id}`)
+          );
       }
 
       await db.update(vipTiers).set(updates).where(eq(vipTiers.id, id));
@@ -164,7 +202,11 @@ export const vipTiersRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       await db
         .update(vipTiers)
         .set({ isActive: false })
@@ -179,7 +221,11 @@ export const vipTiersRouter = router({
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       const [status] = await db
         .select({
           status: clientVipStatus,
@@ -194,7 +240,9 @@ export const vipTiersRouter = router({
         const [defaultTier] = await db
           .select()
           .from(vipTiers)
-          .where(and(eq(vipTiers.isActive, true), eq(vipTiers.isDefault, true)));
+          .where(
+            and(eq(vipTiers.isActive, true), eq(vipTiers.isDefault, true))
+          );
 
         return {
           status: null,
@@ -242,7 +290,11 @@ export const vipTiersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       // Get current status
       const [currentStatus] = await db
         .select()
@@ -296,11 +348,17 @@ export const vipTiersRouter = router({
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
       const history = await db
         .select({
           history: vipTierHistory,
-          previousTier: sql<string>`prev_tier.display_name`.as("previousTierName"),
+          previousTier: sql<string>`prev_tier.display_name`.as(
+            "previousTierName"
+          ),
           newTier: sql<string>`new_tier.display_name`.as("newTierName"),
         })
         .from(vipTierHistory)
@@ -323,7 +381,11 @@ export const vipTiersRouter = router({
    */
   seedDefaults: adminProcedure.mutation(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
     const defaultTiers = [
       {
         name: "bronze",
@@ -429,6 +491,170 @@ export const vipTiersRouter = router({
 
     return { created, skipped };
   }),
+
+  // ============================================================================
+  // Sprint 5 Track A - Task 5.A.1: MEET-043 - Debt Cycling VIP Tiers
+  // ============================================================================
+
+  /**
+   * Get comprehensive VIP metrics for a client (used in VIP Portal)
+   */
+  getClientMetrics: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      return await vipTierService.calculateVipTierMetrics(input.clientId);
+    }),
+
+  /**
+   * Get complete VIP status with tier details and metrics for portal display
+   */
+  getClientStatusDetailed: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      return await vipTierService.getClientVipStatusWithDetails(input.clientId);
+    }),
+
+  /**
+   * VIP Portal endpoint - Get current client's VIP status
+   */
+  getMyVipStatus: vipPortalProcedure.query(async ({ ctx }) => {
+    const clientId = ctx.clientId;
+    if (!clientId) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "VIP session required",
+      });
+    }
+    return await vipTierService.getClientVipStatusWithDetails(clientId);
+  }),
+
+  /**
+   * Calculate recommended tier for a client (admin preview)
+   */
+  calculateTier: adminProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      return await vipTierService.calculateRecommendedTier(input.clientId);
+    }),
+
+  /**
+   * Recalculate and update client's VIP tier
+   */
+  recalculateClientTier: adminProcedure
+    .input(z.object({ clientId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      return await vipTierService.updateClientVipStatus(
+        input.clientId,
+        ctx.user?.id
+      );
+    }),
+
+  /**
+   * Batch recalculate all VIP tiers
+   */
+  recalculateAllTiers: adminProcedure.mutation(async () => {
+    return await vipTierService.recalculateAllVipTiers();
+  }),
+
+  /**
+   * Remove manual tier override
+   */
+  removeOverride: adminProcedure
+    .input(z.object({ clientId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+
+      const [existingStatus] = await db
+        .select()
+        .from(clientVipStatus)
+        .where(eq(clientVipStatus.clientId, input.clientId));
+
+      if (!existingStatus) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Client VIP status not found",
+        });
+      }
+
+      if (!existingStatus.manualTierOverride) {
+        return { success: true, message: "No manual override to remove" };
+      }
+
+      await db
+        .update(clientVipStatus)
+        .set({
+          manualTierOverride: false,
+          overrideReason: null,
+          overrideBy: null,
+          overrideAt: null,
+        })
+        .where(eq(clientVipStatus.clientId, input.clientId));
+
+      // Trigger recalculation
+      const result = await vipTierService.updateClientVipStatus(
+        input.clientId,
+        ctx.user?.id
+      );
+
+      return {
+        success: true,
+        message: "Override removed and tier recalculated",
+        newTierId: result.newTierId,
+      };
+    }),
+
+  /**
+   * Get tier badge info for display
+   */
+  getTierBadge: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+
+      const [status] = await db
+        .select({
+          tier: vipTiers,
+        })
+        .from(clientVipStatus)
+        .leftJoin(vipTiers, eq(clientVipStatus.currentTierId, vipTiers.id))
+        .where(eq(clientVipStatus.clientId, input.clientId));
+
+      if (!status?.tier) {
+        // Get default tier
+        const [defaultTier] = await db
+          .select()
+          .from(vipTiers)
+          .where(
+            and(eq(vipTiers.isActive, true), eq(vipTiers.isDefault, true))
+          );
+
+        return defaultTier
+          ? {
+              name: defaultTier.displayName,
+              color: defaultTier.color,
+              icon: defaultTier.icon,
+              level: defaultTier.level,
+            }
+          : null;
+      }
+
+      return {
+        name: status.tier.displayName,
+        color: status.tier.color,
+        icon: status.tier.icon,
+        level: status.tier.level,
+      };
+    }),
 });
 
 export type VipTiersRouter = typeof vipTiersRouter;

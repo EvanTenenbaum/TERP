@@ -71,10 +71,12 @@ export const navigationItems: NavigationItem[] = [
 
   { name: "Products", path: "/products", icon: Package, group: "inventory" },
   {
-    name: "Batches",
+    // MEET-053: User-friendly terminology - "Inventory" instead of "Batches"
+    name: "Inventory",
     path: "/inventory",
     icon: PackageCheck,
     group: "inventory",
+    ariaLabel: "View and manage inventory items",
   },
   { name: "Samples", path: "/samples", icon: Beaker, group: "inventory" },
   {

@@ -111,6 +111,17 @@ import { client360Router } from "./routers/client360"; // Sprint 4 Track B: Clie
 import { clientWantsRouter } from "./routers/clientWants"; // Sprint 4 Track B: Client Wants/Needs (MEET-021)
 import { officeSupplyRouter } from "./routers/officeSupply"; // Sprint 4 Track B: Office Supply (MEET-055)
 import { storageRouter } from "./routers/storage"; // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
+import { productCategoriesRouter } from "./routers/productCategories"; // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
+
+// Sprint 5 Track D: Transaction & Product Features
+import { invoiceDisputesRouter } from "./routers/invoiceDisputes"; // MEET-017: Invoice History (Debt Disputes)
+import { transactionFeesRouter } from "./routers/transactionFees"; // MEET-018: Transaction Fee Per Client
+import { paymentTermsRouter } from "./routers/paymentTerms"; // MEET-035: Payment Terms (Consignment/Cash/COD)
+import { productCategoriesExtendedRouter } from "./routers/productCategoriesExtended"; // MEET-032: Customizable Categories
+import { productGradesRouter } from "./routers/productGrades"; // MEET-070: Product Grades (AAAA/AAA/AA/B/C)
+import { serviceBillingRouter } from "./routers/serviceBilling"; // MEET-009: Billing for Services
+import { cryptoPaymentsRouter } from "./routers/cryptoPayments"; // MEET-019: Crypto Payment Tracking
+import { installmentPaymentsRouter } from "./routers/installmentPayments"; // MEET-036: Installment Payments
 
 import { healthRouter } from "./routers/health";
 
@@ -242,6 +253,17 @@ export const appRouter = router({
   clientWants: clientWantsRouter, // Sprint 4 Track B: Client Wants/Needs Tracking (MEET-021)
   officeSupply: officeSupplyRouter, // Sprint 4 Track B: Office Supply Needs (MEET-055)
   storage: storageRouter, // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
+  productCategories: productCategoriesRouter, // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
+
+  // Sprint 5 Track D: Transaction & Product Features
+  invoiceDisputes: invoiceDisputesRouter, // MEET-017: Invoice History (Debt Disputes)
+  transactionFees: transactionFeesRouter, // MEET-018: Transaction Fee Per Client
+  paymentTerms: paymentTermsRouter, // MEET-035: Payment Terms (Consignment/Cash/COD)
+  productCategoriesExtended: productCategoriesExtendedRouter, // MEET-032: Customizable Categories
+  productGrades: productGradesRouter, // MEET-070: Product Grades (AAAA/AAA/AA/B/C)
+  serviceBilling: serviceBillingRouter, // MEET-009: Billing for Services
+  cryptoPayments: cryptoPaymentsRouter, // MEET-019: Crypto Payment Tracking
+  installmentPayments: installmentPaymentsRouter, // MEET-036: Installment Payments
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 

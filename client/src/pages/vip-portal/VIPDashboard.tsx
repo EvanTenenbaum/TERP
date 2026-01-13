@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DollarSign,
@@ -16,7 +15,6 @@ import {
   Package,
   ShoppingCart,
   FileText,
-  Award,
   LogOut,
   Menu,
   CalendarIcon,
@@ -39,6 +37,7 @@ import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
 import { Leaderboard } from "@/components/vip-portal/Leaderboard";
 import { LiveCatalog } from "@/components/vip-portal/LiveCatalog";
 import { ImpersonationBanner } from "@/components/vip-portal/ImpersonationBanner";
+import { VipTierBadge } from "@/components/vip-portal/VipTierBadge";
 import AppointmentBooking from "./AppointmentBooking";
 import VipNotificationsBell from "./VipNotificationsBell";
 import DocumentDownloads from "./DocumentDownloads";
@@ -385,22 +384,12 @@ export default function VIPDashboard() {
                   )}
 
                   {config.moduleVipTierEnabled && (
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          VIP Status
-                        </CardTitle>
-                        <Award className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <Badge variant="secondary" className="text-base">
-                          Silver
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Current tier
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <VipTierBadge
+                      clientId={clientId}
+                      variant="card"
+                      showMetrics={true}
+                      showProgress={true}
+                    />
                   )}
 
                   {config.moduleMarketplaceNeedsEnabled && (
