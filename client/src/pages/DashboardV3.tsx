@@ -21,6 +21,7 @@ import {
   MatchmakingOpportunitiesWidget,
   WorkflowQueueWidget,
   WorkflowActivityWidget,
+  AvailableCashWidget,
 } from "@/components/dashboard/widgets-v2";
 
 function DashboardContent() {
@@ -52,6 +53,8 @@ function DashboardContent() {
         return <WorkflowQueueWidget key={widgetId} />;
       case "workflow-activity":
         return <WorkflowActivityWidget key={widgetId} />;
+      case "available-cash":
+        return <AvailableCashWidget key={widgetId} />;
       default:
         return null;
     }
