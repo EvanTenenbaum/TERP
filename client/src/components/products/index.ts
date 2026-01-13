@@ -11,3 +11,13 @@ export type {
 
 export { EditableProductName } from "./EditableProductName";
 export type { EditableProductNameProps } from "./EditableProductName";
+
+export {
+  ProductFormFields,
+  PRODUCT_CATEGORIES,
+  UOM_OPTIONS,
+} from "./ProductFormFields";
+export type {
+  ProductFormFieldsProps,
+  ProductFormData,
+} from "./ProductFormFields";

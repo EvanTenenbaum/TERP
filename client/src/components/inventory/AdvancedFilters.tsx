@@ -274,7 +274,7 @@ export function AdvancedFilters({
             <Label>Stock Status</Label>
             <Select
               value={filters.stockStatus}
-              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("stockStatus", value)}
+              onValueChange={(value: InventoryFilters["stockStatus"]) => onUpdateFilter("stockStatus", value)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -294,7 +294,7 @@ export function AdvancedFilters({
             <Label>Age Bracket</Label>
             <Select
               value={filters.ageBracket}
-              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("ageBracket", value)}
+              onValueChange={(value: InventoryFilters["ageBracket"]) => onUpdateFilter("ageBracket", value)}
             >
               <SelectTrigger>
                 <SelectValue />
