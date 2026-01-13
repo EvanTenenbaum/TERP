@@ -10,11 +10,11 @@ import * as inventoryMovementsDb from "../inventoryMovementsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { db } from "../db";
 import { inventoryMovements, batches, products, users } from "../../drizzle/schema";
-import { eq, desc, sql, and, gte, lte, inArray, isNull } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte, isNull } from "drizzle-orm";
 
 export const inventoryMovementsRouter = router({
   // Record a manual inventory movement
-  record: protectedProcedure.use(requirePermission("inventory:read"))
+  record: protectedProcedure.use(requirePermission("inventory:update"))
     .input(z.object({
       batchId: z.number(),
       movementType: z.enum(["INTAKE", "SALE", "REFUND_RETURN", "ADJUSTMENT", "QUARANTINE", "RELEASE_FROM_QUARANTINE", "DISPOSAL", "TRANSFER", "SAMPLE"]),
@@ -42,7 +42,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Decrease inventory (for sales)
-  decrease: protectedProcedure.use(requirePermission("inventory:read"))
+  decrease: protectedProcedure.use(requirePermission("inventory:update"))
     .input(z.object({
       batchId: z.number(),
       quantity: z.string(),
@@ -64,7 +64,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Increase inventory (for refunds)
-  increase: protectedProcedure.use(requirePermission("inventory:read"))
+  increase: protectedProcedure.use(requirePermission("inventory:update"))
     .input(z.object({
       batchId: z.number(),
       quantity: z.string(),
@@ -86,7 +86,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Adjust inventory (manual adjustment)
-  adjust: protectedProcedure.use(requirePermission("inventory:read"))
+  adjust: protectedProcedure.use(requirePermission("inventory:update"))
     .input(z.object({
       batchId: z.number(),
       newQuantity: z.string(),
@@ -155,7 +155,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Reverse a movement
-  reverse: protectedProcedure.use(requirePermission("inventory:read"))
+  reverse: protectedProcedure.use(requirePermission("inventory:update"))
     .input(z.object({
       movementId: z.number(),
       reason: z.string().min(1),
@@ -337,7 +337,8 @@ export const inventoryMovementsRouter = router({
         .limit(500);
 
       // Identify shrinkage (negative adjustments)
-      const shrinkageReasons = ["DAMAGED", "EXPIRED", "LOST", "THEFT", "COUNT_DISCREPANCY"];
+      // Valid shrinkage reasons for reference
+      const _shrinkageReasons = ["DAMAGED", "EXPIRED", "LOST", "THEFT", "COUNT_DISCREPANCY"];
 
       const shrinkageItems: Array<{
         id: number;

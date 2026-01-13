@@ -707,41 +707,44 @@ export const client360Router = router({
 
       // Since order items are stored as JSON in orders.items, use raw SQL
       // to find clients who purchased this product
-      let whereClause = "";
-      const params: (number | string)[] = [];
+      // Build parameterized query to prevent SQL injection
+      // Using Drizzle's sql template for safe parameter binding
+      const baseQuery = sql`
+        SELECT
+          o.client_id as clientId,
+          c.name as clientName,
+          c.teri_code as clientCode,
+          c.email as clientEmail,
+          COUNT(DISTINCT o.id) as purchaseCount,
+          SUM(o.total) as totalSpent,
+          MAX(o.created_at) as lastPurchaseDate,
+          AVG(o.total) as avgOrderValue
+        FROM orders o
+        INNER JOIN clients c ON o.client_id = c.id
+        INNER JOIN batches b ON JSON_CONTAINS(o.items, JSON_OBJECT('batchId', b.id))
+        INNER JOIN products p ON b.productId = p.id
+        WHERE o.deleted_at IS NULL AND c.deleted_at IS NULL
+      `;
 
+      // Build conditions with safe parameter binding
+      const conditions: ReturnType<typeof sql>[] = [];
       if (productIdToUse) {
-        whereClause = "AND b.productId = ?";
-        params.push(productIdToUse);
+        conditions.push(sql`AND b.productId = ${productIdToUse}`);
       }
-
       if (input.categoryId) {
-        whereClause += " AND p.category = ?";
-        params.push(String(input.categoryId));
+        conditions.push(sql`AND p.category = ${String(input.categoryId)}`);
       }
 
-      // Use raw SQL query since order items are stored as JSON
-      const suggestedBuyersResult = await db.execute(
-        sql.raw(`
-          SELECT
-            o.client_id as clientId,
-            c.name as clientName,
-            c.teri_code as clientCode,
-            c.email as clientEmail,
-            COUNT(DISTINCT o.id) as purchaseCount,
-            SUM(o.total) as totalSpent,
-            MAX(o.created_at) as lastPurchaseDate,
-            AVG(o.total) as avgOrderValue
-          FROM orders o
-          INNER JOIN clients c ON o.client_id = c.id
-          INNER JOIN batches b ON JSON_CONTAINS(o.items, JSON_OBJECT('batchId', b.id))
-          INNER JOIN products p ON b.productId = p.id
-          WHERE o.deleted_at IS NULL AND c.deleted_at IS NULL ${whereClause}
-          GROUP BY o.client_id, c.name, c.teri_code, c.email
-          ORDER BY purchaseCount DESC, lastPurchaseDate DESC
-          LIMIT ${input.limit}
-        `)
-      );
+      // Combine base query with conditions and limit
+      const fullQuery = sql`
+        ${baseQuery}
+        ${conditions.length > 0 ? sql.join(conditions, sql` `) : sql``}
+        GROUP BY o.client_id, c.name, c.teri_code, c.email
+        ORDER BY purchaseCount DESC, lastPurchaseDate DESC
+        LIMIT ${input.limit}
+      `;
+
+      const suggestedBuyersResult = await db.execute(fullQuery);
 
       const suggestedBuyers = suggestedBuyersResult as unknown as Array<{
         clientId: number;

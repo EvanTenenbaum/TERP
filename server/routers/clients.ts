@@ -232,7 +232,7 @@ export const clientsRouter = router({
           paymentDate: z.date().optional(),
           paymentAmount: z.number().optional(),
           notes: z.string().optional(),
-          metadata: z.any().optional(),
+          metadata: z.record(z.string(), z.unknown()).optional(), // Strict object validation
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -295,7 +295,7 @@ export const clientsRouter = router({
 
     // Link transactions (e.g., refund to original sale)
     linkTransaction: protectedProcedure
-      .use(requirePermission("clients:read"))
+      .use(requirePermission("clients:update"))
       .input(
         z.object({
           parentTransactionId: z.number(),

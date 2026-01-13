@@ -14,7 +14,6 @@ import {
   json,
   date,
   index,
-  unique,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 import { users, clients, calendarEvents } from "./schema";
@@ -586,6 +585,26 @@ export const appointmentReferralsRelations = relations(appointmentReferrals, ({ 
   }),
   referringEmployee: one(users, {
     fields: [appointmentReferrals.referringEmployeeId],
+    references: [users.id],
+  }),
+}));
+
+// QA Fix: Add missing relations for deliverySchedules
+export const deliverySchedulesRelations = relations(deliverySchedules, ({ one }) => ({
+  createdBy: one(users, {
+    fields: [deliverySchedules.createdById],
+    references: [users.id],
+  }),
+}));
+
+// QA Fix: Add missing relations for appointmentStatusHistory
+export const appointmentStatusHistoryRelations = relations(appointmentStatusHistory, ({ one }) => ({
+  calendarEvent: one(calendarEvents, {
+    fields: [appointmentStatusHistory.calendarEventId],
+    references: [calendarEvents.id],
+  }),
+  changedBy: one(users, {
+    fields: [appointmentStatusHistory.changedById],
     references: [users.id],
   }),
 }));

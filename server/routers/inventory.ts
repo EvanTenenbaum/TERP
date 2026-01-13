@@ -41,12 +41,15 @@ function calculateStockStatus(
 
 /**
  * Calculate days since a date (for aging)
+ * Returns 0 for future dates (not yet received)
  */
 function calculateAgeDays(date: Date | string | null): number {
   if (!date) return 0;
   const receivedDate = new Date(date);
+  if (isNaN(receivedDate.getTime())) return 0; // Invalid date
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - receivedDate.getTime());
+  const diffTime = now.getTime() - receivedDate.getTime();
+  if (diffTime < 0) return 0; // Future date - not yet received
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 }
@@ -347,18 +350,23 @@ export const inventoryRouter = router({
             case "age":
               comparison = a.ageDays - b.ageDays;
               break;
-            case "receivedDate":
-              comparison = new Date(a.receivedDate).getTime() - new Date(b.receivedDate).getTime();
+            case "receivedDate": {
+              const aDate = a.receivedDate ? new Date(a.receivedDate).getTime() : 0;
+              const bDate = b.receivedDate ? new Date(b.receivedDate).getTime() : 0;
+              comparison = (isNaN(aDate) ? 0 : aDate) - (isNaN(bDate) ? 0 : bDate);
               break;
-            case "lastMovement":
+            }
+            case "lastMovement": {
               const aTime = a.lastMovementDate ? new Date(a.lastMovementDate).getTime() : 0;
               const bTime = b.lastMovementDate ? new Date(b.lastMovementDate).getTime() : 0;
               comparison = aTime - bTime;
               break;
-            case "stockStatus":
-              const statusOrder = { CRITICAL: 0, LOW: 1, OPTIMAL: 2, OUT_OF_STOCK: 3 };
+            }
+            case "stockStatus": {
+              const statusOrder: Record<string, number> = { CRITICAL: 0, LOW: 1, OPTIMAL: 2, OUT_OF_STOCK: 3 };
               comparison = statusOrder[a.stockStatus] - statusOrder[b.stockStatus];
               break;
+            }
           }
           return input.sortOrder === "desc" ? -comparison : comparison;
         });

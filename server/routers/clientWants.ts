@@ -254,7 +254,7 @@ export const clientWantsRouter = router({
    * Delete a client want
    */
   delete: protectedProcedure
-    .use(requirePermission("clients:update"))
+    .use(requirePermission("clients:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();

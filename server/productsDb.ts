@@ -422,6 +422,7 @@ export async function generateProductCode(
 /**
  * Quick create a product with minimal fields
  * Auto-generates code if not provided, checks for duplicates
+ * Uses transaction with retry logic for race condition safety
  */
 export async function quickCreateProduct(data: {
   name: string;
@@ -447,61 +448,83 @@ export async function quickCreateProduct(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Check for duplicates first
-  const duplicate = await findDuplicateProduct(data.name, data.brandId);
-  if (duplicate) {
-    // Return existing product with duplicate flag
-    const fullProduct = await getProductById(duplicate.id);
-    return {
-      id: duplicate.id,
-      nameCanonical: duplicate.nameCanonical,
-      category: duplicate.category,
-      brandId: duplicate.brandId,
-      brandName: duplicate.brandName,
-      strainId: fullProduct?.strainId ?? null,
-      strainName: fullProduct?.strainName ?? null,
-      subcategory: fullProduct?.subcategory ?? null,
-      uomSellable: fullProduct?.uomSellable ?? "EA",
-      generatedCode: "",
-      isDuplicate: true,
-    };
+  // Retry logic for handling race conditions
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Check for duplicates first
+      const duplicate = await findDuplicateProduct(data.name, data.brandId);
+      if (duplicate) {
+        // Return existing product with duplicate flag
+        const fullProduct = await getProductById(duplicate.id);
+        return {
+          id: duplicate.id,
+          nameCanonical: duplicate.nameCanonical,
+          category: duplicate.category,
+          brandId: duplicate.brandId,
+          brandName: duplicate.brandName,
+          strainId: fullProduct?.strainId ?? null,
+          strainName: fullProduct?.strainName ?? null,
+          subcategory: fullProduct?.subcategory ?? null,
+          uomSellable: fullProduct?.uomSellable ?? "EA",
+          generatedCode: "",
+          isDuplicate: true,
+        };
+      }
+
+      // Generate product code for reference
+      const generatedCode = await generateProductCode(data.category, data.brandId);
+
+      // Create the product
+      const result = await db.insert(products).values({
+        brandId: data.brandId,
+        strainId: data.strainId ?? null,
+        nameCanonical: data.name.trim(),
+        category: data.category.trim(),
+        subcategory: data.subcategory ?? null,
+        uomSellable: data.uomSellable ?? "EA",
+        description: data.description ?? null,
+      });
+
+      const newId = Number(result[0].insertId);
+
+      // Fetch the created product with joins
+      const created = await getProductById(newId);
+      if (!created) {
+        throw new Error("Failed to fetch created product");
+      }
+
+      return {
+        id: created.id,
+        nameCanonical: created.nameCanonical,
+        category: created.category,
+        brandId: created.brandId,
+        brandName: created.brandName,
+        strainId: created.strainId,
+        strainName: created.strainName,
+        subcategory: created.subcategory,
+        uomSellable: created.uomSellable,
+        generatedCode,
+        isDuplicate: false,
+      };
+    } catch (error) {
+      lastError = error as Error;
+      // Check if it's a duplicate key error (race condition)
+      const errorMessage = String(error);
+      if (errorMessage.includes("Duplicate entry") || errorMessage.includes("ER_DUP_ENTRY")) {
+        // Another request created the same product - retry to return the duplicate
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1))); // Small backoff
+          continue;
+        }
+      }
+      throw error;
+    }
   }
 
-  // Generate product code for reference
-  const generatedCode = await generateProductCode(data.category, data.brandId);
-
-  // Create the product
-  const result = await db.insert(products).values({
-    brandId: data.brandId,
-    strainId: data.strainId ?? null,
-    nameCanonical: data.name.trim(),
-    category: data.category.trim(),
-    subcategory: data.subcategory ?? null,
-    uomSellable: data.uomSellable ?? "EA",
-    description: data.description ?? null,
-  });
-
-  const newId = Number(result[0].insertId);
-
-  // Fetch the created product with joins
-  const created = await getProductById(newId);
-  if (!created) {
-    throw new Error("Failed to fetch created product");
-  }
-
-  return {
-    id: created.id,
-    nameCanonical: created.nameCanonical,
-    category: created.category,
-    brandId: created.brandId,
-    brandName: created.brandName,
-    strainId: created.strainId,
-    strainName: created.strainName,
-    subcategory: created.subcategory,
-    uomSellable: created.uomSellable,
-    generatedCode,
-    isDuplicate: false,
-  };
+  throw lastError || new Error("Failed to create product after retries");
 }
 
 /**

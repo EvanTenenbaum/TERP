@@ -11,7 +11,20 @@
  * - Download options (PNG, PDF)
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
+
+/**
+ * Escape HTML entities to prevent XSS attacks
+ */
+function escapeHtml(unsafe: string | null | undefined): string {
+  if (!unsafe) return "";
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -297,6 +310,22 @@ export function ReceiptCapture({
     }
   }, [emailAddress, receiptId, sendReceiptEmail]);
 
+  // Build safe fallback HTML with escaped user content
+  const safeFallbackHtml = useMemo(() => {
+    if (!transactionData) return "";
+    const safeClientName = escapeHtml(transactionData.clientName);
+    const amount = Math.abs(transactionData.transactionAmount || 0).toFixed(2);
+    const balance = (transactionData.newBalance || 0).toFixed(2);
+    return `
+      <div style="text-align: center; padding: 20px;">
+        <h3>Receipt Preview</h3>
+        <p>Client: ${safeClientName}</p>
+        <p>Amount: $${amount}</p>
+        <p>New Balance: $${balance}</p>
+      </div>
+    `;
+  }, [transactionData]);
+
   // Render preview content
   const previewContent =
     receiptData?.html || getReceiptPreview.data || transactionData ? (
@@ -306,14 +335,7 @@ export function ReceiptCapture({
           __html:
             receiptData?.html ||
             getReceiptPreview.data ||
-            `
-            <div style="text-align: center; padding: 20px;">
-              <h3>Receipt Preview</h3>
-              <p>Client: ${transactionData?.clientName}</p>
-              <p>Amount: $${Math.abs(transactionData?.transactionAmount || 0).toFixed(2)}</p>
-              <p>New Balance: $${(transactionData?.newBalance || 0).toFixed(2)}</p>
-            </div>
-          `,
+            safeFallbackHtml,
         }}
       />
     ) : (

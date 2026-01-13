@@ -10,10 +10,10 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure, protectedProcedure, vipPortalProcedure } from "../_core/trpc";
+import { router, adminProcedure, vipPortalProcedure } from "../_core/trpc";
 import { db } from "../db";
 import { clients, clientNeeds, batches, products, lots, vendors, brands } from "../../drizzle/schema";
-import { eq, desc, sql, and, gt, ne } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 
 // Default thresholds for stock alerts
 const DEFAULT_THRESHOLDS = {
@@ -378,7 +378,8 @@ export const alertsRouter = router({
 
   /**
    * Set stock alert thresholds for a product
-   * NOTE: Disabled - requires minStockLevel/targetStockLevel columns on products
+   * NOTE: Feature not yet available - requires schema migration
+   * @throws TRPCError with NOT_IMPLEMENTED code
    */
   setThresholds: adminProcedure
     .input(
@@ -389,17 +390,16 @@ export const alertsRouter = router({
       })
     )
     .mutation(async () => {
-      // Feature disabled: products table doesn't have minStockLevel/targetStockLevel
-      // Would need schema migration to add these columns
-      return {
-        success: false,
-        message:
-          "Stock thresholds not supported - schema needs minStockLevel/targetStockLevel columns",
-      };
+      // Feature requires schema migration to add minStockLevel/targetStockLevel columns
+      // Throwing error so frontend knows feature is unavailable
+      throw new Error(
+        "Stock thresholds feature not yet available - requires schema migration"
+      );
     }),
 
   /**
    * Acknowledge an alert
+   * NOTE: Acknowledgments are session-only until alert_acknowledgments table is added
    */
   acknowledge: adminProcedure
     .input(
@@ -407,13 +407,15 @@ export const alertsRouter = router({
         alertId: z.string(),
       })
     )
-    .mutation(async ({ ctx }) => {
-      // For now, just return success
-      // In a full implementation, this would store acknowledgment in a table
+    .mutation(async ({ ctx, input }) => {
+      // Log acknowledgment for audit trail (persists in server logs)
+      console.info(`[ALERT] Alert ${input.alertId} acknowledged by user ${ctx.user.id} at ${new Date().toISOString()}`);
+      // NOTE: Acknowledgments are session-only. For persistence, add alert_acknowledgments table.
       return {
         success: true,
         acknowledgedAt: new Date(),
         acknowledgedBy: ctx.user.id,
+        note: "Acknowledgment recorded (session-only until persistent storage is added)",
       };
     }),
 
