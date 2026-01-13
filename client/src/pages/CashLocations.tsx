@@ -638,7 +638,7 @@ export default function CashLocations() {
                 </div>
 
                 {ledgerLoading ? (
-                  <TableSkeleton rows={8} columns={6} />
+                  <TableSkeleton rows={8} columns={7} />
                 ) : (
                   <Table>
                     <TableHeader>
@@ -648,46 +648,71 @@ export default function CashLocations() {
                         <TableHead>Description</TableHead>
                         <TableHead className="text-right">In</TableHead>
                         <TableHead className="text-right">Out</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
                         <TableHead>By</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {(ledgerData?.transactions?.items ?? []).length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                             No transactions found
                           </TableCell>
                         </TableRow>
                       ) : (
-                        (ledgerData?.transactions?.items ?? []).map((tx: Transaction) => (
-                          <TableRow key={tx.id}>
-                            <TableCell>{formatDateTime(tx.createdAt)}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {tx.transactionType === "IN" && (
-                                  <ArrowDownLeft className="h-4 w-4 text-green-600" />
-                                )}
-                                {tx.transactionType === "OUT" && (
-                                  <ArrowUpRight className="h-4 w-4 text-red-600" />
-                                )}
-                                {tx.transactionType === "TRANSFER" && (
-                                  <ArrowLeftRight className="h-4 w-4 text-blue-600" />
-                                )}
-                                <span className="capitalize">{tx.transactionType.toLowerCase()}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="max-w-[300px] truncate">
-                              {tx.description || "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-green-600">
-                              {tx.transactionType === "IN" ? formatCurrency(tx.amount) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-red-600">
-                              {tx.transactionType === "OUT" ? formatCurrency(tx.amount) : "-"}
-                            </TableCell>
-                            <TableCell>{tx.createdByName || "-"}</TableCell>
-                          </TableRow>
-                        ))
+                        (() => {
+                          // Calculate running balance (transactions are in DESC order by date)
+                          const transactions = ledgerData?.transactions?.items ?? [];
+                          const currentBalance = selectedLocation?.currentBalance ?? 0;
+                          let runningBalance = currentBalance;
+                          const balances: number[] = [];
+
+                          // First pass: calculate balances for each row
+                          // Start from current balance and work backwards
+                          for (let i = 0; i < transactions.length; i++) {
+                            balances[i] = runningBalance;
+                            const tx = transactions[i];
+                            // Reverse the transaction to get previous balance
+                            if (tx.transactionType === "IN") {
+                              runningBalance -= tx.amount;
+                            } else if (tx.transactionType === "OUT") {
+                              runningBalance += tx.amount;
+                            }
+                          }
+
+                          return transactions.map((tx: Transaction, idx: number) => (
+                            <TableRow key={tx.id}>
+                              <TableCell>{formatDateTime(tx.createdAt)}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {tx.transactionType === "IN" && (
+                                    <ArrowDownLeft className="h-4 w-4 text-green-600" />
+                                  )}
+                                  {tx.transactionType === "OUT" && (
+                                    <ArrowUpRight className="h-4 w-4 text-red-600" />
+                                  )}
+                                  {tx.transactionType === "TRANSFER" && (
+                                    <ArrowLeftRight className="h-4 w-4 text-blue-600" />
+                                  )}
+                                  <span className="capitalize">{tx.transactionType.toLowerCase()}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-[300px] truncate">
+                                {tx.description || "-"}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-green-600">
+                                {tx.transactionType === "IN" ? formatCurrency(tx.amount) : "-"}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-red-600">
+                                {tx.transactionType === "OUT" ? formatCurrency(tx.amount) : "-"}
+                              </TableCell>
+                              <TableCell className="text-right font-mono font-medium">
+                                {formatCurrency(balances[idx])}
+                              </TableCell>
+                              <TableCell>{tx.createdByName || "-"}</TableCell>
+                            </TableRow>
+                          ));
+                        })()
                       )}
                     </TableBody>
                   </Table>
