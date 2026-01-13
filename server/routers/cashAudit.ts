@@ -16,6 +16,7 @@ import { getDb } from "../db";
 import {
   cashLocations,
   cashLocationTransactions,
+  shiftAudits,
   bills,
   users,
 } from "../../drizzle/schema";
@@ -807,6 +808,387 @@ export const cashAuditRouter = router({
           transactionCount: transactions.length,
         },
         exportedAt: new Date(),
+      };
+    }),
+
+  // ============================================================================
+  // MEET-004: Shift Payment Tracking API
+  // ============================================================================
+
+  /**
+   * Get current shift payments for a location
+   * Returns active shift info and all transactions within the shift period
+   */
+  getShiftPayments: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(
+      z.object({
+        locationId: z.number(),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({
+        msg: "[CashAudit] Getting shift payments",
+        locationId: input.locationId,
+      });
+
+      // Verify location exists
+      const [location] = await db
+        .select()
+        .from(cashLocations)
+        .where(eq(cashLocations.id, input.locationId));
+
+      if (!location) {
+        throw new Error("Location not found");
+      }
+
+      // Find active shift or create one if none exists
+      let [activeShift] = await db
+        .select()
+        .from(shiftAudits)
+        .where(
+          and(
+            eq(shiftAudits.locationId, input.locationId),
+            eq(shiftAudits.status, "ACTIVE")
+          )
+        );
+
+      // If no active shift, create one
+      if (!activeShift) {
+        const currentBalance = Number(location.currentBalance || 0);
+        const result = await db.insert(shiftAudits).values({
+          locationId: input.locationId,
+          shiftStart: new Date(),
+          startingBalance: currentBalance.toFixed(2),
+          expectedBalance: currentBalance.toFixed(2),
+          status: "ACTIVE",
+        });
+
+        const shiftId = Number(result[0].insertId);
+        [activeShift] = await db
+          .select()
+          .from(shiftAudits)
+          .where(eq(shiftAudits.id, shiftId));
+      }
+
+      // Get transactions since shift start
+      const transactions = await db
+        .select({
+          id: cashLocationTransactions.id,
+          transactionType: cashLocationTransactions.transactionType,
+          amount: cashLocationTransactions.amount,
+          description: cashLocationTransactions.description,
+          referenceType: cashLocationTransactions.referenceType,
+          referenceId: cashLocationTransactions.referenceId,
+          createdByName: users.name,
+          createdAt: cashLocationTransactions.createdAt,
+        })
+        .from(cashLocationTransactions)
+        .leftJoin(users, eq(cashLocationTransactions.createdBy, users.id))
+        .where(
+          and(
+            eq(cashLocationTransactions.locationId, input.locationId),
+            gte(cashLocationTransactions.createdAt, activeShift.shiftStart)
+          )
+        )
+        .orderBy(desc(cashLocationTransactions.createdAt));
+
+      // Calculate shift totals
+      let totalIn = 0;
+      let totalOut = 0;
+      transactions.forEach((tx) => {
+        const amount = Number(tx.amount || 0);
+        if (tx.transactionType === "IN") {
+          totalIn += amount;
+        } else if (tx.transactionType === "OUT") {
+          totalOut += amount;
+        } else if (tx.transactionType === "TRANSFER") {
+          // Transfers are tracked separately in ledger
+          // For shift purposes, they affect balance but aren't "received"
+        }
+      });
+
+      const startingBalance = Number(activeShift.startingBalance || 0);
+      const expectedBalance = startingBalance + totalIn - totalOut;
+
+      return {
+        shiftId: activeShift.id,
+        shiftStart: activeShift.shiftStart,
+        location: {
+          id: location.id,
+          name: location.name,
+          currentBalance: Number(location.currentBalance || 0),
+        },
+        startingBalance,
+        totalReceived: totalIn,
+        totalPaidOut: totalOut,
+        expectedBalance,
+        transactionCount: transactions.length,
+        transactions: transactions.map((tx) => ({
+          ...tx,
+          amount: Number(tx.amount || 0),
+        })),
+      };
+    }),
+
+  /**
+   * Reset/close a shift with reconciliation
+   * Creates an audit trail entry with variance if any
+   */
+  resetShift: protectedProcedure
+    .use(requirePermission("accounting:update"))
+    .input(
+      z.object({
+        locationId: z.number(),
+        actualCashCount: z.number().nonnegative(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({
+        msg: "[CashAudit] Resetting shift",
+        locationId: input.locationId,
+        actualCashCount: input.actualCashCount,
+        userId: ctx.user.id,
+      });
+
+      // Verify location exists
+      const [location] = await db
+        .select()
+        .from(cashLocations)
+        .where(eq(cashLocations.id, input.locationId));
+
+      if (!location) {
+        throw new Error("Location not found");
+      }
+
+      // Find active shift
+      const [activeShift] = await db
+        .select()
+        .from(shiftAudits)
+        .where(
+          and(
+            eq(shiftAudits.locationId, input.locationId),
+            eq(shiftAudits.status, "ACTIVE")
+          )
+        );
+
+      if (!activeShift) {
+        throw new Error("No active shift found for this location");
+      }
+
+      // Get transactions since shift start to calculate expected balance
+      const transactions = await db
+        .select({
+          transactionType: cashLocationTransactions.transactionType,
+          amount: cashLocationTransactions.amount,
+        })
+        .from(cashLocationTransactions)
+        .where(
+          and(
+            eq(cashLocationTransactions.locationId, input.locationId),
+            gte(cashLocationTransactions.createdAt, activeShift.shiftStart)
+          )
+        );
+
+      let totalIn = 0;
+      let totalOut = 0;
+      transactions.forEach((tx) => {
+        const amount = Number(tx.amount || 0);
+        if (tx.transactionType === "IN") {
+          totalIn += amount;
+        } else if (tx.transactionType === "OUT") {
+          totalOut += amount;
+        }
+      });
+
+      const startingBalance = Number(activeShift.startingBalance || 0);
+      const expectedBalance = startingBalance + totalIn - totalOut;
+      const variance = input.actualCashCount - expectedBalance;
+
+      const now = new Date();
+
+      // Update the shift to closed status
+      await db
+        .update(shiftAudits)
+        .set({
+          shiftEnd: now,
+          expectedBalance: expectedBalance.toFixed(2),
+          actualCount: input.actualCashCount.toFixed(2),
+          variance: variance.toFixed(2),
+          status: "CLOSED",
+          notes: input.notes,
+          resetBy: ctx.user.id,
+          resetAt: now,
+        })
+        .where(eq(shiftAudits.id, activeShift.id));
+
+      // Update location balance to actual count (reconciled)
+      await db
+        .update(cashLocations)
+        .set({
+          currentBalance: input.actualCashCount.toFixed(2),
+        })
+        .where(eq(cashLocations.id, input.locationId));
+
+      // If there's a variance, record it as a transaction for audit purposes
+      if (variance !== 0) {
+        const varianceType = variance > 0 ? "IN" : "OUT";
+        const varianceAmount = Math.abs(variance);
+        await db.insert(cashLocationTransactions).values({
+          locationId: input.locationId,
+          transactionType: varianceType,
+          amount: varianceAmount.toFixed(2),
+          description: `Shift reconciliation variance: ${variance > 0 ? "Over" : "Short"} by $${varianceAmount.toFixed(2)}`,
+          referenceType: "MANUAL",
+          createdBy: ctx.user.id,
+        });
+      }
+
+      // Create new shift starting now
+      const newShiftResult = await db.insert(shiftAudits).values({
+        locationId: input.locationId,
+        shiftStart: now,
+        startingBalance: input.actualCashCount.toFixed(2),
+        expectedBalance: input.actualCashCount.toFixed(2),
+        status: "ACTIVE",
+      });
+
+      const newShiftId = Number(newShiftResult[0].insertId);
+
+      logger.info({
+        msg: "[CashAudit] Shift reset completed",
+        closedShiftId: activeShift.id,
+        newShiftId,
+        variance,
+      });
+
+      return {
+        previousShiftId: activeShift.id,
+        previousBalance: startingBalance,
+        expectedBalance,
+        actualCount: input.actualCashCount,
+        variance,
+        variancePercent:
+          expectedBalance !== 0
+            ? ((variance / expectedBalance) * 100).toFixed(2)
+            : "0.00",
+        isCleanAudit: variance === 0,
+        auditEntryId: activeShift.id,
+        newShiftId,
+        newShiftStart: now,
+        timestamp: now,
+      };
+    }),
+
+  /**
+   * Get shift audit history for a location
+   */
+  getShiftHistory: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(
+      z.object({
+        locationId: z.number(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({
+        msg: "[CashAudit] Getting shift history",
+        locationId: input.locationId,
+      });
+
+      // Build conditions
+      const conditions = [eq(shiftAudits.locationId, input.locationId)];
+
+      if (input.startDate) {
+        conditions.push(gte(shiftAudits.shiftStart, input.startDate));
+      }
+      if (input.endDate) {
+        conditions.push(lte(shiftAudits.shiftStart, input.endDate));
+      }
+
+      // Get shift audits with user info
+      const shifts = await db
+        .select({
+          id: shiftAudits.id,
+          locationId: shiftAudits.locationId,
+          shiftStart: shiftAudits.shiftStart,
+          shiftEnd: shiftAudits.shiftEnd,
+          startingBalance: shiftAudits.startingBalance,
+          expectedBalance: shiftAudits.expectedBalance,
+          actualCount: shiftAudits.actualCount,
+          variance: shiftAudits.variance,
+          status: shiftAudits.status,
+          notes: shiftAudits.notes,
+          resetByName: users.name,
+          resetAt: shiftAudits.resetAt,
+          createdAt: shiftAudits.createdAt,
+        })
+        .from(shiftAudits)
+        .leftJoin(users, eq(shiftAudits.resetBy, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(shiftAudits.shiftStart))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      // Get count
+      const countResult = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(shiftAudits)
+        .where(and(...conditions));
+
+      // Calculate variance statistics
+      const closedShifts = shifts.filter((s) => s.status === "CLOSED");
+      const varianceStats = closedShifts.reduce(
+        (acc, shift) => {
+          const variance = Number(shift.variance || 0);
+          acc.totalVariance += variance;
+          if (variance !== 0) acc.shiftsWithVariance++;
+          if (variance > 0) acc.totalOver += variance;
+          if (variance < 0) acc.totalShort += Math.abs(variance);
+          return acc;
+        },
+        { totalVariance: 0, shiftsWithVariance: 0, totalOver: 0, totalShort: 0 }
+      );
+
+      return {
+        shifts: createSafeUnifiedResponse(
+          shifts.map((s) => ({
+            ...s,
+            startingBalance: Number(s.startingBalance || 0),
+            expectedBalance: Number(s.expectedBalance || 0),
+            actualCount: Number(s.actualCount || 0),
+            variance: Number(s.variance || 0),
+          })),
+          Number(countResult[0]?.count || 0),
+          input.limit,
+          input.offset
+        ),
+        statistics: {
+          ...varianceStats,
+          cleanAudits: closedShifts.length - varianceStats.shiftsWithVariance,
+          cleanAuditRate:
+            closedShifts.length > 0
+              ? ((closedShifts.length - varianceStats.shiftsWithVariance) /
+                  closedShifts.length) *
+                100
+              : 100,
+        },
       };
     }),
 });

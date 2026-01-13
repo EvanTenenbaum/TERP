@@ -6510,6 +6510,53 @@ export const cashLocationTransactionsRelations = relations(cashLocationTransacti
   }),
 }));
 
+/**
+ * Shift Audits Table
+ * Tracks shift-based cash reconciliation with variance detection
+ * Feature: MEET-004 Shift Payment Tracking with Reset
+ */
+export const shiftAudits = mysqlTable(
+  "shift_audits",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    locationId: int("location_id").references(() => cashLocations.id),
+    shiftStart: timestamp("shift_start").notNull(),
+    shiftEnd: timestamp("shift_end"),
+    // Balance tracking
+    startingBalance: decimal("starting_balance", { precision: 12, scale: 2 }),
+    expectedBalance: decimal("expected_balance", { precision: 12, scale: 2 }),
+    actualCount: decimal("actual_count", { precision: 12, scale: 2 }),
+    variance: decimal("variance", { precision: 12, scale: 2 }),
+    // Metadata
+    notes: text("notes"),
+    status: varchar("status", { length: 20 }).default("ACTIVE"), // 'ACTIVE', 'CLOSED'
+    // Reset tracking
+    resetBy: int("reset_by").references(() => users.id),
+    resetAt: timestamp("reset_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  table => ({
+    locationIdIdx: index("idx_shift_audits_location").on(table.locationId),
+    statusIdx: index("idx_shift_audits_status").on(table.status),
+    shiftStartIdx: index("idx_shift_audits_start").on(table.shiftStart),
+  })
+);
+
+export type ShiftAudit = typeof shiftAudits.$inferSelect;
+export type InsertShiftAudit = typeof shiftAudits.$inferInsert;
+
+// Relations for shift audits
+export const shiftAuditsRelations = relations(shiftAudits, ({ one }) => ({
+  location: one(cashLocations, {
+    fields: [shiftAudits.locationId],
+    references: [cashLocations.id],
+  }),
+  resetByUser: one(users, {
+    fields: [shiftAudits.resetBy],
+    references: [users.id],
+  }),
+}));
+
 // ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)
 // ============================================================================
