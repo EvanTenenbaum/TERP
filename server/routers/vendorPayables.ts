@@ -14,7 +14,11 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import {
@@ -25,7 +29,7 @@ import {
   clients,
   users,
 } from "../../drizzle/schema";
-import { eq, and, sql, isNull, desc, asc, inArray, gte, lte } from "drizzle-orm";
+import { eq, and, sql, isNull, desc, inArray, gte, lte } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import * as payablesService from "../services/payablesService";
 
@@ -36,7 +40,9 @@ import * as payablesService from "../services/payablesService";
 const listPayablesSchema = z.object({
   vendorClientId: z.number().optional(),
   status: z.enum(["PENDING", "DUE", "PARTIAL", "PAID", "VOID"]).optional(),
-  statuses: z.array(z.enum(["PENDING", "DUE", "PARTIAL", "PAID", "VOID"])).optional(),
+  statuses: z
+    .array(z.enum(["PENDING", "DUE", "PARTIAL", "PAID", "VOID"]))
+    .optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   limit: z.number().min(1).max(100).default(50),
@@ -70,12 +76,18 @@ export const vendorPayablesRouter = router({
     .input(listPayablesSchema)
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(vendorPayables.deletedAt)];
 
       if (input.vendorClientId) {
-        conditions.push(eq(vendorPayables.vendorClientId, input.vendorClientId));
+        conditions.push(
+          eq(vendorPayables.vendorClientId, input.vendorClientId)
+        );
       }
 
       if (input.status) {
@@ -87,7 +99,9 @@ export const vendorPayablesRouter = router({
       }
 
       if (input.startDate) {
-        conditions.push(gte(vendorPayables.createdAt, new Date(input.startDate)));
+        conditions.push(
+          gte(vendorPayables.createdAt, new Date(input.startDate))
+        );
       }
 
       if (input.endDate) {
@@ -145,7 +159,10 @@ export const vendorPayablesRouter = router({
     .query(async ({ input }) => {
       const payable = await payablesService.getPayableById(input.id);
       if (!payable) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Payable not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Payable not found",
+        });
       }
       return payable;
     }),
@@ -159,7 +176,10 @@ export const vendorPayablesRouter = router({
     .query(async ({ input }) => {
       const payable = await payablesService.getPayableByBatchId(input.batchId);
       if (!payable) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No payable found for this batch" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No payable found for this batch",
+        });
       }
       return payable;
     }),
@@ -205,7 +225,10 @@ export const vendorPayablesRouter = router({
 
       const payable = await payablesService.getPayableById(input.payableId);
       if (!payable) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Payable not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Payable not found",
+        });
       }
 
       const amountDue = parseFloat(payable.amountDue || "0");
@@ -224,7 +247,9 @@ export const vendorPayablesRouter = router({
       );
 
       // Get updated payable
-      const updatedPayable = await payablesService.getPayableById(input.payableId);
+      const updatedPayable = await payablesService.getPayableById(
+        input.payableId
+      );
 
       return {
         success: true,
@@ -242,11 +267,18 @@ export const vendorPayablesRouter = router({
     .input(z.object({ payableId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const payable = await payablesService.getPayableById(input.payableId);
       if (!payable) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Payable not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Payable not found",
+        });
       }
 
       if (payable.status !== "PENDING") {
@@ -265,7 +297,7 @@ export const vendorPayablesRouter = router({
         .set({
           status: "DUE",
           inventoryZeroAt: now,
-          dueDate: dueDate.toISOString().split("T")[0],
+          dueDate: dueDate,
         })
         .where(eq(vendorPayables.id, input.payableId));
 
@@ -282,18 +314,27 @@ export const vendorPayablesRouter = router({
    */
   void: protectedProcedure
     .use(requirePermission("accounting:delete"))
-    .input(z.object({
-      payableId: z.number(),
-      reason: z.string().min(1, "Reason is required"),
-    }))
+    .input(
+      z.object({
+        payableId: z.number(),
+        reason: z.string().min(1, "Reason is required"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
       const payable = await payablesService.getPayableById(input.payableId);
       if (!payable) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Payable not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Payable not found",
+        });
       }
 
       if (payable.status === "PAID") {
@@ -307,7 +348,8 @@ export const vendorPayablesRouter = router({
         .update(vendorPayables)
         .set({
           status: "VOID",
-          notes: `${payable.notes || ""}\n[VOIDED by User ${userId} on ${new Date().toISOString()}]: ${input.reason}`.trim(),
+          notes:
+            `${payable.notes || ""}\n[VOIDED by User ${userId} on ${new Date().toISOString()}]: ${input.reason}`.trim(),
         })
         .where(eq(vendorPayables.id, input.payableId));
 
@@ -334,15 +376,21 @@ export const vendorPayablesRouter = router({
    */
   getByVendor: protectedProcedure
     .use(requirePermission("accounting:read"))
-    .input(z.object({
-      vendorClientId: z.number(),
-      includeStatuses: z.array(z.enum(["PENDING", "DUE", "PARTIAL", "PAID", "VOID"])).optional(),
-      limit: z.number().min(1).max(100).default(50),
-    }))
+    .input(
+      z.object({
+        vendorClientId: z.number(),
+        includeStatuses: z
+          .array(z.enum(["PENDING", "DUE", "PARTIAL", "PAID", "VOID"]))
+          .optional(),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
     .query(async ({ input }) => {
       const result = await payablesService.listPayables({
         vendorClientId: input.vendorClientId,
-        status: input.includeStatuses as payablesService.PayableStatus[] | undefined,
+        status: input.includeStatuses as
+          | payablesService.PayableStatus[]
+          | undefined,
         limit: input.limit,
       });
       return result;
@@ -356,7 +404,11 @@ export const vendorPayablesRouter = router({
     .input(z.object({ payableId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const notifications = await db
         .select({
@@ -370,7 +422,9 @@ export const vendorPayablesRouter = router({
 
       return notifications.map(n => ({
         ...n.notification,
-        sentToUserName: n.sentToUserName || "Role: " + (n.notification.sentToRole || "Unknown"),
+        sentToUserName:
+          n.sentToUserName ||
+          "Role: " + (n.notification.sentToRole || "Unknown"),
       }));
     }),
 

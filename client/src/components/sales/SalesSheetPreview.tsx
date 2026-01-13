@@ -21,7 +21,6 @@ import {
   Share2,
   ShoppingCart,
   Video,
-  Link,
   Check,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -284,7 +283,7 @@ export function SalesSheetPreview({
 
   // Save mutation
   const saveMutation = trpc.salesSheets.save.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success("Sales sheet saved successfully");
       utils.salesSheets.getHistory.invalidate();
       setLastSavedSheetId(data);
@@ -296,7 +295,7 @@ export function SalesSheetPreview({
 
   // Share link mutation
   const shareMutation = trpc.salesSheets.generateShareLink.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       const fullUrl = `${window.location.origin}${data.shareUrl}`;
       setShareUrl(fullUrl);
       setShareDialogOpen(true);
@@ -308,7 +307,7 @@ export function SalesSheetPreview({
 
   // Convert to order mutation
   const convertToOrderMutation = trpc.salesSheets.convertToOrder.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success("Converted to order successfully");
       setLocation(`/orders?id=${data.orderId}`);
     },
@@ -318,21 +317,23 @@ export function SalesSheetPreview({
   });
 
   // Convert to live session mutation
-  const convertToSessionMutation = trpc.salesSheets.convertToLiveSession.useMutation({
-    onSuccess: (data) => {
-      toast.success("Live session started");
-      setLocation(`/live-shopping?session=${data.sessionId}`);
-    },
-    onError: error => {
-      toast.error("Failed to start live session: " + error.message);
-    },
-  });
+  const convertToSessionMutation =
+    trpc.salesSheets.convertToLiveSession.useMutation({
+      onSuccess: data => {
+        toast.success("Live session started");
+        setLocation(`/live-shopping?session=${data.sessionId}`);
+      },
+      onError: error => {
+        toast.error("Failed to start live session: " + error.message);
+      },
+    });
 
   // Handle save
   const handleSave = () => {
     const itemsToSave = items.map(item => ({
       ...item,
       finalPrice: priceOverrides.get(item.id) || item.retailPrice,
+      priceMarkup: 0, // Default markup; can be overridden if needed
     }));
 
     saveMutation.mutate({
@@ -520,10 +521,15 @@ export function SalesSheetPreview({
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground font-medium">Share & Convert</p>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Share & Convert
+                    </p>
 
                     {/* Share Button */}
-                    <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+                    <Dialog
+                      open={shareDialogOpen}
+                      onOpenChange={setShareDialogOpen}
+                    >
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
@@ -532,21 +538,24 @@ export function SalesSheetPreview({
                             if (lastSavedSheetId) {
                               shareMutation.mutate({
                                 sheetId: lastSavedSheetId,
-                                expiresInDays: 7
+                                expiresInDays: 7,
                               });
                             }
                           }}
                           disabled={shareMutation.isPending}
                         >
                           <Share2 className="mr-2 h-4 w-4" />
-                          {shareMutation.isPending ? "Generating..." : "Share Link"}
+                          {shareMutation.isPending
+                            ? "Generating..."
+                            : "Share Link"}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Share Sales Sheet</DialogTitle>
                           <DialogDescription>
-                            Send this link to your client. They can view the sales sheet without logging in.
+                            Send this link to your client. They can view the
+                            sales sheet without logging in.
                           </DialogDescription>
                         </DialogHeader>
                         {shareUrl && (

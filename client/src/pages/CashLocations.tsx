@@ -6,7 +6,13 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -36,7 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Skeleton, StatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
+import { StatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { BackButton } from "@/components/common/BackButton";
 import {
   Plus,
@@ -51,7 +57,6 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   RefreshCw,
-  CalendarDays,
   History,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -62,14 +67,14 @@ type CashLocation = {
   id: number;
   name: string;
   currentBalance: number;
-  isActive: boolean;
+  isActive: boolean | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
 
 type Transaction = {
   id: number;
-  locationId: number;
+  locationId: number | null;
   transactionType: string;
   amount: number;
   description: string | null;
@@ -83,17 +88,18 @@ type Transaction = {
 
 type Shift = {
   id: number;
-  locationId: number;
+  locationId: number | null;
   shiftStart: Date | null;
   shiftEnd: Date | null;
   startingBalance: number;
   expectedBalance: number;
   actualCount: number;
   variance: number;
-  status: string;
+  status: string | null;
   notes: string | null;
   resetByName: string | null;
   resetAt: Date | null;
+  createdAt: Date | null;
 };
 
 // Format currency helper
@@ -131,14 +137,17 @@ export default function CashLocations() {
   const utils = trpc.useUtils();
 
   // State
-  const [selectedLocation, setSelectedLocation] = useState<CashLocation | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<CashLocation | null>(
+    null
+  );
   const [activeTab, setActiveTab] = useState<string>("locations");
 
   // Dialog states
   const [showAddLocationDialog, setShowAddLocationDialog] = useState(false);
   const [showEditLocationDialog, setShowEditLocationDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const [showAddTransactionDialog, setShowAddTransactionDialog] = useState(false);
+  const [showAddTransactionDialog, setShowAddTransactionDialog] =
+    useState(false);
   const [showCloseShiftDialog, setShowCloseShiftDialog] = useState(false);
 
   // Form states
@@ -155,55 +164,62 @@ export default function CashLocations() {
   const [transactionDescription, setTransactionDescription] = useState("");
   const [actualCashCount, setActualCashCount] = useState("");
   const [closeShiftNotes, setCloseShiftNotes] = useState("");
-  const [dateFilter, setDateFilter] = useState<{ start?: Date; end?: Date }>({});
+  const [dateFilter, _setDateFilter] = useState<{ start?: Date; end?: Date }>(
+    {}
+  );
   const [typeFilter, setTypeFilter] = useState<string>("");
 
   // Queries
-  const { data: locationsData, isLoading: locationsLoading } = trpc.cashAudit.listLocations.useQuery({
-    includeInactive: true,
-    limit: 100,
-    offset: 0,
-  });
+  const { data: locationsData, isLoading: locationsLoading } =
+    trpc.cashAudit.listLocations.useQuery({
+      includeInactive: true,
+      limit: 100,
+      offset: 0,
+    });
 
   const locations = locationsData?.items ?? [];
   const activeLocations = locations.filter((l: CashLocation) => l.isActive);
 
   // Ledger query (only when location is selected and on ledger tab)
-  const { data: ledgerData, isLoading: ledgerLoading } = trpc.cashAudit.getLocationLedger.useQuery(
-    {
-      locationId: selectedLocation?.id ?? 0,
-      startDate: dateFilter.start,
-      endDate: dateFilter.end,
-      transactionType: typeFilter as "IN" | "OUT" | "TRANSFER" | undefined || undefined,
-      limit: 100,
-      offset: 0,
-    },
-    {
-      enabled: !!selectedLocation && activeTab === "ledger",
-    }
-  );
+  const { data: ledgerData, isLoading: ledgerLoading } =
+    trpc.cashAudit.getLocationLedger.useQuery(
+      {
+        locationId: selectedLocation?.id ?? 0,
+        startDate: dateFilter.start,
+        endDate: dateFilter.end,
+        transactionType:
+          (typeFilter as "IN" | "OUT" | "TRANSFER" | undefined) || undefined,
+        limit: 100,
+        offset: 0,
+      },
+      {
+        enabled: !!selectedLocation && activeTab === "ledger",
+      }
+    );
 
   // Shift payments query (only when location is selected and on shift tab)
-  const { data: shiftData, isLoading: shiftLoading } = trpc.cashAudit.getShiftPayments.useQuery(
-    {
-      locationId: selectedLocation?.id ?? 0,
-    },
-    {
-      enabled: !!selectedLocation && activeTab === "shift",
-    }
-  );
+  const { data: shiftData, isLoading: shiftLoading } =
+    trpc.cashAudit.getShiftPayments.useQuery(
+      {
+        locationId: selectedLocation?.id ?? 0,
+      },
+      {
+        enabled: !!selectedLocation && activeTab === "shift",
+      }
+    );
 
   // Shift history query
-  const { data: shiftHistoryData, isLoading: shiftHistoryLoading } = trpc.cashAudit.getShiftHistory.useQuery(
-    {
-      locationId: selectedLocation?.id ?? 0,
-      limit: 20,
-      offset: 0,
-    },
-    {
-      enabled: !!selectedLocation && activeTab === "shift",
-    }
-  );
+  const { data: shiftHistoryData, isLoading: shiftHistoryLoading } =
+    trpc.cashAudit.getShiftHistory.useQuery(
+      {
+        locationId: selectedLocation?.id ?? 0,
+        limit: 20,
+        offset: 0,
+      },
+      {
+        enabled: !!selectedLocation && activeTab === "shift",
+      }
+    );
 
   // Mutations
   const createLocationMutation = trpc.cashAudit.createLocation.useMutation({
@@ -215,7 +231,7 @@ export default function CashLocations() {
       utils.cashAudit.listLocations.invalidate();
       utils.cashAudit.getCashDashboard.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to create location: ${error.message}`);
     },
   });
@@ -228,13 +244,13 @@ export default function CashLocations() {
       utils.cashAudit.listLocations.invalidate();
       utils.cashAudit.getCashDashboard.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update location: ${error.message}`);
     },
   });
 
   const transferMutation = trpc.cashAudit.transferBetweenLocations.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(
         `Transferred ${formatCurrency(data.amount)} from ${data.fromLocation.name} to ${data.toLocation.name}`
       );
@@ -247,32 +263,33 @@ export default function CashLocations() {
       utils.cashAudit.getLocationLedger.invalidate();
       utils.cashAudit.getCashDashboard.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Transfer failed: ${error.message}`);
     },
   });
 
-  const recordTransactionMutation = trpc.cashAudit.recordTransaction.useMutation({
-    onSuccess: (data) => {
-      toast.success(
-        `${data.transactionType === "IN" ? "Received" : "Paid out"} ${formatCurrency(data.amount)}`
-      );
-      setShowAddTransactionDialog(false);
-      setTransactionAmount("");
-      setTransactionDescription("");
-      setTransactionType("IN");
-      utils.cashAudit.listLocations.invalidate();
-      utils.cashAudit.getLocationLedger.invalidate();
-      utils.cashAudit.getShiftPayments.invalidate();
-      utils.cashAudit.getCashDashboard.invalidate();
-    },
-    onError: (error) => {
-      toast.error(`Failed to record transaction: ${error.message}`);
-    },
-  });
+  const recordTransactionMutation =
+    trpc.cashAudit.recordTransaction.useMutation({
+      onSuccess: data => {
+        toast.success(
+          `${data.transactionType === "IN" ? "Received" : "Paid out"} ${formatCurrency(data.amount)}`
+        );
+        setShowAddTransactionDialog(false);
+        setTransactionAmount("");
+        setTransactionDescription("");
+        setTransactionType("IN");
+        utils.cashAudit.listLocations.invalidate();
+        utils.cashAudit.getLocationLedger.invalidate();
+        utils.cashAudit.getShiftPayments.invalidate();
+        utils.cashAudit.getCashDashboard.invalidate();
+      },
+      onError: error => {
+        toast.error(`Failed to record transaction: ${error.message}`);
+      },
+    });
 
   const resetShiftMutation = trpc.cashAudit.resetShift.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       if (data.isCleanAudit) {
         toast.success("Shift closed successfully - No variance");
       } else {
@@ -289,7 +306,7 @@ export default function CashLocations() {
       utils.cashAudit.getShiftHistory.invalidate();
       utils.cashAudit.getCashDashboard.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to close shift: ${error.message}`);
     },
   });
@@ -303,7 +320,8 @@ export default function CashLocations() {
         locationId: selectedLocation.id,
         startDate: dateFilter.start,
         endDate: dateFilter.end,
-        transactionType: typeFilter as "IN" | "OUT" | "TRANSFER" | undefined || undefined,
+        transactionType:
+          (typeFilter as "IN" | "OUT" | "TRANSFER" | undefined) || undefined,
       });
 
       // Create and download CSV
@@ -317,8 +335,10 @@ export default function CashLocations() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${exportData.summary.transactionCount} transactions`);
-    } catch (error) {
+      toast.success(
+        `Exported ${exportData.summary.transactionCount} transactions`
+      );
+    } catch (_error) {
       toast.error("Failed to export ledger");
     }
   };
@@ -362,7 +382,11 @@ export default function CashLocations() {
   };
 
   const handleRecordTransaction = () => {
-    if (!selectedLocation || !transactionAmount || !transactionDescription.trim()) {
+    if (
+      !selectedLocation ||
+      !transactionAmount ||
+      !transactionDescription.trim()
+    ) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -389,7 +413,7 @@ export default function CashLocations() {
   const openEditDialog = (location: CashLocation) => {
     setSelectedLocation(location);
     setEditLocationName(location.name);
-    setEditLocationActive(location.isActive);
+    setEditLocationActive(location.isActive ?? true);
     setShowEditLocationDialog(true);
   };
 
@@ -400,7 +424,8 @@ export default function CashLocations() {
 
   // Summary stats
   const totalBalance = locations.reduce(
-    (sum: number, loc: CashLocation) => sum + (loc.isActive ? loc.currentBalance : 0),
+    (sum: number, loc: CashLocation) =>
+      sum + (loc.isActive ? loc.currentBalance : 0),
     0
   );
 
@@ -441,7 +466,9 @@ export default function CashLocations() {
         <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Locations</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Locations
+              </CardTitle>
               <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -453,7 +480,9 @@ export default function CashLocations() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cash Balance</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Cash Balance
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -479,7 +508,9 @@ export default function CashLocations() {
                   : "-"}
               </div>
               <p className="text-xs text-muted-foreground">
-                {selectedLocation ? "Current balance" : "Click a location to view details"}
+                {selectedLocation
+                  ? "Current balance"
+                  : "Click a location to view details"}
               </p>
             </CardContent>
           </Card>
@@ -515,7 +546,9 @@ export default function CashLocations() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="text-right">Current Balance</TableHead>
+                      <TableHead className="text-right">
+                        Current Balance
+                      </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Last Updated</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -524,8 +557,12 @@ export default function CashLocations() {
                   <TableBody>
                     {locations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          No cash locations found. Create your first location to get started.
+                        <TableCell
+                          colSpan={5}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          No cash locations found. Create your first location to
+                          get started.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -538,27 +575,37 @@ export default function CashLocations() {
                           )}
                           onClick={() => selectLocation(location)}
                         >
-                          <TableCell className="font-medium">{location.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {location.name}
+                          </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(location.currentBalance)}
                           </TableCell>
                           <TableCell>
                             {location.isActive ? (
-                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                              <Badge
+                                variant="outline"
+                                className="bg-green-100 text-green-700 border-green-200"
+                              >
                                 Active
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
+                              <Badge
+                                variant="outline"
+                                className="bg-gray-100 text-gray-700 border-gray-200"
+                              >
                                 Inactive
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell>{formatDate(location.updatedAt)}</TableCell>
+                          <TableCell>
+                            {formatDate(location.updatedAt)}
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 openEditDialog(location);
                               }}
@@ -583,17 +630,15 @@ export default function CashLocations() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>{selectedLocation.name} - Transaction Ledger</CardTitle>
+                    <CardTitle>
+                      {selectedLocation.name} - Transaction Ledger
+                    </CardTitle>
                     <CardDescription>
                       View and manage transactions for this location
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleExport}
-                    >
+                    <Button variant="outline" size="sm" onClick={handleExport}>
                       <Download className="mr-2 h-4 w-4" />
                       Export CSV
                     </Button>
@@ -632,7 +677,13 @@ export default function CashLocations() {
                       <span className="text-red-600">
                         Out: {formatCurrency(ledgerData.summary.totalOut)}
                       </span>
-                      <span className={ledgerData.summary.netChange >= 0 ? "text-green-600" : "text-red-600"}>
+                      <span
+                        className={
+                          ledgerData.summary.netChange >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
                         Net: {formatCurrency(ledgerData.summary.netChange)}
                       </span>
                     </div>
@@ -657,15 +708,20 @@ export default function CashLocations() {
                     <TableBody>
                       {(ledgerData?.transactions?.items ?? []).length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell
+                            colSpan={7}
+                            className="text-center py-8 text-muted-foreground"
+                          >
                             No transactions found
                           </TableCell>
                         </TableRow>
                       ) : (
                         (() => {
                           // Calculate running balance (transactions are in DESC order by date)
-                          const transactions = ledgerData?.transactions?.items ?? [];
-                          const currentBalance = selectedLocation?.currentBalance ?? 0;
+                          const transactions =
+                            ledgerData?.transactions?.items ?? [];
+                          const currentBalance =
+                            selectedLocation?.currentBalance ?? 0;
                           let runningBalance = currentBalance;
                           const balances: number[] = [];
 
@@ -689,42 +745,52 @@ export default function CashLocations() {
                             }
                           }
 
-                          return transactions.map((tx: Transaction, idx: number) => (
-                            <TableRow key={tx.id}>
-                              <TableCell>{formatDateTime(tx.createdAt)}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {tx.transactionType === "IN" && (
-                                    <ArrowDownLeft className="h-4 w-4 text-green-600" />
-                                  )}
-                                  {tx.transactionType === "OUT" && (
-                                    <ArrowUpRight className="h-4 w-4 text-red-600" />
-                                  )}
-                                  {tx.transactionType === "TRANSFER" && (
-                                    <ArrowLeftRight className="h-4 w-4 text-blue-600" />
-                                  )}
-                                  <span className="capitalize">{tx.transactionType.toLowerCase()}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="max-w-[300px] truncate">
-                                {tx.description || "-"}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-green-600">
-                                {tx.transactionType === "IN" || (tx.transactionType === "TRANSFER" && tx.transferFromLocationId)
-                                  ? formatCurrency(tx.amount)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-red-600">
-                                {tx.transactionType === "OUT" || (tx.transactionType === "TRANSFER" && tx.transferToLocationId)
-                                  ? formatCurrency(tx.amount)
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="text-right font-mono font-medium">
-                                {formatCurrency(balances[idx])}
-                              </TableCell>
-                              <TableCell>{tx.createdByName || "-"}</TableCell>
-                            </TableRow>
-                          ));
+                          return transactions.map(
+                            (tx: Transaction, idx: number) => (
+                              <TableRow key={tx.id}>
+                                <TableCell>
+                                  {formatDateTime(tx.createdAt)}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {tx.transactionType === "IN" && (
+                                      <ArrowDownLeft className="h-4 w-4 text-green-600" />
+                                    )}
+                                    {tx.transactionType === "OUT" && (
+                                      <ArrowUpRight className="h-4 w-4 text-red-600" />
+                                    )}
+                                    {tx.transactionType === "TRANSFER" && (
+                                      <ArrowLeftRight className="h-4 w-4 text-blue-600" />
+                                    )}
+                                    <span className="capitalize">
+                                      {tx.transactionType.toLowerCase()}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="max-w-[300px] truncate">
+                                  {tx.description || "-"}
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-green-600">
+                                  {tx.transactionType === "IN" ||
+                                  (tx.transactionType === "TRANSFER" &&
+                                    tx.transferFromLocationId)
+                                    ? formatCurrency(tx.amount)
+                                    : "-"}
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-red-600">
+                                  {tx.transactionType === "OUT" ||
+                                  (tx.transactionType === "TRANSFER" &&
+                                    tx.transferToLocationId)
+                                    ? formatCurrency(tx.amount)
+                                    : "-"}
+                                </TableCell>
+                                <TableCell className="text-right font-mono font-medium">
+                                  {formatCurrency(balances[idx])}
+                                </TableCell>
+                                <TableCell>{tx.createdByName || "-"}</TableCell>
+                              </TableRow>
+                            )
+                          );
                         })()
                       )}
                     </TableBody>
@@ -770,25 +836,33 @@ export default function CashLocations() {
                   ) : shiftData ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="rounded-lg border p-4">
-                        <p className="text-sm text-muted-foreground">Starting Balance</p>
+                        <p className="text-sm text-muted-foreground">
+                          Starting Balance
+                        </p>
                         <p className="text-xl font-semibold font-mono">
                           {formatCurrency(shiftData.startingBalance)}
                         </p>
                       </div>
                       <div className="rounded-lg border p-4">
-                        <p className="text-sm text-muted-foreground">Total Received</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Received
+                        </p>
                         <p className="text-xl font-semibold font-mono text-green-600">
                           +{formatCurrency(shiftData.totalReceived)}
                         </p>
                       </div>
                       <div className="rounded-lg border p-4">
-                        <p className="text-sm text-muted-foreground">Total Paid Out</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Paid Out
+                        </p>
                         <p className="text-xl font-semibold font-mono text-red-600">
                           -{formatCurrency(shiftData.totalPaidOut)}
                         </p>
                       </div>
                       <div className="rounded-lg border-2 border-primary p-4 bg-primary/5">
-                        <p className="text-sm text-muted-foreground">Expected Balance</p>
+                        <p className="text-sm text-muted-foreground">
+                          Expected Balance
+                        </p>
                         <p className="text-xl font-bold font-mono text-primary">
                           {formatCurrency(shiftData.expectedBalance)}
                         </p>
@@ -801,7 +875,9 @@ export default function CashLocations() {
                   {/* Recent shift transactions */}
                   {shiftData && shiftData.transactions.length > 0 && (
                     <div className="mt-6">
-                      <h4 className="font-medium mb-3">Recent Shift Transactions</h4>
+                      <h4 className="font-medium mb-3">
+                        Recent Shift Transactions
+                      </h4>
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -812,9 +888,11 @@ export default function CashLocations() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {shiftData.transactions.slice(0, 5).map((tx: Transaction) => (
+                          {shiftData.transactions.slice(0, 5).map(tx => (
                             <TableRow key={tx.id}>
-                              <TableCell>{formatDateTime(tx.createdAt)}</TableCell>
+                              <TableCell>
+                                {formatDateTime(tx.createdAt)}
+                              </TableCell>
                               <TableCell>
                                 <Badge
                                   variant="outline"
@@ -822,8 +900,8 @@ export default function CashLocations() {
                                     tx.transactionType === "IN"
                                       ? "bg-green-100 text-green-700 border-green-200"
                                       : tx.transactionType === "OUT"
-                                      ? "bg-red-100 text-red-700 border-red-200"
-                                      : "bg-blue-100 text-blue-700 border-blue-200"
+                                        ? "bg-red-100 text-red-700 border-red-200"
+                                        : "bg-blue-100 text-blue-700 border-blue-200"
                                   )}
                                 >
                                   {tx.transactionType}
@@ -833,7 +911,9 @@ export default function CashLocations() {
                               <TableCell
                                 className={cn(
                                   "text-right font-mono",
-                                  tx.transactionType === "IN" ? "text-green-600" : "text-red-600"
+                                  tx.transactionType === "IN"
+                                    ? "text-green-600"
+                                    : "text-red-600"
                                 )}
                               >
                                 {tx.transactionType === "IN" ? "+" : "-"}
@@ -871,7 +951,9 @@ export default function CashLocations() {
                             : "text-red-600"
                         )}
                       >
-                        {formatCurrency(shiftHistoryData.statistics.totalVariance)}
+                        {formatCurrency(
+                          shiftHistoryData.statistics.totalVariance
+                        )}
                       </span>
                     </CardDescription>
                   )}
@@ -893,9 +975,13 @@ export default function CashLocations() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {(shiftHistoryData?.shifts?.items ?? []).length === 0 ? (
+                        {(shiftHistoryData?.shifts?.items ?? []).length ===
+                        0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            <TableCell
+                              colSpan={7}
+                              className="text-center py-8 text-muted-foreground"
+                            >
                               No shift history found
                             </TableCell>
                           </TableRow>
@@ -904,7 +990,9 @@ export default function CashLocations() {
                             .filter((shift: Shift) => shift.status === "CLOSED")
                             .map((shift: Shift) => (
                               <TableRow key={shift.id}>
-                                <TableCell>{formatDate(shift.shiftStart)}</TableCell>
+                                <TableCell>
+                                  {formatDate(shift.shiftStart)}
+                                </TableCell>
                                 <TableCell>
                                   {shift.shiftStart && shift.shiftEnd ? (
                                     <>
@@ -932,7 +1020,9 @@ export default function CashLocations() {
                                       <AlertTriangle
                                         className={cn(
                                           "h-4 w-4",
-                                          shift.variance > 0 ? "text-green-600" : "text-red-600"
+                                          shift.variance > 0
+                                            ? "text-green-600"
+                                            : "text-red-600"
                                         )}
                                       />
                                     )}
@@ -942,8 +1032,8 @@ export default function CashLocations() {
                                         shift.variance === 0
                                           ? "text-green-600"
                                           : shift.variance > 0
-                                          ? "text-green-600"
-                                          : "text-red-600"
+                                            ? "text-green-600"
+                                            : "text-red-600"
                                       )}
                                     >
                                       {shift.variance >= 0 ? "+" : ""}
@@ -951,7 +1041,9 @@ export default function CashLocations() {
                                     </span>
                                   </div>
                                 </TableCell>
-                                <TableCell>{shift.resetByName || "-"}</TableCell>
+                                <TableCell>
+                                  {shift.resetByName || "-"}
+                                </TableCell>
                               </TableRow>
                             ))
                         )}
@@ -966,7 +1058,10 @@ export default function CashLocations() {
       </Tabs>
 
       {/* Add Location Dialog */}
-      <Dialog open={showAddLocationDialog} onOpenChange={setShowAddLocationDialog}>
+      <Dialog
+        open={showAddLocationDialog}
+        onOpenChange={setShowAddLocationDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Cash Location</DialogTitle>
@@ -981,7 +1076,7 @@ export default function CashLocations() {
                 id="name"
                 placeholder="e.g., Main Register, Safe, Petty Cash"
                 value={newLocationName}
-                onChange={(e) => setNewLocationName(e.target.value)}
+                onChange={e => setNewLocationName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -998,27 +1093,35 @@ export default function CashLocations() {
                   placeholder="0.00"
                   className="pl-7"
                   value={newLocationBalance}
-                  onChange={(e) => setNewLocationBalance(e.target.value)}
+                  onChange={e => setNewLocationBalance(e.target.value)}
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddLocationDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddLocationDialog(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleCreateLocation}
               disabled={createLocationMutation.isPending}
             >
-              {createLocationMutation.isPending ? "Creating..." : "Create Location"}
+              {createLocationMutation.isPending
+                ? "Creating..."
+                : "Create Location"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Location Dialog */}
-      <Dialog open={showEditLocationDialog} onOpenChange={setShowEditLocationDialog}>
+      <Dialog
+        open={showEditLocationDialog}
+        onOpenChange={setShowEditLocationDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Cash Location</DialogTitle>
@@ -1032,7 +1135,7 @@ export default function CashLocations() {
               <Input
                 id="edit-name"
                 value={editLocationName}
-                onChange={(e) => setEditLocationName(e.target.value)}
+                onChange={e => setEditLocationName(e.target.value)}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -1049,7 +1152,10 @@ export default function CashLocations() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditLocationDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditLocationDialog(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1067,9 +1173,7 @@ export default function CashLocations() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Transfer Funds</DialogTitle>
-            <DialogDescription>
-              Move cash between locations
-            </DialogDescription>
+            <DialogDescription>Move cash between locations</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -1095,7 +1199,9 @@ export default function CashLocations() {
                 </SelectTrigger>
                 <SelectContent>
                   {activeLocations
-                    .filter((loc: CashLocation) => loc.id.toString() !== transferFrom)
+                    .filter(
+                      (loc: CashLocation) => loc.id.toString() !== transferFrom
+                    )
                     .map((loc: CashLocation) => (
                       <SelectItem key={loc.id} value={loc.id.toString()}>
                         {loc.name} ({formatCurrency(loc.currentBalance)})
@@ -1117,7 +1223,7 @@ export default function CashLocations() {
                   placeholder="0.00"
                   className="pl-7"
                   value={transferAmount}
-                  onChange={(e) => setTransferAmount(e.target.value)}
+                  onChange={e => setTransferAmount(e.target.value)}
                 />
               </div>
             </div>
@@ -1126,12 +1232,15 @@ export default function CashLocations() {
               <Textarea
                 placeholder="Reason for transfer..."
                 value={transferNotes}
-                onChange={(e) => setTransferNotes(e.target.value)}
+                onChange={e => setTransferNotes(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTransferDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowTransferDialog(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1145,7 +1254,10 @@ export default function CashLocations() {
       </Dialog>
 
       {/* Add Transaction Dialog */}
-      <Dialog open={showAddTransactionDialog} onOpenChange={setShowAddTransactionDialog}>
+      <Dialog
+        open={showAddTransactionDialog}
+        onOpenChange={setShowAddTransactionDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Record Transaction</DialogTitle>
@@ -1158,7 +1270,7 @@ export default function CashLocations() {
               <Label>Transaction Type</Label>
               <Select
                 value={transactionType}
-                onValueChange={(v) => setTransactionType(v as "IN" | "OUT")}
+                onValueChange={v => setTransactionType(v as "IN" | "OUT")}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1192,7 +1304,7 @@ export default function CashLocations() {
                   placeholder="0.00"
                   className="pl-7"
                   value={transactionAmount}
-                  onChange={(e) => setTransactionAmount(e.target.value)}
+                  onChange={e => setTransactionAmount(e.target.value)}
                 />
               </div>
             </div>
@@ -1201,26 +1313,34 @@ export default function CashLocations() {
               <Textarea
                 placeholder="Enter transaction details..."
                 value={transactionDescription}
-                onChange={(e) => setTransactionDescription(e.target.value)}
+                onChange={e => setTransactionDescription(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddTransactionDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddTransactionDialog(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleRecordTransaction}
               disabled={recordTransactionMutation.isPending}
             >
-              {recordTransactionMutation.isPending ? "Recording..." : "Record Transaction"}
+              {recordTransactionMutation.isPending
+                ? "Recording..."
+                : "Record Transaction"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Close Shift Dialog */}
-      <Dialog open={showCloseShiftDialog} onOpenChange={setShowCloseShiftDialog}>
+      <Dialog
+        open={showCloseShiftDialog}
+        onOpenChange={setShowCloseShiftDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Close Shift</DialogTitle>
@@ -1232,13 +1352,17 @@ export default function CashLocations() {
             {shiftData && (
               <div className="rounded-lg bg-muted p-4 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expected Balance:</span>
+                  <span className="text-muted-foreground">
+                    Expected Balance:
+                  </span>
                   <span className="font-mono font-medium">
                     {formatCurrency(shiftData.expectedBalance)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Current Location Balance:</span>
+                  <span className="text-muted-foreground">
+                    Current Location Balance:
+                  </span>
                   <span className="font-mono font-medium">
                     {formatCurrency(shiftData.location.currentBalance)}
                   </span>
@@ -1258,7 +1382,7 @@ export default function CashLocations() {
                   placeholder="0.00"
                   className="pl-7"
                   value={actualCashCount}
-                  onChange={(e) => setActualCashCount(e.target.value)}
+                  onChange={e => setActualCashCount(e.target.value)}
                 />
               </div>
             </div>
@@ -1269,8 +1393,8 @@ export default function CashLocations() {
                   parseFloat(actualCashCount) === shiftData.expectedBalance
                     ? "bg-green-100 dark:bg-green-900/30"
                     : parseFloat(actualCashCount) > shiftData.expectedBalance
-                    ? "bg-amber-100 dark:bg-amber-900/30"
-                    : "bg-red-100 dark:bg-red-900/30"
+                      ? "bg-amber-100 dark:bg-amber-900/30"
+                      : "bg-red-100 dark:bg-red-900/30"
                 )}
               >
                 {parseFloat(actualCashCount) === shiftData.expectedBalance ? (
@@ -1290,8 +1414,8 @@ export default function CashLocations() {
                     {parseFloat(actualCashCount) === shiftData.expectedBalance
                       ? "Perfect Match!"
                       : parseFloat(actualCashCount) > shiftData.expectedBalance
-                      ? `Over by ${formatCurrency(parseFloat(actualCashCount) - shiftData.expectedBalance)}`
-                      : `Short by ${formatCurrency(shiftData.expectedBalance - parseFloat(actualCashCount))}`}
+                        ? `Over by ${formatCurrency(parseFloat(actualCashCount) - shiftData.expectedBalance)}`
+                        : `Short by ${formatCurrency(shiftData.expectedBalance - parseFloat(actualCashCount))}`}
                   </p>
                 </div>
               </div>
@@ -1301,12 +1425,15 @@ export default function CashLocations() {
               <Textarea
                 placeholder="Add any notes about this shift..."
                 value={closeShiftNotes}
-                onChange={(e) => setCloseShiftNotes(e.target.value)}
+                onChange={e => setCloseShiftNotes(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCloseShiftDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCloseShiftDialog(false)}
+            >
               Cancel
             </Button>
             <Button
