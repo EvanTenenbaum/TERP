@@ -29,6 +29,7 @@ import * as liveCatalogService from "../services/liveCatalogService";
 import * as pricingEngine from "../pricingEngine";
 import * as priceAlertsService from "../services/priceAlertsService";
 import * as vipDebtAgingService from "../services/vipDebtAgingService";
+import * as vipCreditService from "../services/vipCreditService";
 import { eq, and, desc, gte, lte, sql, like, or, inArray, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
@@ -2358,6 +2359,51 @@ export const vipPortalRouter = router({
 
         return await vipDebtAgingService.getNextScheduledNotification(clientId);
       }),
+    }),
+
+    // ============================================================================
+    // Sprint 5 Track A - Task 5.A.3: MEET-042 - Credit Usage Display
+    // ============================================================================
+    credit: router({
+      /**
+       * Get credit usage for the current VIP client
+       */
+      getUsage: vipPortalProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.clientId;
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        return await vipCreditService.getClientCreditUsage(clientId);
+      }),
+
+      /**
+       * Get credit utilization history for trends
+       */
+      getHistory: vipPortalProcedure
+        .input(z.object({ days: z.number().min(1).max(365).optional().default(30) }))
+        .query(async ({ ctx, input }) => {
+          const clientId = ctx.clientId;
+          if (!clientId) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          }
+
+          return await vipCreditService.getCreditUtilizationHistory(clientId, input.days);
+        }),
+
+      /**
+       * Check if a purchase amount is within credit availability
+       */
+      checkAvailability: vipPortalProcedure
+        .input(z.object({ amount: z.number().positive() }))
+        .query(async ({ ctx, input }) => {
+          const clientId = ctx.clientId;
+          if (!clientId) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          }
+
+          return await vipCreditService.checkCreditAvailability(clientId, input.amount);
+        }),
     }),
   }),
 });
