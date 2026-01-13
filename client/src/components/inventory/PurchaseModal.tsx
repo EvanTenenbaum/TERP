@@ -80,13 +80,13 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
   const createPurchaseMutation = trpc.inventory.intake.useMutation({
     onSuccess: () => {
-      toast.success("Product purchase created successfully!");
+      toast.success("Product intake created successfully!");
       resetForm();
       onClose();
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(`Failed to create purchase: ${error.message}`);
+      toast.error(`Failed to create intake: ${error.message}`);
     },
   });
 
@@ -262,9 +262,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Product Purchase</DialogTitle>
+          <DialogTitle>New Product Intake</DialogTitle>
           <DialogDescription>
-            Record a new product purchase. You can add detailed location and other information during intake.
+            Record a new product intake. You can add detailed location and other information after receiving.
           </DialogDescription>
         </DialogHeader>
 

@@ -193,7 +193,7 @@ export default function Inventory() {
           { key: "available", label: "Available" },
           { key: "unitCogs", label: "Unit Cost" },
           { key: "totalValue", label: "Total Value" },
-          { key: "purchaseDate", label: "Purchase Date" },
+          { key: "purchaseDate", label: "Intake Date" },
           { key: "expirationDate", label: "Expiration Date" },
           { key: "location", label: "Location" },
         ],
@@ -530,7 +530,7 @@ export default function Inventory() {
             className="w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Purchase
+            New Intake
           </Button>
         </div>
       </div>
