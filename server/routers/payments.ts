@@ -820,6 +820,7 @@ export const paymentsRouter = router({
 
   /**
    * Void a payment
+   * FEAT-007: Updated to handle multi-invoice payments via invoice_payments junction table
    */
   void: protectedProcedure
     .use(requirePermission("accounting:delete"))
@@ -848,16 +849,14 @@ export const paymentsRouter = router({
         });
       }
 
-      const paymentAmount = parseFloat(payment.amount || "0");
+      if (payment.deletedAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Payment has already been voided",
+        });
+      }
 
-      // Get the associated invoice
-      const [invoice] = payment.invoiceId
-        ? await db
-            .select()
-            .from(invoices)
-            .where(eq(invoices.id, payment.invoiceId))
-            .limit(1)
-        : [null];
+      const paymentAmount = parseFloat(payment.amount || "0");
 
       return await db.transaction(async tx => {
         // Soft delete the payment
@@ -870,35 +869,91 @@ export const paymentsRouter = router({
           })
           .where(eq(payments.id, input.id));
 
-        // If there's an associated invoice, reverse the payment
-        if (invoice && payment.invoiceId) {
-          const currentPaid = parseFloat(invoice.amountPaid || "0");
-          const newPaid = Math.max(0, currentPaid - paymentAmount);
-          const totalAmount = parseFloat(invoice.totalAmount || "0");
-          const newDue = totalAmount - newPaid;
+        // FEAT-007: Check for multi-invoice allocations first
+        const allocations = await tx
+          .select({
+            invoiceId: invoicePayments.invoiceId,
+            allocatedAmount: invoicePayments.allocatedAmount,
+          })
+          .from(invoicePayments)
+          .where(eq(invoicePayments.paymentId, input.id));
 
-          // Determine new status
-          const newStatus: "SENT" | "PARTIAL" =
-            newPaid > 0 ? "PARTIAL" : "SENT";
+        if (allocations.length > 0) {
+          // Handle multi-invoice payment: reverse each allocation
+          for (const allocation of allocations) {
+            const allocatedAmount = parseFloat(
+              allocation.allocatedAmount || "0"
+            );
 
-          await tx
-            .update(invoices)
-            .set({
-              amountPaid: newPaid.toFixed(2),
-              amountDue: newDue.toFixed(2),
-              status: newStatus,
-            })
-            .where(eq(invoices.id, payment.invoiceId));
+            const [invoice] = await tx
+              .select()
+              .from(invoices)
+              .where(eq(invoices.id, allocation.invoiceId))
+              .limit(1);
 
-          // Restore client totalOwed
-          if (payment.customerId) {
-            await tx
-              .update(clients)
-              .set({
-                totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
-              })
-              .where(eq(clients.id, payment.customerId));
+            if (invoice) {
+              const currentPaid = parseFloat(invoice.amountPaid || "0");
+              const newPaid = Math.max(0, currentPaid - allocatedAmount);
+              const totalAmount = parseFloat(invoice.totalAmount || "0");
+              const newDue = totalAmount - newPaid;
+
+              // Determine new status
+              const newStatus: "SENT" | "PARTIAL" =
+                newPaid > 0 ? "PARTIAL" : "SENT";
+
+              await tx
+                .update(invoices)
+                .set({
+                  amountPaid: newPaid.toFixed(2),
+                  amountDue: newDue.toFixed(2),
+                  status: newStatus,
+                })
+                .where(eq(invoices.id, allocation.invoiceId));
+            }
           }
+
+          // Soft delete the invoice_payments records
+          await tx
+            .update(invoicePayments)
+            .set({ deletedAt: new Date() })
+            .where(eq(invoicePayments.paymentId, input.id));
+        } else if (payment.invoiceId) {
+          // Handle legacy single-invoice payment
+          const [invoice] = await tx
+            .select()
+            .from(invoices)
+            .where(eq(invoices.id, payment.invoiceId))
+            .limit(1);
+
+          if (invoice) {
+            const currentPaid = parseFloat(invoice.amountPaid || "0");
+            const newPaid = Math.max(0, currentPaid - paymentAmount);
+            const totalAmount = parseFloat(invoice.totalAmount || "0");
+            const newDue = totalAmount - newPaid;
+
+            // Determine new status
+            const newStatus: "SENT" | "PARTIAL" =
+              newPaid > 0 ? "PARTIAL" : "SENT";
+
+            await tx
+              .update(invoices)
+              .set({
+                amountPaid: newPaid.toFixed(2),
+                amountDue: newDue.toFixed(2),
+                status: newStatus,
+              })
+              .where(eq(invoices.id, payment.invoiceId));
+          }
+        }
+
+        // Restore client totalOwed
+        if (payment.customerId) {
+          await tx
+            .update(clients)
+            .set({
+              totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
+            })
+            .where(eq(clients.id, payment.customerId));
         }
 
         // Create reversing GL entries
@@ -944,6 +999,7 @@ export const paymentsRouter = router({
           paymentId: input.id,
           reason: input.reason,
           amount: paymentAmount,
+          allocationsReversed: allocations.length,
         });
 
         return { success: true, paymentId: input.id };

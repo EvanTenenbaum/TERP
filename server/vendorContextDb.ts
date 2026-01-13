@@ -90,6 +90,7 @@ export interface ProductPerformanceEntry {
   totalSold: number;
   totalRevenue: number;
   avgSalePrice: number;
+  totalCogs: number; // COGS for units sold
 
   // Performance metrics
   sellThroughRate: number;
@@ -226,7 +227,12 @@ export async function getVendorContext(
 
   // 6. Get payment history if requested
   const paymentHistoryData = includePaymentHistory
-    ? await getPaymentHistoryData(db, clientId, effectiveStartDate, effectiveEndDate)
+    ? await getPaymentHistoryData(
+        db,
+        clientId,
+        effectiveStartDate,
+        effectiveEndDate
+      )
     : undefined;
 
   // 7. Get related brands for this vendor
@@ -368,7 +374,7 @@ async function getSupplyHistory(
         and(eq(batches.lotId, lot.lotId), sql`${batches.deletedAt} IS NULL`)
       );
 
-    const supplyProducts: SupplyProduct[] = batchesData.map((b) => {
+    const supplyProducts: SupplyProduct[] = batchesData.map(b => {
       // Calculate COGS based on mode
       const unitCogs =
         b.cogsMode === "FIXED"
@@ -447,7 +453,13 @@ async function getProductPerformance(
         sql`${lots.deletedAt} IS NULL`
       )
     )
-    .groupBy(products.id, products.nameCanonical, products.category, products.brandId, brands.name);
+    .groupBy(
+      products.id,
+      products.nameCanonical,
+      products.category,
+      products.brandId,
+      brands.name
+    );
 
   // For each product, get sales data
   const performanceEntries: ProductPerformanceEntry[] = [];
@@ -478,6 +490,7 @@ async function getProductPerformance(
     const totalSold = Number(salesData?.totalSold) || 0;
     const totalRevenue = Number(salesData?.totalRevenue) || 0;
     const totalBatches = Number(product.totalBatches) || 0;
+    const avgUnitCogs = Number(product.avgUnitCogs) || 0;
 
     // Calculate sell-through rate
     const sellThroughRate =
@@ -485,6 +498,9 @@ async function getProductPerformance(
 
     // Calculate average sale price
     const avgSalePrice = totalSold > 0 ? totalRevenue / totalSold : 0;
+
+    // Calculate total COGS for units sold
+    const totalCogs = totalSold * avgUnitCogs;
 
     performanceEntries.push({
       productId: product.productId,
@@ -500,6 +516,7 @@ async function getProductPerformance(
       totalSold,
       totalRevenue,
       avgSalePrice,
+      totalCogs,
 
       sellThroughRate,
       avgDaysToSell: salesData?.avgDaysToSell || null,
@@ -522,11 +539,14 @@ function calculateAggregateMetrics(
   let totalRevenue = 0;
   let totalDaysToSell = 0;
   let daysToSellCount = 0;
+  let totalBatchCount = 0;
 
   for (const product of productPerformance) {
     totalUnitsSupplied += product.totalSupplied;
     totalUnitsSold += product.totalSold;
     totalRevenue += product.totalRevenue;
+    totalCostOfGoods += product.totalCogs; // Sum COGS from each product
+    totalBatchCount += product.totalBatches;
 
     if (product.avgDaysToSell !== null) {
       totalDaysToSell += product.avgDaysToSell * product.totalSold;
@@ -540,18 +560,8 @@ function calculateAggregateMetrics(
   const avgDaysToSell =
     daysToSellCount > 0 ? totalDaysToSell / daysToSellCount : null;
 
-  // Get unique lot count from product batches
-  const uniqueLots = new Set<number>();
-  productPerformance.forEach((p) => {
-    // Count unique lots based on total batches
-    // This is an approximation since we aggregate at product level
-  });
-
   return {
-    totalLotsReceived: productPerformance.reduce(
-      (sum, p) => sum + p.totalBatches,
-      0
-    ),
+    totalLotsReceived: totalBatchCount, // Total batches received from this vendor
     totalUnitsSupplied,
     totalCostOfGoods,
     totalUnitsSold,
@@ -601,7 +611,7 @@ async function getActiveInventory(
     )
     .orderBy(desc(batches.createdAt));
 
-  return activeInventory.map((inv) => {
+  return activeInventory.map(inv => {
     const onHand = parseFloat(inv.onHandQty || "0");
     const reserved = parseFloat(inv.reservedQty || "0");
     const quarantine = parseFloat(inv.quarantineQty || "0");
@@ -672,7 +682,10 @@ async function getPaymentHistoryData(
   for (const payment of payments) {
     const existing = paymentMap.get(payment.paymentId);
     if (existing) {
-      if (payment.lotCode && !existing.relatedLotCodes.includes(payment.lotCode)) {
+      if (
+        payment.lotCode &&
+        !existing.relatedLotCodes.includes(payment.lotCode)
+      ) {
         existing.relatedLotCodes.push(payment.lotCode);
       }
     } else {
@@ -711,15 +724,12 @@ async function getRelatedBrands(
     .innerJoin(batches, eq(batches.productId, products.id))
     .innerJoin(lots, eq(batches.lotId, lots.id))
     .where(
-      and(
-        eq(lots.supplierClientId, clientId),
-        sql`${brands.deletedAt} IS NULL`
-      )
+      and(eq(lots.supplierClientId, clientId), sql`${brands.deletedAt} IS NULL`)
     )
     .groupBy(brands.id, brands.name)
     .orderBy(desc(sql`COUNT(DISTINCT ${products.id})`));
 
-  return brandsData.map((b) => ({
+  return brandsData.map(b => ({
     id: b.brandId,
     name: b.brandName,
     productCount: Number(b.productCount),
@@ -737,10 +747,12 @@ async function getRelatedBrands(
 export async function searchVendorsWithBrands(
   query: string,
   limit = 20
-): Promise<Array<{
-  vendor: VendorInfo;
-  brands: Array<{ id: number; name: string; productCount: number }>;
-}>> {
+): Promise<
+  Array<{
+    vendor: VendorInfo;
+    brands: Array<{ id: number; name: string; productCount: number }>;
+  }>
+> {
   const db = await getDb();
   if (!db) return [];
 
@@ -784,9 +796,7 @@ export async function searchVendorsWithBrands(
  * For Flower category products, the brand represents the Farmer.
  * This function returns the vendor with associated farmer/grower names.
  */
-export async function getVendorWithFarmerInfo(
-  clientId: number
-): Promise<{
+export async function getVendorWithFarmerInfo(clientId: number): Promise<{
   vendor: VendorInfo;
   farmers: Array<{ brandId: number; farmerName: string; productCount: number }>;
 } | null> {
@@ -820,7 +830,7 @@ export async function getVendorWithFarmerInfo(
 
   return {
     vendor: vendorInfo,
-    farmers: farmers.map((f) => ({
+    farmers: farmers.map(f => ({
       brandId: f.brandId,
       farmerName: f.farmerName,
       productCount: Number(f.productCount),
