@@ -23,7 +23,7 @@ export interface CapturedScreenshot {
 
 export interface UseReceiptCaptureReturn {
   /** Ref to attach to the element to capture */
-  captureRef: RefObject<HTMLDivElement>;
+  captureRef: RefObject<HTMLDivElement | null>;
   /** Trigger screenshot capture */
   capture: () => Promise<CapturedScreenshot | null>;
   /** Whether capture is in progress */
