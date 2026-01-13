@@ -407,6 +407,7 @@ export async function updateClient(
     isReferee?: boolean;
     isContractor?: boolean;
     tags?: string[];
+    wishlist?: string; // BUG-090 FIX: Add wishlist field to match createClient
   },
   expectedVersion?: number
 ) {
@@ -426,6 +427,8 @@ export async function updateClient(
   if (data.isContractor !== undefined)
     updateData.isContractor = data.isContractor;
   if (data.tags !== undefined) updateData.tags = data.tags;
+  // BUG-090 FIX: Handle wishlist field
+  if (data.wishlist !== undefined) updateData.wishlist = data.wishlist;
 
   // If version is provided, use optimistic locking
   if (expectedVersion !== undefined) {

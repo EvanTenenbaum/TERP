@@ -24,7 +24,8 @@ const productSchema = z.object({
 const listInputSchema = z.object({
   // Increased limit to 500 to support ProductsPage bulk loading (was 100, caused BUG-087)
   limit: z.number().min(1).max(500).default(50),
-  offset: z.number().min(0).default(0),
+  // BUG-087 FIX: Add max offset validation to prevent unbounded queries
+  offset: z.number().min(0).max(100000).default(0),
   search: z.string().optional(),
   category: z.string().optional(),
   brandId: z.number().optional(),

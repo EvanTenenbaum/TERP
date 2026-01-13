@@ -539,6 +539,14 @@ export const ordersRouter = router({
             throw new Error(`Batch ${item.batchId} not found`);
           }
 
+          // BUG-086 FIX: Get product category like createDraftEnhanced does
+          const product = batch.productId
+            ? await db.query.products.findFirst({
+                where: eq(products.id, batch.productId),
+                columns: { category: true },
+              })
+            : null;
+
           const originalCogs = parseFloat(batch.unitCogs || "0");
           const cogsPerUnit = item.isCogsOverridden
             ? item.cogsPerUnit
@@ -551,12 +559,25 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
+            // BUG-086 FIX: Use actual product category, not hardcoded "OTHER"
+            const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               existingOrder.clientId,
-              "OTHER"
+              productCategory
             );
-            marginPercent = marginResult.marginPercent || 0;
-            marginSource = marginResult.source;
+
+            // BUG-086 FIX: Use 30% fallback with warning instead of 0%
+            if (marginResult.marginPercent === null) {
+              console.warn(
+                `[orders.update] No pricing default found for category "${productCategory}". ` +
+                `Using 30% fallback margin. Please seed pricing_defaults table.`
+              );
+              marginPercent = 30; // Safe default margin
+              marginSource = "MANUAL";
+            } else {
+              marginPercent = marginResult.marginPercent;
+              marginSource = marginResult.source;
+            }
           }
 
           const unitPrice =

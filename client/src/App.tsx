@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { lazy, Suspense, type FC } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -59,7 +59,9 @@ import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
-import CalendarPage from "@/pages/CalendarPage";
+// MEET-049 FIX: Use lazy loading to isolate CalendarPage import
+// This prevents calendar code errors from breaking the entire navigation
+const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -83,6 +85,16 @@ import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 const withErrorBoundary = (Component: FC<any>) => () => (
   <PageErrorBoundary>
     <Component />
+  </PageErrorBoundary>
+);
+
+// MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const withLazyErrorBoundary = (Component: FC<any>) => () => (
+  <PageErrorBoundary>
+    <Suspense fallback={<div className="flex items-center justify-center h-full p-8">Loading...</div>}>
+      <Component />
+    </Suspense>
   </PageErrorBoundary>
 );
 
@@ -316,9 +328,10 @@ function Router() {
                   component={withErrorBoundary(NotificationsPage)}
                 />
                 <Route path="/inbox" component={withErrorBoundary(InboxPage)} />
+                {/* MEET-049 FIX: Use lazy loading wrapper for isolated calendar loading */}
                 <Route
                   path="/calendar"
-                  component={withErrorBoundary(CalendarPage)}
+                  component={withLazyErrorBoundary(CalendarPage)}
                 />
                 <Route
                   path="/workflow-queue"
