@@ -22,6 +22,7 @@ import {
   clients,
   users,
   ledgerEntries,
+  invoicePayments, // FEAT-007: Multi-invoice payment support
 } from "../../drizzle/schema";
 import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
