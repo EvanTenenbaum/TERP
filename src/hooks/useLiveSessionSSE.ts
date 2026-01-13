@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 // Types matching the server side services
 interface CartItem {
@@ -21,12 +21,22 @@ interface CartState {
 
 type ConnectionStatus = "CONNECTING" | "CONNECTED" | "DISCONNECTED" | "ERROR";
 
+// MEET-075-FE: Timeout status interface
+interface TimeoutState {
+  remainingSeconds: number;
+  isWarning: boolean;
+  isExpired: boolean;
+  expiresAt: Date | null;
+}
+
 export const useLiveSessionSSE = (sessionId: number) => {
   const [cart, setCart] = useState<CartState | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [highlightedBatchId, setHighlightedBatchId] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("DISCONNECTED");
-  
+  // MEET-075-FE: Timeout state
+  const [timeoutState, setTimeoutState] = useState<TimeoutState | null>(null);
+
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -104,7 +114,7 @@ export const useLiveSessionSSE = (sessionId: number) => {
         try {
           const data = JSON.parse(event.data);
           setHighlightedBatchId(data.batchId);
-          
+
           // Also update local cart state highlighting if applicable
           setCart(prev => {
             if(!prev) return null;
@@ -118,6 +128,67 @@ export const useLiveSessionSSE = (sessionId: number) => {
           });
         } catch (e) {
           console.error("[SSE] Highlight error", e);
+        }
+      });
+
+      // MEET-075-FE: Event: Timeout Warning
+      evtSource.addEventListener("TIMEOUT_WARNING", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setTimeoutState({
+            remainingSeconds: data.remainingSeconds,
+            isWarning: true,
+            isExpired: false,
+            expiresAt: null,
+          });
+        } catch (e) {
+          console.error("[SSE] Timeout warning error", e);
+        }
+      });
+
+      // MEET-075-FE: Event: Session Timeout
+      evtSource.addEventListener("SESSION_TIMEOUT", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setSessionStatus(data.status || "ENDED");
+          setTimeoutState({
+            remainingSeconds: 0,
+            isWarning: false,
+            isExpired: true,
+            expiresAt: null,
+          });
+        } catch (e) {
+          console.error("[SSE] Session timeout error", e);
+        }
+      });
+
+      // MEET-075-FE: Event: Timeout Extended
+      evtSource.addEventListener("TIMEOUT_EXTENDED", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const newExpiresAt = data.newExpiresAt ? new Date(data.newExpiresAt) : null;
+          const remainingSeconds = newExpiresAt
+            ? Math.max(0, Math.floor((newExpiresAt.getTime() - Date.now()) / 1000))
+            : -1;
+          setTimeoutState({
+            remainingSeconds,
+            isWarning: remainingSeconds > 0 && remainingSeconds <= 300,
+            isExpired: false,
+            expiresAt: newExpiresAt,
+          });
+        } catch (e) {
+          console.error("[SSE] Timeout extended error", e);
+        }
+      });
+
+      // MEET-075-FE: Event: Session Cancelled
+      evtSource.addEventListener("SESSION_CANCELLED", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setSessionStatus("CANCELLED");
+          console.log("[SSE] Session cancelled:", data.reason);
+        } catch (e) {
+          console.error("[SSE] Session cancelled error", e);
         }
       });
 
@@ -150,6 +221,8 @@ export const useLiveSessionSSE = (sessionId: number) => {
     cart,
     sessionStatus,
     highlightedBatchId,
-    connectionStatus
+    connectionStatus,
+    // MEET-075-FE: Timeout state
+    timeoutState,
   };
 };
