@@ -110,6 +110,7 @@ import { schedulingRouter } from "./routers/scheduling"; // Sprint 4 Track D: Sc
 import { client360Router } from "./routers/client360"; // Sprint 4 Track B: Client 360 View
 import { clientWantsRouter } from "./routers/clientWants"; // Sprint 4 Track B: Client Wants/Needs (MEET-021)
 import { officeSupplyRouter } from "./routers/officeSupply"; // Sprint 4 Track B: Office Supply (MEET-055)
+import { storageRouter } from "./routers/storage"; // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
 
 import { healthRouter } from "./routers/health";
 
@@ -240,6 +241,7 @@ export const appRouter = router({
   client360: client360Router, // Sprint 4 Track B: Client 360 View (ENH-002, MEET-007, MEET-012, MEET-013, MEET-020, MEET-021, MEET-022, WS-011)
   clientWants: clientWantsRouter, // Sprint 4 Track B: Client Wants/Needs Tracking (MEET-021)
   officeSupply: officeSupplyRouter, // Sprint 4 Track B: Office Supply Needs (MEET-055)
+  storage: storageRouter, // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 
