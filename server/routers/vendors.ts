@@ -1,11 +1,13 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
+import * as vendorContextDb from "../vendorContextDb";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { vendorNotes } from "../../drizzle/schema";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { TRPCError } from "@trpc/server";
 
 /**
  * Vendors Router - FACADE over clients table
@@ -592,6 +594,159 @@ export const vendorsRouter = router({
               ? error.message
               : "Failed to fetch vendor history",
         };
+      }
+    }),
+
+  /**
+   * Get comprehensive vendor context - FEAT-002-BE
+   *
+   * Returns complete vendor history and performance metrics including:
+   * - Vendor info (name, contact, payment terms, relationship start)
+   * - Supply history (lots with products, dates, quantities)
+   * - Product performance (units supplied, sold, sell-through rate, avg days to sell)
+   * - Aggregate metrics (total supplied, sold, revenue, profit)
+   * - Active inventory from this vendor
+   * - Payment history (optional)
+   * - Related brands
+   */
+  getContext: protectedProcedure
+    .use(requirePermission("vendors:read"))
+    .input(
+      z.object({
+        clientId: z.number().describe("Vendor's client ID (isSeller=true)"),
+        dateRange: z
+          .object({
+            startDate: z.string().optional().describe("ISO date string"),
+            endDate: z.string().optional().describe("ISO date string"),
+          })
+          .optional(),
+        includeActiveInventory: z.boolean().default(true),
+        includePaymentHistory: z.boolean().default(true),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const startDate = input.dateRange?.startDate
+          ? new Date(input.dateRange.startDate)
+          : undefined;
+        const endDate = input.dateRange?.endDate
+          ? new Date(input.dateRange.endDate)
+          : undefined;
+
+        const context = await vendorContextDb.getVendorContext({
+          clientId: input.clientId,
+          startDate,
+          endDate,
+          includeActiveInventory: input.includeActiveInventory,
+          includePaymentHistory: input.includePaymentHistory,
+        });
+
+        return {
+          success: true,
+          data: context,
+        };
+      } catch (error) {
+        console.error("Error fetching vendor context:", error);
+
+        if (error instanceof Error) {
+          if (error.message === "Vendor not found") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Vendor not found",
+            });
+          }
+          if (error.message.includes("not a vendor")) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Client is not a vendor",
+            });
+          }
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor context",
+        });
+      }
+    }),
+
+  /**
+   * Search vendors with related brands - MEET-030
+   *
+   * When searching vendors, returns their associated brands
+   * with product counts for quick filtering.
+   */
+  searchWithBrands: protectedProcedure
+    .use(requirePermission("vendors:read"))
+    .input(
+      z.object({
+        query: z.string().min(1),
+        limit: z.number().default(20),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const results = await vendorContextDb.searchVendorsWithBrands(
+          input.query,
+          input.limit
+        );
+
+        return {
+          success: true,
+          data: results,
+        };
+      } catch (error) {
+        console.error("Error searching vendors with brands:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to search vendors",
+        });
+      }
+    }),
+
+  /**
+   * Get vendor with farmer/grower associations - MEET-029
+   *
+   * For Flower category products, returns associated farmer names.
+   * Farmers are represented as brands in the data model.
+   */
+  getWithFarmerInfo: protectedProcedure
+    .use(requirePermission("vendors:read"))
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const result = await vendorContextDb.getVendorWithFarmerInfo(
+          input.clientId
+        );
+
+        if (!result) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Vendor not found",
+          });
+        }
+
+        return {
+          success: true,
+          data: result,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+
+        console.error("Error fetching vendor with farmer info:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor info",
+        });
       }
     }),
 });

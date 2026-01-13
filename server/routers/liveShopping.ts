@@ -7,12 +7,14 @@ import {
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { clients, users, products, batches } from "../../drizzle/schema";
-import { eq, and, desc, like, or, sql } from "drizzle-orm";
+import { eq, and, desc, like, or, sql, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionPricingService } from "../services/live-shopping/sessionPricingService";
 import { sessionOrderService } from "../services/live-shopping/sessionOrderService";
 import { sessionCreditService } from "../services/live-shopping/sessionCreditService";
+import { sessionTimeoutService } from "../services/live-shopping/sessionTimeoutService";
+import { sessionPickListService, warehouseEventManager } from "../services/live-shopping/sessionPickListService";
 // ordersDb available for future direct order operations
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 import { randomUUID } from "crypto";

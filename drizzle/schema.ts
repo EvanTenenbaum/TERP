@@ -137,6 +137,16 @@ export const paymentTermsEnum = mysqlEnum("paymentTerms", [
 ]);
 
 /**
+ * Ownership Type Enum (MEET-006)
+ * Defines how inventory is owned - consigned from vendor, office-owned, or sample
+ */
+export const ownershipTypeEnum = mysqlEnum("ownership_type", [
+  "CONSIGNED",     // Inventory consigned from vendor - payable due when sold
+  "OFFICE_OWNED",  // Office purchased outright - no payable to vendor
+  "SAMPLE",        // Sample inventory - not for sale
+]);
+
+/**
  * Vendors table
  * Represents suppliers/vendors who provide products
  * 
@@ -552,6 +562,7 @@ export const batches = mysqlTable(
     unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
     unitCogsMax: varchar("unitCogsMax", { length: 20 }), // RANGE
     paymentTerms: paymentTermsEnum.notNull(),
+    ownershipType: ownershipTypeEnum.notNull().default("CONSIGNED"), // MEET-006: Track inventory ownership
     amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
     metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
 
@@ -2153,6 +2164,186 @@ export type PricingProfile = typeof pricingProfiles.$inferSelect;
 export type InsertPricingProfile = typeof pricingProfiles.$inferInsert;
 
 /**
+ * Order Price Adjustments (FEAT-004-BE)
+ * Tracks all price adjustments made during order creation for audit trail
+ */
+export const orderPriceAdjustmentTypeEnum = mysqlEnum(
+  "order_price_adjustment_type",
+  ["ITEM", "CATEGORY", "ORDER"]
+);
+
+export const orderPriceAdjustmentModeEnum = mysqlEnum(
+  "order_price_adjustment_mode",
+  ["PERCENT", "FIXED"]
+);
+
+export const orderPriceAdjustments = mysqlTable(
+  "order_price_adjustments",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderId: int("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    adjustmentType: orderPriceAdjustmentTypeEnum.notNull(),
+    targetId: int("target_id"), // productId for ITEM, null for CATEGORY/ORDER
+    targetCategory: varchar("target_category", { length: 100 }), // category name for CATEGORY type
+    adjustmentMode: orderPriceAdjustmentModeEnum.notNull(),
+    adjustmentValue: decimal("adjustment_value", {
+      precision: 10,
+      scale: 2,
+    }).notNull(), // negative for discount, positive for markup
+    originalPrice: decimal("original_price", { precision: 15, scale: 2 }),
+    adjustedPrice: decimal("adjusted_price", { precision: 15, scale: 2 }),
+    reason: text("reason"),
+    notes: text("notes"), // MEET-038: Notes on product pricing
+    adjustedBy: int("adjusted_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  table => ({
+    orderIdIdx: index("idx_opa_order").on(table.orderId),
+    adjustmentTypeIdx: index("idx_opa_type").on(table.adjustmentType),
+    targetCategoryIdx: index("idx_opa_category").on(table.targetCategory),
+  })
+);
+
+export type OrderPriceAdjustment = typeof orderPriceAdjustments.$inferSelect;
+export type InsertOrderPriceAdjustment =
+  typeof orderPriceAdjustments.$inferInsert;
+
+/**
+ * Variable Markup Rules (MEET-014)
+ * Configurable age-based and quantity-based markup/discount rules
+ */
+export const variableMarkupRules = mysqlTable(
+  "variable_markup_rules",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    profileId: int("profile_id").references(() => pricingProfiles.id, {
+      onDelete: "cascade",
+    }),
+    ruleType: mysqlEnum("rule_type", ["AGE", "QUANTITY"]).notNull(),
+    // For AGE: days threshold, For QUANTITY: units threshold
+    thresholdMin: int("threshold_min").notNull().default(0),
+    thresholdMax: int("threshold_max"), // null = unlimited
+    adjustmentMode: orderPriceAdjustmentModeEnum.notNull(),
+    adjustmentValue: decimal("adjustment_value", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    category: varchar("category", { length: 100 }), // Optional category filter
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  table => ({
+    profileIdIdx: index("idx_vmr_profile").on(table.profileId),
+    ruleTypeIdx: index("idx_vmr_type").on(table.ruleType),
+  })
+);
+
+export type VariableMarkupRule = typeof variableMarkupRules.$inferSelect;
+export type InsertVariableMarkupRule = typeof variableMarkupRules.$inferInsert;
+
+/**
+ * Credit Override Requests (FEAT-004-BE)
+ * Tracks credit limit override requests and approvals
+ */
+export const creditOverrideRequests = mysqlTable(
+  "credit_override_requests",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderId: int("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    clientId: int("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    requestedAmount: decimal("requested_amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+    availableCredit: decimal("available_credit", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+    shortfall: decimal("shortfall", { precision: 15, scale: 2 }).notNull(),
+    reason: text("reason").notNull(),
+    status: mysqlEnum("status", ["PENDING", "APPROVED", "REJECTED"])
+      .notNull()
+      .default("PENDING"),
+    requestedBy: int("requested_by")
+      .notNull()
+      .references(() => users.id),
+    reviewedBy: int("reviewed_by").references(() => users.id),
+    reviewNotes: text("review_notes"),
+    requestedAt: timestamp("requested_at").defaultNow(),
+    reviewedAt: timestamp("reviewed_at"),
+  },
+  table => ({
+    orderIdIdx: index("idx_cor_order").on(table.orderId),
+    clientIdIdx: index("idx_cor_client").on(table.clientId),
+    statusIdx: index("idx_cor_status").on(table.status),
+  })
+);
+
+export type CreditOverrideRequest = typeof creditOverrideRequests.$inferSelect;
+export type InsertCreditOverrideRequest =
+  typeof creditOverrideRequests.$inferInsert;
+
+/**
+ * Price History (MEET-061, MEET-062)
+ * Tracks historical prices for products by client
+ */
+export const priceHistory = mysqlTable(
+  "price_history",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    productId: int("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    batchId: int("batch_id").references(() => batches.id, {
+      onDelete: "set null",
+    }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }), // null for general price history
+    orderId: int("order_id").references(() => orders.id, {
+      onDelete: "set null",
+    }),
+    transactionType: mysqlEnum("transaction_type", [
+      "PURCHASE",
+      "SALE",
+    ]).notNull(),
+    unitPrice: decimal("unit_price", { precision: 15, scale: 4 }).notNull(),
+    quantity: decimal("quantity", { precision: 15, scale: 4 }).notNull(),
+    totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
+    // Supplier info for PURCHASE transactions
+    supplierId: int("supplier_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  table => ({
+    productIdIdx: index("idx_ph_product").on(table.productId),
+    clientIdIdx: index("idx_ph_client").on(table.clientId),
+    supplierIdIdx: index("idx_ph_supplier").on(table.supplierId),
+    transactionTypeIdx: index("idx_ph_type").on(table.transactionType),
+    createdAtIdx: index("idx_ph_created").on(table.createdAt),
+    // Composite index for last sale price lookup
+    productClientIdx: index("idx_ph_product_client").on(
+      table.productId,
+      table.clientId,
+      table.transactionType
+    ),
+  })
+);
+
+export type PriceHistory = typeof priceHistory.$inferSelect;
+export type InsertPriceHistory = typeof priceHistory.$inferInsert;
+
+/**
  * Sales Sheet Templates
  * Saved configurations for quick sales sheet creation
  */
@@ -2432,6 +2623,13 @@ export const orders = mysqlTable(
     convertedAt: timestamp("converted_at"),
     confirmedAt: timestamp("confirmed_at"),
     relatedSampleRequestId: int("related_sample_request_id"), // Link to sample request if order came from sample
+
+    // FEAT-004-BE: Credit Override fields
+    creditOverrideApproved: boolean("credit_override_approved").default(false),
+    creditOverrideBy: int("credit_override_by").references(() => users.id),
+    creditOverrideReason: text("credit_override_reason"),
+    creditOverrideRequestId: int("credit_override_request_id"),
+
     // USP: Soft delete support for orders
     deletedAt: timestamp("deleted_at"),
 
@@ -6553,6 +6751,220 @@ export const shiftAuditsRelations = relations(shiftAudits, ({ one }) => ({
   }),
   resetByUser: one(users, {
     fields: [shiftAudits.resetBy],
+    references: [users.id],
+  }),
+}));
+
+// ============================================================================
+// SPRINT 3 TRACK D: PAYABLES LOGIC (MEET-005, MEET-006, FEAT-007)
+// ============================================================================
+
+/**
+ * Vendor Payable Status Enum (MEET-005)
+ * Tracks the status of payables to vendors for consigned inventory
+ */
+export const vendorPayableStatusEnum = mysqlEnum("vendor_payable_status", [
+  "PENDING",  // Inventory still on hand, payable not yet due
+  "DUE",      // Inventory sold out, payable is now due to vendor
+  "PARTIAL",  // Some payment made, balance remaining
+  "PAID",     // Fully paid
+  "VOID",     // Voided (e.g., inventory returned or destroyed)
+]);
+
+/**
+ * Payable Notification Type Enum (MEET-005)
+ * Types of notifications for payables
+ */
+export const payableNotificationTypeEnum = mysqlEnum("payable_notification_type", [
+  "GRACE_PERIOD_WARNING",  // Warning before payable becomes due
+  "PAYABLE_DUE",           // Payable is now due
+  "PAYMENT_REMINDER",      // Reminder for outstanding payable
+  "OVERDUE",               // Payable is past due
+]);
+
+/**
+ * Vendor Payables Table (MEET-005)
+ * Tracks payables to vendors for consigned inventory
+ * When a consigned batch's inventory reaches zero, the payable becomes "DUE"
+ */
+export const vendorPayables = mysqlTable(
+  "vendor_payables",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    deletedAt: timestamp("deleted_at"),
+    version: int("version").notNull().default(1),
+
+    // Vendor reference (supplier client)
+    vendorClientId: int("vendor_client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "restrict" }),
+
+    // Batch reference
+    batchId: int("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "restrict" }),
+    lotId: int("lot_id")
+      .notNull()
+      .references(() => lots.id, { onDelete: "restrict" }),
+
+    // Payable details
+    payableNumber: varchar("payable_number", { length: 50 }).notNull().unique(),
+    unitsSold: decimal("units_sold", { precision: 15, scale: 2 }).notNull().default("0"),
+    cogsPerUnit: decimal("cogs_per_unit", { precision: 15, scale: 2 }).notNull(),
+    totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).notNull().default("0"),
+    amountDue: decimal("amount_due", { precision: 15, scale: 2 }).notNull().default("0"),
+
+    // Status tracking
+    status: vendorPayableStatusEnum.notNull().default("PENDING"),
+    dueDate: date("due_date"),
+    paidDate: date("paid_date"),
+
+    // Grace period tracking for notifications
+    inventoryZeroAt: timestamp("inventory_zero_at"),
+    notificationSentAt: timestamp("notification_sent_at"),
+    gracePeriodHours: int("grace_period_hours").notNull().default(24),
+
+    // Audit fields
+    notes: text("notes"),
+    createdBy: int("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    vendorIdx: index("idx_vendor_payables_vendor").on(table.vendorClientId),
+    batchIdx: index("idx_vendor_payables_batch").on(table.batchId),
+    statusIdx: index("idx_vendor_payables_status").on(table.status),
+    dueDateIdx: index("idx_vendor_payables_due_date").on(table.dueDate),
+  })
+);
+
+export type VendorPayable = typeof vendorPayables.$inferSelect;
+export type InsertVendorPayable = typeof vendorPayables.$inferInsert;
+
+/**
+ * Payable Notifications Table (MEET-005)
+ * Tracks notifications sent to accounting for due payables
+ */
+export const payableNotifications = mysqlTable(
+  "payable_notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    deletedAt: timestamp("deleted_at"),
+
+    payableId: int("payable_id")
+      .notNull()
+      .references(() => vendorPayables.id, { onDelete: "cascade" }),
+    notificationType: payableNotificationTypeEnum.notNull(),
+    sentToUserId: int("sent_to_user_id").references(() => users.id, { onDelete: "set null" }),
+    sentToRole: varchar("sent_to_role", { length: 50 }),
+
+    // Notification content
+    subject: varchar("subject", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+
+    // Status
+    sentAt: timestamp("sent_at").defaultNow().notNull(),
+    readAt: timestamp("read_at"),
+    acknowledgedBy: int("acknowledged_by").references(() => users.id, { onDelete: "set null" }),
+    acknowledgedAt: timestamp("acknowledged_at"),
+  },
+  table => ({
+    payableIdx: index("idx_payable_notifications_payable").on(table.payableId),
+    typeIdx: index("idx_payable_notifications_type").on(table.notificationType),
+  })
+);
+
+export type PayableNotification = typeof payableNotifications.$inferSelect;
+export type InsertPayableNotification = typeof payableNotifications.$inferInsert;
+
+/**
+ * Invoice Payments Junction Table (FEAT-007)
+ * Allows payments to be allocated across multiple invoices
+ * Supports partial payments and batch payment allocation
+ */
+export const invoicePayments = mysqlTable(
+  "invoice_payments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    deletedAt: timestamp("deleted_at"),
+
+    paymentId: int("payment_id")
+      .notNull()
+      .references(() => payments.id, { onDelete: "cascade" }),
+    invoiceId: int("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "restrict" }),
+    allocatedAmount: decimal("allocated_amount", { precision: 15, scale: 2 }).notNull(),
+
+    // Allocation metadata
+    allocatedAt: timestamp("allocated_at").defaultNow().notNull(),
+    allocatedBy: int("allocated_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    notes: text("notes"),
+  },
+  table => ({
+    paymentIdx: index("idx_invoice_payments_payment").on(table.paymentId),
+    invoiceIdx: index("idx_invoice_payments_invoice").on(table.invoiceId),
+    uniqueAllocation: uniqueIndex("uk_invoice_payments").on(table.paymentId, table.invoiceId),
+  })
+);
+
+export type InvoicePayment = typeof invoicePayments.$inferSelect;
+export type InsertInvoicePayment = typeof invoicePayments.$inferInsert;
+
+// Relations for vendor payables
+export const vendorPayablesRelations = relations(vendorPayables, ({ one, many }) => ({
+  vendor: one(clients, {
+    fields: [vendorPayables.vendorClientId],
+    references: [clients.id],
+  }),
+  batch: one(batches, {
+    fields: [vendorPayables.batchId],
+    references: [batches.id],
+  }),
+  lot: one(lots, {
+    fields: [vendorPayables.lotId],
+    references: [lots.id],
+  }),
+  createdByUser: one(users, {
+    fields: [vendorPayables.createdBy],
+    references: [users.id],
+  }),
+  notifications: many(payableNotifications),
+}));
+
+// Relations for payable notifications
+export const payableNotificationsRelations = relations(payableNotifications, ({ one }) => ({
+  payable: one(vendorPayables, {
+    fields: [payableNotifications.payableId],
+    references: [vendorPayables.id],
+  }),
+  sentToUser: one(users, {
+    fields: [payableNotifications.sentToUserId],
+    references: [users.id],
+  }),
+  acknowledgedByUser: one(users, {
+    fields: [payableNotifications.acknowledgedBy],
+    references: [users.id],
+  }),
+}));
+
+// Relations for invoice payments
+export const invoicePaymentsRelations = relations(invoicePayments, ({ one }) => ({
+  payment: one(payments, {
+    fields: [invoicePayments.paymentId],
+    references: [payments.id],
+  }),
+  invoice: one(invoices, {
+    fields: [invoicePayments.invoiceId],
+    references: [invoices.id],
+  }),
+  allocatedByUser: one(users, {
+    fields: [invoicePayments.allocatedBy],
     references: [users.id],
   }),
 }));
