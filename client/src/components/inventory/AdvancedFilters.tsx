@@ -160,7 +160,7 @@ export function AdvancedFilters({
             <Label>Stock Level</Label>
             <Select
               value={filters.stockLevel}
-              onValueChange={(value: any) => onUpdateFilter("stockLevel", value)}
+              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("stockLevel", value)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -266,6 +266,46 @@ export function AdvancedFilters({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status Filter */}
+          <div className="space-y-2">
+            <Label>Stock Status</Label>
+            <Select
+              value={filters.stockStatus}
+              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("stockStatus", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="OPTIMAL">Optimal</SelectItem>
+                <SelectItem value="LOW">Low Stock</SelectItem>
+                <SelectItem value="CRITICAL">Critical</SelectItem>
+                <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sprint 4 Track A: 4.A.2 ENH-001 - Age Bracket Filter */}
+          <div className="space-y-2">
+            <Label>Age Bracket</Label>
+            <Select
+              value={filters.ageBracket}
+              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("ageBracket", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Ages</SelectItem>
+                <SelectItem value="FRESH">Fresh (0-7 days)</SelectItem>
+                <SelectItem value="MODERATE">Moderate (8-14 days)</SelectItem>
+                <SelectItem value="AGING">Aging (15-30 days)</SelectItem>
+                <SelectItem value="CRITICAL">Critical (30+ days)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}

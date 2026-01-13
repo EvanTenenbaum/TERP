@@ -25,8 +25,13 @@ import {
   Pause,
   Edit,
   Download,
+  Image as ImageIcon,
   type LucideIcon,
 } from "lucide-react";
+// Sprint 4 Track A imports
+import { StockStatusBadge, type StockStatus } from "@/components/inventory/StockStatusBadge";
+import { AgingBadge, getAgingRowClass, type AgeBracket } from "@/components/inventory/AgingBadge";
+import { Toggle } from "@/components/ui/toggle";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
@@ -100,6 +105,19 @@ export default function Inventory() {
     new Set()
   );
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  // Sprint 4 Track A: 4.A.5 ENH-008 - Image toggle state
+  const [showImages, setShowImages] = useState(() => {
+    try {
+      return localStorage.getItem("terp-inventory-show-images") === "true";
+    } catch {
+      return false;
+    }
+  });
+  // Sprint 4 Track A: 4.A.2 ENH-001 - Use enhanced API
+  const [useEnhancedApi, _setUseEnhancedApi] = useState(true);
+  // Sprint 4 Track A: 4.A.2 - Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
   // Valid batch statuses for bulk operations
   const VALID_BATCH_STATUSES = [
     "AWAITING_INTAKE",
@@ -309,17 +327,110 @@ export default function Inventory() {
   // Debounce search query (150ms as per spec)
   const debouncedSearch = useDebounce(searchQuery, 150);
 
-  // Fetch inventory data
-  const { data: inventoryResponse, isLoading } = trpc.inventory.list.useQuery({
-    query: debouncedSearch || undefined,
-    limit: 1000, // Increased limit to show all inventory
+  // Sprint 4 Track A: 4.A.5 ENH-008 - Persist image toggle preference
+  useEffect(() => {
+    try {
+      localStorage.setItem("terp-inventory-show-images", showImages.toString());
+    } catch {
+      // Silently fail
+    }
+  }, [showImages]);
+
+  // Sprint 4 Track A: 4.A.2 ENH-001 - Fetch enhanced inventory data with pagination
+  const { data: enhancedResponse, isLoading: enhancedLoading } = trpc.inventory.getEnhanced.useQuery({
+    page: currentPage,
+    pageSize,
+    search: debouncedSearch || undefined,
+    status: filters.status.length > 0 ? filters.status : undefined,
+    category: filters.category || undefined,
+    vendor: filters.vendor.length > 0 ? filters.vendor : undefined,
+    brand: filters.brand.length > 0 ? filters.brand : undefined,
+    grade: filters.grade.length > 0 ? filters.grade : undefined,
+    stockStatus: filters.stockStatus !== "ALL" ? filters.stockStatus : undefined,
+    ageBracket: filters.ageBracket !== "ALL" ? filters.ageBracket : undefined,
+    batchId: filters.batchId || undefined,
+    sortBy: sortState.column === "product" ? "productName" :
+            sortState.column === "onHand" ? "onHand" :
+            sortState.column === "available" ? "available" :
+            sortState.column === "vendor" ? "vendor" :
+            sortState.column === "brand" ? "brand" :
+            sortState.column === "status" ? "status" :
+            sortState.column === "sku" ? "sku" : "sku",
+    sortOrder: sortState.direction || "desc",
+  }, {
+    enabled: useEnhancedApi,
   });
 
-  // Extract items from response (API returns { items, nextCursor, hasMore })
-  const inventoryData = useMemo(
-    () => inventoryResponse?.items ?? [],
-    [inventoryResponse]
-  );
+  // Fallback to legacy list API
+  const { data: legacyResponse, isLoading: legacyLoading } = trpc.inventory.list.useQuery({
+    query: debouncedSearch || undefined,
+    limit: 1000,
+  }, {
+    enabled: !useEnhancedApi,
+  });
+
+  const isLoading = useEnhancedApi ? enhancedLoading : legacyLoading;
+
+  // Extract items from response - handle both enhanced and legacy APIs
+  const inventoryData = useMemo(() => {
+    if (useEnhancedApi && enhancedResponse) {
+      // Transform enhanced API response to match legacy format for compatibility
+      return enhancedResponse.items.map(item => ({
+        batch: {
+          id: item.id,
+          sku: item.sku,
+          code: item.code,
+          batchStatus: item.status,
+          grade: item.grade,
+          onHandQty: item.onHandQty.toString(),
+          reservedQty: item.reservedQty.toString(),
+          quarantineQty: item.quarantineQty.toString(),
+          holdQty: item.holdQty.toString(),
+          unitCogs: item.unitCogs?.toString() || null,
+          createdAt: item.receivedDate,
+          // Sprint 4 Track A enhanced fields
+          ageDays: item.ageDays,
+          ageBracket: item.ageBracket,
+          stockStatus: item.stockStatus,
+          batchInfo: item.batchInfo,
+          lastMovementDate: item.lastMovementDate,
+        },
+        product: {
+          nameCanonical: item.productName,
+          category: item.category,
+          subcategory: item.subcategory,
+        },
+        vendor: {
+          name: item.vendorName,
+        },
+        brand: {
+          name: item.brandName,
+        },
+      }));
+    }
+    return legacyResponse?.items ?? [];
+  }, [useEnhancedApi, enhancedResponse, legacyResponse]);
+
+  // Sprint 4 Track A: Pagination info
+  const paginationInfo = useMemo(() => {
+    if (useEnhancedApi && enhancedResponse) {
+      return {
+        hasMore: enhancedResponse.pagination.hasMore,
+        page: enhancedResponse.pagination.page,
+        pageSize: enhancedResponse.pagination.pageSize,
+        totalItems: enhancedResponse.summary.totalItems,
+      };
+    }
+    return { hasMore: false, page: 1, pageSize: 1000, totalItems: inventoryData.length };
+  }, [useEnhancedApi, enhancedResponse, inventoryData.length]);
+
+  // Sprint 4 Track A: Summary stats from enhanced API
+  const summaryStats = useMemo(() => {
+    if (useEnhancedApi && enhancedResponse) {
+      return enhancedResponse.summary;
+    }
+    return null;
+  }, [useEnhancedApi, enhancedResponse]);
 
   // Fetch dashboard statistics
   const { data: dashboardStats } = trpc.inventory.dashboardStats.useQuery();
@@ -565,6 +676,16 @@ export default function Inventory() {
             className="pl-10"
           />
         </div>
+        {/* Sprint 4 Track A: 4.A.5 ENH-008 - Image Toggle */}
+        <Toggle
+          pressed={showImages}
+          onPressedChange={setShowImages}
+          aria-label="Toggle images"
+          className="gap-2"
+        >
+          <ImageIcon className="h-4 w-4" />
+          <span className="hidden sm:inline">Images</span>
+        </Toggle>
         {hasActiveFilters && (
           <Button
             variant="outline"
@@ -575,6 +696,28 @@ export default function Inventory() {
           </Button>
         )}
       </div>
+
+      {/* Sprint 4 Track A: Summary Stats */}
+      {summaryStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <p className="text-green-600 font-medium">Optimal</p>
+            <p className="text-2xl font-bold text-green-700">{summaryStats.byStockStatus.optimal}</p>
+          </div>
+          <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+            <p className="text-orange-600 font-medium">Low Stock</p>
+            <p className="text-2xl font-bold text-orange-700">{summaryStats.byStockStatus.low}</p>
+          </div>
+          <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+            <p className="text-red-600 font-medium">Critical</p>
+            <p className="text-2xl font-bold text-red-700">{summaryStats.byStockStatus.critical}</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+            <p className="text-gray-600 font-medium">Out of Stock</p>
+            <p className="text-2xl font-bold text-gray-700">{summaryStats.byStockStatus.outOfStock}</p>
+          </div>
+        </div>
+      )}
 
       {/* Advanced Filters */}
       <AdvancedFilters
@@ -776,19 +919,23 @@ export default function Inventory() {
                     Available
                   </SortControls>
                 </TableHead>
+                {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status Column */}
+                <TableHead>Stock Status</TableHead>
+                {/* Sprint 4 Track A: 4.A.3 MEET-024 - Age Column */}
+                <TableHead>Age</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
+                  <TableCell colSpan={14} className="text-center py-8">
                     Loading inventory...
                   </TableCell>
                 </TableRow>
               ) : !inventoryData || inventoryData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
+                  <TableCell colSpan={14} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2">
                       <Package className="h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
@@ -806,7 +953,7 @@ export default function Inventory() {
                 </TableRow>
               ) : filteredInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
+                  <TableCell colSpan={14} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2">
                       <Package className="h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
@@ -837,11 +984,20 @@ export default function Inventory() {
                   if (!batch) return null;
 
                   const available = calculateAvailable(batch);
+                  // Sprint 4 Track A: 4.A.2 ENH-001 - Get enhanced fields
+                  // Cast batch to extended type to access enhanced API fields
+                  interface EnhancedBatch { ageDays?: number; ageBracket?: AgeBracket; stockStatus?: StockStatus; }
+                  const enhancedBatch = batch as typeof batch & EnhancedBatch;
+                  const ageDays = enhancedBatch.ageDays ?? 0;
+                  const ageBracket = enhancedBatch.ageBracket;
+                  const stockStatus = enhancedBatch.stockStatus;
+                  // Sprint 4 Track A: 4.A.3 MEET-024 - Row highlighting for aging
+                  const rowHighlightClass = getAgingRowClass(ageDays);
 
                   return (
                     <TableRow
                       key={batch.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={`cursor-pointer hover:bg-muted/50 ${rowHighlightClass}`}
                     >
                       <TableCell
                         className="w-12"
@@ -919,6 +1075,22 @@ export default function Inventory() {
                           {available.toFixed(2)}
                         </span>
                       </TableCell>
+                      {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status */}
+                      <TableCell>
+                        {stockStatus ? (
+                          <StockStatusBadge status={stockStatus} showIcon={false} />
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      {/* Sprint 4 Track A: 4.A.3 MEET-024 - Age */}
+                      <TableCell>
+                        {ageDays > 0 ? (
+                          <AgingBadge ageDays={ageDays} ageBracket={ageBracket} variant="compact" />
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
@@ -953,6 +1125,35 @@ export default function Inventory() {
               )}
             </TableBody>
           </Table>
+          {/* Sprint 4 Track A: 4.A.2 ENH-001 - Pagination */}
+          {useEnhancedApi && paginationInfo && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, paginationInfo.totalItems)} of {paginationInfo.totalItems} items
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={!paginationInfo.hasMore}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile Card View */}
