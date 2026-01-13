@@ -116,6 +116,11 @@ function Router() {
         path="/shared/sales-sheet/:token"
         component={withErrorBoundary(SharedSalesSheetPage)}
       />
+      {/* FEAT-008: Public farmer verification page */}
+      <Route
+        path="/intake/verify/:token"
+        component={withErrorBoundary(FarmerVerification)}
+      />
       <Route
         path="/vip-portal/dashboard"
         component={withErrorBoundary(VIPDashboard)}

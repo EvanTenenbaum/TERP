@@ -66,6 +66,7 @@ import {
   Plus,
   CheckCircle,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -302,6 +303,13 @@ export default function ClientProfilePage() {
                   VIP Portal Config
                 </Button>
               )}
+              <Button
+                variant="outline"
+                onClick={() => setLocation(`/clients/${clientId}/ledger`)}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                View Ledger
+              </Button>
               <Button onClick={() => setEditDialogOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Client
