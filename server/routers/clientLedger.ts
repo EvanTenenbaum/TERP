@@ -676,12 +676,12 @@ export const clientLedgerRouter = router({
       const csvContent = [
         `Client Ledger: ${client.name} (${client.teriCode})`,
         `Generated: ${new Date().toISOString()}`,
-        input.startDate ? `Start Date: ${formatDateISO(input.startDate)}` : "",
-        input.endDate ? `End Date: ${formatDateISO(input.endDate)}` : "",
+        input.startDate ? `Start Date: ${formatDateISO(input.startDate)}` : null,
+        input.endDate ? `End Date: ${formatDateISO(input.endDate)}` : null,
         "",
         headers.join(","),
         ...rows.map(row => row.join(",")),
-      ].filter(line => line !== "" || line === "").join("\n");
+      ].filter((line): line is string => line !== null).join("\n");
 
       return {
         filename: `ledger_${client.teriCode}_${formatDateISO(new Date())}.csv`,

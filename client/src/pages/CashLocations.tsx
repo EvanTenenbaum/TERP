@@ -75,6 +75,8 @@ type Transaction = {
   description: string | null;
   referenceType: string | null;
   referenceId: number | null;
+  transferToLocationId: number | null;
+  transferFromLocationId: number | null;
   createdByName: string | null;
   createdAt: Date | null;
 };
@@ -677,6 +679,13 @@ export default function CashLocations() {
                               runningBalance -= tx.amount;
                             } else if (tx.transactionType === "OUT") {
                               runningBalance += tx.amount;
+                            } else if (tx.transactionType === "TRANSFER") {
+                              // Transfers: incoming if transferFromLocationId is set, outgoing if transferToLocationId is set
+                              if (tx.transferFromLocationId) {
+                                runningBalance -= tx.amount; // Incoming transfer
+                              } else if (tx.transferToLocationId) {
+                                runningBalance += tx.amount; // Outgoing transfer
+                              }
                             }
                           }
 
@@ -701,10 +710,14 @@ export default function CashLocations() {
                                 {tx.description || "-"}
                               </TableCell>
                               <TableCell className="text-right font-mono text-green-600">
-                                {tx.transactionType === "IN" ? formatCurrency(tx.amount) : "-"}
+                                {tx.transactionType === "IN" || (tx.transactionType === "TRANSFER" && tx.transferFromLocationId)
+                                  ? formatCurrency(tx.amount)
+                                  : "-"}
                               </TableCell>
                               <TableCell className="text-right font-mono text-red-600">
-                                {tx.transactionType === "OUT" ? formatCurrency(tx.amount) : "-"}
+                                {tx.transactionType === "OUT" || (tx.transactionType === "TRANSFER" && tx.transferToLocationId)
+                                  ? formatCurrency(tx.amount)
+                                  : "-"}
                               </TableCell>
                               <TableCell className="text-right font-mono font-medium">
                                 {formatCurrency(balances[idx])}

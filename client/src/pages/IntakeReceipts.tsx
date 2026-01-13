@@ -1131,7 +1131,7 @@ export default function IntakeReceipts() {
                       <TableCell>
                         <IntakeStatusBadge status={receipt.status as ReceiptStatus} />
                       </TableCell>
-                      <TableCell className="text-right">-</TableCell>
+                      <TableCell className="text-right">{receipt.itemCount ?? '-'}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm">
                           <ExternalLink className="h-4 w-4" />

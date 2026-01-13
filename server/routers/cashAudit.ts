@@ -719,6 +719,8 @@ export const cashAuditRouter = router({
           description: cashLocationTransactions.description,
           referenceType: cashLocationTransactions.referenceType,
           referenceId: cashLocationTransactions.referenceId,
+          transferToLocationId: cashLocationTransactions.transferToLocationId,
+          transferFromLocationId: cashLocationTransactions.transferFromLocationId,
           createdByName: users.name,
           createdAt: cashLocationTransactions.createdAt,
         })
@@ -742,33 +744,32 @@ export const cashAuditRouter = router({
 
       const csvRows = transactions.map((tx) => {
         const amount = Number(tx.amount || 0);
-        const inAmount = tx.transactionType === "IN" ||
-          (tx.transactionType === "TRANSFER" && tx.referenceType === "TRANSFER")
-          ? amount : "";
-        const outAmount = tx.transactionType === "OUT" ||
-          (tx.transactionType === "TRANSFER" && tx.referenceType === "TRANSFER")
-          ? amount : "";
 
-        // For transfers, determine if it's IN or OUT based on context
-        let displayIn = "";
-        let displayOut = "";
+        // Determine IN or OUT column based on transaction type
+        // For TRANSFER: check transferFromLocationId (incoming) vs transferToLocationId (outgoing)
+        let inAmount = "";
+        let outAmount = "";
         if (tx.transactionType === "IN") {
-          displayIn = amount.toFixed(2);
+          inAmount = amount.toFixed(2);
         } else if (tx.transactionType === "OUT") {
-          displayOut = amount.toFixed(2);
+          outAmount = amount.toFixed(2);
         } else if (tx.transactionType === "TRANSFER") {
-          // In the ledger context, transfers are recorded as both sides
-          // The amount field shows the transfer value
-          displayIn = amount.toFixed(2);
-          displayOut = amount.toFixed(2);
+          // Transfers have a direction based on the location perspective:
+          // - transferFromLocationId set = funds came FROM another location TO this one (IN)
+          // - transferToLocationId set = funds went TO another location FROM this one (OUT)
+          if (tx.transferFromLocationId) {
+            inAmount = amount.toFixed(2);
+          } else if (tx.transferToLocationId) {
+            outAmount = amount.toFixed(2);
+          }
         }
 
         return [
           tx.id,
           tx.createdAt ? new Date(tx.createdAt).toISOString() : "",
           tx.transactionType,
-          tx.transactionType === "IN" ? amount.toFixed(2) : "",
-          tx.transactionType === "OUT" ? amount.toFixed(2) : "",
+          inAmount,
+          outAmount,
           `"${(tx.description || "").replace(/"/g, '""')}"`,
           tx.referenceType || "",
           tx.referenceId || "",

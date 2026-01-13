@@ -311,7 +311,7 @@ export const intakeReceiptsRouter = router({
         conditions.push(like(intakeReceipts.receiptNumber, `%${input.search}%`));
       }
 
-      // Execute query
+      // Execute query with item count subquery
       const baseQuery = db
         .select({
           id: intakeReceipts.id,
@@ -326,6 +326,7 @@ export const intakeReceiptsRouter = router({
           createdAt: intakeReceipts.createdAt,
           updatedAt: intakeReceipts.updatedAt,
           supplierName: clients.name,
+          itemCount: sql<number>`(SELECT COUNT(*) FROM ${intakeReceiptItems} WHERE ${intakeReceiptItems.receiptId} = ${intakeReceipts.id})`,
         })
         .from(intakeReceipts)
         .leftJoin(clients, eq(intakeReceipts.supplierId, clients.id));
@@ -994,7 +995,15 @@ export const intakeReceiptsRouter = router({
         .limit(limit)
         .offset(offset);
 
-      return createSafeUnifiedResponse(receipts, -1, limit, offset);
+      // Get total count for pagination
+      const [countResult] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(intakeReceipts)
+        .where(statusFilter);
+
+      const total = countResult?.count ?? receipts.length;
+
+      return createSafeUnifiedResponse(receipts, total, limit, offset);
     }),
 
   /**
