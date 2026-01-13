@@ -105,6 +105,7 @@ import { spreadsheetRouter } from "./routers/spreadsheet";
 import { catalogRouter } from "./routers/catalog";
 import { organizationSettingsRouter } from "./routers/organizationSettings";
 import { cashAuditRouter } from "./routers/cashAudit";
+import { vendorPayablesRouter } from "./routers/vendorPayables"; // MEET-005: Payables Due When SKU Hits Zero
 
 import { healthRouter } from "./routers/health";
 
@@ -230,6 +231,7 @@ export const appRouter = router({
   catalog: catalogRouter, // INV-4: Catalog Publishing
   organizationSettings: organizationSettingsRouter, // FEAT-010 to FEAT-015: Organization Settings & Preferences
   cashAudit: cashAuditRouter, // FEAT-007: Cash Audit System
+  vendorPayables: vendorPayablesRouter, // MEET-005: Payables Due When SKU Hits Zero
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 

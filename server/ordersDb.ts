@@ -21,6 +21,8 @@ import {
   reverseOrderAccountingEntries,
 } from "./services/orderAccountingService";
 import { calculateAvailableQty } from "./inventoryUtils";
+// MEET-005: Import payables service for tracking vendor payables when inventory is sold
+import * as payablesService from "./services/payablesService";
 
 // ============================================================================
 // TYPES
@@ -313,10 +315,19 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         } else {
           // Reduce onHandQty
           await tx.update(batches)
-            .set({ 
-              onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}` 
+            .set({
+              onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}`
             })
             .where(eq(batches.id, item.batchId));
+
+          // MEET-005: Update payables tracking when inventory is sold
+          try {
+            await payablesService.updatePayableOnSale(item.batchId, item.quantity);
+            await payablesService.checkInventoryZeroThreshold(item.batchId);
+          } catch (payableError) {
+            // Log but don't fail the order - payables can be reconciled later
+            console.error("[MEET-005] Payables update error (non-fatal):", payableError);
+          }
         }
       }
 
@@ -1065,13 +1076,21 @@ export async function confirmDraftOrder(input: {
         });
       } else {
         await tx.update(batches)
-          .set({ 
-            onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}` 
+          .set({
+            onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}`
           })
           .where(eq(batches.id, item.batchId));
+
+        // MEET-005: Update payables tracking when inventory is sold
+        try {
+          await payablesService.updatePayableOnSale(item.batchId, item.quantity);
+          await payablesService.checkInventoryZeroThreshold(item.batchId);
+        } catch (payableError) {
+          console.error("[MEET-005] Payables update error (non-fatal):", payableError);
+        }
       }
     }
-    
+
     // 7. Get the confirmed order
     const confirmed = await tx
       .select()
