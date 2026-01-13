@@ -12,6 +12,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { accountingRouter } from "./routers/accounting";
 import { freeformNotesRouter } from "./routers/freeformNotes";
 import { clientsRouter } from "./routers/clients";
+import { clientLedgerRouter } from "./routers/clientLedger";
 import { creditRouter } from "./routers/credit";
 import { creditsRouter } from "./routers/credits";
 import { badDebtRouter } from "./routers/badDebt";
@@ -30,6 +31,7 @@ import { dashboardEnhancedRouter } from "./routers/dashboardEnhanced";
 import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
 import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
 import { productIntakeRouter } from "./routers/productIntake";
+import { intakeReceiptsRouter } from "./routers/intakeReceipts"; // FEAT-008: Intake Verification System
 import { orderEnhancementsRouter } from "./routers/orderEnhancements";
 import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
@@ -102,6 +104,7 @@ import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
 import { catalogRouter } from "./routers/catalog";
 import { organizationSettingsRouter } from "./routers/organizationSettings";
+import { cashAuditRouter } from "./routers/cashAudit";
 
 import { healthRouter } from "./routers/health";
 
@@ -134,6 +137,7 @@ export const appRouter = router({
   accounting: accountingRouter,
   freeformNotes: freeformNotesRouter,
   clients: clientsRouter,
+  clientLedger: clientLedgerRouter, // FEAT-009 / MEET-010: Client Ledger System
   credit: creditRouter,
   credits: creditsRouter,
   badDebt: badDebtRouter,
@@ -152,6 +156,7 @@ export const appRouter = router({
   salesSheetEnhancements: salesSheetEnhancementsRouter,
   advancedTagFeatures: advancedTagFeaturesRouter,
   productIntake: productIntakeRouter,
+  intakeReceipts: intakeReceiptsRouter, // FEAT-008: Intake Verification System (MEET-064 to MEET-066)
   orderEnhancements: orderEnhancementsRouter,
   clientNeeds: clientNeedsEnhancedRouter,
   vendorSupply: vendorSupplyRouter,
@@ -224,6 +229,7 @@ export const appRouter = router({
   spreadsheet: spreadsheetRouter,
   catalog: catalogRouter, // INV-4: Catalog Publishing
   organizationSettings: organizationSettingsRouter, // FEAT-010 to FEAT-015: Organization Settings & Preferences
+  cashAudit: cashAuditRouter, // FEAT-007: Cash Audit System
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 

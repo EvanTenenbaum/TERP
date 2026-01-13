@@ -13,3 +13,4 @@ export { TopStrainFamiliesWidget } from "./TopStrainFamiliesWidget";
 export { MatchmakingOpportunitiesWidget } from "./MatchmakingOpportunitiesWidget";
 export { WorkflowQueueWidget } from "./WorkflowQueueWidget";
 export { WorkflowActivityWidget } from "./WorkflowActivityWidget";
+export { AvailableCashWidget } from "./AvailableCashWidget";

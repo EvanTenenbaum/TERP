@@ -23,8 +23,10 @@ import Payments from "@/pages/accounting/Payments";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import Expenses from "@/pages/accounting/Expenses";
+import CashLocations from "@/pages/CashLocations";
 import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
+import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
@@ -46,6 +48,8 @@ import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
 import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
+import IntakeReceipts from "@/pages/IntakeReceipts"; // FEAT-008: Intake Verification System
+import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -111,6 +115,11 @@ function Router() {
       <Route
         path="/shared/sales-sheet/:token"
         component={withErrorBoundary(SharedSalesSheetPage)}
+      />
+      {/* FEAT-008: Public farmer verification page */}
+      <Route
+        path="/intake/verify/:token"
+        component={withErrorBoundary(FarmerVerification)}
       />
       <Route
         path="/vip-portal/dashboard"
@@ -194,6 +203,11 @@ function Router() {
                   path="/accounting/expenses"
                   component={withErrorBoundary(Expenses)}
                 />
+                {/* FEAT-007: Cash Audit System */}
+                <Route
+                  path="/accounting/cash-locations"
+                  component={withErrorBoundary(CashLocations)}
+                />
                 <Route
                   path="/clients"
                   component={withErrorBoundary(ClientsListPage)}
@@ -201,6 +215,14 @@ function Router() {
                 <Route
                   path="/clients/:id"
                   component={withErrorBoundary(ClientProfilePage)}
+                />
+                <Route
+                  path="/clients/:clientId/ledger"
+                  component={withErrorBoundary(ClientLedger)}
+                />
+                <Route
+                  path="/client-ledger"
+                  component={withErrorBoundary(ClientLedger)}
                 />
                 <Route path="/users" component={withErrorBoundary(UsersPage)} />
                 <Route
@@ -292,6 +314,11 @@ function Router() {
                 <Route
                   path="/locations"
                   component={withErrorBoundary(LocationsPage)}
+                />
+                {/* FEAT-008: Intake Verification System */}
+                <Route
+                  path="/intake-receipts"
+                  component={withErrorBoundary(IntakeReceipts)}
                 />
                 <Route
                   path="/matchmaking"
