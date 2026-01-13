@@ -12,7 +12,7 @@
 import { z } from "zod";
 import { router, adminProcedure, protectedProcedure, vipPortalProcedure } from "../_core/trpc";
 import { db } from "../db";
-import { clients, clientNeeds, batches, products, vendors, brands } from "../../drizzle/schema";
+import { clients, clientNeeds, batches, products, lots, vendors, brands } from "../../drizzle/schema";
 import { eq, desc, sql, and, gt, ne } from "drizzle-orm";
 
 // Default thresholds for stock alerts
@@ -304,7 +304,8 @@ export const alertsRouter = router({
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
-        .leftJoin(vendors, eq(products.vendorId, vendors.id))
+        .leftJoin(lots, eq(batches.lotId, lots.id))
+        .leftJoin(vendors, eq(lots.vendorId, vendors.id))
         .leftJoin(brands, eq(products.brandId, brands.id))
         .where(
           and(
