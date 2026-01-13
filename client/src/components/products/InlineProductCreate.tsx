@@ -1,12 +1,14 @@
 /**
- * InlineProductCreate Component - ENH-003
+ * InlineProductCreate Component - ENH-003, MEET-031
  * Quick product creation modal triggered from order forms
  *
  * Features:
- * - Minimal form: name, category, brand, supplier
+ * - Minimal form: name, category, brand, subcategory (no SKU field)
+ * - SKU/Product code auto-generated on backend (MEET-031)
+ * - Format: [CATEGORY]-[BRAND]-[SEQUENCE]
  * - Triggered when product not found during order entry
  * - Creates product and returns it for immediate use
- * - Success state with product details
+ * - Success state with product details and generated code
  * - Error handling with retry option
  */
 
