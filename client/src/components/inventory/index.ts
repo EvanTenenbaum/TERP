@@ -9,3 +9,6 @@ export { BatchMediaUpload } from "./BatchMediaUpload";
 export { StockStatusBadge, type StockStatus } from "./StockStatusBadge";
 export { AgingBadge, getAgeBracket, getAgingRowClass, type AgeBracket } from "./AgingBadge";
 export { BatchInfoPanel } from "./BatchInfoPanel";
+// Sprint 4 Track A: 4.A.8 WS-009 - Movement & Shrinkage Tracking
+export { MovementHistoryPanel } from "./MovementHistoryPanel";
+export { ShrinkageReport } from "./ShrinkageReport";
