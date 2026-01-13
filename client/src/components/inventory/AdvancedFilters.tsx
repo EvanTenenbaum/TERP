@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter, ChevronDown, ChevronUp, Hash } from "lucide-react";
 import type { InventoryFilters } from "@/hooks/useInventoryFilters";
 import { getBrandLabel } from "@/lib/nomenclature";
 
@@ -306,6 +307,20 @@ export function AdvancedFilters({
                 <SelectItem value="CRITICAL">Critical (30+ days)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Sprint 4 Track A: 4.A.6 MEET-023 - Batch ID Filter */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              <Hash className="h-4 w-4" />
+              Batch ID
+            </Label>
+            <Input
+              placeholder="Search by batch code..."
+              value={filters.batchId || ""}
+              onChange={(e) => onUpdateFilter("batchId", e.target.value || null)}
+              className="font-mono"
+            />
           </div>
         </div>
       )}

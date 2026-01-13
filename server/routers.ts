@@ -106,6 +106,8 @@ import { catalogRouter } from "./routers/catalog";
 import { organizationSettingsRouter } from "./routers/organizationSettings";
 import { cashAuditRouter } from "./routers/cashAudit";
 import { vendorPayablesRouter } from "./routers/vendorPayables"; // MEET-005: Payables Due When SKU Hits Zero
+import { schedulingRouter } from "./routers/scheduling"; // Sprint 4 Track D: Scheduling System
+import { client360Router } from "./routers/client360"; // Sprint 4 Track B: Client 360 View
 
 import { healthRouter } from "./routers/health";
 
@@ -232,6 +234,8 @@ export const appRouter = router({
   organizationSettings: organizationSettingsRouter, // FEAT-010 to FEAT-015: Organization Settings & Preferences
   cashAudit: cashAuditRouter, // FEAT-007: Cash Audit System
   vendorPayables: vendorPayablesRouter, // MEET-005: Payables Due When SKU Hits Zero
+  scheduling: schedulingRouter, // Sprint 4 Track D: Scheduling System (FEAT-005-BE, MEET-046, MEET-047, MEET-050, MEET-034)
+  client360: client360Router, // Sprint 4 Track B: Client 360 View (ENH-002, MEET-007, MEET-012, MEET-013, MEET-020, MEET-021, MEET-022, WS-011)
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 
