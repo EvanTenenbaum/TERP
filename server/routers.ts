@@ -12,6 +12,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { accountingRouter } from "./routers/accounting";
 import { freeformNotesRouter } from "./routers/freeformNotes";
 import { clientsRouter } from "./routers/clients";
+import { clientLedgerRouter } from "./routers/clientLedger";
 import { creditRouter } from "./routers/credit";
 import { creditsRouter } from "./routers/credits";
 import { badDebtRouter } from "./routers/badDebt";
@@ -135,6 +136,7 @@ export const appRouter = router({
   accounting: accountingRouter,
   freeformNotes: freeformNotesRouter,
   clients: clientsRouter,
+  clientLedger: clientLedgerRouter, // FEAT-009 / MEET-010: Client Ledger System
   credit: creditRouter,
   credits: creditsRouter,
   badDebt: badDebtRouter,

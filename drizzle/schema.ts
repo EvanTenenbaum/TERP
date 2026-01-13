@@ -6452,6 +6452,64 @@ export const cashLocations = mysqlTable(
 export type CashLocation = typeof cashLocations.$inferSelect;
 export type InsertCashLocation = typeof cashLocations.$inferInsert;
 
+/**
+ * Cash Location Transactions Table
+ * Records all cash movements (IN, OUT, TRANSFER) with audit trail
+ * Feature: MEET-002 Multi-Location Cash Tracking
+ */
+export const cashLocationTransactions = mysqlTable(
+  "cash_location_transactions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    locationId: int("location_id").references(() => cashLocations.id),
+    transactionType: varchar("transaction_type", { length: 20 }).notNull(), // 'IN', 'OUT', 'TRANSFER'
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    description: text("description"),
+    referenceType: varchar("reference_type", { length: 50 }), // 'ORDER', 'VENDOR_PAYMENT', 'TRANSFER', 'MANUAL'
+    referenceId: int("reference_id"),
+    // For transfers: the other location involved
+    transferToLocationId: int("transfer_to_location_id").references(() => cashLocations.id),
+    transferFromLocationId: int("transfer_from_location_id").references(() => cashLocations.id),
+    createdBy: int("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  table => ({
+    locationIdIdx: index("idx_cash_loc_tx_location").on(table.locationId),
+    typeIdx: index("idx_cash_loc_tx_type").on(table.transactionType),
+    createdAtIdx: index("idx_cash_loc_tx_created").on(table.createdAt),
+    referenceIdx: index("idx_cash_loc_tx_reference").on(table.referenceType, table.referenceId),
+  })
+);
+
+export type CashLocationTransaction = typeof cashLocationTransactions.$inferSelect;
+export type InsertCashLocationTransaction = typeof cashLocationTransactions.$inferInsert;
+
+// Relations for cash audit module
+export const cashLocationsRelations = relations(cashLocations, ({ many }) => ({
+  transactions: many(cashLocationTransactions),
+}));
+
+export const cashLocationTransactionsRelations = relations(cashLocationTransactions, ({ one }) => ({
+  location: one(cashLocations, {
+    fields: [cashLocationTransactions.locationId],
+    references: [cashLocations.id],
+  }),
+  createdByUser: one(users, {
+    fields: [cashLocationTransactions.createdBy],
+    references: [users.id],
+  }),
+  transferToLocation: one(cashLocations, {
+    fields: [cashLocationTransactions.transferToLocationId],
+    references: [cashLocations.id],
+    relationName: "transferTo",
+  }),
+  transferFromLocation: one(cashLocations, {
+    fields: [cashLocationTransactions.transferFromLocationId],
+    references: [cashLocations.id],
+    relationName: "transferFrom",
+  }),
+}));
+
 // ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)
 // ============================================================================
@@ -6551,4 +6609,212 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   orders: many(orders),
   invoices: many(invoices),
   payments: many(payments),
+}));
+
+// ============================================================================
+// INTAKE VERIFICATION SYSTEM (FEAT-008: MEET-064 to MEET-066)
+// ============================================================================
+
+/**
+ * Intake Receipt Status Enum
+ * Tracks the lifecycle of an intake receipt through verification
+ */
+export const intakeReceiptStatusEnum = mysqlEnum("intake_receipt_status", [
+  "PENDING",          // Initial state - awaiting farmer verification
+  "FARMER_VERIFIED",  // Farmer has acknowledged the receipt
+  "STACKER_VERIFIED", // Stacker has verified actual quantities
+  "FINALIZED",        // Both parties verified, inventory updated
+  "DISPUTED",         // Discrepancy requires admin resolution
+]);
+
+/**
+ * Intake Receipt Verification Status Enum
+ * Status for individual line items
+ */
+export const intakeVerificationStatusEnum = mysqlEnum("intake_verification_status", [
+  "PENDING",     // Not yet verified
+  "VERIFIED",    // Verified as correct
+  "DISCREPANCY", // Quantity mismatch found
+]);
+
+/**
+ * Intake Discrepancy Resolution Enum
+ * How a discrepancy was resolved
+ */
+export const intakeResolutionEnum = mysqlEnum("intake_resolution", [
+  "ACCEPTED",  // Accept actual quantity
+  "ADJUSTED",  // Adjust to expected quantity
+  "REJECTED",  // Reject the item entirely
+]);
+
+/**
+ * Intake Receipts Table
+ * Primary document for intake verification workflow
+ * FEAT-008: MEET-064 - Intake Receipt Tool
+ */
+export const intakeReceipts = mysqlTable(
+  "intake_receipts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    receiptNumber: varchar("receipt_number", { length: 50 }).notNull().unique(),
+    supplierId: int("supplier_id").references(() => clients.id),
+    status: varchar("status", { length: 30 }).notNull().default("PENDING"),
+    // Status: 'PENDING', 'FARMER_VERIFIED', 'STACKER_VERIFIED', 'FINALIZED', 'DISPUTED'
+
+    // Farmer verification
+    farmerVerifiedAt: timestamp("farmer_verified_at"),
+    farmerVerifiedBy: int("farmer_verified_by").references(() => users.id),
+
+    // Stacker verification
+    stackerVerifiedAt: timestamp("stacker_verified_at"),
+    stackerVerifiedBy: int("stacker_verified_by").references(() => users.id),
+
+    // Finalization
+    finalizedAt: timestamp("finalized_at"),
+    finalizedBy: int("finalized_by").references(() => users.id),
+
+    // Additional info
+    notes: text("notes"),
+    shareableToken: varchar("shareable_token", { length: 100 }),
+
+    // Track creator for discrepancy notifications
+    createdBy: int("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    supplierIdx: index("idx_intake_receipts_supplier").on(table.supplierId),
+    statusIdx: index("idx_intake_receipts_status").on(table.status),
+    createdIdx: index("idx_intake_receipts_created").on(table.createdAt),
+    tokenIdx: index("idx_intake_receipts_token").on(table.shareableToken),
+  })
+);
+
+export type IntakeReceipt = typeof intakeReceipts.$inferSelect;
+export type InsertIntakeReceipt = typeof intakeReceipts.$inferInsert;
+
+/**
+ * Intake Receipt Items Table
+ * Line items for an intake receipt
+ * FEAT-008: MEET-064 - Intake Receipt Tool
+ */
+export const intakeReceiptItems = mysqlTable(
+  "intake_receipt_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    receiptId: int("receipt_id")
+      .notNull()
+      .references(() => intakeReceipts.id, { onDelete: "cascade" }),
+    productId: int("product_id").references(() => products.id),
+    productName: varchar("product_name", { length: 255 }).notNull(),
+    expectedQuantity: decimal("expected_quantity", { precision: 12, scale: 4 }).notNull(),
+    actualQuantity: decimal("actual_quantity", { precision: 12, scale: 4 }),
+    unit: varchar("unit", { length: 20 }).notNull(),
+    expectedPrice: decimal("expected_price", { precision: 12, scale: 2 }),
+    verificationStatus: varchar("verification_status", { length: 20 }).default("PENDING"),
+    // Status: 'PENDING', 'VERIFIED', 'DISCREPANCY'
+    discrepancyNotes: text("discrepancy_notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    receiptIdx: index("idx_intake_receipt_items_receipt").on(table.receiptId),
+    productIdx: index("idx_intake_receipt_items_product").on(table.productId),
+  })
+);
+
+export type IntakeReceiptItem = typeof intakeReceiptItems.$inferSelect;
+export type InsertIntakeReceiptItem = typeof intakeReceiptItems.$inferInsert;
+
+/**
+ * Intake Discrepancies Table
+ * Records discrepancies found during verification
+ * FEAT-008: MEET-065 - Verification Process
+ */
+export const intakeDiscrepancies = mysqlTable(
+  "intake_discrepancies",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    receiptId: int("receipt_id")
+      .notNull()
+      .references(() => intakeReceipts.id, { onDelete: "cascade" }),
+    itemId: int("item_id")
+      .notNull()
+      .references(() => intakeReceiptItems.id, { onDelete: "cascade" }),
+    expectedQuantity: decimal("expected_quantity", { precision: 12, scale: 4 }),
+    actualQuantity: decimal("actual_quantity", { precision: 12, scale: 4 }),
+    difference: decimal("difference", { precision: 12, scale: 4 }),
+    resolution: varchar("resolution", { length: 50 }),
+    // Resolution: 'ACCEPTED', 'ADJUSTED', 'REJECTED'
+    resolutionNotes: text("resolution_notes"),
+    resolvedBy: int("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    receiptIdx: index("idx_intake_discrepancies_receipt").on(table.receiptId),
+    itemIdx: index("idx_intake_discrepancies_item").on(table.itemId),
+    resolutionIdx: index("idx_intake_discrepancies_resolution").on(table.resolution),
+  })
+);
+
+export type IntakeDiscrepancy = typeof intakeDiscrepancies.$inferSelect;
+export type InsertIntakeDiscrepancy = typeof intakeDiscrepancies.$inferInsert;
+
+// Relations for intake receipts
+export const intakeReceiptsRelations = relations(intakeReceipts, ({ one, many }) => ({
+  supplier: one(clients, {
+    fields: [intakeReceipts.supplierId],
+    references: [clients.id],
+  }),
+  creator: one(users, {
+    fields: [intakeReceipts.createdBy],
+    references: [users.id],
+    relationName: "intakeReceiptCreator",
+  }),
+  farmerVerifier: one(users, {
+    fields: [intakeReceipts.farmerVerifiedBy],
+    references: [users.id],
+    relationName: "intakeReceiptFarmerVerifier",
+  }),
+  stackerVerifier: one(users, {
+    fields: [intakeReceipts.stackerVerifiedBy],
+    references: [users.id],
+    relationName: "intakeReceiptStackerVerifier",
+  }),
+  finalizer: one(users, {
+    fields: [intakeReceipts.finalizedBy],
+    references: [users.id],
+    relationName: "intakeReceiptFinalizer",
+  }),
+  items: many(intakeReceiptItems),
+  discrepancies: many(intakeDiscrepancies),
+}));
+
+// Relations for intake receipt items
+export const intakeReceiptItemsRelations = relations(intakeReceiptItems, ({ one, many }) => ({
+  receipt: one(intakeReceipts, {
+    fields: [intakeReceiptItems.receiptId],
+    references: [intakeReceipts.id],
+  }),
+  product: one(products, {
+    fields: [intakeReceiptItems.productId],
+    references: [products.id],
+  }),
+  discrepancies: many(intakeDiscrepancies),
+}));
+
+// Relations for intake discrepancies
+export const intakeDiscrepanciesRelations = relations(intakeDiscrepancies, ({ one }) => ({
+  receipt: one(intakeReceipts, {
+    fields: [intakeDiscrepancies.receiptId],
+    references: [intakeReceipts.id],
+  }),
+  item: one(intakeReceiptItems, {
+    fields: [intakeDiscrepancies.itemId],
+    references: [intakeReceiptItems.id],
+  }),
+  resolver: one(users, {
+    fields: [intakeDiscrepancies.resolvedBy],
+    references: [users.id],
+  }),
 }));
