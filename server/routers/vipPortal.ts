@@ -28,6 +28,7 @@ import {
 import * as liveCatalogService from "../services/liveCatalogService";
 import * as pricingEngine from "../pricingEngine";
 import * as priceAlertsService from "../services/priceAlertsService";
+import * as vipDebtAgingService from "../services/vipDebtAgingService";
 import { eq, and, desc, gte, lte, sql, like, or, inArray, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
@@ -720,7 +721,7 @@ export const vipPortalRouter = router({
         const { clientId, search, status } = input;
         
         // Build query conditions
-        let conditions = [eq(invoices.customerId, clientId)];
+        const conditions = [eq(invoices.customerId, clientId)];
         
         if (search) {
           conditions.push(like(invoices.invoiceNumber, `%${search}%`));
@@ -778,7 +779,7 @@ export const vipPortalRouter = router({
         const { clientId, search, status } = input;
         
         // Build query conditions
-        let conditions = [eq(bills.vendorId, clientId)];
+        const conditions = [eq(bills.vendorId, clientId)];
         
         if (search) {
           conditions.push(like(bills.billNumber, `%${search}%`));
@@ -837,7 +838,7 @@ export const vipPortalRouter = router({
         const { clientId, search, type, status } = input;
         
         // Build query conditions
-        let conditions = [eq(clientTransactions.clientId, clientId)];
+        const conditions = [eq(clientTransactions.clientId, clientId)];
         
         if (search) {
           conditions.push(like(clientTransactions.transactionNumber, `%${search}%`));
@@ -2328,6 +2329,35 @@ export const vipPortalRouter = router({
 
           return result;
         }),
+    }),
+
+    // ============================================================================
+    // Sprint 5 Track A - Task 5.A.2: MEET-041 - VIP Debt Aging
+    // ============================================================================
+    debtAging: router({
+      /**
+       * Get debt aging summary for the current VIP client
+       */
+      getSummary: vipPortalProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.clientId;
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        return await vipDebtAgingService.getClientDebtAgingSummary(clientId);
+      }),
+
+      /**
+       * Get next scheduled notification for the current VIP client
+       */
+      getNextNotification: vipPortalProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.clientId;
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        return await vipDebtAgingService.getNextScheduledNotification(clientId);
+      }),
     }),
   }),
 });
