@@ -43,7 +43,7 @@ export const productCatalogueRouter = router({
     .input(listInputSchema)
     .query(async ({ input, ctx }) => {
       // Debug logging for QA-049
-      console.log('[productCatalogue.list] Input:', {
+      console.info("[productCatalogue.list] Input:", {
         limit: input.limit,
         offset: input.offset,
         search: input.search,
@@ -64,15 +64,22 @@ export const productCatalogueRouter = router({
       });
 
       // Debug logging for QA-049
-      console.log('[productCatalogue.list] Result:', {
+      console.info("[productCatalogue.list] Result:", {
         productsCount: products.length,
         total,
         hasProducts: products.length > 0,
       });
 
       // Warn if unexpected empty result
-      if (products.length === 0 && !input.search && !input.category && !input.brandId) {
-        console.warn('[productCatalogue.list] Zero products returned with no filters - possible data issue');
+      if (
+        products.length === 0 &&
+        !input.search &&
+        !input.category &&
+        !input.brandId
+      ) {
+        console.warn(
+          "[productCatalogue.list] Zero products returned with no filters - possible data issue"
+        );
       }
 
       return createSafeUnifiedResponse(
@@ -217,7 +224,7 @@ export const productCatalogueRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        console.log("[productCatalogue.quickCreate] Creating product:", {
+        console.info("[productCatalogue.quickCreate] Creating product:", {
           name: input.name,
           category: input.category,
           brandId: input.brandId,
@@ -234,9 +241,12 @@ export const productCatalogueRouter = router({
         });
 
         if (result.isDuplicate) {
-          console.log("[productCatalogue.quickCreate] Found duplicate product:", result.id);
+          console.info(
+            "[productCatalogue.quickCreate] Found duplicate product:",
+            result.id
+          );
         } else {
-          console.log("[productCatalogue.quickCreate] Created new product:", {
+          console.info("[productCatalogue.quickCreate] Created new product:", {
             id: result.id,
             generatedCode: result.generatedCode,
           });
@@ -254,7 +264,8 @@ export const productCatalogueRouter = router({
         console.error("[productCatalogue.quickCreate] Error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to create product",
+          message:
+            error instanceof Error ? error.message : "Failed to create product",
         });
       }
     }),
@@ -328,7 +339,10 @@ export const productCatalogueRouter = router({
       } catch (error) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: error instanceof Error ? error.message : "Failed to update product name",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to update product name",
         });
       }
     }),
