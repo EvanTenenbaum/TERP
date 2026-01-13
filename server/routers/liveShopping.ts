@@ -974,4 +974,312 @@ export const liveShoppingRouter = router({
         };
       });
     }),
+
+  // ==========================================================================
+  // ACTIVE SESSIONS (MEET-075-BE)
+  // ==========================================================================
+
+  /**
+   * Get all active sessions across the organization
+   */
+  getActive: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const sessions = await db
+        .select({
+          id: liveShoppingSessions.id,
+          title: liveShoppingSessions.title,
+          status: liveShoppingSessions.status,
+          roomCode: liveShoppingSessions.roomCode,
+          startedAt: liveShoppingSessions.startedAt,
+          expiresAt: liveShoppingSessions.expiresAt,
+          timeoutSeconds: liveShoppingSessions.timeoutSeconds,
+          lastActivityAt: liveShoppingSessions.lastActivityAt,
+          clientId: liveShoppingSessions.clientId,
+          clientName: clients.name,
+          hostUserId: liveShoppingSessions.hostUserId,
+          hostName: users.name,
+          itemCount: sql<number>`(SELECT COUNT(*) FROM ${sessionCartItems} WHERE ${sessionCartItems.sessionId} = ${liveShoppingSessions.id})`,
+          cartValue: sql<string>`(SELECT COALESCE(SUM(${sessionCartItems.quantity} * ${sessionCartItems.unitPrice}), 0) FROM ${sessionCartItems} WHERE ${sessionCartItems.sessionId} = ${liveShoppingSessions.id})`,
+        })
+        .from(liveShoppingSessions)
+        .leftJoin(clients, eq(liveShoppingSessions.clientId, clients.id))
+        .leftJoin(users, eq(liveShoppingSessions.hostUserId, users.id))
+        .where(inArray(liveShoppingSessions.status, ["ACTIVE", "PAUSED"]))
+        .orderBy(desc(liveShoppingSessions.startedAt));
+
+      const now = new Date();
+      return sessions.map((session) => ({
+        ...session,
+        remainingSeconds: session.expiresAt
+          ? Math.max(0, Math.floor((session.expiresAt.getTime() - now.getTime()) / 1000))
+          : -1,
+        isNearingTimeout:
+          session.expiresAt && session.expiresAt.getTime() - now.getTime() < 300000,
+      }));
+    }),
+
+  // ==========================================================================
+  // SESSION TIMEOUT MANAGEMENT (MEET-075-BE)
+  // ==========================================================================
+
+  getTimeoutStatus: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      return await sessionTimeoutService.getTimeoutStatus(input.sessionId);
+    }),
+
+  extendTimeout: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        additionalMinutes: z.number().min(1).max(240).default(60),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const additionalSeconds = input.additionalMinutes * 60;
+      return await sessionTimeoutService.extendTimeout(input.sessionId, additionalSeconds);
+    }),
+
+  configureTimeout: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        timeoutMinutes: z.number().min(0).max(480),
+        autoReleaseEnabled: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const timeoutSeconds = input.timeoutMinutes * 60;
+      await sessionTimeoutService.setSessionTimeout(input.sessionId, {
+        timeoutSeconds,
+        autoReleaseEnabled: input.autoReleaseEnabled,
+      });
+      return await sessionTimeoutService.getTimeoutStatus(input.sessionId);
+    }),
+
+  disableTimeout: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input }) => {
+      await sessionTimeoutService.disableTimeout(input.sessionId);
+      return { success: true };
+    }),
+
+  // ==========================================================================
+  // WAREHOUSE PICK LIST (MEET-075-BE)
+  // ==========================================================================
+
+  getConsolidatedPickList: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      return await sessionPickListService.getConsolidatedPickList();
+    }),
+
+  getSessionPickList: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      return await sessionPickListService.getSessionPickList(input.sessionId);
+    }),
+
+  getActiveSessionsSummary: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      return await sessionPickListService.getActiveSessionsSummary();
+    }),
+
+  // ==========================================================================
+  // SESSION NOTES/COMMENTS (MEET-075-BE)
+  // ==========================================================================
+
+  updateSessionNotes: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        notes: z.string().max(5000),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+      const timestamp = new Date().toISOString();
+
+      await db.update(liveShoppingSessions)
+        .set({
+          internalNotes: input.notes,
+          lastActivityAt: new Date(),
+        })
+        .where(eq(liveShoppingSessions.id, input.sessionId));
+
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NOTES_UPDATED",
+        payload: {
+          sessionId: input.sessionId,
+          notes: input.notes,
+          updatedBy: userId,
+          timestamp,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  getSessionNotes: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+        columns: {
+          internalNotes: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!session) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      }
+
+      return {
+        notes: session.internalNotes || "",
+        lastUpdated: session.updatedAt,
+      };
+    }),
+
+  // ==========================================================================
+  // ENHANCED CANCEL SESSION (MEET-075-BE)
+  // ==========================================================================
+
+  cancelSession: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+      const now = new Date();
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      }
+
+      if (session.status === "CONVERTED" || session.status === "CANCELLED") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Session is already ${session.status.toLowerCase()}`,
+        });
+      }
+
+      const cartItems = await db
+        .select({
+          id: sessionCartItems.id,
+          batchId: sessionCartItems.batchId,
+          quantity: sessionCartItems.quantity,
+        })
+        .from(sessionCartItems)
+        .where(eq(sessionCartItems.sessionId, input.sessionId));
+
+      const cancellationNote = input.reason
+        ? `[CANCELLED] ${now.toISOString()} by user ${userId}: ${input.reason}`
+        : `[CANCELLED] ${now.toISOString()} by user ${userId}`;
+
+      await db.update(liveShoppingSessions)
+        .set({
+          status: "CANCELLED",
+          endedAt: now,
+          internalNotes: sql`CONCAT(COALESCE(${liveShoppingSessions.internalNotes}, ''), '\n', ${cancellationNote})`,
+        })
+        .where(eq(liveShoppingSessions.id, input.sessionId));
+
+      sessionEventManager.emitStatusChange(input.sessionId, "CANCELLED");
+
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "SESSION_CANCELLED",
+        payload: {
+          sessionId: input.sessionId,
+          reason: input.reason,
+          cancelledBy: userId,
+          releasedItems: cartItems.length,
+          timestamp: now.toISOString(),
+        },
+      });
+
+      await sessionPickListService.notifyPickListUpdate(input.sessionId, "ITEM_REMOVED");
+
+      return {
+        success: true,
+        releasedItems: cartItems.length,
+        message: `Session cancelled. ${cartItems.length} items released from soft hold.`,
+      };
+    }),
+
+  // ==========================================================================
+  // ENHANCED CREDIT CHECK (MEET-075-BE)
+  // ==========================================================================
+
+  getDetailedCreditStatus: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const creditResult = await sessionCreditService.validateCartCredit(
+        input.sessionId,
+        session.clientId
+      );
+
+      const exposure = await sessionCreditService.getDraftExposure(input.sessionId);
+
+      const cart = await sessionCartService.getCart(input.sessionId);
+      const toPurchaseItems = cart.items.filter((i) => i.itemStatus === "TO_PURCHASE");
+      const toPurchaseValue = toPurchaseItems.reduce(
+        (sum, i) => sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+        0
+      );
+
+      return {
+        ...creditResult,
+        breakdown: {
+          toPurchaseValue,
+          interestedValue: exposure.totalCartValue - toPurchaseValue - exposure.sampleValue,
+          sampleValue: exposure.sampleValue,
+          totalCartValue: exposure.totalCartValue,
+          toPurchaseCount: toPurchaseItems.length,
+          totalItemCount: cart.itemCount,
+        },
+        percentUtilized: creditResult.creditLimit > 0
+          ? ((creditResult.projectedExposure / creditResult.creditLimit) * 100).toFixed(1)
+          : "N/A",
+      };
+    }),
 });
