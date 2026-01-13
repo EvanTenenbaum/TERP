@@ -44,7 +44,9 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Available Cash</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            Available Cash
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -82,7 +84,7 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
           </div>
         ) : error ? (
           <EmptyState
-            variant="error"
+            variant="generic"
             size="sm"
             title="Unable to load cash data"
             description="Please try refreshing the page"
@@ -114,7 +116,9 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
                 <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Scheduled Payables</p>
+                <p className="text-sm text-muted-foreground">
+                  Scheduled Payables
+                </p>
                 <p className="text-lg font-semibold text-amber-600 dark:text-amber-400 font-mono">
                   {formatCurrency(data.scheduledPayables)}
                 </p>
@@ -131,7 +135,9 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
                 <p
                   className={cn(
                     "text-xl font-bold font-mono",
-                    data.availableCash >= 0 ? "text-primary" : "text-destructive"
+                    data.availableCash >= 0
+                      ? "text-primary"
+                      : "text-destructive"
                   )}
                 >
                   {formatCurrency(data.availableCash)}

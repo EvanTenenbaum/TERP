@@ -25,7 +25,7 @@ import {
   clientLedgerAdjustments,
   users,
 } from "../../drizzle/schema";
-import { eq, and, lte, gte, inArray, desc, asc, sql, isNull } from "drizzle-orm";
+import { eq, and, inArray, sql, isNull } from "drizzle-orm";
 import { logger } from "../_core/logger";
 
 // ============================================================================
@@ -37,22 +37,24 @@ import { logger } from "../_core/logger";
  * Direction: Debit (+) = increases what they owe, Credit (-) = decreases what they owe
  */
 type LedgerTransactionType =
-  | "SALE"              // Debit (+) - from orders
-  | "PURCHASE"          // Credit (-) - from purchase_orders
-  | "PAYMENT_RECEIVED"  // Credit (-) - from payments (received from client)
-  | "PAYMENT_SENT"      // Debit (+) - from payments (sent to client as supplier)
-  | "CREDIT"            // Credit (-) - manual credit adjustment
-  | "DEBIT";            // Debit (+) - manual debit adjustment
+  | "SALE" // Debit (+) - from orders
+  | "PURCHASE" // Credit (-) - from purchase_orders
+  | "PAYMENT_RECEIVED" // Credit (-) - from payments (received from client)
+  | "PAYMENT_SENT" // Debit (+) - from payments (sent to client as supplier)
+  | "PAYMENT" // Credit (-) - alias for PAYMENT_RECEIVED (used in export)
+  | "CREDIT" // Credit (-) - manual credit adjustment
+  | "DEBIT"; // Debit (+) - manual debit adjustment
 
 interface LedgerTransaction {
-  id: string;            // Unique identifier (source_type:id format)
+  id: string; // Unique identifier (source_type:id format)
   date: Date;
   type: LedgerTransactionType;
   description: string;
   referenceType?: string;
   referenceId?: number;
-  debitAmount?: number;
-  creditAmount?: number;
+  referenceNumber?: string; // Optional reference number
+  debitAmount: number;
+  creditAmount: number;
   runningBalance: number;
   createdBy: string;
 }
@@ -118,9 +120,16 @@ export const clientLedgerRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      logger.info({ msg: "[ClientLedger] Getting ledger", clientId: input.clientId });
+      logger.info({
+        msg: "[ClientLedger] Getting ledger",
+        clientId: input.clientId,
+      });
 
       // Get client info
       const [client] = await db
@@ -137,7 +146,9 @@ export const clientLedgerRouter = router({
       }
 
       // Build date filter conditions
-      const startDateStr = input.startDate ? formatDateISO(input.startDate) : null;
+      const startDateStr = input.startDate
+        ? formatDateISO(input.startDate)
+        : null;
       const endDateStr = input.endDate ? formatDateISO(input.endDate) : null;
 
       // Collect all transactions from different sources
@@ -161,7 +172,7 @@ export const clientLedgerRouter = router({
             eq(orders.orderType, "SALE"),
             isNull(orders.deletedAt),
             // Only include confirmed/completed orders
-            inArray(orders.saleStatus, ["CONFIRMED", "INVOICED", "PAID", "PARTIAL", "SHIPPED", "DELIVERED"])
+            sql`${orders.saleStatus} IN ('CONFIRMED', 'INVOICED', 'PAID', 'PARTIAL', 'SHIPPED', 'DELIVERED')`
           )
         );
 
@@ -283,7 +294,11 @@ export const clientLedgerRouter = router({
           and(
             eq(purchaseOrders.supplierClientId, input.clientId),
             // Only include confirmed/received purchase orders
-            inArray(purchaseOrders.purchaseOrderStatus, ["CONFIRMED", "RECEIVING", "RECEIVED"])
+            inArray(purchaseOrders.purchaseOrderStatus, [
+              "CONFIRMED",
+              "RECEIVING",
+              "RECEIVED",
+            ])
           )
         );
 
@@ -345,9 +360,10 @@ export const clientLedgerRouter = router({
 
       // Apply transaction type filters
       let filteredTransactions = allTransactions;
-      if (input.transactionTypes && input.transactionTypes.length > 0) {
+      const transactionTypes = input.transactionTypes;
+      if (transactionTypes && transactionTypes.length > 0) {
         filteredTransactions = allTransactions.filter(t =>
-          input.transactionTypes!.includes(t.type)
+          transactionTypes.includes(t.type)
         );
       }
 
@@ -370,8 +386,14 @@ export const clientLedgerRouter = router({
 
       // Calculate summary from ALL filtered transactions (before pagination)
       const summary: LedgerSummary = {
-        totalDebits: filteredTransactions.reduce((sum, t) => sum + (t.debitAmount || 0), 0),
-        totalCredits: filteredTransactions.reduce((sum, t) => sum + (t.creditAmount || 0), 0),
+        totalDebits: filteredTransactions.reduce(
+          (sum, t) => sum + (t.debitAmount || 0),
+          0
+        ),
+        totalCredits: filteredTransactions.reduce(
+          (sum, t) => sum + (t.creditAmount || 0),
+          0
+        ),
         netChange: runningBalance,
       };
 
@@ -409,12 +431,16 @@ export const clientLedgerRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       logger.info({
         msg: "[ClientLedger] Getting balance as of date",
         clientId: input.clientId,
-        asOfDate: input.asOfDate
+        asOfDate: input.asOfDate,
       });
 
       // Get client info
@@ -444,7 +470,7 @@ export const clientLedgerRouter = router({
             eq(orders.clientId, input.clientId),
             eq(orders.orderType, "SALE"),
             isNull(orders.deletedAt),
-            inArray(orders.saleStatus, ["CONFIRMED", "INVOICED", "PAID", "PARTIAL", "SHIPPED", "DELIVERED"]),
+            sql`${orders.saleStatus} IN ('CONFIRMED', 'INVOICED', 'PAID', 'PARTIAL', 'SHIPPED', 'DELIVERED')`,
             sql`DATE(COALESCE(${orders.confirmedAt}, ${orders.createdAt})) <= ${asOfDateStr}`
           )
         );
@@ -491,7 +517,11 @@ export const clientLedgerRouter = router({
         .where(
           and(
             eq(purchaseOrders.supplierClientId, input.clientId),
-            inArray(purchaseOrders.purchaseOrderStatus, ["CONFIRMED", "RECEIVING", "RECEIVED"]),
+            inArray(purchaseOrders.purchaseOrderStatus, [
+              "CONFIRMED",
+              "RECEIVING",
+              "RECEIVED",
+            ]),
             sql`DATE(COALESCE(${purchaseOrders.confirmedAt}, ${purchaseOrders.orderDate})) <= ${asOfDateStr}`
           )
         );
@@ -545,11 +575,18 @@ export const clientLedgerRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Authentication required",
+        });
       }
 
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       logger.info({
         msg: "[ClientLedger] Adding adjustment",
@@ -576,7 +613,7 @@ export const clientLedgerRouter = router({
         transactionType: input.transactionType,
         amount: input.amount.toFixed(2),
         description: input.description,
-        effectiveDate: formatDateISO(effectiveDate),
+        effectiveDate: effectiveDate,
         createdBy: ctx.user.id,
       });
 
@@ -607,11 +644,18 @@ export const clientLedgerRouter = router({
         transactionTypes: z.array(z.string()).optional(),
       })
     )
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      logger.info({ msg: "[ClientLedger] Exporting ledger", clientId: input.clientId });
+      logger.info({
+        msg: "[ClientLedger] Exporting ledger",
+        clientId: input.clientId,
+      });
 
       // Get client info
       const [client] = await db
@@ -628,14 +672,105 @@ export const clientLedgerRouter = router({
       }
 
       // Reuse getLedger logic with a high limit to get all transactions
-      const ledgerData = await clientLedgerRouter.createCaller(ctx).getLedger({
-        clientId: input.clientId,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        transactionTypes: input.transactionTypes,
-        limit: 10000, // High limit for export
-        offset: 0,
-      });
+      // Note: Direct DB queries to avoid self-reference type issues
+      // Collect transactions from different sources
+      const allTransactions: LedgerTransaction[] = [];
+
+      // Get orders
+      const ordersQuery = await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          total: orders.total,
+          createdAt: orders.createdAt,
+          confirmedAt: orders.confirmedAt,
+          createdByName: users.name,
+        })
+        .from(orders)
+        .leftJoin(users, eq(orders.createdBy, users.id))
+        .where(
+          and(
+            eq(orders.clientId, input.clientId),
+            eq(orders.orderType, "SALE"),
+            isNull(orders.deletedAt),
+            sql`${orders.saleStatus} IN ('CONFIRMED', 'INVOICED', 'PAID', 'PARTIAL', 'SHIPPED', 'DELIVERED')`
+          )
+        );
+
+      for (const order of ordersQuery) {
+        const orderDate = order.confirmedAt || order.createdAt || new Date();
+        allTransactions.push({
+          id: `ORDER:${order.id}`,
+          type: "SALE",
+          date: orderDate,
+          description: `Sale #${order.orderNumber || order.id}`,
+          referenceType: "ORDER",
+          referenceId: order.id,
+          referenceNumber: order.orderNumber || undefined,
+          debitAmount: parseFloat(String(order.total) || "0"),
+          creditAmount: 0,
+          runningBalance: 0,
+          createdBy: order.createdByName || "System",
+        });
+      }
+
+      // Get payments received
+      const paymentsQuery = await db
+        .select({
+          id: payments.id,
+          paymentNumber: payments.paymentNumber,
+          amount: payments.amount,
+          paymentDate: payments.paymentDate,
+          paymentType: payments.paymentType,
+          createdByName: users.name,
+        })
+        .from(payments)
+        .leftJoin(users, eq(payments.createdBy, users.id))
+        .where(
+          and(
+            eq(payments.customerId, input.clientId),
+            isNull(payments.deletedAt)
+          )
+        );
+
+      for (const pmt of paymentsQuery) {
+        const pmtDate = pmt.paymentDate || new Date();
+        const isCredit = pmt.paymentType === "RECEIVED";
+        allTransactions.push({
+          id: `PAYMENT:${pmt.id}`,
+          type: isCredit ? "PAYMENT" : "PAYMENT_SENT",
+          date: pmtDate,
+          description: `Payment ${isCredit ? "received" : "sent"} #${pmt.paymentNumber || pmt.id}`,
+          referenceType: "PAYMENT",
+          referenceId: pmt.id,
+          referenceNumber: pmt.paymentNumber || undefined,
+          debitAmount: isCredit ? 0 : parseFloat(String(pmt.amount) || "0"),
+          creditAmount: isCredit ? parseFloat(String(pmt.amount) || "0") : 0,
+          runningBalance: 0,
+          createdBy: pmt.createdByName || "System",
+        });
+      }
+
+      // Sort by date descending and calculate running balance
+      allTransactions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      let totalDebits = 0;
+      let totalCredits = 0;
+      for (const t of allTransactions) {
+        totalDebits += t.debitAmount;
+        totalCredits += t.creditAmount;
+      }
+      const currentBalance = totalDebits - totalCredits;
+
+      // Calculate running balances (from oldest to newest)
+      const sortedForBalance = [...allTransactions].reverse();
+      let runningBal = 0;
+      for (const t of sortedForBalance) {
+        runningBal += t.debitAmount - t.creditAmount;
+        t.runningBalance = runningBal;
+      }
 
       // Build CSV content
       const headers = [
@@ -651,46 +786,90 @@ export const clientLedgerRouter = router({
       ];
 
       // Reverse transactions back to chronological order for export
-      const sortedTransactions = [...ledgerData.transactions].reverse();
+      const sortedTransactions: LedgerTransaction[] = [
+        ...allTransactions,
+      ].reverse();
 
-      const rows = sortedTransactions.map(t => [
-        formatDateISO(t.date),
-        t.type,
-        `"${t.description.replace(/"/g, '""')}"`, // Escape quotes in description
-        t.referenceType || "",
-        t.referenceId?.toString() || "",
-        formatCurrency(t.debitAmount),
-        formatCurrency(t.creditAmount),
-        formatCurrency(t.runningBalance),
-        t.createdBy,
-      ]);
+      const rows: (string | number)[][] = sortedTransactions.map(
+        (t: LedgerTransaction) => [
+          formatDateISO(t.date),
+          t.type,
+          `"${t.description.replace(/"/g, '""')}"`, // Escape quotes in description
+          t.referenceType || "",
+          t.referenceId?.toString() || "",
+          formatCurrency(t.debitAmount),
+          formatCurrency(t.creditAmount),
+          formatCurrency(t.runningBalance),
+          t.createdBy,
+        ]
+      );
 
       // Add summary rows
       rows.push([]);
       rows.push(["SUMMARY"]);
-      rows.push(["Total Debits", "", "", "", "", formatCurrency(ledgerData.summary.totalDebits), "", "", ""]);
-      rows.push(["Total Credits", "", "", "", "", "", formatCurrency(ledgerData.summary.totalCredits), "", ""]);
-      rows.push(["Current Balance", "", "", "", "", "", "", formatCurrency(ledgerData.currentBalance), ""]);
-      rows.push(["", "", ledgerData.balanceDescription, "", "", "", "", "", ""]);
+      rows.push([
+        "Total Debits",
+        "",
+        "",
+        "",
+        "",
+        formatCurrency(totalDebits),
+        "",
+        "",
+        "",
+      ]);
+      rows.push([
+        "Total Credits",
+        "",
+        "",
+        "",
+        "",
+        "",
+        formatCurrency(totalCredits),
+        "",
+        "",
+      ]);
+      rows.push([
+        "Current Balance",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        formatCurrency(currentBalance),
+        "",
+      ]);
+      const balanceDescription =
+        currentBalance > 0
+          ? "Client owes"
+          : currentBalance < 0
+            ? "Client has credit"
+            : "Balanced";
+      rows.push(["", "", balanceDescription, "", "", "", "", "", ""]);
 
-      const csvContent = [
+      const csvContent: string = [
         `Client Ledger: ${client.name} (${client.teriCode})`,
         `Generated: ${new Date().toISOString()}`,
-        input.startDate ? `Start Date: ${formatDateISO(input.startDate)}` : null,
+        input.startDate
+          ? `Start Date: ${formatDateISO(input.startDate)}`
+          : null,
         input.endDate ? `End Date: ${formatDateISO(input.endDate)}` : null,
         "",
         headers.join(","),
-        ...rows.map(row => row.join(",")),
-      ].filter((line): line is string => line !== null).join("\n");
+        ...rows.map((row: (string | number)[]) => row.join(",")),
+      ]
+        .filter((line): line is string => line !== null)
+        .join("\n");
 
       return {
         filename: `ledger_${client.teriCode}_${formatDateISO(new Date())}.csv`,
         content: csvContent,
         mimeType: "text/csv",
         clientName: client.name,
-        totalTransactions: ledgerData.totalCount,
-        currentBalance: ledgerData.currentBalance,
-        balanceDescription: ledgerData.balanceDescription,
+        totalTransactions: allTransactions.length,
+        currentBalance: currentBalance,
+        balanceDescription: balanceDescription,
       };
     }),
 
@@ -701,12 +880,42 @@ export const clientLedgerRouter = router({
     .use(requirePermission("clients:read"))
     .query(async () => {
       return [
-        { value: "SALE", label: "Sale", direction: "Debit (+)", source: "Orders" },
-        { value: "PURCHASE", label: "Purchase", direction: "Credit (-)", source: "Purchase Orders" },
-        { value: "PAYMENT_RECEIVED", label: "Payment Received", direction: "Credit (-)", source: "Payments" },
-        { value: "PAYMENT_SENT", label: "Payment Sent", direction: "Debit (+)", source: "Payments" },
-        { value: "CREDIT", label: "Credit Adjustment", direction: "Credit (-)", source: "Manual Adjustment" },
-        { value: "DEBIT", label: "Debit Adjustment", direction: "Debit (+)", source: "Manual Adjustment" },
+        {
+          value: "SALE",
+          label: "Sale",
+          direction: "Debit (+)",
+          source: "Orders",
+        },
+        {
+          value: "PURCHASE",
+          label: "Purchase",
+          direction: "Credit (-)",
+          source: "Purchase Orders",
+        },
+        {
+          value: "PAYMENT_RECEIVED",
+          label: "Payment Received",
+          direction: "Credit (-)",
+          source: "Payments",
+        },
+        {
+          value: "PAYMENT_SENT",
+          label: "Payment Sent",
+          direction: "Debit (+)",
+          source: "Payments",
+        },
+        {
+          value: "CREDIT",
+          label: "Credit Adjustment",
+          direction: "Credit (-)",
+          source: "Manual Adjustment",
+        },
+        {
+          value: "DEBIT",
+          label: "Debit Adjustment",
+          direction: "Debit (+)",
+          source: "Manual Adjustment",
+        },
       ];
     }),
 });

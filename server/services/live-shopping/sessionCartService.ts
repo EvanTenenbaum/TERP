@@ -1,14 +1,15 @@
 import { getDb } from "../../db";
 import { eq, and, inArray, sql } from "drizzle-orm";
-import { 
-  liveShoppingSessions, 
-  sessionCartItems, 
-  SessionCartItem 
+import {
+  liveShoppingSessions,
+  sessionCartItems,
+  SessionCartItem
 } from "../../../drizzle/schema-live-shopping";
 import { batches, products } from "../../../drizzle/schema";
 import { sessionPricingService } from "./sessionPricingService";
 import { sessionEventManager } from "../../lib/sse/sessionEventManager";
 import { financialMath } from "../../utils/financialMath";
+import { sessionPickListService } from "./sessionPickListService";
 
 export interface AddItemRequest {
   sessionId: number;
@@ -207,6 +208,10 @@ export const sessionCartService = {
 
     // Emit event OUTSIDE transaction (after commit)
     await this.emitCartUpdate(req.sessionId);
+
+    // MEET-075-BE: Notify warehouse pick list and update activity
+    await this.updateSessionActivity(req.sessionId);
+    await sessionPickListService.notifyPickListUpdate(req.sessionId, "ITEM_ADDED");
   },
 
   /**
@@ -226,6 +231,28 @@ export const sessionCartService = {
       );
 
     await this.emitCartUpdate(sessionId);
+
+    // MEET-075-BE: Notify warehouse pick list and update activity
+    await this.updateSessionActivity(sessionId);
+    await sessionPickListService.notifyPickListUpdate(sessionId, "ITEM_REMOVED", cartItemId);
+  },
+
+  /**
+   * Update session last activity timestamp
+   * MEET-075-BE: Track activity for timeout management
+   */
+  async updateSessionActivity(sessionId: number): Promise<void> {
+    const db = await getDb();
+    if (!db) return;
+
+    try {
+      await db.update(liveShoppingSessions)
+        .set({ lastActivityAt: new Date() })
+        .where(eq(liveShoppingSessions.id, sessionId));
+    } catch (e) {
+      // Non-critical, just log and continue
+      console.error("[sessionCartService] Failed to update activity:", e);
+    }
   },
 
   /**

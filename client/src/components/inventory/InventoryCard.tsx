@@ -3,6 +3,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Edit, Eye } from "lucide-react";
+import { getBrandLabel } from "@/lib/nomenclature";
 
 interface InventoryCardProps {
   batch: {
@@ -11,6 +12,7 @@ interface InventoryCardProps {
     productName: string;
     brandName: string;
     vendorName: string;
+    category?: string; // ENH-007: Added for dynamic Brand/Farmer terminology
     grade: string;
     status: string;
     onHandQty: string;
@@ -67,10 +69,12 @@ export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit
         {/* Product Details */}
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-muted-foreground">Brand</p>
+            {/* ENH-007: Dynamic Brand/Farmer label based on category */}
+            <p className="text-muted-foreground">{getBrandLabel(batch.category)}</p>
             <p className="font-medium">{batch.brandName}</p>
           </div>
           <div>
+            {/* MEET-027: Vendor is the business entity */}
             <p className="text-muted-foreground">Vendor</p>
             <p className="font-medium">{batch.vendorName}</p>
           </div>

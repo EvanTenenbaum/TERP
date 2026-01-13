@@ -152,11 +152,14 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         },
       },
       {
-        headerName: "Brand",
+        // ENH-007: Dynamic header based on row category
+        // Shows "Brand/Farmer" for mixed grid since rows can have different categories
+        headerName: "Brand/Farmer",
         field: "brandName",
         width: 140,
         editable: params => params.data?.status === "pending",
-        // Brand can be free-text or copied from vendor
+        // Brand/Farmer can be free-text or copied from vendor
+        // For Flower category, this represents the Farmer
       },
       {
         headerName: "Category",

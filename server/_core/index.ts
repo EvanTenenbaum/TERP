@@ -38,6 +38,7 @@ import { setupGracefulShutdown } from "./gracefulShutdown";
 import { assignRoleToUser } from "../services/seedRBAC";
 import { performRBACStartupCheck } from "../services/rbacValidation";
 import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
+import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 import { runAutoMigrations } from "../autoMigrate";
@@ -479,6 +480,15 @@ async function startServer() {
         logger.info("✅ Price alerts cron job started");
       } catch (error) {
         logger.error({ msg: "Failed to start price alerts cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start session timeout cron job (MEET-075-BE)
+      try {
+        startSessionTimeoutCron();
+        logger.info("✅ Session timeout cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start session timeout cron", error });
         // Server continues - cron is non-critical
       }
     });
