@@ -891,23 +891,23 @@ DEPENDENCY VERIFICATION
 | BLOCKED-003 | Add accounting:reports:view | ☐ | ☐ |
 | ST-026 | Concurrent Edit Detection | ☐ | ☐ |
 
-### Sprint 1: Critical UI Fixes
+### Sprint 1: Critical UI Fixes (COMPLETE - 2026-01-13)
 | Task ID | Description | Status | Verified |
 |---------|-------------|--------|----------|
-| BUG-086 | Order finalization | ☐ | ☐ |
-| BUG-093 | finalizeMutation | ☐ | ☐ |
-| BUG-040 | Order Creator inventory | ☐ | ☐ |
-| BUG-045 | Order Creator form reset | ☐ | ☐ |
-| BUG-091 | Spreadsheet View grid | ☐ | ☐ |
-| BUG-092 | AR/AP widgets | ☐ | ☐ |
-| BUG-087 | Products pagination | ☐ | ☐ |
-| BUG-088 | Spreadsheet Clients | ☐ | ☐ |
-| BUG-089 | New Invoice button | ☐ | ☐ |
-| BUG-090 | Client edit save | ☐ | ☐ |
-| BUG-094 | Live Shopping session | ☐ | ☐ |
-| BUG-095 | Batches New Purchase | ☐ | ☐ |
-| BUG-046 | Settings Users tab | ☐ | ☐ |
-| MEET-049 | Calendar Navigation Bug | ☐ | ☐ |
+| BUG-086 | Order finalization | ✅ | ✅ |
+| BUG-093 | finalizeMutation | ✅ | ✅ |
+| BUG-040 | Order Creator inventory | ✅ | ✅ |
+| BUG-045 | Order Creator form reset | ✅ | ✅ |
+| BUG-091 | Spreadsheet View grid | ✅ | ✅ |
+| BUG-092 | AR/AP widgets | ✅ | ✅ |
+| BUG-087 | Products pagination | ✅ | ✅ |
+| BUG-088 | Spreadsheet Clients | ✅ | ✅ |
+| BUG-089 | New Invoice button | ✅ | ✅ |
+| BUG-090 | Client edit save | ✅ | ✅ |
+| BUG-094 | Live Shopping session | ✅ | ✅ |
+| BUG-095 | Batches New Purchase | ✅ | ✅ |
+| BUG-046 | Settings Users tab | ✅ | ✅ |
+| MEET-049 | Calendar Navigation Bug | ✅ | ✅ |
 
 ### Sprint 2: Wave 1 - Stop the Bleeding
 | MEET ID | Description | Backend | Frontend | QA |
