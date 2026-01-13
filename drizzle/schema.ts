@@ -1754,6 +1754,44 @@ export type ClientNote = typeof clientNotes.$inferSelect;
 export type InsertClientNote = typeof clientNotes.$inferInsert;
 
 // ============================================================================
+// CLIENT LEDGER SYSTEM (FEAT-009 / MEET-010)
+// ============================================================================
+
+/**
+ * Client Ledger Adjustments table
+ * For manual credits/debits not tied to orders or payments
+ * Supports the unified client ledger view (MEET-010)
+ */
+export const clientLedgerAdjustments = mysqlTable(
+  "client_ledger_adjustments",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientId: int("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    transactionType: mysqlEnum("transaction_type", [
+      "CREDIT",
+      "DEBIT",
+    ]).notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    description: text("description").notNull(),
+    effectiveDate: date("effective_date").notNull(),
+    createdBy: int("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  table => ({
+    clientIdIdx: index("idx_ledger_adj_client_id").on(table.clientId),
+    effectiveDateIdx: index("idx_ledger_adj_effective_date").on(table.effectiveDate),
+    typeIdx: index("idx_ledger_adj_type").on(table.transactionType),
+  })
+);
+
+export type ClientLedgerAdjustment = typeof clientLedgerAdjustments.$inferSelect;
+export type InsertClientLedgerAdjustment = typeof clientLedgerAdjustments.$inferInsert;
+
+// ============================================================================
 // CREDIT INTELLIGENCE SYSTEM
 // ============================================================================
 
@@ -6384,6 +6422,35 @@ export const customFinanceStatuses = mysqlTable(
 
 export type CustomFinanceStatus = typeof customFinanceStatuses.$inferSelect;
 export type InsertCustomFinanceStatus = typeof customFinanceStatuses.$inferInsert;
+
+// ============================================================================
+// CASH AUDIT MODULE (FEAT-007)
+// ============================================================================
+
+/**
+ * Cash Locations Table
+ * Tracks multiple physical cash locations (e.g., "Location 1", "Location 2")
+ * Each location maintains its own balance
+ * Feature: MEET-002 Multi-Location Cash Tracking
+ */
+export const cashLocations = mysqlTable(
+  "cash_locations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    currentBalance: decimal("current_balance", { precision: 12, scale: 2 }).default("0"),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  table => ({
+    nameIdx: index("idx_cash_locations_name").on(table.name),
+    activeIdx: index("idx_cash_locations_active").on(table.isActive),
+  })
+);
+
+export type CashLocation = typeof cashLocations.$inferSelect;
+export type InsertCashLocation = typeof cashLocations.$inferInsert;
 
 // ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)

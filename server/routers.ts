@@ -102,6 +102,7 @@ import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
 import { catalogRouter } from "./routers/catalog";
 import { organizationSettingsRouter } from "./routers/organizationSettings";
+import { cashAuditRouter } from "./routers/cashAudit";
 
 import { healthRouter } from "./routers/health";
 
@@ -224,6 +225,7 @@ export const appRouter = router({
   spreadsheet: spreadsheetRouter,
   catalog: catalogRouter, // INV-4: Catalog Publishing
   organizationSettings: organizationSettingsRouter, // FEAT-010 to FEAT-015: Organization Settings & Preferences
+  cashAudit: cashAuditRouter, // FEAT-007: Cash Audit System
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 
