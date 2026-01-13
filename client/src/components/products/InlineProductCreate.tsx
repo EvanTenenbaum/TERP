@@ -10,7 +10,7 @@
  * - Error handling with retry option
  */
 
-import { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -32,7 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Plus, AlertCircle, CheckCircle2, Package } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  AlertCircle,
+  CheckCircle2,
+  Package,
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
@@ -94,7 +100,7 @@ export function InlineProductCreate({
   initialBrandId,
   onProductCreated,
   title = "Create New Product",
-}: InlineProductCreateProps): JSX.Element {
+}: InlineProductCreateProps): React.ReactElement {
   // Form state
   const [name, setName] = useState(initialName);
   const [category, setCategory] = useState(initialCategory);
@@ -114,7 +120,7 @@ export function InlineProductCreate({
 
   // Quick create mutation
   const quickCreate = trpc.productCatalogue.quickCreate.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       if (result.isDuplicate) {
         toast.info(`Found existing product: ${result.product.nameCanonical}`);
       } else {
@@ -124,7 +130,7 @@ export function InlineProductCreate({
       setSuccess(true);
       setError(null);
     },
-    onError: (err) => {
+    onError: err => {
       setError(err.message);
       toast.error(`Failed to create product: ${err.message}`);
     },
@@ -277,7 +283,7 @@ export function InlineProductCreate({
               <Input
                 id="product-name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 placeholder="Enter product name"
                 disabled={quickCreate.isPending}
                 autoFocus
@@ -297,7 +303,7 @@ export function InlineProductCreate({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRODUCT_CATEGORIES.map((cat) => (
+                  {PRODUCT_CATEGORIES.map(cat => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
                     </SelectItem>
@@ -312,7 +318,7 @@ export function InlineProductCreate({
               </Label>
               <Select
                 value={brandId?.toString() ?? ""}
-                onValueChange={(v) => setBrandId(parseInt(v, 10))}
+                onValueChange={v => setBrandId(parseInt(v, 10))}
                 disabled={quickCreate.isPending || brandsLoading}
               >
                 <SelectTrigger id="product-brand">
@@ -321,7 +327,7 @@ export function InlineProductCreate({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {brands?.map((brand) => (
+                  {brands?.map(brand => (
                     <SelectItem key={brand.id} value={brand.id.toString()}>
                       {brand.name}
                     </SelectItem>
@@ -331,11 +337,13 @@ export function InlineProductCreate({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="product-subcategory">Subcategory (optional)</Label>
+              <Label htmlFor="product-subcategory">
+                Subcategory (optional)
+              </Label>
               <Input
                 id="product-subcategory"
                 value={subcategory}
-                onChange={(e) => setSubcategory(e.target.value)}
+                onChange={e => setSubcategory(e.target.value)}
                 placeholder="e.g., Smalls, Indoor, Outdoor"
                 disabled={quickCreate.isPending}
               />
@@ -351,7 +359,9 @@ export function InlineProductCreate({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={quickCreate.isPending || !name || !category || !brandId}
+                disabled={
+                  quickCreate.isPending || !name || !category || !brandId
+                }
               >
                 {quickCreate.isPending ? (
                   <>
