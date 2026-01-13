@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { IntakeGridRow, IntakeGridSummary } from "@/types/spreadsheet";
-import { Plus, Send, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Send, Trash2, AlertCircle, CheckCircle2, Loader2, RefreshCw, Package } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
@@ -110,7 +110,8 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch vendors for autocomplete
-  const { data: vendorsData } = trpc.vendors.getAll.useQuery();
+  // QA-FIX: Added isLoading and error states for proper state handling
+  const { data: vendorsData, isLoading: vendorsLoading, error: vendorsError, refetch: refetchVendors } = trpc.vendors.getAll.useQuery();
   const vendors: VendorItem[] = useMemo(() => {
     if (!vendorsData || !vendorsData.success) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -119,14 +120,16 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   }, [vendorsData]);
 
   // Fetch locations for dropdown
-  const { data: locationsData } = trpc.locations.getAll.useQuery();
+  // QA-FIX: Added isLoading and error states for proper state handling
+  const { data: locationsData, isLoading: locationsLoading, error: locationsError, refetch: refetchLocations } = trpc.locations.getAll.useQuery();
   const locations: LocationItem[] = useMemo(
     () => (Array.isArray(locationsData) ? locationsData : []),
     [locationsData]
   );
 
   // Fetch strains for item autocomplete
-  const { data: strainsData } = trpc.strains.list.useQuery({});
+  // QA-FIX: Added isLoading and error states for proper state handling
+  const { data: strainsData, isLoading: strainsLoading, error: strainsError, refetch: refetchStrains } = trpc.strains.list.useQuery({});
   const strains: StrainItem[] = useMemo(
     () => strainsData?.items ?? [],
     [strainsData?.items]
@@ -469,6 +472,39 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* QA-FIX: Add loading/error state handling for reference data */}
+        {(vendorsLoading || locationsLoading || strainsLoading) && (
+          <div className="flex items-center justify-center h-[600px]">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Loading reference data...
+              </p>
+            </div>
+          </div>
+        )}
+        {(vendorsError || locationsError || strainsError) && !(vendorsLoading || locationsLoading || strainsLoading) && (
+          <div className="mb-3 p-4 text-sm text-destructive bg-destructive/10 rounded-md">
+            <p className="font-medium">Unable to load reference data</p>
+            <p className="text-muted-foreground mt-1">
+              {vendorsError?.message || locationsError?.message || strainsError?.message || "Please try again."}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void refetchVendors();
+                void refetchLocations();
+                void refetchStrains();
+              }}
+              className="mt-2"
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              Try Again
+            </Button>
+          </div>
+        )}
+        {!vendorsLoading && !locationsLoading && !strainsLoading && !vendorsError && !locationsError && !strainsError && (
         <div className="ag-theme-alpine h-[600px] w-full">
           <AgGridReact<IntakeGridRow>
             rowData={rows}
@@ -483,6 +519,7 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
             }}
           />
         </div>
+        )}
       </CardContent>
     </Card>
   );
