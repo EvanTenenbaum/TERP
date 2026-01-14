@@ -520,15 +520,18 @@ export async function updateClientStats(clientId: number) {
     .where(eq(clientTransactions.clientId, clientId));
 
   let totalSpent = 0;
-  const totalProfit = 0;
+  let totalProfit = 0; // BUG FIX: Changed from const to let to allow calculation
   let totalOwed = 0;
   let oldestDebtDays = 0;
 
   for (const txn of transactions) {
     const amount = Number(txn.amount);
+    // Calculate profit from transaction margin if available
+    const profit = Number(txn.profit || 0);
 
     if (txn.transactionType === "INVOICE" || txn.transactionType === "ORDER") {
       totalSpent += amount;
+      totalProfit += profit; // BUG FIX: Accumulate profit from transactions
 
       if (txn.paymentStatus !== "PAID") {
         totalOwed += amount;

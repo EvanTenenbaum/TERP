@@ -607,6 +607,9 @@ export async function applyPriceAdjustment(params: {
     );
   }
 
+  // SECURITY FIX: Also validate fixed-amount discounts by converting to effective percentage
+  // This prevents bypassing discount limits by using fixed amounts instead of percentages
+
   // Get order
   const orderResult = await db
     .select()
@@ -632,6 +635,15 @@ export async function applyPriceAdjustment(params: {
       if (params.adjustmentMode === "PERCENT") {
         adjustedPrice = originalPrice * (1 + params.adjustmentValue / 100);
       } else {
+        // SECURITY FIX: Validate fixed-amount discounts against max percentage limit
+        if (originalPrice > 0 && params.adjustmentValue < 0) {
+          const effectivePercent = (Math.abs(params.adjustmentValue) / originalPrice) * 100;
+          if (effectivePercent > maxDiscount) {
+            throw new Error(
+              `Fixed discount exceeds your authority. Maximum: ${maxDiscount}% (${(originalPrice * maxDiscount / 100).toFixed(2)}), Requested: ${Math.abs(params.adjustmentValue).toFixed(2)} (${effectivePercent.toFixed(1)}%)`
+            );
+          }
+        }
         adjustedPrice = originalPrice + params.adjustmentValue;
       }
     }

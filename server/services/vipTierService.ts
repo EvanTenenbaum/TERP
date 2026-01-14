@@ -496,16 +496,28 @@ export async function updateClientVipStatus(
 
   // Record tier change if tier changed
   if (previousTierId !== newTierId) {
+    // BUG FIX: Compare tier levels instead of IDs
+    // IDs are not ordered by tier level, but the `level` column is
+    let changeReason: "AUTO_UPGRADE" | "AUTO_DOWNGRADE" | "MANUAL";
+    if (previousTierId === null) {
+      changeReason = "AUTO_UPGRADE";
+    } else {
+      // Fetch tier levels to determine if this is upgrade or downgrade
+      const tierData = await db
+        .select({ id: vipTiers.id, level: vipTiers.level })
+        .from(vipTiers)
+        .where(sql`${vipTiers.id} IN (${previousTierId}, ${newTierId})`);
+
+      const prevLevel = tierData.find(t => t.id === previousTierId)?.level ?? 0;
+      const newLevel = tierData.find(t => t.id === newTierId)?.level ?? 0;
+      changeReason = newLevel > prevLevel ? "AUTO_UPGRADE" : "AUTO_DOWNGRADE";
+    }
+
     await db.insert(vipTierHistory).values({
       clientId,
       previousTierId,
       newTierId,
-      changeReason:
-        previousTierId === null
-          ? "AUTO_UPGRADE"
-          : previousTierId && newTierId && newTierId > previousTierId
-            ? "AUTO_UPGRADE"
-            : "AUTO_DOWNGRADE",
+      changeReason,
       changeDetails: calculation.reason,
       changedBy: changedByUserId || null,
     });

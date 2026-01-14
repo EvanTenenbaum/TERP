@@ -726,8 +726,9 @@ export const inventoryRouter = router({
   // Create new batch (intake)
   // ✅ FIXED: Uses transactional service (TERP-INIT-005 Phase 1)
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  // SECURITY FIX: Changed from inventory:read to inventory:create
   intake: protectedProcedure
-    .use(requirePermission("inventory:read"))
+    .use(requirePermission("inventory:create"))
     .input(intakeSchema)
     .mutation(async ({ input, ctx }) => {
       try {

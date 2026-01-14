@@ -652,6 +652,7 @@ export const receiptsRouter = router({
 
   /**
    * Public endpoint to view receipt by receipt number
+   * SECURITY: Only shows minimal receipt info, no financial balances
    */
   getPublicReceipt: publicProcedure
     .input(z.object({ receiptNumber: z.string() }))
@@ -661,9 +662,8 @@ export const receiptsRouter = router({
           receiptNumber: receipts.receiptNumber,
           clientName: clients.name,
           transactionType: receipts.transactionType,
-          previousBalance: receipts.previousBalance,
+          // SECURITY FIX: Only show transaction amount, not balance details
           transactionAmount: receipts.transactionAmount,
-          newBalance: receipts.newBalance,
           note: receipts.note,
           createdAt: receipts.createdAt,
         })
@@ -677,22 +677,22 @@ export const receiptsRouter = router({
       }
 
       const r = receipt[0];
+      // SECURITY FIX: Public receipt only shows transaction details, not balances
       return {
         receiptNumber: r.receiptNumber,
         clientName: r.clientName || 'Client',
         transactionType: r.transactionType,
-        previousBalance: parseFloat(r.previousBalance as string),
         transactionAmount: parseFloat(r.transactionAmount as string),
-        newBalance: parseFloat(r.newBalance as string),
         note: r.note,
         date: r.createdAt,
+        // Public HTML doesn't include balance information
         html: generateReceiptHtml({
           receiptNumber: r.receiptNumber,
           clientName: r.clientName || 'Client',
           transactionType: r.transactionType,
-          previousBalance: parseFloat(r.previousBalance as string),
+          previousBalance: 0, // Hidden for public view
           transactionAmount: parseFloat(r.transactionAmount as string),
-          newBalance: parseFloat(r.newBalance as string),
+          newBalance: 0, // Hidden for public view
           note: r.note || undefined,
           date: r.createdAt || new Date(),
         }),
