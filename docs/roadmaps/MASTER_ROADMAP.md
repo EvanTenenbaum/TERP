@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 5.2
-**Last Updated:** 2026-01-14 (Added BUG-098, BUG-099 - UI/Data mismatch issues)
+**Version:** 5.3
+**Last Updated:** 2026-01-14 (Full roadmap accuracy audit - fixed duplicate UX entries, recalculated MVP summary)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -452,10 +452,10 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | Task   | Description                                    | Priority | Status      |
 | ------ | ---------------------------------------------- | -------- | ----------- |
 | UX-009 | Fix Sidebar Slide Animation                    | LOW      | ✅ COMPLETE |
-| UX-010 | Clarify My Account vs User Settings Navigation | LOW      | ready       |
-| UX-011 | Fix Two Export Buttons Issue                   | LOW      | ready       |
-| UX-012 | Fix Period Display Formatting                  | LOW      | ready       |
-| UX-013 | Fix Mirrored Elements Issue                    | LOW      | ready       |
+| UX-010 | Clarify My Account vs User Settings Navigation | LOW      | ✅ COMPLETE |
+| UX-011 | Fix Two Export Buttons Issue                   | LOW      | ✅ COMPLETE |
+| UX-012 | Fix Period Display Formatting                  | LOW      | ✅ COMPLETE |
+| UX-013 | Fix Mirrored Elements Issue                    | LOW      | ✅ COMPLETE |
 | UX-014 | Make Optional Fields Clear                     | LOW      | ✅ COMPLETE |
 
 ---
@@ -516,18 +516,18 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | -------------------- | --------- | ------- | -------- |
 | Infrastructure       | 18        | 4       | 22       |
 | Security             | 17        | 0       | 17       |
-| Bug Fixes            | 38        | 6       | 44       |
+| Bug Fixes            | 43        | 3       | 46       |
 | API Registration     | 10        | 0       | 10       |
-| Stability            | 11        | 0       | 11       |
+| Stability            | 4         | 0       | 4        |
 | Quality              | 10        | 2       | 12       |
-| Features             | 6         | 23+     | 29+      |
+| Features             | 6         | 24      | 30       |
 | UX                   | 12        | 0       | 12       |
-| Data & Schema        | 7         | 1       | 8        |
+| Data & Schema        | 8         | 0       | 8        |
 | Data Integrity (QA)  | 5         | 3       | 8        |
 | Frontend Quality (QA)| 3         | 0       | 3        |
 | Backend Quality (QA) | 5         | 0       | 5        |
 | Improvements         | 4         | 0       | 4        |
-| **TOTAL**            | **146+**  | **39+** | **185+** |
+| **TOTAL**            | **145**   | **36**  | **181**  |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
@@ -609,9 +609,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open     | Total    | Progress |
 | --------- | --------- | -------- | -------- | -------- |
-| MVP       | 146+      | 39+      | 185+     | ~79%     |
+| MVP       | 145       | 36       | 181      | ~80%     |
 | Beta      | 0         | 17       | 17       | 0%       |
-| **TOTAL** | **146+**  | **56+**  | **202+** | ~72%     |
+| **TOTAL** | **145**   | **53**   | **198**  | ~73%     |
 
 ---
 
