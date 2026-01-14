@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 5.1
-**Last Updated:** 2026-01-14 (MVP Execution Session Completed - 53 Tasks)
+**Version:** 5.2
+**Last Updated:** 2026-01-14 (Added BUG-098, BUG-099 - UI/Data mismatch issues)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -230,6 +230,25 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-075 | Fix Settings Users Tab Authentication Error | HIGH     | ✅ COMPLETE (Jan 13, 2026) - duplicate of BUG-046 |
 | BUG-076 | Fix Search and Filter Functionality         | HIGH     | ✅ COMPLETE (Jan 12-14, 2026) |
 | BUG-077 | Fix Notification System Not Working         | HIGH     | ✅ COMPLETE (Jan 12-14, 2026) |
+
+#### UI/Data Mismatch Issues (Jan 14, 2026)
+
+> Discovered during comprehensive UI investigation session.
+
+| Task    | Description                                                      | Priority | Status  | Root Cause |
+| ------- | ---------------------------------------------------------------- | -------- | ------- | ---------- |
+| BUG-098 | Inventory Page - Table shows 0 items but summary shows $62.3M    | P1       | 🔴 OPEN | Data source mismatch: dashboardStats shows total inventory value while getEnhanced returns filtered/empty items |
+| BUG-099 | Samples Page - Database error when loading samples               | P1       | 🔴 OPEN | samplesDb.getAllSampleRequests throws when DB unavailable or query fails |
+
+**BUG-098 Details:**
+- **Location:** `client/src/pages/Inventory.tsx:467` (dashboardStats), `client/src/pages/Inventory.tsx:681` (DataCardSection)
+- **Root Cause:** Page uses multiple independent data sources - `dashboardStats` and `DataCardSection` show totals from ALL inventory, while table uses `getEnhanced` which may return filtered/empty data
+- **Fix Strategy:** Either sync summary to use filtered results from `enhancedResponse.summary`, or investigate why `getEnhanced` returns 0 items
+
+**BUG-099 Details:**
+- **Location:** `server/samplesDb.ts:882-892`, `server/routers/samples.ts:457-506`
+- **Root Cause:** `getDb()` returns null or SQL query fails (table missing/schema mismatch)
+- **Fix Strategy:** Add database connection validation, verify `sampleRequests` table exists with correct schema
 
 #### E2E Test Coverage Defects (Jan 9, 2026)
 
@@ -497,7 +516,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | -------------------- | --------- | ------- | -------- |
 | Infrastructure       | 18        | 4       | 22       |
 | Security             | 17        | 0       | 17       |
-| Bug Fixes            | 38        | 4       | 42       |
+| Bug Fixes            | 38        | 6       | 44       |
 | API Registration     | 10        | 0       | 10       |
 | Stability            | 11        | 0       | 11       |
 | Quality              | 10        | 2       | 12       |
@@ -508,7 +527,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Frontend Quality (QA)| 3         | 0       | 3        |
 | Backend Quality (QA) | 5         | 0       | 5        |
 | Improvements         | 4         | 0       | 4        |
-| **TOTAL**            | **146+**  | **37+** | **183+** |
+| **TOTAL**            | **146+**  | **39+** | **185+** |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
@@ -590,9 +609,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open     | Total    | Progress |
 | --------- | --------- | -------- | -------- | -------- |
-| MVP       | 146+      | 37+      | 183+     | ~80%     |
+| MVP       | 146+      | 39+      | 185+     | ~79%     |
 | Beta      | 0         | 17       | 17       | 0%       |
-| **TOTAL** | **146+**  | **54+**  | **200+** | ~73%     |
+| **TOTAL** | **146+**  | **56+**  | **202+** | ~72%     |
 
 ---
 
