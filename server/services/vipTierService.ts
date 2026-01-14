@@ -136,9 +136,7 @@ async function calculatePaymentSpeedScore(
  * Calculate volume score (0-100)
  * Based on YTD spend and order count
  */
-async function calculateVolumeScore(
-  clientId: number
-): Promise<{
+async function calculateVolumeScore(clientId: number): Promise<{
   score: number;
   ytdSpend: number;
   ytdOrders: number;
