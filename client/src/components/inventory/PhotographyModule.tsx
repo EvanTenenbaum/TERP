@@ -10,7 +10,7 @@
  * - Batch photo upload
  */
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,6 +124,15 @@ export function PhotographyModule({
   // Calculate remaining slots
   const remainingSlots = maxPhotos - photos.length;
   const canAddMore = remainingSlots > 0;
+
+  // MEMORY LEAK FIX: Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
 
   // Handle file selection
   const handleFileSelect = useCallback(
