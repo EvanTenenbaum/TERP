@@ -1,44 +1,18 @@
 /**
  * Database Transaction Utilities
  * Provides transaction support for critical operations
- * 
- * Note: MySQL transactions in Drizzle ORM require connection pooling
- * This is a simplified version - production should use proper connection pools
+ *
+ * This module re-exports the production-ready transaction utilities from _core/dbTransaction.ts
+ * which provides proper transaction semantics with automatic rollback, isolation levels, and retry logic.
  */
 
-import { getDb } from "./db";
-import { logger } from "./_core/logger";
-
-/**
- * Execute a function within a database transaction
- * 
- * WARNING: This is a basic implementation. For production use:
- * 1. Implement proper connection pooling
- * 2. Add retry logic for deadlocks
- * 3. Add timeout handling
- * 4. Consider using row-level locking (SELECT ... FOR UPDATE)
- * 
- * @param callback Function to execute within transaction
- * @returns Result of the callback
- */
-export async function withTransaction<T>(
-  callback: (db: Awaited<ReturnType<typeof getDb>>) => Promise<T>
-): Promise<T> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  try {
-    // Note: Drizzle ORM transaction support varies by driver
-    // This is a placeholder for proper transaction implementation
-    // In production, use: await db.transaction(async (tx) => { ... })
-    
-    const result = await callback(db);
-    return result;
-  } catch (error) {
-    logger.error({ error }, "Transaction error");
-    throw error;
-  }
-}
+// Re-export the production-ready transaction implementation
+export {
+  withTransaction,
+  withRetryableTransaction,
+  TransactionIsolationLevel,
+  type TransactionOptions,
+} from "./_core/dbTransaction";
 
 /**
  * Add optimistic locking check

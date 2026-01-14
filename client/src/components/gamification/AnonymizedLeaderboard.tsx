@@ -313,7 +313,7 @@ export const AnonymizedLeaderboard = React.memo(function AnonymizedLeaderboard({
         {isLoading && (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full" />
+              <Skeleton key={`skeleton-${i}`} className="h-14 w-full" />
             ))}
           </div>
         )}

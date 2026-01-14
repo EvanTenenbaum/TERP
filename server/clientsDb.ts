@@ -344,6 +344,9 @@ export async function createClient(
     email?: string;
     phone?: string;
     address?: string;
+    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
+    paymentTerms?: number;
     isBuyer?: boolean;
     isSeller?: boolean;
     isBrand?: boolean;
@@ -368,6 +371,9 @@ export async function createClient(
     email: data.email || null,
     phone: data.phone || null,
     address: data.address || null,
+    businessType: data.businessType || null,
+    preferredContact: data.preferredContact || null,
+    paymentTerms: data.paymentTerms || 30,
     isBuyer: data.isBuyer || false,
     isSeller: data.isSeller || false,
     isBrand: data.isBrand || false,
@@ -401,6 +407,9 @@ export async function updateClient(
     email?: string;
     phone?: string;
     address?: string;
+    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
+    paymentTerms?: number;
     isBuyer?: boolean;
     isSeller?: boolean;
     isBrand?: boolean;
@@ -420,6 +429,9 @@ export async function updateClient(
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
+  if (data.businessType !== undefined) updateData.businessType = data.businessType;
+  if (data.preferredContact !== undefined) updateData.preferredContact = data.preferredContact;
+  if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms;
   if (data.isBuyer !== undefined) updateData.isBuyer = data.isBuyer;
   if (data.isSeller !== undefined) updateData.isSeller = data.isSeller;
   if (data.isBrand !== undefined) updateData.isBrand = data.isBrand;

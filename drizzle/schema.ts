@@ -472,7 +472,8 @@ export const tags = mysqlTable("tags", {
   name: varchar("name", { length: 100 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   standardizedName: varchar("standardizedName", { length: 100 }).notNull(),
-  category: varchar("category", { length: 50 }), // strain_type, flavor, effect, etc.
+  category: mysqlEnum("category", ["STATUS", "PRIORITY", "TYPE", "CUSTOM", "STRAIN", "FLAVOR", "EFFECT"]).default("CUSTOM"), // FEAT-002: Structured categories
+  color: varchar("color", { length: 7 }).default("#6B7280"), // FEAT-002: Hex color for visual organization
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -496,6 +497,25 @@ export const productTags = mysqlTable("productTags", {
 
 export type ProductTag = typeof productTags.$inferSelect;
 export type InsertProductTag = typeof productTags.$inferInsert;
+
+/**
+ * Client Tags junction table
+ * FEAT-002: Links clients to tags (many-to-many relationship)
+ */
+export const clientTags = mysqlTable("clientTags", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  tagId: int("tagId")
+    .notNull()
+    .references(() => tags.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+});
+
+export type ClientTag = typeof clientTags.$inferSelect;
+export type InsertClientTag = typeof clientTags.$inferInsert;
 
 /**
  * Lots table
@@ -558,12 +578,12 @@ export const batches = mysqlTable(
     sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
     sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
     cogsMode: cogsModeEnum.notNull(),
-    unitCogs: varchar("unitCogs", { length: 20 }), // FIXED
-    unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
-    unitCogsMax: varchar("unitCogsMax", { length: 20 }), // RANGE
+    unitCogs: decimal("unitCogs", { precision: 12, scale: 4 }), // FIXED
+    unitCogsMin: decimal("unitCogsMin", { precision: 12, scale: 4 }), // RANGE
+    unitCogsMax: decimal("unitCogsMax", { precision: 12, scale: 4 }), // RANGE
     paymentTerms: paymentTermsEnum.notNull(),
     ownershipType: ownershipTypeEnum.notNull().default("CONSIGNED"), // MEET-006: Track inventory ownership
-    amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
+    amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }).default("0"), // For COD/Partial tracking
     metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
 
     // v3.2: Link to PHOTOGRAPHY calendar event if batch had photo session
@@ -572,14 +592,14 @@ export const batches = mysqlTable(
       { onDelete: "set null" }
     ),
 
-    onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
-    sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
-    reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
-    quarantineQty: varchar("quarantineQty", { length: 20 })
+    onHandQty: decimal("onHandQty", { precision: 15, scale: 4 }).notNull().default("0"),
+    sampleQty: decimal("sampleQty", { precision: 15, scale: 4 }).notNull().default("0"),
+    reservedQty: decimal("reservedQty", { precision: 15, scale: 4 }).notNull().default("0"),
+    quarantineQty: decimal("quarantineQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
-    holdQty: varchar("holdQty", { length: 20 }).notNull().default("0"),
-    defectiveQty: varchar("defectiveQty", { length: 20 })
+    holdQty: decimal("holdQty", { precision: 15, scale: 4 }).notNull().default("0"),
+    defectiveQty: decimal("defectiveQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
     publishEcom: int("publishEcom").notNull().default(0), // 0 = false, 1 = true
@@ -612,7 +632,7 @@ export const paymentHistory = mysqlTable("paymentHistory", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
   vendorId: int("vendorId").notNull(),
-  amount: varchar("amount", { length: 20 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   paymentDate: timestamp("paymentDate").notNull(),
   paymentMethod: varchar("paymentMethod", { length: 50 }),
@@ -637,7 +657,7 @@ export const batchLocations = mysqlTable("batchLocations", {
   rack: varchar("rack", { length: 100 }),
   shelf: varchar("shelf", { length: 100 }),
   bin: varchar("bin", { length: 100 }),
-  qty: varchar("qty", { length: 20 }).notNull(),
+  qty: decimal("qty", { precision: 15, scale: 4 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -656,10 +676,10 @@ export const sales = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     batchId: int("batchId").notNull(),
     productId: int("productId").notNull(),
-    quantity: varchar("quantity", { length: 20 }).notNull(),
+    quantity: decimal("quantity", { precision: 15, scale: 4 }).notNull(),
     deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-    cogsAtSale: varchar("cogsAtSale", { length: 20 }).notNull(), // COGS snapshot
-    salePrice: varchar("salePrice", { length: 20 }).notNull(),
+    cogsAtSale: decimal("cogsAtSale", { precision: 12, scale: 4 }).notNull(), // COGS snapshot
+    salePrice: decimal("salePrice", { precision: 12, scale: 2 }).notNull(),
     cogsOverride: int("cogsOverride").notNull().default(0), // 0 = false, 1 = true
     // FK added: customerId → clients.id (Task 10.4)
     customerId: int("customerId").references(() => clients.id, {
@@ -700,9 +720,9 @@ export type InsertSale = typeof sales.$inferInsert;
 export const cogsHistory = mysqlTable("cogsHistory", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
-  oldCogs: varchar("oldCogs", { length: 20 }),
+  oldCogs: decimal("oldCogs", { precision: 12, scale: 4 }),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  newCogs: varchar("newCogs", { length: 20 }).notNull(),
+  newCogs: decimal("newCogs", { precision: 12, scale: 4 }).notNull(),
   changeType: varchar("changeType", { length: 50 }).notNull(), // prospective, retroactive, both
   affectedSalesCount: int("affectedSalesCount").default(0),
   reason: text("reason"),
@@ -1495,6 +1515,31 @@ export const cogsAdjustmentTypeEnum = mysqlEnum("cogsAdjustmentType", [
   "FIXED_AMOUNT",
 ]);
 
+/**
+ * Business Type Enum (FEAT-001)
+ * Types of client businesses
+ */
+export const businessTypeEnum = mysqlEnum("businessType", [
+  "RETAIL",
+  "WHOLESALE",
+  "DISPENSARY",
+  "DELIVERY",
+  "MANUFACTURER",
+  "DISTRIBUTOR",
+  "OTHER",
+]);
+
+/**
+ * Preferred Contact Method Enum (FEAT-001)
+ * Client's preferred communication channel
+ */
+export const preferredContactEnum = mysqlEnum("preferredContact", [
+  "EMAIL",
+  "PHONE",
+  "TEXT",
+  "ANY",
+]);
+
 export const clients = mysqlTable(
   "clients",
   {
@@ -1505,6 +1550,11 @@ export const clients = mysqlTable(
     email: varchar("email", { length: 255 }),
     phone: varchar("phone", { length: 50 }),
     address: text("address"),
+
+    // Business information (FEAT-001)
+    businessType: businessTypeEnum,
+    preferredContact: preferredContactEnum,
+    paymentTerms: int("payment_terms").default(30), // Payment terms in days
 
     // Client types (multi-role support)
     isBuyer: boolean("is_buyer").default(false),
@@ -2419,8 +2469,7 @@ export const salesSheetHistory = mysqlTable(
     lastViewedAt: timestamp("last_viewed_at"),
 
     // USP: Link to converted order (when sales sheet becomes a quote/order)
-    // Note: FK constraint added via migration, not inline reference (avoids circular dependency)
-    convertedToOrderId: int("converted_to_order_id"),
+    convertedToOrderId: int("converted_to_order_id").references(() => orders.id, { onDelete: "set null" }),
     // USP: Link to converted live shopping session
     convertedToSessionId: varchar("converted_to_session_id", { length: 36 }),
     // USP: Soft delete support for sales sheets
@@ -2947,7 +2996,7 @@ export const transactions = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     transactionDate: timestamp("transactionDate").notNull(),
-    amount: varchar("amount", { length: 20 }).notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
     transactionStatus: transactionStatusEnum.notNull(),
     notes: text("notes"),
     metadata: text("metadata"), // JSON string for type-specific data
@@ -3001,7 +3050,7 @@ export const transactionLinks = mysqlTable(
       .notNull()
       .references(() => transactions.id, { onDelete: "cascade" }),
     transactionLinkType: transactionLinkTypeEnum.notNull(),
-    linkAmount: varchar("linkAmount", { length: 20 }), // Amount of the link (for partial payments/refunds)
+    linkAmount: decimal("linkAmount", { precision: 12, scale: 2 }), // Amount of the link (for partial payments/refunds)
     notes: text("notes"),
     createdBy: int("createdBy")
       .notNull()
@@ -3053,9 +3102,9 @@ export const credits = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     transactionId: int("transactionId").references(() => transactions.id), // Link to base transaction
-    creditAmount: varchar("creditAmount", { length: 20 }).notNull(),
-    amountUsed: varchar("amountUsed", { length: 20 }).notNull().default("0"),
-    amountRemaining: varchar("amountRemaining", { length: 20 }).notNull(),
+    creditAmount: decimal("creditAmount", { precision: 12, scale: 2 }).notNull(),
+    amountUsed: decimal("amountUsed", { precision: 12, scale: 2 }).notNull().default("0"),
+    amountRemaining: decimal("amountRemaining", { precision: 12, scale: 2 }).notNull(),
     creditReason: varchar("creditReason", { length: 100 }),
     expirationDate: timestamp("expirationDate"),
     creditStatus: creditStatusEnum.notNull().default("ACTIVE"),
@@ -3090,17 +3139,19 @@ export const creditApplications = mysqlTable(
     invoiceId: int("invoiceId")
       .notNull()
       .references(() => transactions.id, { onDelete: "cascade" }),
-    amountApplied: varchar("amountApplied", { length: 20 }).notNull(),
+    amountApplied: decimal("amountApplied", { precision: 12, scale: 2 }).notNull(),
     appliedDate: timestamp("appliedDate").notNull(),
     notes: text("notes"),
     appliedBy: int("appliedBy")
       .notNull()
       .references(() => users.id),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => ({
     creditIdIdx: index("idx_credit_applications_credit").on(table.creditId),
     invoiceIdIdx: index("idx_credit_applications_invoice").on(table.invoiceId),
+    idempotencyKeyIdx: uniqueIndex("idx_credit_applications_idempotency").on(table.idempotencyKey),
   })
 );
 
@@ -3187,9 +3238,9 @@ export const inventoryMovements = mysqlTable(
       .notNull()
       .references(() => batches.id, { onDelete: "restrict" }), // QUAL-004: Protect audit trail
     inventoryMovementType: inventoryMovementTypeEnum.notNull(),
-    quantityChange: varchar("quantityChange", { length: 20 }).notNull(), // Can be negative
-    quantityBefore: varchar("quantityBefore", { length: 20 }).notNull(),
-    quantityAfter: varchar("quantityAfter", { length: 20 }).notNull(),
+    quantityChange: decimal("quantityChange", { precision: 15, scale: 4 }).notNull(), // Can be negative
+    quantityBefore: decimal("quantityBefore", { precision: 15, scale: 4 }).notNull(),
+    quantityAfter: decimal("quantityAfter", { precision: 15, scale: 4 }).notNull(),
     referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
     referenceId: int("referenceId"),
     adjustmentReason: adjustmentReasonEnum, // Reason for manual adjustments (DATA-010)
@@ -3327,11 +3378,11 @@ export const sampleAllocations = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     monthYear: varchar("monthYear", { length: 7 }).notNull(), // Format: "2025-10"
-    allocatedQuantity: varchar("allocatedQuantity", { length: 20 }).notNull(), // e.g., "7.0" grams
-    usedQuantity: varchar("usedQuantity", { length: 20 })
+    allocatedQuantity: decimal("allocatedQuantity", { precision: 15, scale: 4 }).notNull(), // e.g., "7.0" grams
+    usedQuantity: decimal("usedQuantity", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
-    remainingQuantity: varchar("remainingQuantity", { length: 20 }).notNull(), // computed
+    remainingQuantity: decimal("remainingQuantity", { precision: 15, scale: 4 }).notNull(), // computed
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -5911,6 +5962,16 @@ export {
   type InsertAdminImpersonationSession,
   type AdminImpersonationAction,
   type InsertAdminImpersonationAction,
+  // VIP Tier System (FEAT-019)
+  vipTiers,
+  clientVipStatus,
+  vipTierHistory,
+  type VipTier,
+  type InsertVipTier,
+  type ClientVipStatus,
+  type InsertClientVipStatus,
+  type VipTierHistory,
+  type InsertVipTierHistory,
 } from "./schema-vip-portal";
 
 // ============================================================================

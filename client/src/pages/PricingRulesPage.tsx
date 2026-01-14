@@ -42,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash, Search, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { PricingRule } from "../../../drizzle/schema";
 
 interface RuleFormData {
@@ -76,6 +77,7 @@ export default function PricingRulesPage() {
   // Condition builder state
   const [conditionKey, setConditionKey] = useState("");
   const [conditionValue, setConditionValue] = useState("");
+  const [deleteConditionConfirm, setDeleteConditionConfirm] = useState<string | null>(null);
 
   // Fetch pricing rules
   const { data: rules, isLoading } = trpc.pricing.listRules.useQuery();
@@ -293,7 +295,7 @@ export default function PricingRulesPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeCondition(key)}
+                onClick={() => setDeleteConditionConfirm(key)}
               >
                 <Trash className="h-4 w-4" />
               </Button>
@@ -518,6 +520,22 @@ export default function PricingRulesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Condition Delete Confirmation */}
+      <ConfirmDialog
+        open={deleteConditionConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteConditionConfirm(null)}
+        title="Remove Condition"
+        description="Are you sure you want to remove this condition from the pricing rule?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteConditionConfirm) {
+            removeCondition(deleteConditionConfirm);
+          }
+          setDeleteConditionConfirm(null);
+        }}
+      />
     </div>
   );
 }

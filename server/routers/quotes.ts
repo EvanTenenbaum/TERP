@@ -291,7 +291,9 @@ export const quotesRouter = router({
 
       logger.info({ msg: "[Quotes] Quote sent", quoteId: input.id });
 
-      // TODO: Send email notification to client (future wave)
+      // TODO: Send email notification to client
+      // Email integration not configured - requires FEATURE_EMAIL_ENABLED=true
+      // and email service provider configuration (Resend/SendGrid)
 
       // Refetch the updated quote
       const [updated] = await db

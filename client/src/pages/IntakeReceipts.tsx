@@ -289,7 +289,7 @@ function CreateReceiptDialog({ open, onOpenChange, onSuccess }: CreateReceiptDia
 
             <div className="space-y-3">
               {items.map((item, index) => (
-                <div key={index} className="flex gap-2 items-start p-3 border rounded-lg bg-muted/30">
+                <div key={`page-item-${index}`} className="flex gap-2 items-start p-3 border rounded-lg bg-muted/30">
                   <div className="flex-1 space-y-2">
                     <Input
                       placeholder="Product name"

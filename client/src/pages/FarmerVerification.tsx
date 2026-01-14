@@ -265,7 +265,7 @@ export default function FarmerVerification() {
                 </TableHeader>
                 <TableBody>
                   {receipt.items?.map((item: any, index: number) => (
-                    <TableRow key={index}>
+                    <TableRow key={`page-item-${index}`}>
                       <TableCell className="font-medium">{item.productName}</TableCell>
                       <TableCell className="text-right">
                         {item.expectedQuantity} {item.unit}

@@ -32,6 +32,7 @@ import { PackageX, Plus, TrendingDown } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { Checkbox } from "../components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ReturnsPage() {
   const { toast } = useToast();
@@ -43,6 +44,7 @@ export default function ReturnsPage() {
   const [notes, setNotes] = useState("");
   const [returnItems, setReturnItems] = useState<Array<{ batchId: number; quantity: string; reason?: string }>>([]);
   const [restockInventory, setRestockInventory] = useState(true);
+  const [deleteReturnItemConfirm, setDeleteReturnItemConfirm] = useState<number | null>(null);
 
   const { data: returns, isLoading, refetch } = trpc.returns.getAll.useQuery({ limit: 100 });
   const { data: stats } = trpc.returns.getStats.useQuery();
@@ -333,7 +335,7 @@ export default function ReturnsPage() {
                   {returnItems.map((item, index) => {
                     const lineItem = orderDetails?.lineItems?.find((li: any) => li.batchId === item.batchId);
                     return (
-                      <div key={index} className="flex gap-2 items-center p-2 border rounded-lg">
+                      <div key={`page-item-${index}`} className="flex gap-2 items-center p-2 border rounded-lg">
                         <div className="flex-1">
                           <div className="font-medium">
                             {lineItem?.productDisplayName || `Batch #${item.batchId}`}
@@ -349,7 +351,7 @@ export default function ReturnsPage() {
                           onChange={(e) => updateReturnItem(index, "reason", e.target.value)}
                           className="flex-1"
                         />
-                        <Button type="button" variant="destructive" size="sm" onClick={() => removeReturnItem(index)}>
+                        <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteReturnItemConfirm(index)}>
                           Remove
                         </Button>
                       </div>
@@ -376,6 +378,22 @@ export default function ReturnsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Return Item Delete Confirmation */}
+      <ConfirmDialog
+        open={deleteReturnItemConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteReturnItemConfirm(null)}
+        title="Remove Return Item"
+        description="Are you sure you want to remove this item from the return?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteReturnItemConfirm !== null) {
+            removeReturnItem(deleteReturnItemConfirm);
+          }
+          setDeleteReturnItemConfirm(null);
+        }}
+      />
     </div>
   );
 }

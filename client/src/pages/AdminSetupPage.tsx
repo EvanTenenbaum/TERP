@@ -14,11 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, Users, Shield } from "lucide-react";
-
-const SETUP_KEY = "terp-admin-setup-2024";
+import { CheckCircle, AlertCircle, Users, Shield, Key } from "lucide-react";
 
 export default function AdminSetupPage() {
+  const [setupKey, setSetupKey] = useState("");
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -34,10 +33,14 @@ export default function AdminSetupPage() {
   });
 
   const handlePromoteAll = () => {
+    if (!setupKey.trim()) {
+      setResult({ success: false, message: "Please enter the admin setup key" });
+      return;
+    }
     setLoading(true);
     setResult(null);
     promoteAllMutation.mutate({
-      setupKey: SETUP_KEY,
+      setupKey: setupKey,
       confirmPhrase: "I understand this promotes all users",
     });
   };
@@ -67,9 +70,27 @@ export default function AdminSetupPage() {
           )}
 
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="setupKey" className="flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                Admin Setup Key
+              </Label>
+              <Input
+                id="setupKey"
+                type="password"
+                placeholder="Enter admin setup key from .env"
+                value={setupKey}
+                onChange={(e) => setSetupKey(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500">
+                This is the ADMIN_SETUP_KEY from your environment variables
+              </p>
+            </div>
+
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-800">
-                <strong>Note:</strong> This will promote ALL users to admin role. 
+                <strong>Note:</strong> This will promote ALL users to admin role.
                 This is intended for initial setup only.
               </p>
             </div>

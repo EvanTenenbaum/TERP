@@ -38,7 +38,7 @@ export function RoomSidebar({
           <div className="h-6 bg-gray-200 rounded w-32" />
           <div className="space-y-2">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-10 bg-gray-200 rounded" />
+              <div key={`skeleton-${i}`} className="h-10 bg-gray-200 rounded" />
             ))}
           </div>
         </div>

@@ -50,7 +50,6 @@ import {
   CreditCard,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
-import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
 import {
   PaginationControls,
@@ -58,8 +57,10 @@ import {
 } from "@/components/ui/pagination-controls";
 import { toast } from "sonner";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
-// FEAT-007: Import Record Payment Dialog
+// FEAT-007: Import Record Payment Dialog and Payment History
 import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
+import { InvoicePaymentHistory } from "@/components/accounting/InvoicePaymentHistory";
+import { formatDate } from "@/lib/dateFormat";
 
 type Invoice = {
   id: number;
@@ -209,11 +210,6 @@ export default function Invoices() {
       style: "currency",
       currency: "USD",
     }).format(num);
-  };
-
-  const formatDate = (dateStr: Date | string) => {
-    const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
-    return format(date, "MMM dd, yyyy");
   };
 
   return (
@@ -546,6 +542,14 @@ export default function Invoices() {
               </div>
 
               <Separator />
+
+              {/* FEAT-007: Payment History */}
+              {selectedInvoice.status !== "DRAFT" && parseFloat(selectedInvoice.amountPaid) > 0 && (
+                <>
+                  <InvoicePaymentHistory invoiceId={selectedInvoice.id} />
+                  <Separator />
+                </>
+              )}
 
               {/* Quick Actions */}
               <div className="space-y-2">

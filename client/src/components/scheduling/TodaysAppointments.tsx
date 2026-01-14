@@ -115,7 +115,7 @@ export function TodaysAppointments({
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-gray-200 rounded w-48" />
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-20 bg-gray-200 rounded" />
+            <div key={`skeleton-${i}`} className="h-20 bg-gray-200 rounded" />
           ))}
         </div>
       </div>

@@ -783,6 +783,16 @@ export default function Inventory() {
                 .filter((c): c is string => Boolean(c)) || []
             )
           )}
+          subcategories={Array.from(
+            new Set(
+              inventoryData
+                ?.map(i => i.product?.subcategory)
+                .filter((s): s is string => Boolean(s))
+                .filter(s => !filters.category || inventoryData?.some(
+                  item => item.product?.subcategory === s && item.product?.category === filters.category
+                )) || []
+            )
+          )}
           grades={Array.from(
             new Set(
               inventoryData

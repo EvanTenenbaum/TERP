@@ -48,8 +48,9 @@ export const LineItemRow = memo(function LineItemRow({
   // Format currency
   const fmt = (value: number) => `$${value.toFixed(2)}`;
 
-  // Handle quantity change
+  // FEAT-003: Handle quantity change with validation
   const handleQuantityChange = (newQty: number) => {
+    // Validate: quantity must be greater than 0
     if (newQty > 0) {
       const updated = calculateLineItem(
         item.batchId,
@@ -66,9 +67,29 @@ export const LineItemRow = memo(function LineItemRow({
     if (!isNaN(qty) && qty > 0) {
       handleQuantityChange(qty);
     } else {
+      // Reset to original value if invalid
       setQtyInput(item.quantity.toString());
     }
     setIsEditingQty(false);
+  };
+
+  // FEAT-003: Handle keyboard navigation for quick entry
+  const handleQuantityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleQuantityBlur();
+      // Focus next editable quantity field for quick entry
+      const currentRow = (e.target as HTMLElement).closest('tr');
+      const nextRow = currentRow?.nextElementSibling;
+      if (nextRow) {
+        // Click the next row's quantity cell to enable editing
+        const nextQtyCell = nextRow.querySelector('td:nth-child(3) > div') as HTMLElement;
+        nextQtyCell?.click();
+      }
+    } else if (e.key === "Escape") {
+      setQtyInput(item.quantity.toString());
+      setIsEditingQty(false);
+    }
   };
 
   // Handle COGS change
@@ -128,22 +149,18 @@ export const LineItemRow = memo(function LineItemRow({
         </div>
       </TableCell>
 
-      {/* Quantity */}
+      {/* Quantity - FEAT-003: Enhanced with validation and keyboard navigation */}
       <TableCell className="text-right">
         {isEditingQty ? (
           <div className="flex items-center justify-end gap-1">
             <Input
               type="number"
+              min="0"
+              step="0.01"
               value={qtyInput}
               onChange={(e) => setQtyInput(e.target.value)}
               onBlur={handleQuantityBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleQuantityBlur();
-                if (e.key === "Escape") {
-                  setQtyInput(item.quantity.toString());
-                  setIsEditingQty(false);
-                }
-              }}
+              onKeyDown={handleQuantityKeyDown}
               className="w-20 h-8 text-right"
               autoFocus
             />
@@ -152,6 +169,7 @@ export const LineItemRow = memo(function LineItemRow({
           <div
             className="cursor-pointer hover:bg-muted px-2 py-1 rounded"
             onClick={() => setIsEditingQty(true)}
+            title="Click to edit quantity"
           >
             {item.quantity}
           </div>

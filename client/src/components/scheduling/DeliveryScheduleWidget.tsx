@@ -202,7 +202,7 @@ export function DeliveryScheduleWidget({
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map(i => (
                   <div
-                    key={i}
+                    key={`skeleton-${i}`}
                     className="h-16 bg-gray-200 rounded animate-pulse"
                   />
                 ))}

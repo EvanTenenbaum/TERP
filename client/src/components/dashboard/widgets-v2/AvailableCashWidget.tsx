@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowRight, DollarSign, Clock, Wallet } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/dateFormat";
 
 export const AvailableCashWidget = memo(function AvailableCashWidget() {
   const [, setLocation] = useLocation();
@@ -28,16 +29,6 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
-  };
-
-  const formatDate = (date: Date | string) => {
-    const d = new Date(date);
-    return d.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
   };
 
   return (
@@ -147,7 +138,7 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
 
             {/* Last Updated */}
             <p className="text-xs text-muted-foreground text-right">
-              Updated {formatDate(data.lastUpdated)}
+              Updated {formatDateTime(data.lastUpdated, "short", "short")}
             </p>
           </div>
         ) : (

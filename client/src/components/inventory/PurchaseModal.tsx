@@ -58,15 +58,39 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const debouncedVendorSearch = useDebounce(vendorSearch, 300);
   const debouncedBrandSearch = useDebounce(brandSearch, 300);
 
+  // BUG-073 FIX: Track request IDs to prevent race conditions in debounced search
+  const vendorRequestIdRef = React.useRef(0);
+  const brandRequestIdRef = React.useRef(0);
+  const [vendorRequestId, setVendorRequestId] = useState(0);
+  const [brandRequestId, setBrandRequestId] = useState(0);
+
+  // BUG-073 FIX: Increment request ID when debounced search changes
+  React.useEffect(() => {
+    vendorRequestIdRef.current += 1;
+    setVendorRequestId(vendorRequestIdRef.current);
+  }, [debouncedVendorSearch]);
+
+  React.useEffect(() => {
+    brandRequestIdRef.current += 1;
+    setBrandRequestId(brandRequestIdRef.current);
+  }, [debouncedBrandSearch]);
+
   // Fetch autocomplete data
+  // BUG-073 FIX: Add request ID to queries to prevent stale results
   const { data: vendors } = trpc.inventory.vendors.useQuery(
     { query: debouncedVendorSearch },
-    { enabled: debouncedVendorSearch.length > 0 }
+    {
+      enabled: debouncedVendorSearch.length > 0,
+      keepPreviousData: false, // Don't show stale data
+    }
   );
 
   const { data: brands } = trpc.inventory.brands.useQuery(
     { query: debouncedBrandSearch },
-    { enabled: debouncedBrandSearch.length > 0 }
+    {
+      enabled: debouncedBrandSearch.length > 0,
+      keepPreviousData: false, // Don't show stale data
+    }
   );
 
 
@@ -75,6 +99,11 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const { data: categories } = trpc.settings.categories.list.useQuery();
   const { data: grades } = trpc.settings.grades.list.useQuery();
   const { data: locations } = trpc.settings.locations.list.useQuery();
+
+  // FEAT-012: Fetch display settings for grade field visibility
+  const { data: displaySettings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  const showGradeField = displaySettings?.display?.showGradeField ?? true;
+  const gradeFieldRequired = displaySettings?.display?.gradeFieldRequired ?? false;
 
   const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
   const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
@@ -133,6 +162,12 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     
     if (!isFlowerCategory && !formData.productName) {
       toast.error("Please enter a product name");
+      return;
+    }
+
+    // FEAT-012: Conditionally validate grade field if required
+    if (showGradeField && gradeFieldRequired && !formData.grade) {
+      toast.error("Please select a grade");
       return;
     }
 
@@ -409,24 +444,29 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="grade">Grade *</Label>
-              <Select
-                value={formData.grade}
-                onValueChange={(value) => setFormData({ ...formData, grade: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {grades?.map((grade) => (
-                    <SelectItem key={grade.id} value={grade.name}>
-                      {grade.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* FEAT-012: Conditionally render grade field based on organization settings */}
+            {showGradeField && (
+              <div className="space-y-2">
+                <Label htmlFor="grade">
+                  Grade{gradeFieldRequired && <span className="text-destructive"> *</span>}
+                </Label>
+                <Select
+                  value={formData.grade}
+                  onValueChange={(value) => setFormData({ ...formData, grade: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grades?.map((grade) => (
+                      <SelectItem key={grade.id} value={grade.name}>
+                        {grade.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Quantity */}
@@ -599,7 +639,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               {mediaFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {mediaFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                       <span className="text-sm truncate flex-1">{file.name}</span>
                       <Button
                         type="button"

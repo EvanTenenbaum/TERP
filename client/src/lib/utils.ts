@@ -21,42 +21,60 @@ export function formatCurrency(value: string | number | null | undefined): strin
 }
 
 /**
+ * UX-012: Date formatting utilities
+ *
+ * These functions are re-exported from @/lib/dateFormat for backward compatibility.
+ * For new code, prefer importing directly from @/lib/dateFormat for access to additional
+ * features like user preferences and style options.
+ */
+import {
+  formatDate as _formatDate,
+  formatDateTime as _formatDateTime,
+  formatDateRange as _formatDateRange,
+  formatRelativeTime as _formatRelativeTime,
+} from "@/lib/dateFormat";
+
+/**
  * Format a date value for display
+ * @deprecated Use formatDate from @/lib/dateFormat for more options
  */
 export function formatDate(
   value: Date | string | null | undefined,
   options?: Intl.DateTimeFormatOptions
 ): string {
-  if (!value) return "-";
-  const date = typeof value === "string" ? new Date(value) : value;
-  if (isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    ...options,
-  }).format(date);
+  // Maintain backward compatibility with Intl options
+  if (options) {
+    if (!value) return "-";
+    const date = typeof value === "string" ? new Date(value) : value;
+    if (date instanceof Date && isNaN(date.getTime())) return "-";
+    return new Intl.DateTimeFormat("en-US", options).format(date);
+  }
+
+  // Use centralized formatter with medium style
+  const result = _formatDate(value, "medium");
+  return result === "N/A" ? "-" : result;
 }
 
 /**
  * Format a date with time
+ * @deprecated Use formatDateTime from @/lib/dateFormat for more options
  */
 export function formatDateTime(value: Date | string | null | undefined): string {
-  if (!value) return "-";
-  const date = typeof value === "string" ? new Date(value) : value;
-  if (isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+  const result = _formatDateTime(value, "medium", "short");
+  return result === "N/A" ? "-" : result;
 }
 
 /**
- * UX-012: Additional date formatting utilities for consistent display
+ * Format a date range (e.g., "Jan 1 - Jan 15, 2024")
+ * @deprecated Use formatDateRange from @/lib/dateFormat for more options
  */
+export function formatDateRange(
+  startValue: Date | string | null | undefined,
+  endValue: Date | string | null | undefined
+): string {
+  const result = _formatDateRange(startValue, endValue, "medium");
+  return result === "N/A" ? "-" : result;
+}
 
 /**
  * Format a date in short format (e.g., "Jan 15" or "Jan 15, 2024")
@@ -65,45 +83,13 @@ export function formatShortDate(
   value: Date | string | null | undefined,
   includeYear = false
 ): string {
-  if (!value) return "-";
-  const date = typeof value === "string" ? new Date(value) : value;
-  if (isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    ...(includeYear && { year: "numeric" }),
-  }).format(date);
-}
-
-/**
- * Format a date range (e.g., "Jan 1 - Jan 15, 2024")
- */
-export function formatDateRange(
-  startValue: Date | string | null | undefined,
-  endValue: Date | string | null | undefined
-): string {
-  if (!startValue || !endValue) return "-";
-  const startDate = typeof startValue === "string" ? new Date(startValue) : startValue;
-  const endDate = typeof endValue === "string" ? new Date(endValue) : endValue;
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return "-";
-
-  const startFormatted = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(startDate);
-
-  const endFormatted = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(endDate);
-
-  return `${startFormatted} - ${endFormatted}`;
+  const style = includeYear ? "medium" : "short";
+  const result = _formatDate(value, style);
+  return result === "N/A" ? "-" : result;
 }
 
 /**
  * Format a relative date (e.g., "2 days ago", "in 3 hours")
- * Falls back to formatDate for dates beyond the threshold
  */
 export function formatRelativeDate(
   value: Date | string | null | undefined,
@@ -111,7 +97,7 @@ export function formatRelativeDate(
 ): string {
   if (!value) return "-";
   const date = typeof value === "string" ? new Date(value) : value;
-  if (isNaN(date.getTime())) return "-";
+  if (date instanceof Date && isNaN(date.getTime())) return "-";
 
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
@@ -122,20 +108,7 @@ export function formatRelativeDate(
     return formatDate(date);
   }
 
-  // Use relative time formatter if supported
-  try {
-    const rtf = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-
-    if (Math.abs(diffMinutes) < 60) {
-      return rtf.format(diffMinutes, "minute");
-    } else if (Math.abs(diffHours) < 24) {
-      return rtf.format(diffHours, "hour");
-    } else {
-      return rtf.format(Math.floor(diffMs / (1000 * 60 * 60 * 24)), "day");
-    }
-  } catch {
-    return formatDate(date);
-  }
+  // Use centralized relative time formatter
+  const result = _formatRelativeTime(value);
+  return result === "N/A" ? "-" : result;
 }

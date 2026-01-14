@@ -115,7 +115,7 @@ export function SuggestedBuyers({
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-16" />
+              <Skeleton key={`skeleton-${i}`} className="h-16" />
             ))}
           </div>
         </CardContent>

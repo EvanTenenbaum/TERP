@@ -231,7 +231,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                         <div className="grid gap-3">
                           {selectedNeed.matches.slice(0, 3).map((match: any, idx: number) => (
                             <MatchCard
-                              key={idx}
+                              key={`match-${match.batchId || match.sku}-${idx}`}
                               match={match}
                               onCreateQuote={() => handleCreateQuote(need, [match])}
                             />
@@ -270,7 +270,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
           ) : (
             <div className="grid gap-4">
               {purchasePatterns.map((pattern: any, idx: number) => (
-                <Card key={idx}>
+                <Card key={`pattern-${pattern.strain || pattern.category}-${idx}`}>
                   <CardHeader>
                     <CardTitle className="text-base">
                       {pattern.strain || pattern.category || "Unknown Product"}

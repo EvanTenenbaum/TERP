@@ -139,7 +139,7 @@ export const NotificationPreferencesPage = React.memo(
             <CardContent className="space-y-4">
               {[1, 2, 3, 4, 5].map(i => (
                 <div
-                  key={i}
+                  key={`page-item-${i}`}
                   className="flex items-center justify-between border border-border rounded-lg p-4"
                 >
                   <div className="space-y-2 flex-1">

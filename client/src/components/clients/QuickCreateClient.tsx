@@ -15,6 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -52,6 +59,8 @@ export function QuickCreateClient({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [businessType, setBusinessType] = useState<"" | "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER">("");
+  const [preferredContact, setPreferredContact] = useState<"" | "EMAIL" | "PHONE" | "TEXT" | "ANY">("");
   const [isBuyer, setIsBuyer] = useState(true);
   const [isSeller, setIsSeller] = useState(false);
   const [referrerId, setReferrerId] = useState<number | undefined>(
@@ -90,6 +99,7 @@ export function QuickCreateClient({
   );
 
   // Quick create mutation
+  // BUG-071 FIX: Enhanced error handling with detailed messages
   const quickCreateMutation = trpc.client360.quickCreate.useMutation({
     onSuccess: result => {
       if (result.success && result.client) {
@@ -117,7 +127,27 @@ export function QuickCreateClient({
       }
     },
     onError: error => {
-      toast.error(error.message || "Failed to create client");
+      // BUG-071 FIX: Provide clear, user-friendly error messages
+      console.error('Quick create client error:', error);
+
+      // Handle specific error types
+      if (error.message.includes('unique') || error.message.includes('duplicate')) {
+        toast.error('Client already exists', {
+          description: 'A client with this name or email already exists. Please use different information.'
+        });
+      } else if (error.message.includes('validation') || error.message.includes('required')) {
+        toast.error('Invalid form data', {
+          description: 'Please check all required fields and try again.'
+        });
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error('Connection error', {
+          description: 'Unable to reach the server. Please check your connection and try again.'
+        });
+      } else {
+        toast.error('Failed to create client', {
+          description: error.message || 'An unexpected error occurred. Please try again.'
+        });
+      }
     },
   });
 
@@ -125,6 +155,8 @@ export function QuickCreateClient({
     setName("");
     setEmail("");
     setPhone("");
+    setBusinessType("");
+    setPreferredContact("");
     setIsBuyer(true);
     setIsSeller(false);
     setReferrerId(defaultReferrerId);
@@ -134,13 +166,34 @@ export function QuickCreateClient({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // BUG-071 FIX: Enhanced validation with user feedback
     if (!name.trim()) {
-      toast.error("Name is required");
+      toast.error("Name is required", {
+        description: "Please provide a name for the client"
+      });
       return;
     }
 
     if (!email.trim() && !phone.trim()) {
-      toast.error("Please provide either email or phone");
+      toast.error("Contact information required", {
+        description: "Please provide either an email address or phone number"
+      });
+      return;
+    }
+
+    // Validate email format if provided
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error("Invalid email format", {
+        description: "Please provide a valid email address"
+      });
+      return;
+    }
+
+    // Validate at least one client type is selected
+    if (!isBuyer && !isSeller) {
+      toast.error("Client type required", {
+        description: "Please select if this client is a buyer, seller, or both"
+      });
       return;
     }
 
@@ -148,6 +201,8 @@ export function QuickCreateClient({
       name: name.trim(),
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
+      businessType: businessType || undefined,
+      preferredContact: preferredContact || undefined,
       isBuyer,
       isSeller,
       referredByClientId: referrerId,
@@ -181,7 +236,7 @@ export function QuickCreateClient({
               <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {nameSuggestions.suggestions.map((s, idx) => (
                   <button
-                    key={idx}
+                    key={`name-suggestion-${s.value}-${idx}`}
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                     onClick={() => {
@@ -222,7 +277,7 @@ export function QuickCreateClient({
               <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {emailSuggestions.suggestions.map((s, idx) => (
                   <button
-                    key={idx}
+                    key={`email-suggestion-${s.value}-${idx}`}
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                     onClick={() => {
@@ -260,7 +315,7 @@ export function QuickCreateClient({
               <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {phoneSuggestions.suggestions.map((s, idx) => (
                   <button
-                    key={idx}
+                    key={`phone-suggestion-${s.value}-${idx}`}
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                     onClick={() => {
@@ -277,6 +332,48 @@ export function QuickCreateClient({
         <p className="text-xs text-muted-foreground">
           At least email or phone is required
         </p>
+      </div>
+
+      {/* Business Information */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="quick-businessType">Business Type</Label>
+          <Select
+            value={businessType}
+            onValueChange={(value) => setBusinessType(value as typeof businessType)}
+          >
+            <SelectTrigger id="quick-businessType">
+              <SelectValue placeholder="Select type (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="RETAIL">Retail</SelectItem>
+              <SelectItem value="WHOLESALE">Wholesale</SelectItem>
+              <SelectItem value="DISPENSARY">Dispensary</SelectItem>
+              <SelectItem value="DELIVERY">Delivery</SelectItem>
+              <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
+              <SelectItem value="DISTRIBUTOR">Distributor</SelectItem>
+              <SelectItem value="OTHER">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="quick-preferredContact">Preferred Contact</Label>
+          <Select
+            value={preferredContact}
+            onValueChange={(value) => setPreferredContact(value as typeof preferredContact)}
+          >
+            <SelectTrigger id="quick-preferredContact">
+              <SelectValue placeholder="Select method (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EMAIL">Email</SelectItem>
+              <SelectItem value="PHONE">Phone</SelectItem>
+              <SelectItem value="TEXT">Text</SelectItem>
+              <SelectItem value="ANY">Any</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Client Types */}

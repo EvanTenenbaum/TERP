@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatDateRange } from "@/lib/dateFormat";
 
 export type FiscalPeriodStatus = "OPEN" | "CLOSED" | "LOCKED";
 
@@ -63,19 +64,6 @@ export function FiscalPeriodSelector({
   }, [periods]);
 
   const selectedPeriod = sortedPeriods.find((period) => period.id === value);
-
-  const formatDateRange = (startDate: string | Date, endDate: string | Date): string => {
-    const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
-    const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
-    
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-
-    return `${formatter.format(start)} - ${formatter.format(end)}`;
-  };
 
   const getStatusBadge = (periodStatus: FiscalPeriodStatus) => {
     switch (periodStatus) {

@@ -132,6 +132,12 @@ export function EditInvoiceDialog({
 
     if (!invoiceId) return;
 
+    // FEAT-008: Prevent editing PAID or VOID invoices
+    if (invoice?.status === "PAID" || invoice?.status === "VOID") {
+      toast.error(`Cannot edit ${invoice.status.toLowerCase()} invoices`);
+      return;
+    }
+
     updateInvoiceMutation.mutate({
       id: invoiceId,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
@@ -150,6 +156,14 @@ export function EditInvoiceDialog({
   };
 
   if (!invoiceId) return null;
+
+  // FEAT-008: Check if invoice can be edited based on status
+  const isEditable = invoice && invoice.status !== "PAID" && invoice.status !== "VOID";
+  const statusMessage = invoice?.status === "PAID"
+    ? "This invoice has been paid and cannot be edited."
+    : invoice?.status === "VOID"
+    ? "This invoice has been voided and cannot be edited."
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -170,6 +184,17 @@ export function EditInvoiceDialog({
           </div>
         ) : invoice ? (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* FEAT-008: Status restriction warning */}
+            {statusMessage && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-amber-900">Editing Restricted</p>
+                  <p className="text-sm text-amber-700 mt-1">{statusMessage}</p>
+                </div>
+              </div>
+            )}
+
             {/* Invoice Summary (Read-only) */}
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
@@ -221,6 +246,7 @@ export function EditInvoiceDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, dueDate: e.target.value })
                   }
+                  disabled={!isEditable}
                 />
               </div>
 
@@ -232,8 +258,9 @@ export function EditInvoiceDialog({
                   onValueChange={(value) =>
                     setFormData({ ...formData, paymentTerms: value })
                   }
+                  disabled={!isEditable}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger disabled={!isEditable}>
                     <SelectValue placeholder="Select payment terms" />
                   </SelectTrigger>
                   <SelectContent>
@@ -254,8 +281,9 @@ export function EditInvoiceDialog({
                   onValueChange={(value: InvoiceData["status"]) =>
                     setFormData({ ...formData, status: value })
                   }
+                  disabled={!isEditable}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger disabled={!isEditable}>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -285,6 +313,7 @@ export function EditInvoiceDialog({
                   }
                   placeholder="Add internal notes about this invoice..."
                   rows={3}
+                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -296,21 +325,23 @@ export function EditInvoiceDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={updateInvoiceMutation.isPending}
               >
-                Cancel
+                {isEditable ? "Cancel" : "Close"}
               </Button>
-              <Button
-                type="submit"
-                disabled={updateInvoiceMutation.isPending}
-              >
-                {updateInvoiceMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
+              {isEditable && (
+                <Button
+                  type="submit"
+                  disabled={updateInvoiceMutation.isPending}
+                >
+                  {updateInvoiceMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              )}
             </DialogFooter>
           </form>
         ) : (

@@ -38,8 +38,19 @@ import {
   Cloud,
   CloudOff,
   Loader2,
+  ChevronDown,
+  FileText,
+  Send,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Import new v2 components
 import {
@@ -80,6 +91,8 @@ interface InventoryItemForOrder {
   name: string;
   basePrice: number;
   retailPrice?: number;
+  orderQuantity?: number; // FEAT-003: Support quick add quantity from InventoryBrowser
+  quantity?: number; // Available stock quantity
 }
 
 export default function OrderCreatorPageV2() {
@@ -432,10 +445,13 @@ export default function OrderCreatorPageV2() {
       const marginPercent =
         cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
 
+      // FEAT-003: Use orderQuantity from InventoryBrowser if provided, otherwise default to 1
+      const quantity = item.orderQuantity || 1;
+
       // Use calculateLineItem to ensure proper structure
       const calculated = calculateLineItem(
         item.id, // batchId - guaranteed to be defined after filter
-        1, // default quantity
+        quantity,
         cogsPerUnit,
         marginPercent
       );
@@ -510,51 +526,35 @@ export default function OrderCreatorPageV2() {
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                {/* CHAOS-025: Auto-save status indicator */}
-                {clientId && items.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    {autoSaveStatus === "saving" && (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    )}
-                    {autoSaveStatus === "saved" && (
-                      <>
-                        <Cloud className="h-4 w-4 text-green-600" />
-                        {/* QA-W2-006: Display saved draft ID for user reference */}
-                        <span className="text-green-600">
-                          Draft saved
-                          {lastSavedDraftId ? ` (#${lastSavedDraftId})` : ""}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === "error" && (
-                      <>
-                        <CloudOff className="h-4 w-4 text-destructive" />
-                        <span className="text-destructive">
-                          Auto-save failed
-                        </span>
-                      </>
-                    )}
-                  </div>
-                )}
-                <Select
-                  value={orderType}
-                  onValueChange={value =>
-                    setOrderType(value as "QUOTE" | "SALE")
-                  }
-                >
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SALE">Sale</SelectItem>
-                    <SelectItem value="QUOTE">Quote</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* CHAOS-025: Auto-save status indicator */}
+              {clientId && items.length > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  {autoSaveStatus === "saving" && (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  )}
+                  {autoSaveStatus === "saved" && (
+                    <>
+                      <Cloud className="h-4 w-4 text-green-600" />
+                      {/* QA-W2-006: Display saved draft ID for user reference */}
+                      <span className="text-green-600">
+                        Draft saved
+                        {lastSavedDraftId ? ` (#${lastSavedDraftId})` : ""}
+                      </span>
+                    </>
+                  )}
+                  {autoSaveStatus === "error" && (
+                    <>
+                      <CloudOff className="h-4 w-4 text-destructive" />
+                      <span className="text-destructive">
+                        Auto-save failed
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -755,66 +755,62 @@ export default function OrderCreatorPageV2() {
                 }}
               />
 
-              {/* FEAT-005: Merged Draft/Quote Workflow Actions */}
+              {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
               <Card>
                 <CardContent className="pt-6 space-y-3">
-                  {/* Order Type Indicator */}
-                  <div className="flex items-center justify-between p-2 bg-muted rounded-md mb-2">
-                    <span className="text-sm text-muted-foreground">
-                      Creating:
-                    </span>
-                    <span className="font-medium">
-                      {orderType === "QUOTE" ? "Quote" : "Sale Order"}
-                    </span>
-                  </div>
-
-                  {/* Save as Draft - works for both Quote and Sale */}
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={handleSaveDraft}
-                    disabled={
-                      items.length === 0 || createDraftMutation.isPending
-                    }
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save as Draft
-                  </Button>
-
-                  {/* Quick Quote Option - saves and marks as quote */}
-                  {orderType === "SALE" && (
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      onClick={() => {
-                        setOrderType("QUOTE");
-                        handleSaveDraft();
-                      }}
-                      disabled={
-                        items.length === 0 || createDraftMutation.isPending
+                  {/* Order Type Selector */}
+                  <div className="space-y-2">
+                    <Label>Order Type</Label>
+                    <Select
+                      value={orderType}
+                      onValueChange={value =>
+                        setOrderType(value as "QUOTE" | "SALE")
                       }
                     >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save as Quote Instead
-                    </Button>
-                  )}
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SALE">Sale Order</SelectItem>
+                        <SelectItem value="QUOTE">Quote</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  {/* Convert Quote to Sale */}
-                  {orderType === "QUOTE" && (
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      onClick={() => {
-                        setOrderType("SALE");
-                      }}
-                      disabled={items.length === 0}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Convert to Sale
-                    </Button>
-                  )}
+                  {/* Unified Save Dropdown Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        disabled={items.length === 0 || createDraftMutation.isPending}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save
+                        <ChevronDown className="h-4 w-4 ml-auto" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuLabel>Save Options</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSaveDraft}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Save as Draft
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setOrderType("QUOTE");
+                          // Use setTimeout to allow orderType state to update
+                          setTimeout(() => handleSaveDraft(), 0);
+                        }}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Save & Send as Quote
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                  {/* Finalize Button */}
+                  {/* Primary Finalize/Confirm Button */}
                   <Button
                     className="w-full"
                     onClick={handlePreviewAndFinalize}
@@ -831,14 +827,14 @@ export default function OrderCreatorPageV2() {
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         {orderType === "QUOTE"
                           ? "Creating Quote..."
-                          : "Finalizing Sale..."}
+                          : "Confirming Order..."}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
                         {orderType === "QUOTE"
-                          ? "Create Quote"
-                          : "Finalize Sale"}
+                          ? "Confirm Quote"
+                          : "Confirm Order"}
                       </>
                     )}
                   </Button>
@@ -847,7 +843,7 @@ export default function OrderCreatorPageV2() {
                     <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm">
                       <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
                       <p className="text-destructive">
-                        Fix validation errors before finalizing
+                        Fix validation errors before confirming
                       </p>
                     </div>
                   )}

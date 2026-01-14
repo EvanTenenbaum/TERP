@@ -33,13 +33,41 @@ export const useLiveSessionClient = (roomCode: string, sessionToken: string) => 
   useEffect(() => {
     if (!roomCode || !sessionToken) return;
 
-    const connect = () => {
+    const connect = async () => {
       setConnectionStatus("CONNECTING");
-      
-      // Pass token in query param for auth
-      const url = `/api/sse/vip/live-shopping/${roomCode}?token=${encodeURIComponent(sessionToken)}`;
-      const evtSource = new EventSource(url);
-      eventSourceRef.current = evtSource;
+
+      // SEC-021 Fix: Two-step authentication to avoid exposing token in URL
+      // Step 1: Exchange token for short-lived SSE session ID
+      try {
+        const authResponse = await fetch("/api/sse/vip/auth", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token: sessionToken,
+            roomCode: roomCode,
+          }),
+        });
+
+        if (!authResponse.ok) {
+          const error = await authResponse.json();
+          console.error("[Client SSE] Auth failed:", error);
+          setConnectionStatus("ERROR");
+
+          // Retry after 5 seconds if auth fails
+          retryTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, 5000);
+          return;
+        }
+
+        const { sseSessionId } = await authResponse.json();
+
+        // Step 2: Connect to SSE with SSE session ID (not actual token)
+        const url = `/api/sse/vip/live-shopping/${roomCode}?sseSessionId=${encodeURIComponent(sseSessionId)}`;
+        const evtSource = new EventSource(url);
+        eventSourceRef.current = evtSource;
 
       evtSource.onopen = () => {
         setConnectionStatus("CONNECTED");
@@ -112,16 +140,25 @@ export const useLiveSessionClient = (roomCode: string, sessionToken: string) => 
         }
       });
 
-      evtSource.onerror = (err) => {
-        console.error("[Client SSE] Error", err);
+        evtSource.onerror = (err) => {
+          console.error("[Client SSE] Error", err);
+          setConnectionStatus("ERROR");
+          evtSource.close();
+
+          // Auto-reconnect after 3 seconds
+          retryTimeoutRef.current = setTimeout(() => {
+              connect();
+          }, 3000);
+        };
+      } catch (error) {
+        console.error("[Client SSE] Connection error:", error);
         setConnectionStatus("ERROR");
-        evtSource.close();
-        
-        // Auto-reconnect after 3 seconds
+
+        // Retry after 5 seconds on connection error
         retryTimeoutRef.current = setTimeout(() => {
-            connect();
-        }, 3000);
-      };
+          connect();
+        }, 5000);
+      }
     };
 
     connect();

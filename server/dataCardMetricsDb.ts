@@ -249,26 +249,15 @@ async function calculateInventoryMetrics(
     };
   }
   
-  // Expiring Soon - DISABLED: expirationDate column doesn't exist in schema
-  if (false && metricIds.includes('inventory_expiring_soon')) {
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    
-    // Note: expirationDate field doesn't exist in batches table
-    // TODO: Add expirationDate to batches schema or remove this metric
-    // const [result] = await db
-    //   .select({ count: count() })
-    //   .from(batches)
-    //   .where(
-    //     and(
-    //       lte(batches.expirationDate, thirtyDaysFromNow),
-    //       gte(batches.expirationDate, new Date())
-    //     )
-    //   );
-    
+  // Expiring Soon - DISABLED: expirationDate column doesn't exist in batches or lots schema
+  // Note: Vendor supply expiration tracking is available via vendor_expiring metric
+  if (metricIds.includes('inventory_expiring_soon')) {
+    // Batch/lot expiration tracking not implemented in current schema
+    // Alternative: Use vendor_expiring metric for vendor supply expiration
+    // To enable: Add expirationDate column to batches or lots table
     results['inventory_expiring_soon'] = {
-      value: 0, // Disabled until expirationDate is added to schema
-      subtext: 'expiring in 30 days',
+      value: 0,
+      subtext: 'expiration tracking N/A',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -373,24 +362,25 @@ async function calculateOrdersMetrics(
   }
   
   if (metricIds.includes('orders_overdue')) {
-    const now = new Date();
-    
-    // Note: expectedShipDate field doesn't exist in orders table
-    // TODO: Add expectedShipDate to orders schema or use different field
-    // const [result] = await db
-    //   .select({ count: count() })
-    //   .from(orders)
-    //   .where(
-    //     and(
-    //       eq(orders.orderType, 'SALE'),
-    //       lte(orders.expectedShipDate, now),
-    //       eq(orders.fulfillmentStatus, 'PENDING')
-    //     )
-    //   );
-    
+    // Count orders that have been PENDING for more than 7 days
+    // (using createdAt since expectedShipDate doesn't exist in schema)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.orderType, 'SALE'),
+          lte(orders.createdAt, sevenDaysAgo),
+          eq(orders.fulfillmentStatus, 'PENDING')
+        )
+      );
+
     results['orders_overdue'] = {
-      value: 0, // Disabled until expectedShipDate is added to schema
-      subtext: 'overdue shipments',
+      value: result?.count || 0,
+      subtext: 'pending >7 days',
       updatedAt: new Date().toISOString(),
     };
   }
