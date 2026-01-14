@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 5.6
-**Last Updated:** 2026-01-14 (Wave 2 audit - FEAT-007, FEAT-008, FEAT-011, QUAL-003 verified already implemented)
+**Version:** 5.7
+**Last Updated:** 2026-01-14 (Wave 3 audit - FEAT-009, FEAT-010, FEAT-019, FEAT-023 verified already implemented)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -425,8 +425,8 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | FEAT-006    | Show Product Name Instead of SKU in Order Creator    | MEDIUM   | ready       | -      |
 | FEAT-007    | Add Payment Recording Against Invoices               | HIGH     | ✅ COMPLETE (already implemented) | -      |
 | FEAT-008    | Invoice Editing from Order View                      | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
-| FEAT-009    | Add Product Subcategories (Smalls, Trim, etc.)       | MEDIUM   | ready       | -      |
-| FEAT-010    | Default Warehouse Selection                          | MEDIUM   | ready       | -      |
+| FEAT-009    | Add Product Subcategories (Smalls, Trim, etc.)       | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
+| FEAT-010    | Default Warehouse Selection                          | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | FEAT-011    | COGS Logic and Sales Flow Integration                | HIGH     | ✅ COMPLETE (already implemented) | -      |
 | FEAT-012    | Make Grade Field Optional/Customizable               | LOW      | ready       | -      |
 | FEAT-013    | Add Packaged Unit Type for Products                  | LOW      | ready       | -      |
@@ -435,11 +435,11 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | FEAT-016    | Rename Credits to Credit Settings                    | LOW      | ✅ COMPLETE | -      |
 | FEAT-017    | Feature Flags Direct Access                          | LOW      | ready       | -      |
 | FEAT-018    | Remove Development-Only Features from User-Facing UI | LOW      | ready       | -      |
-| FEAT-019    | VIP Status and Tiers Implementation                  | MEDIUM   | ready       | -      |
+| FEAT-019    | VIP Status and Tiers Implementation                  | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | FEAT-020    | Product Subcategory and Strain Matching              | MEDIUM   | ready       | -      |
 | FEAT-021    | Settings Changes Apply to Entire Team                | MEDIUM   | ready       | -      |
 | FEAT-022    | Show Role Names Instead of Count in Permissions      | LOW      | ready       | -      |
-| FEAT-023    | Notification Preferences - System vs User Level      | MEDIUM   | ready       | -      |
+| FEAT-023    | Notification Preferences - System vs User Level      | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | FEAT-024    | Inline Notifications Without Page Navigation         | MEDIUM   | ready       | -      |
 | FEATURE-003 | Live Shopping & Price Negotiation System             | MEDIUM   | ready       | -      |
 
@@ -518,14 +518,14 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | API Registration     | 10        | 0       | 10       |
 | Stability            | 4         | 0       | 4        |
 | Quality              | 11        | 1       | 12       |
-| Features             | 9         | 21      | 30       |
+| Features             | 13        | 17      | 30       |
 | UX                   | 12        | 0       | 12       |
 | Data & Schema        | 8         | 0       | 8        |
 | Data Integrity (QA)  | 8         | 0       | 8        |
 | Frontend Quality (QA)| 3         | 0       | 3        |
 | Backend Quality (QA) | 5         | 0       | 5        |
 | Improvements         | 4         | 0       | 4        |
-| **TOTAL**            | **154**   | **27**  | **181**  |
+| **TOTAL**            | **158**   | **23**  | **181**  |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
@@ -607,9 +607,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open     | Total    | Progress |
 | --------- | --------- | -------- | -------- | -------- |
-| MVP       | 154       | 27       | 181      | ~85%     |
+| MVP       | 158       | 23       | 181      | ~87%     |
 | Beta      | 0         | 17       | 17       | 0%       |
-| **TOTAL** | **154**   | **44**   | **198**  | ~78%     |
+| **TOTAL** | **158**   | **40**   | **198**  | ~80%     |
 
 ---
 
