@@ -13,6 +13,18 @@
 import { logger } from "../_core/logger";
 
 /**
+ * Helper to find a key in SUBCATEGORY_RELATIONSHIPS case-insensitively
+ * @param input - The subcategory string to look up
+ * @returns The matching key from SUBCATEGORY_RELATIONSHIPS or undefined
+ */
+function findRelationshipKey(input: string): string | undefined {
+  const normalized = input.trim().toLowerCase();
+  return Object.keys(SUBCATEGORY_RELATIONSHIPS).find(
+    key => key.toLowerCase() === normalized
+  );
+}
+
+/**
  * Define relationships between subcategories
  * Products from the same harvest often have multiple subcategories
  * that can substitute for each other at different match scores
@@ -78,8 +90,9 @@ export function calculateSubcategoryScore(
     return 100;
   }
 
-  // Check if they're related subcategories
-  const relationships = SUBCATEGORY_RELATIONSHIPS[needSubcat] || [];
+  // Check if they're related subcategories (case-insensitive key lookup)
+  const needKey = findRelationshipKey(needSubcat);
+  const relationships = needKey ? SUBCATEGORY_RELATIONSHIPS[needKey] : [];
   const relatedMatch = relationships.find(
     related => related.toLowerCase() === supplyNormalized
   );
@@ -90,7 +103,8 @@ export function calculateSubcategoryScore(
   }
 
   // Also check reverse relationship (if supply has need in its relationships)
-  const reverseRelationships = SUBCATEGORY_RELATIONSHIPS[supplySubcat] || [];
+  const supplyKey = findRelationshipKey(supplySubcat);
+  const reverseRelationships = supplyKey ? SUBCATEGORY_RELATIONSHIPS[supplyKey] : [];
   const reverseMatch = reverseRelationships.find(
     related => related.toLowerCase() === needNormalized
   );
@@ -119,7 +133,9 @@ export function calculateSubcategoryScore(
 export function getRelatedSubcategories(subcategory: string): string[] {
   if (!subcategory) return [];
 
-  const relationships = SUBCATEGORY_RELATIONSHIPS[subcategory] || [];
+  // Case-insensitive key lookup
+  const key = findRelationshipKey(subcategory);
+  const relationships = key ? SUBCATEGORY_RELATIONSHIPS[key] : [];
 
   // Also check reverse relationships
   const reverseRelated: string[] = [];

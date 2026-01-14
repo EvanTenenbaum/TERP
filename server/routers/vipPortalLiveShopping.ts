@@ -141,7 +141,7 @@ export const vipPortalLiveShoppingRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify session ownership first
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -190,7 +190,7 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -236,7 +236,7 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -277,7 +277,7 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -303,7 +303,7 @@ export const vipPortalLiveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const session = await db.query.liveShoppingSessions.findFirst({
         where: eq(liveShoppingSessions.id, input.sessionId),
