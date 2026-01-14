@@ -10,9 +10,9 @@
 
 ## 🟢 Currently Working
 
-| Session ID | Task | Branch | Module | Status | Started | ETA |
-| ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session ID                      | Task           | Branch | Module    | Status      | Started    | ETA |
+| ------------------------------- | -------------- | ------ | --------- | ----------- | ---------- | --- |
+| Session-20260114-QA-TERP-664c9b | Deep QA Review | main   | Repo-wide | In Progress | 2026-01-14 | TBD |
 
 ## ⏸️ Paused / Waiting
 
