@@ -10,6 +10,7 @@ import {
   UserCog,
   Settings,
   Calendar,
+  CalendarClock,
   CreditCard,
   Coins,
   BarChart3,
@@ -70,10 +71,12 @@ export const navigationItems: NavigationItem[] = [
 
   { name: "Products", path: "/products", icon: Package, group: "inventory" },
   {
-    name: "Batches",
+    // MEET-053: User-friendly terminology - "Inventory" instead of "Batches"
+    name: "Inventory",
     path: "/inventory",
     icon: PackageCheck,
     group: "inventory",
+    ariaLabel: "View and manage inventory items",
   },
   { name: "Samples", path: "/samples", icon: Beaker, group: "inventory" },
   {
@@ -106,8 +109,20 @@ export const navigationItems: NavigationItem[] = [
   // QA-W2-008: Use UserCog icon to avoid duplicate with Clients
   { name: "Users", path: "/users", icon: UserCog, group: "admin" },
   // UX-010: Renamed "Settings" to "System Settings" to distinguish from personal account settings
-  { name: "System Settings", path: "/settings", icon: Settings, group: "admin" },
+  {
+    name: "System Settings",
+    path: "/settings",
+    icon: Settings,
+    group: "admin",
+  },
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "admin" },
+  // Sprint 4 Track D: Scheduling System - Room booking, shifts, deliveries
+  {
+    name: "Scheduling",
+    path: "/scheduling",
+    icon: CalendarClock,
+    group: "admin",
+  },
   // FEAT-017: Direct access to Feature Flags for improved discoverability
   {
     name: "Feature Flags",

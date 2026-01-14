@@ -25,8 +25,20 @@ import {
   Pause,
   Edit,
   Download,
+  Image as ImageIcon,
   type LucideIcon,
 } from "lucide-react";
+// Sprint 4 Track A imports
+import {
+  StockStatusBadge,
+  type StockStatus,
+} from "@/components/inventory/StockStatusBadge";
+import {
+  AgingBadge,
+  getAgingRowClass,
+  type AgeBracket,
+} from "@/components/inventory/AgingBadge";
+import { Toggle } from "@/components/ui/toggle";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
@@ -100,6 +112,19 @@ export default function Inventory() {
     new Set()
   );
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  // Sprint 4 Track A: 4.A.5 ENH-008 - Image toggle state
+  const [showImages, setShowImages] = useState(() => {
+    try {
+      return localStorage.getItem("terp-inventory-show-images") === "true";
+    } catch {
+      return false;
+    }
+  });
+  // Sprint 4 Track A: 4.A.2 ENH-001 - Use enhanced API
+  const [useEnhancedApi, _setUseEnhancedApi] = useState(true);
+  // Sprint 4 Track A: 4.A.2 - Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
   // Valid batch statuses for bulk operations
   const VALID_BATCH_STATUSES = [
     "AWAITING_INTAKE",
@@ -309,17 +334,134 @@ export default function Inventory() {
   // Debounce search query (150ms as per spec)
   const debouncedSearch = useDebounce(searchQuery, 150);
 
-  // Fetch inventory data
-  const { data: inventoryResponse, isLoading } = trpc.inventory.list.useQuery({
-    query: debouncedSearch || undefined,
-    limit: 1000, // Increased limit to show all inventory
-  });
+  // Sprint 4 Track A: 4.A.5 ENH-008 - Persist image toggle preference
+  useEffect(() => {
+    try {
+      localStorage.setItem("terp-inventory-show-images", showImages.toString());
+    } catch {
+      // Silently fail
+    }
+  }, [showImages]);
 
-  // Extract items from response (API returns { items, nextCursor, hasMore })
-  const inventoryData = useMemo(
-    () => inventoryResponse?.items ?? [],
-    [inventoryResponse]
-  );
+  // Sprint 4 Track A: 4.A.2 ENH-001 - Fetch enhanced inventory data with pagination
+  const { data: enhancedResponse, isLoading: enhancedLoading } =
+    trpc.inventory.getEnhanced.useQuery(
+      {
+        page: currentPage,
+        pageSize,
+        search: debouncedSearch || undefined,
+        status: filters.status.length > 0 ? filters.status : undefined,
+        category: filters.category || undefined,
+        vendor: filters.vendor.length > 0 ? filters.vendor : undefined,
+        brand: filters.brand.length > 0 ? filters.brand : undefined,
+        grade: filters.grade.length > 0 ? filters.grade : undefined,
+        stockStatus:
+          filters.stockStatus !== "ALL" ? filters.stockStatus : undefined,
+        ageBracket:
+          filters.ageBracket !== "ALL" ? filters.ageBracket : undefined,
+        batchId: filters.batchId || undefined,
+        sortBy:
+          sortState.column === "product"
+            ? "productName"
+            : sortState.column === "onHand"
+              ? "onHand"
+              : sortState.column === "available"
+                ? "available"
+                : sortState.column === "vendor"
+                  ? "vendor"
+                  : sortState.column === "brand"
+                    ? "brand"
+                    : sortState.column === "status"
+                      ? "status"
+                      : sortState.column === "sku"
+                        ? "sku"
+                        : "sku",
+        sortOrder: sortState.direction || "desc",
+      },
+      {
+        enabled: useEnhancedApi,
+      }
+    );
+
+  // Fallback to legacy list API
+  const { data: legacyResponse, isLoading: legacyLoading } =
+    trpc.inventory.list.useQuery(
+      {
+        query: debouncedSearch || undefined,
+        limit: 1000,
+      },
+      {
+        enabled: !useEnhancedApi,
+      }
+    );
+
+  const isLoading = useEnhancedApi ? enhancedLoading : legacyLoading;
+
+  // Extract items from response - handle both enhanced and legacy APIs
+  const inventoryData = useMemo(() => {
+    if (useEnhancedApi && enhancedResponse) {
+      // Transform enhanced API response to match legacy format for compatibility
+      return enhancedResponse.items.map(item => ({
+        batch: {
+          id: item.id,
+          sku: item.sku,
+          code: item.code,
+          batchStatus: item.status,
+          grade: item.grade,
+          onHandQty: item.onHandQty.toString(),
+          reservedQty: item.reservedQty.toString(),
+          quarantineQty: item.quarantineQty.toString(),
+          holdQty: item.holdQty.toString(),
+          unitCogs: item.unitCogs?.toString() || null,
+          createdAt: item.receivedDate,
+          // Sprint 4 Track A enhanced fields
+          ageDays: item.ageDays,
+          ageBracket: item.ageBracket,
+          stockStatus: item.stockStatus,
+          batchInfo: item.batchInfo,
+          lastMovementDate: item.lastMovementDate,
+        },
+        product: {
+          nameCanonical: item.productName,
+          category: item.category,
+          subcategory: item.subcategory,
+        },
+        vendor: {
+          name: item.vendorName,
+        },
+        brand: {
+          name: item.brandName,
+        },
+      }));
+    }
+    return legacyResponse?.items ?? [];
+  }, [useEnhancedApi, enhancedResponse, legacyResponse]);
+
+  // Sprint 4 Track A: Pagination info
+  const paginationInfo = useMemo(() => {
+    if (useEnhancedApi && enhancedResponse) {
+      return {
+        hasMore: enhancedResponse.pagination.hasMore,
+        page: enhancedResponse.pagination.page,
+        pageSize: enhancedResponse.pagination.pageSize,
+        totalItems: enhancedResponse.summary.totalItems,
+      };
+    }
+    return {
+      hasMore: false,
+      page: 1,
+      pageSize: 1000,
+      totalItems: inventoryData.length,
+    };
+  }, [useEnhancedApi, enhancedResponse, inventoryData.length]);
+
+  // Sprint 4 Track A: Summary stats from enhanced API
+  const summaryStats = useMemo(() => {
+    if (useEnhancedApi && enhancedResponse) {
+      return enhancedResponse.summary;
+    }
+    return null;
+  }, [useEnhancedApi, enhancedResponse]);
 
   // Fetch dashboard statistics
   const { data: dashboardStats } = trpc.inventory.dashboardStats.useQuery();
@@ -404,8 +546,8 @@ export default function Inventory() {
       return true;
     });
 
-    // Apply sorting
-    return sortData(filtered);
+    // Apply sorting - type assertion needed for union type compatibility
+    return sortData(filtered as Parameters<typeof sortData>[0]);
   }, [inventoryData, filters, sortData]);
 
   // Alias for backward compatibility
@@ -481,625 +623,741 @@ export default function Inventory() {
 
   return (
     <PageErrorBoundary pageName="Inventory">
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Inventory
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage batches, track stock levels, and control product lifecycle
-          </p>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Inventory
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage batches, track stock levels, and control product lifecycle
+            </p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <SavedViewsDropdown
+              onApplyView={(filters: Partial<InventoryFilters>) => {
+                // Apply all filters from the saved view
+                Object.entries(filters).forEach(([key, value]) => {
+                  const typedKey = key as keyof InventoryFilters;
+                  if (value !== undefined) {
+                    updateFilter(
+                      typedKey,
+                      value as InventoryFilters[typeof typedKey]
+                    );
+                  }
+                });
+              }}
+            />
+            <Button
+              onClick={() => setShowSaveViewModal(true)}
+              variant="outline"
+              disabled={!hasActiveFilters}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Save View
+            </Button>
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              disabled={!filteredBatches || filteredBatches.length === 0}
+              className="w-full sm:w-auto"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => setShowPurchaseModal(true)}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Intake
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <SavedViewsDropdown
-            onApplyView={(filters: Partial<InventoryFilters>) => {
-              // Apply all filters from the saved view
-              Object.entries(filters).forEach(([key, value]) => {
-                const typedKey = key as keyof InventoryFilters;
-                if (value !== undefined) {
-                  updateFilter(
-                    typedKey,
-                    value as InventoryFilters[typeof typedKey]
-                  );
-                }
-              });
-            }}
-          />
-          <Button
-            onClick={() => setShowSaveViewModal(true)}
-            variant="outline"
-            disabled={!hasActiveFilters}
-            className="w-full sm:w-auto"
+
+        {/* Dashboard Statistics */}
+        <DataCardSection moduleId="inventory" />
+
+        {/* Stock Level Charts */}
+        {dashboardStats && (
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+            <StockLevelChart
+              title="Stock Levels by Category"
+              data={dashboardStats.categoryStats}
+              maxItems={5}
+            />
+            <StockLevelChart
+              title="Stock Levels by Subcategory"
+              data={dashboardStats.subcategoryStats}
+              maxItems={5}
+            />
+          </div>
+        )}
+
+        {/* Search Bar and Filter Status */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by SKU, batch code, or product name..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {/* Sprint 4 Track A: 4.A.5 ENH-008 - Image Toggle */}
+          <Toggle
+            pressed={showImages}
+            onPressedChange={setShowImages}
+            aria-label="Toggle images"
+            className="gap-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Save View
-          </Button>
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            disabled={!filteredBatches || filteredBatches.length === 0}
-            className="w-full sm:w-auto"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button
-            onClick={() => setShowPurchaseModal(true)}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Intake
-          </Button>
+            <ImageIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Images</span>
+          </Toggle>
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              onClick={clearAllFilters}
+              className="whitespace-nowrap"
+            >
+              Clear All Filters ({activeFilterCount})
+            </Button>
+          )}
         </div>
-      </div>
 
-      {/* Dashboard Statistics */}
-      <DataCardSection moduleId="inventory" />
+        {/* Sprint 4 Track A: Summary Stats */}
+        {summaryStats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+              <p className="text-green-600 font-medium">Optimal</p>
+              <p className="text-2xl font-bold text-green-700">
+                {summaryStats.byStockStatus.optimal}
+              </p>
+            </div>
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+              <p className="text-orange-600 font-medium">Low Stock</p>
+              <p className="text-2xl font-bold text-orange-700">
+                {summaryStats.byStockStatus.low}
+              </p>
+            </div>
+            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+              <p className="text-red-600 font-medium">Critical</p>
+              <p className="text-2xl font-bold text-red-700">
+                {summaryStats.byStockStatus.critical}
+              </p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <p className="text-gray-600 font-medium">Out of Stock</p>
+              <p className="text-2xl font-bold text-gray-700">
+                {summaryStats.byStockStatus.outOfStock}
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* Stock Level Charts */}
-      {dashboardStats && (
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-          <StockLevelChart
-            title="Stock Levels by Category"
-            data={dashboardStats.categoryStats}
-            maxItems={5}
-          />
-          <StockLevelChart
-            title="Stock Levels by Subcategory"
-            data={dashboardStats.subcategoryStats}
-            maxItems={5}
-          />
-        </div>
-      )}
-
-      {/* Search Bar and Filter Status */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by SKU, batch code, or product name..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        {hasActiveFilters && (
-          <Button
-            variant="outline"
-            onClick={clearAllFilters}
-            className="whitespace-nowrap"
-          >
-            Clear All Filters ({activeFilterCount})
-          </Button>
-        )}
-      </div>
-
-      {/* Advanced Filters */}
-      <AdvancedFilters
-        filters={filters}
-        onUpdateFilter={updateFilter}
-        vendors={Array.from(
-          new Set(
-            inventoryData
-              ?.map(i => i.vendor?.name)
-              .filter((v): v is string => Boolean(v)) || []
-          )
-        )}
-        brands={Array.from(
-          new Set(
-            inventoryData
-              ?.map(i => i.brand?.name)
-              .filter((b): b is string => Boolean(b)) || []
-          )
-        )}
-        categories={Array.from(
-          new Set(
-            inventoryData
-              ?.map(i => i.product?.category)
-              .filter((c): c is string => Boolean(c)) || []
-          )
-        )}
-        grades={Array.from(
-          new Set(
-            inventoryData
-              ?.map(i => i.batch?.grade)
-              .filter((g): g is string => Boolean(g)) || []
-          )
-        )}
-      />
-
-      {/* Active Filter Chips */}
-      {hasActiveFilters && (
-        <FilterChips
+        {/* Advanced Filters */}
+        <AdvancedFilters
           filters={filters}
-          onRemoveFilter={(key, value) => {
-            if (key === "status" && value) {
-              updateFilter(
-                "status",
-                filters.status.filter(s => s !== value)
-              );
-            } else if (key === "vendor" && value) {
-              updateFilter(
-                "vendor",
-                filters.vendor.filter(v => v !== value)
-              );
-            } else if (key === "brand" && value) {
-              updateFilter(
-                "brand",
-                filters.brand.filter(b => b !== value)
-              );
-            } else if (key === "grade" && value) {
-              updateFilter(
-                "grade",
-                filters.grade.filter(g => g !== value)
-              );
-            } else if (key === "paymentStatus" && value) {
-              updateFilter(
-                "paymentStatus",
-                filters.paymentStatus.filter(p => p !== value)
-              );
-            } else {
-              // For non-array filters, just clear them
-              if (key === "category") updateFilter("category", null);
-              if (key === "subcategory") updateFilter("subcategory", null);
-              if (key === "location") updateFilter("location", null);
-              if (key === "stockLevel") updateFilter("stockLevel", "all");
-              if (key === "dateRange")
-                updateFilter("dateRange", { from: null, to: null });
-              if (key === "cogsRange")
-                updateFilter("cogsRange", { min: null, max: null });
-            }
-          }}
-          onClearAll={clearAllFilters}
+          onUpdateFilter={updateFilter}
+          vendors={Array.from(
+            new Set(
+              inventoryData
+                ?.map(i => i.vendor?.name)
+                .filter((v): v is string => Boolean(v)) || []
+            )
+          )}
+          brands={Array.from(
+            new Set(
+              inventoryData
+                ?.map(i => i.brand?.name)
+                .filter((b): b is string => Boolean(b)) || []
+            )
+          )}
+          categories={Array.from(
+            new Set(
+              inventoryData
+                ?.map(i => i.product?.category)
+                .filter((c): c is string => Boolean(c)) || []
+            )
+          )}
+          grades={Array.from(
+            new Set(
+              inventoryData
+                ?.map(i => i.batch?.grade)
+                .filter((g): g is string => Boolean(g)) || []
+            )
+          )}
         />
-      )}
 
-      {/* Inventory Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={
-                      selectedBatchIds.size === filteredBatches?.length &&
-                      filteredBatches.length > 0
-                    }
-                    onCheckedChange={checked => {
-                      if (checked) {
-                        setSelectedBatchIds(
-                          new Set(
-                            (filteredBatches
-                              ?.map(b => b.batch?.id)
-                              .filter(id => id !== undefined) as number[]) || []
-                          )
-                        );
-                      } else {
-                        setSelectedBatchIds(new Set());
+        {/* Active Filter Chips */}
+        {hasActiveFilters && (
+          <FilterChips
+            filters={filters}
+            onRemoveFilter={(key, value) => {
+              if (key === "status" && value) {
+                updateFilter(
+                  "status",
+                  filters.status.filter(s => s !== value)
+                );
+              } else if (key === "vendor" && value) {
+                updateFilter(
+                  "vendor",
+                  filters.vendor.filter(v => v !== value)
+                );
+              } else if (key === "brand" && value) {
+                updateFilter(
+                  "brand",
+                  filters.brand.filter(b => b !== value)
+                );
+              } else if (key === "grade" && value) {
+                updateFilter(
+                  "grade",
+                  filters.grade.filter(g => g !== value)
+                );
+              } else if (key === "paymentStatus" && value) {
+                updateFilter(
+                  "paymentStatus",
+                  filters.paymentStatus.filter(p => p !== value)
+                );
+              } else {
+                // For non-array filters, just clear them
+                if (key === "category") updateFilter("category", null);
+                if (key === "subcategory") updateFilter("subcategory", null);
+                if (key === "location") updateFilter("location", null);
+                if (key === "stockLevel") updateFilter("stockLevel", "all");
+                if (key === "dateRange")
+                  updateFilter("dateRange", { from: null, to: null });
+                if (key === "cogsRange")
+                  updateFilter("cogsRange", { min: null, max: null });
+              }
+            }}
+            onClearAll={clearAllFilters}
+          />
+        )}
+
+        {/* Inventory Table */}
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        selectedBatchIds.size === filteredBatches?.length &&
+                        filteredBatches.length > 0
                       }
-                    }}
-                  />
-                </TableHead>
-                <TableHead>
-                  <SortControls
-                    column="sku"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                  >
-                    SKU
-                  </SortControls>
-                </TableHead>
-                <TableHead>
-                  <SortControls
-                    column="product"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                  >
-                    Product
-                  </SortControls>
-                </TableHead>
-                <TableHead>
-                  <SortControls
-                    column="brand"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                  >
-                    Brand
-                  </SortControls>
-                </TableHead>
-                <TableHead>
-                  <SortControls
-                    column="vendor"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                  >
-                    Vendor
-                  </SortControls>
-                </TableHead>
-                <TableHead>
-                  <SortControls
-                    column="grade"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                  >
-                    Grade
-                  </SortControls>
-                </TableHead>
-                <TableHead>
-                  <SortControls
-                    column="status"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                  >
-                    Status
-                  </SortControls>
-                </TableHead>
-                <TableHead className="text-right">
-                  <SortControls
-                    column="onHand"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                    align="right"
-                  >
-                    On Hand
-                  </SortControls>
-                </TableHead>
-                <TableHead className="text-right">
-                  <SortControls
-                    column="reserved"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                    align="right"
-                  >
-                    Reserved
-                  </SortControls>
-                </TableHead>
-                <TableHead className="text-right">
-                  <SortControls
-                    column="available"
-                    currentColumn={sortState.column}
-                    direction={sortState.direction}
-                    onSort={toggleSort}
-                    align="right"
-                  >
-                    Available
-                  </SortControls>
-                </TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
-                    Loading inventory...
-                  </TableCell>
+                      onCheckedChange={checked => {
+                        if (checked) {
+                          setSelectedBatchIds(
+                            new Set(
+                              (filteredBatches
+                                ?.map(b => b.batch?.id)
+                                .filter(id => id !== undefined) as number[]) ||
+                                []
+                            )
+                          );
+                        } else {
+                          setSelectedBatchIds(new Set());
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortControls
+                      column="sku"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                    >
+                      SKU
+                    </SortControls>
+                  </TableHead>
+                  <TableHead>
+                    <SortControls
+                      column="product"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                    >
+                      Product
+                    </SortControls>
+                  </TableHead>
+                  <TableHead>
+                    <SortControls
+                      column="brand"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                    >
+                      Brand
+                    </SortControls>
+                  </TableHead>
+                  <TableHead>
+                    <SortControls
+                      column="vendor"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                    >
+                      Vendor
+                    </SortControls>
+                  </TableHead>
+                  <TableHead>
+                    <SortControls
+                      column="grade"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                    >
+                      Grade
+                    </SortControls>
+                  </TableHead>
+                  <TableHead>
+                    <SortControls
+                      column="status"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                    >
+                      Status
+                    </SortControls>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <SortControls
+                      column="onHand"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                      align="right"
+                    >
+                      On Hand
+                    </SortControls>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <SortControls
+                      column="reserved"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                      align="right"
+                    >
+                      Reserved
+                    </SortControls>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <SortControls
+                      column="available"
+                      currentColumn={sortState.column}
+                      direction={sortState.direction}
+                      onSort={toggleSort}
+                      align="right"
+                    >
+                      Available
+                    </SortControls>
+                  </TableHead>
+                  {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status Column */}
+                  <TableHead>Stock Status</TableHead>
+                  {/* Sprint 4 Track A: 4.A.3 MEET-024 - Age Column */}
+                  <TableHead>Age</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : !inventoryData || inventoryData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
-                    <div className="flex flex-col items-center gap-2">
-                      <Package className="h-12 w-12 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        No inventory found
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowPurchaseModal(true)}
-                      >
-                        Create First Batch
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : filteredInventory.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8">
-                    <div className="flex flex-col items-center gap-2">
-                      <Package className="h-12 w-12 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        No matching inventory found
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Try adjusting your filters or search query
-                      </p>
-                      {hasActiveFilters && (
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={14} className="text-center py-8">
+                      Loading inventory...
+                    </TableCell>
+                  </TableRow>
+                ) : !inventoryData || inventoryData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={14} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <Package className="h-12 w-12 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          No inventory found
+                        </p>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={clearAllFilters}
+                          onClick={() => setShowPurchaseModal(true)}
                         >
-                          Clear All Filters
+                          Create First Batch
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredInventory.map(item => {
-                  const batch = item.batch;
-                  const product = item.product;
-                  const brand = item.brand;
-                  const vendor = item.vendor;
-
-                  if (!batch) return null;
-
-                  const available = calculateAvailable(batch);
-
-                  return (
-                    <TableRow
-                      key={batch.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                    >
-                      <TableCell
-                        className="w-12"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <Checkbox
-                          checked={selectedBatchIds.has(batch.id)}
-                          onCheckedChange={checked => {
-                            const newSelected = new Set(selectedBatchIds);
-                            if (checked) {
-                              newSelected.add(batch.id);
-                            } else {
-                              newSelected.delete(batch.id);
-                            }
-                            setSelectedBatchIds(newSelected);
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell
-                        className="font-mono text-sm"
-                        onClick={() => setSelectedBatch(batch.id)}
-                      >
-                        <SearchHighlight
-                          text={batch.sku}
-                          query={debouncedSearch}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <SearchHighlight
-                          text={product?.nameCanonical || "Unknown"}
-                          query={debouncedSearch}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <SearchHighlight
-                          text={brand?.name || "Unknown"}
-                          query={debouncedSearch}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <SearchHighlight
-                          text={vendor?.name || "Unknown"}
-                          query={debouncedSearch}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {batch.grade ? (
-                          <Badge variant="outline">{batch.grade}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(batch.batchStatus)}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        <div className="flex items-center justify-end gap-1">
-                          {parseFloat(batch.onHandQty).toFixed(2)}
-                          <AuditIcon
-                            type="inventory"
-                            entityId={batch.id}
-                            fieldName="onHandQty"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {parseFloat(batch.reservedQty).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        <span
-                          className={
-                            available <= 100
-                              ? "text-orange-600 font-semibold"
-                              : ""
-                          }
-                        >
-                          {available.toFixed(2)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredInventory.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={14} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <Package className="h-12 w-12 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          No matching inventory found
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Try adjusting your filters or search query
+                        </p>
+                        {hasActiveFilters && (
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={e => {
-                              e.stopPropagation();
-                              setSelectedBatch(batch.id);
-                            }}
+                            onClick={clearAllFilters}
                           >
-                            View
+                            Clear All Filters
                           </Button>
-                          {batch.batchStatus === "AWAITING_INTAKE" && (
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredInventory.map(item => {
+                    const batch = item.batch;
+                    const product = item.product;
+                    const brand = item.brand;
+                    const vendor = item.vendor;
+
+                    if (!batch) return null;
+
+                    const available = calculateAvailable(batch);
+                    // Sprint 4 Track A: 4.A.2 ENH-001 - Get enhanced fields
+                    // Cast batch to extended type to access enhanced API fields
+                    interface EnhancedBatch {
+                      ageDays?: number;
+                      ageBracket?: AgeBracket;
+                      stockStatus?: StockStatus;
+                    }
+                    const enhancedBatch = batch as typeof batch & EnhancedBatch;
+                    const ageDays = enhancedBatch.ageDays ?? 0;
+                    const ageBracket = enhancedBatch.ageBracket;
+                    const stockStatus = enhancedBatch.stockStatus;
+                    // Sprint 4 Track A: 4.A.3 MEET-024 - Row highlighting for aging
+                    const rowHighlightClass = getAgingRowClass(ageDays);
+
+                    return (
+                      <TableRow
+                        key={batch.id}
+                        className={`cursor-pointer hover:bg-muted/50 ${rowHighlightClass}`}
+                      >
+                        <TableCell
+                          className="w-12"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={selectedBatchIds.has(batch.id)}
+                            onCheckedChange={checked => {
+                              const newSelected = new Set(selectedBatchIds);
+                              if (checked) {
+                                newSelected.add(batch.id);
+                              } else {
+                                newSelected.delete(batch.id);
+                              }
+                              setSelectedBatchIds(newSelected);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell
+                          className="font-mono text-sm"
+                          onClick={() => setSelectedBatch(batch.id)}
+                        >
+                          <SearchHighlight
+                            text={batch.sku}
+                            query={debouncedSearch}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <SearchHighlight
+                            text={product?.nameCanonical || "Unknown"}
+                            query={debouncedSearch}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <SearchHighlight
+                            text={brand?.name || "Unknown"}
+                            query={debouncedSearch}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <SearchHighlight
+                            text={vendor?.name || "Unknown"}
+                            query={debouncedSearch}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {batch.grade ? (
+                            <Badge variant="outline">{batch.grade}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(batch.batchStatus)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          <div className="flex items-center justify-end gap-1">
+                            {parseFloat(batch.onHandQty).toFixed(2)}
+                            <AuditIcon
+                              type="inventory"
+                              entityId={batch.id}
+                              fieldName="onHandQty"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {parseFloat(batch.reservedQty).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          <span
+                            className={
+                              available <= 100
+                                ? "text-orange-600 font-semibold"
+                                : ""
+                            }
+                          >
+                            {available.toFixed(2)}
+                          </span>
+                        </TableCell>
+                        {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status */}
+                        <TableCell>
+                          {stockStatus ? (
+                            <StockStatusBadge
+                              status={stockStatus}
+                              showIcon={false}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        {/* Sprint 4 Track A: 4.A.3 MEET-024 - Age */}
+                        <TableCell>
+                          {ageDays > 0 ? (
+                            <AgingBadge
+                              ageDays={ageDays}
+                              ageBracket={ageBracket}
+                              variant="compact"
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={e => {
                                 e.stopPropagation();
-                                setEditingBatch(batch.id);
+                                setSelectedBatch(batch.id);
                               }}
-                              className="text-blue-600 hover:text-blue-700"
                             >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Intake
+                              View
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-4">
-          {isLoading ? (
-            <Card className="p-8">
-              <div className="text-center text-muted-foreground">
-                Loading inventory...
-              </div>
-            </Card>
-          ) : !inventoryData || inventoryData.length === 0 ? (
-            <Card className="p-8">
-              <div className="flex flex-col items-center gap-4">
-                <Package className="h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground">No inventory found</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowPurchaseModal(true)}
-                >
-                  Create First Batch
-                </Button>
-              </div>
-            </Card>
-          ) : filteredInventory.length === 0 ? (
-            <Card className="p-8">
-              <div className="flex flex-col items-center gap-4">
-                <Package className="h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground">No matching inventory found</p>
-                <p className="text-sm text-muted-foreground text-center">
-                  Try adjusting your filters or search query
-                </p>
-                {hasActiveFilters && (
+                            {batch.batchStatus === "AWAITING_INTAKE" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setEditingBatch(batch.id);
+                                }}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Intake
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+            {/* Sprint 4 Track A: 4.A.2 ENH-001 - Pagination */}
+            {useEnhancedApi && paginationInfo && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                  {Math.min(currentPage * pageSize, paginationInfo.totalItems)}{" "}
+                  of {paginationInfo.totalItems} items
+                </div>
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={clearAllFilters}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
                   >
-                    Clear All Filters
+                    Previous
                   </Button>
-                )}
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={!paginationInfo.hasMore}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-            </Card>
-          ) : (
-            filteredInventory.map(item => {
-              const batch = item.batch;
-              const product = item.product;
-              const brand = item.brand;
-              const vendor = item.vendor;
+            )}
+          </div>
 
-              if (!batch) return null;
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {isLoading ? (
+              <Card className="p-8">
+                <div className="text-center text-muted-foreground">
+                  Loading inventory...
+                </div>
+              </Card>
+            ) : !inventoryData || inventoryData.length === 0 ? (
+              <Card className="p-8">
+                <div className="flex flex-col items-center gap-4">
+                  <Package className="h-12 w-12 text-muted-foreground" />
+                  <p className="text-muted-foreground">No inventory found</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPurchaseModal(true)}
+                  >
+                    Create First Batch
+                  </Button>
+                </div>
+              </Card>
+            ) : filteredInventory.length === 0 ? (
+              <Card className="p-8">
+                <div className="flex flex-col items-center gap-4">
+                  <Package className="h-12 w-12 text-muted-foreground" />
+                  <p className="text-muted-foreground">
+                    No matching inventory found
+                  </p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Try adjusting your filters or search query
+                  </p>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllFilters}
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              filteredInventory.map(item => {
+                const batch = item.batch;
+                const product = item.product;
+                const brand = item.brand;
+                const vendor = item.vendor;
 
-              const available = calculateAvailable(batch);
+                if (!batch) return null;
 
-              return (
-                <InventoryCard
-                  key={batch.id}
-                  batch={{
-                    id: batch.id,
-                    sku: batch.sku,
-                    productName: product?.nameCanonical || "Unknown",
-                    brandName: brand?.name || "Unknown",
-                    vendorName: vendor?.name || "Unknown",
-                    grade: batch.grade || "-",
-                    status: batch.batchStatus,
-                    onHandQty: batch.onHandQty,
-                    reservedQty: batch.reservedQty,
-                    availableQty: available.toString(),
-                  }}
-                  onView={id => setSelectedBatch(id)}
-                  onEdit={
-                    batch.batchStatus === "AWAITING_INTAKE"
-                      ? id => setEditingBatch(id)
-                      : undefined
-                  }
-                />
-              );
-            })
-          )}
-        </div>
-      </Card>
+                const available = calculateAvailable(batch);
 
-      {/* Intake Modal */}
-      <PurchaseModal
-        open={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-        onSuccess={() => {
-          // Refresh the list
-        }}
-      />
+                return (
+                  <InventoryCard
+                    key={batch.id}
+                    batch={{
+                      id: batch.id,
+                      sku: batch.sku,
+                      productName: product?.nameCanonical || "Unknown",
+                      brandName: brand?.name || "Unknown",
+                      vendorName: vendor?.name || "Unknown",
+                      grade: batch.grade || "-",
+                      status: batch.batchStatus,
+                      onHandQty: batch.onHandQty,
+                      reservedQty: batch.reservedQty,
+                      availableQty: available.toString(),
+                    }}
+                    onView={id => setSelectedBatch(id)}
+                    onEdit={
+                      batch.batchStatus === "AWAITING_INTAKE"
+                        ? id => setEditingBatch(id)
+                        : undefined
+                    }
+                  />
+                );
+              })
+            )}
+          </div>
+        </Card>
 
-      {/* Batch Detail Drawer */}
-      <BatchDetailDrawer
-        batchId={selectedBatch}
-        open={selectedBatch !== null}
-        onClose={() => setSelectedBatch(null)}
-      />
-
-      {/* Edit Batch Modal */}
-      {editingBatch && (
-        <EditBatchModal
-          batchId={editingBatch}
-          open={editingBatch !== null}
-          onClose={() => setEditingBatch(null)}
+        {/* Intake Modal */}
+        <PurchaseModal
+          open={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
           onSuccess={() => {
-            setEditingBatch(null);
-            // Refresh will happen automatically via tRPC cache invalidation
+            // Refresh the list
           }}
         />
-      )}
 
-      {/* Save View Modal */}
-      <SaveViewModal
-        open={showSaveViewModal}
-        onOpenChange={setShowSaveViewModal}
-        filters={filters}
-        onSuccess={() => {
-          // Refresh will happen automatically via tRPC
-        }}
-      />
+        {/* Batch Detail Drawer */}
+        <BatchDetailDrawer
+          batchId={selectedBatch}
+          open={selectedBatch !== null}
+          onClose={() => setSelectedBatch(null)}
+        />
 
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={selectedBatchIds.size}
-        onClearSelection={() => setSelectedBatchIds(new Set())}
-        onStatusChange={handleBulkStatusChange}
-        onDelete={handleBulkDelete}
-      />
+        {/* Edit Batch Modal */}
+        {editingBatch && (
+          <EditBatchModal
+            batchId={editingBatch}
+            open={editingBatch !== null}
+            onClose={() => setEditingBatch(null)}
+            onSuccess={() => {
+              setEditingBatch(null);
+              // Refresh will happen automatically via tRPC cache invalidation
+            }}
+          />
+        )}
 
-      {/* Bulk Confirm Dialog */}
-      <BulkConfirmDialog
-        open={showBulkConfirm}
-        onOpenChange={setShowBulkConfirm}
-        title={
-          bulkAction.type === "delete" ? "Delete Batches" : "Update Status"
-        }
-        description={
-          bulkAction.type === "delete"
-            ? "Are you sure you want to delete these batches? This action cannot be undone."
-            : `Change status to ${bulkAction.value}?`
-        }
-        selectedCount={selectedBatchIds.size}
-        actionLabel={bulkAction.type === "delete" ? "Delete" : "Update"}
-        onConfirm={handleBulkConfirm}
-        variant={bulkAction.type === "delete" ? "destructive" : "default"}
-      />
-    </div>
+        {/* Save View Modal */}
+        <SaveViewModal
+          open={showSaveViewModal}
+          onOpenChange={setShowSaveViewModal}
+          filters={filters}
+          onSuccess={() => {
+            // Refresh will happen automatically via tRPC
+          }}
+        />
+
+        {/* Bulk Actions Bar */}
+        <BulkActionsBar
+          selectedCount={selectedBatchIds.size}
+          onClearSelection={() => setSelectedBatchIds(new Set())}
+          onStatusChange={handleBulkStatusChange}
+          onDelete={handleBulkDelete}
+        />
+
+        {/* Bulk Confirm Dialog */}
+        <BulkConfirmDialog
+          open={showBulkConfirm}
+          onOpenChange={setShowBulkConfirm}
+          title={
+            bulkAction.type === "delete" ? "Delete Batches" : "Update Status"
+          }
+          description={
+            bulkAction.type === "delete"
+              ? "Are you sure you want to delete these batches? This action cannot be undone."
+              : `Change status to ${bulkAction.value}?`
+          }
+          selectedCount={selectedBatchIds.size}
+          actionLabel={bulkAction.type === "delete" ? "Delete" : "Update"}
+          onConfirm={handleBulkConfirm}
+          variant={bulkAction.type === "delete" ? "destructive" : "default"}
+        />
+      </div>
     </PageErrorBoundary>
   );
 }

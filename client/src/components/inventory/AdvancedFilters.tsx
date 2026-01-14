@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter, ChevronDown, ChevronUp, Hash } from "lucide-react";
 import type { InventoryFilters } from "@/hooks/useInventoryFilters";
 import { getBrandLabel } from "@/lib/nomenclature";
 
@@ -160,7 +161,7 @@ export function AdvancedFilters({
             <Label>Stock Level</Label>
             <Select
               value={filters.stockLevel}
-              onValueChange={(value: any) => onUpdateFilter("stockLevel", value)}
+              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("stockLevel", value)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -266,6 +267,60 @@ export function AdvancedFilters({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status Filter */}
+          <div className="space-y-2">
+            <Label>Stock Status</Label>
+            <Select
+              value={filters.stockStatus}
+              onValueChange={(value: InventoryFilters["stockStatus"]) => onUpdateFilter("stockStatus", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="OPTIMAL">Optimal</SelectItem>
+                <SelectItem value="LOW">Low Stock</SelectItem>
+                <SelectItem value="CRITICAL">Critical</SelectItem>
+                <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sprint 4 Track A: 4.A.2 ENH-001 - Age Bracket Filter */}
+          <div className="space-y-2">
+            <Label>Age Bracket</Label>
+            <Select
+              value={filters.ageBracket}
+              onValueChange={(value: InventoryFilters["ageBracket"]) => onUpdateFilter("ageBracket", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Ages</SelectItem>
+                <SelectItem value="FRESH">Fresh (0-7 days)</SelectItem>
+                <SelectItem value="MODERATE">Moderate (8-14 days)</SelectItem>
+                <SelectItem value="AGING">Aging (15-30 days)</SelectItem>
+                <SelectItem value="CRITICAL">Critical (30+ days)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sprint 4 Track A: 4.A.6 MEET-023 - Batch ID Filter */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              <Hash className="h-4 w-4" />
+              Batch ID
+            </Label>
+            <Input
+              placeholder="Search by batch code..."
+              value={filters.batchId || ""}
+              onChange={(e) => onUpdateFilter("batchId", e.target.value || null)}
+              className="font-mono"
+            />
           </div>
         </div>
       )}

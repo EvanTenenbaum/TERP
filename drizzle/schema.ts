@@ -1557,6 +1557,9 @@ export const clients = mysqlTable(
     // Customer wishlist/preferences (WS-015)
     wishlist: text("wishlist"), // Free-form text for customer product wishes/preferences
 
+    // Referral tracking (4.B.4 - MEET-012)
+    referredByClientId: int("referred_by_client_id"), // Self-referential FK to clients.id
+
     deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
@@ -1564,6 +1567,7 @@ export const clients = mysqlTable(
   table => ({
     teriCodeIdx: index("idx_teri_code").on(table.teriCode),
     totalOwedIdx: index("idx_total_owed").on(table.totalOwed),
+    referredByIdx: index("idx_referred_by").on(table.referredByClientId),
   })
 );
 
@@ -6979,6 +6983,11 @@ export * from "./schema-live-shopping";
 // FEATURE FLAGS MODULE
 // ============================================================================
 export * from "./schema-feature-flags";
+
+// ============================================================================
+// SCHEDULING MODULE (Sprint 4 Track D)
+// ============================================================================
+export * from "./schema-scheduling";
 
 // ============================================================================
 // ACCOUNTING MODULE RELATIONS (BUG-046 FIX)

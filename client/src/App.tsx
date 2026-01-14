@@ -66,6 +66,8 @@ import { NotificationsPage } from "@/pages/NotificationsPage";
 // MEET-049 FIX: Use lazy loading to isolate CalendarPage import
 // This prevents calendar code errors from breaking the entire navigation
 const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
+// Sprint 4 Track D: Scheduling System
+const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -96,7 +98,13 @@ const withErrorBoundary = (Component: FC<any>) => () => (
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const withLazyErrorBoundary = (Component: FC<any>) => () => (
   <PageErrorBoundary>
-    <Suspense fallback={<div className="flex items-center justify-center h-full p-8">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full p-8">
+          Loading...
+        </div>
+      }
+    >
       <Component />
     </Suspense>
   </PageErrorBoundary>
@@ -359,6 +367,11 @@ function Router() {
                 <Route
                   path="/calendar"
                   component={withLazyErrorBoundary(CalendarPage)}
+                />
+                {/* Sprint 4 Track D: Scheduling System */}
+                <Route
+                  path="/scheduling"
+                  component={withLazyErrorBoundary(SchedulingPage)}
                 />
                 <Route
                   path="/workflow-queue"

@@ -38,15 +38,15 @@ export interface InventorySortableRow {
     [key: string]: unknown;
   } | null;
   product: {
-    id: number;
+    id?: number;
     nameCanonical: string;
     category: string | null;
     subcategory: string | null;
     [key: string]: unknown;
   } | null;
-  brand: { id: number; name: string; [key: string]: unknown } | null;
-  vendor: { id: number; name: string; [key: string]: unknown } | null;
-  lot?: { id: number; [key: string]: unknown } | null;
+  brand: { id?: number; name: string; [key: string]: unknown } | null;
+  vendor: { id?: number; name: string; [key: string]: unknown } | null;
+  lot?: { id?: number; [key: string]: unknown } | null;
 }
 
 export function useInventorySort() {
