@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 5.4
-**Last Updated:** 2026-01-14 (BUG-098 and BUG-099 fixed - inventory data mismatch and samples DB error)
+**Version:** 5.5
+**Last Updated:** 2026-01-14 (Wave 1 execution - BUG-098, BUG-099 fixed; DI-004, DI-005, DI-006 verified complete)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -354,9 +354,9 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | DI-001 | Implement Real withTransaction Database Wrapper      | HIGH     | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/DI-001.md` |
 | DI-002 | Fix Credit Application Race Condition                | HIGH     | ✅ COMPLETE (Jan 12-14, 2026) | 8h       | `docs/prompts/DI-002.md` |
 | DI-003 | Add Transaction to Cascading Delete Operations       | HIGH     | ✅ COMPLETE (Jan 12-14, 2026) | 4h       | `docs/prompts/DI-003.md` |
-| DI-004 | Implement Soft-Delete Support for Clients            | MEDIUM   | ready  | 8h       | `docs/prompts/DI-004.md` |
-| DI-005 | Fix Startup Seeding Schema Drift                     | MEDIUM   | ready  | 4h       | `docs/prompts/DI-005.md` |
-| DI-006 | Add Missing Foreign Key Constraints                  | MEDIUM   | ready  | 8h       | `docs/prompts/DI-006.md` |
+| DI-004 | Implement Soft-Delete Support for Clients            | MEDIUM   | ✅ COMPLETE (already implemented) | 8h       | `docs/prompts/DI-004.md` |
+| DI-005 | Fix Startup Seeding Schema Drift                     | MEDIUM   | ✅ COMPLETE (already implemented) | 4h       | `docs/prompts/DI-005.md` |
+| DI-006 | Add Missing Foreign Key Constraints                  | MEDIUM   | ✅ COMPLETE (already implemented) | 8h       | `docs/prompts/DI-006.md` |
 | DI-007 | Migrate VARCHAR to DECIMAL for Numeric Columns       | LOW      | ✅ COMPLETE (Jan 12-14, 2026) | 2d       | `docs/prompts/DI-007.md` |
 | DI-008 | Fix SSE Event Listener Memory Leaks                  | MEDIUM   | ✅ COMPLETE (Jan 12-14, 2026) | 4h       | `docs/prompts/DI-008.md` |
 
@@ -521,11 +521,11 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Features             | 6         | 24      | 30       |
 | UX                   | 12        | 0       | 12       |
 | Data & Schema        | 8         | 0       | 8        |
-| Data Integrity (QA)  | 5         | 3       | 8        |
+| Data Integrity (QA)  | 8         | 0       | 8        |
 | Frontend Quality (QA)| 3         | 0       | 3        |
 | Backend Quality (QA) | 5         | 0       | 5        |
 | Improvements         | 4         | 0       | 4        |
-| **TOTAL**            | **147**   | **34**  | **181**  |
+| **TOTAL**            | **150**   | **31**  | **181**  |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
@@ -607,9 +607,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open     | Total    | Progress |
 | --------- | --------- | -------- | -------- | -------- |
-| MVP       | 147       | 34       | 181      | ~81%     |
+| MVP       | 150       | 31       | 181      | ~83%     |
 | Beta      | 0         | 17       | 17       | 0%       |
-| **TOTAL** | **147**   | **51**   | **198**  | ~74%     |
+| **TOTAL** | **150**   | **48**   | **198**  | ~76%     |
 
 ---
 
