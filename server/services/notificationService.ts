@@ -85,7 +85,7 @@ function filterChannelsByPreferences(
   if (channels.includes("email") && preferences.emailEnabled) {
     enabled.push("email");
   }
-  if (channels.includes("sms") && preferences.emailEnabled) {
+  if (channels.includes("sms") && preferences.smsEnabled) {
     enabled.push("sms");
   }
   return enabled;

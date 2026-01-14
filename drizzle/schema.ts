@@ -4690,6 +4690,7 @@ export const notificationPreferences = mysqlTable(
     clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
     inAppEnabled: boolean("in_app_enabled").notNull().default(true),
     emailEnabled: boolean("email_enabled").notNull().default(true),
+    smsEnabled: boolean("sms_enabled").notNull().default(false),
     appointmentReminders: boolean("appointment_reminders")
       .notNull()
       .default(true),
