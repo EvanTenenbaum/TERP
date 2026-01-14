@@ -27,7 +27,7 @@ import { APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, LogIn, Settings, PanelLeft, Menu } from "lucide-react";
+import { LogOut, LogIn, Settings, PanelLeft, Menu, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { buildNavigationGroups, navigationItems } from "@/config/navigation";
@@ -300,12 +300,21 @@ function DashboardLayoutContent({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                {/* UX-010: Use "My Account" for personal settings */}
+                <DropdownMenuItem
+                  onClick={() => setLocation("/account")}
+                  className="cursor-pointer"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  <span>My Account</span>
+                </DropdownMenuItem>
+                {/* UX-010: Use "System Settings" for admin/system configuration */}
                 <DropdownMenuItem
                   onClick={() => setLocation("/settings")}
                   className="cursor-pointer"
                 >
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>System Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}

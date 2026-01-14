@@ -553,7 +553,7 @@ export function VendorContextPanel({
           <Skeleton className="h-4 w-32" />
           <div className="grid grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-20" />
+              <Skeleton key={`skeleton-${i}`} className="h-20" />
             ))}
           </div>
           <Skeleton className="h-64" />

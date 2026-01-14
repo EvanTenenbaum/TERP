@@ -382,25 +382,23 @@ export function ReceiptCapture({
           <TabsContent value="receipt" className="space-y-4">
             {previewContent}
 
-            {/* Email Section */}
+            {/* Email Section - Disabled (not configured) */}
             {receiptId && (
               <div className="flex gap-2">
                 <Input
                   type="email"
-                  placeholder="Email address"
+                  placeholder="Email integration not configured"
                   value={emailAddress}
                   onChange={e => setEmailAddress(e.target.value)}
                   className="flex-1"
+                  disabled={true}
                 />
                 <Button
                   onClick={handleSendEmail}
-                  disabled={isSendingEmail || !emailAddress}
+                  disabled={true}
+                  title="Email integration not configured. Contact your administrator to enable this feature."
                 >
-                  {isSendingEmail ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Mail className="h-4 w-4" />
-                  )}
+                  <Mail className="h-4 w-4" />
                   <span className="ml-2">Send</span>
                 </Button>
               </div>

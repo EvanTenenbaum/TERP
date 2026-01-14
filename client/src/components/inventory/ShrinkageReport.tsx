@@ -341,7 +341,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                           }
                         >
                           {chartDataByReason.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                            <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                           ))}
                         </Pie>
                         <Tooltip

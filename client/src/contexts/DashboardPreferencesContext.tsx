@@ -95,7 +95,9 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
       setIsSyncing(true);
     },
     onSuccess: () => {
-      console.log('Dashboard preferences synced to server');
+      if (import.meta.env.DEV) {
+        console.log('Dashboard preferences synced to server');
+      }
     },
     onError: (error) => {
       console.error('Failed to sync dashboard preferences:', error);
@@ -108,7 +110,9 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   // Mutation for resetting preferences
   const resetMutation = trpc.dashboardPreferences.resetPreferences.useMutation({
     onSuccess: () => {
-      console.log('Dashboard preferences reset on server');
+      if (import.meta.env.DEV) {
+        console.log('Dashboard preferences reset on server');
+      }
       // Reset local state to defaults
       setState({
         activeLayoutId: DEFAULT_LAYOUT_ID,
@@ -138,11 +142,15 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         widgets: backendWidgets,
         isCustomizing: false,
       });
-      
-      console.log('Loaded dashboard preferences from server');
+
+      if (import.meta.env.DEV) {
+        console.log('Loaded dashboard preferences from server');
+      }
     } else if (serverPreferences && serverPreferences.id === 0) {
       // No saved preferences on server, use localStorage or defaults
-      console.log('No saved preferences on server, using localStorage/defaults');
+      if (import.meta.env.DEV) {
+        console.log('No saved preferences on server, using localStorage/defaults');
+      }
     }
   }, [serverPreferences]);
 

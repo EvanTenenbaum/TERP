@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
 import { FormSkeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Batch status type for type-safe status updates
 type BatchStatus =
@@ -54,6 +55,7 @@ export function EditBatchModal({
   });
 
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [deleteMediaConfirm, setDeleteMediaConfirm] = useState<number | null>(null);
 
   // Fetch batch details
   const { data: batch, isLoading } = trpc.inventory.getById.useQuery(batchId, {
@@ -275,7 +277,7 @@ export function EditBatchModal({
                 <div className="mt-4 space-y-2">
                   {mediaFiles.map((file, index) => (
                     <div
-                      key={index}
+                      key={`${file.name}-${file.size}-${index}`}
                       className="flex items-center justify-between bg-gray-50 p-2 rounded"
                     >
                       <span className="text-sm truncate flex-1">
@@ -285,7 +287,7 @@ export function EditBatchModal({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeMedia(index)}
+                        onClick={() => setDeleteMediaConfirm(index)}
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -309,6 +311,20 @@ export function EditBatchModal({
           </DialogFooter>
         </form>
       </DialogContent>
+      <ConfirmDialog
+        open={deleteMediaConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteMediaConfirm(null)}
+        title="Remove Media"
+        description="Are you sure you want to remove this media file?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteMediaConfirm !== null) {
+            removeMedia(deleteMediaConfirm);
+          }
+          setDeleteMediaConfirm(null);
+        }}
+      />
     </Dialog>
   );
 }

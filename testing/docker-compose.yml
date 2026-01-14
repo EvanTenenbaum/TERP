@@ -4,13 +4,64 @@ services:
   terp-test-db:
     image: mysql:8.0
     container_name: terp-test-db
+
+    # Environment configuration
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: terp-test
+      MYSQL_ROOT_HOST: '%'
+      # Performance tuning for test environment
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 256M
+      MYSQL_MAX_CONNECTIONS: 100
+
+    # Network configuration
     ports:
       - '3307:3306' # Expose test DB on a different port to avoid conflicts
+
+    # Data persistence
     volumes:
       - terp-test-db-data:/var/lib/mysql
+      # Optional: Add custom MySQL config
+      # - ./testing/mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
 
+    # Health check - verifies MySQL is ready to accept connections
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # Restart policy - always restart unless explicitly stopped
+    restart: unless-stopped
+
+    # Resource limits - prevents test DB from consuming too much resources
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network settings
+    networks:
+      - terp-test-network
+
+# Named volumes for data persistence
 volumes:
   terp-test-db-data:
+    driver: local
+
+# Custom network for service isolation
+networks:
+  terp-test-network:
+    driver: bridge

@@ -113,8 +113,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
+          // UX-010: Renamed to "System Settings" for clarity
           id: "settings",
-          label: "Settings",
+          label: "System Settings",
           icon: Settings,
           shortcut: "S",
           action: () => {

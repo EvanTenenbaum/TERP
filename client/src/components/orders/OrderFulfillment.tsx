@@ -202,7 +202,7 @@ export function OrderFulfillment({ order, onUpdate }: OrderFulfillmentProps) {
           <div className="space-y-2">
             {items.map((item, index) => (
               <div
-                key={index}
+                key={item.id || `item-${item.displayName}-${index}`}
                 className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded"
               >
                 <div>

@@ -7,6 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface AddClientWizardProps {
   open: boolean;
@@ -38,6 +46,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     city: "", // FEAT-001: Added city
     state: "", // FEAT-001: Added state
     zipCode: "", // FEAT-001: Added zip code
+    businessType: "" as "" | "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER", // FEAT-001: Business type
+    preferredContact: "" as "" | "EMAIL" | "PHONE" | "TEXT" | "ANY", // FEAT-001: Preferred contact method
+    paymentTerms: 30, // FEAT-001: Payment terms in days
     notes: "", // FEAT-001: Added notes field
     isBuyer: false,
     isSeller: false,
@@ -47,6 +58,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     tags: [] as string[],
   });
   const [newTag, setNewTag] = useState("");
+  const [deleteTagConfirm, setDeleteTagConfirm] = useState<string | null>(null);
 
   // UX-001: Warn before leaving with unsaved changes
   const hasFormData = formData.name !== "" || formData.teriCode !== "" || formData.email !== "" ||
@@ -58,16 +70,38 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   const { data: existingTags } = trpc.clients.tags.getAll.useQuery();
 
   // Create client mutation
+  // BUG-071 FIX: Enhanced error handling with detailed messages
   const createClientMutation = trpc.clients.create.useMutation({
     onSuccess: (data) => {
-      toast.success('Client created successfully');
+      toast.success('Client created successfully', {
+        description: `${formData.name} has been added to your client list`
+      });
       onOpenChange(false);
       resetForm();
       if (onSuccess && data) onSuccess(data as number);
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to create client');
+      // BUG-071 FIX: Provide clear, user-friendly error messages
       console.error('Create client error:', error);
+
+      // Handle specific error types
+      if (error.message.includes('unique') || error.message.includes('duplicate')) {
+        toast.error('Client already exists', {
+          description: 'A client with this TERI code or name already exists. Please use a different identifier.'
+        });
+      } else if (error.message.includes('validation') || error.message.includes('required')) {
+        toast.error('Invalid form data', {
+          description: 'Please check all required fields and try again.'
+        });
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error('Connection error', {
+          description: 'Unable to reach the server. Please check your connection and try again.'
+        });
+      } else {
+        toast.error('Failed to create client', {
+          description: error.message || 'An unexpected error occurred. Please try again.'
+        });
+      }
     },
   });
 
@@ -84,6 +118,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
       city: "",
       state: "",
       zipCode: "",
+      businessType: "",
+      preferredContact: "",
+      paymentTerms: 30,
       notes: "",
       isBuyer: false,
       isSeller: false,
@@ -104,7 +141,31 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   };
 
   const handleSubmit = async () => {
+    // BUG-071 FIX: Enhanced validation with user feedback
     try {
+      // Validate required fields
+      if (!formData.teriCode.trim()) {
+        toast.error('TERI Code is required', {
+          description: 'Please provide a unique TERI code for this client'
+        });
+        return;
+      }
+
+      if (!formData.name.trim()) {
+        toast.error('Contact name is required', {
+          description: 'Please provide a contact name for this client'
+        });
+        return;
+      }
+
+      // Validate at least one client type is selected
+      if (!formData.isBuyer && !formData.isSeller && !formData.isBrand && !formData.isReferee && !formData.isContractor) {
+        toast.error('Client type is required', {
+          description: 'Please select at least one client type'
+        });
+        return;
+      }
+
       // FEAT-001: Compose full address from parts
       const addressParts = [
         formData.address,
@@ -130,6 +191,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
         email: formData.email || undefined,
         phone: formData.phone || undefined,
         address: fullAddress || undefined,
+        businessType: formData.businessType || undefined,
+        preferredContact: formData.preferredContact || undefined,
+        paymentTerms: formData.paymentTerms || 30,
         isBuyer: formData.isBuyer,
         isSeller: formData.isSeller,
         isBrand: formData.isBrand,
@@ -249,6 +313,62 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   onChange={(e) => setFormData({ ...formData, secondaryPhone: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="businessType">Business Type</Label>
+                <Select
+                  value={formData.businessType}
+                  onValueChange={(value) => setFormData({ ...formData, businessType: value as typeof formData.businessType })}
+                >
+                  <SelectTrigger id="businessType">
+                    <SelectValue placeholder="Select business type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RETAIL">Retail</SelectItem>
+                    <SelectItem value="WHOLESALE">Wholesale</SelectItem>
+                    <SelectItem value="DISPENSARY">Dispensary</SelectItem>
+                    <SelectItem value="DELIVERY">Delivery</SelectItem>
+                    <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
+                    <SelectItem value="DISTRIBUTOR">Distributor</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="preferredContact">Preferred Contact</Label>
+                <Select
+                  value={formData.preferredContact}
+                  onValueChange={(value) => setFormData({ ...formData, preferredContact: value as typeof formData.preferredContact })}
+                >
+                  <SelectTrigger id="preferredContact">
+                    <SelectValue placeholder="Select contact method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EMAIL">Email</SelectItem>
+                    <SelectItem value="PHONE">Phone</SelectItem>
+                    <SelectItem value="TEXT">Text</SelectItem>
+                    <SelectItem value="ANY">Any</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentTerms">Payment Terms (Days)</Label>
+              <Input
+                id="paymentTerms"
+                type="number"
+                min="0"
+                placeholder="30"
+                value={formData.paymentTerms}
+                onChange={(e) => setFormData({ ...formData, paymentTerms: parseInt(e.target.value) || 30 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Number of days for payment (e.g., Net 30)
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -461,7 +581,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                           {tag}
                           <button
                             type="button"
-                            onClick={() => removeTag(tag)}
+                            onClick={() => setDeleteTagConfirm(tag)}
                             className="ml-1 hover:text-destructive"
                           >
                             <X className="h-3 w-3" />
@@ -537,6 +657,20 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
           </div>
         </DialogFooter>
       </DialogContent>
+      <ConfirmDialog
+        open={deleteTagConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteTagConfirm(null)}
+        title="Remove Tag"
+        description="Are you sure you want to remove this tag from the client?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTagConfirm) {
+            removeTag(deleteTagConfirm);
+          }
+          setDeleteTagConfirm(null);
+        }}
+      />
     </Dialog>
   );
 }

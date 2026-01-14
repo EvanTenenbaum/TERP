@@ -99,24 +99,27 @@ export default function ProductsPage() {
     const itemCount = productsData?.items?.length ?? 0;
     const total = productsData?.pagination?.total ?? 'unknown';
 
-    console.log('[ProductsPage] Query state:', {
-      isLoading,
-      isError,
-      error: error?.message,
-      itemCount,
-      total,
-      showDeleted,
-      hasItems: productsData?.items !== undefined,
-      rawDataType: productsData ? typeof productsData : 'undefined',
-    });
-
-    // Warn if we have a response but no items
-    if (!isLoading && !isError && productsData && itemCount === 0) {
-      console.warn('[ProductsPage] Zero products returned - possible data display issue', {
+    // Debug logging for data display issues (QA-049) - only in development
+    if (import.meta.env.DEV) {
+      console.log('[ProductsPage] Query state:', {
+        isLoading,
+        isError,
+        error: error?.message,
+        itemCount,
+        total,
         showDeleted,
-        pagination: productsData.pagination,
-        response: productsData,
+        hasItems: productsData?.items !== undefined,
+        rawDataType: productsData ? typeof productsData : 'undefined',
       });
+
+      // Warn if we have a response but no items
+      if (!isLoading && !isError && productsData && itemCount === 0) {
+        console.warn('[ProductsPage] Zero products returned - possible data display issue', {
+          showDeleted,
+          pagination: productsData.pagination,
+          response: productsData,
+        });
+      }
     }
   }, [productsData, isLoading, isError, error, showDeleted]);
 

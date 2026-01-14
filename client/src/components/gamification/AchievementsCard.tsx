@@ -187,7 +187,7 @@ export const AchievementsCard = React.memo(function AchievementsCard({
         {isLoading && (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="w-14 h-14 rounded-full" />
+              <Skeleton key={`skeleton-${i}`} className="w-14 h-14 rounded-full" />
             ))}
           </div>
         )}

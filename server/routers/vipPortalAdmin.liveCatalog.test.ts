@@ -26,8 +26,8 @@ vi.mock("drizzle-orm", async (importOriginal) => {
 
 import { appRouter } from '../routers';
 import { db, getDb } from '../db';
-import { 
-  clients, 
+import {
+  clients,
   vipPortalConfigurations,
   roles,
   userRoles,
@@ -36,6 +36,7 @@ import {
 } from '../../drizzle/schema';
 import { seedRBACDefaults, assignRoleToUser } from '../services/seedRBAC';
 import { eq } from 'drizzle-orm';
+import { withTransaction } from '../dbTransaction';
 
 // Mock user for authenticated admin requests
 const mockAdminUser = {
@@ -87,12 +88,11 @@ describe('VIP Portal Admin - Live Catalog', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    const db = await getDb();
-    if (!db) return;
-    
-    await db.delete(vipPortalConfigurations).where(eq(vipPortalConfigurations.clientId, testClientId));
-    await db.delete(clients).where(eq(clients.id, testClientId));
+    // DI-003: Wrap cascading deletes in transaction to prevent orphaned test data
+    await withTransaction(async (tx) => {
+      await tx.delete(vipPortalConfigurations).where(eq(vipPortalConfigurations.clientId, testClientId));
+      await tx.delete(clients).where(eq(clients.id, testClientId));
+    });
   });
 
   describe('saveConfiguration', () => {

@@ -26,6 +26,7 @@ import { eq, desc, sql, and, or, gte, lte, like } from "drizzle-orm";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { logger } from "../_core/logger";
 import { sendNotification } from "../services/notificationService";
+import { withTransaction } from "../dbTransaction";
 import crypto from "crypto";
 
 // ============================================================================
@@ -1076,15 +1077,18 @@ export const intakeReceiptsRouter = router({
         });
       }
 
-      // Delete items first (cascade should handle this, but being explicit)
-      await db
-        .delete(intakeReceiptItems)
-        .where(eq(intakeReceiptItems.receiptId, input.id));
+      // Delete receipt and items in transaction to prevent orphaned records
+      await withTransaction(async (tx) => {
+        // Delete child records first
+        await tx
+          .delete(intakeReceiptItems)
+          .where(eq(intakeReceiptItems.receiptId, input.id));
 
-      // Delete receipt
-      await db
-        .delete(intakeReceipts)
-        .where(eq(intakeReceipts.id, input.id));
+        // Then delete parent
+        await tx
+          .delete(intakeReceipts)
+          .where(eq(intakeReceipts.id, input.id));
+      });
 
       logger.info(
         { receiptId: input.id, receiptNumber: receipt.receiptNumber },

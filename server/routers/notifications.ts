@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { organizationSettings } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
 
 const paginationInput = z
   .object({
@@ -55,16 +56,25 @@ const systemNotificationSettingsSchema = z.object({
 
 export const notificationsRouter = router({
   list: protectedProcedure.input(paginationInput).query(async ({ ctx, input }) => {
-    const { limit, offset } = resolvePagination(input);
-    const items = await listNotifications({ userId: ctx.user.id }, { limit, offset });
-    const unread = await getUnreadCount({ userId: ctx.user.id });
+    try {
+      const { limit, offset } = resolvePagination(input);
+      const items = await listNotifications({ userId: ctx.user.id }, { limit, offset });
+      const unread = await getUnreadCount({ userId: ctx.user.id });
 
-    return {
-      items,
-      unread,
-      total: items.length,
-      pagination: { limit, offset },
-    };
+      return {
+        items,
+        unread,
+        total: items.length,
+        pagination: { limit, offset },
+      };
+    } catch (error) {
+      logger.error("Failed to list notifications", { error, userId: ctx.user.id });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch notifications",
+        cause: error,
+      });
+    }
   }),
 
   markRead: protectedProcedure
@@ -101,20 +111,29 @@ export const notificationsRouter = router({
     ),
 
   vipList: vipPortalProcedure.input(paginationInput).query(async ({ ctx, input }) => {
-    const { limit, offset } = resolvePagination(input);
-    const clientId = ctx.clientId;
-    const items = await listNotifications(
-      { clientId, recipientType: "client" },
-      { limit, offset }
-    );
-    const unread = await getUnreadCount({ clientId, recipientType: "client" });
+    try {
+      const { limit, offset } = resolvePagination(input);
+      const clientId = ctx.clientId;
+      const items = await listNotifications(
+        { clientId, recipientType: "client" },
+        { limit, offset }
+      );
+      const unread = await getUnreadCount({ clientId, recipientType: "client" });
 
-    return {
-      items,
-      unread,
-      total: items.length,
-      pagination: { limit, offset },
-    };
+      return {
+        items,
+        unread,
+        total: items.length,
+        pagination: { limit, offset },
+      };
+    } catch (error) {
+      logger.error("Failed to list VIP notifications", { error, clientId: ctx.clientId });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch notifications",
+        cause: error,
+      });
+    }
   }),
 
   vipMarkRead: vipPortalProcedure

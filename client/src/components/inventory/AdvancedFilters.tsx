@@ -30,6 +30,7 @@ interface AdvancedFiltersProps {
   vendors: string[];
   brands: string[];
   categories: string[];
+  subcategories: string[];
   grades: string[];
 }
 
@@ -39,6 +40,7 @@ export function AdvancedFilters({
   vendors,
   brands,
   categories,
+  subcategories,
   grades,
 }: AdvancedFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -155,6 +157,31 @@ export function AdvancedFilters({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Subcategory Filter */}
+          {subcategories.length > 0 && (
+            <div className="space-y-2">
+              <Label>Subcategory</Label>
+              <Select
+                value={filters.subcategory || "all"}
+                onValueChange={(value) =>
+                  onUpdateFilter("subcategory", value === "all" ? null : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Subcategories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subcategories</SelectItem>
+                  {subcategories.map((sub) => (
+                    <SelectItem key={sub} value={sub}>
+                      {sub}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Stock Level Filter */}
           <div className="space-y-2">

@@ -514,7 +514,7 @@ export function PhotographyModule({
         {uploadProgress.length > 0 && (
           <div className="space-y-2 p-3 rounded-lg bg-muted">
             {uploadProgress.map((item, idx) => (
-              <div key={idx} className="space-y-1">
+              <div key={`${item.filename}-${idx}`} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="truncate">{item.filename}</span>
                   <span className="text-muted-foreground">

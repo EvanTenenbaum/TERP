@@ -39,6 +39,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDate as formatDateUtil } from "@/lib/dateFormat";
 
 type FiscalPeriod = {
   id: number;
@@ -105,11 +106,6 @@ export default function FiscalPeriods() {
       toast.error(`Failed to reopen fiscal period: ${error.message}`);
     },
   });
-
-  const formatDate = (dateStr: Date | string) => {
-    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-    return format(date, "MMM dd, yyyy");
-  };
 
   const getStatusBadge = (status: string, isCurrent: boolean = false) => {
     let badge;
@@ -310,8 +306,8 @@ export default function FiscalPeriods() {
                       <TableRow key={period.id} className={cn(isCurrent && "bg-blue-50")}>
                         <TableCell className="font-medium">{period.periodName}</TableCell>
                         <TableCell>{period.fiscalYear}</TableCell>
-                        <TableCell>{formatDate(period.startDate)}</TableCell>
-                        <TableCell>{formatDate(period.endDate)}</TableCell>
+                        <TableCell>{formatDateUtil(period.startDate, "long")}</TableCell>
+                        <TableCell>{formatDateUtil(period.endDate, "long")}</TableCell>
                         <TableCell>{getStatusBadge(period.status, isCurrent)}</TableCell>
                         <TableCell className="text-right">
                           {getActionButtons(period)}

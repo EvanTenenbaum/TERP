@@ -1,5 +1,5 @@
 import { mysqlTable, int, boolean, json, timestamp, varchar, text, index, decimal, unique } from "drizzle-orm/mysql-core";
-import { clients, users } from "./schema";
+import { clients, users, orders, batches } from "./schema";
 
 /**
  * VIP Portal Configurations
@@ -169,10 +169,10 @@ export const clientInterestLists = mysqlTable("client_interest_lists", {
   totalItems: int("total_items").notNull(),
   totalValue: decimal("total_value", { precision: 10, scale: 2 }).notNull(),
   reviewedAt: timestamp("reviewed_at"),
-  reviewedBy: int("reviewed_by"),
-  convertedToOrderId: int("converted_to_order_id"),
+  reviewedBy: int("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+  convertedToOrderId: int("converted_to_order_id").references(() => orders.id, { onDelete: "set null" }),
   convertedAt: timestamp("converted_at"),
-  convertedBy: int("converted_by"),
+  convertedBy: int("converted_by").references(() => users.id, { onDelete: "set null" }),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -191,7 +191,7 @@ export type InsertClientInterestList = typeof clientInterestLists.$inferInsert;
 export const clientInterestListItems = mysqlTable("client_interest_list_items", {
   id: int("id").primaryKey().autoincrement(),
   interestListId: int("interest_list_id").notNull().references(() => clientInterestLists.id, { onDelete: "cascade" }),
-  batchId: int("batch_id").notNull(),
+  batchId: int("batch_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
   // Snapshot data at time of interest
   itemName: varchar("item_name", { length: 255 }).notNull(),
   category: varchar("category", { length: 100 }),
@@ -214,7 +214,7 @@ export type InsertClientInterestListItem = typeof clientInterestListItems.$infer
 export const clientDraftInterests = mysqlTable("client_draft_interests", {
   id: int("id").primaryKey().autoincrement(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
-  batchId: int("batch_id").notNull(),
+  batchId: int("batch_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
   addedAt: timestamp("added_at").defaultNow().notNull(),
 }, (table) => ({
   clientIdIdx: index("idx_client_draft_interests_client_id").on(table.clientId),
@@ -232,7 +232,7 @@ export type InsertClientDraftInterest = typeof clientDraftInterests.$inferInsert
 export const clientPriceAlerts = mysqlTable("client_price_alerts", {
   id: int("id").primaryKey().autoincrement(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
-  batchId: int("batch_id").notNull(),
+  batchId: int("batch_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
   targetPrice: decimal("target_price", { precision: 10, scale: 2 }).notNull(),
   active: boolean("active").default(true).notNull(),
   triggeredAt: timestamp("triggered_at"),

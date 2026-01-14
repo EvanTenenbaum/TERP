@@ -148,7 +148,7 @@ export function AuditModal({
           </TableHeader>
           <TableBody>
             {data.transactions.map((t, i) => (
-              <TableRow key={i}>
+              <TableRow key={`skeleton-${i}`}>
                 <TableCell>{formatDate(t.date)}</TableCell>
                 <TableCell>
                   <Badge variant={t.type === "ORDER" ? "default" : "secondary"}>
@@ -234,7 +234,7 @@ export function AuditModal({
           </TableHeader>
           <TableBody>
             {data.movements.map((m, i) => (
-              <TableRow key={i}>
+              <TableRow key={`skeleton-${i}`}>
                 <TableCell>{formatDate(m.date)}</TableCell>
                 <TableCell>
                   <Badge variant={m.quantity >= 0 ? "default" : "destructive"}>
@@ -296,7 +296,7 @@ export function AuditModal({
           </TableHeader>
           <TableBody>
             {data.lineItems.map((li, i) => (
-              <TableRow key={i}>
+              <TableRow key={`skeleton-${i}`}>
                 <TableCell>{li.productName}</TableCell>
                 <TableCell className="text-right">{li.quantity}</TableCell>
                 <TableCell className="text-right">{formatCurrency(li.unitPrice)}</TableCell>
@@ -348,7 +348,7 @@ export function AuditModal({
               </TableHeader>
               <TableBody>
                 {data.payments.map((p, i) => (
-                  <TableRow key={i}>
+                  <TableRow key={`skeleton-${i}`}>
                     <TableCell>{formatDate(p.date)}</TableCell>
                     <TableCell>{p.method}</TableCell>
                     <TableCell>{p.createdBy}</TableCell>
@@ -403,7 +403,7 @@ export function AuditModal({
           </TableHeader>
           <TableBody>
             {data.transactions.map((t, i) => (
-              <TableRow key={i}>
+              <TableRow key={`skeleton-${i}`}>
                 <TableCell>{formatDate(t.date)}</TableCell>
                 <TableCell>
                   <Badge variant={t.type === "BILL" ? "default" : "secondary"}>

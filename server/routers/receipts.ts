@@ -38,38 +38,6 @@ async function generateReceiptNumber(retryCount = 0): Promise<string> {
   return `${prefix}${String(nextNum).padStart(6, '0')}`;
 }
 
-/**
- * Create receipt with retry logic for duplicate key handling
- * Returns receipt number on success
- * @deprecated TODO: Integrate this into receipt creation flow
- */
-async function _createReceiptWithRetry(
-  data: Omit<typeof receipts.$inferInsert, 'receiptNumber'>,
-  maxRetries = 3
-): Promise<string> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const receiptNumber = await generateReceiptNumber(attempt);
-    try {
-      await db.insert(receipts).values({
-        ...data,
-        receiptNumber,
-      } as typeof receipts.$inferInsert);
-      return receiptNumber;
-    } catch (error) {
-      const errorMessage = String(error);
-      if (errorMessage.includes("Duplicate entry") || errorMessage.includes("ER_DUP_ENTRY")) {
-        // Race condition - retry with next number
-        if (attempt < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)));
-          continue;
-        }
-      }
-      throw error;
-    }
-  }
-  throw new Error("Failed to generate unique receipt number after retries");
-}
-
 // Generate HTML receipt template
 function generateReceiptHtml(data: {
   receiptNumber: string;
@@ -489,6 +457,7 @@ export const receiptsRouter = router({
 
   /**
    * Send receipt via email
+   * NOTE: Email integration not configured - this endpoint throws NOT_IMPLEMENTED
    */
   sendEmail: adminProcedure
     .input(z.object({
@@ -497,26 +466,17 @@ export const receiptsRouter = router({
       customMessage: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      // Update receipt with email info
-      await db
-        .update(receipts)
-        .set({
-          emailedTo: input.email,
-          emailedAt: new Date(),
-        })
-        .where(eq(receipts.id, input.receiptId));
-
-      // TODO: Integrate with email service (SendGrid, etc.)
-      // For now, just record that it was "sent"
-      
-      return {
-        success: true,
-        sentAt: new Date(),
-      };
+      // Email integration is not configured
+      // To enable: Set FEATURE_EMAIL_ENABLED=true and configure RESEND_API_KEY
+      throw new TRPCError({
+        code: "NOT_IMPLEMENTED",
+        message: "Email integration not configured. Please contact your system administrator to enable email functionality.",
+      });
     }),
 
   /**
    * Send receipt via SMS
+   * NOTE: SMS integration not configured - this endpoint throws NOT_IMPLEMENTED
    */
   sendSms: adminProcedure
     .input(z.object({
@@ -524,22 +484,12 @@ export const receiptsRouter = router({
       phoneNumber: z.string(),
     }))
     .mutation(async ({ input }) => {
-      // Update receipt with SMS info
-      await db
-        .update(receipts)
-        .set({
-          smsSentTo: input.phoneNumber,
-          smsSentAt: new Date(),
-        })
-        .where(eq(receipts.id, input.receiptId));
-
-      // TODO: Integrate with SMS service (Twilio, etc.)
-      // For now, just record that it was "sent"
-      
-      return {
-        success: true,
-        sentAt: new Date(),
-      };
+      // SMS integration is not configured
+      // To enable: Set FEATURE_SMS_ENABLED=true and configure Twilio credentials
+      throw new TRPCError({
+        code: "NOT_IMPLEMENTED",
+        message: "SMS integration not configured. Please contact your system administrator to enable SMS functionality.",
+      });
     }),
 
   /**
@@ -559,7 +509,10 @@ export const receiptsRouter = router({
       }
 
       // Generate public URL (no expiry for now)
-      const baseUrl = process.env.PUBLIC_URL || 'https://terp.app';
+      const baseUrl = process.env.PUBLIC_URL;
+      if (!baseUrl) {
+        throw new Error("PUBLIC_URL environment variable must be set");
+      }
       return {
         url: `${baseUrl}/receipts/${receipt[0].receiptNumber}`,
         expiresAt: null, // No expiry

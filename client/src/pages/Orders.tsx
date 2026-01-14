@@ -52,6 +52,7 @@ const ORDERS_FILTER_KEY = "terp-orders-filters";
 /**
  * Load orders filters from localStorage
  * CHAOS-023: Filter persistence
+ * BUG-072 FIX: Fallback to sessionStorage if localStorage unavailable
  */
 function loadOrdersFiltersFromStorage(): { activeTab: 'draft' | 'confirmed'; statusFilter: string } | null {
   try {
@@ -59,18 +60,37 @@ function loadOrdersFiltersFromStorage(): { activeTab: 'draft' | 'confirmed'; sta
     if (!stored) return null;
     return JSON.parse(stored);
   } catch {
-    return null;
+    // BUG-072 FIX: Try sessionStorage as fallback
+    try {
+      const stored = sessionStorage.getItem(ORDERS_FILTER_KEY);
+      if (!stored) return null;
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
   }
 }
 
 /**
  * Save orders filters to localStorage
+ * BUG-072 FIX: Add toast notification and sessionStorage fallback
  */
 function saveOrdersFiltersToStorage(filters: { activeTab: 'draft' | 'confirmed'; statusFilter: string }): void {
   try {
     localStorage.setItem(ORDERS_FILTER_KEY, JSON.stringify(filters));
-  } catch {
-    // Silently fail
+  } catch (error) {
+    console.warn('localStorage unavailable, using sessionStorage fallback:', error);
+    try {
+      sessionStorage.setItem(ORDERS_FILTER_KEY, JSON.stringify(filters));
+      toast.warning('Unable to save filter preferences permanently', {
+        description: 'Your filters will reset when you close the browser'
+      });
+    } catch (sessionError) {
+      console.error('sessionStorage also unavailable:', sessionError);
+      toast.warning('Unable to save filter preferences', {
+        description: 'Storage is disabled. Your filters will reset on page refresh'
+      });
+    }
   }
 }
 
@@ -100,6 +120,8 @@ export default function Orders() {
   const [activeTab, setActiveTab] = useState<'draft' | 'confirmed'>(initialFilters.activeTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(initialFilters.statusFilter);
+  // FEAT-005: Add order type filter for unified draft/quote workflow
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL');
 
   // Persist filter changes to localStorage (CHAOS-023)
   useEffect(() => {
@@ -146,9 +168,15 @@ export default function Orders() {
 
   // Debug logging removed - use browser DevTools Network tab for API debugging
 
-  // Filter orders by search query
+  // FEAT-005: Filter orders by search query and order type
   const filteredDrafts = draftOrders.filter((order: any) => {
-    if (!searchQuery) return true; // Show all if no search query
+    // Order type filter
+    if (orderTypeFilter !== 'ALL' && order.orderType !== orderTypeFilter) {
+      return false;
+    }
+
+    // Search query filter
+    if (!searchQuery) return true;
     try {
       const searchLower = searchQuery.toLowerCase();
       const orderNumber = order.orderNumber || '';
@@ -159,12 +187,18 @@ export default function Orders() {
       );
     } catch (error) {
       console.error('Error filtering draft order:', error, order);
-      return true; // Include order if filter fails
+      return true;
     }
   });
 
   const filteredConfirmed = confirmedOrders.filter((order: any) => {
-    if (!searchQuery) return true; // Show all if no search query
+    // Order type filter
+    if (orderTypeFilter !== 'ALL' && order.orderType !== orderTypeFilter) {
+      return false;
+    }
+
+    // Search query filter
+    if (!searchQuery) return true;
     try {
       const searchLower = searchQuery.toLowerCase();
       const orderNumber = order.orderNumber || '';
@@ -175,7 +209,7 @@ export default function Orders() {
       );
     } catch (error) {
       console.error('Error filtering confirmed order:', error, order);
-      return true; // Include order if filter fails
+      return true;
     }
   });
   
@@ -339,18 +373,32 @@ export default function Orders() {
             </Card>
           </div>
 
-          {/* Search */}
+          {/* FEAT-005: Search and Order Type Filter */}
           <Card>
             <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search by order number or client name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                  aria-label="Search draft orders"
-                />
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search by order number or client name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      aria-label="Search draft orders"
+                    />
+                  </div>
+                </div>
+                <Select value={orderTypeFilter} onValueChange={setOrderTypeFilter}>
+                  <SelectTrigger className="w-[180px]" aria-label="Filter by order type">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Types</SelectItem>
+                    <SelectItem value="SALE">Sales Only</SelectItem>
+                    <SelectItem value="QUOTE">Quotes Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -388,6 +436,10 @@ export default function Orders() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
                             <Badge variant="secondary">Draft</Badge>
+                            {/* FEAT-005: Show order type (Quote/Sale) */}
+                            <Badge variant={order.orderType === "QUOTE" ? "outline" : "default"}>
+                              {order.orderType === "QUOTE" ? "Quote" : "Sale"}
+                            </Badge>
                           </div>
                           <div className="text-sm text-muted-foreground space-y-1">
                             <div>Client: {getClientName(order.clientId)}</div>
@@ -418,7 +470,7 @@ export default function Orders() {
           {/* Confirmed Statistics Cards */}
           <DataCardSection moduleId="orders" />
 
-          {/* Filters */}
+          {/* FEAT-005: Filters with Order Type */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -434,10 +486,20 @@ export default function Orders() {
                     />
                   </div>
                 </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]" aria-label="Filter by fulfillment status">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
+                <Select value={orderTypeFilter} onValueChange={setOrderTypeFilter}>
+                  <SelectTrigger className="w-[180px]" aria-label="Filter by order type">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Types</SelectItem>
+                    <SelectItem value="SALE">Sales Only</SelectItem>
+                    <SelectItem value="QUOTE">Quotes Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]" aria-label="Filter by fulfillment status">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">All Statuses</SelectItem>
                     <SelectItem value="PENDING">Pending</SelectItem>
@@ -478,6 +540,10 @@ export default function Orders() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
                             <OrderStatusBadge status={order.fulfillmentStatus || 'PENDING'} />
+                            {/* FEAT-005: Show order type (Quote/Sale) */}
+                            <Badge variant={order.orderType === "QUOTE" ? "outline" : "default"}>
+                              {order.orderType === "QUOTE" ? "Quote" : "Sale"}
+                            </Badge>
                             {order.saleStatus && (
                               <Badge variant="outline" className="text-xs" title="Payment Status">
                                 Payment: {order.saleStatus}
@@ -548,7 +614,7 @@ export default function Orders() {
                 <h3 className="font-semibold mb-2">Order Items</h3>
                 <div className="space-y-2">
                   {(selectedOrder.items as any[])?.map((item: any, index: number) => (
-                    <div key={index} className="flex justify-between text-sm">
+                    <div key={`page-item-${index}`} className="flex justify-between text-sm">
                       <div>
                         <div className="font-medium">{item.displayName}</div>
                         <div className="text-muted-foreground">
@@ -572,6 +638,32 @@ export default function Orders() {
                   <span>${parseFloat(selectedOrder.total).toFixed(2)}</span>
                 </div>
               </div>
+
+              {/* FEAT-008: Invoice Information */}
+              {selectedOrder.invoiceId && !selectedOrder.isDraft && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">Invoice Details</h3>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditInvoiceId(selectedOrder.invoiceId);
+                          setShowEditInvoiceDialog(true);
+                        }}
+                      >
+                        <Receipt className="h-4 w-4 mr-2" />
+                        Edit Invoice
+                      </Button>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Invoice generated for this order. Click "Edit Invoice" to update details, payment terms, or due date.
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Actions */}
               <div className="space-y-2">
@@ -597,20 +689,6 @@ export default function Orders() {
                     {selectedOrder.fulfillmentStatus === 'PACKED' && (
                       <Button className="w-full" onClick={handleStatusChange}>
                         Mark as Shipped
-                      </Button>
-                    )}
-                    {/* FEAT-008: Edit Invoice Button */}
-                    {selectedOrder.invoiceId && (
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        onClick={() => {
-                          setEditInvoiceId(selectedOrder.invoiceId);
-                          setShowEditInvoiceDialog(true);
-                        }}
-                      >
-                        <Receipt className="h-4 w-4 mr-2" />
-                        Edit Invoice
                       </Button>
                     )}
                     <Button

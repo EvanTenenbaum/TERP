@@ -472,7 +472,8 @@ export const tags = mysqlTable("tags", {
   name: varchar("name", { length: 100 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   standardizedName: varchar("standardizedName", { length: 100 }).notNull(),
-  category: varchar("category", { length: 50 }), // strain_type, flavor, effect, etc.
+  category: mysqlEnum("category", ["STATUS", "PRIORITY", "TYPE", "CUSTOM", "STRAIN", "FLAVOR", "EFFECT"]).default("CUSTOM"), // FEAT-002: Structured categories
+  color: varchar("color", { length: 7 }).default("#6B7280"), // FEAT-002: Hex color for visual organization
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -496,6 +497,25 @@ export const productTags = mysqlTable("productTags", {
 
 export type ProductTag = typeof productTags.$inferSelect;
 export type InsertProductTag = typeof productTags.$inferInsert;
+
+/**
+ * Client Tags junction table
+ * FEAT-002: Links clients to tags (many-to-many relationship)
+ */
+export const clientTags = mysqlTable("clientTags", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  tagId: int("tagId")
+    .notNull()
+    .references(() => tags.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+});
+
+export type ClientTag = typeof clientTags.$inferSelect;
+export type InsertClientTag = typeof clientTags.$inferInsert;
 
 /**
  * Lots table
@@ -1495,6 +1515,31 @@ export const cogsAdjustmentTypeEnum = mysqlEnum("cogsAdjustmentType", [
   "FIXED_AMOUNT",
 ]);
 
+/**
+ * Business Type Enum (FEAT-001)
+ * Types of client businesses
+ */
+export const businessTypeEnum = mysqlEnum("businessType", [
+  "RETAIL",
+  "WHOLESALE",
+  "DISPENSARY",
+  "DELIVERY",
+  "MANUFACTURER",
+  "DISTRIBUTOR",
+  "OTHER",
+]);
+
+/**
+ * Preferred Contact Method Enum (FEAT-001)
+ * Client's preferred communication channel
+ */
+export const preferredContactEnum = mysqlEnum("preferredContact", [
+  "EMAIL",
+  "PHONE",
+  "TEXT",
+  "ANY",
+]);
+
 export const clients = mysqlTable(
   "clients",
   {
@@ -1505,6 +1550,11 @@ export const clients = mysqlTable(
     email: varchar("email", { length: 255 }),
     phone: varchar("phone", { length: 50 }),
     address: text("address"),
+
+    // Business information (FEAT-001)
+    businessType: businessTypeEnum,
+    preferredContact: preferredContactEnum,
+    paymentTerms: int("payment_terms").default(30), // Payment terms in days
 
     // Client types (multi-role support)
     isBuyer: boolean("is_buyer").default(false),
@@ -3095,11 +3145,13 @@ export const creditApplications = mysqlTable(
     appliedBy: int("appliedBy")
       .notNull()
       .references(() => users.id),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => ({
     creditIdIdx: index("idx_credit_applications_credit").on(table.creditId),
     invoiceIdIdx: index("idx_credit_applications_invoice").on(table.invoiceId),
+    idempotencyKeyIdx: uniqueIndex("idx_credit_applications_idempotency").on(table.idempotencyKey),
   })
 );
 
@@ -5910,6 +5962,16 @@ export {
   type InsertAdminImpersonationSession,
   type AdminImpersonationAction,
   type InsertAdminImpersonationAction,
+  // VIP Tier System (FEAT-019)
+  vipTiers,
+  clientVipStatus,
+  vipTierHistory,
+  type VipTier,
+  type InsertVipTier,
+  type ClientVipStatus,
+  type InsertClientVipStatus,
+  type VipTierHistory,
+  type InsertVipTierHistory,
 } from "./schema-vip-portal";
 
 // ============================================================================

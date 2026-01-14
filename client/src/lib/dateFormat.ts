@@ -243,12 +243,46 @@ export function isValidDate(date: Date | string | null | undefined): boolean {
   return parseDate(date) !== null;
 }
 
+/**
+ * Format a quarter (e.g., "Q1 2024")
+ */
+export function formatQuarter(
+  date: Date | string | null | undefined
+): string {
+  const parsed = parseDate(date);
+  if (!parsed) return "N/A";
+
+  const quarter = Math.floor(parsed.getMonth() / 3) + 1;
+  const year = parsed.getFullYear();
+  return `Q${quarter} ${year}`;
+}
+
+/**
+ * Format a month and year (e.g., "January 2024")
+ */
+export function formatMonthYear(
+  date: Date | string | null | undefined,
+  style: "short" | "long" = "long"
+): string {
+  const parsed = parseDate(date);
+  if (!parsed) return "N/A";
+
+  try {
+    const pattern = style === "short" ? "MMM yyyy" : "MMMM yyyy";
+    return format(parsed, pattern);
+  } catch {
+    return "Invalid date";
+  }
+}
+
 export default {
   formatDate,
   formatDateTime,
   formatDateRange,
   formatRelativeTime,
   formatTime,
+  formatQuarter,
+  formatMonthYear,
   getDateFormatPreference,
   setDateFormatPreference,
   getStartOfDay,

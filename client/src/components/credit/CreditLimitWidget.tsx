@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  AlertCircle, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertCircle,
   Info,
   Settings,
   RotateCcw,
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { toast } from "sonner";
 
 interface CreditLimitWidgetProps {
   clientId: number;
@@ -90,17 +91,17 @@ export function CreditLimitWidget({
 
   const handlePreview = async () => {
     if (!customWeights) return;
-    
+
     // Validate weights sum to 100
     const sum = Object.values(customWeights).reduce((a, b) => a + b, 0);
     if (Math.abs(sum - 100) > 0.01) {
-      alert("Weights must sum to 100%");
+      toast.error("Weights must sum to 100%");
       return;
     }
 
-    await calculateMutation.mutateAsync({ 
-      clientId, 
-      customWeights 
+    await calculateMutation.mutateAsync({
+      clientId,
+      customWeights
     });
   };
 

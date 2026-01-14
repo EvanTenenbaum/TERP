@@ -1,8 +1,9 @@
 import { router, publicProcedure, adminProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
-import { grades, categories, subcategories, locations } from "../../drizzle/schema";
-import { eq, isNull, and } from "drizzle-orm";
+import { grades, categories, subcategories, locations, products } from "../../drizzle/schema";
+import { eq, isNull, and, count } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 // Legacy seeding system has been deprecated
 // Use the new seeding system: pnpm seed:new
 // See: scripts/seed/README.md and docs/deployment/SEEDING_RUNBOOK.md
@@ -113,6 +114,32 @@ const subcategoriesRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      // First, get the subcategory name to check for usage
+      const [subcategory] = await db.select().from(subcategories).where(eq(subcategories.id, input.id));
+      if (!subcategory) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Subcategory not found"
+        });
+      }
+
+      // Check for products using this subcategory
+      const [usage] = await db.select({ count: count() })
+        .from(products)
+        .where(and(
+          eq(products.subcategory, subcategory.name),
+          isNull(products.deletedAt)
+        ));
+
+      if (usage && usage.count > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Cannot delete: ${usage.count} product(s) use this subcategory`
+        });
+      }
+
+      // Soft delete the subcategory
       await db.update(subcategories).set({ deletedAt: new Date() }).where(eq(subcategories.id, input.id));
       return { success: true };
     }),

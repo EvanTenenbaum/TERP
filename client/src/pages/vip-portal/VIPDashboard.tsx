@@ -97,55 +97,10 @@ export default function VIPDashboard() {
   } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // FIX-VIP-001: Track if session token has been applied to fetch
-  const [isSessionReady, setIsSessionReady] = useState(false);
 
-  // FIX-VIP-002: Patch fetch BEFORE any queries fire
-  // This must happen synchronously on sessionToken availability
-  // SEC-FIX: Only send session token to same-origin requests to prevent leakage
-  useEffect(() => {
-    if (!sessionToken) {
-      setIsSessionReady(false);
-      return;
-    }
-    const originalFetch = window.fetch.bind(window);
-
-    // Helper to check if URL is same-origin
-    const isSameOrigin = (url: string | URL | Request): boolean => {
-      try {
-        const targetUrl = url instanceof Request ? url.url : url.toString();
-        // Handle relative URLs (always same-origin)
-        if (targetUrl.startsWith("/") && !targetUrl.startsWith("//")) {
-          return true;
-        }
-        const parsed = new URL(targetUrl, window.location.origin);
-        return parsed.origin === window.location.origin;
-      } catch {
-        // If URL parsing fails, assume it's a relative path
-        return true;
-      }
-    };
-
-    window.fetch = (input, init) => {
-      // SEC-FIX: Only add session token to same-origin requests
-      if (isSameOrigin(input)) {
-        const headers = new Headers(init?.headers ?? {});
-        headers.set("x-vip-session-token", sessionToken);
-        return originalFetch(input, { ...(init ?? {}), headers });
-      }
-      // For cross-origin requests, don't add session token
-      return originalFetch(input, init);
-    };
-    // Mark session as ready AFTER fetch is patched
-    setIsSessionReady(true);
-    return () => {
-      window.fetch = originalFetch;
-    };
-  }, [sessionToken]);
-
-  // FIX-VIP-003: Only fetch data when auth is fully initialized AND session is ready
-  // This prevents queries with clientId=0 and ensures session header is attached
-  const isReady = isInitialized && isSessionReady && clientId > 0;
+  // FE-QA-003: Only fetch data when auth is fully initialized
+  // tRPC client now sends x-vip-session-token header automatically from main.tsx
+  const isReady = isInitialized && clientId > 0;
 
   const { data: rawConfig } = trpc.vipPortal.config.get.useQuery(
     { clientId },
@@ -159,7 +114,7 @@ export default function VIPDashboard() {
   // Cast config to properly typed interface to avoid unknown type issues
   const config = rawConfig as VipPortalConfig | undefined;
 
-  // FIX-VIP-004: Show loading state while initializing or fetching data
+  // Show loading state while initializing or fetching data
   if (!isReady || !config || !kpis) {
     return (
       <div className="min-h-screen flex items-center justify-center">

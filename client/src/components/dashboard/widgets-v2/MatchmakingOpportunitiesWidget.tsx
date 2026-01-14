@@ -150,7 +150,7 @@ export const MatchmakingOpportunitiesWidget = memo(
                   <div className="space-y-2">
                     {topMatches.map((match, idx) => (
                       <div
-                        key={idx}
+                        key={`item-${idx}`}
                         className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${match.clientId}?tab=needs`)
@@ -196,7 +196,7 @@ export const MatchmakingOpportunitiesWidget = memo(
                   <div className="space-y-2">
                     {overdueReorders.map((prediction, idx) => (
                       <div
-                        key={idx}
+                        key={`item-${idx}`}
                         className="border border-destructive/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${prediction.clientId}`)
@@ -237,7 +237,7 @@ export const MatchmakingOpportunitiesWidget = memo(
                   <div className="space-y-2">
                     {urgentNeeds.map((need, idx) => (
                       <div
-                        key={idx}
+                        key={`item-${idx}`}
                         className="border border-orange-300/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${need.clientId}?tab=needs`)

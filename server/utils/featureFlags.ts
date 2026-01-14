@@ -39,16 +39,38 @@ import { logger } from "../_core/logger";
 export const FEATURE_FLAGS = {
   /**
    * Live Catalog Feature
-   * 
+   *
    * @deprecated Use featureFlagService.isEnabled("live-catalog") instead
-   * 
+   *
    * Enables the VIP Portal Live Catalog feature, allowing clients to browse
    * a personalized inventory catalog and submit interest lists.
-   * 
+   *
    * Environment Variable: FEATURE_LIVE_CATALOG
    * Default: false (disabled)
    */
   LIVE_CATALOG: process.env.FEATURE_LIVE_CATALOG === 'true',
+
+  /**
+   * Email Integration
+   *
+   * Enables email sending functionality for receipts and notifications.
+   * Requires external email service configuration (e.g., Resend, SendGrid).
+   *
+   * Environment Variable: FEATURE_EMAIL_ENABLED
+   * Default: false (disabled)
+   */
+  EMAIL_ENABLED: process.env.FEATURE_EMAIL_ENABLED === 'true',
+
+  /**
+   * SMS Integration
+   *
+   * Enables SMS sending functionality for receipts and notifications.
+   * Requires external SMS service configuration (e.g., Twilio).
+   *
+   * Environment Variable: FEATURE_SMS_ENABLED
+   * Default: false (disabled)
+   */
+  SMS_ENABLED: process.env.FEATURE_SMS_ENABLED === 'true',
 } as const;
 
 // Track deprecation warnings to avoid spamming logs
@@ -101,4 +123,6 @@ export function getAllFeatureFlags(): Record<keyof typeof FEATURE_FLAGS, boolean
  */
 export const LEGACY_TO_NEW_FLAG_MAPPING: Record<keyof typeof FEATURE_FLAGS, string> = {
   LIVE_CATALOG: "live-catalog",
+  EMAIL_ENABLED: "email-enabled",
+  SMS_ENABLED: "sms-enabled",
 };

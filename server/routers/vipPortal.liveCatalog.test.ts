@@ -27,7 +27,7 @@ vi.mock("drizzle-orm", async (importOriginal) => {
 import { appRouter } from '../routers';
 import { db, getDb } from '../db';
 import { clients } from '../../drizzle/schema';
-import { 
+import {
   vipPortalConfigurations,
   clientDraftInterests,
   clientCatalogViews,
@@ -35,6 +35,7 @@ import {
   products,
 } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { withTransaction } from '../dbTransaction';
 
 // Mock VIP portal client user
 const mockVipClient = {
@@ -117,14 +118,13 @@ describe.skip('VIP Portal - Live Catalog (Client-Facing)', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    const db = await getDb();
-    if (!db) return;
-    
-    await db.delete(clientCatalogViews).where(eq(clientCatalogViews.clientId, testClientId));
-    await db.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, testClientId));
-    await db.delete(vipPortalConfigurations).where(eq(vipPortalConfigurations.clientId, testClientId));
-    await db.delete(clients).where(eq(clients.id, testClientId));
+    // DI-003: Wrap cascading deletes in transaction to prevent orphaned test data
+    await withTransaction(async (tx) => {
+      await tx.delete(clientCatalogViews).where(eq(clientCatalogViews.clientId, testClientId));
+      await tx.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, testClientId));
+      await tx.delete(vipPortalConfigurations).where(eq(vipPortalConfigurations.clientId, testClientId));
+      await tx.delete(clients).where(eq(clients.id, testClientId));
+    });
   });
 
   describe('get', () => {
@@ -171,10 +171,12 @@ describe.skip('VIP Portal - Live Catalog (Client-Facing)', () => {
       // Assert
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
-      
-      // Cleanup
-      await db.delete(vipPortalConfigurations).where(eq(vipPortalConfigurations.clientId, disabledClientId));
-      await db.delete(clients).where(eq(clients.id, disabledClientId));
+
+      // Cleanup - DI-003: Wrap cascading deletes in transaction
+      await withTransaction(async (tx) => {
+        await tx.delete(vipPortalConfigurations).where(eq(vipPortalConfigurations.clientId, disabledClientId));
+        await tx.delete(clients).where(eq(clients.id, disabledClientId));
+      });
     });
 
     it('should apply category filters correctly', async () => {

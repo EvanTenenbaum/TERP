@@ -125,7 +125,7 @@ export function DataCardGrid({ moduleId, className }: DataCardGridProps) {
       >
         {metricIds.map((_, index) => (
           <Card
-            key={index}
+            key={`metric-skeleton-${index}`}
             className="h-32 animate-pulse bg-muted"
             data-testid="metric-skeleton"
           />

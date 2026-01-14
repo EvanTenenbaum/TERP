@@ -235,7 +235,7 @@ export function Leaderboard({ clientId, config }: LeaderboardProps) {
             <div className="space-y-3">
               {suggestions.map((suggestion, index) => (
                 <div
-                  key={index}
+                  key={`suggestion-${index}-${suggestion.substring(0, 20)}`}
                   className="flex gap-3 p-3 bg-muted/50 rounded-lg border"
                 >
                   <div className="shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">

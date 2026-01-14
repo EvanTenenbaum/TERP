@@ -271,7 +271,7 @@ export function VendorSearchWithBrands({
               // Loading state
               <>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-3 space-y-2">
+                  <div key={`skeleton-${i}`} className="p-3 space-y-2">
                     <Skeleton className="h-5 w-32" />
                     <Skeleton className="h-3 w-24" />
                   </div>

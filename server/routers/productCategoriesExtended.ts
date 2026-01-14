@@ -25,6 +25,7 @@ import {
 } from "../../drizzle/schema-sprint5-trackd";
 import { eq, and, sql, isNull, desc, asc, like } from "drizzle-orm";
 import { logger } from "../_core/logger";
+import { withTransaction } from "../dbTransaction";
 
 // ============================================================================
 // Helper Functions
@@ -409,24 +410,27 @@ export const productCategoriesExtendedRouter = router({
         });
       }
 
-      // Handle product reassignment
-      if (input.reassignTo) {
-        await db
-          .update(productCategoryAssignments)
-          .set({ categoryId: input.reassignTo })
-          .where(eq(productCategoryAssignments.categoryId, input.id));
-      } else {
-        // Remove product assignments
-        await db
-          .delete(productCategoryAssignments)
-          .where(eq(productCategoryAssignments.categoryId, input.id));
-      }
+      // DI-003: Wrap cascading operations in transaction to prevent orphaned records
+      await withTransaction(async (tx) => {
+        // Handle product reassignment
+        if (input.reassignTo) {
+          await tx
+            .update(productCategoryAssignments)
+            .set({ categoryId: input.reassignTo })
+            .where(eq(productCategoryAssignments.categoryId, input.id));
+        } else {
+          // Remove product assignments
+          await tx
+            .delete(productCategoryAssignments)
+            .where(eq(productCategoryAssignments.categoryId, input.id));
+        }
 
-      // Soft delete the category
-      await db
-        .update(productCategories)
-        .set({ deletedAt: new Date(), isActive: false })
-        .where(eq(productCategories.id, input.id));
+        // Soft delete the category
+        await tx
+          .update(productCategories)
+          .set({ deletedAt: new Date(), isActive: false })
+          .where(eq(productCategories.id, input.id));
+      });
 
       logger.info({
         msg: "[Categories] Deleted category",

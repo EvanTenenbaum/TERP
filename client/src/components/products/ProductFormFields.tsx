@@ -77,34 +77,35 @@ export interface ProductFormFieldsProps {
   showDescription?: boolean;
 }
 
-// Standard product categories with subcategories
+// Standard product categories with subcategories (fallback if database not available)
+// NOTE: These should match the defaults in server/services/seedDefaults.ts
 const PRODUCT_CATEGORIES: Record<string, string[]> = {
-  Flower: ["Indoor", "Outdoor", "Greenhouse", "Smalls", "Shake", "Pre-Ground"],
-  Concentrate: [
-    "Live Resin",
-    "Rosin",
+  Flower: [
+    "Tops/Colas",
+    "Smalls/Popcorn",
+    "Trim",
+    "Shake",
+    "Larf",
+    "Machine Trim",
+    "Hand Trim",
+    "Outdoor",
+    "Deps",
+    "Indoor",
+  ],
+  Concentrates: [
     "Shatter",
     "Wax",
+    "Live Resin",
+    "Rosin",
     "Diamonds",
-    "Sauce",
-    "Badder",
-    "Sugar",
+    "Distillate",
+    "Crumble",
+    "Budder",
   ],
-  Edible: [
-    "Gummy",
-    "Chocolate",
-    "Beverage",
-    "Cookie",
-    "Mint",
-    "Capsule",
-    "Tincture",
-  ],
-  Vape: ["Cartridge", "Disposable", "Pod"],
-  "Pre-Roll": ["Single", "Multi-Pack", "Infused", "Mini"],
-  Topical: ["Lotion", "Balm", "Salve", "Patch", "Oil"],
-  Tincture: ["Full Spectrum", "Isolate", "Broad Spectrum"],
-  Accessory: ["Pipe", "Paper", "Grinder", "Storage", "Other"],
-  Other: [],
+  Edibles: ["Gummies", "Chocolates", "Beverages", "Baked Goods"],
+  Vapes: ["Cartridge", "All in One"],
+  "Bulk Oil": [],
+  "Manufactured Products": ["Preroll", "Edible", "Tincture", "Topical", "Accessory"],
 };
 
 // Unit of measure options
@@ -142,16 +143,33 @@ export function ProductFormFields({
       enabled: showStrain,
     });
 
+  // Fetch categories with subcategories
+  const { data: categoriesData } = trpc.settings.categories.list.useQuery();
+
+  // Fetch subcategories for the selected category
+  const { data: subcategoriesData } = trpc.settings.subcategories.list.useQuery(
+    { categoryId: values.category ?
+      categoriesData?.find(c => c.name === values.category)?.id :
+      undefined
+    },
+    { enabled: !!values.category && !!categoriesData }
+  );
+
   // State for searchable dropdowns
   const [categoryOpen, setCategoryOpen] = React.useState(false);
   const [brandOpen, setBrandOpen] = React.useState(false);
   const [strainOpen, setStrainOpen] = React.useState(false);
 
-  // Get subcategories based on selected category
+  // Get subcategories based on selected category from database or fallback to hardcoded
   const subcategories = useMemo(() => {
     if (!values.category) return [];
+    // Use database subcategories if available
+    if (subcategoriesData && subcategoriesData.length > 0) {
+      return subcategoriesData.map(sub => sub.name);
+    }
+    // Fallback to hardcoded categories for backwards compatibility
     return PRODUCT_CATEGORIES[values.category] || [];
-  }, [values.category]);
+  }, [values.category, subcategoriesData]);
 
   // Handle field changes
   const handleChange = useCallback(

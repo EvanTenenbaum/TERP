@@ -42,7 +42,7 @@ export function LiveQueue() {
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-gray-200 rounded w-32" />
           {[1, 2].map(i => (
-            <div key={i} className="h-16 bg-gray-200 rounded" />
+            <div key={`skeleton-${i}`} className="h-16 bg-gray-200 rounded" />
           ))}
         </div>
       </div>

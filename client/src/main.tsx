@@ -53,11 +53,45 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Helper to get VIP session token from storage
+ * Checks sessionStorage first (for impersonation), then localStorage (for regular sessions)
+ */
+function getVipSessionToken(): string | null {
+  // Check sessionStorage first (impersonation sessions)
+  const sessionToken = sessionStorage.getItem("vip_session_token");
+  const isImpersonation = sessionStorage.getItem("vip_impersonation") === "true";
+
+  if (sessionToken && isImpersonation) {
+    return sessionToken;
+  }
+
+  // Check localStorage (regular sessions)
+  const regularToken = localStorage.getItem("vip_session_token");
+  const isRegularImpersonation = localStorage.getItem("vip_impersonation") === "true";
+
+  if (regularToken && !isRegularImpersonation) {
+    return regularToken;
+  }
+
+  return null;
+}
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      headers() {
+        // FE-QA-003: Send VIP session token in header for VIP portal procedures
+        const vipToken = getVipSessionToken();
+        if (vipToken) {
+          return {
+            "x-vip-session-token": vipToken,
+          };
+        }
+        return {};
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),

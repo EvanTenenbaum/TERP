@@ -161,8 +161,8 @@ export function ReceiptPreview({
               variant="outline"
               className="flex flex-col items-center gap-1 h-auto py-3"
               onClick={() => setShowEmailDialog(true)}
-              disabled={!clientEmail}
-              title={!clientEmail ? "No email on file" : "Send via email"}
+              disabled={true}
+              title="Email integration not configured. Contact your administrator to enable this feature."
             >
               <Mail className="h-5 w-5" />
               <span className="text-xs">Email</span>
@@ -172,8 +172,8 @@ export function ReceiptPreview({
               variant="outline"
               className="flex flex-col items-center gap-1 h-auto py-3"
               onClick={() => setShowSmsDialog(true)}
-              disabled={!clientPhone}
-              title={!clientPhone ? "No phone on file" : "Send via SMS"}
+              disabled={true}
+              title="SMS integration not configured. Contact your administrator to enable this feature."
             >
               <MessageSquare className="h-5 w-5" />
               <span className="text-xs">SMS</span>
