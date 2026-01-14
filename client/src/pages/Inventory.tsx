@@ -677,8 +677,31 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* Dashboard Statistics */}
-        <DataCardSection moduleId="inventory" />
+        {/* Dashboard Statistics - BUG-098 FIX: Use enhanced API summary when available */}
+        {useEnhancedApi && enhancedResponse?.summary ? (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">Total Items</div>
+              <div className="text-2xl font-bold">{enhancedResponse.summary.totalItems.toLocaleString()}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">Total On Hand</div>
+              <div className="text-2xl font-bold">{enhancedResponse.summary.totalOnHand.toLocaleString()}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">Available Units</div>
+              <div className="text-2xl font-bold">{enhancedResponse.summary.totalAvailable.toLocaleString()}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">Total Value</div>
+              <div className="text-2xl font-bold">
+                ${enhancedResponse.summary.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <DataCardSection moduleId="inventory" />
+        )}
 
         {/* Stock Level Charts */}
         {dashboardStats && (
