@@ -96,7 +96,7 @@ export function ClientPreview({
                 </TableHeader>
                 <TableBody>
                   {items.map((item, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={`${item.productDisplayName}-${item.quantity}-${item.unitPrice}-${index}`}>
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{item.productDisplayName || `Item ${index + 1}`}</span>

@@ -56,6 +56,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { AuditIcon } from "@/components/audit";
 import { PageSkeleton } from "@/components/ui/skeleton-loaders";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
+import { useOptimisticLocking } from "@/hooks/useOptimisticLocking";
 import {
   Edit,
   DollarSign,
@@ -90,6 +91,13 @@ export default function ClientProfilePage() {
   // BUG-090 fix: Get utils for cache invalidation
   const utils = trpc.useUtils();
 
+  // ST-026: Optimistic locking for concurrent edit detection
+  const { handleMutationError, ConflictDialogComponent } = useOptimisticLocking({
+    entityType: "Client",
+    onRefresh: () => refetchClient(),
+    onDiscard: () => setEditDialogOpen(false),
+  });
+
   // Fetch client data
   const { data: client, isLoading: clientLoading, refetch: refetchClient } =
     trpc.clients.getById.useQuery({
@@ -118,6 +126,7 @@ export default function ClientProfilePage() {
 
   // Mutations
   // BUG-090 fix: Add proper cache invalidation and refetch on success
+  // ST-026: Add optimistic locking error handling
   const updateClientMutation = trpc.clients.update.useMutation({
     onSuccess: () => {
       // Invalidate all client-related caches to ensure fresh data
@@ -126,6 +135,13 @@ export default function ClientProfilePage() {
       // Refetch the current client to show updated data
       refetchClient();
       setEditDialogOpen(false);
+    },
+    onError: (error) => {
+      // ST-026: Handle concurrent edit conflicts
+      if (!handleMutationError(error)) {
+        // If it's not an optimistic lock error, show generic error
+        console.error("Error updating client:", error);
+      }
     },
   });
   const createTransactionMutation =
@@ -275,7 +291,7 @@ export default function ClientProfilePage() {
                 <CardTitle className="text-3xl">{client.teriCode}</CardTitle>
                 <div className="flex gap-2">
                   {getClientTypeBadges().map((badge, idx) => (
-                    <Badge key={idx} variant={badge.variant}>
+                    <Badge key={`page-item-${idx}`} variant={badge.variant}>
                       {badge.label}
                     </Badge>
                   ))}
@@ -485,6 +501,8 @@ export default function ClientProfilePage() {
             <CustomerWishlistCard
               clientId={clientId}
               wishlist={client.wishlist || ""}
+              version={client.version}
+              onRefresh={refetchClient}
             />
           )}
 
@@ -533,7 +551,7 @@ export default function ClientProfilePage() {
                     Array.isArray(client.tags) &&
                     client.tags.length > 0 ? (
                       (client.tags as string[]).map((tag, idx) => (
-                        <Badge key={idx} variant="outline">
+                        <Badge key={`page-item-${idx}`} variant="outline">
                           {tag}
                         </Badge>
                       ))
@@ -943,6 +961,7 @@ export default function ClientProfilePage() {
               const formData = new FormData(e.currentTarget);
               updateClientMutation.mutate({
                 clientId: client.id,
+                version: client.version, // ST-026: Include version for optimistic locking
                 name: formData.get("name") as string,
                 email: (formData.get("email") as string) || undefined,
                 phone: (formData.get("phone") as string) || undefined,
@@ -1201,6 +1220,9 @@ export default function ClientProfilePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ST-026: Conflict dialog for concurrent edit detection */}
+      {ConflictDialogComponent}
     </div>
     </PageErrorBoundary>
   );

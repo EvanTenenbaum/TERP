@@ -530,7 +530,10 @@ export const vipPortalRouter = router({
         // Send password reset email via notification service
         try {
           const { sendNotification } = await import("../services/notificationService");
-          const appUrl = process.env.APP_URL || "https://terp-app-b9s35.ondigitalocean.app";
+          const appUrl = process.env.APP_URL;
+          if (!appUrl) {
+            throw new Error("APP_URL environment variable must be set");
+          }
           await sendNotification({
             userId: authRecord.clientId,
             type: "warning",
@@ -1354,6 +1357,73 @@ export const vipPortalRouter = router({
 
       return calendarsWithTypes;
     }),
+
+    listAppointmentTypes: vipPortalProcedure
+      .input(
+        z
+          .object({
+            calendarId: z.number().optional(),
+            limit: z.number().min(1).max(100).optional().default(50),
+            offset: z.number().min(0).optional().default(0),
+          })
+          .optional()
+      )
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+        }
+
+        const limit = input?.limit ?? 50;
+        const offset = input?.offset ?? 0;
+
+        // Build conditions for active appointment types
+        const conditions = [eq(appointmentTypes.isActive, true)];
+
+        if (input?.calendarId) {
+          conditions.push(eq(appointmentTypes.calendarId, input.calendarId));
+        }
+
+        // Fetch appointment types
+        const types = await db
+          .select({
+            id: appointmentTypes.id,
+            calendarId: appointmentTypes.calendarId,
+            name: appointmentTypes.name,
+            description: appointmentTypes.description,
+            duration: appointmentTypes.duration,
+            bufferBefore: appointmentTypes.bufferBefore,
+            bufferAfter: appointmentTypes.bufferAfter,
+            minNoticeHours: appointmentTypes.minNoticeHours,
+            maxAdvanceDays: appointmentTypes.maxAdvanceDays,
+            color: appointmentTypes.color,
+          })
+          .from(appointmentTypes)
+          .where(and(...conditions))
+          .limit(limit)
+          .offset(offset);
+
+        // Get total count for pagination
+        const countResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(appointmentTypes)
+          .where(and(...conditions));
+
+        const total = Number(countResult[0]?.count ?? 0);
+
+        return {
+          items: types,
+          total,
+          pagination: {
+            limit,
+            offset,
+            hasMore: offset + types.length < total,
+          },
+        };
+      }),
 
     getSlots: vipPortalProcedure
       .input(

@@ -190,7 +190,7 @@ export const Client360Pod = React.memo(function Client360Pod({
                 <CardTitle className="text-2xl">{client.teriCode}</CardTitle>
                 <div className="flex gap-2 flex-wrap">
                   {getClientTypeBadges().map((badge, idx) => (
-                    <Badge key={idx} variant={badge.variant}>
+                    <Badge key={`badge-${badge.label}-${idx}`} variant={badge.variant}>
                       {badge.label}
                     </Badge>
                   ))}
@@ -273,7 +273,7 @@ export const Client360Pod = React.memo(function Client360Pod({
                 Array.isArray(client.tags) &&
                 client.tags.length > 0 ? (
                   (client.tags as string[]).slice(0, 5).map((tag, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs">
+                    <Badge key={`tag-${tag}-${idx}`} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))
@@ -461,7 +461,7 @@ export const Client360Pod = React.memo(function Client360Pod({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {purchaseHistory.slice(0, 6).map((item, idx) => (
                     <div
-                      key={idx}
+                      key={`purchase-${item.sku || item.name}-${idx}`}
                       className="flex items-center justify-between text-sm border rounded-lg p-2"
                     >
                       <span className="truncate flex-1">

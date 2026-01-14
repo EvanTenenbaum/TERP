@@ -125,7 +125,7 @@ export function PurchasePatternsWidget({
             ) : (
               <div className="grid gap-4">
                 {purchasePatterns.map((pattern, idx) => (
-                  <Card key={idx}>
+                  <Card key={`pattern-${pattern.productName || pattern.sku}-${idx}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -243,7 +243,7 @@ export function PurchasePatternsWidget({
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       (prediction: any, idx: number) => (
                         <Card
-                          key={idx}
+                          key={`prediction-${prediction.productName || prediction.sku}-${idx}`}
                           className={
                             prediction.daysUntilPredictedOrder < 0
                               ? "border-red-500"
@@ -312,7 +312,7 @@ export function PurchasePatternsWidget({
                                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                       (reason: any, ridx: number) => (
                                         <li
-                                          key={ridx}
+                                          key={`reason-${ridx}-${String(reason).substring(0, 20)}`}
                                           className="text-xs flex items-start gap-2"
                                         >
                                           <ArrowRight className="h-3 w-3 text-muted-foreground mt-0.5" />
@@ -443,7 +443,7 @@ export function PurchasePatternsWidget({
                       .slice(0, 5)
                       .map((pattern, idx) => (
                         <div
-                          key={idx}
+                          key={`top-pattern-${pattern.productName || pattern.sku}-${idx}`}
                           className="flex items-center justify-between"
                         >
                           <div className="flex-1">

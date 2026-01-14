@@ -30,6 +30,7 @@ import { samplesRouter } from "./routers/samples";
 import { dashboardEnhancedRouter } from "./routers/dashboardEnhanced";
 import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
 import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
+import { tagsRouter } from "./routers/tags"; // FEAT-002: Tag System Revamp
 import { productIntakeRouter } from "./routers/productIntake";
 import { intakeReceiptsRouter } from "./routers/intakeReceipts"; // FEAT-008: Intake Verification System
 import { orderEnhancementsRouter } from "./routers/orderEnhancements";
@@ -175,6 +176,7 @@ export const appRouter = router({
   dashboardEnhanced: dashboardEnhancedRouter,
   salesSheetEnhancements: salesSheetEnhancementsRouter,
   advancedTagFeatures: advancedTagFeaturesRouter,
+  tags: tagsRouter, // FEAT-002: Tag System Revamp
   productIntake: productIntakeRouter,
   intakeReceipts: intakeReceiptsRouter, // FEAT-008: Intake Verification System (MEET-064 to MEET-066)
   orderEnhancements: orderEnhancementsRouter,

@@ -8,6 +8,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { X, Plus, Building2, Truck, Trash2, Edit2, Check } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface RoomManagementModalProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export function RoomManagementModal({
     features: [],
   });
   const [featureInput, setFeatureInput] = useState("");
+  const [deleteFeatureConfirm, setDeleteFeatureConfirm] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -305,7 +307,7 @@ export function RoomManagementModal({
                           {feature}
                           <button
                             type="button"
-                            onClick={() => removeFeature(feature)}
+                            onClick={() => setDeleteFeatureConfirm(feature)}
                             className="text-gray-500 hover:text-gray-700"
                           >
                             <X className="h-3 w-3" />
@@ -350,7 +352,7 @@ export function RoomManagementModal({
             {isLoading ? (
               <div className="animate-pulse space-y-4">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="h-16 bg-gray-200 rounded" />
+                  <div key={`skeleton-${i}`} className="h-16 bg-gray-200 rounded" />
                 ))}
               </div>
             ) : (
@@ -409,6 +411,20 @@ export function RoomManagementModal({
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={deleteFeatureConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteFeatureConfirm(null)}
+        title="Remove Feature"
+        description="Are you sure you want to remove this feature from the room?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteFeatureConfirm) {
+            removeFeature(deleteFeatureConfirm);
+          }
+          setDeleteFeatureConfirm(null);
+        }}
+      />
     </div>
   );
 }

@@ -135,6 +135,7 @@ export interface SupplierWithProfile extends Client {
 /**
  * Get all suppliers (clients with isSeller=true)
  * Replaces deprecated getAllVendors()
+ * DI-004: Filters out soft-deleted clients
  */
 export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
   return await cache.getOrSet(
@@ -143,11 +144,11 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
       const db = await getDb();
       if (!db) return [];
 
-      // Get all clients with isSeller=true
+      // Get all clients with isSeller=true, excluding deleted ones
       const supplierClients = await db
         .select()
         .from(clients)
-        .where(eq(clients.isSeller, true))
+        .where(and(eq(clients.isSeller, true), sql`${clients.deletedAt} IS NULL`))
         .orderBy(asc(clients.name));
 
       // Get all supplier profiles
@@ -171,6 +172,7 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
 
 /**
  * Get supplier by client ID
+ * DI-004: Filters out soft-deleted clients
  */
 export async function getSupplierByClientId(
   clientId: number
@@ -181,7 +183,13 @@ export async function getSupplierByClientId(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.isSeller, true)))
+    .where(
+      and(
+        eq(clients.id, clientId),
+        eq(clients.isSeller, true),
+        sql`${clients.deletedAt} IS NULL`
+      )
+    )
     .limit(1);
 
   if (!client) return null;
@@ -200,6 +208,7 @@ export async function getSupplierByClientId(
 
 /**
  * Get supplier by legacy vendor ID (for backward compatibility during migration)
+ * DI-004: Filters out soft-deleted clients
  */
 export async function getSupplierByLegacyVendorId(
   vendorId: number
@@ -216,11 +225,11 @@ export async function getSupplierByLegacyVendorId(
 
   if (!profile) return null;
 
-  // Get the associated client
+  // Get the associated client, excluding deleted ones
   const [client] = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, profile.clientId))
+    .where(and(eq(clients.id, profile.clientId), sql`${clients.deletedAt} IS NULL`))
     .limit(1);
 
   if (!client) return null;
@@ -233,6 +242,7 @@ export async function getSupplierByLegacyVendorId(
 
 /**
  * Search suppliers by name
+ * DI-004: Filters out soft-deleted clients
  */
 export async function searchSuppliers(
   query: string
@@ -240,11 +250,17 @@ export async function searchSuppliers(
   const db = await getDb();
   if (!db) return [];
 
-  // Search clients with isSeller=true
+  // Search clients with isSeller=true, excluding deleted ones
   const supplierClients = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.isSeller, true), like(clients.name, `%${query}%`)))
+    .where(
+      and(
+        eq(clients.isSeller, true),
+        like(clients.name, `%${query}%`),
+        sql`${clients.deletedAt} IS NULL`
+      )
+    )
     .limit(20);
 
   if (supplierClients.length === 0) return [];
@@ -441,17 +457,36 @@ export async function updateSupplier(
 
 /**
  * Soft-delete supplier (sets deletedAt on client)
- * Note: clients table doesn't have deletedAt yet, so we'll just mark isSeller=false for now
+ * DI-004: Proper soft-delete implementation with deletedAt timestamp
  */
 export async function deleteSupplier(clientId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // For now, just mark as not a seller (soft disable)
-  // TODO: Add deletedAt column to clients table for proper soft delete
+  // Soft delete by setting deletedAt timestamp
   await db
     .update(clients)
-    .set({ isSeller: false })
+    .set({ deletedAt: new Date() })
+    .where(eq(clients.id, clientId));
+
+  // Invalidate cache
+  cache.delete(CacheKeys.suppliers());
+
+  return true;
+}
+
+/**
+ * Restore a soft-deleted supplier (clears deletedAt on client)
+ * DI-004: Allow recovery of soft-deleted suppliers
+ */
+export async function restoreSupplier(clientId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Restore by clearing deletedAt timestamp
+  await db
+    .update(clients)
+    .set({ deletedAt: null })
     .where(eq(clients.id, clientId));
 
   // Invalidate cache

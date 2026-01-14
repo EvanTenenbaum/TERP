@@ -330,7 +330,7 @@ export default function Quotes() {
                   <h3 className="font-semibold mb-3">Items</h3>
                   <div className="space-y-2">
                     {(selectedQuote.items as any[])?.map((item: any, index: number) => (
-                      <div key={index} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
+                      <div key={`page-item-${index}`} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
                         <div>
                           <div className="font-medium">{item.displayName}</div>
                           <div className="text-muted-foreground">Qty: {item.quantity}</div>

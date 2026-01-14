@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as historicalAnalysis from "../historicalAnalysis";
 import type { EnhancedBatchSourceData, EnhancedHistoricalSourceData } from "../matchingEngineEnhanced";
@@ -12,7 +13,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find matches for a specific client need
    */
-  findMatchesForNeed: publicProcedure
+  findMatchesForNeed: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ needId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -34,7 +36,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find client needs that match a specific inventory batch
    */
-  findMatchesForBatch: publicProcedure
+  findMatchesForBatch: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -56,7 +59,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find client needs that match a specific vendor supply
    */
-  findMatchesForVendorSupply: publicProcedure
+  findMatchesForVendorSupply: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ vendorSupplyId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -78,7 +82,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Analyze client purchase history to identify patterns
    */
-  analyzeClientPurchaseHistory: publicProcedure
+  analyzeClientPurchaseHistory: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(
       z.object({
         clientId: z.number(),
@@ -109,7 +114,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Identify lapsed buyers (clients who used to buy but haven't recently)
    */
-  identifyLapsedBuyers: publicProcedure
+  identifyLapsedBuyers: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(
       z.object({
         minPastPurchases: z.number().default(3),
@@ -138,7 +144,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Get all active needs with their matches (for dashboard widgets)
    */
-  getAllActiveNeedsWithMatches: publicProcedure
+  getAllActiveNeedsWithMatches: protectedProcedure
+    .use(requirePermission("matching:read"))
     .query(async () => {
       try {
         const results = await matchingEngine.getAllActiveNeedsWithMatches();
@@ -209,7 +216,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Get predictive reorder opportunities based on purchase history
    */
-  getPredictiveReorderOpportunities: publicProcedure
+  getPredictiveReorderOpportunities: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({
       lookAheadDays: z.number().optional().default(30),
       minOrderCount: z.number().optional().default(2),
@@ -254,7 +262,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find potential buyers for a specific inventory batch
    */
-  findBuyersForInventory: publicProcedure
+  findBuyersForInventory: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -310,7 +319,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find historical buyers for a product/strain
    */
-  findHistoricalBuyers: publicProcedure
+  findHistoricalBuyers: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -378,7 +388,8 @@ export const matchingEnhancedRouter = router({
    * FEAT-020: Find products matching by strain
    * Groups inventory batches by strain for easier matching
    */
-  findProductsByStrain: publicProcedure
+  findProductsByStrain: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({
       strainName: z.string().optional(),
       strainId: z.number().optional(),
@@ -407,7 +418,8 @@ export const matchingEnhancedRouter = router({
    * FEAT-020: Group products by subcategory
    * Returns products organized by their subcategory for catalog views
    */
-  groupProductsBySubcategory: publicProcedure
+  groupProductsBySubcategory: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({
       category: z.string().optional(),
       includeOutOfStock: z.boolean().default(false),
@@ -433,7 +445,8 @@ export const matchingEnhancedRouter = router({
   /**
    * FEAT-020: Find similar strains based on characteristics
    */
-  findSimilarStrains: publicProcedure
+  findSimilarStrains: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({
       strainId: z.number(),
       limit: z.number().default(10),

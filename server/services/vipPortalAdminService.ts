@@ -6,9 +6,9 @@
  */
 
 import { getDb } from "../db";
-import { 
-  clients, 
-  vipPortalAuth, 
+import {
+  clients,
+  vipPortalAuth,
   vipPortalConfigurations,
   clientInterestLists,
   clientInterestListItems,
@@ -20,6 +20,9 @@ import {
   adminImpersonationActions,
   type InsertAdminImpersonationSession,
   type InsertAdminImpersonationAction,
+  vipTiers,
+  type VipTier,
+  type InsertVipTier,
 } from "../../drizzle/schema";
 import * as pricingEngine from "../pricingEngine";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -438,58 +441,171 @@ export async function copyConfiguration(sourceClientId: number, targetClientId: 
 // ============================================================================
 
 export async function getVipTierConfiguration() {
-  // TODO: Implement tier configuration storage
-  // For now, return hardcoded tiers
-  return {
-    tiers: [
-      {
-        name: "PLATINUM",
-        requirements: {
-          minYtdSpend: 100000,
-          minTransactionCount: 50,
-          maxOverdueDays: 0,
-        },
-        rewards: [
-          "Priority support",
-          "Exclusive pricing",
-          "First access to new products",
-        ],
-      },
-      {
-        name: "GOLD",
-        requirements: {
-          minYtdSpend: 50000,
-          minTransactionCount: 25,
-          maxOverdueDays: 7,
-        },
-        rewards: [
-          "Enhanced support",
-          "Preferred pricing",
-          "Early access to new products",
-        ],
-      },
-      {
-        name: "SILVER",
-        requirements: {
-          minYtdSpend: 10000,
-          minTransactionCount: 10,
-          maxOverdueDays: 30,
-        },
-        rewards: [
-          "Standard support",
-          "Standard pricing",
-        ],
-      },
-    ],
-  };
-}
-
-export async function updateVipTierConfiguration(_tiers: any[]) {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
-  // TODO: Implement tier configuration storage
+
+  // Get all active tiers sorted by level
+  const tiers = await db.query.vipTiers.findMany({
+    where: eq(vipTiers.isActive, true),
+    orderBy: (vipTiers, { asc }) => [asc(vipTiers.level)],
+  });
+
+  return { tiers };
+}
+
+export interface UpdateVipTierOptions {
+  id: number;
+  displayName?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  minSpendYtd?: number;
+  minOrdersYtd?: number;
+  minAccountAgeDays?: number;
+  minPaymentOnTimeRate?: number;
+  discountPercentage?: number;
+  creditLimitMultiplier?: number;
+  prioritySupport?: boolean;
+  earlyAccessToProducts?: boolean;
+  freeShipping?: boolean;
+  dedicatedRep?: boolean;
+  customBenefits?: Array<{ name: string; description: string; value?: string }>;
+  isActive?: boolean;
+}
+
+export async function updateVipTier(options: UpdateVipTierOptions) {
+  const { id, ...updateData } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Check if tier exists
+  const existingTier = await db.query.vipTiers.findFirst({
+    where: eq(vipTiers.id, id),
+  });
+
+  if (!existingTier) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "VIP tier not found",
+    });
+  }
+
+  // Update tier
+  await db.update(vipTiers)
+    .set(updateData)
+    .where(eq(vipTiers.id, id));
+
   return { success: true };
+}
+
+// Legacy function for backward compatibility
+export async function updateVipTierConfiguration(tiers: UpdateVipTierOptions[]) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Update each tier
+  for (const tier of tiers) {
+    await updateVipTier(tier);
+  }
+
+  return { success: true };
+}
+
+export interface CreateVipTierOptions {
+  name: string;
+  displayName: string;
+  description?: string;
+  level: number;
+  color?: string;
+  icon?: string;
+  minSpendYtd?: number;
+  minOrdersYtd?: number;
+  minAccountAgeDays?: number;
+  minPaymentOnTimeRate?: number;
+  discountPercentage?: number;
+  creditLimitMultiplier?: number;
+  prioritySupport?: boolean;
+  earlyAccessToProducts?: boolean;
+  freeShipping?: boolean;
+  dedicatedRep?: boolean;
+  customBenefits?: Array<{ name: string; description: string; value?: string }>;
+  isActive?: boolean;
+  isDefault?: boolean;
+}
+
+export async function createVipTier(options: CreateVipTierOptions) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Check if tier name already exists
+  const existingTier = await db.query.vipTiers.findFirst({
+    where: eq(vipTiers.name, options.name),
+  });
+
+  if (existingTier) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "A tier with this name already exists",
+    });
+  }
+
+  // Create tier
+  const [newTier] = await db.insert(vipTiers).values(options as InsertVipTier);
+
+  return { success: true, tier: newTier };
+}
+
+export async function deleteVipTier(tierId: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Check if tier exists
+  const tier = await db.query.vipTiers.findFirst({
+    where: eq(vipTiers.id, tierId),
+  });
+
+  if (!tier) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "VIP tier not found",
+    });
+  }
+
+  // Check if tier is in use
+  const [usageCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(sql`client_vip_status`)
+    .where(sql`current_tier_id = ${tierId}`);
+
+  if (usageCount && usageCount.count > 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Cannot delete tier: ${usageCount.count} client(s) are currently assigned to this tier. Please reassign them first.`,
+    });
+  }
+
+  // Delete tier
+  await db.delete(vipTiers).where(eq(vipTiers.id, tierId));
+
+  return { success: true };
+}
+
+export async function getVipTierById(tierId: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const tier = await db.query.vipTiers.findFirst({
+    where: eq(vipTiers.id, tierId),
+  });
+
+  if (!tier) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "VIP tier not found",
+    });
+  }
+
+  return tier;
 }
 
 // ============================================================================

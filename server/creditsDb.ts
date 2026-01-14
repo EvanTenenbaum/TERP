@@ -10,7 +10,7 @@
  */
 
 import { getDb } from "./db";
-import { 
+import {
   credits,
   creditApplications,
   type Credit,
@@ -20,6 +20,7 @@ import {
 } from "../drizzle/schema";
 import { eq, and, desc, sql, or, lt, inArray } from "drizzle-orm";
 import { logger } from "./_core/logger";
+import { withTransaction } from "./dbTransaction";
 
 /**
  * Create a new credit
@@ -202,16 +203,16 @@ export async function getClientCreditBalance(clientId: number): Promise<number> 
 
 /**
  * Apply credit to an invoice
- * 
- * ⚠️ RACE CONDITION RISK: This function should be wrapped in a database transaction
- * to prevent concurrent applications of the same credit. Consider using SELECT ... FOR UPDATE
- * on the credit record to lock it during the operation.
- * 
+ *
+ * Uses database transactions with row-level locking to prevent race conditions.
+ * Supports idempotency keys to prevent double-application on retries.
+ *
  * @param creditId Credit ID
  * @param invoiceId Invoice ID (transaction ID)
  * @param amountToApply Amount to apply
  * @param appliedBy User ID applying the credit
  * @param notes Optional notes
+ * @param idempotencyKey Optional idempotency key to prevent duplicate applications
  * @returns The created credit application
  */
 export async function applyCredit(
@@ -219,92 +220,114 @@ export async function applyCredit(
   invoiceId: number,
   amountToApply: string,
   appliedBy: number,
-  notes?: string
+  notes?: string,
+  idempotencyKey?: string
 ): Promise<CreditApplication> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
   try {
-    // Fetch the credit
-    const credit = await getCreditById(creditId);
-    
-    if (!credit) {
-      throw new Error("Credit not found");
-    }
-    
-    // Verify credit is active or partially used
-    if (credit.creditStatus !== "ACTIVE" && credit.creditStatus !== "PARTIALLY_USED") {
-      throw new Error(`Credit is ${credit.creditStatus.toLowerCase()} and cannot be applied`);
-    }
-    
-    // Check if credit is expired
-    if (credit.expirationDate && new Date(credit.expirationDate) < new Date()) {
-      throw new Error("Credit has expired");
-    }
-    
-    // Verify sufficient balance
-    const amountToApplyNum = parseFloat(amountToApply);
-    const amountRemainingNum = parseFloat(credit.amountRemaining);
-    
-    if (isNaN(amountToApplyNum) || amountToApplyNum <= 0) {
-      throw new Error("Invalid amount to apply");
-    }
-    
-    if (amountToApplyNum > amountRemainingNum) {
-      throw new Error(`Insufficient credit balance. Available: ${credit.amountRemaining}, Requested: ${amountToApply}`);
-    }
-    
-    // Create the credit application
-    const [application] = await db.insert(creditApplications).values({
-      creditId,
-      invoiceId,
-      amountApplied: amountToApply,
-      appliedDate: new Date(),
-      notes,
-      appliedBy
-    }).$returningId();
-    
-    if (!application) {
-      throw new Error("Failed to create credit application");
-    }
-    
-    // Update the credit balance and status
-    const newAmountUsed = parseFloat(credit.amountUsed) + amountToApplyNum;
-    const newAmountRemaining = parseFloat(credit.creditAmount) - newAmountUsed;
-    
-    let newStatus: "ACTIVE" | "PARTIALLY_USED" | "FULLY_USED" = "ACTIVE";
-    if (newAmountRemaining <= 0) {
-      newStatus = "FULLY_USED";
-    } else if (newAmountUsed > 0) {
-      newStatus = "PARTIALLY_USED";
-    }
-    
-    await db
-      .update(credits)
-      .set({
-        amountUsed: newAmountUsed.toFixed(2),
-        amountRemaining: newAmountRemaining.toFixed(2),
-        creditStatus: newStatus
-      })
-      .where(eq(credits.id, creditId));
-    
-    // Fetch the complete application record
-    const [created] = await db
-      .select()
-      .from(creditApplications)
-      .where(eq(creditApplications.id, application.id));
-    
-    if (!created) {
-      throw new Error("Credit application created but not found");
-    }
-    
-    return created;
+    return await withTransaction(async (tx) => {
+      // Check idempotency first - if this request was already processed, return existing application
+      if (idempotencyKey) {
+        const [existing] = await tx
+          .select()
+          .from(creditApplications)
+          .where(eq(creditApplications.idempotencyKey, idempotencyKey))
+          .limit(1);
+
+        if (existing) {
+          logger.info({
+            msg: "Credit application already exists (idempotency key match)",
+            idempotencyKey,
+            applicationId: existing.id
+          });
+          return existing;
+        }
+      }
+
+      // Lock the credit row with FOR UPDATE to prevent concurrent modifications
+      // This ensures no other transaction can modify this credit until we commit
+      const [credit] = await tx
+        .select()
+        .from(credits)
+        .where(eq(credits.id, creditId))
+        .for("update"); // Row-level lock
+
+      if (!credit) {
+        throw new Error("Credit not found");
+      }
+
+      // Verify credit is active or partially used
+      if (credit.creditStatus !== "ACTIVE" && credit.creditStatus !== "PARTIALLY_USED") {
+        throw new Error(`Credit is ${credit.creditStatus.toLowerCase()} and cannot be applied`);
+      }
+
+      // Check if credit is expired
+      if (credit.expirationDate && new Date(credit.expirationDate) < new Date()) {
+        throw new Error("Credit has expired");
+      }
+
+      // Verify sufficient balance
+      const amountToApplyNum = parseFloat(amountToApply);
+      const amountRemainingNum = parseFloat(credit.amountRemaining);
+
+      if (isNaN(amountToApplyNum) || amountToApplyNum <= 0) {
+        throw new Error("Invalid amount to apply");
+      }
+
+      if (amountToApplyNum > amountRemainingNum) {
+        throw new Error(`Insufficient credit balance. Available: ${credit.amountRemaining}, Requested: ${amountToApply}`);
+      }
+
+      // Atomically update credit using SQL expressions to prevent read-modify-write race
+      // This ensures the calculation happens at the database level
+      // Use database-level arithmetic to avoid floating-point precision issues
+      await tx
+        .update(credits)
+        .set({
+          amountUsed: sql`${credits.amountUsed} + ${amountToApply}`,
+          amountRemaining: sql`${credits.amountRemaining} - ${amountToApply}`,
+          // Update status based on new remaining amount
+          creditStatus: sql`CASE
+            WHEN ${credits.amountRemaining} - ${amountToApply} <= 0 THEN 'FULLY_USED'
+            WHEN ${credits.amountUsed} + ${amountToApply} > 0 THEN 'PARTIALLY_USED'
+            ELSE 'ACTIVE'
+          END`
+        })
+        .where(eq(credits.id, creditId));
+
+      // Create the credit application
+      const [application] = await tx.insert(creditApplications).values({
+        creditId,
+        invoiceId,
+        amountApplied: amountToApply,
+        appliedDate: new Date(),
+        notes,
+        appliedBy,
+        idempotencyKey
+      }).$returningId();
+
+      if (!application) {
+        throw new Error("Failed to create credit application");
+      }
+
+      // Fetch the complete application record
+      const [created] = await tx
+        .select()
+        .from(creditApplications)
+        .where(eq(creditApplications.id, application.id));
+
+      if (!created) {
+        throw new Error("Credit application created but not found");
+      }
+
+      return created;
+    });
   } catch (error) {
     logger.error({
       msg: "Error applying credit",
       creditId,
       invoiceId,
       amountToApply,
+      idempotencyKey,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

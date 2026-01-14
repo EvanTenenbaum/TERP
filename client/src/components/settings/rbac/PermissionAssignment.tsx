@@ -401,7 +401,7 @@ export function PermissionAssignment() {
                               {permission.roleNames && permission.roleNames.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 justify-center">
                                   {permission.roleNames.slice(0, 3).map((roleName: string, idx: number) => (
-                                    <Badge key={idx} variant="outline" className="text-xs">
+                                    <Badge key={`role-${roleName}-${idx}`} variant="outline" className="text-xs">
                                       {roleName}
                                     </Badge>
                                   ))}

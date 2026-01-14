@@ -17,6 +17,7 @@ import {
   clients,
 } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { withTransaction } from "../dbTransaction";
 
 // SKIPPED: Integration tests requiring real database connection
 // These tests need to be refactored to use mocks or run in a database test environment
@@ -92,25 +93,28 @@ describe.skip("Calendar Invitations Router", () => {
     const db = await getDb();
     if (!db) return;
 
-    // Clean up test data
-    await db
-      .delete(calendarInvitationHistory)
-      .where(eq(calendarInvitationHistory.invitationId, testEventId));
-    await db
-      .delete(calendarEventInvitations)
-      .where(eq(calendarEventInvitations.eventId, testEventId));
-    await db
-      .delete(calendarEventParticipants)
-      .where(eq(calendarEventParticipants.eventId, testEventId));
-    await db
-      .delete(calendarEvents)
-      .where(eq(calendarEvents.id, testEventId));
-    await db
-      .delete(calendarInvitationSettings)
-      .where(eq(calendarInvitationSettings.userId, inviteeUserId));
-    await db.delete(clients).where(eq(clients.id, testClientId));
-    await db.delete(users).where(eq(users.id, testUserId));
-    await db.delete(users).where(eq(users.id, inviteeUserId));
+    // DI-003: Wrap cascading deletes in transaction to prevent orphaned test data
+    await withTransaction(async (tx) => {
+      // Clean up test data
+      await tx
+        .delete(calendarInvitationHistory)
+        .where(eq(calendarInvitationHistory.invitationId, testEventId));
+      await tx
+        .delete(calendarEventInvitations)
+        .where(eq(calendarEventInvitations.eventId, testEventId));
+      await tx
+        .delete(calendarEventParticipants)
+        .where(eq(calendarEventParticipants.eventId, testEventId));
+      await tx
+        .delete(calendarEvents)
+        .where(eq(calendarEvents.id, testEventId));
+      await tx
+        .delete(calendarInvitationSettings)
+        .where(eq(calendarInvitationSettings.userId, inviteeUserId));
+      await tx.delete(clients).where(eq(clients.id, testClientId));
+      await tx.delete(users).where(eq(users.id, testUserId));
+      await tx.delete(users).where(eq(users.id, inviteeUserId));
+    });
   });
 
   describe("createInvitation", () => {

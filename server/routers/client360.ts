@@ -924,6 +924,7 @@ export const client360Router = router({
 
   /**
    * Quick create a client with minimal required fields
+   * FEAT-001: Added business fields support
    */
   quickCreate: protectedProcedure
     .use(requirePermission("clients:create"))
@@ -932,6 +933,9 @@ export const client360Router = router({
         name: z.string().min(1).max(255),
         email: z.string().email().optional().or(z.literal("")),
         phone: z.string().max(50).optional(),
+        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
+        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        paymentTerms: z.number().int().positive().optional().default(30),
         isBuyer: z.boolean().default(true),
         isSeller: z.boolean().default(false),
         referredByClientId: z.number().optional(),
@@ -981,6 +985,9 @@ export const client360Router = router({
         name: input.name,
         email: input.email || null,
         phone: input.phone || null,
+        businessType: input.businessType || null,
+        preferredContact: input.preferredContact || null,
+        paymentTerms: input.paymentTerms || 30,
         isBuyer: input.isBuyer,
         isSeller: input.isSeller,
         referredByClientId: input.referredByClientId || null,

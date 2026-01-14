@@ -185,7 +185,7 @@ export function PriceHistoryLookup({
                       </p>
                       {saleData.clientPriceHistory.slice(0, 3).map((h, i) => (
                         <div
-                          key={i}
+                          key={`history-${h.date}-${h.price}-${i}`}
                           className="flex items-center justify-between text-xs"
                         >
                           <span>{formatDate(h.date)}</span>

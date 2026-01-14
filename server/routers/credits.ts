@@ -328,16 +328,18 @@ export const creditsRouter = router({
       invoiceId: z.number(),
       amountToApply: z.string(),
       notes: z.string().optional(),
+      idempotencyKey: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
+
       return await creditsDb.applyCredit(
         input.creditId,
         input.invoiceId,
         input.amountToApply,
         ctx.user.id,
-        input.notes
+        input.notes,
+        input.idempotencyKey
       );
     }),
 

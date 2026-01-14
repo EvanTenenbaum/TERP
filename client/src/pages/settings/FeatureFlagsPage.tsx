@@ -11,6 +11,7 @@
 import React, { useState } from "react";
 import { trpc } from "../../lib/trpc";
 import { useToast } from "../../hooks/use-toast";
+import { usePermissions } from "../../hooks/usePermissions";
 import {
   Card,
   CardContent,
@@ -65,9 +66,13 @@ import { formatDistanceToNow } from "date-fns";
 
 export default function FeatureFlagsPage() {
   const { toast } = useToast();
+  const { isSuperAdmin, hasPermission } = usePermissions();
   const [selectedFlag, setSelectedFlag] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false);
+
+  // FEAT-018: Only allow admins to seed defaults (development/setup feature)
+  const showDevTools = isSuperAdmin || hasPermission("admin:dev-tools");
 
   // Queries
   const {
@@ -198,17 +203,20 @@ export default function FeatureFlagsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => seedDefaultsMutation.mutate()}
-            disabled={seedDefaultsMutation.isPending}
-          >
-            <Settings
-              className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`}
-            />
-            Seed Defaults
-          </Button>
+          {/* FEAT-018: Hide Seed Defaults button from non-admin users */}
+          {showDevTools && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => seedDefaultsMutation.mutate()}
+              disabled={seedDefaultsMutation.isPending}
+            >
+              <Settings
+                className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`}
+              />
+              Seed Defaults
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

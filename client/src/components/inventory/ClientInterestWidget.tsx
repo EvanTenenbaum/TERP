@@ -160,7 +160,7 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                   <p className="font-medium mb-1">Match reasons:</p>
                   <ul className="space-y-0.5">
                     {match.reasons.slice(0, 3).map((reason: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-1">
+                      <li key={`reason-${idx}-${reason.substring(0, 20)}`} className="flex items-start gap-1">
                         <span className="text-green-500">✓</span>
                         <span>{reason}</span>
                       </li>

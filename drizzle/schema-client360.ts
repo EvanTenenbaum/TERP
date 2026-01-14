@@ -19,7 +19,7 @@ import {
   index,
   mysqlEnum,
 } from "drizzle-orm/mysql-core";
-import { clients, products, categories, users } from "./schema";
+import { clients, products, categories, users, orders, batches } from "./schema";
 
 // ============================================================================
 // Client Wants/Needs Tracking (4.B.6 - MEET-021)
@@ -136,7 +136,7 @@ export const clientWantMatches = mysqlTable(
     clientWantId: int("client_want_id")
       .notNull()
       .references(() => clientWants.id, { onDelete: "cascade" }),
-    inventoryItemId: int("inventory_item_id").notNull(),
+    inventoryItemId: int("inventory_item_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
 
     // Match quality
     matchScore: decimal("match_score", { precision: 5, scale: 2 }), // 0-100 percentage
@@ -146,7 +146,7 @@ export const clientWantMatches = mysqlTable(
     status: clientWantMatchStatusEnum.notNull().default("NEW"),
     notifiedAt: timestamp("notified_at"),
     viewedAt: timestamp("viewed_at"),
-    convertedToOrderId: int("converted_to_order_id"),
+    convertedToOrderId: int("converted_to_order_id").references(() => orders.id, { onDelete: "set null" }),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),

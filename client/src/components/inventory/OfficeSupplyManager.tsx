@@ -541,7 +541,7 @@ export function OfficeSupplyManager() {
                             {summaryData.topReordered
                               .slice(0, 3)
                               .map((item, idx) => (
-                                <div key={idx} className="flex justify-between">
+                                <div key={item.product_name} className="flex justify-between">
                                   <span className="text-muted-foreground truncate">
                                     {item.product_name}
                                   </span>

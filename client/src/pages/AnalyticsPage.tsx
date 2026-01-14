@@ -16,6 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   BarChart3,
   TrendingUp,
   Users,
@@ -25,6 +31,7 @@ import {
   CreditCard,
   Percent,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
@@ -126,15 +133,36 @@ export default function AnalyticsPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleExport("summary", "csv")}
-            disabled={exportMutation.isPending}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={exportMutation.isPending}
+              >
+                {exportMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("summary", "csv")}>
+                Export Summary (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("revenue", "csv")}>
+                Export Revenue Data (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("inventory", "csv")}>
+                Export Inventory Data (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("clients", "csv")}>
+                Export Clients Data (CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -263,15 +291,6 @@ export default function AnalyticsPage() {
                   Track sales performance and trends over time
                 </CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport("revenue", "csv")}
-                disabled={exportMutation.isPending}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
             </CardHeader>
             <CardContent>
               {trendsLoading ? (
@@ -299,15 +318,6 @@ export default function AnalyticsPage() {
                   Monitor inventory levels and product performance
                 </CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport("inventory", "csv")}
-                disabled={exportMutation.isPending}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
@@ -345,15 +355,6 @@ export default function AnalyticsPage() {
                   Your highest revenue generating clients
                 </CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport("clients", "csv")}
-                disabled={exportMutation.isPending}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
             </CardHeader>
             <CardContent>
               {clientsLoading ? (

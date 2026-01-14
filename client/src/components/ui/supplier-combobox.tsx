@@ -87,22 +87,28 @@ export interface SupplierComboboxProps {
 
 /**
  * Custom hook for debounced search input
+ * BUG-073 FIX: Added request ID tracking to prevent race conditions
  */
 function useDebouncedSearch(
   delay: number = 300
-): [string, string, (value: string) => void] {
+): [string, string, (value: string) => void, number] {
   const [inputValue, setInputValue] = useState("");
   const [debouncedValue, setDebouncedValue] = useState("");
+  const [requestId, setRequestId] = useState(0);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedValue(inputValue);
+      // BUG-073 FIX: Increment request ID when debounced value updates
+      requestIdRef.current += 1;
+      setRequestId(requestIdRef.current);
     }, delay);
 
     return () => clearTimeout(timer);
   }, [inputValue, delay]);
 
-  return [inputValue, debouncedValue, setInputValue];
+  return [inputValue, debouncedValue, setInputValue, requestId];
 }
 
 // ============================================================================
@@ -127,7 +133,8 @@ export function SupplierCombobox({
   isCreating = false,
 }: SupplierComboboxProps): React.ReactElement {
   const [open, setOpen] = useState(false);
-  const [inputValue, debouncedSearch, setInputValue] =
+  // BUG-073 FIX: Track request ID from debounced search (prevents race conditions)
+  const [inputValue, debouncedSearch, setInputValue, searchRequestId] =
     useDebouncedSearch(debounceMs);
   const listRef = useRef<HTMLDivElement>(null);
 

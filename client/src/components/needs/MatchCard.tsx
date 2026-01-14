@@ -137,7 +137,7 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
           {isExpanded && (
             <ul className="mt-2 space-y-1">
               {match.reasons.map((reason, idx) => (
-                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                <li key={`reason-${idx}-${reason.substring(0, 20)}`} className="text-sm text-muted-foreground flex items-start gap-2">
                   <span className="text-green-500 mt-0.5">✓</span>
                   <span>{reason}</span>
                 </li>

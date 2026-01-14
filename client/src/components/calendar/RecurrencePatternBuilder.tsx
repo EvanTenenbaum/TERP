@@ -198,7 +198,7 @@ export default function RecurrencePatternBuilder({
             className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             {MONTHS.map((month, index) => (
-              <option key={month} value={index + 1}>
+              <option key={`month-${month}`} value={index + 1}>
                 {month}
               </option>
             ))}

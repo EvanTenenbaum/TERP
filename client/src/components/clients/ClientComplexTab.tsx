@@ -513,7 +513,7 @@ function PurchasesTab({
               </TableHeader>
               <TableBody>
                 {filteredPurchases.map((item, idx) => (
-                  <TableRow key={idx}>
+                  <TableRow key={`purchase-${item.productName}-${item.sku || idx}`}>
                     <TableCell className="font-medium">
                       {item.productName}
                     </TableCell>

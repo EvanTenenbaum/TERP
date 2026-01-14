@@ -7,7 +7,9 @@ import {
   grades,
   expenseCategories,
   accounts,
+  unitTypes,
 } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Seed default storage locations
@@ -116,8 +118,17 @@ export async function seedDefaultLocations() {
     },
   ];
 
+  // Insert locations with error handling
   for (const location of locationsData) {
-    await db.insert(locations).values(location);
+    try {
+      await db.insert(locations).values(location);
+    } catch (error: any) {
+      // If it's a duplicate, skip it (though locations don't have unique constraints)
+      // Log other errors but continue
+      if (!error.message?.includes("Duplicate entry")) {
+        console.warn(`Failed to insert location:`, error.message || error);
+      }
+    }
   }
 
   console.log("✅ Default locations seeded");
@@ -154,7 +165,18 @@ export async function seedDefaultCategories() {
   const categoriesData = [
     {
       name: "Flower",
-      subcategories: ["Outdoor", "Deps", "Indoor", "Smalls", "Trim"],
+      subcategories: [
+        "Tops/Colas",
+        "Smalls/Popcorn",
+        "Trim",
+        "Shake",
+        "Larf",
+        "Machine Trim",
+        "Hand Trim",
+        "Outdoor",
+        "Deps",
+        "Indoor",
+      ],
     },
     {
       name: "Concentrates",
@@ -163,10 +185,15 @@ export async function seedDefaultCategories() {
         "Wax",
         "Live Resin",
         "Rosin",
+        "Diamonds",
         "Distillate",
         "Crumble",
         "Budder",
       ],
+    },
+    {
+      name: "Edibles",
+      subcategories: ["Gummies", "Chocolates", "Beverages", "Baked Goods"],
     },
     {
       name: "Vapes",
@@ -184,17 +211,43 @@ export async function seedDefaultCategories() {
 
   // Create categories and subcategories
   for (const categoryData of categoriesData) {
-    const [category] = await db.insert(categories).values({
-      name: categoryData.name,
-    });
-
-    const categoryId = category.insertId;
-
-    for (const subName of categoryData.subcategories) {
-      await db.insert(subcategories).values({
-        name: subName,
-        categoryId: categoryId,
+    // Insert category (idempotent - will be skipped if name already exists due to unique constraint)
+    try {
+      await db.insert(categories).values({
+        name: categoryData.name,
       });
+    } catch (error: any) {
+      // If it's a duplicate key error, that's fine - category already exists
+      if (!error.message?.includes("Duplicate entry")) {
+        throw error;
+      }
+    }
+
+    // Query back to get the category ID
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.name, categoryData.name))
+      .limit(1);
+
+    if (!category) {
+      console.error(`Failed to find category: ${categoryData.name}`);
+      continue;
+    }
+
+    // Insert subcategories
+    for (const subName of categoryData.subcategories) {
+      try {
+        await db.insert(subcategories).values({
+          name: subName,
+          categoryId: category.id,
+        });
+      } catch (error: any) {
+        // If it's a duplicate, skip it
+        if (!error.message?.includes("Duplicate entry")) {
+          console.warn(`Failed to insert subcategory ${subName}:`, error);
+        }
+      }
     }
   }
 
@@ -235,8 +288,16 @@ export async function seedDefaultGrades() {
     { name: "D", description: "Economy quality", sortOrder: 4 },
   ];
 
+  // Insert grades with error handling (has unique constraint on name)
   for (const grade of gradesData) {
-    await db.insert(grades).values(grade);
+    try {
+      await db.insert(grades).values(grade);
+    } catch (error: any) {
+      // If it's a duplicate, skip it
+      if (!error.message?.includes("Duplicate entry")) {
+        console.warn(`Failed to insert grade ${grade.name}:`, error.message || error);
+      }
+    }
   }
 
   console.log("✅ Default grades seeded");
@@ -300,18 +361,44 @@ export async function seedDefaultExpenseCategories() {
 
   // Create expense categories
   for (const categoryData of expenseCategoriesData) {
-    const [parent] = await db.insert(expenseCategories).values({
-      categoryName: categoryData.name,
-      parentCategoryId: null,
-    });
-
-    const parentId = parent.insertId;
-
-    for (const childName of categoryData.children) {
+    // Insert parent category (idempotent)
+    try {
       await db.insert(expenseCategories).values({
-        categoryName: childName,
-        parentCategoryId: parentId,
+        categoryName: categoryData.name,
+        parentCategoryId: null,
       });
+    } catch (error: any) {
+      // If it's a duplicate, that's fine - category already exists
+      if (!error.message?.includes("Duplicate entry")) {
+        throw error;
+      }
+    }
+
+    // Query back to get the parent category ID
+    const [parent] = await db
+      .select()
+      .from(expenseCategories)
+      .where(eq(expenseCategories.categoryName, categoryData.name))
+      .limit(1);
+
+    if (!parent) {
+      console.error(`Failed to find expense category: ${categoryData.name}`);
+      continue;
+    }
+
+    // Insert child categories
+    for (const childName of categoryData.children) {
+      try {
+        await db.insert(expenseCategories).values({
+          categoryName: childName,
+          parentCategoryId: parent.id,
+        });
+      } catch (error: any) {
+        // If it's a duplicate, skip it
+        if (!error.message?.includes("Duplicate entry")) {
+          console.warn(`Failed to insert expense category ${childName}:`, error);
+        }
+      }
     }
   }
 
@@ -411,11 +498,85 @@ export async function seedDefaultChartOfAccounts() {
     },
   ];
 
+  // Insert accounts with error handling (has unique constraint on accountNumber)
   for (const account of accountsData) {
-    await db.insert(accounts).values(account);
+    try {
+      await db.insert(accounts).values(account);
+    } catch (error: any) {
+      // If it's a duplicate, skip it
+      if (!error.message?.includes("Duplicate entry")) {
+        console.warn(`Failed to insert account ${account.accountNumber}:`, error.message || error);
+      }
+    }
   }
 
   console.log("✅ Default chart of accounts seeded");
+}
+
+/**
+ * Seed default unit types including packaged units (FEAT-013)
+ *
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
+ */
+export async function seedDefaultUnitTypes() {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping unit types seeding");
+    return;
+  }
+
+  console.log("🌱 Seeding default unit types...");
+
+  const db = await getDb();
+  if (!db) {
+    console.warn("Database not available, skipping unit types seeding");
+    return;
+  }
+
+  // Check if unit types already exist
+  const existing = await db.select().from(unitTypes).limit(1);
+  if (existing.length > 0) {
+    console.log("✅ Unit types already seeded, skipping...");
+    return;
+  }
+
+  const unitTypesData = [
+    // COUNT
+    { code: "EA", name: "Each", description: "Individual unit count", category: "COUNT" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 10 },
+
+    // WEIGHT
+    { code: "G", name: "Gram", description: "Weight in grams", category: "WEIGHT" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 20 },
+    { code: "OZ", name: "Ounce", description: "Weight in ounces (28.3495g)", category: "WEIGHT" as const, conversionFactor: "28.3495", baseUnitCode: "G", sortOrder: 30 },
+    { code: "LB", name: "Pound", description: "Weight in pounds (453.592g)", category: "WEIGHT" as const, conversionFactor: "453.592", baseUnitCode: "G", sortOrder: 40 },
+    { code: "KG", name: "Kilogram", description: "Weight in kilograms (1000g)", category: "WEIGHT" as const, conversionFactor: "1000", baseUnitCode: "G", sortOrder: 50 },
+
+    // VOLUME
+    { code: "ML", name: "Milliliter", description: "Volume in milliliters", category: "VOLUME" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 60 },
+    { code: "L", name: "Liter", description: "Volume in liters (1000ml)", category: "VOLUME" as const, conversionFactor: "1000", baseUnitCode: "ML", sortOrder: 70 },
+
+    // PACKAGED
+    { code: "PKG", name: "Package", description: "Pre-packaged unit (variable contents)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 80 },
+    { code: "PK5", name: "Pack of 5", description: "5-unit package", category: "PACKAGED" as const, conversionFactor: "5", baseUnitCode: "EA", sortOrder: 85 },
+    { code: "BOX", name: "Box", description: "Box container (packaged)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 90 },
+    { code: "PK10", name: "Pack of 10", description: "10-unit package", category: "PACKAGED" as const, conversionFactor: "10", baseUnitCode: "EA", sortOrder: 95 },
+    { code: "CASE", name: "Case", description: "Case container (packaged)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 100 },
+    { code: "CASE24", name: "Case (24)", description: "Case containing 24 units", category: "PACKAGED" as const, conversionFactor: "24", baseUnitCode: "EA", sortOrder: 105 },
+    { code: "PALLET", name: "Pallet", description: "Standard pallet (quantity varies by product)", category: "PACKAGED" as const, conversionFactor: "1", baseUnitCode: null, sortOrder: 110 },
+  ];
+
+  // Insert unit types with error handling (has unique constraint on code)
+  for (const unitType of unitTypesData) {
+    try {
+      await db.insert(unitTypes).values(unitType);
+    } catch (error: any) {
+      // If it's a duplicate, skip it
+      if (!error.message?.includes("Duplicate entry")) {
+        console.warn(`Failed to insert unit type ${unitType.code}:`, error.message || error);
+      }
+    }
+  }
+
+  console.log("✅ Default unit types seeded");
 }
 
 /**
@@ -443,17 +604,55 @@ export async function seedAllDefaults() {
 
   console.log("🌱 Starting default data seeding...");
 
+  // Validate database connection first
+  const db = await getDb();
+  if (!db) {
+    console.error("❌ Database connection not available - skipping seeding");
+    return;
+  }
+
+  const seedingResults = {
+    rbac: false,
+    locations: false,
+    categories: false,
+    grades: false,
+    expenseCategories: false,
+    accounts: false,
+    unitTypes: false,
+  };
+
   try {
     // Seed RBAC first (roles and permissions must exist before user-role assignments)
+    console.log("📝 Seeding RBAC...");
     await seedRBACDefaults();
+    seedingResults.rbac = true;
 
+    console.log("📍 Seeding locations...");
     await seedDefaultLocations();
+    seedingResults.locations = true;
+
+    console.log("📂 Seeding categories...");
     await seedDefaultCategories();
+    seedingResults.categories = true;
+
+    console.log("🎯 Seeding grades...");
     await seedDefaultGrades();
+    seedingResults.grades = true;
+
+    console.log("💰 Seeding expense categories...");
     await seedDefaultExpenseCategories();
+    seedingResults.expenseCategories = true;
+
+    console.log("📊 Seeding chart of accounts...");
     await seedDefaultChartOfAccounts();
+    seedingResults.accounts = true;
+
+    console.log("📦 Seeding unit types...");
+    await seedDefaultUnitTypes();
+    seedingResults.unitTypes = true;
 
     console.log("✅ All defaults seeded successfully!");
+    console.log("📋 Seeding summary:", seedingResults);
   } catch (error) {
     // Log the error but DON'T throw - seeding failure should not crash the server
     // This is critical for deployment health checks to succeed
@@ -464,5 +663,6 @@ export async function seedAllDefaults() {
     console.warn(
       "⚠️ Some default data may be missing - the app will still function but some features may be unavailable"
     );
+    console.log("📋 Partial seeding summary:", seedingResults);
   }
 }

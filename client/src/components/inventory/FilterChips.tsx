@@ -124,7 +124,7 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
       <span className="text-sm font-medium text-muted-foreground">Active Filters:</span>
       {chips.map((chip, index) => (
         <Badge
-          key={`${chip.key}-${chip.value || index}`}
+          key={`${chip.key}-${chip.value || 'no-value'}-${chip.label}`}
           variant="secondary"
           className="gap-1 pr-1"
         >

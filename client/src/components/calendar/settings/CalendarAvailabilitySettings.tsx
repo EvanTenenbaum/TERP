@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, X, Clock, Calendar } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
  * CalendarAvailabilitySettings Component
@@ -26,6 +27,7 @@ export function CalendarAvailabilitySettings() {
   const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
   const [blockedDateInput, setBlockedDateInput] = useState("");
   const [blockedReasonInput, setBlockedReasonInput] = useState("");
+  const [deleteBlockedConfirm, setDeleteBlockedConfirm] = useState<number | null>(null);
 
   const { data: calendars } = trpc.calendarsManagement.list.useQuery({});
   const { data: availability, refetch: refetchAvailability } =
@@ -262,7 +264,7 @@ export function CalendarAvailabilitySettings() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => removeBlockedMutation.mutate({ id: blocked.id })}
+                onClick={() => setDeleteBlockedConfirm(blocked.id)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -275,6 +277,20 @@ export function CalendarAvailabilitySettings() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={deleteBlockedConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteBlockedConfirm(null)}
+        title="Delete Blocked Date"
+        description="Are you sure you want to remove this blocked date? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteBlockedConfirm) {
+            removeBlockedMutation.mutate({ id: deleteBlockedConfirm });
+          }
+          setDeleteBlockedConfirm(null);
+        }}
+      />
     </div>
   );
 }

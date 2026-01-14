@@ -239,7 +239,7 @@ export function UserManagement() {
           <CardContent>
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map(i => (
-                <Skeleton key={i} className="h-16 w-full" />
+                <Skeleton key={`skeleton-${i}`} className="h-16 w-full" />
               ))}
             </div>
           </CardContent>
