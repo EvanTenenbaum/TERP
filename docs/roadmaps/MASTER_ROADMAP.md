@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.9
-**Last Updated:** 2026-01-11 (QA Wave 2 Fixes Complete)
+**Version:** 5.0
+**Last Updated:** 2026-01-14 (QA Deep Audit Tasks Added)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -315,6 +315,62 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 ---
 
+### QA Deep Audit Findings (Jan 14, 2026)
+
+> Discovered during comprehensive QA audit of entire codebase.
+> See: `QA_COMBINED_FINAL_REPORT.md` for full analysis.
+
+#### Security Issues (P0)
+
+| Task    | Description                                             | Priority | Status | Estimate | Prompt                    |
+| ------- | ------------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| SEC-018 | Remove Hardcoded Admin Setup Key Fallback               | HIGH     | ready  | 2h       | `docs/prompts/SEC-018.md` |
+| SEC-019 | Protect 12 matchingEnhanced Public Endpoints            | HIGH     | ready  | 4h       | `docs/prompts/SEC-019.md` |
+| SEC-020 | Protect 5 calendarRecurrence Public Mutations           | HIGH     | ready  | 2h       | `docs/prompts/SEC-020.md` |
+| SEC-021 | Fix Token Exposure in URL Query Parameter               | MEDIUM   | ready  | 4h       | `docs/prompts/SEC-021.md` |
+| SEC-022 | Remove Hardcoded Production URLs                        | LOW      | ready  | 2h       | `docs/prompts/SEC-022.md` |
+
+#### Data Integrity Issues (P0/P1)
+
+| Task   | Description                                          | Priority | Status | Estimate | Prompt                   |
+| ------ | ---------------------------------------------------- | -------- | ------ | -------- | ------------------------ |
+| DI-001 | Implement Real withTransaction Database Wrapper      | HIGH     | ready  | 8h       | `docs/prompts/DI-001.md` |
+| DI-002 | Fix Credit Application Race Condition                | HIGH     | ready  | 8h       | `docs/prompts/DI-002.md` |
+| DI-003 | Add Transaction to Cascading Delete Operations       | HIGH     | ready  | 4h       | `docs/prompts/DI-003.md` |
+| DI-004 | Implement Soft-Delete Support for Clients            | MEDIUM   | ready  | 8h       | `docs/prompts/DI-004.md` |
+| DI-005 | Fix Startup Seeding Schema Drift                     | MEDIUM   | ready  | 4h       | `docs/prompts/DI-005.md` |
+| DI-006 | Add Missing Foreign Key Constraints                  | MEDIUM   | ready  | 8h       | `docs/prompts/DI-006.md` |
+| DI-007 | Migrate VARCHAR to DECIMAL for Numeric Columns       | LOW      | ready  | 2d       | `docs/prompts/DI-007.md` |
+| DI-008 | Fix SSE Event Listener Memory Leaks                  | MEDIUM   | ready  | 4h       | `docs/prompts/DI-008.md` |
+
+#### Frontend Quality Issues (P2)
+
+| Task      | Description                                       | Priority | Status | Estimate | Prompt                      |
+| --------- | ------------------------------------------------- | -------- | ------ | -------- | --------------------------- |
+| FE-QA-001 | Replace key={index} Anti-Pattern (27 Files)       | MEDIUM   | ready  | 8h       | `docs/prompts/FE-QA-001.md` |
+| FE-QA-002 | Align Frontend/Backend Pagination Parameters      | MEDIUM   | ready  | 4h       | `docs/prompts/FE-QA-002.md` |
+| FE-QA-003 | Fix VIP Token Header vs Input Inconsistency       | MEDIUM   | ready  | 2h       | `docs/prompts/FE-QA-003.md` |
+
+#### Backend Placeholder Issues (P2)
+
+| Task      | Description                                       | Priority | Status | Estimate | Prompt                      |
+| --------- | ------------------------------------------------- | -------- | ------ | -------- | --------------------------- |
+| BE-QA-001 | Complete or Remove Email/SMS Integration Stubs    | MEDIUM   | ready  | 16h      | `docs/prompts/BE-QA-001.md` |
+| BE-QA-002 | Implement VIP Tier Config Database Storage        | MEDIUM   | ready  | 8h       | `docs/prompts/BE-QA-002.md` |
+| BE-QA-003 | Fix Vendor Supply Matching Empty Results          | MEDIUM   | ready  | 8h       | `docs/prompts/BE-QA-003.md` |
+| BE-QA-004 | Complete Dashboard Metrics Schema Implementation  | MEDIUM   | ready  | 8h       | `docs/prompts/BE-QA-004.md` |
+| BE-QA-005 | Fix Supplier Metrics Null Return Values           | MEDIUM   | ready  | 4h       | `docs/prompts/BE-QA-005.md` |
+
+#### UX Issues (P1/P2)
+
+| Task   | Description                                          | Priority | Status | Estimate | Prompt                   |
+| ------ | ---------------------------------------------------- | -------- | ------ | -------- | ------------------------ |
+| UX-015 | Add Confirmation Dialogs for 14 Delete Actions       | MEDIUM   | ready  | 8h       | `docs/prompts/UX-015.md` |
+| UX-016 | Replace window.alert() with Toast Notifications      | LOW      | ready  | 2h       | `docs/prompts/UX-016.md` |
+| UX-017 | Fix Broken Delete Subcategory Button Handler         | HIGH     | ready  | 1h       | `docs/prompts/UX-017.md` |
+
+---
+
 ### Stability Tasks (P1)
 
 | Task   | Description                                | Priority | Status      | Prompt                   |
@@ -433,19 +489,22 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ## 📊 MVP Summary
 
-| Category         | Completed | Open    | Total    |
-| ---------------- | --------- | ------- | -------- |
-| Infrastructure   | 18        | 4       | 22       |
-| Security         | 12        | 0       | 12       |
-| Bug Fixes        | 21        | 21      | 42       |
-| API Registration | 0         | 10      | 10       |
-| Stability        | 10        | 1       | 11       |
-| Quality          | 10        | 2       | 12       |
-| Features         | 6         | 23+     | 29+      |
-| UX               | 5         | 4       | 9        |
-| Data & Schema    | 7         | 1       | 8        |
-| Improvements     | 4         | 0       | 4        |
-| **TOTAL**        | **93+**   | **66+** | **159+** |
+| Category             | Completed | Open    | Total    |
+| -------------------- | --------- | ------- | -------- |
+| Infrastructure       | 18        | 4       | 22       |
+| Security             | 12        | 5       | 17       |
+| Bug Fixes            | 21        | 21      | 42       |
+| API Registration     | 0         | 10      | 10       |
+| Stability            | 10        | 1       | 11       |
+| Quality              | 10        | 2       | 12       |
+| Features             | 6         | 23+     | 29+      |
+| UX                   | 5         | 7       | 12       |
+| Data & Schema        | 7         | 1       | 8        |
+| Data Integrity (QA)  | 0         | 8       | 8        |
+| Frontend Quality (QA)| 0         | 3       | 3        |
+| Backend Quality (QA) | 0         | 5       | 5        |
+| Improvements         | 4         | 0       | 4        |
+| **TOTAL**            | **93+**   | **90+** | **183+** |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
@@ -527,9 +586,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open     | Total    | Progress |
 | --------- | --------- | -------- | -------- | -------- |
-| MVP       | 56+       | 89+      | 145+     | ~39%     |
+| MVP       | 93+       | 90+      | 183+     | ~51%     |
 | Beta      | 0         | 17       | 17       | 0%       |
-| **TOTAL** | **56+**   | **106+** | **162+** | ~35%     |
+| **TOTAL** | **93+**   | **107+** | **200+** | ~47%     |
 
 ---
 
