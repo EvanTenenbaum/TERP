@@ -40,6 +40,7 @@
     "mega:qa:bugpackage": "tsx scripts/mega-qa/bugpackager.ts",
     "mega:qa:invariants": "tsx scripts/mega-qa/invariants/db-invariants.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:migrate": "tsx scripts/run-migrations.ts",
     "seed": "tsx scripts/legacy/seed-realistic-runner.ts",
     "seed:light": "tsx scripts/legacy/seed-realistic-runner.ts light",
     "seed:full": "tsx scripts/legacy/seed-realistic-runner.ts full",
