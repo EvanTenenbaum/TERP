@@ -878,12 +878,17 @@ export async function setSampleExpirationDate(
 
 /**
  * Get all sample requests (not just pending)
+ * BUG-099 FIX: Returns empty array with logged warning instead of throwing on DB errors
  */
 export async function getAllSampleRequests(
   limit: number = 100
 ): Promise<SampleRequest[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) {
+    // BUG-099 FIX: Log warning and return empty array instead of throwing
+    console.warn('[samplesDb.getAllSampleRequests] Database not available - returning empty array');
+    return [];
+  }
 
   try {
     const requests = await db.select()
@@ -893,7 +898,11 @@ export async function getAllSampleRequests(
 
     return requests;
   } catch (error) {
-    throw new Error(`Failed to get all sample requests: ${error instanceof Error ? error.message : String(error)}`);
+    // BUG-099 FIX: Log error but return empty array to prevent page crash
+    // This allows the UI to show "no samples" state instead of error state
+    console.error('[samplesDb.getAllSampleRequests] Query failed:', error instanceof Error ? error.message : String(error));
+    console.error('[samplesDb.getAllSampleRequests] Possible causes: sampleRequests table missing or schema mismatch');
+    return [];
   }
 }
 

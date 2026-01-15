@@ -9,6 +9,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { CalendarSettings } from "@/components/calendar/CalendarSettings";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errorHandling";
 import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
@@ -301,6 +302,7 @@ function LocationsManager() {
   }, [newLocation, editingId]);
 
   const { data: locations, refetch } = trpc.settings.locations.list.useQuery();
+  // BUG-097 FIX: Use standardized error handling
   const createMutation = trpc.settings.locations.create.useMutation({
     onSuccess: () => {
       toast.success("Location created successfully");
@@ -308,8 +310,8 @@ function LocationsManager() {
       setHasUnsavedChanges(false);
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to create location");
+    onError: (error) => {
+      showErrorToast(error, { action: "create", resource: "location" });
     },
   });
 
@@ -321,8 +323,8 @@ function LocationsManager() {
       setHasUnsavedChanges(false);
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to update location");
+    onError: (error) => {
+      showErrorToast(error, { action: "update", resource: "location" });
     },
   });
 
@@ -331,8 +333,8 @@ function LocationsManager() {
       toast.success("Location deleted successfully");
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to delete location");
+    onError: (error) => {
+      showErrorToast(error, { action: "delete", resource: "location" });
     },
   });
 
