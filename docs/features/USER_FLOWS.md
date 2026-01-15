@@ -2,7 +2,7 @@
 
 **Date Created:** November 5, 2025
 **Last Updated:** January 15, 2026
-**Status:** v3.0 - Comprehensive Feature Inventory
+**Status:** v3.2 - Comprehensive Feature Inventory with Business Outcomes
 
 ---
 
@@ -18,8 +18,62 @@ This document maps user flows for all **70 major feature modules** in the TERP c
 - Total tRPC Procedures: 1,414+
 - Total Client Routes: 54 pages
 - Documentation Coverage: 100%
+- Business Logic Coverage: 100% (v3.2)
 
 Each section outlines the primary user journeys, the actors involved, and specific functionalities that should be included or explicitly excluded based on your comments.
+
+---
+
+## Business Outcomes Summary
+
+This section documents the expected business outcomes and measurable effects for each feature category.
+
+### Core Business Outcomes
+
+| Feature Category | Primary Business Outcome | Key Metrics |
+|------------------|-------------------------|-------------|
+| **Accounting** | Accurate financial tracking with full GL integration | AR aging accuracy, collection rate, DSO |
+| **Orders** | Complete order lifecycle from draft to delivery | Order-to-cash cycle time, fulfillment accuracy |
+| **Inventory** | Real-time quantity management with full traceability | Inventory accuracy, shrinkage rate, turnover |
+| **CRM** | 360-degree client view with credit management | Client lifetime value, retention rate |
+| **VIP Portal** | Self-service client experience with tier benefits | Portal adoption, self-service rate |
+| **Gamification** | Engagement through points, achievements, leaderboards | Rep engagement, referral conversion |
+| **Live Shopping** | Real-time collaborative selling sessions | Session conversion rate, average cart value |
+| **Pricing** | Dynamic client-specific pricing with margin control | Margin consistency, pricing rule utilization |
+
+### Expected System Effects by Operation Type
+
+| Operation Type | Expected Effect | Business Impact |
+|----------------|-----------------|-----------------|
+| **Create operations** | New record + audit log + notifications | Data creation with full traceability |
+| **Update operations** | Optimistic locking + change tracking + cascade updates | Safe concurrent editing |
+| **State transitions** | Status change + side effects + notifications | Workflow automation |
+| **Delete operations** | Soft delete (preserve history) or validation before hard delete | Data integrity and compliance |
+| **Financial operations** | GL entries + balance updates + aging recalculation | Accurate financial state |
+| **Inventory operations** | Quantity change + movement record + valuation update | Accurate inventory state |
+
+### Key State Machine Patterns
+
+**Order Lifecycle:**
+```
+DRAFT → PENDING → CONFIRMED → PICKING → PACKED → SHIPPED → DELIVERED
+         ↓                                         ↓
+      CANCELLED                                RETURNED
+```
+
+**Invoice Lifecycle:**
+```
+DRAFT → SENT → VIEWED → PARTIAL → PAID
+                ↓
+             OVERDUE → VOID (terminal)
+```
+
+**Batch Lifecycle:**
+```
+AWAITING_INTAKE → QA_PENDING → LIVE → DEPLETED
+                     ↓            ↓
+                  REJECTED     EXPIRED
+```
 
 ---
 

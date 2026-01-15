@@ -1,4 +1,4 @@
-# TERP User Flow Guide (v3.1)
+# TERP User Flow Guide (v3.2)
 
 _Generated: 2026-01-15 | Source: Comprehensive codebase analysis of 123 server routers, 54 client pages, and RBAC definitions_
 
@@ -10,14 +10,86 @@ This guide documents all user flows in the TERP application, organized by busine
 - **Auth Level**: publicProcedure, protectedProcedure, adminProcedure, strictlyProtectedProcedure, or vipPortalProcedure
 - **Permission**: Required RBAC permission string (if any)
 - **Roles**: User roles that can access this flow
+- **Expected Effects**: Business logic side effects and outcomes (v3.2)
 
-**Statistics (v3.1 - 100% Coverage):**
+**Statistics (v3.2 - 100% Coverage with Business Logic):**
 - Total Routers: 123 (119 main + 4 subdirectory)
 - Total Procedures: 1,414+
 - Total Domains: 26
 - Total Features: 70
 - Client Routes: 54 pages, 41 defined routes
 - Documentation Coverage: 100%
+
+---
+
+## Business Logic & Expected Effects
+
+This section documents the key business logic patterns, side effects, and expected outcomes for major operations across the system.
+
+### Accounting Domain Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **Generate Invoice from Order** | Creates GL entry (debit AR, credit Revenue). Updates order.invoiceId. Calculates due date from payment terms. | Invoice: DRAFT |
+| **Mark Invoice Sent** | Records sentAt timestamp. Triggers client notification. Starts aging clock. | Invoice: DRAFT → SENT |
+| **Record Payment** | Creates GL entries (debit Cash, credit AR). Auto-applies to oldest invoices (FIFO). Updates client balance. | Invoice: SENT → PARTIAL/PAID |
+| **Void Invoice** | IRREVERSIBLE. Reverses GL entries. Updates client balance. Requires reason. Cannot void if payments applied. | Invoice: → VOID |
+| **Bad Debt Write-Off** | Creates GL entry (debit Bad Debt Expense, credit AR). Updates client credit status to SUSPENDED. | Client: credit_status → SUSPENDED |
+
+### Order Domain Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **Create Draft Order** | Soft-reserves inventory (visible but not committed). Calculates margins per line item. | Order: DRAFT |
+| **Confirm Draft Order** | Commits inventory reservations (hard reserve). Validates credit limit. Sends to fulfillment queue. | Order: DRAFT → PENDING |
+| **Fulfill Order** | Deducts inventory from batches. Creates inventory movements (type=SALE). Handles partial fulfillment. | Order: CONFIRMED → FULFILLED, Batch: quantity decreases |
+| **Ship Order** | Records carrier/tracking. Triggers shipping notification. Sets expected delivery date. | Order: PACKED → SHIPPED |
+| **Deliver Order** | Can trigger auto-invoice generation. Starts payment terms clock. Awards gamification points. | Order: SHIPPED → DELIVERED |
+| **Process Return** | Creates return record. Triggers inventory restoration workflow. May create credit memo or refund. | Order: creates linked Return |
+
+### Inventory Domain Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **Create Batch** | Generates unique batch ID. Creates inventory movement (type=INTAKE). Updates location counts. | Batch: AWAITING_INTAKE |
+| **Update Batch Status** | LIVE: makes available for sale. DEPLETED: auto-set when quantity=0. EXPIRED: removes from availability. | Batch: status transition |
+| **Record Movement** | Updates batch quantity. Links to reference document (order/PO/transfer). Maintains running balance. | Batch: quantity changes |
+| **Adjust Inventory** | Creates ADJUSTMENT movement with reason code. May trigger manager alert for large adjustments. | Batch: quantity changes |
+| **Update COGS** | Records audit trail. Recalculates pending order margins. May trigger margin alerts if below threshold. | Batch: cogs updated, Orders: margins recalculated |
+
+### CRM Domain Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **Create Client** | Generates TERI code. Sets default payment terms/credit limit. Links referrer (triggers gamification points). | Client: created |
+| **Update Client** | Optimistic locking (version check). Credit limit changes may trigger credit review. | Client: updated |
+| **Archive Client** | Soft delete (sets deletedAt). Validates no pending orders. Preserves history for reporting. | Client: deletedAt set |
+
+### VIP Portal Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **VIP Login** | Creates session token (JWT). Logs login event. Rate limited. | Session: created |
+| **Create Need** | Creates need record. Notifies sales team. Used for demand forecasting. | Need: PENDING |
+| **Enable VIP Portal** | Generates client portal credentials. Sets VIP flag. Sends welcome email. | Client: vipEnabled = true |
+
+### Live Shopping Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **Create Session** | Generates session ID. Enables real-time inventory visibility. Notifies warehouse. | Session: ACTIVE |
+| **Add to Cart** | Soft holds inventory. Calculates client-specific pricing. Broadcasts to participants. | Item: INTERESTED |
+| **End Session** | Converts CONFIRMED items to order. Releases unpurchased items. Creates order if applicable. | Session: COMPLETED, Order: created |
+
+### Gamification Effects
+
+| Operation | Side Effects | State Changes |
+|-----------|--------------|---------------|
+| **Record Referral** | Links referrer to new client. Awards points on first purchase. Tracks couch tax chain. | Referral: created |
+| **Redeem Reward** | Deducts points. Creates redemption record. Triggers fulfillment (physical) or instant delivery (digital). | Points: deducted, Redemption: created |
+| **Process Couch Tax** | Traverses referral network. Awards percentage to each level. Creates distribution record. | Points: awarded to chain |
+
+---
 
 ### Authentication Levels
 
