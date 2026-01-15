@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 5.9
-**Last Updated:** 2026-01-14 (Final MVP audit - 6 more tasks verified complete, 3 remaining)
+**Version:** 6.0
+**Last Updated:** 2026-01-15 (BUG-097 fixed - standardized error handling, 2 remaining)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -293,7 +293,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-094    | Live Shopping session creation fails (FK constraint violation) | P1       | ✅ FIXED (Jan 11, 2026) | RC-007 |
 | BUG-095    | Batches "New Purchase" button inert (Dialog handler mismatch)  | P1       | ✅ FIXED (Jan 11, 2026) | RC-008 |
 | BUG-096    | AR/AP aging widgets still failing (underlying query issue)     | P1       | ✅ FIXED (Jan 11, 2026) | RC-009 |
-| BUG-097    | Error handling inconsistency across modules                    | P3       | 🔴 OPEN | UX |
+| BUG-097    | Error handling inconsistency across modules                    | P3       | ✅ FIXED | UX |
 
 ---
 
@@ -514,7 +514,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | -------------------- | --------- | ------- | -------- |
 | Infrastructure       | 21        | 1       | 22       |
 | Security             | 17        | 0       | 17       |
-| Bug Fixes            | 45        | 1       | 46       |
+| Bug Fixes            | 46        | 0       | 46       |
 | API Registration     | 10        | 0       | 10       |
 | Stability            | 4         | 0       | 4        |
 | Quality              | 12        | 0       | 12       |
@@ -525,7 +525,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Frontend Quality (QA)| 3         | 0       | 3        |
 | Backend Quality (QA) | 5         | 0       | 5        |
 | Improvements         | 4         | 0       | 4        |
-| **TOTAL**            | **178**   | **3**   | **181**  |
+| **TOTAL**            | **179**   | **2**   | **181**  |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.

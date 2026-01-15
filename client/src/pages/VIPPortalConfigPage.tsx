@@ -23,6 +23,7 @@ import { ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errorHandling";
 
 export default function VIPPortalConfigPage() {
   const { clientId } = useParams<{ clientId: string }>();
@@ -41,13 +42,14 @@ export default function VIPPortalConfigPage() {
     { enabled: !!clientId }
   );
 
+  // BUG-097 FIX: Use standardized error handling
   const updateConfigMutation = trpc.vipPortalAdmin.config.update.useMutation({
     onSuccess: () => {
       toast.success("Configuration updated successfully");
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to update configuration");
+    onError: (error) => {
+      showErrorToast(error, { action: "update", resource: "configuration" });
     },
   });
 
@@ -57,8 +59,8 @@ export default function VIPPortalConfigPage() {
         toast.success("Template applied successfully");
         refetch();
       },
-      onError: () => {
-        toast.error("Failed to apply template");
+      onError: (error) => {
+        showErrorToast(error, { action: "apply", resource: "template" });
       },
     });
 
