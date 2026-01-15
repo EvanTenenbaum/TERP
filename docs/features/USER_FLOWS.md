@@ -8,14 +8,16 @@
 
 ## Overview
 
-This document maps user flows for all **58 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
+This document maps user flows for all **70 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
 
 **Statistics:**
 - Original Documented Features: 15
-- Newly Discovered Features: 43
-- Total Feature Modules: 58
+- Newly Discovered Features: 55
+- Total Feature Modules: 70
+- Total tRPC Routers: 123
 - Total tRPC Procedures: 1,414+
 - Total Client Routes: 54 pages
+- Documentation Coverage: 100%
 
 Each section outlines the primary user journeys, the actors involved, and specific functionalities that should be included or explicitly excluded based on your comments.
 
@@ -102,6 +104,28 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-056: Low Stock Alerts](#df-056-low-stock-alerts)
 - [DF-057: Deployment Tracking](#df-057-deployment-tracking)
 - [DF-058: Comments & Mentions](#df-058-comments--mentions)
+
+### Financial & Analytics Extended (DF-059 to DF-061)
+- [DF-059: COGS Management](#df-059-cogs-management)
+- [DF-060: Client Ledger](#df-060-client-ledger)
+- [DF-061: Bad Debt Management](#df-061-bad-debt-management)
+
+### Product & Catalog Extended (DF-062 to DF-063)
+- [DF-062: Strains Management](#df-062-strains-management)
+- [DF-063: Advanced Tags System](#df-063-advanced-tags-system)
+
+### Analytics & Reporting Extended (DF-064 to DF-065)
+- [DF-064: Analytics Engine](#df-064-analytics-engine)
+- [DF-065: Vendor Supply Matching](#df-065-vendor-supply-matching)
+
+### System Configuration (DF-066 to DF-067)
+- [DF-066: System Configuration](#df-066-system-configuration)
+- [DF-067: Recurring Orders](#df-067-recurring-orders)
+
+### System Infrastructure (DF-068 to DF-070)
+- [DF-068: Health & Diagnostics](#df-068-health--diagnostics)
+- [DF-069: Admin Tools Suite](#df-069-admin-tools-suite)
+- [DF-070: User Management](#df-070-user-management)
 
 ---
 ## DF-001: Calendar & Event Management System
@@ -1409,3 +1433,291 @@ Comment system with @mentions and resolution tracking.
 _No specific exclusions noted for this module._
 
 ---
+
+## DF-059: COGS Management
+
+**Category:** Financial
+**Status:** Fully Implemented
+
+Cost of Goods Sold (COGS) tracking, impact analysis, and margin reporting with full audit trail.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Manager views COGS summary for period | Manager |
+| Manager updates batch COGS with audit trail | Manager |
+| System calculates impact of COGS changes on pending orders | System |
+| Accounting views COGS history from audit logs | Accounting |
+| Manager views COGS breakdown by batch | Manager |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-060: Client Ledger
+
+**Category:** Financial
+**Status:** Fully Implemented
+
+Unified ledger view for all client transactions (orders, payments, purchase orders, manual adjustments) with running balance.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Sales rep views complete client ledger | Sales Rep |
+| Accounting calculates balance as of specific date | Accounting |
+| Accounting adds manual credit/debit adjustment | Accounting |
+| Manager exports ledger to CSV | Manager |
+| User filters ledger by transaction type | All Users |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-061: Bad Debt Management
+
+**Category:** Financial
+**Status:** Fully Implemented
+
+Bad debt write-off management with GL entry creation and reversal capability.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Accounting writes off bad debt | Accounting |
+| Accounting reverses bad debt write-off | Accounting |
+| Manager views bad debt by client | Manager |
+| Manager generates aging report | Manager |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-062: Strains Management
+
+**Category:** Product Management
+**Status:** Fully Implemented
+
+Strain management with fuzzy matching, family relationships, OpenTHC integration, and autocomplete support.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Admin imports strains from OpenTHC | Admin |
+| User searches strains with fuzzy matching | All Users |
+| User views strain family (parent + variants) | All Users |
+| Manager creates custom strain | Manager |
+| System auto-matches strains during intake | System |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-063: Advanced Tags System
+
+**Category:** Product Management
+**Status:** Fully Implemented
+
+Complete tag management with color-coding, categories, hierarchy, grouping, merging, and boolean search.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Admin creates tag with color and category | Admin |
+| User adds tags to products or clients | All Users |
+| User performs boolean tag search (AND/OR) | All Users |
+| Admin creates tag hierarchy (parent-child) | Admin |
+| Admin merges duplicate tags | Admin |
+| Admin views tag usage statistics | Admin |
+| User bulk-adds tags to multiple products | All Users |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-064: Analytics Engine
+
+**Category:** Analytics & Reporting
+**Status:** Fully Implemented
+
+Comprehensive analytics with revenue trends, top clients, strain preferences, and export capabilities.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Manager views analytics summary | Manager |
+| Manager views extended summary with growth rates | Manager |
+| Manager views revenue trends by granularity | Manager |
+| Manager views top clients by metric | Manager |
+| Sales rep views client strain preferences | Sales Rep |
+| Manager exports analytics data (CSV/JSON) | Manager |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-065: Vendor Supply Matching
+
+**Category:** Supply Chain
+**Status:** Fully Implemented
+
+Vendor supply management with status tracking, buyer matching, and expiration handling.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Vendor creates supply listing | Vendor |
+| System finds potential buyers for supply | System |
+| Buyer reserves supply item | Buyer |
+| Buyer completes purchase | Buyer |
+| System expires old supply listings | System |
+| Manager views all supplies with match counts | Manager |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-066: System Configuration
+
+**Category:** Administration
+**Status:** Fully Implemented
+
+Centralized configuration management with presets, feature flags, organization settings, and team settings.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Admin views/sets configuration values | Admin |
+| Admin applies configuration preset (retail/wholesale) | Admin |
+| Admin views configuration history | Admin |
+| Admin manages organization settings | Admin |
+| Manager sets team settings | Manager |
+| User manages personal preferences | All Users |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-067: Recurring Orders
+
+**Category:** Order Management
+**Status:** Fully Implemented
+
+Recurring order templates with scheduling, pause/resume, and automatic generation.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Sales rep creates recurring order template | Sales Rep |
+| System generates orders on schedule | System |
+| Sales rep pauses recurring order | Sales Rep |
+| Sales rep resumes recurring order | Sales Rep |
+| Sales rep cancels recurring order | Sales Rep |
+| Manager views all recurring orders | Manager |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-068: Health & Diagnostics
+
+**Category:** System Infrastructure
+**Status:** Fully Implemented
+
+Health check endpoints for K8s/Docker probes, performance monitoring, and database diagnostics.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Load balancer checks service health | System |
+| K8s checks liveness/readiness probes | System |
+| Admin views detailed health diagnostics | Admin |
+| Admin views runtime metrics | Admin |
+| Admin runs database schema validation | Admin |
+| Admin views debug information | Admin |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-069: Admin Tools Suite
+
+**Category:** Administration
+**Status:** Fully Implemented
+
+Comprehensive admin tools for migrations, data augmentation, schema management, and system setup.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Admin runs database migrations | Admin |
+| Admin checks migration status | Admin |
+| Admin runs data augmentation scripts | Admin |
+| Admin imports strains in batches | Admin |
+| Admin validates schema against database | Admin |
+| Admin pushes schema changes | Admin |
+| Admin fixes user permissions | Admin |
+| Admin promotes user to admin | Admin |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+## DF-070: User Management
+
+**Category:** Administration
+**Status:** Fully Implemented
+
+User lifecycle management with creation, deletion, password reset, and role assignment.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Admin lists all users | Admin |
+| Admin creates new user | Admin |
+| Admin deletes user (soft delete) | Admin |
+| Admin resets user password | Admin |
+| User views their profile | All Users |
+| User updates their profile | All Users |
+
+### Exclusions & User-Defined Constraints
+
+_No specific exclusions noted for this module._
+
+---
+
+_End of TERP User Flow Mapping v3.1 - 100% Coverage_

@@ -1,4 +1,4 @@
-# TERP User Flow Guide (v3.0)
+# TERP User Flow Guide (v3.1)
 
 _Generated: 2026-01-15 | Source: Comprehensive codebase analysis of 123 server routers, 54 client pages, and RBAC definitions_
 
@@ -11,11 +11,13 @@ This guide documents all user flows in the TERP application, organized by busine
 - **Permission**: Required RBAC permission string (if any)
 - **Roles**: User roles that can access this flow
 
-**Statistics (v3.0):**
+**Statistics (v3.1 - 100% Coverage):**
 - Total Routers: 123 (119 main + 4 subdirectory)
 - Total Procedures: 1,414+
-- Total Domains: 18
+- Total Domains: 26
+- Total Features: 70
 - Client Routes: 54 pages, 41 defined routes
+- Documentation Coverage: 100%
 
 ### Authentication Levels
 
@@ -972,6 +974,183 @@ DRAFT → SENT → CONFIRMED → RECEIVING → RECEIVED
 
 ---
 
+## Domain 19: COGS Management
+
+### 19.1 Cost of Goods Sold
+
+| Flow | Procedure | Type | Auth | Permission | Roles |
+|------|-----------|------|------|------------|-------|
+| Get COGS Summary | `cogs.getCOGS` | query | protected | (none) | Manager, Accounting |
+| Calculate Impact | `cogs.calculateImpact` | query | protected | (none) | Manager, Accounting |
+| Update Batch COGS | `cogs.updateBatchCogs` | mutation | protected | (none) | Manager, Accounting |
+| Get History | `cogs.getHistory` | query | protected | (none) | Manager, Accounting |
+| Get COGS By Batch | `cogs.getCOGSByBatch` | query | protected | (none) | Manager, Accounting |
+
+---
+
+## Domain 20: Client Ledger
+
+### 20.1 Unified Ledger
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Get Ledger | `clientLedger.getLedger` | query | protected | (none) |
+| Get Balance As Of | `clientLedger.getBalanceAsOf` | query | protected | (none) |
+| Add Adjustment | `clientLedger.addLedgerAdjustment` | mutation | protected | (none) |
+| Export Ledger | `clientLedger.exportLedger` | query | protected | (none) |
+| Get Transaction Types | `clientLedger.getTransactionTypes` | query | protected | (none) |
+
+---
+
+## Domain 21: Bad Debt
+
+### 21.1 Write-Off Management
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Write Off | `badDebt.writeOff` | mutation | protected | accounting:manage |
+| Reverse | `badDebt.reverse` | mutation | protected | accounting:manage |
+| Get By Client | `badDebt.getByClient` | query | protected | accounting:manage |
+| Get Client Total | `badDebt.getClientTotal` | query | protected | accounting:manage |
+| Get Aging Report | `badDebt.getAgingReport` | query | protected | accounting:manage |
+
+---
+
+## Domain 22: Strains
+
+### 22.1 Strain Management
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| List Strains | `strains.list` | query | protected | inventory:read |
+| Get By ID | `strains.getById` | query | protected | inventory:read |
+| Search | `strains.search` | query | protected | inventory:read |
+| Fuzzy Search | `strains.fuzzySearch` | query | protected | inventory:read |
+| Get Family | `strains.getFamily` | query | protected | inventory:read |
+| Get Family Stats | `strains.getFamilyStats` | query | protected | inventory:read |
+| Create | `strains.create` | mutation | protected | inventory:create |
+| Get Or Create | `strains.getOrCreate` | mutation | protected | inventory:create |
+| Import OpenTHC | `strains.importOpenTHC` | mutation | protected | inventory:create |
+
+---
+
+## Domain 23: Tags
+
+### 23.1 Tag Management
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| List Tags | `tags.list` | query | public | (none) |
+| Get By ID | `tags.getById` | query | public | (none) |
+| Create Tag | `tags.create` | mutation | public | (none) |
+| Update Tag | `tags.update` | mutation | public | (none) |
+| Delete Tag | `tags.delete` | mutation | public | (none) |
+| Get Product Tags | `tags.getProductTags` | query | public | (none) |
+| Get Client Tags | `tags.getClientTags` | query | public | (none) |
+| Add Product Tags | `tags.addProductTags` | mutation | public | (none) |
+| Add Client Tags | `tags.addClientTags` | mutation | public | (none) |
+
+### 23.2 Advanced Tag Features
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Boolean Search | `advancedTagFeatures.booleanSearch` | query | public | (none) |
+| Create Hierarchy | `advancedTagFeatures.createHierarchy` | mutation | public | (none) |
+| Get Children | `advancedTagFeatures.getChildren` | query | public | (none) |
+| Merge Tags | `advancedTagFeatures.mergeTags` | mutation | public | (none) |
+| Get Usage Stats | `advancedTagFeatures.getUsageStats` | query | public | (none) |
+| Bulk Add Tags | `advancedTagFeatures.bulkAddTags` | mutation | public | (none) |
+
+---
+
+## Domain 24: Vendor Supply
+
+### 24.1 Supply Management
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Create | `vendorSupply.create` | mutation | public | (none) |
+| Get All | `vendorSupply.getAll` | query | public | (none) |
+| Get Available | `vendorSupply.getAvailable` | query | public | (none) |
+| Reserve | `vendorSupply.reserve` | mutation | public | (none) |
+| Purchase | `vendorSupply.purchase` | mutation | public | (none) |
+| Find Buyers | `vendorSupply.findBuyers` | query | public | (none) |
+| Expire Old | `vendorSupply.expireOld` | mutation | public | (none) |
+
+---
+
+## Domain 25: Health & Diagnostics
+
+### 25.1 Health Checks
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Check | `health.check` | query | public | (none) |
+| Liveness | `health.liveness` | query | public | (none) |
+| Readiness | `health.readiness` | query | public | (none) |
+| Detailed Check | `health.checkDetailed` | query | protected | (none) |
+| Metrics | `health.metrics` | query | protected | (none) |
+
+### 25.2 Debug (Development Only)
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Raw MySQL Test | `debug.rawMysqlTest` | query | public | (none) |
+| Drizzle Test | `debug.drizzleTest` | query | public | (none) |
+| Get Counts | `debug.getCounts` | query | public | (none) |
+| Check Database Schema | `debug.checkDatabaseSchema` | query | public | (none) |
+
+---
+
+## Domain 26: Admin Tools
+
+### 26.1 System Administration
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Setup Strain System | `admin.setupStrainSystem` | mutation | protected | (none) |
+| Verify Strain System | `admin.verifyStrainSystem` | query | protected | (none) |
+| Fix User Permissions | `admin.fixUserPermissions` | mutation | admin | (none) |
+| Assign Super Admin | `admin.assignSuperAdminRole` | mutation | admin | (none) |
+
+### 26.2 Migrations
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Run All Migrations | `adminMigrations.runAllMigrations` | mutation | admin | (none) |
+| Check Status | `adminMigrations.checkMigrationStatus` | query | admin | (none) |
+
+### 26.3 Data Augmentation
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Run All | `adminDataAugment.runAll` | mutation | protected | (none) |
+| Run Script | `adminDataAugment.runScript` | mutation | protected | (none) |
+| Get Status | `adminDataAugment.getStatus` | query | protected | (none) |
+
+### 26.4 Import
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Import Strains Batch | `adminImport.importStrainsBatch` | mutation | protected | (none) |
+| Get Import Progress | `adminImport.getImportProgress` | query | protected | (none) |
+
+### 26.5 Schema Management
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| Validate Schema | `adminSchema.validate` | query | protected | (none) |
+| Push Schema | `adminSchemaPush.pushSchema` | mutation | admin | (none) |
+
+### 26.6 Setup
+
+| Flow | Procedure | Type | Auth | Permission |
+|------|-----------|------|------|------------|
+| List Users | `adminSetup.listUsers` | query | public | (none) |
+| Promote To Admin | `adminSetup.promoteToAdmin` | mutation | public | (none) |
+
+---
+
 ## Known Issues & RBAC Gaps
 
 ### Permission Strings Not in RBAC Seed
@@ -1120,4 +1299,4 @@ The `vendors` router is deprecated. All vendor operations should use the `client
 
 ---
 
-_End of TERP User Flow Guide v3.0_
+_End of TERP User Flow Guide v3.1 - 100% Router Coverage_

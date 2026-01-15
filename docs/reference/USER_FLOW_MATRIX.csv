@@ -408,3 +408,103 @@ Scheduling,Hour Tracking,Clock In,Action,hourTracking.clockIn,mutation,protected
 Scheduling,Hour Tracking,Clock Out,Action,hourTracking.clockOut,mutation,protectedProcedure,(none),all,All Users,/scheduling,Clock out from shift,Client-wired,,server/routers/hourTracking.ts
 Scheduling,Hour Tracking,Get Timesheet,Report,hourTracking.getTimesheet,query,protectedProcedure,(none),all,All Users,/scheduling/timesheet,Get user timesheet,Client-wired,,server/routers/hourTracking.ts
 Scheduling,Hour Tracking,Get Hours Report,Report,hourTracking.getHoursReport,query,protectedProcedure,(none),all,Manager,/scheduling/reports,Get hours worked report,Client-wired,,server/routers/hourTracking.ts
+COGS,COGS,Get COGS Summary,Report,cogs.getCOGS,query,protectedProcedure,(none),all,"Manager, Accounting",/settings/cogs,Get COGS summary for period with revenue and margins,Client-wired,,server/routers/cogs.ts
+COGS,COGS,Calculate Impact,View/Search,cogs.calculateImpact,query,protectedProcedure,(none),all,"Manager, Accounting",/settings/cogs,Model impact of COGS changes on pending orders,Client-wired,,server/routers/cogs.ts
+COGS,COGS,Update Batch COGS,Update,cogs.updateBatchCogs,mutation,protectedProcedure,(none),all,"Manager, Accounting",/inventory/:id,Update batch COGS with audit trail,Client-wired,,server/routers/cogs.ts
+COGS,COGS,Get History,View/Search,cogs.getHistory,query,protectedProcedure,(none),all,"Manager, Accounting",/inventory/:id,Get COGS adjustment history,Client-wired,,server/routers/cogs.ts
+COGS,COGS,Get COGS By Batch,Report,cogs.getCOGSByBatch,query,protectedProcedure,(none),all,"Manager, Accounting",/reports/cogs,Get COGS breakdown by batch,Client-wired,,server/routers/cogs.ts
+Client Ledger,Ledger,Get Ledger,View/Search,clientLedger.getLedger,query,protectedProcedure,(none),all,All Users,/clients/:id/ledger,Get complete ledger with running balance,Client-wired,,server/routers/clientLedger.ts
+Client Ledger,Ledger,Get Balance As Of,View/Search,clientLedger.getBalanceAsOf,query,protectedProcedure,(none),all,All Users,/clients/:id/ledger,Calculate balance as of specific date,Client-wired,,server/routers/clientLedger.ts
+Client Ledger,Ledger,Add Adjustment,Create,clientLedger.addLedgerAdjustment,mutation,protectedProcedure,(none),all,Accounting,/clients/:id/ledger,Add manual credit/debit adjustment,Client-wired,,server/routers/clientLedger.ts
+Client Ledger,Ledger,Export Ledger,Action,clientLedger.exportLedger,query,protectedProcedure,(none),all,Manager,/clients/:id/ledger,Export ledger to CSV,Client-wired,,server/routers/clientLedger.ts
+Client Ledger,Ledger,Get Transaction Types,View/Search,clientLedger.getTransactionTypes,query,protectedProcedure,(none),all,All Users,/clients/:id/ledger,Get available transaction types,Client-wired,,server/routers/clientLedger.ts
+Bad Debt,Bad Debt,Write Off,Action,badDebt.writeOff,mutation,protectedProcedure,accounting:manage,all,Accounting,/accounting,Write off bad debt with GL entry,Client-wired,,server/routers/badDebt.ts
+Bad Debt,Bad Debt,Reverse,Action,badDebt.reverse,mutation,protectedProcedure,accounting:manage,all,Accounting,/accounting,Reverse bad debt write-off,Client-wired,,server/routers/badDebt.ts
+Bad Debt,Bad Debt,Get By Client,View/Search,badDebt.getByClient,query,protectedProcedure,accounting:manage,all,All Users,/clients/:id,Get write-offs for client,Client-wired,,server/routers/badDebt.ts
+Bad Debt,Bad Debt,Get Client Total,View/Search,badDebt.getClientTotal,query,protectedProcedure,accounting:manage,all,All Users,/clients/:id,Get total write-offs for client,Client-wired,,server/routers/badDebt.ts
+Bad Debt,Bad Debt,Get Aging Report,Report,badDebt.getAgingReport,query,protectedProcedure,accounting:manage,all,Manager,/accounting/reports,Generate bad debt aging report,Client-wired,,server/routers/badDebt.ts
+Strains,Strains,List Strains,View/Search,strains.list,query,protectedProcedure,inventory:read,all,All Users,/strains,List all strains with pagination,Client-wired,,server/routers/strains.ts
+Strains,Strains,Get By ID,View/Search,strains.getById,query,protectedProcedure,inventory:read,all,All Users,/strains/:id,Get strain by ID,Client-wired,,server/routers/strains.ts
+Strains,Strains,Search,View/Search,strains.search,query,protectedProcedure,inventory:read,all,All Users,/strains,Search strains for autocomplete,Client-wired,,server/routers/strains.ts
+Strains,Strains,Fuzzy Search,View/Search,strains.fuzzySearch,query,protectedProcedure,inventory:read,all,All Users,/strains,Fuzzy search with similarity scoring,Client-wired,,server/routers/strains.ts
+Strains,Strains,Get Family,View/Search,strains.getFamily,query,protectedProcedure,inventory:read,all,All Users,/strains/:id,Get strain family (parent + variants),Client-wired,,server/routers/strains.ts
+Strains,Strains,Create,Create,strains.create,mutation,protectedProcedure,inventory:create,all,Manager,/strains/new,Create custom strain,Client-wired,,server/routers/strains.ts
+Strains,Strains,Get Or Create,Create,strains.getOrCreate,mutation,protectedProcedure,inventory:create,all,Manager,/inventory/intake,Get or create strain with fuzzy matching,Client-wired,,server/routers/strains.ts
+Strains,Strains,Import OpenTHC,Action,strains.importOpenTHC,mutation,protectedProcedure,inventory:create,all,Admin,/admin/strains,Import strains from OpenTHC,Client-wired,,server/routers/strains.ts
+Tags,Tags,List Tags,View/Search,tags.list,query,publicProcedure,(none),all,All Users,/tags,List all tags with filtering,Client-wired,,server/routers/tags.ts
+Tags,Tags,Get By ID,View/Search,tags.getById,query,publicProcedure,(none),all,All Users,/tags/:id,Get single tag by ID,Client-wired,,server/routers/tags.ts
+Tags,Tags,Create Tag,Create,tags.create,mutation,publicProcedure,(none),all,All Users,/tags/new,Create new tag with color,Client-wired,,server/routers/tags.ts
+Tags,Tags,Update Tag,Update,tags.update,mutation,publicProcedure,(none),all,All Users,/tags/:id,Update tag,Client-wired,,server/routers/tags.ts
+Tags,Tags,Delete Tag,Delete,tags.delete,mutation,publicProcedure,(none),all,Admin,/tags/:id,Soft delete tag,Client-wired,,server/routers/tags.ts
+Tags,Tags,Get Product Tags,View/Search,tags.getProductTags,query,publicProcedure,(none),all,All Users,/products/:id,Get tags for product,Client-wired,,server/routers/tags.ts
+Tags,Tags,Get Client Tags,View/Search,tags.getClientTags,query,publicProcedure,(none),all,All Users,/clients/:id,Get tags for client,Client-wired,,server/routers/tags.ts
+Tags,Tags,Add Product Tags,Action,tags.addProductTags,mutation,publicProcedure,(none),all,All Users,/products/:id,Add tags to product,Client-wired,,server/routers/tags.ts
+Tags,Tags,Add Client Tags,Action,tags.addClientTags,mutation,publicProcedure,(none),all,All Users,/clients/:id,Add tags to client,Client-wired,,server/routers/tags.ts
+Tags,Advanced Tags,Boolean Search,View/Search,advancedTagFeatures.booleanSearch,query,publicProcedure,(none),all,All Users,/search,Boolean tag search (AND/OR),Client-wired,,server/routers/advancedTagFeatures.ts
+Tags,Advanced Tags,Create Hierarchy,Action,advancedTagFeatures.createHierarchy,mutation,publicProcedure,(none),all,Admin,/tags,Create parent-child relationship,Client-wired,,server/routers/advancedTagFeatures.ts
+Tags,Advanced Tags,Merge Tags,Action,advancedTagFeatures.mergeTags,mutation,publicProcedure,(none),all,Admin,/tags,Merge source tag into target,Client-wired,,server/routers/advancedTagFeatures.ts
+Tags,Advanced Tags,Get Usage Stats,Report,advancedTagFeatures.getUsageStats,query,publicProcedure,(none),all,Admin,/tags,Get tag usage statistics,Client-wired,,server/routers/advancedTagFeatures.ts
+Tags,Advanced Tags,Bulk Add Tags,Action,advancedTagFeatures.bulkAddTags,mutation,publicProcedure,(none),all,All Users,/products,Add tags to multiple products,Client-wired,,server/routers/advancedTagFeatures.ts
+Analytics,Analytics,Get Summary,Report,analytics.getSummary,query,protectedProcedure,analytics:read,all,Manager,/analytics,Get analytics summary,Client-wired,,server/routers/analytics.ts
+Analytics,Analytics,Get Extended Summary,Report,analytics.getExtendedSummary,query,protectedProcedure,analytics:read,all,Manager,/analytics,Extended summary with growth rates,Client-wired,,server/routers/analytics.ts
+Analytics,Analytics,Get Revenue Trends,Report,analytics.getRevenueTrends,query,protectedProcedure,analytics:read,all,Manager,/analytics,Revenue trends by granularity,Client-wired,,server/routers/analytics.ts
+Analytics,Analytics,Get Top Clients,Report,analytics.getTopClients,query,protectedProcedure,analytics:read,all,Manager,/analytics,Top clients by metric,Client-wired,,server/routers/analytics.ts
+Analytics,Analytics,Client Strain Preferences,Report,analytics.clientStrainPreferences,query,protectedProcedure,analytics:read,all,Sales Rep,/clients/:id,Client strain preferences,Client-wired,,server/routers/analytics.ts
+Analytics,Analytics,Top Strain Families,Report,analytics.topStrainFamilies,query,protectedProcedure,analytics:read,all,Manager,/analytics,Top-selling strain families,Client-wired,,server/routers/analytics.ts
+Analytics,Analytics,Export Data,Action,analytics.exportData,mutation,protectedProcedure,analytics:read,all,Manager,/analytics,Export analytics data,Client-wired,,server/routers/analytics.ts
+Vendor Supply,Vendor Supply,Create,Create,vendorSupply.create,mutation,publicProcedure,(none),all,Vendor,/vendor-supply,Create vendor supply listing,Client-wired,,server/routers/vendorSupply.ts
+Vendor Supply,Vendor Supply,Get All,View/Search,vendorSupply.getAll,query,publicProcedure,(none),all,All Users,/vendor-supply,Get all vendor supply,Client-wired,,server/routers/vendorSupply.ts
+Vendor Supply,Vendor Supply,Get Available,View/Search,vendorSupply.getAvailable,query,publicProcedure,(none),all,All Users,/vendor-supply,Get available supply items,Client-wired,,server/routers/vendorSupply.ts
+Vendor Supply,Vendor Supply,Reserve,Action,vendorSupply.reserve,mutation,publicProcedure,(none),all,Buyer,/vendor-supply/:id,Reserve supply item,Client-wired,,server/routers/vendorSupply.ts
+Vendor Supply,Vendor Supply,Purchase,Action,vendorSupply.purchase,mutation,publicProcedure,(none),all,Buyer,/vendor-supply/:id,Mark as purchased,Client-wired,,server/routers/vendorSupply.ts
+Vendor Supply,Vendor Supply,Find Buyers,View/Search,vendorSupply.findBuyers,query,publicProcedure,(none),all,All Users,/vendor-supply/:id,Find potential buyers,Client-wired,,server/routers/vendorSupply.ts
+Vendor Supply,Vendor Supply,Expire Old,Action,vendorSupply.expireOld,mutation,publicProcedure,(none),all,System,Background,Expire old listings,API-only,,server/routers/vendorSupply.ts
+Configuration,Configuration,Get Config,View/Search,configuration.get,query,protectedProcedure,settings:manage,all,Admin,/settings,Get current configuration,Client-wired,,server/routers/configuration.ts
+Configuration,Configuration,Set Value,Update,configuration.setValue,mutation,protectedProcedure,settings:manage,all,Admin,/settings,Set configuration value,Client-wired,,server/routers/configuration.ts
+Configuration,Configuration,Reset,Action,configuration.reset,mutation,protectedProcedure,settings:manage,all,Admin,/settings,Reset to defaults,Client-wired,,server/routers/configuration.ts
+Configuration,Configuration,Get History,View/Search,configuration.getHistory,query,protectedProcedure,settings:manage,all,Admin,/settings,Get change history,Client-wired,,server/routers/configuration.ts
+Configuration,Configuration,Apply Preset,Action,configuration.applyPreset,mutation,protectedProcedure,settings:manage,all,Admin,/settings,Apply preset (retail/wholesale),Client-wired,,server/routers/configuration.ts
+Configuration,Configuration,Get Feature Flags,View/Search,configuration.getFeatureFlags,query,protectedProcedure,settings:manage,all,Admin,/settings,Get feature flags,Client-wired,,server/routers/configuration.ts
+Organization,Settings,List Settings,View/Search,organizationSettings.list,query,protectedProcedure,(none),all,Admin,/settings/organization,List org settings,Client-wired,,server/routers/organizationSettings.ts
+Organization,Settings,Get By Key,View/Search,organizationSettings.getByKey,query,protectedProcedure,(none),all,All Users,/settings,Get setting by key,Client-wired,,server/routers/organizationSettings.ts
+Organization,Settings,Update Setting,Update,organizationSettings.update,mutation,protectedProcedure,(none),all,Admin,/settings/organization,Update org setting,Client-wired,,server/routers/organizationSettings.ts
+Organization,Settings,Bulk Update,Update,organizationSettings.bulkUpdate,mutation,adminProcedure,(none),all,Admin,/settings/organization,Bulk update settings,Client-wired,,server/routers/organizationSettings.ts
+Organization,Team Settings,Get Team Settings,View/Search,organizationSettings.getTeamSettings,query,protectedProcedure,(none),all,Manager,/settings/team,Get team settings,Client-wired,,server/routers/organizationSettings.ts
+Organization,Team Settings,Update Team Setting,Update,organizationSettings.updateTeamSetting,mutation,adminProcedure,(none),all,Admin,/settings/team,Update team setting,Client-wired,,server/routers/organizationSettings.ts
+Recurring Orders,Recurring,Create Recurring Order,Create,orderEnhancements.createRecurringOrder,mutation,protectedProcedure,(none),all,Sales Rep,/orders,Create recurring order template,Client-wired,,server/routers/orderEnhancements.ts
+Recurring Orders,Recurring,List For Client,View/Search,orderEnhancements.listRecurringOrdersForClient,query,protectedProcedure,(none),all,All Users,/clients/:id/orders,Get client recurring orders,Client-wired,,server/routers/orderEnhancements.ts
+Recurring Orders,Recurring,List All,View/Search,orderEnhancements.listAllRecurringOrders,query,protectedProcedure,(none),all,Manager,/orders/recurring,Get all recurring orders,Client-wired,,server/routers/orderEnhancements.ts
+Recurring Orders,Recurring,Pause Order,State Transition,orderEnhancements.pauseRecurringOrder,mutation,protectedProcedure,(none),all,Sales Rep,/orders/recurring/:id,Pause recurring order,Client-wired,,server/routers/orderEnhancements.ts
+Recurring Orders,Recurring,Resume Order,State Transition,orderEnhancements.resumeRecurringOrder,mutation,protectedProcedure,(none),all,Sales Rep,/orders/recurring/:id,Resume recurring order,Client-wired,,server/routers/orderEnhancements.ts
+Recurring Orders,Recurring,Cancel Order,State Transition,orderEnhancements.cancelRecurringOrder,mutation,protectedProcedure,(none),all,Sales Rep,/orders/recurring/:id,Cancel recurring order,Client-wired,,server/routers/orderEnhancements.ts
+Health,Health,Check,View/Search,health.check,query,publicProcedure,(none),all,System,/health,Public health status,API-only,,server/routers/health.ts
+Health,Health,Liveness,View/Search,health.liveness,query,publicProcedure,(none),all,System,/health/live,K8s liveness probe,API-only,,server/routers/health.ts
+Health,Health,Readiness,View/Search,health.readiness,query,publicProcedure,(none),all,System,/health/ready,K8s readiness probe,API-only,,server/routers/health.ts
+Health,Health,Detailed Check,View/Search,health.checkDetailed,query,protectedProcedure,(none),all,Admin,/admin/health,Full diagnostics,Client-wired,,server/routers/health.ts
+Health,Health,Metrics,Report,health.metrics,query,protectedProcedure,(none),all,Admin,/admin/metrics,Runtime metrics,Client-wired,,server/routers/health.ts
+Debug,Debug,Raw MySQL Test,View/Search,debug.rawMysqlTest,query,publicProcedure,(none),all,Admin,/admin/debug,Test raw MySQL queries,API-only,,server/routers/debug.ts
+Debug,Debug,Drizzle Test,View/Search,debug.drizzleTest,query,publicProcedure,(none),all,Admin,/admin/debug,Test Drizzle ORM,API-only,,server/routers/debug.ts
+Debug,Debug,Get Counts,View/Search,debug.getCounts,query,publicProcedure,(none),all,Admin,/admin/debug,Get table counts,API-only,,server/routers/debug.ts
+Debug,Debug,Check Database Schema,View/Search,debug.checkDatabaseSchema,query,publicProcedure,(none),all,Admin,/admin/debug,Check DB schema,API-only,,server/routers/debug.ts
+Admin Tools,Admin,Setup Strain System,Action,admin.setupStrainSystem,mutation,protectedProcedure,(none),all,Admin,/admin,Setup strain fuzzy matching,Client-wired,,server/routers/admin.ts
+Admin Tools,Admin,Verify Strain System,View/Search,admin.verifyStrainSystem,query,protectedProcedure,(none),all,Admin,/admin,Verify strain system setup,Client-wired,,server/routers/admin.ts
+Admin Tools,Admin,Fix User Permissions,Action,admin.fixUserPermissions,mutation,adminProcedure,(none),all,Admin,/admin/users,Fix user permissions,Client-wired,,server/routers/admin.ts
+Admin Tools,Admin,Assign Super Admin,Action,admin.assignSuperAdminRole,mutation,adminProcedure,(none),all,Admin,/admin/users,Assign Super Admin role,Client-wired,,server/routers/admin.ts
+Admin Tools,Migrations,Run All Migrations,Action,adminMigrations.runAllMigrations,mutation,adminProcedure,(none),all,Admin,/admin/migrations,Run pending migrations,Client-wired,,server/routers/adminMigrations.ts
+Admin Tools,Migrations,Check Status,View/Search,adminMigrations.checkMigrationStatus,query,adminProcedure,(none),all,Admin,/admin/migrations,Check migration status,Client-wired,,server/routers/adminMigrations.ts
+Admin Tools,Data Augment,Run All,Action,adminDataAugment.runAll,mutation,protectedProcedure,(none),all,Admin,/admin/data-augment,Run all augmentation scripts,Client-wired,,server/routers/adminDataAugment.ts
+Admin Tools,Data Augment,Run Script,Action,adminDataAugment.runScript,mutation,protectedProcedure,(none),all,Admin,/admin/data-augment,Run individual script,Client-wired,,server/routers/adminDataAugment.ts
+Admin Tools,Data Augment,Get Status,View/Search,adminDataAugment.getStatus,query,protectedProcedure,(none),all,Admin,/admin/data-augment,Get available scripts,Client-wired,,server/routers/adminDataAugment.ts
+Admin Tools,Import,Import Strains Batch,Action,adminImport.importStrainsBatch,mutation,protectedProcedure,(none),all,Admin,/admin/import,Import strains in batches,Client-wired,,server/routers/adminImport.ts
+Admin Tools,Import,Get Import Progress,View/Search,adminImport.getImportProgress,query,protectedProcedure,(none),all,Admin,/admin/import,Get import progress,Client-wired,,server/routers/adminImport.ts
+Admin Tools,Schema,Validate Schema,View/Search,adminSchema.validate,query,protectedProcedure,(none),all,Admin,/admin/schema,Validate schema vs database,Client-wired,,server/routers/adminSchema.ts
+Admin Tools,Schema Push,Push Schema,Action,adminSchemaPush.pushSchema,mutation,adminProcedure,(none),all,Admin,/admin/schema,Apply pending migrations,Client-wired,,server/routers/adminSchemaPush.ts
+Admin Tools,Setup,List Users,View/Search,adminSetup.listUsers,query,publicProcedure,(none),all,Admin,/admin-setup,List users for setup,Client-wired,,server/routers/adminSetup.ts
+Admin Tools,Setup,Promote To Admin,Action,adminSetup.promoteToAdmin,mutation,publicProcedure,(none),all,Admin,/admin-setup,Promote user to admin,Client-wired,,server/routers/adminSetup.ts
+User Management,Users,List Users,View/Search,userManagement.listUsers,query,strictlyProtectedProcedure,(none),all,Admin,/admin/users,List all users,Client-wired,,server/routers/userManagement.ts
+User Management,Users,Create User,Create,userManagement.createUser,mutation,strictlyProtectedProcedure,(none),all,Admin,/admin/users,Create new user,Client-wired,,server/routers/userManagement.ts
+User Management,Users,Delete User,Delete,userManagement.deleteUser,mutation,strictlyProtectedProcedure,(none),all,Admin,/admin/users,Soft delete user,Client-wired,,server/routers/userManagement.ts
+User Management,Users,Reset Password,Action,userManagement.resetPassword,mutation,strictlyProtectedProcedure,(none),all,Admin,/admin/users,Reset user password,Client-wired,,server/routers/userManagement.ts
+User Management,Auth,Me,View/Search,auth.me,query,publicProcedure,(none),all,All Users,*,Get current user,Client-wired,,server/routers/auth.ts
+User Management,Auth,Logout,Action,auth.logout,mutation,publicProcedure,(none),all,All Users,*,Logout,Client-wired,,server/routers/auth.ts
+User Management,Auth,Update Profile,Update,auth.updateProfile,mutation,strictlyProtectedProcedure,(none),all,All Users,/account,Update profile,Client-wired,,server/routers/auth.ts
