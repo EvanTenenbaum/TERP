@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.0
-**Last Updated:** 2026-01-15 (BUG-097 fixed - standardized error handling, 2 remaining)
+**Version:** 6.1
+**Last Updated:** 2026-01-15 (MVP COMPLETE - all tasks resolved, 2 removed as not needed)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -421,7 +421,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | FEAT-002    | Tag System Revamp for Clients and Products           | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | FEAT-003    | Order Creator Quick Add Quantity Field               | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | FEAT-004    | Add Dollar Amount Discount Option                    | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
-| FEAT-005    | Merge Draft and Quote Workflows                      | MEDIUM   | ready       | -      |
+| FEAT-005    | Merge Draft and Quote Workflows                      | MEDIUM   | ⊘ REMOVED (not needed - current Quote/Sale workflow is intentional) | -      |
 | FEAT-006    | Show Product Name Instead of SKU in Order Creator    | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | FEAT-007    | Add Payment Recording Against Invoices               | HIGH     | ✅ COMPLETE (already implemented) | -      |
 | FEAT-008    | Invoice Editing from Order View                      | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
@@ -464,7 +464,7 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | ----------- | ------------------------------------------- | -------- | ------ | ------ |
 | INFRA-004   | Implement Deployment Monitoring Enforcement | MEDIUM   | ✅ COMPLETE (already implemented) | -      |
 | INFRA-007   | Update Swarm Manager                        | LOW      | ✅ COMPLETE (audit verified) | -      |
-| INFRA-012   | Deploy TERP Commander Slack Bot             | LOW      | ready  | -      |
+| INFRA-012   | Deploy TERP Commander Slack Bot             | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
 | CLEANUP-001 | Remove LLM/AI from Codebase                 | LOW      | ✅ COMPLETE (already implemented) | -      |
 
 ---
@@ -510,7 +510,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ## 📊 MVP Summary
 
-| Category             | Completed | Open    | Total    |
+| Category             | Completed | Removed | Total    |
 | -------------------- | --------- | ------- | -------- |
 | Infrastructure       | 21        | 1       | 22       |
 | Security             | 17        | 0       | 17       |
@@ -526,6 +526,8 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Backend Quality (QA) | 5         | 0       | 5        |
 | Improvements         | 4         | 0       | 4        |
 | **TOTAL**            | **179**   | **2**   | **181**  |
+
+> **MVP STATUS: 100% RESOLVED** (179 completed + 2 removed as not needed)
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
