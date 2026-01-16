@@ -1,0 +1,158 @@
+# Oracle: Orders.DraftOrders.ConfirmDraftOrder
+# Confirm a draft order with payment terms
+
+flow_id: "Orders.DraftOrders.ConfirmDraftOrder"
+description: "Confirm a draft order by setting payment terms and triggering inventory/accounting"
+role: "SalesManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - draft
+  - state-transition
+  - mutation
+timeout: 60000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 20
+  create:
+    - entity: "order"
+      ref: "temp:draft_to_confirm"
+      data:
+        order_type: "SALE"
+        is_draft: true
+        client_id: "$seed:client.redwood.id"
+        order_number: "D-CONFIRM-{{timestamp}}"
+        total: "5000.00"
+        items: '[{"batchId": "$seed:batch.og_kush.id", "quantity": 5, "unitPrice": 1000, "isSample": false}]'
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Filter to show draft orders
+  - action: click
+    target: "[data-testid='filter-drafts'], [data-testid='status-filter']:has-text('Draft')"
+    wait_after: 1000
+
+  # Click on the draft order
+  - action: click
+    target: "tr:has-text('D-CONFIRM'), [data-testid='order-row']:has-text('CONFIRM'):first-of-type"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='order-id'], [data-order-id]"
+    as: "confirming_order_id"
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "confirming_order_number"
+
+  # Click confirm button
+  - action: click
+    target: "[data-testid='confirm-order-btn'], button:has-text('Confirm Order')"
+    wait_after: 500
+
+  # Fill in payment terms modal
+  - action: wait
+    for: "[data-testid='confirm-modal'], .modal, [role='dialog']"
+    timeout: 5000
+
+  - action: select
+    target: "[data-testid='payment-terms-select'], select[name='paymentTerms']"
+    value: "NET_30"
+
+  - action: type
+    target: "[data-testid='cash-payment-input'], input[name='cashPayment']"
+    value: "1000"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='confirm-notes'], textarea[name='notes']"
+    value: "Confirmed via E2E test"
+
+  - action: click
+    target: "[data-testid='submit-confirm'], button:has-text('Confirm')"
+    wait_after: 2000
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "draft_order_confirmed"
+
+expected_ui:
+  visible:
+    - "[data-testid='order-detail'], .order-detail"
+  not_visible:
+    - "[data-testid='draft-badge'], .draft-indicator"
+  text_present:
+    - "PENDING"
+    - "Confirmed"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.confirming_order_number"
+      expect:
+        is_draft: false
+        sale_status_in: ["PENDING", "PARTIAL"]
+        fulfillment_status: "PENDING"
+        payment_terms: "NET_30"
+        cash_payment: "1000"
+        confirmed_at_not_null: true
+        due_date_not_null: true
+      store_as: "confirmed_order"
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        # Inventory should be decremented
+        on_hand_qty_lte: 95
+
+  invoices:
+    - where:
+        order_id: "$confirmed_order.id"
+      expect:
+        client_id: "$seed:client.redwood.id"
+        total_not_null: true
+      count_gte: 1
+
+  invariants:
+    - name: "Inventory decremented by order quantity"
+      query: |
+        SELECT
+          b.on_hand_qty,
+          (SELECT SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(item.value, '$.quantity')) AS DECIMAL))
+           FROM orders o, JSON_TABLE(o.items, '$[*]' COLUMNS (value JSON PATH '$')) as item
+           WHERE o.id = $confirmed_order.id) as ordered_qty
+        FROM batches b
+        WHERE b.id = $seed:batch.og_kush.id
+      assert: "on_hand_qty <= 100 - ordered_qty"
+
+    - name: "Invoice created for confirmed order"
+      query: |
+        SELECT COUNT(*) as invoice_count
+        FROM invoices
+        WHERE order_id = $confirmed_order.id
+      assert: "invoice_count >= 1"

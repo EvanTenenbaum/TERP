@@ -1,0 +1,120 @@
+# CRM.Clients.Tags.Add Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Tags.Add"
+description: "Add a tag to a client, verifying idempotent behavior and activity logging"
+role: "SalesManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - tags
+  - mutation
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.sales_manager"
+      where:
+        email: "qa.salesmanager@terp.test"
+        status: "active"
+    - entity: "client"
+      ref: "seed:client.test_buyer"
+      where:
+        deleted_at_null: true
+        is_buyer: true
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "seed:client.test_buyer.teri_code"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='client-row']"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='client-row']:first-child"
+    wait_for_navigation: true
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "client_id"
+
+  - action: click
+    target: "[data-testid='tags-section']"
+    wait_for: "[data-testid='tags-list']"
+
+  - action: click
+    target: "[data-testid='add-tag-btn']"
+    wait_for: "[data-testid='tag-input']"
+
+  - action: type
+    target: "[data-testid='tag-input']"
+    value: "VIP-{{random:4}}"
+    clear_first: true
+
+  - action: store
+    from: "[data-testid='tag-input']"
+    as: "new_tag"
+
+  - action: click
+    target: "[data-testid='save-tag-btn']"
+    wait_for: "[data-testid='success-message']"
+
+  - action: wait
+    duration: 1000
+
+  - action: screenshot
+    name: "tag_added"
+
+  # Verify tag appears in list
+  - action: assert
+    text_contains: "$stored.new_tag"
+
+expected_ui:
+  visible:
+    - "[data-testid='tags-list']"
+    - "[data-testid='success-message']"
+  not_visible:
+    - "[data-testid='tag-input']"
+    - ".error-message"
+  text_present:
+    - "Tag added"
+
+expected_db:
+  clients:
+    - where:
+        id: "$stored.client_id"
+      expect:
+        tags_contains: "$stored.new_tag"
+      store_as: "tagged_client"
+
+  client_activity:
+    - where:
+        client_id: "$stored.client_id"
+        activity_type: "TAG_ADDED"
+      expect:
+        metadata_contains: "$stored.new_tag"
+      count_gte: 1
+
+  invariants:
+    - name: "Tag added to JSON array"
+      query: |
+        SELECT JSON_CONTAINS(tags, CONCAT('"', '$stored.new_tag', '"')) as has_tag
+        FROM clients WHERE id = $stored.client_id
+      assert: "has_tag = 1"
+
+    - name: "Tag appears in global tag list"
+      query: |
+        SELECT COUNT(*) as cnt FROM clients
+        WHERE JSON_CONTAINS(tags, CONCAT('"', '$stored.new_tag', '"'))
+        AND deleted_at IS NULL
+      assert: "cnt >= 1"

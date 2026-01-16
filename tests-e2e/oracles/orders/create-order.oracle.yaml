@@ -1,0 +1,128 @@
+# Oracle: Orders.Orders.Create
+# Create a new order (basic version)
+
+flow_id: "Orders.Orders.Create"
+description: "Create a new order with line items using the basic create mutation"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - crud
+  - mutation
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+        is_buyer: true
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 10
+
+steps:
+  - action: navigate
+    path: "/orders/new"
+    wait_for: "[data-testid='order-form'], [data-testid='order-creator'], form"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: select
+    target: "[data-testid='client-select'], [data-testid='client-dropdown'], select[name='clientId']"
+    value_ref: "seed:client.redwood.name"
+    type_to_search: true
+
+  - action: wait
+    duration: 500
+
+  - action: select
+    target: "[data-testid='order-type-select'], select[name='orderType']"
+    value: "SALE"
+
+  - action: click
+    target: "[data-testid='add-line-item'], [data-testid='add-item-btn'], button:has-text('Add Item')"
+    wait_after: 500
+
+  - action: select
+    target: "[data-testid='batch-select'], [data-testid='product-select']"
+    value_ref: "seed:batch.og_kush.display_name"
+    type_to_search: true
+
+  - action: type
+    target: "input[name='quantity'], [data-testid='quantity-input']"
+    value: "5"
+    clear_first: true
+
+  - action: type
+    target: "input[name='unitPrice'], [data-testid='unit-price-input']"
+    value: "1000"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='line-total'], .line-total"
+    timeout: 5000
+
+  - action: select
+    target: "[data-testid='payment-terms-select'], select[name='paymentTerms']"
+    value: "NET_30"
+
+  - action: click
+    target: "[data-testid='submit-order'], [data-testid='create-order-btn'], button[type='submit']:has-text('Create')"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "created_order_number"
+
+  - action: screenshot
+    name: "order_created"
+
+expected_ui:
+  url_contains: "/orders"
+  visible:
+    - "[data-testid='order-detail'], [data-testid='order-confirmation'], .order-detail"
+  text_present:
+    - "Order"
+    - "SALE"
+  fields:
+    "[data-testid='order-type'], .order-type": "SALE"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.created_order_number"
+      expect:
+        order_type: "SALE"
+        client_id: "$seed:client.redwood.id"
+        is_draft: false
+        sale_status: "PENDING"
+        fulfillment_status: "PENDING"
+        payment_terms: "NET_30"
+      store_as: "created_order"
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        on_hand_qty_lte: 95
+
+  invariants:
+    - name: "Order total matches line items"
+      query: |
+        SELECT
+          o.total,
+          (SELECT SUM(line_total) FROM order_line_items WHERE order_id = o.id) as line_sum
+        FROM orders o
+        WHERE o.id = $created_order.id
+      assert: "total = line_sum OR line_sum IS NULL"

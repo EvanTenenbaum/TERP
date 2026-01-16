@@ -1,0 +1,128 @@
+# Oracle: Orders.DraftOrders.FinalizeDraft
+# Finalize a draft order (lock it as non-draft)
+
+flow_id: "Orders.DraftOrders.FinalizeDraft"
+description: "Finalize a draft order, locking it for editing and setting confirmedAt"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - draft
+  - state-transition
+  - mutation
+timeout: 60000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 10
+  create:
+    - entity: "order"
+      ref: "temp:draft_to_finalize"
+      data:
+        order_type: "SALE"
+        is_draft: true
+        client_id: "$seed:client.redwood.id"
+        order_number: "D-FINALIZE-{{timestamp}}"
+        total: "3000.00"
+        version: 1
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Filter to show draft orders
+  - action: click
+    target: "[data-testid='filter-drafts'], [data-testid='status-filter']:has-text('Draft')"
+    wait_after: 1000
+
+  # Click on the draft order to finalize
+  - action: click
+    target: "tr:has-text('D-FINALIZE'), [data-testid='order-row']:has-text('FINALIZE'):first-of-type"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "finalizing_order_number"
+
+  - action: store
+    from: "[data-testid='order-version'], [data-version]"
+    as: "initial_version"
+
+  # Click finalize button
+  - action: click
+    target: "[data-testid='finalize-btn'], button:has-text('Finalize')"
+    wait_after: 500
+
+  # Confirm in modal if present
+  - action: wait
+    for: "[data-testid='finalize-modal'], .modal, [role='dialog']"
+    timeout: 3000
+
+  - action: click
+    target: "[data-testid='confirm-finalize'], button:has-text('Finalize'), button:has-text('Confirm')"
+    wait_after: 2000
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "draft_order_finalized"
+
+expected_ui:
+  visible:
+    - "[data-testid='order-detail'], .order-detail"
+  not_visible:
+    - "[data-testid='draft-badge'], .draft-indicator"
+    - "[data-testid='edit-order-btn']"
+  text_present:
+    - "Finalized"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.finalizing_order_number"
+      expect:
+        is_draft: false
+        confirmed_at_not_null: true
+      store_as: "finalized_order"
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        # Finalize does NOT decrement inventory (only confirm does)
+        on_hand_qty_gte: 90
+
+  invariants:
+    - name: "Version incremented after finalize"
+      query: |
+        SELECT version
+        FROM orders
+        WHERE id = $finalized_order.id
+      assert: "version >= $stored.initial_version"
+
+    - name: "Order marked as non-draft"
+      query: |
+        SELECT is_draft, confirmed_at
+        FROM orders
+        WHERE id = $finalized_order.id
+      assert: "is_draft = 0 AND confirmed_at IS NOT NULL"

@@ -1,0 +1,73 @@
+# Oracle: Accounting.Invoices.CheckOverdue
+# Batch process to mark overdue invoices (typically scheduled job)
+
+flow_id: "Accounting.Invoices.CheckOverdue"
+description: "Execute overdue check to transition past-due invoices to OVERDUE status"
+role: "AccountingManager"
+seed_profile: "basic_sales"
+tags:
+  - tier2
+  - accounting
+  - invoices
+  - batch-process
+  - scheduled
+  - mutation
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "invoice"
+      ref: "seed:invoice.past_due"
+      where:
+        status_in: ["SENT", "VIEWED", "PARTIAL"]
+        due_date_lt: "{{date:today}}"
+        deletedAt_null: true
+
+  # Note: This flow is typically API-only/scheduled
+  # For E2E testing, we use admin tools or direct API call
+
+steps:
+  # Navigate to accounting dashboard where overdue check can be triggered
+  - action: navigate
+    path: "/accounting/dashboard"
+    wait_for: "[data-testid='accounting-dashboard'], main"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Look for manual trigger button (admin feature)
+  - action: click
+    target: "[data-testid='check-overdue-btn'], button:contains('Check Overdue'), [data-testid='run-overdue-check']"
+    wait_after: 3000
+
+  - action: wait
+    for: "[data-testid='overdue-complete'], .success-toast"
+    timeout: 15000
+
+  - action: screenshot
+    name: "overdue_check_completed"
+
+expected_ui:
+  visible:
+    - "[data-testid='accounting-dashboard'], main"
+  text_present:
+    - "overdue"
+
+expected_db:
+  invoices:
+    - where:
+        id: "$seed:invoice.past_due.id"
+      expect:
+        status: "OVERDUE"
+
+  # Verify other non-overdue invoices were not affected
+  invariants:
+    - name: "Only past-due invoices marked overdue"
+      query: |
+        SELECT COUNT(*) as count
+        FROM invoices
+        WHERE status = 'OVERDUE'
+        AND due_date >= CURDATE()
+        AND deleted_at IS NULL
+      assert: "count = 0"

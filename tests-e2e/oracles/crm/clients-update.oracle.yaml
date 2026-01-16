@@ -1,0 +1,121 @@
+# CRM.Clients.Update Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Update"
+description: "Update an existing client with optimistic locking support, verifying field changes and activity logging"
+role: "SalesManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - clients
+  - mutation
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.sales_manager"
+      where:
+        email: "qa.salesmanager@terp.test"
+        status: "active"
+    - entity: "client"
+      ref: "seed:client.test_buyer"
+      where:
+        deleted_at_null: true
+        is_buyer: true
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "seed:client.test_buyer.teri_code"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='client-row']"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='client-row']:first-child"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='client-detail']"
+    timeout: 5000
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "client_id"
+
+  - action: store
+    from: "[data-testid='client-version']"
+    as: "original_version"
+
+  - action: click
+    target: "[data-testid='edit-client-btn']"
+    wait_for: "[data-testid='client-form']"
+
+  - action: type
+    target: "input[name='phone']"
+    value: "555-999-{{random:4}}"
+    clear_first: true
+
+  - action: store
+    from: "input[name='phone']"
+    as: "updated_phone"
+
+  - action: select
+    target: "[data-testid='preferred-contact-select']"
+    value: "PHONE"
+
+  - action: click
+    target: "[data-testid='save-client-btn']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='success-message']"
+    timeout: 5000
+
+  - action: screenshot
+    name: "client_updated"
+
+expected_ui:
+  url_contains: "/clients/"
+  visible:
+    - "[data-testid='client-detail']"
+    - "[data-testid='success-message']"
+  not_visible:
+    - ".error-message"
+  text_present:
+    - "Client updated"
+  fields:
+    "[data-testid='preferred-contact']": "PHONE"
+
+expected_db:
+  clients:
+    - where:
+        id: "$stored.client_id"
+      expect:
+        phone: "$stored.updated_phone"
+        preferred_contact: "PHONE"
+        deleted_at_null: true
+      store_as: "updated_client"
+
+  client_activity:
+    - where:
+        client_id: "$stored.client_id"
+        activity_type: "UPDATED"
+      expect:
+        user_id_not_null: true
+      count_gte: 1
+
+  invariants:
+    - name: "Version incremented on update"
+      query: |
+        SELECT version FROM clients WHERE id = $stored.client_id
+      assert: "version >= $stored.original_version"

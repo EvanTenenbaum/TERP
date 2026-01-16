@@ -1,0 +1,80 @@
+# Oracle: Accounting.Invoices.UpdateStatus
+# Update invoice status through the allowed lifecycle transitions
+
+flow_id: "Accounting.Invoices.UpdateStatus"
+description: "Update invoice status from DRAFT to SENT and verify state transition"
+role: "AccountingManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - accounting
+  - invoices
+  - state-transition
+  - mutation
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "invoice"
+      ref: "seed:invoice.draft"
+      where:
+        status: "DRAFT"
+        deletedAt_null: true
+
+steps:
+  - action: navigate
+    path: "/accounting/invoices"
+    wait_for: "[data-testid='invoices-table'], table, main"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='invoice-row-{{seed:invoice.draft.id}}'], tr[data-invoice-id='{{seed:invoice.draft.id}}']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='invoice-detail'], .invoice-detail"
+    timeout: 10000
+
+  - action: assert
+    text_contains: "DRAFT"
+
+  - action: click
+    target: "[data-testid='status-dropdown'], [data-testid='update-status-btn'], select[name='status']"
+    wait_after: 500
+
+  - action: select
+    target: "[data-testid='status-select'], select[name='status']"
+    value: "SENT"
+
+  - action: type
+    target: "[data-testid='status-notes'], textarea[name='notes'], input[name='notes']"
+    value: "Invoice sent to client via email"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='confirm-status-btn'], button:contains('Update'), button[type='submit']"
+    wait_after: 2000
+
+  - action: wait
+    for: "[data-testid='status-success'], .success-toast"
+    timeout: 10000
+
+  - action: screenshot
+    name: "invoice_status_updated_to_sent"
+
+expected_ui:
+  visible:
+    - "[data-testid='invoice-detail'], main"
+  text_present:
+    - "SENT"
+
+expected_db:
+  invoices:
+    - where:
+        id: "$seed:invoice.draft.id"
+      expect:
+        status: "SENT"
+        notes_like: "%Status Update%"

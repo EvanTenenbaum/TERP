@@ -1,0 +1,63 @@
+# Oracle: Accounting.Invoices.MarkSent
+# Quick action to mark invoice as sent
+
+flow_id: "Accounting.Invoices.MarkSent"
+description: "Mark a DRAFT invoice as SENT using the quick action button"
+role: "AccountingManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - accounting
+  - invoices
+  - quick-action
+  - mutation
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "invoice"
+      ref: "seed:invoice.draft_for_send"
+      where:
+        status: "DRAFT"
+        deletedAt_null: true
+
+steps:
+  - action: navigate
+    path: "/accounting/invoices"
+    wait_for: "[data-testid='invoices-table'], table, main"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='invoice-row-{{seed:invoice.draft_for_send.id}}'], tr[data-invoice-id='{{seed:invoice.draft_for_send.id}}']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='invoice-detail'], .invoice-detail"
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='mark-sent-btn'], button:contains('Mark Sent'), button:contains('Send')"
+    wait_after: 2000
+
+  - action: wait
+    for: "[data-testid='sent-success'], .success-toast, .toast-success"
+    timeout: 10000
+
+  - action: screenshot
+    name: "invoice_marked_sent"
+
+expected_ui:
+  visible:
+    - "[data-testid='invoice-detail'], main"
+  text_present:
+    - "SENT"
+
+expected_db:
+  invoices:
+    - where:
+        id: "$seed:invoice.draft_for_send.id"
+      expect:
+        status: "SENT"

@@ -1,0 +1,122 @@
+# Oracle: Inventory.Movements.AdjustInventory
+# Adjust inventory quantity with categorized reason
+
+flow_id: "Inventory.Movements.AdjustInventory"
+description: "Adjust inventory quantity with categorized adjustment reason for shrinkage tracking"
+role: "InventoryManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - inventory
+  - mutation
+  - movements
+  - shrinkage
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        batchStatus: "LIVE"
+        onHandQty_gte: 100
+    - entity: "user"
+      ref: "seed:user.inventory_manager"
+      where:
+        permissions_include: "inventory:update"
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "[data-testid='inventory-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: click
+    target: "tr:has-text('OG Kush'), [data-testid='batch-row']:first-child"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='batch-detail'], .batch-detail-panel"
+    timeout: 5000
+
+  - action: store
+    from: "[data-testid='current-qty'], [data-testid='on-hand-qty']"
+    as: "original_qty"
+
+  - action: click
+    target: "[data-testid='adjust-qty-btn'], button:has-text('Adjust'), button:has-text('Adjustment')"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='adjust-form'], form, .adjustment-modal"
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='new-qty-input'], input[name='newQuantity']"
+    value: "95"
+    clear_first: true
+
+  - action: select
+    target: "[data-testid='adjustment-reason-select'], select[name='adjustmentReason']"
+    value: "COUNT_DISCREPANCY"
+
+  - action: type
+    target: "[data-testid='reason-input'], textarea[name='reason'], input[name='reason']"
+    value: "Physical count revealed 5 unit discrepancy during weekly audit"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='notes-input'], textarea[name='notes']"
+    value: "Counted by John Doe, verified by Jane Smith"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='submit-adjustment'], button[type='submit'], button:has-text('Adjust')"
+    wait_after: 1000
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: screenshot
+    name: "inventory_adjusted"
+
+expected_ui:
+  visible:
+    - "[data-testid='success-toast'], .toast-success"
+  text_present:
+    - "adjusted"
+    - "95"
+  not_visible:
+    - "[data-testid='error-message']"
+
+expected_db:
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        onHandQty: "95"
+      store_as: "adjusted_batch"
+
+  inventory_movements:
+    - where:
+        batchId: "$seed:batch.og_kush.id"
+        inventoryMovementType: "ADJUSTMENT"
+        adjustmentReason: "COUNT_DISCREPANCY"
+      expect:
+        quantityChange: "-5"
+        notes_contains: "weekly audit"
+        performedBy_not_null: true
+      count_gte: 1
+
+  invariants:
+    - name: "Adjustment reason categorized"
+      query: |
+        SELECT COUNT(*) as count FROM inventory_movements
+        WHERE batchId = $seed:batch.og_kush.id
+          AND inventoryMovementType = 'ADJUSTMENT'
+          AND adjustmentReason IN ('DAMAGED', 'EXPIRED', 'LOST', 'THEFT', 'COUNT_DISCREPANCY', 'QUALITY_ISSUE', 'REWEIGH', 'OTHER')
+      assert: "count >= 1"

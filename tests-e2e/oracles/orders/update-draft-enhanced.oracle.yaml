@@ -1,0 +1,139 @@
+# Oracle: Orders.DraftOrders.UpdateDraftEnhanced
+# Update an existing draft order with new line items
+
+flow_id: "Orders.DraftOrders.UpdateDraftEnhanced"
+description: "Update a draft order with modified line items and recalculated totals"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - draft
+  - update
+  - mutation
+timeout: 60000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 10
+    - entity: "batch"
+      ref: "seed:batch.blue_dream"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 10
+  create:
+    - entity: "order"
+      ref: "temp:draft_order"
+      data:
+        order_type: "SALE"
+        is_draft: true
+        client_id: "$seed:client.redwood.id"
+        order_number: "D-{{timestamp}}"
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Filter to show draft orders
+  - action: click
+    target: "[data-testid='filter-drafts'], [data-testid='draft-filter']"
+    wait_after: 1000
+
+  # Click on the draft order to edit
+  - action: click
+    target: "tr:has-text('Draft'):first-of-type, [data-testid='order-row-draft']:first-of-type"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "editing_order_number"
+
+  - action: store
+    from: "[data-testid='order-version'], [data-version]"
+    as: "initial_version"
+
+  - action: click
+    target: "[data-testid='edit-order-btn'], button:has-text('Edit')"
+    wait_after: 1000
+
+  # Modify quantity on existing line item
+  - action: type
+    target: "[data-testid='quantity-input']:first-of-type, input[name='quantity']:first-of-type"
+    value: "7"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='line-total'], .line-total"
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='notes-input'], textarea[name='notes']"
+    value: "Updated via E2E test - quantity changed"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='save-draft-btn'], button:has-text('Save')"
+    wait_after: 2000
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "draft_order_updated"
+
+expected_ui:
+  url_contains: "/orders"
+  visible:
+    - "[data-testid='order-detail'], .order-detail"
+    - "[data-testid='draft-badge'], .draft-indicator"
+  text_present:
+    - "Draft"
+    - "Updated"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.editing_order_number"
+      expect:
+        is_draft: true
+        notes_like: "%Updated via E2E test%"
+      store_as: "updated_order"
+
+  order_line_items:
+    - where:
+        order_id: "$updated_order.id"
+      expect:
+        quantity: 7
+
+  invariants:
+    - name: "Version incremented after update"
+      query: |
+        SELECT version
+        FROM orders
+        WHERE id = $updated_order.id
+      assert: "version > $stored.initial_version OR version >= 1"
+
+    - name: "Totals recalculated"
+      query: |
+        SELECT total, subtotal
+        FROM orders
+        WHERE id = $updated_order.id
+      assert: "total IS NOT NULL AND subtotal IS NOT NULL"

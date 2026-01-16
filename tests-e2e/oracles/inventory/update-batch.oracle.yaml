@@ -1,0 +1,99 @@
+# Oracle: Inventory.Batches.UpdateBatch
+# Update an existing batch's COGS and notes
+
+flow_id: "Inventory.Batches.UpdateBatch"
+description: "Update batch COGS (ticket) and notes with optimistic locking verification"
+role: "InventoryManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - inventory
+  - mutation
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        batchStatus: "LIVE"
+    - entity: "user"
+      ref: "seed:user.inventory_manager"
+      where:
+        permissions_include: "inventory:update"
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "[data-testid='inventory-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: click
+    target: "tr:has-text('OG Kush'), [data-testid='batch-row']:first-child"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='batch-detail'], .batch-detail-panel"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='edit-batch-btn'], button:has-text('Edit')"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='batch-edit-form'], form"
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='ticket-input'], input[name='ticket'], input[name='unitCogs']"
+    value: "550"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='notes-input'], textarea[name='notes']"
+    value: "Updated COGS for Q1 pricing adjustment"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='reason-input'], input[name='reason'], textarea[name='reason']"
+    value: "Q1 pricing review"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='save-btn'], button:has-text('Save'), button[type='submit']"
+    wait_after: 1000
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: screenshot
+    name: "batch_updated"
+
+expected_ui:
+  visible:
+    - "[data-testid='success-toast'], .toast-success"
+  text_present:
+    - "updated"
+  not_visible:
+    - "[data-testid='error-message'], .error"
+
+expected_db:
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        unitCogs: "550.00"
+      store_as: "updated_batch"
+
+  audit_logs:
+    - where:
+        entity: "Batch"
+        entityId: "$seed:batch.og_kush.id"
+        action: "BATCH_UPDATE"
+      expect:
+        reason_contains: "Q1"
+      count_gte: 1

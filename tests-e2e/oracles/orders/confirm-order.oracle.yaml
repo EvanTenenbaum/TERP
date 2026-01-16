@@ -1,0 +1,136 @@
+# Oracle: Orders.Fulfillment.ConfirmOrder
+# Confirm a pending SALE order (fulfillment workflow)
+
+flow_id: "Orders.Fulfillment.ConfirmOrder"
+description: "Confirm a pending SALE order, validating inventory availability"
+role: "Fulfillment"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - fulfillment
+  - state-transition
+  - mutation
+timeout: 60000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 20
+  create:
+    - entity: "order"
+      ref: "temp:order_to_confirm"
+      data:
+        order_type: "SALE"
+        is_draft: false
+        client_id: "$seed:client.redwood.id"
+        order_number: "S-CONFIRM-{{timestamp}}"
+        sale_status: "PENDING"
+        fulfillment_status: "PENDING"
+        total: "5000.00"
+        items: '[{"batchId": "$seed:batch.og_kush.id", "quantity": 5, "unitPrice": 1000, "isSample": false}]'
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Filter to show pending orders
+  - action: click
+    target: "[data-testid='filter-pending'], [data-testid='status-filter']:has-text('Pending')"
+    wait_after: 1000
+
+  # Click on the pending order
+  - action: click
+    target: "tr:has-text('S-CONFIRM'), [data-testid='order-row']:has-text('PENDING'):first-of-type"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='order-id'], [data-order-id]"
+    as: "confirming_order_id"
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "confirming_order_number"
+
+  - action: assert
+    text_contains: "PENDING"
+
+  # Click confirm button in fulfillment context
+  - action: click
+    target: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment'), button:has-text('Confirm')"
+    wait_after: 500
+
+  # Add confirmation notes if modal appears
+  - action: wait
+    for: "[data-testid='confirm-modal'], .modal, [role='dialog']"
+    timeout: 3000
+
+  - action: type
+    target: "[data-testid='confirm-notes'], textarea[name='notes']"
+    value: "Confirmed for fulfillment via E2E test"
+
+  - action: click
+    target: "[data-testid='submit-confirm'], button:has-text('Confirm')"
+    wait_after: 2000
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "order_confirmed_for_fulfillment"
+
+expected_ui:
+  visible:
+    - "[data-testid='order-detail'], .order-detail"
+  text_present:
+    - "Confirmed"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.confirming_order_number"
+      expect:
+        order_type: "SALE"
+        is_draft: false
+        confirmed_at_not_null: true
+        notes_like: "%Confirmed%"
+      store_as: "confirmed_order"
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        # confirmOrder validates but does NOT decrement inventory
+        on_hand_qty_gte: 15
+
+  invariants:
+    - name: "Order confirmed timestamp set"
+      query: |
+        SELECT confirmed_at
+        FROM orders
+        WHERE id = $confirmed_order.id
+      assert: "confirmed_at IS NOT NULL"
+
+    - name: "Inventory verified but not decremented"
+      query: |
+        SELECT on_hand_qty
+        FROM batches
+        WHERE id = $seed:batch.og_kush.id
+      assert: "on_hand_qty >= 15"

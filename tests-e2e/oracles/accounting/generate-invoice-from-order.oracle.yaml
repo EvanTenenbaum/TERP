@@ -1,0 +1,94 @@
+# Oracle: Accounting.Invoices.GenerateFromOrder
+# Generate an invoice from a completed SALE order
+
+flow_id: "Accounting.Invoices.GenerateFromOrder"
+description: "Generate an invoice from a SALE order in SHIPPED status and verify invoice creation"
+role: "AccountingManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - accounting
+  - invoices
+  - mutation
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "order"
+      ref: "seed:order.shipped_sale"
+      where:
+        orderType: "SALE"
+        fulfillmentStatus: "SHIPPED"
+        invoiceId_null: true
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table, main"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='order-row-{{seed:order.shipped_sale.id}}'], tr[data-order-id='{{seed:order.shipped_sale.id}}']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='order-detail'], .order-detail"
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='generate-invoice-btn'], button:contains('Generate Invoice')"
+    wait_after: 2000
+
+  - action: wait
+    for: "[data-testid='invoice-success'], .success-toast, .toast-success"
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='invoice-number'], .invoice-number"
+    as: "generated_invoice_number"
+
+  - action: screenshot
+    name: "invoice_generated_from_order"
+
+expected_ui:
+  visible:
+    - "[data-testid='invoice-success'], .success-message, .toast"
+  text_present:
+    - "Invoice"
+    - "generated"
+
+expected_db:
+  invoices:
+    - where:
+        referenceType: "ORDER"
+        referenceId: "$seed:order.shipped_sale.id"
+      expect:
+        status: "DRAFT"
+        customerId: "$seed:order.shipped_sale.clientId"
+        referenceType: "ORDER"
+        deletedAt_null: true
+      store_as: "created_invoice"
+
+  orders:
+    - where:
+        id: "$seed:order.shipped_sale.id"
+      expect:
+        invoiceId_not_null: true
+
+  invariants:
+    - name: "Invoice total matches order total"
+      query: |
+        SELECT
+          i.totalAmount as invoice_total,
+          o.total as order_total
+        FROM invoices i
+        JOIN orders o ON i.referenceId = o.id
+        WHERE i.id = $created_invoice.id
+      assert: "invoice_total = order_total"

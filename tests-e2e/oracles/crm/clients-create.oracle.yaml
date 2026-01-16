@@ -1,0 +1,122 @@
+# CRM.Clients.Create Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Create"
+description: "Create a new client with required TERI code and name, validating unique constraint and proper data storage"
+role: "SalesManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - clients
+  - mutation
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.sales_manager"
+      where:
+        email: "qa.salesmanager@terp.test"
+        status: "active"
+  feature_flags: []
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: click
+    target: "[data-testid='create-client-btn']"
+    wait_for: "[data-testid='client-form']"
+
+  - action: type
+    target: "input[name='teriCode']"
+    value: "TEST{{random:6}}"
+    clear_first: true
+
+  - action: store
+    from: "input[name='teriCode']"
+    as: "created_teri_code"
+
+  - action: type
+    target: "input[name='name']"
+    value: "Test Client {{timestamp}}"
+    clear_first: true
+
+  - action: type
+    target: "input[name='email']"
+    value: "testclient{{random:4}}@example.com"
+    clear_first: true
+
+  - action: type
+    target: "input[name='phone']"
+    value: "555-123-4567"
+    clear_first: true
+
+  - action: select
+    target: "[data-testid='business-type-select']"
+    value: "WHOLESALE"
+
+  - action: click
+    target: "input[name='isBuyer']"
+    wait_after: 100
+
+  - action: click
+    target: "[data-testid='save-client-btn']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='client-detail']"
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "created_client_id"
+
+  - action: screenshot
+    name: "client_created"
+
+expected_ui:
+  url_contains: "/clients/"
+  visible:
+    - "[data-testid='client-detail']"
+    - "[data-testid='success-message']"
+  not_visible:
+    - ".error-message"
+    - "[data-testid='loading-spinner']"
+  text_present:
+    - "Client created"
+  fields:
+    "[data-testid='business-type']": "WHOLESALE"
+    "[data-testid='is-buyer']": "true"
+
+expected_db:
+  clients:
+    - where:
+        teri_code: "$stored.created_teri_code"
+      expect:
+        deleted_at_null: true
+        is_buyer: true
+        business_type: "WHOLESALE"
+        total_spent: "0.00"
+        total_owed: "0.00"
+      store_as: "created_client"
+
+  client_activity:
+    - where:
+        client_id: "$created_client.id"
+        activity_type: "CREATED"
+      expect:
+        user_id_not_null: true
+      count: 1
+
+  invariants:
+    - name: "TERI code is unique"
+      query: |
+        SELECT COUNT(*) as cnt FROM clients
+        WHERE teri_code = '$stored.created_teri_code'
+        AND deleted_at IS NULL
+      assert: "cnt = 1"
