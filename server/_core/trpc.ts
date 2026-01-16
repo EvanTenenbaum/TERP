@@ -177,16 +177,29 @@ const requireUser = t.middleware(async opts => {
 
   // Log warning if public user is being used for mutations
   // Reject public/demo user for mutations to prevent unauthorized writes
+  // EXCEPTION: Allow demo users with Super Admin role to perform mutations
   const isDemo = isPublicDemoUser(user);
   if (type === "mutation" && isDemo) {
-    logger.warn({
-      msg: "SECURITY: Public demo user attempted mutation - rejecting",
+    // Check if demo user has Super Admin role - if so, allow mutations
+    const { isSuperAdmin } = await import("../services/permissionService");
+    const isSA = await isSuperAdmin(user.openId);
+
+    if (!isSA) {
+      logger.warn({
+        msg: "SECURITY: Public demo user attempted mutation - rejecting (not Super Admin)",
+        url: ctx.req.url,
+        type,
+      });
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: UNAUTHED_ERR_MSG,
+      });
+    }
+
+    logger.info({
+      msg: "protectedProcedure: Allowing demo user mutation (Super Admin)",
       url: ctx.req.url,
-      type,
-    });
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: UNAUTHED_ERR_MSG,
+      userId: user.id,
     });
   }
 
