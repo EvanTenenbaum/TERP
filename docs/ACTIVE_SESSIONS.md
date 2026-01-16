@@ -5,10 +5,12 @@
 **Source:** `docs/sessions/active/*.md`
 ---
 ## 🟢 Currently Working
-| Session ID                             | Task           | Branch | Module        | Status      | Started    | ETA |
-| -------------------------------------- | -------------- | ------ | ------------- | ----------- | ---------- | --- |
-| Session-20260115-DOCS-USERFLOWS-d5ea18 | DOCS-USERFLOWS | -      | Documentation | In Progress | 2026-01-15 | -   |
-| Session-20260114-QA-TERP-664c9b        | Deep QA Review | main   | Repo-wide     | In Progress | 2026-01-14 | TBD |
+| Session ID                             | Task                                             | Branch | Module        | Status      | Started    | ETA |
+| -------------------------------------- | ------------------------------------------------ | ------ | ------------- | ----------- | ---------- | --- |
+| Session-20260115-DOCS-USERFLOWS-d5ea18 | DOCS-USERFLOWS                                   | -      | Documentation | In Progress | 2026-01-15 | -   |
+| Session-20260114-QA-TERP-664c9b        | Deep QA Review                                   | main   | Repo-wide     | In Progress | 2026-01-14 | TBD |
+| Session-20260109-QA-E2E-a63131         | QA-E2E full browser coverage                     | main   | QA/Automation | In Progress | 2026-01-09 | -   |
+| Session-20260109-QA-E2E-0c47cb         | QA-E2E credential provisioning + flow completion | main   | QA/Automation | In Progress | 2026-01-09 | -   |
 ## ⏸️ Paused / Waiting
 | Session ID | Task | Branch | Reason | Paused At | Resume When |
 | ---------- | ---- | ------ | ------ | --------- | ----------- |
