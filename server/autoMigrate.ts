@@ -985,6 +985,113 @@ export async function runAutoMigrations() {
 
 
 
+    // ========================================================================
+    // LIVE SHOPPING SESSION TIMEOUT COLUMNS (MEET-075-BE)
+    // ========================================================================
+    // Add timeout-related columns to liveShoppingSessions table
+    // These columns are required for the session timeout cron job
+    
+    // Check if liveShoppingSessions table exists first
+    let liveShoppingTableExists = false;
+    try {
+      await db.execute(sql`SELECT 1 FROM liveShoppingSessions LIMIT 1`);
+      liveShoppingTableExists = true;
+    } catch {
+      console.log("  ℹ️  liveShoppingSessions table not found - skipping timeout columns");
+    }
+
+    if (liveShoppingTableExists) {
+      // Add timeoutSeconds column
+      try {
+        await db.execute(
+          sql`ALTER TABLE liveShoppingSessions ADD COLUMN timeoutSeconds INT DEFAULT 7200`
+        );
+        console.log("  ✅ Added timeoutSeconds column to liveShoppingSessions");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.log("  ℹ️  liveShoppingSessions.timeoutSeconds already exists");
+        } else {
+          console.log("  ⚠️  liveShoppingSessions.timeoutSeconds:", errMsg);
+        }
+      }
+
+      // Add expiresAt column
+      try {
+        await db.execute(
+          sql`ALTER TABLE liveShoppingSessions ADD COLUMN expiresAt TIMESTAMP NULL`
+        );
+        console.log("  ✅ Added expiresAt column to liveShoppingSessions");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.log("  ℹ️  liveShoppingSessions.expiresAt already exists");
+        } else {
+          console.log("  ⚠️  liveShoppingSessions.expiresAt:", errMsg);
+        }
+      }
+
+      // Add autoReleaseEnabled column
+      try {
+        await db.execute(
+          sql`ALTER TABLE liveShoppingSessions ADD COLUMN autoReleaseEnabled BOOLEAN DEFAULT TRUE`
+        );
+        console.log("  ✅ Added autoReleaseEnabled column to liveShoppingSessions");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.log("  ℹ️  liveShoppingSessions.autoReleaseEnabled already exists");
+        } else {
+          console.log("  ⚠️  liveShoppingSessions.autoReleaseEnabled:", errMsg);
+        }
+      }
+
+      // Add lastActivityAt column
+      try {
+        await db.execute(
+          sql`ALTER TABLE liveShoppingSessions ADD COLUMN lastActivityAt TIMESTAMP NULL`
+        );
+        console.log("  ✅ Added lastActivityAt column to liveShoppingSessions");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.log("  ℹ️  liveShoppingSessions.lastActivityAt already exists");
+        } else {
+          console.log("  ⚠️  liveShoppingSessions.lastActivityAt:", errMsg);
+        }
+      }
+
+      // Add extensionCount column
+      try {
+        await db.execute(
+          sql`ALTER TABLE liveShoppingSessions ADD COLUMN extensionCount INT DEFAULT 0`
+        );
+        console.log("  ✅ Added extensionCount column to liveShoppingSessions");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.log("  ℹ️  liveShoppingSessions.extensionCount already exists");
+        } else {
+          console.log("  ⚠️  liveShoppingSessions.extensionCount:", errMsg);
+        }
+      }
+
+      // Add index for expiresAt to optimize timeout queries
+      try {
+        await db.execute(
+          sql`CREATE INDEX idx_lss_expires ON liveShoppingSessions (expiresAt)`
+        );
+        console.log("  ✅ Added idx_lss_expires index to liveShoppingSessions");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate key name")) {
+          console.log("  ℹ️  idx_lss_expires index already exists");
+        } else {
+          console.log("  ⚠️  idx_lss_expires index:", errMsg);
+        }
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.log(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
