@@ -1,0 +1,134 @@
+# Oracle: Orders.DraftOrders.CreateDraftEnhanced
+# Create draft order with COGS/margin tracking
+
+flow_id: "Orders.DraftOrders.CreateDraftEnhanced"
+description: "Create a draft order with enhanced COGS and margin calculation"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - draft
+  - margin
+  - mutation
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+        is_buyer: true
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 10
+    - entity: "batch"
+      ref: "seed:batch.blue_dream"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 5
+
+steps:
+  - action: navigate
+    path: "/orders/new"
+    wait_for: "[data-testid='order-form'], [data-testid='order-creator'], form"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: select
+    target: "[data-testid='client-select'], [data-testid='client-dropdown']"
+    value_ref: "seed:client.redwood.name"
+    type_to_search: true
+
+  - action: wait
+    duration: 500
+
+  - action: select
+    target: "[data-testid='order-type-select'], select[name='orderType']"
+    value: "SALE"
+
+  - action: click
+    target: "[data-testid='add-line-item'], [data-testid='add-item-btn']"
+    wait_after: 500
+
+  - action: select
+    target: "[data-testid='batch-select']:first-of-type, [data-testid='product-select']:first-of-type"
+    value_ref: "seed:batch.og_kush.display_name"
+    type_to_search: true
+
+  - action: type
+    target: "[data-testid='quantity-input']:first-of-type, input[name='quantity']:first-of-type"
+    value: "3"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='margin-display'], .margin-percent"
+    timeout: 5000
+
+  - action: assert
+    visible: "[data-testid='cogs-display'], [data-testid='margin-display']"
+
+  - action: click
+    target: "[data-testid='save-draft-btn'], button:has-text('Save Draft')"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "created_order_number"
+
+  - action: screenshot
+    name: "draft_order_created"
+
+expected_ui:
+  url_contains: "/orders"
+  visible:
+    - "[data-testid='order-detail'], [data-testid='draft-badge'], .draft-indicator"
+  text_present:
+    - "Draft"
+    - "Order"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.created_order_number"
+      expect:
+        order_type: "SALE"
+        client_id: "$seed:client.redwood.id"
+        is_draft: true
+        total_not_null: true
+        avg_margin_percent_not_null: true
+      store_as: "created_draft"
+
+  order_line_items:
+    - where:
+        order_id: "$created_draft.id"
+      expect:
+        batch_id: "$seed:batch.og_kush.id"
+        quantity: 3
+        margin_source_not_null: true
+        cogs_per_unit_not_null: true
+      count: 1
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        # Draft orders should NOT decrement inventory
+        on_hand_qty_gte: 97
+
+  invariants:
+    - name: "Draft order has valid margin"
+      query: |
+        SELECT avg_margin_percent
+        FROM orders
+        WHERE id = $created_draft.id
+      assert: "avg_margin_percent IS NOT NULL AND avg_margin_percent >= 0"

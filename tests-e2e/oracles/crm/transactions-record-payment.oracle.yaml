@@ -1,0 +1,148 @@
+# CRM.Clients.Transactions.RecordPayment Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Transactions.RecordPayment"
+description: "Record a payment against an existing transaction, updating payment status and client financials"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - transactions
+  - payments
+  - mutation
+  - financial
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.sales_rep"
+      where:
+        email: "qa.salesrep@terp.test"
+        status: "active"
+    - entity: "client"
+      ref: "seed:client.test_buyer"
+      where:
+        deleted_at_null: true
+        is_buyer: true
+  create:
+    - entity: "client_transaction"
+      ref: "temp:unpaid_invoice"
+      data:
+        client_id_ref: "seed:client.test_buyer.id"
+        transaction_type: "INVOICE"
+        amount: "2000.00"
+        payment_status: "PENDING"
+        transaction_date: "{{date:YYYY-MM-DD}}"
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "seed:client.test_buyer.teri_code"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='client-row']"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='client-row']:first-child"
+    wait_for_navigation: true
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "client_id"
+
+  - action: store
+    from: "[data-testid='total-owed']"
+    as: "original_total_owed"
+
+  - action: click
+    target: "[data-testid='transactions-tab']"
+    wait_for: "[data-testid='transactions-list']"
+
+  # Find the pending transaction
+  - action: click
+    target: "[data-testid='transaction-row'][data-status='PENDING']:first-child [data-testid='record-payment-btn']"
+    wait_for: "[data-testid='payment-form']"
+
+  - action: store
+    from: "[data-testid='transaction-id']"
+    as: "transaction_id"
+
+  - action: type
+    target: "input[name='paymentAmount']"
+    value: "2000.00"
+    clear_first: true
+
+  - action: type
+    target: "input[name='paymentDate']"
+    value: "{{date:YYYY-MM-DD}}"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='submit-payment-btn']"
+    wait_for: "[data-testid='success-message']"
+
+  - action: wait
+    duration: 2000
+
+  - action: screenshot
+    name: "payment_recorded"
+
+expected_ui:
+  visible:
+    - "[data-testid='transactions-list']"
+    - "[data-testid='success-message']"
+  not_visible:
+    - "[data-testid='payment-form']"
+    - ".error-message"
+  text_present:
+    - "Payment recorded"
+    - "PAID"
+
+expected_db:
+  client_transactions:
+    - where:
+        id: "$stored.transaction_id"
+      expect:
+        payment_status: "PAID"
+        payment_amount: "2000.00"
+        payment_date_not_null: true
+      store_as: "paid_transaction"
+
+  clients:
+    - where:
+        id: "$stored.client_id"
+      expect:
+        total_owed_not_null: true
+      store_as: "updated_client"
+
+  client_activity:
+    - where:
+        client_id: "$stored.client_id"
+        activity_type: "PAYMENT_RECORDED"
+      expect:
+        user_id_not_null: true
+        metadata_contains: "paymentAmount"
+      count_gte: 1
+
+  invariants:
+    - name: "Full payment sets PAID status"
+      query: |
+        SELECT payment_status FROM client_transactions
+        WHERE id = $stored.transaction_id
+      assert: "payment_status = 'PAID'"
+
+    - name: "Payment amount matches transaction amount"
+      query: |
+        SELECT CAST(payment_amount AS DECIMAL(10,2)) as paid,
+               CAST(amount AS DECIMAL(10,2)) as total
+        FROM client_transactions WHERE id = $stored.transaction_id
+      assert: "paid = total"

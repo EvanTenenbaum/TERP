@@ -1,0 +1,171 @@
+# Oracle: Orders.OrderStatus.UpdateOrderStatus
+# Update order fulfillment status through the workflow
+
+flow_id: "Orders.OrderStatus.UpdateOrderStatus"
+description: "Update an order's fulfillment status through PENDING -> PACKED -> SHIPPED workflow"
+role: "Fulfillment"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - fulfillment
+  - state-transition
+  - mutation
+timeout: 60000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 20
+  create:
+    - entity: "order"
+      ref: "temp:order_to_ship"
+      data:
+        order_type: "SALE"
+        is_draft: false
+        client_id: "$seed:client.redwood.id"
+        order_number: "S-STATUS-{{timestamp}}"
+        sale_status: "PENDING"
+        fulfillment_status: "PACKED"
+        packed_at: "{{date:now}}"
+        total: "5000.00"
+        items: '[{"batchId": "$seed:batch.og_kush.id", "quantity": 5, "unitPrice": 1000, "isSample": false, "pickedQuantity": 5}]'
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "[data-testid='orders-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Filter to show packed orders
+  - action: click
+    target: "[data-testid='filter-packed'], [data-testid='status-filter']:has-text('Packed')"
+    wait_after: 1000
+
+  # Click on the packed order
+  - action: click
+    target: "tr:has-text('S-STATUS'), [data-testid='order-row']:has-text('PACKED'):first-of-type"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "shipping_order_number"
+
+  - action: store
+    from: "[data-testid='order-version'], [data-version]"
+    as: "initial_version"
+
+  - action: assert
+    text_contains: "PACKED"
+
+  # Click ship button
+  - action: click
+    target: "[data-testid='ship-btn'], button:has-text('Ship'), button:has-text('Mark Shipped')"
+    wait_after: 500
+
+  # Fill shipping modal
+  - action: wait
+    for: "[data-testid='ship-modal'], .modal, [role='dialog']"
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='tracking-number'], input[name='trackingNumber']"
+    value: "TRACK-E2E-{{random:8}}"
+
+  - action: type
+    target: "[data-testid='carrier-input'], input[name='carrier']"
+    value: "E2E Test Carrier"
+
+  - action: type
+    target: "[data-testid='ship-notes'], textarea[name='notes']"
+    value: "Shipped via E2E test"
+
+  - action: click
+    target: "[data-testid='confirm-ship'], button:has-text('Ship'), button:has-text('Confirm')"
+    wait_after: 2000
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "order_shipped"
+
+expected_ui:
+  visible:
+    - "[data-testid='order-detail'], .order-detail"
+  text_present:
+    - "SHIPPED"
+    - "TRACK-E2E"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.shipping_order_number"
+      expect:
+        fulfillment_status: "SHIPPED"
+        shipped_at_not_null: true
+        shipped_by_not_null: true
+        notes_like: "%Shipped%"
+      store_as: "shipped_order"
+
+  order_status_history:
+    - where:
+        order_id: "$shipped_order.id"
+        fulfillment_status: "SHIPPED"
+      expect:
+        changed_by_not_null: true
+        notes_like: "%Shipped%"
+      count_gte: 1
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        # Inventory decremented at SHIPPED status
+        on_hand_qty_lte: 95
+
+  inventory_movements:
+    - where:
+        reference_type: "ORDER"
+        reference_id: "$shipped_order.id"
+      expect:
+        movement_type: "SALE"
+        quantity: -5
+      count_gte: 1
+
+  invariants:
+    - name: "Version incremented after status update"
+      query: |
+        SELECT version
+        FROM orders
+        WHERE id = $shipped_order.id
+      assert: "version > $stored.initial_version"
+
+    - name: "Status history recorded"
+      query: |
+        SELECT COUNT(*) as history_count
+        FROM order_status_history
+        WHERE order_id = $shipped_order.id
+      assert: "history_count >= 1"
+
+    - name: "Inventory movement recorded"
+      query: |
+        SELECT SUM(quantity_change) as total_change
+        FROM inventory_movements
+        WHERE reference_type = 'ORDER' AND reference_id = $shipped_order.id
+      assert: "total_change <= -5 OR total_change IS NULL"

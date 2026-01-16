@@ -1,0 +1,118 @@
+# CRM.Clients.Delete Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Delete"
+description: "Delete (soft delete) a client - requires Super Admin role, sets deletedAt timestamp"
+role: "SuperAdmin"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - clients
+  - mutation
+  - destructive
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.super_admin"
+      where:
+        email: "qa.superadmin@terp.test"
+        status: "active"
+  create:
+    - entity: "client"
+      ref: "temp:delete_target_client"
+      data:
+        name: "Delete Test Client {{timestamp}}"
+        teri_code: "DEL{{random:6}}"
+        is_buyer: true
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "temp:delete_target_client.teri_code"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='client-row']"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='client-row']:first-child"
+    wait_for_navigation: true
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "client_id"
+
+  - action: click
+    target: "[data-testid='delete-client-btn']"
+    wait_for: "[data-testid='confirm-delete-modal']"
+
+  - action: click
+    target: "[data-testid='confirm-delete-btn']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='clients-list']"
+    timeout: 5000
+
+  - action: screenshot
+    name: "client_deleted"
+
+  # Verify deleted client no longer appears in list
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "temp:delete_target_client.teri_code"
+    clear_first: true
+
+  - action: wait
+    duration: 1000
+
+  - action: assert
+    not_visible: "[data-testid='client-row']"
+
+expected_ui:
+  url_equals: "/clients"
+  visible:
+    - "[data-testid='clients-list']"
+    - "[data-testid='success-message']"
+  not_visible:
+    - "[data-testid='confirm-delete-modal']"
+  text_present:
+    - "Client deleted"
+    - "archived"
+
+expected_db:
+  clients:
+    - where:
+        id: "$stored.client_id"
+      expect:
+        deleted_at_not_null: true
+      store_as: "deleted_client"
+
+  client_activity:
+    - where:
+        client_id: "$stored.client_id"
+        activity_type: "UPDATED"
+      expect:
+        metadata_contains: "archived"
+      count_gte: 1
+
+  invariants:
+    - name: "Soft delete preserves record"
+      query: |
+        SELECT id, deleted_at FROM clients WHERE id = $stored.client_id
+      assert: "id IS NOT NULL AND deleted_at IS NOT NULL"
+
+    - name: "Deleted client excluded from active list"
+      query: |
+        SELECT COUNT(*) as cnt FROM clients
+        WHERE id = $stored.client_id AND deleted_at IS NULL
+      assert: "cnt = 0"

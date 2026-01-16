@@ -1,0 +1,84 @@
+# Oracle: Accounting.Invoices.Void
+# Void an invoice with required reason (terminal state)
+
+flow_id: "Accounting.Invoices.Void"
+description: "Void an invoice with a mandatory reason and verify terminal state"
+role: "AccountingManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - accounting
+  - invoices
+  - state-transition
+  - terminal
+  - mutation
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "invoice"
+      ref: "seed:invoice.to_void"
+      where:
+        status_not: "VOID"
+        deletedAt_null: true
+
+steps:
+  - action: navigate
+    path: "/accounting/invoices"
+    wait_for: "[data-testid='invoices-table'], table, main"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='invoice-row-{{seed:invoice.to_void.id}}'], tr[data-invoice-id='{{seed:invoice.to_void.id}}']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='invoice-detail'], .invoice-detail"
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='void-invoice-btn'], button:contains('Void'), [data-testid='actions-menu']"
+    wait_after: 500
+
+  # If actions menu, click void option
+  - action: click
+    target: "[data-testid='void-option'], button:contains('Void Invoice')"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='void-modal'], .modal, [role='dialog']"
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='void-reason'], textarea[name='reason'], input[name='reason']"
+    value: "Duplicate invoice created in error - client requested cancellation"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='confirm-void-btn'], button:contains('Confirm'), button[type='submit']"
+    wait_after: 2000
+
+  - action: wait
+    for: "[data-testid='void-success'], .success-toast"
+    timeout: 10000
+
+  - action: screenshot
+    name: "invoice_voided"
+
+expected_ui:
+  visible:
+    - "[data-testid='invoice-detail'], main"
+    - "[data-testid='void-badge'], .void-status, .badge-void"
+  text_present:
+    - "VOID"
+
+expected_db:
+  invoices:
+    - where:
+        id: "$seed:invoice.to_void.id"
+      expect:
+        status: "VOID"
+        notes_contains: "VOIDED"

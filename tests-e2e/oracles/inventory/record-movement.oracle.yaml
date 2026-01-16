@@ -1,0 +1,110 @@
+# Oracle: Inventory.Movements.RecordMovement
+# Record a manual inventory movement
+
+flow_id: "Inventory.Movements.RecordMovement"
+description: "Record a manual inventory movement with full audit trail"
+role: "InventoryManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - inventory
+  - mutation
+  - movements
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        batchStatus: "LIVE"
+        onHandQty_gte: 50
+    - entity: "user"
+      ref: "seed:user.inventory_manager"
+      where:
+        permissions_include: "inventory:update"
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "[data-testid='inventory-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: click
+    target: "tr:has-text('OG Kush'), [data-testid='batch-row']:first-child"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='batch-detail'], .batch-detail-panel"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='movements-tab'], button:has-text('Movements'), a:has-text('Movements')"
+    wait_after: 500
+
+  - action: click
+    target: "[data-testid='record-movement-btn'], button:has-text('Record Movement'), button:has-text('Add Movement')"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='movement-form'], form, .movement-modal"
+    timeout: 5000
+
+  - action: select
+    target: "[data-testid='movement-type-select'], select[name='movementType']"
+    value: "SAMPLE"
+
+  - action: type
+    target: "[data-testid='quantity-input'], input[name='quantityChange'], input[name='quantity']"
+    value: "-5"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='reason-input'], textarea[name='reason'], input[name='notes']"
+    value: "Sample sent to buyer for quality review"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='submit-movement'], button[type='submit'], button:has-text('Record')"
+    wait_after: 1000
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: screenshot
+    name: "movement_recorded"
+
+expected_ui:
+  visible:
+    - "[data-testid='success-toast'], .toast-success"
+    - "[data-testid='movement-list'], .movements-table"
+  text_present:
+    - "SAMPLE"
+    - "-5"
+  not_visible:
+    - "[data-testid='error-message']"
+
+expected_db:
+  inventory_movements:
+    - where:
+        batchId: "$seed:batch.og_kush.id"
+        inventoryMovementType: "SAMPLE"
+      expect:
+        quantityChange: "-5"
+        performedBy_not_null: true
+        notes_contains: "Sample sent"
+      store_as: "recorded_movement"
+      count_gte: 1
+
+  invariants:
+    - name: "Movement has performer"
+      query: |
+        SELECT COUNT(*) as count FROM inventory_movements
+        WHERE batchId = $seed:batch.og_kush.id
+          AND inventoryMovementType = 'SAMPLE'
+          AND performedBy IS NOT NULL
+      assert: "count >= 1"

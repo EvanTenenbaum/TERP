@@ -1,0 +1,103 @@
+# CRM.Clients.Archive Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Archive"
+description: "Archive a client (soft delete) - available to Sales Manager, sets deletedAt timestamp, can be restored"
+role: "SalesManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - clients
+  - mutation
+  - archive
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.sales_manager"
+      where:
+        email: "qa.salesmanager@terp.test"
+        status: "active"
+  create:
+    - entity: "client"
+      ref: "temp:archive_target_client"
+      data:
+        name: "Archive Test Client {{timestamp}}"
+        teri_code: "ARC{{random:6}}"
+        is_buyer: true
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "temp:archive_target_client.teri_code"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='client-row']"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='client-row']:first-child"
+    wait_for_navigation: true
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "client_id"
+
+  - action: click
+    target: "[data-testid='archive-client-btn']"
+    wait_for: "[data-testid='confirm-archive-modal']"
+
+  - action: click
+    target: "[data-testid='confirm-archive-btn']"
+    wait_for_navigation: true
+
+  - action: wait
+    for: "[data-testid='clients-list']"
+    timeout: 5000
+
+  - action: screenshot
+    name: "client_archived"
+
+expected_ui:
+  url_equals: "/clients"
+  visible:
+    - "[data-testid='clients-list']"
+    - "[data-testid='success-message']"
+  text_present:
+    - "Client archived"
+
+expected_db:
+  clients:
+    - where:
+        id: "$stored.client_id"
+      expect:
+        deleted_at_not_null: true
+      store_as: "archived_client"
+
+  client_activity:
+    - where:
+        client_id: "$stored.client_id"
+        activity_type: "UPDATED"
+      expect:
+        metadata_contains: "archived"
+      count_gte: 1
+
+  invariants:
+    - name: "Archive sets deletedAt"
+      query: |
+        SELECT deleted_at FROM clients WHERE id = $stored.client_id
+      assert: "deleted_at IS NOT NULL"
+
+    - name: "Archived client data preserved"
+      query: |
+        SELECT name, teri_code, is_buyer FROM clients
+        WHERE id = $stored.client_id
+      assert: "name IS NOT NULL AND teri_code IS NOT NULL"

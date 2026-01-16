@@ -1,0 +1,116 @@
+# Oracle: Inventory.Batches.UpdateStatus
+# Update batch status through lifecycle transitions
+
+flow_id: "Inventory.Batches.UpdateStatus"
+description: "Transition batch status from AWAITING_INTAKE to LIVE, testing valid lifecycle transition"
+role: "InventoryManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - inventory
+  - mutation
+  - state-transition
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.inventory_manager"
+      where:
+        permissions_include: "inventory:update"
+  create:
+    - entity: "batch"
+      ref: "temp:test_batch_status"
+      data:
+        sku: "STATUS-TEST-{{timestamp}}"
+        batchStatus: "AWAITING_INTAKE"
+        onHandQty: "100"
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "[data-testid='inventory-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='search-input'], input[type='search']"
+    value: "STATUS-TEST"
+    clear_first: true
+
+  - action: wait
+    for: "tr:has-text('STATUS-TEST')"
+    timeout: 5000
+
+  - action: click
+    target: "tr:has-text('STATUS-TEST')"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='batch-detail'], .batch-detail-panel"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='status-dropdown'], [data-testid='change-status-btn'], button:has-text('Status')"
+    wait_after: 500
+
+  - action: click
+    target: "[data-testid='status-LIVE'], [data-value='LIVE'], li:has-text('LIVE'), option:has-text('LIVE')"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='reason-modal'], [data-testid='reason-input']"
+    timeout: 3000
+
+  - action: type
+    target: "[data-testid='reason-input'], textarea[name='reason'], input[name='reason']"
+    value: "Quality check passed - moving to LIVE status"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='confirm-status-btn'], button:has-text('Confirm'), button[type='submit']"
+    wait_after: 1000
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: screenshot
+    name: "status_updated"
+
+expected_ui:
+  visible:
+    - "[data-testid='success-toast'], .toast-success"
+    - "[data-testid='status-badge']:has-text('LIVE'), .badge:has-text('LIVE')"
+  text_present:
+    - "LIVE"
+  not_visible:
+    - "[data-testid='error-message']"
+
+expected_db:
+  batches:
+    - where:
+        sku_like: "STATUS-TEST%"
+      expect:
+        batchStatus: "LIVE"
+      store_as: "updated_batch"
+
+  audit_logs:
+    - where:
+        entity: "Batch"
+        action: "STATUS_CHANGE"
+      expect:
+        reason_contains: "Quality check"
+      count_gte: 1
+
+  invariants:
+    - name: "Valid status transition"
+      query: |
+        SELECT COUNT(*) as count FROM audit_logs
+        WHERE entity = 'Batch'
+          AND action = 'STATUS_CHANGE'
+          AND JSON_EXTRACT(before_snapshot, '$.batchStatus') = 'AWAITING_INTAKE'
+          AND JSON_EXTRACT(after_snapshot, '$.batchStatus') = 'LIVE'
+      assert: "count >= 1"

@@ -1,0 +1,112 @@
+# Oracle: Inventory.Batches.CreateBatch
+# Create a new inventory batch via intake flow
+
+flow_id: "Inventory.Batches.CreateBatch"
+description: "Create a new inventory batch through the intake process with vendor, brand, product, and quantity"
+role: "InventoryManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - inventory
+  - mutation
+  - smoke
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.inventory_manager"
+      where:
+        permissions_include: "inventory:create"
+  feature_flags:
+    - FEATURE_INVENTORY_INTAKE
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "[data-testid='inventory-table'], table, .inventory-list"
+
+  - action: click
+    target: "[data-testid='new-batch-btn'], button:has-text('New Batch'), a:has-text('Add Batch')"
+    wait_after: 1000
+
+  - action: wait
+    for: "[data-testid='batch-form'], form, .intake-form"
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='vendor-input'], input[name='vendorName']"
+    value: "Test Vendor {{timestamp}}"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='brand-input'], input[name='brandName']"
+    value: "Test Brand"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='product-input'], input[name='productName']"
+    value: "Test Product Flower"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='quantity-input'], input[name='quantity']"
+    value: "100"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='cogs-input'], input[name='unitCogs']"
+    value: "500"
+    clear_first: true
+
+  - action: select
+    target: "[data-testid='category-select'], select[name='category']"
+    value: "Flower"
+
+  - action: select
+    target: "[data-testid='grade-select'], select[name='grade']"
+    value: "AAA"
+
+  - action: click
+    target: "[data-testid='submit-btn'], button[type='submit'], button:has-text('Create')"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "batch_created"
+
+expected_ui:
+  url_contains: "/inventory"
+  visible:
+    - "[data-testid='success-toast'], .toast-success, .success-message"
+  text_present:
+    - "created"
+  not_visible:
+    - "[data-testid='error-message'], .error"
+
+expected_db:
+  batches:
+    - where:
+        batchStatus: "AWAITING_INTAKE"
+      expect:
+        onHandQty_gte: 100
+        unitCogs_not_null: true
+      count_gte: 1
+
+  inventory_movements:
+    - where:
+        inventoryMovementType: "INTAKE"
+      expect:
+        quantityChange_contains: "100"
+      count_gte: 1
+
+  audit_logs:
+    - where:
+        entity: "Batch"
+        action: "CREATE"
+      expect:
+        actorId_not_null: true
+      count_gte: 1

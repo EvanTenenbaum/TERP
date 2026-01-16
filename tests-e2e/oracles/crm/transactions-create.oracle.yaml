@@ -1,0 +1,152 @@
+# CRM.Clients.Transactions.Create Oracle
+# Generated: 2026-01-16
+# Based on: USER_FLOW_MATRIX.csv, FLOW_GUIDE.md, server/routers/clients.ts
+
+flow_id: "CRM.Clients.Transactions.Create"
+description: "Create a client transaction (invoice, payment, order, etc.) and verify client stats are updated"
+role: "SalesManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - crm
+  - transactions
+  - mutation
+  - financial
+timeout: 45000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.sales_manager"
+      where:
+        email: "qa.salesmanager@terp.test"
+        status: "active"
+    - entity: "client"
+      ref: "seed:client.test_buyer"
+      where:
+        deleted_at_null: true
+        is_buyer: true
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "[data-testid='clients-list']"
+
+  - action: type
+    target: "[data-testid='search-input']"
+    value_ref: "seed:client.test_buyer.teri_code"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='client-row']"
+    timeout: 5000
+
+  - action: click
+    target: "[data-testid='client-row']:first-child"
+    wait_for_navigation: true
+
+  - action: store
+    from: "[data-testid='client-id']"
+    as: "client_id"
+
+  - action: store
+    from: "[data-testid='total-spent']"
+    as: "original_total_spent"
+
+  - action: store
+    from: "[data-testid='total-owed']"
+    as: "original_total_owed"
+
+  - action: click
+    target: "[data-testid='transactions-tab']"
+    wait_for: "[data-testid='transactions-list']"
+
+  - action: click
+    target: "[data-testid='add-transaction-btn']"
+    wait_for: "[data-testid='transaction-form']"
+
+  - action: select
+    target: "[data-testid='transaction-type-select']"
+    value: "INVOICE"
+
+  - action: type
+    target: "input[name='amount']"
+    value: "1500.00"
+    clear_first: true
+
+  - action: type
+    target: "input[name='transactionDate']"
+    value: "{{date:YYYY-MM-DD}}"
+    clear_first: true
+
+  - action: select
+    target: "[data-testid='payment-status-select']"
+    value: "PENDING"
+
+  - action: type
+    target: "textarea[name='notes']"
+    value: "Test invoice for E2E testing"
+    clear_first: true
+
+  - action: click
+    target: "[data-testid='save-transaction-btn']"
+    wait_for: "[data-testid='success-message']"
+
+  - action: wait
+    duration: 2000
+
+  - action: screenshot
+    name: "transaction_created"
+
+expected_ui:
+  visible:
+    - "[data-testid='transactions-list']"
+    - "[data-testid='success-message']"
+  not_visible:
+    - "[data-testid='transaction-form']"
+    - ".error-message"
+  text_present:
+    - "Transaction created"
+    - "1,500.00"
+    - "INVOICE"
+    - "PENDING"
+
+expected_db:
+  client_transactions:
+    - where:
+        client_id: "$stored.client_id"
+        transaction_type: "INVOICE"
+        amount: "1500.00"
+      expect:
+        payment_status: "PENDING"
+        notes: "Test invoice for E2E testing"
+      store_as: "created_transaction"
+      count: 1
+
+  clients:
+    - where:
+        id: "$stored.client_id"
+      expect:
+        total_owed_gt: 0
+      store_as: "updated_client"
+
+  client_activity:
+    - where:
+        client_id: "$stored.client_id"
+        activity_type: "TRANSACTION_ADDED"
+      expect:
+        user_id_not_null: true
+      count_gte: 1
+
+  invariants:
+    - name: "Client totalOwed includes new transaction"
+      query: |
+        SELECT CAST(total_owed AS DECIMAL(10,2)) as owed
+        FROM clients WHERE id = $stored.client_id
+      assert: "owed >= 1500.00"
+
+    - name: "Transaction amount stored correctly"
+      query: |
+        SELECT CAST(amount AS DECIMAL(10,2)) as amt
+        FROM client_transactions WHERE id = $created_transaction.id
+      assert: "amt = 1500.00"

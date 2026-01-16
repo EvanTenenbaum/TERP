@@ -1,0 +1,97 @@
+# Oracle: Inventory.Batches.DeleteBatch
+# Soft delete a batch (Super Admin only)
+
+flow_id: "Inventory.Batches.DeleteBatch"
+description: "Soft delete a batch by setting status to CLOSED (Super Admin only)"
+role: "SuperAdmin"
+seed_profile: "basic_sales"
+tags:
+  - tier2
+  - inventory
+  - mutation
+  - destructive
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.super_admin"
+      where:
+        permissions_include: "inventory:delete"
+  create:
+    - entity: "batch"
+      ref: "temp:test_batch_to_delete"
+      data:
+        sku: "DELETE-TEST-{{timestamp}}"
+        batchStatus: "LIVE"
+        onHandQty: "50"
+        reservedQty: "0"
+        quarantineQty: "0"
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "[data-testid='inventory-table'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: type
+    target: "[data-testid='search-input'], input[type='search'], input[placeholder*='Search']"
+    value: "DELETE-TEST"
+    clear_first: true
+
+  - action: wait
+    for: "tr:has-text('DELETE-TEST')"
+    timeout: 5000
+
+  - action: click
+    target: "tr:has-text('DELETE-TEST') [data-testid='batch-checkbox'], tr:has-text('DELETE-TEST') input[type='checkbox']"
+    wait_after: 300
+
+  - action: click
+    target: "[data-testid='bulk-actions-btn'], button:has-text('Bulk Actions')"
+    wait_after: 500
+
+  - action: click
+    target: "[data-testid='delete-selected'], button:has-text('Delete'), [data-testid='bulk-delete']"
+    wait_after: 500
+
+  - action: wait
+    for: "[data-testid='confirm-dialog'], .confirmation-modal, [role='dialog']"
+    timeout: 3000
+
+  - action: click
+    target: "[data-testid='confirm-delete'], button:has-text('Confirm'), button:has-text('Delete')"
+    wait_after: 1000
+
+  - action: wait
+    network_idle: true
+    timeout: 5000
+
+  - action: screenshot
+    name: "batch_deleted"
+
+expected_ui:
+  visible:
+    - "[data-testid='success-toast'], .toast-success"
+  text_present:
+    - "deleted"
+  not_visible:
+    - "tr:has-text('DELETE-TEST')"
+
+expected_db:
+  batches:
+    - where:
+        sku_like: "DELETE-TEST%"
+      expect:
+        batchStatus: "CLOSED"
+
+  audit_logs:
+    - where:
+        entity: "Batch"
+        action_in: ["DELETE", "STATUS_CHANGE"]
+      expect:
+        actorId_not_null: true
+      count_gte: 1

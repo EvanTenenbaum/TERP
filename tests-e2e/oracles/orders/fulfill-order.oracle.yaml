@@ -1,0 +1,121 @@
+# Oracle: Orders.Fulfillment.FulfillOrder
+# Fulfill order items with pick quantities
+
+flow_id: "Orders.Fulfillment.FulfillOrder"
+description: "Fulfill an order by recording picked quantities for all items"
+role: "Fulfillment"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - fulfillment
+  - pick-pack
+  - mutation
+timeout: 60000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+      where:
+        status: "active"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+      where:
+        status: "LIVE"
+        available_quantity_gte: 20
+  create:
+    - entity: "order"
+      ref: "temp:order_to_fulfill"
+      data:
+        order_type: "SALE"
+        is_draft: false
+        client_id: "$seed:client.redwood.id"
+        order_number: "S-FULFILL-{{timestamp}}"
+        sale_status: "PENDING"
+        fulfillment_status: "PENDING"
+        confirmed_at: "{{date:now}}"
+        total: "5000.00"
+        items: '[{"batchId": "$seed:batch.og_kush.id", "quantity": 5, "unitPrice": 1000, "isSample": false}]'
+
+steps:
+  - action: navigate
+    path: "/pick-pack"
+    wait_for: "[data-testid='pick-pack-list'], table"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  # Find the order in pick/pack queue
+  - action: click
+    target: "tr:has-text('S-FULFILL'), [data-testid='order-row']:has-text('FULFILL'):first-of-type"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: store
+    from: "[data-testid='order-number'], .order-number"
+    as: "fulfilling_order_number"
+
+  # Enter picked quantities
+  - action: type
+    target: "[data-testid='picked-qty-0'], input[name='pickedQuantity']:first-of-type"
+    value: "5"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='pick-notes-0'], input[name='pickNotes']:first-of-type"
+    value: "All items picked from location A1"
+
+  # Click fulfill/pack button
+  - action: click
+    target: "[data-testid='fulfill-btn'], [data-testid='pack-btn'], button:has-text('Pack Items'), button:has-text('Fulfill')"
+    wait_after: 2000
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "order_fulfilled"
+
+expected_ui:
+  visible:
+    - "[data-testid='order-detail'], .order-detail, [data-testid='pick-pack-detail']"
+  text_present:
+    - "PACKED"
+
+expected_db:
+  orders:
+    - where:
+        order_number: "$stored.fulfilling_order_number"
+      expect:
+        fulfillment_status: "PACKED"
+        packed_at_not_null: true
+        packed_by_not_null: true
+      store_as: "fulfilled_order"
+
+  batches:
+    - where:
+        id: "$seed:batch.og_kush.id"
+      expect:
+        # fulfillOrder does NOT decrement inventory; that happens at ship
+        on_hand_qty_gte: 15
+
+  invariants:
+    - name: "Order marked as packed"
+      query: |
+        SELECT fulfillment_status, packed_at, packed_by
+        FROM orders
+        WHERE id = $fulfilled_order.id
+      assert: "fulfillment_status = 'PACKED' AND packed_at IS NOT NULL"
+
+    - name: "Items have pick data"
+      query: |
+        SELECT items
+        FROM orders
+        WHERE id = $fulfilled_order.id
+      assert: "items LIKE '%pickedQuantity%' OR items LIKE '%picked%'"
