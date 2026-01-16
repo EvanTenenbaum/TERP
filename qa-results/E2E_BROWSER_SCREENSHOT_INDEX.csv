@@ -1,0 +1,11 @@
+Screenshot ID,Flow,Role,URL,Notes,Path
+ROLE-SUPER-ADMIN,Role Login,Super Admin,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/afe8e8de83e67a13/artifacts/artifacts/role-super-admin.png
+ROLE-OWNER-EXECUTIVE,Role Login,Owner/Executive,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/0dcde5da70095a7e/artifacts/artifacts/role-owner-executive.png
+ROLE-OPERATIONS-MANAGER,Role Login,Operations Manager,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/426f93f54f497475/artifacts/artifacts/role-operations-manager.png
+ROLE-SALES-MANAGER,Role Login,Sales Manager,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/ac3bdc0a943ec94b/artifacts/artifacts/role-sales-manager.png
+ROLE-ACCOUNTANT,Role Login,Accountant,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/2f8210b6e5abfe1f/artifacts/artifacts/role-accountant.png
+ROLE-INVENTORY-MANAGER,Role Login,Inventory Manager,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/c7eb858f360bcc04/artifacts/artifacts/role-inventory-manager.png
+ROLE-BUYER-PROCUREMENT,Role Login,Buyer/Procurement,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/344eab198127e2e3/artifacts/artifacts/role-buyer-procurement.png
+ROLE-CUSTOMER-SERVICE,Role Login,Customer Service,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/6e012a5078f82cf7/artifacts/artifacts/role-customer-service.png
+ROLE-WAREHOUSE-STAFF,Role Login,Warehouse Staff,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/16553ff20dd64df9/artifacts/artifacts/role-warehouse-staff.png
+ROLE-READ-ONLY-AUDITOR,Role Login,Read-Only Auditor,https://terp-app-b9s35.ondigitalocean.app/,Sidebar + landing page after login,browser:/tmp/codex_browser_invocations/fdc90a8f2803dfa3/artifacts/artifacts/role-read-only-auditor.png

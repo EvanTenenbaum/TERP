@@ -10,7 +10,6 @@
 - [x] Review latest user flow docs
 - [x] Define impact outcome column model + validation checklist
 - [x] Create AI prompt for impact-outcome-driven E2E testing
-- [x] Add prompt metadata for versioning
 - [ ] Populate impact outcomes per flow
 
 ## Notes

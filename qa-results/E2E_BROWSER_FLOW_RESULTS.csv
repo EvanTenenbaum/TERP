@@ -1,0 +1,93 @@
+Role,Path,URL,HTTP Status,Result
+Super Admin,/accounting/bank-accounts,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-accounts,200,OK
+Super Admin,/accounting/bank-accounts/1,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-accounts/1,200,OK
+Super Admin,/accounting/bank-accounts/new,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-accounts/new,200,Access/NotFound text detected
+Super Admin,/accounting/bank-transactions,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-transactions,200,OK
+Super Admin,/accounting/bank-transactions/new,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-transactions/new,200,Access/NotFound text detected
+Super Admin,/accounting/chart-of-accounts,https://terp-app-b9s35.ondigitalocean.app/accounting/chart-of-accounts,200,OK
+Super Admin,/accounting/chart-of-accounts/1,https://terp-app-b9s35.ondigitalocean.app/accounting/chart-of-accounts/1,200,OK
+Super Admin,/accounting/clients/1,https://terp-app-b9s35.ondigitalocean.app/accounting/clients/1,200,OK
+Super Admin,/accounting/dashboard,https://terp-app-b9s35.ondigitalocean.app/accounting/dashboard,200,OK
+Super Admin,/accounting/expenses,https://terp-app-b9s35.ondigitalocean.app/accounting/expenses,200,OK
+Super Admin,/accounting/expenses/1,https://terp-app-b9s35.ondigitalocean.app/accounting/expenses/1,200,OK
+Super Admin,/accounting/expenses/new,https://terp-app-b9s35.ondigitalocean.app/accounting/expenses/new,200,OK
+Super Admin,/accounting/fiscal-periods,https://terp-app-b9s35.ondigitalocean.app/accounting/fiscal-periods,200,OK
+Super Admin,/accounting/fiscal-periods/1,https://terp-app-b9s35.ondigitalocean.app/accounting/fiscal-periods/1,200,OK
+Super Admin,/accounting/fiscal-periods/new,https://terp-app-b9s35.ondigitalocean.app/accounting/fiscal-periods/new,200,Access/NotFound text detected
+Super Admin,/accounting/general-ledger,https://terp-app-b9s35.ondigitalocean.app/accounting/general-ledger,200,OK
+Super Admin,/accounting/invoices,https://terp-app-b9s35.ondigitalocean.app/accounting/invoices,200,OK
+Super Admin,/accounting/invoices/1,https://terp-app-b9s35.ondigitalocean.app/accounting/invoices/1,200,Access/NotFound text detected
+Super Admin,/accounting/payments,https://terp-app-b9s35.ondigitalocean.app/accounting/payments,200,OK
+Super Admin,/admin/audit,https://terp-app-b9s35.ondigitalocean.app/admin/audit,200,Access/NotFound text detected
+Super Admin,/admin/monitoring,https://terp-app-b9s35.ondigitalocean.app/admin/monitoring,200,Access/NotFound text detected
+Super Admin,/admin/roles,https://terp-app-b9s35.ondigitalocean.app/admin/roles,200,OK
+Super Admin,/admin/roles/1,https://terp-app-b9s35.ondigitalocean.app/admin/roles/1,200,OK
+Super Admin,/admin/roles/new,https://terp-app-b9s35.ondigitalocean.app/admin/roles/new,200,OK
+Super Admin,/admin/settings,https://terp-app-b9s35.ondigitalocean.app/admin/settings,200,Access/NotFound text detected
+Super Admin,/admin/users,https://terp-app-b9s35.ondigitalocean.app/admin/users,200,OK
+Super Admin,/admin/users/1,https://terp-app-b9s35.ondigitalocean.app/admin/users/1,200,Access/NotFound text detected
+Super Admin,/admin/users/new,https://terp-app-b9s35.ondigitalocean.app/admin/users/new,200,OK
+Super Admin,/analytics,https://terp-app-b9s35.ondigitalocean.app/analytics,200,OK
+Super Admin,/calendar,https://terp-app-b9s35.ondigitalocean.app/calendar,200,OK
+Super Admin,/calendar/1,https://terp-app-b9s35.ondigitalocean.app/calendar/1,200,Access/NotFound text detected
+Super Admin,/calendar/time-off,https://terp-app-b9s35.ondigitalocean.app/calendar/time-off,200,Access/NotFound text detected
+Super Admin,/clients,https://terp-app-b9s35.ondigitalocean.app/clients,200,OK
+Super Admin,/clients/1,https://terp-app-b9s35.ondigitalocean.app/clients/1,200,OK
+Super Admin,/clients/1/activity,https://terp-app-b9s35.ondigitalocean.app/clients/1/activity,200,Access/NotFound text detected
+Super Admin,/clients/1/communications,https://terp-app-b9s35.ondigitalocean.app/clients/1/communications,200,Access/NotFound text detected
+Super Admin,/clients/1/notes,https://terp-app-b9s35.ondigitalocean.app/clients/1/notes,200,OK
+Super Admin,/clients/1/orders,https://terp-app-b9s35.ondigitalocean.app/clients/1/orders,200,OK
+Super Admin,/clients/1/pricing,https://terp-app-b9s35.ondigitalocean.app/clients/1/pricing,200,Access/NotFound text detected
+Super Admin,/clients/1/transactions,https://terp-app-b9s35.ondigitalocean.app/clients/1/transactions,200,Access/NotFound text detected
+Super Admin,/clients/1/transactions/1,https://terp-app-b9s35.ondigitalocean.app/clients/1/transactions/1,200,OK
+Super Admin,/clients/new,https://terp-app-b9s35.ondigitalocean.app/clients/new,200,OK
+Super Admin,/inventory,https://terp-app-b9s35.ondigitalocean.app/inventory,200,OK
+Super Admin,/inventory/1,https://terp-app-b9s35.ondigitalocean.app/inventory/1,200,OK
+Super Admin,/inventory/1/movements,https://terp-app-b9s35.ondigitalocean.app/inventory/1/movements,200,Access/NotFound text detected
+Super Admin,/inventory/intake,https://terp-app-b9s35.ondigitalocean.app/inventory/intake,200,OK
+Super Admin,/inventory/movements,https://terp-app-b9s35.ondigitalocean.app/inventory/movements,200,OK
+Super Admin,/inventory/new,https://terp-app-b9s35.ondigitalocean.app/inventory/new,200,OK
+Super Admin,/inventory/reports,https://terp-app-b9s35.ondigitalocean.app/inventory/reports,200,OK
+Super Admin,/orders,https://terp-app-b9s35.ondigitalocean.app/orders,200,OK
+Super Admin,/orders/1,https://terp-app-b9s35.ondigitalocean.app/orders/1,200,OK
+Super Admin,/orders/1/pick-pack,https://terp-app-b9s35.ondigitalocean.app/orders/1/pick-pack,200,Access/NotFound text detected
+Super Admin,/orders/1/returns,https://terp-app-b9s35.ondigitalocean.app/orders/1/returns,200,OK
+Super Admin,/orders/new,https://terp-app-b9s35.ondigitalocean.app/orders/new,200,Access/NotFound text detected
+Super Admin,/orders/pick-pack,https://terp-app-b9s35.ondigitalocean.app/orders/pick-pack,200,Access/NotFound text detected
+Super Admin,/pricing/defaults,https://terp-app-b9s35.ondigitalocean.app/pricing/defaults,200,OK
+Super Admin,/pricing/profiles,https://terp-app-b9s35.ondigitalocean.app/pricing/profiles,200,OK
+Super Admin,/pricing/profiles/1,https://terp-app-b9s35.ondigitalocean.app/pricing/profiles/1,200,Access/NotFound text detected
+Super Admin,/pricing/profiles/new,https://terp-app-b9s35.ondigitalocean.app/pricing/profiles/new,200,Access/NotFound text detected
+Super Admin,/pricing/rules,https://terp-app-b9s35.ondigitalocean.app/pricing/rules,200,OK
+Super Admin,/pricing/rules/1,https://terp-app-b9s35.ondigitalocean.app/pricing/rules/1,200,OK
+Super Admin,/pricing/rules/new,https://terp-app-b9s35.ondigitalocean.app/pricing/rules/new,200,OK
+Super Admin,/products,https://terp-app-b9s35.ondigitalocean.app/products,200,OK
+Super Admin,/products/1,https://terp-app-b9s35.ondigitalocean.app/products/1,200,Access/NotFound text detected
+Super Admin,/products/new,https://terp-app-b9s35.ondigitalocean.app/products/new,200,OK
+Super Admin,/strains,https://terp-app-b9s35.ondigitalocean.app/strains,200,Access/NotFound text detected
+Super Admin,/strains/1,https://terp-app-b9s35.ondigitalocean.app/strains/1,200,Access/NotFound text detected
+Super Admin,/strains/new,https://terp-app-b9s35.ondigitalocean.app/strains/new,200,Access/NotFound text detected
+Sales Manager,/analytics,https://terp-app-b9s35.ondigitalocean.app/analytics,200,OK
+Sales Manager,/calendar,https://terp-app-b9s35.ondigitalocean.app/calendar,200,OK
+Sales Manager,/calendar/1,https://terp-app-b9s35.ondigitalocean.app/calendar/1,200,Access/NotFound text detected
+Sales Manager,/clients,https://terp-app-b9s35.ondigitalocean.app/clients,200,OK
+Sales Manager,/clients/1,https://terp-app-b9s35.ondigitalocean.app/clients/1,200,OK
+Sales Manager,/clients/1/activity,https://terp-app-b9s35.ondigitalocean.app/clients/1/activity,200,Access/NotFound text detected
+Sales Manager,/clients/1/communications,https://terp-app-b9s35.ondigitalocean.app/clients/1/communications,200,OK
+Sales Manager,/clients/1/notes,https://terp-app-b9s35.ondigitalocean.app/clients/1/notes,200,Access/NotFound text detected
+Sales Manager,/clients/1/orders,https://terp-app-b9s35.ondigitalocean.app/clients/1/orders,200,OK
+Sales Manager,/clients/1/pricing,https://terp-app-b9s35.ondigitalocean.app/clients/1/pricing,200,OK
+Sales Manager,/clients/1/transactions,https://terp-app-b9s35.ondigitalocean.app/clients/1/transactions,200,Access/NotFound text detected
+Sales Manager,/clients/1/transactions/1,https://terp-app-b9s35.ondigitalocean.app/clients/1/transactions/1,200,OK
+Sales Manager,/clients/new,https://terp-app-b9s35.ondigitalocean.app/clients/new,200,OK
+Sales Manager,/orders,https://terp-app-b9s35.ondigitalocean.app/orders,200,OK
+Sales Manager,/orders/1,https://terp-app-b9s35.ondigitalocean.app/orders/1,200,OK
+Sales Manager,/orders/1/returns,https://terp-app-b9s35.ondigitalocean.app/orders/1/returns,200,OK
+Sales Manager,/orders/new,https://terp-app-b9s35.ondigitalocean.app/orders/new,200,Access/NotFound text detected
+Sales Manager,/pricing/defaults,https://terp-app-b9s35.ondigitalocean.app/pricing/defaults,200,Access/NotFound text detected
+Sales Manager,/pricing/profiles,https://terp-app-b9s35.ondigitalocean.app/pricing/profiles,200,OK
+Sales Manager,/pricing/profiles/1,https://terp-app-b9s35.ondigitalocean.app/pricing/profiles/1,200,Access/NotFound text detected
+Sales Manager,/pricing/profiles/new,https://terp-app-b9s35.ondigitalocean.app/pricing/profiles/new,200,OK
+Sales Manager,/pricing/rules,https://terp-app-b9s35.ondigitalocean.app/pricing/rules,200,OK
+Sales Manager,/pricing/rules/1,https://terp-app-b9s35.ondigitalocean.app/pricing/rules/1,200,Access/NotFound text detected
+Sales Manager,/pricing/rules/new,https://terp-app-b9s35.ondigitalocean.app/pricing/rules/new,200,Access/NotFound text detected

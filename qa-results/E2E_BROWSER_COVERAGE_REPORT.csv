@@ -1,0 +1,21 @@
+Metric,Value
+Total Flows,274
+Total Roles,11
+Role Permutations (role count sum),516
+Flows Tested,5
+Permutations Tested,5
+Coverage %,1.82
+
+Domain,Total Flows,Tested Flows,Coverage %
+Accounting,52,5,9.62
+Admin,27,0,0
+Analytics,8,0,0
+Auth,4,0,0
+CRM,28,0,0
+Calendar,34,0,0
+Dashboard,12,0,0
+Deprecated,6,0,0
+Inventory,37,0,0
+Orders,37,0,0
+Pricing,16,0,0
+Workflow,13,0,0

@@ -1,7 +1,5 @@
 # User Flow Impact Outcomes → Systematic E2E Testing Prompt
 
-_Last Updated: 2026-01-15_
-
 Use this prompt to guide an AI agent through **systematic E2E testing** based on the user flow impact outcomes model and matrix. The goal is to compare **expected business logic outcomes** with **observed behavior** for each flow.
 
 ---

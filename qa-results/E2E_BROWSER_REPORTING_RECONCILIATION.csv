@@ -1,0 +1,5 @@
+Report,Expected,Observed,Status,Notes
+Sales Reports,Orders shipped/invoiced reflected,,Not executed,Blocked pending full role coverage
+Inventory Reports,Stock movements reflected,,Not executed,Blocked pending full role coverage
+Aging Reports,Unpaid invoices reflected,,Not executed,Blocked pending full role coverage
+Dashboard Metrics,New entities reflected,,Not executed,Blocked pending full role coverage
