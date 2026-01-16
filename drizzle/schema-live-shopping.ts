@@ -22,7 +22,7 @@ import { orders } from "./schema"; // Assuming orders exists, see schema extensi
 /**
  * Session Status Enum
  */
-export const liveSessionStatusEnum = mysqlEnum("liveSessionStatus", [
+export const liveSessionStatusEnum = mysqlEnum("status", [
   "SCHEDULED", // Future session
   "ACTIVE",    // Currently live
   "PAUSED",    // Temporarily halted
