@@ -9,6 +9,7 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
       { id: 'sales-comparison', isVisible: true, isExpanded: false, size: 'lg' },
       { id: 'profitability', isVisible: true, isExpanded: false, size: 'lg' },
       { id: 'cash-flow', isVisible: true, isExpanded: false, size: 'md' },
+      { id: 'available-cash', isVisible: true, isExpanded: false, size: 'md' },
       { id: 'total-debt', isVisible: true, isExpanded: false, size: 'md' },
       { id: 'sales-by-client', isVisible: false, isExpanded: false },
       { id: 'transaction-snapshot', isVisible: false, isExpanded: false },
@@ -24,6 +25,7 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
     widgets: [
       { id: 'sales-by-client', isVisible: true, isExpanded: false, size: 'md' },
       { id: 'cash-flow', isVisible: true, isExpanded: false, size: 'md' },
+      { id: 'available-cash', isVisible: true, isExpanded: false, size: 'md' },
       { id: 'transaction-snapshot', isVisible: true, isExpanded: false, size: 'sm' },
       { id: 'inventory-snapshot', isVisible: true, isExpanded: false, size: 'sm' },
       { id: 'total-debt', isVisible: true, isExpanded: false, size: 'sm' },
@@ -116,5 +118,10 @@ export const WIDGET_METADATA = {
     name: 'Workflow Activity',
     description: 'Recent batch status changes',
     category: 'operations',
+  },
+  'available-cash': {
+    name: 'Available Cash',
+    description: 'Cash on hand, scheduled payables, and available balance',
+    category: 'financial',
   },
 };

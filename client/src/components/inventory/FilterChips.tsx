@@ -1,12 +1,14 @@
 /**
  * FilterChips Component
  * Displays active filters as removable chips
+ * ENH-007: Uses dynamic Brand/Farmer terminology based on category filter
  */
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import type { InventoryFilters } from "@/hooks/useInventoryFilters";
+import { getBrandLabel } from "@/lib/nomenclature";
 
 interface FilterChipsProps {
   filters: InventoryFilters;
@@ -51,10 +53,11 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
     });
   });
 
-  // Brand filters
+  // Brand/Farmer filters - ENH-007: Dynamic label based on category
+  const brandLabel = getBrandLabel(filters.category);
   filters.brand.forEach((brand) => {
     chips.push({
-      label: `Brand: ${brand}`,
+      label: `${brandLabel}: ${brand}`,
       key: "brand",
       value: brand,
     });
@@ -121,7 +124,7 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
       <span className="text-sm font-medium text-muted-foreground">Active Filters:</span>
       {chips.map((chip, index) => (
         <Badge
-          key={`${chip.key}-${chip.value || index}`}
+          key={`${chip.key}-${chip.value || 'no-value'}-${chip.label}`}
           variant="secondary"
           className="gap-1 pr-1"
         >

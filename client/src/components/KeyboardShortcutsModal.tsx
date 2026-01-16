@@ -88,14 +88,14 @@ export function KeyboardShortcutsModal({
                   .filter(s => s.category === category)
                   .map((shortcut, idx) => (
                     <div
-                      key={idx}
+                      key={`${category}-${shortcut.description}-${idx}`}
                       className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50"
                     >
                       <span className="text-sm">{shortcut.description}</span>
                       <div className="flex items-center gap-1">
                         {shortcut.keys.map((key, keyIdx) => (
                           <span
-                            key={keyIdx}
+                            key={`${key}-${keyIdx}`}
                             className="flex items-center gap-1"
                           >
                             <Kbd>{key}</Kbd>

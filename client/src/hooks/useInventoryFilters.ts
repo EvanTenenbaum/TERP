@@ -26,6 +26,10 @@ export interface InventoryFilters {
     max: number | null;
   };
   paymentStatus: string[];
+  // Sprint 4 Track A: 4.A.2 ENH-001 - Enhanced filters
+  stockStatus: "ALL" | "CRITICAL" | "LOW" | "OPTIMAL" | "OUT_OF_STOCK";
+  ageBracket: "ALL" | "FRESH" | "MODERATE" | "AGING" | "CRITICAL";
+  batchId: string | null;
 }
 
 export const defaultFilters: InventoryFilters = {
@@ -46,6 +50,10 @@ export const defaultFilters: InventoryFilters = {
     max: null,
   },
   paymentStatus: [],
+  // Sprint 4 Track A: 4.A.2 ENH-001 - Enhanced filters
+  stockStatus: "ALL",
+  ageBracket: "ALL",
+  batchId: null,
 };
 
 /**
@@ -163,7 +171,11 @@ export function useInventoryFilters() {
       filters.stockLevel !== "all" ||
       filters.cogsRange.min !== null ||
       filters.cogsRange.max !== null ||
-      filters.paymentStatus.length > 0
+      filters.paymentStatus.length > 0 ||
+      // Sprint 4 Track A: 4.A.2 ENH-001 - Enhanced filters
+      filters.stockStatus !== "ALL" ||
+      filters.ageBracket !== "ALL" ||
+      filters.batchId !== null
     );
   }, [filters]);
 
@@ -180,6 +192,10 @@ export function useInventoryFilters() {
     if (filters.stockLevel !== "all") count++;
     if (filters.cogsRange.min !== null || filters.cogsRange.max !== null) count++;
     if (filters.paymentStatus.length > 0) count++;
+    // Sprint 4 Track A: 4.A.2 ENH-001 - Enhanced filters
+    if (filters.stockStatus !== "ALL") count++;
+    if (filters.ageBracket !== "ALL") count++;
+    if (filters.batchId) count++;
     return count;
   }, [filters]);
 

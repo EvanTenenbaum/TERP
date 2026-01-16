@@ -29,6 +29,65 @@ const returnConditionSchema = z.enum([
 ]);
 
 export const samplesRouter = router({
+  // List sample requests with pagination
+  // BUG-034: Standardized .list procedure for API consistency
+  list: protectedProcedure
+    .use(requirePermission("samples:read"))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(1000).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        clientId: z.number().optional(),
+        status: z.enum(["PENDING", "FULFILLED", "CANCELLED", "RETURN_REQUESTED", "RETURNED"]).optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+
+      logger.info(
+        { operation: 'samples.list', userId, limit, offset },
+        '[Samples] Listing sample requests'
+      );
+
+      try {
+        // Fetch all sample requests (we'll filter in-memory if needed)
+        let requests = await samplesDb.getAllSampleRequests(limit + offset);
+
+        // Apply client filter if provided
+        if (input?.clientId) {
+          requests = requests.filter(r => r.clientId === input.clientId);
+        }
+
+        // Apply status filter if provided
+        if (input?.status) {
+          requests = requests.filter(r => r.sampleRequestStatus === input.status);
+        }
+
+        const total = requests.length;
+        const paginatedRequests = requests.slice(offset, offset + limit);
+
+        logger.info(
+          { operation: 'samples.list', userId, count: paginatedRequests.length, total },
+          `[Samples] Listed ${paginatedRequests.length} of ${total} sample requests`
+        );
+
+        return createSafeUnifiedResponse(paginatedRequests, total, limit, offset);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(
+          { operation: 'samples.list', userId, error: errorMessage },
+          '[Samples] Error listing sample requests'
+        );
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to list sample requests.',
+          cause: error,
+        });
+      }
+    }),
+
   // Create a new sample request
   createRequest: strictlyProtectedProcedure
     .use(requirePermission("samples:create"))

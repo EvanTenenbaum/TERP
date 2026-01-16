@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Search, Plus, FileText, DollarSign } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
-import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
+import { formatDate } from "@/lib/dateFormat";
 
 export default function Bills() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,11 +63,6 @@ export default function Bills() {
       style: "currency",
       currency: "USD",
     }).format(num);
-  };
-
-  const formatDate = (dateStr: Date | string) => {
-    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-    return format(date, "MMM dd, yyyy");
   };
 
   return (

@@ -115,7 +115,7 @@ export function LineItemTable({
             <TableBody>
               {items.map((item, index) => (
                 <LineItemRow
-                  key={index}
+                  key={item.id || `lineitem-${item.batchSku || item.productId}-${index}`}
                   item={item}
                   index={index}
                   clientId={clientId}

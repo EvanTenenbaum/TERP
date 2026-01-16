@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
@@ -11,20 +11,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Users, Package, Loader2, RefreshCw } from "lucide-react";
-import { Link } from "wouter";
+import { Search, FileText, Users, Package, Loader2 } from "lucide-react";
 
 export default function SearchResultsPage() {
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(location.split("?")[1] || "");
   const initialQuery = params.get("q") || "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  // BUG-042 FIX: Track navigation state to prevent stale UI
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Update query when URL changes
   useEffect(() => {
     const newParams = new URLSearchParams(location.split("?")[1] || "");
     const newQuery = newParams.get("q") || "";
     setSearchQuery(newQuery);
+    // Reset navigation state when URL changes
+    setIsNavigating(false);
   }, [location]);
 
   // Fetch search results
@@ -32,10 +35,9 @@ export default function SearchResultsPage() {
     data: results,
     isLoading,
     error,
-    refetch,
   } = trpc.search.global.useQuery(
     { query: searchQuery },
-    { enabled: searchQuery.trim().length > 0 }
+    { enabled: searchQuery.trim().length > 0 && !isNavigating }
   );
 
   const handleSearch = (e: React.FormEvent) => {
@@ -44,6 +46,27 @@ export default function SearchResultsPage() {
       setLocation(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  /**
+   * BUG-042 FIX: Safe navigation handler that prevents state issues.
+   *
+   * Root cause: When clicking search results, the Link component could cause
+   * race conditions where the destination page tries to load while the search
+   * page is still in a transitional state, leading to incorrect data display.
+   *
+   * Fix: Use programmatic navigation with state tracking to ensure clean transitions.
+   * REDHAT-FIX-002: Removed setTimeout - React batches state updates automatically.
+   */
+  const handleResultClick = useCallback(
+    (url: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      // Set navigating state to pause queries and prevent race conditions
+      setIsNavigating(true);
+      // Navigate immediately - React batches the state update with navigation
+      setLocation(url);
+    },
+    [setLocation]
+  );
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -85,18 +108,10 @@ export default function SearchResultsPage() {
             </div>
           )}
 
-          {/* Error State - UX-006: Added retry button */}
+          {/* Error State */}
           {error && (
-            <div className="text-center py-12">
-              <p className="text-destructive mb-4">Error searching: {error.message}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
+            <div className="text-center py-12 text-destructive">
+              <p>Error searching: {error.message}</p>
             </div>
           )}
 
@@ -112,7 +127,7 @@ export default function SearchResultsPage() {
           {/* Results */}
           {!isLoading && !error && searchQuery.trim() && results && (
             <div className="space-y-6">
-              {/* Quotes Section */}
+              {/* Quotes Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.quotes.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -123,7 +138,11 @@ export default function SearchResultsPage() {
                   </div>
                   <div className="space-y-2">
                     {results.quotes.map(quote => (
-                      <Link key={quote.id} href={quote.url}>
+                      <a
+                        key={quote.id}
+                        href={quote.url}
+                        onClick={e => handleResultClick(quote.url, e)}
+                      >
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
@@ -137,26 +156,23 @@ export default function SearchResultsPage() {
                                     {quote.description}
                                   </p>
                                 )}
-                                {quote.metadata?.total !== null &&
-                                  quote.metadata?.total !== undefined && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      Total: $
-                                      {Number(
-                                        quote.metadata.total as number
-                                      ).toFixed(2)}
-                                    </p>
-                                  )}
+                                {(quote.metadata as Record<string, unknown>)?.total && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Total: $
+                                    {Number((quote.metadata as Record<string, unknown>).total).toFixed(2)}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Customers Section */}
+              {/* Customers Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.customers.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -167,7 +183,11 @@ export default function SearchResultsPage() {
                   </div>
                   <div className="space-y-2">
                     {results.customers.map(customer => (
-                      <Link key={customer.id} href={customer.url}>
+                      <a
+                        key={customer.id}
+                        href={customer.url}
+                        onClick={e => handleResultClick(customer.url, e)}
+                      >
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
@@ -183,23 +203,22 @@ export default function SearchResultsPage() {
                                     {customer.description}
                                   </p>
                                 )}
-                                {customer.metadata?.phone !== null &&
-                                  customer.metadata?.phone !== undefined && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      Phone: {String(customer.metadata.phone)}
-                                    </p>
-                                  )}
+                                {(customer.metadata as Record<string, unknown>)?.phone && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Phone: {String((customer.metadata as Record<string, unknown>).phone)}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Products Section */}
+              {/* Products Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.products.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -210,7 +229,11 @@ export default function SearchResultsPage() {
                   </div>
                   <div className="space-y-2">
                     {results.products.map(product => (
-                      <Link key={product.id} href={product.url}>
+                      <a
+                        key={product.id}
+                        href={product.url}
+                        onClick={e => handleResultClick(product.url, e)}
+                      >
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
@@ -227,34 +250,29 @@ export default function SearchResultsPage() {
                                   </p>
                                 )}
                                 <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                                  {product.metadata?.quantityAvailable !==
-                                    null &&
-                                    product.metadata?.quantityAvailable !==
-                                      undefined && (
-                                      <span>
-                                        Qty:{" "}
-                                        {Number(
-                                          product.metadata
-                                            .quantityAvailable as number
-                                        )}
-                                      </span>
-                                    )}
-                                  {product.metadata?.unitPrice !== null &&
-                                    product.metadata?.unitPrice !==
-                                      undefined && (
-                                      <span>
-                                        Price: $
-                                        {Number(
-                                          product.metadata.unitPrice as number
-                                        ).toFixed(2)}
-                                      </span>
-                                    )}
+                                  {(product.metadata as Record<string, unknown>)?.quantityAvailable !==
+                                    undefined && (
+                                    <span>
+                                      Qty:{" "}
+                                      {Number(
+                                        (product.metadata as Record<string, unknown>).quantityAvailable
+                                      )}
+                                    </span>
+                                  )}
+                                  {(product.metadata as Record<string, unknown>)?.unitPrice && (
+                                    <span>
+                                      Price: $
+                                      {Number(
+                                        (product.metadata as Record<string, unknown>).unitPrice
+                                      ).toFixed(2)}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>

@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DollarSign,
@@ -16,10 +15,10 @@ import {
   Package,
   ShoppingCart,
   FileText,
-  Award,
   LogOut,
   Menu,
   CalendarIcon,
+  Video,
 } from "lucide-react";
 import {
   Sheet,
@@ -38,9 +37,11 @@ import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
 import { Leaderboard } from "@/components/vip-portal/Leaderboard";
 import { LiveCatalog } from "@/components/vip-portal/LiveCatalog";
 import { ImpersonationBanner } from "@/components/vip-portal/ImpersonationBanner";
+import { VipTierBadge } from "@/components/vip-portal/VipTierBadge";
 import AppointmentBooking from "./AppointmentBooking";
 import VipNotificationsBell from "./VipNotificationsBell";
 import DocumentDownloads from "./DocumentDownloads";
+import LiveShoppingPage from "./LiveShoppingPage";
 
 // Type for VIP Portal configuration with all module flags as boolean
 interface VipPortalConfig {
@@ -48,6 +49,7 @@ interface VipPortalConfig {
   clientId: number;
   moduleDashboardEnabled: boolean;
   moduleLiveCatalogEnabled: boolean;
+  moduleLiveShoppingEnabled: boolean;
   moduleArEnabled: boolean;
   moduleApEnabled: boolean;
   moduleTransactionHistoryEnabled: boolean;
@@ -91,34 +93,29 @@ export default function VIPDashboard() {
     isImpersonation,
     sessionGuid,
     sessionToken,
+    isInitialized,
   } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { data: rawConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
-  const { data: kpis } = trpc.vipPortal.dashboard.getKPIs.useQuery({
-    clientId,
-  });
+  // FE-QA-003: Only fetch data when auth is fully initialized
+  // tRPC client now sends x-vip-session-token header automatically from main.tsx
+  const isReady = isInitialized && clientId > 0;
+
+  const { data: rawConfig } = trpc.vipPortal.config.get.useQuery(
+    { clientId },
+    { enabled: isReady }
+  );
+  const { data: kpis } = trpc.vipPortal.dashboard.getKPIs.useQuery(
+    { clientId },
+    { enabled: isReady }
+  );
 
   // Cast config to properly typed interface to avoid unknown type issues
   const config = rawConfig as VipPortalConfig | undefined;
 
-  useEffect(() => {
-    if (!sessionToken) {
-      return;
-    }
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = (input, init) => {
-      const headers = new Headers(init?.headers ?? {});
-      headers.set("x-vip-session-token", sessionToken);
-      return originalFetch(input, { ...(init ?? {}), headers });
-    };
-    return () => {
-      window.fetch = originalFetch;
-    };
-  }, [sessionToken]);
-
-  if (!config || !kpis) {
+  // Show loading state while initializing or fetching data
+  if (!isReady || !config || !kpis) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -134,6 +131,11 @@ export default function VIPDashboard() {
       id: "dashboard",
       label: "Dashboard",
       enabled: config.moduleDashboardEnabled,
+    },
+    {
+      id: "live-shopping",
+      label: "Live Shopping",
+      enabled: config.moduleLiveShoppingEnabled ?? true, // Default enabled
     },
     {
       id: "catalog",
@@ -337,22 +339,12 @@ export default function VIPDashboard() {
                   )}
 
                   {config.moduleVipTierEnabled && (
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          VIP Status
-                        </CardTitle>
-                        <Award className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <Badge variant="secondary" className="text-base">
-                          Silver
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Current tier
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <VipTierBadge
+                      clientId={clientId}
+                      variant="card"
+                      showMetrics={true}
+                      showProgress={true}
+                    />
                   )}
 
                   {config.moduleMarketplaceNeedsEnabled && (
@@ -451,6 +443,16 @@ export default function VIPDashboard() {
                             Book Appointment
                           </span>
                         </Button>
+                        <Button
+                          variant="outline"
+                          className="h-auto flex-col gap-2 p-4 md:p-6 border-green-200 bg-green-50 hover:bg-green-100"
+                          onClick={() => setActiveTab("live-shopping")}
+                        >
+                          <Video className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+                          <span className="text-xs md:text-sm">
+                            Live Shopping
+                          </span>
+                        </Button>
                         {config.moduleCreditCenterEnabled && (
                           <Button
                             variant="outline"
@@ -469,6 +471,11 @@ export default function VIPDashboard() {
                 <DocumentDownloads clientId={clientId} />
               </div>
             )}
+
+          {/* Live Shopping Tab */}
+          {activeTab === "live-shopping" && (
+            <LiveShoppingPage onBack={() => setActiveTab("dashboard")} />
+          )}
 
           {/* AR Tab */}
           {activeTab === "ar" && config.moduleArEnabled && (

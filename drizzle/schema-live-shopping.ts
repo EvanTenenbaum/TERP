@@ -80,6 +80,18 @@ export const liveShoppingSessions = mysqlTable(
     // Configuration snapshot (prices, allowed categories, etc - serialized)
     sessionConfig: json("sessionConfig"),
 
+    // Session timeout configuration (MEET-075-BE)
+    // Default timeout is 2 hours (7200 seconds), 0 = no timeout
+    timeoutSeconds: int("timeoutSeconds").default(7200),
+    // When this session will auto-expire (calculated from startedAt + timeoutSeconds)
+    expiresAt: timestamp("expiresAt"),
+    // Whether timeout auto-release is enabled (releases inventory on timeout)
+    autoReleaseEnabled: boolean("autoReleaseEnabled").default(true),
+    // Timestamp when session was last activity (cart update, price change, etc.)
+    lastActivityAt: timestamp("lastActivityAt"),
+    // Session extension count (for tracking how many times timeout was extended)
+    extensionCount: int("extensionCount").default(0),
+
     // Standard audit fields
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -90,6 +102,7 @@ export const liveShoppingSessions = mysqlTable(
     clientIdx: index("idx_lss_client").on(table.clientId),
     statusIdx: index("idx_lss_status").on(table.status),
     roomCodeIdx: index("idx_lss_room").on(table.roomCode),
+    expiresAtIdx: index("idx_lss_expires").on(table.expiresAt),
   })
 );
 
@@ -140,6 +153,41 @@ export const sessionCartItems = mysqlTable(
     // INTERESTED: Customer interested, may negotiate price
     // TO_PURCHASE: Customer intends to buy
     itemStatus: cartItemStatusEnum.default("INTERESTED"),
+
+    // FEATURE-003: Price Negotiation fields
+    // Status of price negotiation for this item
+    negotiationStatus: mysqlEnum("negotiationStatus", [
+      "PENDING",        // Awaiting response
+      "COUNTER_OFFERED", // Seller made counter-offer
+      "ACCEPTED",       // Price agreed
+      "REJECTED",       // Negotiation rejected
+    ]),
+    // JSON field to store negotiation history and details
+    negotiationData: json("negotiationData").$type<{
+      status: string;
+      originalPrice: number;
+      proposedPrice: number;
+      proposedQuantity?: number;
+      counterPrice?: number;
+      counterQuantity?: number;
+      finalPrice?: number;
+      reason?: string;
+      requestedBy?: number;
+      requestedAt?: string;
+      acceptedAt?: string;
+      acceptedBy?: number;
+      rejectedAt?: string;
+      rejectedBy?: number;
+      rejectionReason?: string;
+      history: Array<{
+        action: string;
+        price?: number | null;
+        quantity?: number;
+        by: number;
+        at: string;
+        reason?: string;
+      }>;
+    }>(),
 
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

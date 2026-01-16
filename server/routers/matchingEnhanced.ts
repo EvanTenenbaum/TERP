@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as historicalAnalysis from "../historicalAnalysis";
 import type { EnhancedBatchSourceData, EnhancedHistoricalSourceData } from "../matchingEngineEnhanced";
@@ -12,7 +13,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find matches for a specific client need
    */
-  findMatchesForNeed: publicProcedure
+  findMatchesForNeed: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ needId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -34,7 +36,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find client needs that match a specific inventory batch
    */
-  findMatchesForBatch: publicProcedure
+  findMatchesForBatch: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -56,7 +59,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find client needs that match a specific vendor supply
    */
-  findMatchesForVendorSupply: publicProcedure
+  findMatchesForVendorSupply: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ vendorSupplyId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -78,7 +82,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Analyze client purchase history to identify patterns
    */
-  analyzeClientPurchaseHistory: publicProcedure
+  analyzeClientPurchaseHistory: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(
       z.object({
         clientId: z.number(),
@@ -109,7 +114,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Identify lapsed buyers (clients who used to buy but haven't recently)
    */
-  identifyLapsedBuyers: publicProcedure
+  identifyLapsedBuyers: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(
       z.object({
         minPastPurchases: z.number().default(3),
@@ -138,7 +144,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Get all active needs with their matches (for dashboard widgets)
    */
-  getAllActiveNeedsWithMatches: publicProcedure
+  getAllActiveNeedsWithMatches: protectedProcedure
+    .use(requirePermission("matching:read"))
     .query(async () => {
       try {
         const results = await matchingEngine.getAllActiveNeedsWithMatches();
@@ -209,7 +216,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Get predictive reorder opportunities based on purchase history
    */
-  getPredictiveReorderOpportunities: publicProcedure
+  getPredictiveReorderOpportunities: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({
       lookAheadDays: z.number().optional().default(30),
       minOrderCount: z.number().optional().default(2),
@@ -254,7 +262,8 @@ export const matchingEnhancedRouter = router({
   /**
    * Find potential buyers for a specific inventory batch
    */
-  findBuyersForInventory: publicProcedure
+  findBuyersForInventory: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -310,13 +319,14 @@ export const matchingEnhancedRouter = router({
   /**
    * Find historical buyers for a product/strain
    */
-  findHistoricalBuyers: publicProcedure
+  findHistoricalBuyers: protectedProcedure
+    .use(requirePermission("matching:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
         // Get batch details first to find product/strain info
         const batchResults = await matchingEngine.findBuyersForInventory(input.batchId);
-        
+
         // Helper to safely extract data from sourceData union type
         const getClientName = (sourceData: matchingEngine.Match["sourceData"], fallback: string): string => {
           if ("client" in sourceData && sourceData.client?.name) {
@@ -324,28 +334,28 @@ export const matchingEnhancedRouter = router({
           }
           return fallback;
         };
-        
+
         const getPurchaseCount = (sourceData: matchingEngine.Match["sourceData"]): number => {
           if ("purchaseCount" in sourceData && sourceData.purchaseCount) {
             return sourceData.purchaseCount;
           }
           return 0;
         };
-        
+
         const getLastPurchaseDate = (sourceData: matchingEngine.Match["sourceData"]): Date => {
           if ("lastPurchaseDate" in sourceData && sourceData.lastPurchaseDate) {
             return sourceData.lastPurchaseDate;
           }
           return new Date();
         };
-        
+
         const getTotalQuantity = (sourceData: matchingEngine.Match["sourceData"]): number => {
           if ("totalQuantity" in sourceData && sourceData.totalQuantity) {
             return sourceData.totalQuantity;
           }
           return 0;
         };
-        
+
         // Filter to only historical matches
         const historicalBuyers = batchResults
           .filter(result => result.matches.some(m => m.type === "HISTORICAL"))
@@ -369,6 +379,88 @@ export const matchingEnhancedRouter = router({
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to find historical buyers",
+          data: [],
+        };
+      }
+    }),
+
+  /**
+   * FEAT-020: Find products matching by strain
+   * Groups inventory batches by strain for easier matching
+   */
+  findProductsByStrain: protectedProcedure
+    .use(requirePermission("matching:read"))
+    .input(z.object({
+      strainName: z.string().optional(),
+      strainId: z.number().optional(),
+      includeRelated: z.boolean().default(true), // Include strain family matches
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { findProductsByStrain } = await import("../services/strainMatchingService");
+        const results = await findProductsByStrain({
+          strainName: input.strainName,
+          strainId: input.strainId,
+          includeRelated: input.includeRelated,
+        });
+        return { success: true, data: results };
+      } catch (error) {
+        console.error("Error finding products by strain:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to find products",
+          data: [],
+        };
+      }
+    }),
+
+  /**
+   * FEAT-020: Group products by subcategory
+   * Returns products organized by their subcategory for catalog views
+   */
+  groupProductsBySubcategory: protectedProcedure
+    .use(requirePermission("matching:read"))
+    .input(z.object({
+      category: z.string().optional(),
+      includeOutOfStock: z.boolean().default(false),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { groupProductsBySubcategory } = await import("../services/strainMatchingService");
+        const results = await groupProductsBySubcategory({
+          category: input.category,
+          includeOutOfStock: input.includeOutOfStock,
+        });
+        return { success: true, data: results };
+      } catch (error) {
+        console.error("Error grouping products by subcategory:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to group products",
+          data: {},
+        };
+      }
+    }),
+
+  /**
+   * FEAT-020: Find similar strains based on characteristics
+   */
+  findSimilarStrains: protectedProcedure
+    .use(requirePermission("matching:read"))
+    .input(z.object({
+      strainId: z.number(),
+      limit: z.number().default(10),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { findSimilarStrains } = await import("../services/strainMatchingService");
+        const results = await findSimilarStrains(input.strainId, input.limit);
+        return { success: true, data: results };
+      } catch (error) {
+        console.error("Error finding similar strains:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to find similar strains",
           data: [],
         };
       }

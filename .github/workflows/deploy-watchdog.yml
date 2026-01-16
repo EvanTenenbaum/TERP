@@ -63,15 +63,57 @@ jobs:
             sleep 30
           done
 
+      - name: Setup Node.js
+        if: steps.watch.outputs.result == 'success'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        if: steps.watch.outputs.result == 'success'
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Checkout code
+        if: steps.watch.outputs.result == 'success'
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        if: steps.watch.outputs.result == 'success'
+        run: pnpm install --frozen-lockfile
+
+      - name: INFRA-004 Post-Deployment Health Check
+        id: health
+        if: steps.watch.outputs.result == 'success'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          echo "Running post-deployment health check..."
+          pnpm tsx scripts/deployment-enforcement.ts health || echo "HEALTH_FAILED=true" >> $GITHUB_OUTPUT
+
       - name: Notify Slack (Success)
-        if: success() && steps.watch.outputs.result == 'success'
+        if: success() && steps.watch.outputs.result == 'success' && steps.health.outputs.HEALTH_FAILED != 'true'
         uses: 8398a7/action-slack@v3
         with:
           status: custom
           custom_payload: |
             {
-              "text": "✅ **Deployment Successful**\nApp: ${{ secrets.DO_APP_NAME }}\nVersion: ${{ github.sha }} is now live.",
+              "text": "✅ **Deployment Successful**\nApp: ${{ secrets.DO_APP_NAME }}\nVersion: ${{ github.sha }} is now live.\nHealth Check: PASSED",
               "attachments": [{ "color": "#36a64f" }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack (Health Check Failed)
+        if: steps.watch.outputs.result == 'success' && steps.health.outputs.HEALTH_FAILED == 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "⚠️ **Deployment Health Check FAILED**\nApp: ${{ secrets.DO_APP_NAME }}\nVersion: ${{ github.sha }} deployed but health check failed.",
+              "attachments": [{ "color": "#ff9800" }]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

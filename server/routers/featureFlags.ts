@@ -95,6 +95,56 @@ export const featureFlagsRouter = router({
   // ========================================================================
 
   /**
+   * List feature flags with pagination (admin view)
+   * BUG-034: Standardized .list procedure for API consistency
+   */
+  list: adminProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(1000).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        search: z.string().optional(),
+        module: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+
+      let flags = await featureFlagService.getAllFlags();
+
+      // Apply search filter if provided
+      if (input?.search) {
+        const searchLower = input.search.toLowerCase();
+        flags = flags.filter(
+          (flag) =>
+            flag.key?.toLowerCase().includes(searchLower) ||
+            flag.name?.toLowerCase().includes(searchLower) ||
+            flag.description?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Apply module filter if provided
+      if (input?.module) {
+        flags = flags.filter((flag) => flag.module === input.module);
+      }
+
+      // Get total count before pagination
+      const total = flags.length;
+
+      // Apply pagination
+      const paginatedFlags = flags.slice(offset, offset + limit);
+
+      return {
+        data: paginatedFlags,
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total,
+      };
+    }),
+
+  /**
    * Get all flags (admin view)
    */
   getAll: adminProcedure.query(async () => {

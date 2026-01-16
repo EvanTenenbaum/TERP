@@ -104,7 +104,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
         <div className="space-y-3">
           {opportunities.map((opp: any, idx: number) => (
             <div
-              key={idx}
+              key={`item-${idx}`}
               className="flex items-start justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
               onClick={() => setLocation(`/clients/${opp.clientId}?tab=needs`)}
             >

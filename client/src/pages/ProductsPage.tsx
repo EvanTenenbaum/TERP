@@ -99,24 +99,27 @@ export default function ProductsPage() {
     const itemCount = productsData?.items?.length ?? 0;
     const total = productsData?.pagination?.total ?? 'unknown';
 
-    console.log('[ProductsPage] Query state:', {
-      isLoading,
-      isError,
-      error: error?.message,
-      itemCount,
-      total,
-      showDeleted,
-      hasItems: productsData?.items !== undefined,
-      rawDataType: productsData ? typeof productsData : 'undefined',
-    });
-
-    // Warn if we have a response but no items
-    if (!isLoading && !isError && productsData && itemCount === 0) {
-      console.warn('[ProductsPage] Zero products returned - possible data display issue', {
+    // Debug logging for data display issues (QA-049) - only in development
+    if (import.meta.env.DEV) {
+      console.log('[ProductsPage] Query state:', {
+        isLoading,
+        isError,
+        error: error?.message,
+        itemCount,
+        total,
         showDeleted,
-        pagination: productsData.pagination,
-        response: productsData,
+        hasItems: productsData?.items !== undefined,
+        rawDataType: productsData ? typeof productsData : 'undefined',
       });
+
+      // Warn if we have a response but no items
+      if (!isLoading && !isError && productsData && itemCount === 0) {
+        console.warn('[ProductsPage] Zero products returned - possible data display issue', {
+          showDeleted,
+          pagination: productsData.pagination,
+          response: productsData,
+        });
+      }
     }
   }, [productsData, isLoading, isError, error, showDeleted]);
 
@@ -124,6 +127,10 @@ export default function ProductsPage() {
   const { data: brands } = trpc.productCatalogue.getBrands.useQuery();
   const { data: strains } = trpc.productCatalogue.getStrains.useQuery();
   const { data: categories } = trpc.productCatalogue.getCategories.useQuery();
+
+  // FEAT-009: Fetch subcategories from settings for hierarchical categorization
+  const { data: settingsCategories } = trpc.settings.categories.list.useQuery();
+  const { data: settingsSubcategories } = trpc.settings.subcategories.list.useQuery();
 
   // Mutations
   const createProduct = trpc.productCatalogue.create.useMutation({
@@ -576,16 +583,48 @@ export default function ProductsPage() {
                 ))}
               </datalist>
             </div>
+            {/* FEAT-009: Enhanced subcategory select with hierarchical options */}
             <div className="space-y-2">
               <Label htmlFor="subcategory">Subcategory</Label>
-              <Input
-                id="subcategory"
-                value={formData.subcategory}
-                onChange={e =>
-                  setFormData({ ...formData, subcategory: e.target.value })
+              <Select
+                value={formData.subcategory || "none"}
+                onValueChange={v =>
+                  setFormData({ ...formData, subcategory: v === "none" ? "" : v })
                 }
-                placeholder="e.g., Indoor, Outdoor, Live Rosin"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a subcategory (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Subcategory</SelectItem>
+                  {/* Group subcategories by parent category */}
+                  {settingsCategories?.map((cat: { id: number; name: string }) => {
+                    const catSubcategories = settingsSubcategories?.filter(
+                      (sub: { categoryId: number }) => sub.categoryId === cat.id
+                    ) || [];
+                    if (catSubcategories.length === 0) return null;
+                    return (
+                      <React.Fragment key={cat.id}>
+                        <SelectItem disabled value={`cat-${cat.id}`} className="font-semibold text-muted-foreground">
+                          {cat.name}
+                        </SelectItem>
+                        {catSubcategories.map((sub: { id: number; name: string }) => (
+                          <SelectItem key={sub.id} value={sub.name} className="pl-6">
+                            {sub.name}
+                          </SelectItem>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+                  {/* Also show common subcategory options */}
+                  <SelectItem value="Smalls">Smalls</SelectItem>
+                  <SelectItem value="Trim">Trim</SelectItem>
+                  <SelectItem value="Shake">Shake</SelectItem>
+                  <SelectItem value="Indoor">Indoor</SelectItem>
+                  <SelectItem value="Outdoor">Outdoor</SelectItem>
+                  <SelectItem value="Light Dep">Light Dep</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="strain">Strain</Label>
@@ -725,16 +764,48 @@ export default function ProductsPage() {
                 ))}
               </datalist>
             </div>
+            {/* FEAT-009: Enhanced subcategory select with hierarchical options */}
             <div className="space-y-2">
               <Label htmlFor="edit-subcategory">Subcategory</Label>
-              <Input
-                id="edit-subcategory"
-                value={formData.subcategory}
-                onChange={e =>
-                  setFormData({ ...formData, subcategory: e.target.value })
+              <Select
+                value={formData.subcategory || "none"}
+                onValueChange={v =>
+                  setFormData({ ...formData, subcategory: v === "none" ? "" : v })
                 }
-                placeholder="e.g., Indoor, Outdoor, Live Rosin"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a subcategory (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Subcategory</SelectItem>
+                  {/* Group subcategories by parent category */}
+                  {settingsCategories?.map((cat: { id: number; name: string }) => {
+                    const catSubcategories = settingsSubcategories?.filter(
+                      (sub: { categoryId: number }) => sub.categoryId === cat.id
+                    ) || [];
+                    if (catSubcategories.length === 0) return null;
+                    return (
+                      <React.Fragment key={cat.id}>
+                        <SelectItem disabled value={`edit-cat-${cat.id}`} className="font-semibold text-muted-foreground">
+                          {cat.name}
+                        </SelectItem>
+                        {catSubcategories.map((sub: { id: number; name: string }) => (
+                          <SelectItem key={sub.id} value={sub.name} className="pl-6">
+                            {sub.name}
+                          </SelectItem>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+                  {/* Also show common subcategory options */}
+                  <SelectItem value="Smalls">Smalls</SelectItem>
+                  <SelectItem value="Trim">Trim</SelectItem>
+                  <SelectItem value="Shake">Shake</SelectItem>
+                  <SelectItem value="Indoor">Indoor</SelectItem>
+                  <SelectItem value="Outdoor">Outdoor</SelectItem>
+                  <SelectItem value="Light Dep">Light Dep</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-strain">Strain</Label>

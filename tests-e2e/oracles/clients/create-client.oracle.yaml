@@ -1,0 +1,50 @@
+# Oracle: CRM.Clients.CreateClient
+# Create a new client and verify success
+
+flow_id: "CRM.Clients.CreateClient"
+description: "Create a new client via the UI form"
+role: "SalesManager"
+tags:
+  - tier1
+  - clients
+  - crud
+timeout: 45000
+
+preconditions:
+  ensure: []
+
+steps:
+  - action: navigate
+    path: "/clients/new"
+    wait_for: "form, [data-testid='client-form']"
+
+  - action: wait
+    network_idle: true
+
+  - action: type
+    target: "input[name='name'], [data-testid='client-name']"
+    value: "Test Client {{timestamp}}"
+    clear_first: true
+
+  - action: type
+    target: "input[name='teri_code'], input[name='teriCode'], [data-testid='teri-code']"
+    value: "TEST{{random:4}}"
+    clear_first: true
+
+  - action: screenshot
+    name: "client_form_filled"
+
+  - action: click
+    target: "button[type='submit'], [data-testid='save-client'], button:has-text('Save'), button:has-text('Create')"
+    wait_for_navigation: true
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "client_created"
+
+expected_ui:
+  visible:
+    - "[data-testid='client-detail'], [data-testid='success-message'], .toast-success, [role='status']"

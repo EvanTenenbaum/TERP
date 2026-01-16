@@ -1,7 +1,7 @@
 import { memo } from "react";
 /**
  * Workflow Recent Activity Widget
- * 
+ *
  * Displays recent batch status changes with visual transition indicators.
  * Shows the most recent workflow activity across all batches.
  */
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowRight, History, Clock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
@@ -17,18 +18,20 @@ import { formatDistanceToNow } from "date-fns";
 
 export const WorkflowActivityWidget = memo(function WorkflowActivityWidget() {
   const [, setLocation] = useLocation();
-  
-  const { data: recentChanges, isLoading: changesLoading } = trpc.workflowQueue.getRecentChanges.useQuery({
-    limit: 5,
-  });
-  
-  const { data: statuses, isLoading: statusesLoading } = trpc.workflowQueue.listStatuses.useQuery();
+
+  const { data: recentChanges, isLoading: changesLoading } =
+    trpc.workflowQueue.getRecentChanges.useQuery({
+      limit: 5,
+    });
+
+  const { data: statuses, isLoading: statusesLoading } =
+    trpc.workflowQueue.listStatuses.useQuery();
 
   const isLoading = changesLoading || statusesLoading;
 
   const getStatusById = (id: number | null) => {
     if (!id || !statuses) return null;
-    return statuses.find((s) => s.id === id);
+    return statuses.find(s => s.id === id);
   };
 
   return (
@@ -56,13 +59,15 @@ export const WorkflowActivityWidget = memo(function WorkflowActivityWidget() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : !recentChanges || recentChanges.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <History className="h-12 w-12 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">No recent workflow activity</p>
-          </div>
+          <EmptyState
+            variant="generic"
+            size="sm"
+            title="No recent activity"
+            description="Workflow activity will appear once batch statuses change"
+          />
         ) : (
           <div className="space-y-3">
-            {recentChanges.map((change) => {
+            {recentChanges.map(change => {
               const fromStatus = getStatusById(change.fromStatusId);
               const toStatus = getStatusById(change.toStatusId);
 
@@ -78,7 +83,9 @@ export const WorkflowActivityWidget = memo(function WorkflowActivityWidget() {
                     </span>
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Clock className="h-3 w-3" />
-                      {formatDistanceToNow(new Date(change.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(change.createdAt), {
+                        addSuffix: true,
+                      })}
                     </div>
                   </div>
 

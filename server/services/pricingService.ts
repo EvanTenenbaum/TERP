@@ -22,8 +22,10 @@ export const pricingService = {
   /**
    * Get margin for a customer and product category with fallback logic:
    * 1. Customer-specific margin from customPricingRules (if exists)
-   * 2. Default margin by category (if exists)
-   * 3. null (manual input required)
+   * 2. Default margin by exact category (if exists)
+   * 3. Default margin by "OTHER" category (fallback)
+   * 4. Default margin by "DEFAULT" category (global fallback)
+   * 5. null (manual input required)
    */
   async getMarginWithFallback(
     customerId: number,
@@ -50,7 +52,7 @@ export const pricingService = {
       }
     }
 
-    // Step 2: Try default margin by category
+    // Step 2: Try default margin by exact category
     const defaultMargin = await db
       .select()
       .from(pricingDefaults)
@@ -65,7 +67,41 @@ export const pricingService = {
       };
     }
 
-    // Step 3: No margin found - manual input required
+    // Step 3: Fallback to "OTHER" category (used when product category is unknown)
+    if (productCategory !== "OTHER") {
+      const otherMargin = await db
+        .select()
+        .from(pricingDefaults)
+        .where(eq(pricingDefaults.productCategory, "OTHER"))
+        .limit(1);
+
+      if (otherMargin.length > 0) {
+        return {
+          marginPercent: parseFloat(otherMargin[0].defaultMarginPercent),
+          source: "DEFAULT",
+          productCategory: "OTHER",
+        };
+      }
+    }
+
+    // Step 4: Fallback to "DEFAULT" category (global fallback)
+    if (productCategory !== "DEFAULT") {
+      const globalDefault = await db
+        .select()
+        .from(pricingDefaults)
+        .where(eq(pricingDefaults.productCategory, "DEFAULT"))
+        .limit(1);
+
+      if (globalDefault.length > 0) {
+        return {
+          marginPercent: parseFloat(globalDefault[0].defaultMarginPercent),
+          source: "DEFAULT",
+          productCategory: "DEFAULT",
+        };
+      }
+    }
+
+    // Step 5: No margin found - manual input required
     return {
       marginPercent: null,
       source: "MANUAL",

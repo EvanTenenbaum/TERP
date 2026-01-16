@@ -47,9 +47,9 @@ import {
   CheckCircle,
   Mail,
   Download,
+  CreditCard,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
-import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
 import {
   PaginationControls,
@@ -57,6 +57,10 @@ import {
 } from "@/components/ui/pagination-controls";
 import { toast } from "sonner";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
+// FEAT-007: Import Record Payment Dialog and Payment History
+import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
+import { InvoicePaymentHistory } from "@/components/accounting/InvoicePaymentHistory";
+import { formatDate } from "@/lib/dateFormat";
 
 type Invoice = {
   id: number;
@@ -75,6 +79,11 @@ export default function Invoices() {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [showAging, setShowAging] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  // BUG-089 fix: Add state for create invoice dialog
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  // FEAT-007: State for record payment dialog
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // PERF-003: Pagination state
   const { page, pageSize, offset, setPage, setPageSize } = usePagination(50);
@@ -106,6 +115,14 @@ export default function Invoices() {
 
   const handleDownloadPDF = (invoice: Invoice) => {
     toast.success(`Downloading PDF for ${invoice.invoiceNumber}`);
+  };
+
+  // FEAT-007: Handle record payment action
+  const handleRecordPayment = (invoice: Invoice) => {
+    setPaymentInvoice(invoice);
+    setShowPaymentDialog(true);
+    // Close the detail sheet if open
+    setSelectedInvoice(null);
   };
 
   const handleExportAll = () => {
@@ -195,11 +212,6 @@ export default function Invoices() {
     }).format(num);
   };
 
-  const formatDate = (dateStr: Date | string) => {
-    const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
-    return format(date, "MMM dd, yyyy");
-  };
-
   return (
     <PageErrorBoundary pageName="Invoices">
     <div className="flex flex-col gap-6 p-6">
@@ -222,7 +234,8 @@ export default function Invoices() {
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button>
+          {/* BUG-089 fix: Add onClick handler for New Invoice button */}
+          <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Invoice
           </Button>
@@ -413,6 +426,14 @@ export default function Invoices() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {/* FEAT-007: Record Payment action */}
+                                <DropdownMenuItem
+                                  onClick={() => handleRecordPayment(invoice)}
+                                  disabled={invoice.status === "PAID" || invoice.status === "VOID"}
+                                >
+                                  <CreditCard className="h-4 w-4 mr-2" />
+                                  Record Payment
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => handleMarkPaid(invoice)}
                                   disabled={invoice.status === "PAID"}
@@ -522,16 +543,34 @@ export default function Invoices() {
 
               <Separator />
 
+              {/* FEAT-007: Payment History */}
+              {selectedInvoice.status !== "DRAFT" && parseFloat(selectedInvoice.amountPaid) > 0 && (
+                <>
+                  <InvoicePaymentHistory invoiceId={selectedInvoice.id} />
+                  <Separator />
+                </>
+              )}
+
               {/* Quick Actions */}
               <div className="space-y-2">
                 <h3 className="font-semibold mb-3">Quick Actions</h3>
+                {/* FEAT-007: Primary action - Record Payment */}
                 <Button
+                  className="w-full"
+                  onClick={() => handleRecordPayment(selectedInvoice)}
+                  disabled={selectedInvoice.status === "PAID" || selectedInvoice.status === "VOID"}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Record Payment
+                </Button>
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => handleMarkPaid(selectedInvoice)}
                   disabled={selectedInvoice.status === "PAID"}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark as Paid
+                  Mark as Paid (Full)
                 </Button>
                 <Button
                   variant="outline"
@@ -558,6 +597,72 @@ export default function Invoices() {
           </SheetContent>
         </Sheet>
       )}
+
+      {/* BUG-089 fix: Create Invoice Sheet */}
+      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Create New Invoice</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <p className="text-muted-foreground">
+              To create an invoice, please use one of the following methods:
+            </p>
+            <div className="space-y-3">
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">From Sales Order</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Navigate to Sales → Orders, select a finalized order, and click "Generate Invoice"
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    window.location.href = '/sales/orders';
+                  }}
+                >
+                  Go to Orders
+                </Button>
+              </div>
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">From Client Profile</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Navigate to a client's profile and create an invoice from their Transactions tab
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    window.location.href = '/sales/clients';
+                  }}
+                >
+                  Go to Clients
+                </Button>
+              </div>
+            </div>
+            <Separator className="my-4" />
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => setIsCreateOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* FEAT-007: Record Payment Dialog */}
+      <RecordPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        invoice={paymentInvoice}
+        onSuccess={() => {
+          setPaymentInvoice(null);
+        }}
+      />
     </div>
     </PageErrorBoundary>
   );

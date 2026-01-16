@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
 import type { ClientGridRow, ClientGridSummary } from "@/types/spreadsheet";
+import { Loader2 } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
@@ -214,9 +215,21 @@ export const ClientGrid = React.memo(function ClientGrid() {
           </Card>
 
           <div className="ag-theme-alpine h-[600px] w-full">
-            {error && (
+            {/* QA-FIX: Add explicit loading state for better UX */}
+            {isLoading && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Loading client orders...
+                  </p>
+                </div>
+              </div>
+            )}
+            {error && !isLoading && (
               <div className="mb-3 text-sm text-destructive">
-                {error.message}
+                {/* BUG-088 fix: Show user-friendly error instead of raw SQL/query errors */}
+                Unable to load client orders. Please try again or contact support if the issue persists.
               </div>
             )}
             {!isLoading && !error && (!gridData?.rows || gridData.rows.length === 0) ? (

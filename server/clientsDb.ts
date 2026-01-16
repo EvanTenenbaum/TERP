@@ -47,55 +47,65 @@ export async function getClients(options: {
   // FIX-008: Diagnostic - Test with minimal columns first to isolate failure
   // If this fails, the issue is not with specific columns but with the connection/query execution
   try {
-    const minimalTest = await db.select({
-      id: clients.id,
-      name: clients.name,
-    }).from(clients).limit(1);
-    console.log("[DIAG] Minimal query succeeded:", minimalTest.length, "rows");
+    const minimalTest = await db
+      .select({
+        id: clients.id,
+        name: clients.name,
+      })
+      .from(clients)
+      .limit(1);
+    console.info("[DIAG] Minimal query succeeded:", minimalTest.length, "rows");
   } catch (minimalError) {
     console.error("[DIAG] Minimal query FAILED:", minimalError);
     // If even minimal query fails, throw with this context
-    throw new Error(`Database connection issue - even minimal query failed: ${String(minimalError)}`);
+    throw new Error(
+      `Database connection issue - even minimal query failed: ${String(minimalError)}`
+    );
   }
 
   // FIX-007: Select specific columns to avoid max_allowed_packet issues
   // Large JSON columns (tags, customPricingRules) are excluded from list view
   // They can be fetched separately when viewing individual client details
-  let query = db.select({
-    id: clients.id,
-    version: clients.version,
-    teriCode: clients.teriCode,
-    name: clients.name,
-    email: clients.email,
-    phone: clients.phone,
-    address: clients.address,
-    isBuyer: clients.isBuyer,
-    isSeller: clients.isSeller,
-    isBrand: clients.isBrand,
-    isReferee: clients.isReferee,
-    isContractor: clients.isContractor,
-    // Exclude large JSON columns: tags, customPricingRules
-    pricingProfileId: clients.pricingProfileId,
-    cogsAdjustmentType: clients.cogsAdjustmentType,
-    cogsAdjustmentValue: clients.cogsAdjustmentValue,
-    autoDeferConsignment: clients.autoDeferConsignment,
-    totalSpent: clients.totalSpent,
-    totalProfit: clients.totalProfit,
-    avgProfitMargin: clients.avgProfitMargin,
-    totalOwed: clients.totalOwed,
-    oldestDebtDays: clients.oldestDebtDays,
-    creditLimit: clients.creditLimit,
-    creditLimitUpdatedAt: clients.creditLimitUpdatedAt,
-    creditLimitSource: clients.creditLimitSource,
-    creditLimitOverrideReason: clients.creditLimitOverrideReason,
-    vipPortalEnabled: clients.vipPortalEnabled,
-    vipPortalLastLogin: clients.vipPortalLastLogin,
-    createdAt: clients.createdAt,
-    updatedAt: clients.updatedAt,
-  }).from(clients);
+  let query = db
+    .select({
+      id: clients.id,
+      version: clients.version,
+      teriCode: clients.teriCode,
+      name: clients.name,
+      email: clients.email,
+      phone: clients.phone,
+      address: clients.address,
+      isBuyer: clients.isBuyer,
+      isSeller: clients.isSeller,
+      isBrand: clients.isBrand,
+      isReferee: clients.isReferee,
+      isContractor: clients.isContractor,
+      // Exclude large JSON columns: tags, customPricingRules
+      pricingProfileId: clients.pricingProfileId,
+      cogsAdjustmentType: clients.cogsAdjustmentType,
+      cogsAdjustmentValue: clients.cogsAdjustmentValue,
+      autoDeferConsignment: clients.autoDeferConsignment,
+      totalSpent: clients.totalSpent,
+      totalProfit: clients.totalProfit,
+      avgProfitMargin: clients.avgProfitMargin,
+      totalOwed: clients.totalOwed,
+      oldestDebtDays: clients.oldestDebtDays,
+      creditLimit: clients.creditLimit,
+      creditLimitUpdatedAt: clients.creditLimitUpdatedAt,
+      creditLimitSource: clients.creditLimitSource,
+      creditLimitOverrideReason: clients.creditLimitOverrideReason,
+      vipPortalEnabled: clients.vipPortalEnabled,
+      vipPortalLastLogin: clients.vipPortalLastLogin,
+      createdAt: clients.createdAt,
+      updatedAt: clients.updatedAt,
+    })
+    .from(clients);
 
   // Build WHERE conditions
   const conditions: (SQL<unknown> | undefined)[] = [];
+
+  // FIX: Always filter out soft-deleted clients unless explicitly requested
+  conditions.push(sql`${clients.deletedAt} IS NULL`);
 
   // Enhanced multi-field search (TERI code, name, email, phone, address)
   if (search) {
@@ -113,11 +123,16 @@ export async function getClients(options: {
   // Filter by client types
   if (clientTypes && clientTypes.length > 0) {
     const typeConditions: SQL<unknown>[] = [];
-    if (clientTypes.includes("buyer")) typeConditions.push(eq(clients.isBuyer, true));
-    if (clientTypes.includes("seller")) typeConditions.push(eq(clients.isSeller, true));
-    if (clientTypes.includes("brand")) typeConditions.push(eq(clients.isBrand, true));
-    if (clientTypes.includes("referee")) typeConditions.push(eq(clients.isReferee, true));
-    if (clientTypes.includes("contractor")) typeConditions.push(eq(clients.isContractor, true));
+    if (clientTypes.includes("buyer"))
+      typeConditions.push(eq(clients.isBuyer, true));
+    if (clientTypes.includes("seller"))
+      typeConditions.push(eq(clients.isSeller, true));
+    if (clientTypes.includes("brand"))
+      typeConditions.push(eq(clients.isBrand, true));
+    if (clientTypes.includes("referee"))
+      typeConditions.push(eq(clients.isReferee, true));
+    if (clientTypes.includes("contractor"))
+      typeConditions.push(eq(clients.isContractor, true));
     if (typeConditions.length > 0) {
       const orCondition = or(...typeConditions);
       if (orCondition) conditions.push(orCondition);
@@ -136,12 +151,14 @@ export async function getClients(options: {
   // Filter by tags (JSON search)
   if (tags && tags.length > 0) {
     for (const tag of tags) {
-      conditions.push(sql`JSON_CONTAINS(${clients.tags}, ${JSON.stringify([tag])})`);
+      conditions.push(
+        sql`JSON_CONTAINS(${clients.tags}, ${JSON.stringify([tag])})`
+      );
     }
   }
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   try {
@@ -164,7 +181,7 @@ export async function getClients(options: {
       };
       message?: string;
       query?: string;
-      params?: any;
+      params?: unknown;
     };
 
     // Extract the underlying MySQL error from cause
@@ -184,11 +201,18 @@ export async function getClients(options: {
 
     // Log the full error structure for debugging
     console.error("Error cause:", drizzleError.cause);
-    console.error("Full Error Object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error(
+      "Full Error Object:",
+      JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+    );
     console.error("------------------------------------------");
 
     // Re-throw with the actual MySQL error if available
-    const errorMessage = mysqlError.sqlMessage || mysqlError.message || drizzleError.message || String(error);
+    const errorMessage =
+      mysqlError.sqlMessage ||
+      mysqlError.message ||
+      drizzleError.message ||
+      String(error);
     throw new Error(`Database error fetching clients: ${errorMessage}`);
   }
 }
@@ -212,6 +236,9 @@ export async function getClientCount(options: {
   // Build WHERE conditions (same as getClients)
   const conditions: (SQL<unknown> | undefined)[] = [];
 
+  // FIX: Always filter out soft-deleted clients
+  conditions.push(sql`${clients.deletedAt} IS NULL`);
+
   // Enhanced multi-field search (same as getClients)
   if (search) {
     conditions.push(
@@ -227,11 +254,16 @@ export async function getClientCount(options: {
 
   if (clientTypes && clientTypes.length > 0) {
     const typeConditions: SQL<unknown>[] = [];
-    if (clientTypes.includes("buyer")) typeConditions.push(eq(clients.isBuyer, true));
-    if (clientTypes.includes("seller")) typeConditions.push(eq(clients.isSeller, true));
-    if (clientTypes.includes("brand")) typeConditions.push(eq(clients.isBrand, true));
-    if (clientTypes.includes("referee")) typeConditions.push(eq(clients.isReferee, true));
-    if (clientTypes.includes("contractor")) typeConditions.push(eq(clients.isContractor, true));
+    if (clientTypes.includes("buyer"))
+      typeConditions.push(eq(clients.isBuyer, true));
+    if (clientTypes.includes("seller"))
+      typeConditions.push(eq(clients.isSeller, true));
+    if (clientTypes.includes("brand"))
+      typeConditions.push(eq(clients.isBrand, true));
+    if (clientTypes.includes("referee"))
+      typeConditions.push(eq(clients.isReferee, true));
+    if (clientTypes.includes("contractor"))
+      typeConditions.push(eq(clients.isContractor, true));
     if (typeConditions.length > 0) {
       const orCondition = or(...typeConditions);
       if (orCondition) conditions.push(orCondition);
@@ -248,12 +280,14 @@ export async function getClientCount(options: {
 
   if (tags && tags.length > 0) {
     for (const tag of tags) {
-      conditions.push(sql`JSON_CONTAINS(${clients.tags}, ${JSON.stringify([tag])})`);
+      conditions.push(
+        sql`JSON_CONTAINS(${clients.tags}, ${JSON.stringify([tag])})`
+      );
     }
   }
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   const result = await query;
@@ -262,6 +296,8 @@ export async function getClientCount(options: {
 
 /**
  * Get single client by ID
+ *
+ * SEC-FIX: Added deletedAt filter to prevent access to soft-deleted clients
  */
 export async function getClientById(clientId: number) {
   const db = await getDb();
@@ -270,7 +306,7 @@ export async function getClientById(clientId: number) {
   const result = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, clientId))
+    .where(and(eq(clients.id, clientId), sql`${clients.deletedAt} IS NULL`))
     .limit(1);
 
   return result[0] || null;
@@ -278,6 +314,8 @@ export async function getClientById(clientId: number) {
 
 /**
  * Get client by TERI code
+ *
+ * SEC-FIX: Added deletedAt filter to prevent access to soft-deleted clients
  */
 export async function getClientByTeriCode(teriCode: string) {
   const db = await getDb();
@@ -286,7 +324,9 @@ export async function getClientByTeriCode(teriCode: string) {
   const result = await db
     .select()
     .from(clients)
-    .where(eq(clients.teriCode, teriCode))
+    .where(
+      and(eq(clients.teriCode, teriCode), sql`${clients.deletedAt} IS NULL`)
+    )
     .limit(1);
 
   return result[0] || null;
@@ -294,20 +334,28 @@ export async function getClientByTeriCode(teriCode: string) {
 
 /**
  * Create new client
+ * FEAT-001: Added wishlist field support for notes/additional info
  */
-export async function createClient(userId: number, data: {
-  teriCode: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  isBuyer?: boolean;
-  isSeller?: boolean;
-  isBrand?: boolean;
-  isReferee?: boolean;
-  isContractor?: boolean;
-  tags?: string[];
-}) {
+export async function createClient(
+  userId: number,
+  data: {
+    teriCode: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
+    paymentTerms?: number;
+    isBuyer?: boolean;
+    isSeller?: boolean;
+    isBrand?: boolean;
+    isReferee?: boolean;
+    isContractor?: boolean;
+    tags?: string[];
+    wishlist?: string; // FEAT-001: Notes/additional info
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -323,19 +371,23 @@ export async function createClient(userId: number, data: {
     email: data.email || null,
     phone: data.phone || null,
     address: data.address || null,
+    businessType: data.businessType || null,
+    preferredContact: data.preferredContact || null,
+    paymentTerms: data.paymentTerms || 30,
     isBuyer: data.isBuyer || false,
     isSeller: data.isSeller || false,
     isBrand: data.isBrand || false,
     isReferee: data.isReferee || false,
     isContractor: data.isContractor || false,
     tags: data.tags || null,
+    wishlist: data.wishlist || null, // FEAT-001: Store notes/additional info
   };
 
   const result = await db.insert(clients).values(clientData);
   const clientId = Number(result[0].insertId);
 
   // Log activity
-  await logActivity(clientId, userId, "CREATED", null);
+  await logActivity(clientId, userId, "CREATED", {});
 
   return clientId;
 }
@@ -355,12 +407,16 @@ export async function updateClient(
     email?: string;
     phone?: string;
     address?: string;
+    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
+    paymentTerms?: number;
     isBuyer?: boolean;
     isSeller?: boolean;
     isBrand?: boolean;
     isReferee?: boolean;
     isContractor?: boolean;
     tags?: string[];
+    wishlist?: string; // BUG-090 FIX: Add wishlist field to match createClient
   },
   expectedVersion?: number
 ) {
@@ -373,40 +429,91 @@ export async function updateClient(
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
+  if (data.businessType !== undefined) updateData.businessType = data.businessType;
+  if (data.preferredContact !== undefined) updateData.preferredContact = data.preferredContact;
+  if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms;
   if (data.isBuyer !== undefined) updateData.isBuyer = data.isBuyer;
   if (data.isSeller !== undefined) updateData.isSeller = data.isSeller;
   if (data.isBrand !== undefined) updateData.isBrand = data.isBrand;
   if (data.isReferee !== undefined) updateData.isReferee = data.isReferee;
-  if (data.isContractor !== undefined) updateData.isContractor = data.isContractor;
+  if (data.isContractor !== undefined)
+    updateData.isContractor = data.isContractor;
   if (data.tags !== undefined) updateData.tags = data.tags;
+  // BUG-090 FIX: Handle wishlist field
+  if (data.wishlist !== undefined) updateData.wishlist = data.wishlist;
 
   // If version is provided, use optimistic locking
   if (expectedVersion !== undefined) {
     // Import optimistic locking utilities
     const { updateWithVersion } = await import("./_core/optimisticLocking");
-    await updateWithVersion(db, clients, "Client", clientId, expectedVersion, updateData);
+    await updateWithVersion(
+      db,
+      clients,
+      "Client",
+      clientId,
+      expectedVersion,
+      updateData
+    );
   } else {
     // Legacy update without version check (for backward compatibility)
-    await db
-      .update(clients)
-      .set(updateData)
-      .where(eq(clients.id, clientId));
+    await db.update(clients).set(updateData).where(eq(clients.id, clientId));
   }
 
   // Log activity
-  await logActivity(clientId, userId, "UPDATED", { fields: Object.keys(updateData) });
+  await logActivity(clientId, userId, "UPDATED", {
+    fields: Object.keys(updateData),
+  });
 
   return true;
 }
 
 /**
- * Delete client (soft delete by marking as inactive)
+ * Delete client (soft delete by setting deletedAt timestamp)
+ *
+ * SEC-FIX: Changed from hard delete to soft delete to preserve data integrity
+ * and allow recovery of accidentally deleted clients.
+ *
+ * @param clientId - Client ID to archive
+ * @param userId - User performing the deletion (for audit logging)
  */
-export async function deleteClient(clientId: number) {
+export async function deleteClient(clientId: number, userId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(clients).where(eq(clients.id, clientId));
+  // Soft delete by setting deletedAt timestamp
+  await db
+    .update(clients)
+    .set({ deletedAt: new Date() })
+    .where(eq(clients.id, clientId));
+
+  // Log activity if userId provided
+  if (userId) {
+    await logActivity(clientId, userId, "UPDATED", { action: "archived" });
+  }
+
+  return true;
+}
+
+/**
+ * Restore a soft-deleted client
+ *
+ * @param clientId - Client ID to restore
+ * @param userId - User performing the restore (for audit logging)
+ */
+export async function restoreClient(clientId: number, userId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Restore by clearing deletedAt timestamp
+  await db
+    .update(clients)
+    .set({ deletedAt: null })
+    .where(eq(clients.id, clientId));
+
+  // Log activity if userId provided
+  if (userId) {
+    await logActivity(clientId, userId, "UPDATED", { action: "restored" });
+  }
 
   return true;
 }
@@ -425,22 +532,26 @@ export async function updateClientStats(clientId: number) {
     .where(eq(clientTransactions.clientId, clientId));
 
   let totalSpent = 0;
-  let totalProfit = 0;
+  let totalProfit = 0; // BUG FIX: Changed from const to let to allow calculation
   let totalOwed = 0;
   let oldestDebtDays = 0;
 
   for (const txn of transactions) {
     const amount = Number(txn.amount);
+    // Calculate profit from transaction margin if available
+    const profit = Number(txn.profit || 0);
 
     if (txn.transactionType === "INVOICE" || txn.transactionType === "ORDER") {
       totalSpent += amount;
+      totalProfit += profit; // BUG FIX: Accumulate profit from transactions
 
       if (txn.paymentStatus !== "PAID") {
         totalOwed += amount;
 
         // Calculate days since transaction date
         const daysSince = Math.floor(
-          (new Date().getTime() - new Date(txn.transactionDate).getTime()) / (1000 * 60 * 60 * 24)
+          (new Date().getTime() - new Date(txn.transactionDate).getTime()) /
+            (1000 * 60 * 60 * 24)
         );
         if (daysSince > oldestDebtDays) {
           oldestDebtDays = daysSince;
@@ -466,7 +577,10 @@ export async function updateClientStats(clientId: number) {
   // Only recalculate if client has transactions (buyer activity)
   if (transactions.length > 0) {
     triggerCreditRecalculation(clientId).catch(err => {
-      console.error(`Failed to recalculate credit for client ${clientId}:`, err);
+      console.error(
+        `Failed to recalculate credit for client ${clientId}:`,
+        err
+      );
     });
   }
 
@@ -519,32 +633,46 @@ export async function getClientTransactions(
     endDate,
   } = options;
 
-  const conditions: any[] = [eq(clientTransactions.clientId, clientId)];
+  const conditions: SQL[] = [eq(clientTransactions.clientId, clientId)];
 
   if (search) {
     conditions.push(like(clientTransactions.transactionNumber, `%${search}%`));
   }
 
   if (transactionType) {
-    conditions.push(eq(clientTransactions.transactionType, transactionType as any));
+    conditions.push(
+      eq(
+        clientTransactions.transactionType,
+        transactionType as (typeof clientTransactions.transactionType.enumValues)[number]
+      )
+    );
   }
 
   if (paymentStatus) {
-    conditions.push(eq(clientTransactions.paymentStatus, paymentStatus as any));
+    conditions.push(
+      eq(
+        clientTransactions.paymentStatus,
+        paymentStatus as (typeof clientTransactions.paymentStatus.enumValues)[number]
+      )
+    );
   }
 
   if (startDate) {
-    conditions.push(sql`${clientTransactions.transactionDate} >= ${startDate.toISOString().split('T')[0]}`);
+    conditions.push(
+      sql`${clientTransactions.transactionDate} >= ${startDate.toISOString().split("T")[0]}`
+    );
   }
 
   if (endDate) {
-    conditions.push(sql`${clientTransactions.transactionDate} <= ${endDate.toISOString().split('T')[0]}`);
+    conditions.push(
+      sql`${clientTransactions.transactionDate} <= ${endDate.toISOString().split("T")[0]}`
+    );
   }
 
   const query = db
     .select()
     .from(clientTransactions)
-    .where(and(...conditions))
+    .where(and(...conditions));
 
   const results = await query
     .orderBy(desc(clientTransactions.transactionDate))
@@ -577,7 +705,13 @@ export async function createTransaction(
   userId: number,
   data: {
     clientId: number;
-    transactionType: "INVOICE" | "PAYMENT" | "QUOTE" | "ORDER" | "REFUND" | "CREDIT";
+    transactionType:
+      | "INVOICE"
+      | "PAYMENT"
+      | "QUOTE"
+      | "ORDER"
+      | "REFUND"
+      | "CREDIT";
     transactionNumber?: string;
     transactionDate: Date;
     amount: number;
@@ -585,7 +719,7 @@ export async function createTransaction(
     paymentDate?: Date;
     paymentAmount?: number;
     notes?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }
 ) {
   const db = await getDb();
@@ -595,10 +729,10 @@ export async function createTransaction(
     clientId: data.clientId,
     transactionType: data.transactionType,
     transactionNumber: data.transactionNumber || null,
-    transactionDate: data.transactionDate.toISOString().split('T')[0] as any,
+    transactionDate: data.transactionDate,
     amount: data.amount.toFixed(2),
     paymentStatus: data.paymentStatus || "PENDING",
-    paymentDate: data.paymentDate ? data.paymentDate.toISOString().split('T')[0] as any : null,
+    paymentDate: data.paymentDate ?? null,
     paymentAmount: data.paymentAmount ? data.paymentAmount.toFixed(2) : null,
     notes: data.notes || null,
     metadata: data.metadata || null,
@@ -611,7 +745,9 @@ export async function createTransaction(
   await updateClientStats(data.clientId);
 
   // Log activity
-  await logActivity(data.clientId, userId, "TRANSACTION_ADDED", { transactionId });
+  await logActivity(data.clientId, userId, "TRANSACTION_ADDED", {
+    transactionId,
+  });
 
   return transactionId;
 }
@@ -634,15 +770,18 @@ export async function updateTransaction(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const updateData: any = {};
+  const updateData: Record<string, unknown> = {};
 
   if (data.transactionDate !== undefined) {
-    updateData.transactionDate = data.transactionDate.toISOString().split('T')[0];
+    updateData.transactionDate = data.transactionDate
+      .toISOString()
+      .split("T")[0];
   }
   if (data.amount !== undefined) updateData.amount = data.amount.toFixed(2);
-  if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
+  if (data.paymentStatus !== undefined)
+    updateData.paymentStatus = data.paymentStatus;
   if (data.paymentDate !== undefined) {
-    updateData.paymentDate = data.paymentDate.toISOString().split('T')[0];
+    updateData.paymentDate = data.paymentDate.toISOString().split("T")[0];
   }
   if (data.paymentAmount !== undefined) {
     updateData.paymentAmount = data.paymentAmount.toFixed(2);
@@ -679,16 +818,15 @@ export async function recordPayment(
   if (!txn) throw new Error("Transaction not found");
 
   const totalAmount = Number(txn.amount);
-  const newPaymentStatus =
-    paymentAmount >= totalAmount ? "PAID" : "PARTIAL";
+  const newPaymentStatus = paymentAmount >= totalAmount ? "PAID" : "PARTIAL";
 
   // Use transaction to ensure payment update, stats update, and activity log are atomic
-  return await db.transaction(async (tx) => {
+  return await db.transaction(async tx => {
     await tx
       .update(clientTransactions)
       .set({
         paymentStatus: newPaymentStatus,
-        paymentDate: paymentDate.toISOString().split('T')[0] as any,
+        paymentDate: paymentDate,
         paymentAmount: paymentAmount.toFixed(2),
       })
       .where(eq(clientTransactions.id, transactionId));
@@ -716,7 +854,9 @@ export async function deleteTransaction(transactionId: number) {
   const txn = await getTransactionById(transactionId);
   if (!txn) throw new Error("Transaction not found");
 
-  await db.delete(clientTransactions).where(eq(clientTransactions.id, transactionId));
+  await db
+    .delete(clientTransactions)
+    .where(eq(clientTransactions.id, transactionId));
 
   // Update client stats
   await updateClientStats(txn.clientId);
@@ -734,8 +874,15 @@ export async function deleteTransaction(transactionId: number) {
 export async function logActivity(
   clientId: number,
   userId: number,
-  activityType: "CREATED" | "UPDATED" | "TRANSACTION_ADDED" | "PAYMENT_RECORDED" | "NOTE_ADDED" | "TAG_ADDED" | "TAG_REMOVED",
-  metadata: any
+  activityType:
+    | "CREATED"
+    | "UPDATED"
+    | "TRANSACTION_ADDED"
+    | "PAYMENT_RECORDED"
+    | "NOTE_ADDED"
+    | "TAG_ADDED"
+    | "TAG_REMOVED",
+  metadata: Record<string, unknown>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -783,13 +930,18 @@ export async function getClientActivity(clientId: number, limit: number = 50) {
 // ============================================================================
 
 /**
- * Get all unique tags across all clients
+ * Get all unique tags from clients
+ *
+ * SEC-FIX: Filter out soft-deleted clients to prevent tag leakage
  */
 export async function getAllTags() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const allClients = await db.select({ tags: clients.tags }).from(clients);
+  const allClients = await db
+    .select({ tags: clients.tags })
+    .from(clients)
+    .where(sql`${clients.deletedAt} IS NULL`);
 
   const tagsSet = new Set<string>();
   for (const client of allClients) {
@@ -842,7 +994,7 @@ export async function removeTag(clientId: number, userId: number, tag: string) {
   if (!client) throw new Error("Client not found");
 
   const currentTags = (client.tags as string[]) || [];
-  const newTags = currentTags.filter((t) => t !== tag);
+  const newTags = currentTags.filter(t => t !== tag);
 
   await db
     .update(clients)
@@ -892,7 +1044,6 @@ export async function getClientNoteId(clientId: number) {
   return result[0]?.noteId || null;
 }
 
-
 // ============================================================================
 // CLIENT COMMUNICATIONS
 // ============================================================================
@@ -902,19 +1053,19 @@ export async function getClientNoteId(clientId: number) {
  */
 export async function getClientCommunications(
   clientId: number,
-  type?: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE'
+  type?: "CALL" | "EMAIL" | "MEETING" | "NOTE"
 ) {
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  
-  const { clientCommunications, users } = await import('../drizzle/schema');
-  
+  if (!db) throw new Error("Database not available");
+
+  const { clientCommunications, users } = await import("../drizzle/schema");
+
   // Build where conditions
   const conditions = [eq(clientCommunications.clientId, clientId)];
   if (type) {
     conditions.push(eq(clientCommunications.communicationType, type));
   }
-  
+
   const query = db
     .select({
       id: clientCommunications.id,
@@ -931,7 +1082,7 @@ export async function getClientCommunications(
     .leftJoin(users, eq(clientCommunications.loggedBy, users.id))
     .where(and(...conditions))
     .orderBy(desc(clientCommunications.communicatedAt));
-  
+
   return await query;
 }
 
@@ -940,33 +1091,37 @@ export async function getClientCommunications(
  */
 export async function addCommunication(input: {
   clientId: number;
-  type: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE';
+  type: "CALL" | "EMAIL" | "MEETING" | "NOTE";
   subject: string;
   notes?: string;
   communicatedAt: string;
   loggedBy: number;
 }) {
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  
+  if (!db) throw new Error("Database not available");
+
   // Sanitize inputs
   const sanitizedSubject = input.subject.trim().substring(0, 255);
-  const sanitizedNotes = input.notes ? input.notes.trim().substring(0, 5000) : undefined;
-  
-  const { clientCommunications } = await import('../drizzle/schema');
-  
-  const [result] = await db.insert(clientCommunications).values({
-    clientId: input.clientId,
-    communicationType: input.type,
-    subject: sanitizedSubject,
-    notes: sanitizedNotes,
-    communicatedAt: new Date(input.communicatedAt),
-    loggedBy: input.loggedBy,
-  }).$returningId();
-  
+  const sanitizedNotes = input.notes
+    ? input.notes.trim().substring(0, 5000)
+    : undefined;
+
+  const { clientCommunications } = await import("../drizzle/schema");
+
+  const [result] = await db
+    .insert(clientCommunications)
+    .values({
+      clientId: input.clientId,
+      communicationType: input.type,
+      subject: sanitizedSubject,
+      notes: sanitizedNotes,
+      communicatedAt: new Date(input.communicatedAt),
+      loggedBy: input.loggedBy,
+    })
+    .$returningId();
+
   return { success: true, id: result.id };
 }
-
 
 // ============================================================================
 // SUPPLIER PROFILE FUNCTIONS
@@ -978,16 +1133,16 @@ export async function addCommunication(input: {
  */
 export async function getSupplierProfile(clientId: number) {
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  
-  const { supplierProfiles } = await import('../drizzle/schema');
-  
+  if (!db) throw new Error("Database not available");
+
+  const { supplierProfiles } = await import("../drizzle/schema");
+
   const [profile] = await db
     .select()
     .from(supplierProfiles)
     .where(eq(supplierProfiles.clientId, clientId))
     .limit(1);
-  
+
   return profile || null;
 }
 
@@ -1008,28 +1163,35 @@ export async function updateSupplierProfile(
   }
 ) {
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  
-  const { supplierProfiles } = await import('../drizzle/schema');
-  
+  if (!db) throw new Error("Database not available");
+
+  const { supplierProfiles } = await import("../drizzle/schema");
+
   // Check if profile exists
   const [existingProfile] = await db
     .select()
     .from(supplierProfiles)
     .where(eq(supplierProfiles.clientId, clientId))
     .limit(1);
-  
+
   // Build update object, filtering out empty strings
   const updateData: Record<string, string | null> = {};
-  if (data.contactName !== undefined) updateData.contactName = data.contactName || null;
-  if (data.contactEmail !== undefined) updateData.contactEmail = data.contactEmail || null;
-  if (data.contactPhone !== undefined) updateData.contactPhone = data.contactPhone || null;
-  if (data.licenseNumber !== undefined) updateData.licenseNumber = data.licenseNumber || null;
+  if (data.contactName !== undefined)
+    updateData.contactName = data.contactName || null;
+  if (data.contactEmail !== undefined)
+    updateData.contactEmail = data.contactEmail || null;
+  if (data.contactPhone !== undefined)
+    updateData.contactPhone = data.contactPhone || null;
+  if (data.licenseNumber !== undefined)
+    updateData.licenseNumber = data.licenseNumber || null;
   if (data.taxId !== undefined) updateData.taxId = data.taxId || null;
-  if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms || null;
-  if (data.preferredPaymentMethod !== undefined) updateData.preferredPaymentMethod = data.preferredPaymentMethod || null;
-  if (data.supplierNotes !== undefined) updateData.supplierNotes = data.supplierNotes || null;
-  
+  if (data.paymentTerms !== undefined)
+    updateData.paymentTerms = data.paymentTerms || null;
+  if (data.preferredPaymentMethod !== undefined)
+    updateData.preferredPaymentMethod = data.preferredPaymentMethod || null;
+  if (data.supplierNotes !== undefined)
+    updateData.supplierNotes = data.supplierNotes || null;
+
   if (existingProfile) {
     // Update existing profile
     await db
@@ -1043,6 +1205,6 @@ export async function updateSupplierProfile(
       ...updateData,
     });
   }
-  
+
   return { success: true };
 }

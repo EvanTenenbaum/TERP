@@ -30,6 +30,8 @@ export function InventoryBrowser({
 }: InventoryBrowserProps) {
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  // FEAT-003: Quick add quantity state - tracks quantity for each item
+  const [quickQuantities, setQuickQuantities] = useState<Record<number, string>>({});
 
   // Filter inventory by search, ensuring items have valid data
   const filteredInventory = inventory.filter((item) => {
@@ -78,9 +80,27 @@ export function InventoryBrowser({
     setSelectedIds(new Set());
   };
 
-  // Add single item to sheet
-  const addSingleItem = (item: any) => {
-    onAddItems([item]);
+  // FEAT-003: Add single item with optional quick quantity
+  const addSingleItem = (item: any, customQuantity?: number) => {
+    const qty = customQuantity || parseFloat(quickQuantities[item.id]) || 1;
+
+    // FEAT-003: Validate quantity doesn't exceed available stock
+    const availableQty = item.quantity || 0;
+    const finalQty = Math.min(qty, availableQty);
+
+    const itemWithQuantity = { ...item, orderQuantity: finalQty };
+    onAddItems([itemWithQuantity]);
+    // Clear the quick quantity input after adding
+    setQuickQuantities((prev) => {
+      const updated = { ...prev };
+      delete updated[item.id];
+      return updated;
+    });
+  };
+
+  // FEAT-003: Update quick quantity for an item
+  const updateQuickQuantity = (itemId: number, value: string) => {
+    setQuickQuantities((prev) => ({ ...prev, [itemId]: value }));
   };
 
   // Calculate markup percentage
@@ -150,17 +170,18 @@ export function InventoryBrowser({
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Qty</TableHead>
+                <TableHead>Stock</TableHead>
                 <TableHead>Base Price</TableHead>
                 <TableHead>Retail Price</TableHead>
                 <TableHead>Markup</TableHead>
+                <TableHead className="w-24">Quick Qty</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     No inventory items found
                   </TableCell>
                 </TableRow>
@@ -168,7 +189,8 @@ export function InventoryBrowser({
                 filteredInventory.map((item) => {
                   const markup = calculateMarkup(item.basePrice, item.retailPrice);
                   const alreadyInSheet = isInSheet(item.id);
-                  
+                  const quickQty = quickQuantities[item.id] || "";
+
                   return (
                     <TableRow key={item.id} className={alreadyInSheet ? "opacity-50" : ""}>
                       <TableCell>
@@ -209,14 +231,49 @@ export function InventoryBrowser({
                           {markup > 0 ? "+" : ""}{markup.toFixed(1)}%
                         </Badge>
                       </TableCell>
+                      {/* FEAT-003: Quick Add Quantity Field */}
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={item.quantity}
+                            step="0.01"
+                            placeholder="1"
+                            value={quickQty}
+                            onChange={(e) => updateQuickQuantity(item.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !alreadyInSheet) {
+                                e.preventDefault();
+                                addSingleItem(item);
+                                // Focus next row's quantity input for quick entry
+                                const currentRow = (e.target as HTMLElement).closest('tr');
+                                const nextRow = currentRow?.nextElementSibling;
+                                if (nextRow) {
+                                  const nextInput = nextRow.querySelector('input[type="number"]') as HTMLInputElement;
+                                  nextInput?.focus();
+                                }
+                              }
+                            }}
+                            disabled={alreadyInSheet}
+                            className="w-20 h-8 text-center"
+                            title={`Available: ${item.quantity.toFixed(2)}`}
+                          />
+                          <span className="text-[10px] text-muted-foreground text-center">
+                            / {item.quantity.toFixed(2)}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => addSingleItem(item)}
                           disabled={alreadyInSheet}
+                          title={quickQty ? `Add ${quickQty}` : "Add 1"}
                         >
                           <Plus className="h-4 w-4" />
+                          {quickQty && <span className="ml-1 text-xs">{quickQty}</span>}
                         </Button>
                       </TableCell>
                     </TableRow>

@@ -263,7 +263,7 @@ function TableLoadingSkeleton({ columns }: { columns: number }) {
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (
         <div
-          key={i}
+          key={`skeleton-${i}`}
           className="h-16 bg-muted/50 rounded-lg animate-pulse"
         />
       ))}

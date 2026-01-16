@@ -4,3 +4,5 @@
  */
 
 export { ReceiptPreview } from "./ReceiptPreview";
+export { ReceiptCapture } from "./ReceiptCapture";
+export type { ReceiptCaptureProps } from "./ReceiptCapture";

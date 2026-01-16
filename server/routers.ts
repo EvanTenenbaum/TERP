@@ -12,6 +12,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { accountingRouter } from "./routers/accounting";
 import { freeformNotesRouter } from "./routers/freeformNotes";
 import { clientsRouter } from "./routers/clients";
+import { clientLedgerRouter } from "./routers/clientLedger";
 import { creditRouter } from "./routers/credit";
 import { creditsRouter } from "./routers/credits";
 import { badDebtRouter } from "./routers/badDebt";
@@ -29,7 +30,9 @@ import { samplesRouter } from "./routers/samples";
 import { dashboardEnhancedRouter } from "./routers/dashboardEnhanced";
 import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
 import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
+import { tagsRouter } from "./routers/tags"; // FEAT-002: Tag System Revamp
 import { productIntakeRouter } from "./routers/productIntake";
+import { intakeReceiptsRouter } from "./routers/intakeReceipts"; // FEAT-008: Intake Verification System
 import { orderEnhancementsRouter } from "./routers/orderEnhancements";
 import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
@@ -53,6 +56,7 @@ import { adminSchemaRouter } from "./routers/adminSchema";
 import { adminDataAugmentRouter } from "./routers/adminDataAugment";
 import { vipPortalRouter } from "./routers/vipPortal";
 import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
+import { vipTiersRouter } from "./routers/vipTiers";
 // ordersEnhancedV2Router consolidated into ordersRouter (RF-001)
 import { pricingDefaultsRouter } from "./routers/pricingDefaults";
 import { dashboardPreferencesRouter } from "./routers/dashboardPreferences";
@@ -100,6 +104,28 @@ import { featureFlagsRouter } from "./routers/featureFlags";
 import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
 import { catalogRouter } from "./routers/catalog";
+import { organizationSettingsRouter } from "./routers/organizationSettings";
+import { cashAuditRouter } from "./routers/cashAudit";
+import { vendorPayablesRouter } from "./routers/vendorPayables"; // MEET-005: Payables Due When SKU Hits Zero
+import { schedulingRouter } from "./routers/scheduling"; // Sprint 4 Track D: Scheduling System
+import { client360Router } from "./routers/client360"; // Sprint 4 Track B: Client 360 View
+import { clientWantsRouter } from "./routers/clientWants"; // Sprint 4 Track B: Client Wants/Needs (MEET-021)
+import { officeSupplyRouter } from "./routers/officeSupply"; // Sprint 4 Track B: Office Supply (MEET-055)
+import { storageRouter } from "./routers/storage"; // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
+import { productCategoriesRouter } from "./routers/productCategories"; // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
+import { hourTrackingRouter } from "./routers/hourTracking"; // Sprint 5 Track E: Hour Tracking (MEET-048)
+import { rbacEnhancedRouter } from "./routers/rbacEnhanced"; // Sprint 5 Track E: User Roles & Permissions (MEET-051)
+import { gamificationRouter } from "./routers/gamification"; // Sprint 5 Track B: Gamification (MEET-044, MEET-045, FEAT-006)
+
+// Sprint 5 Track D: Transaction & Product Features
+import { invoiceDisputesRouter } from "./routers/invoiceDisputes"; // MEET-017: Invoice History (Debt Disputes)
+import { transactionFeesRouter } from "./routers/transactionFees"; // MEET-018: Transaction Fee Per Client
+import { paymentTermsRouter } from "./routers/paymentTerms"; // MEET-035: Payment Terms (Consignment/Cash/COD)
+import { productCategoriesExtendedRouter } from "./routers/productCategoriesExtended"; // MEET-032: Customizable Categories
+import { productGradesRouter } from "./routers/productGrades"; // MEET-070: Product Grades (AAAA/AAA/AA/B/C)
+import { serviceBillingRouter } from "./routers/serviceBilling"; // MEET-009: Billing for Services
+import { cryptoPaymentsRouter } from "./routers/cryptoPayments"; // MEET-019: Crypto Payment Tracking
+import { installmentPaymentsRouter } from "./routers/installmentPayments"; // MEET-036: Installment Payments
 
 import { healthRouter } from "./routers/health";
 
@@ -132,6 +158,7 @@ export const appRouter = router({
   accounting: accountingRouter,
   freeformNotes: freeformNotesRouter,
   clients: clientsRouter,
+  clientLedger: clientLedgerRouter, // FEAT-009 / MEET-010: Client Ledger System
   credit: creditRouter,
   credits: creditsRouter,
   badDebt: badDebtRouter,
@@ -149,7 +176,9 @@ export const appRouter = router({
   dashboardEnhanced: dashboardEnhancedRouter,
   salesSheetEnhancements: salesSheetEnhancementsRouter,
   advancedTagFeatures: advancedTagFeaturesRouter,
+  tags: tagsRouter, // FEAT-002: Tag System Revamp
   productIntake: productIntakeRouter,
+  intakeReceipts: intakeReceiptsRouter, // FEAT-008: Intake Verification System (MEET-064 to MEET-066)
   orderEnhancements: orderEnhancementsRouter,
   clientNeeds: clientNeedsEnhancedRouter,
   vendorSupply: vendorSupplyRouter,
@@ -173,6 +202,7 @@ export const appRouter = router({
   adminDataAugment: adminDataAugmentRouter,
   vipPortal: vipPortalRouter,
   vipPortalAdmin: vipPortalAdminRouter,
+  vipTiers: vipTiersRouter, // FEAT-019: VIP Tier System
   // ordersEnhancedV2: Consolidated into orders router (RF-001)
   pricingDefaults: pricingDefaultsRouter,
   dashboardPreferences: dashboardPreferencesRouter,
@@ -220,6 +250,27 @@ export const appRouter = router({
   adminSetup: adminSetupRouter, // Feature Flag System
   spreadsheet: spreadsheetRouter,
   catalog: catalogRouter, // INV-4: Catalog Publishing
+  organizationSettings: organizationSettingsRouter, // FEAT-010 to FEAT-015: Organization Settings & Preferences
+  cashAudit: cashAuditRouter, // FEAT-007: Cash Audit System
+  vendorPayables: vendorPayablesRouter, // MEET-005: Payables Due When SKU Hits Zero
+  scheduling: schedulingRouter, // Sprint 4 Track D: Scheduling System (FEAT-005-BE, MEET-046, MEET-047, MEET-050, MEET-034)
+  client360: client360Router, // Sprint 4 Track B: Client 360 View (ENH-002, MEET-007, MEET-012, MEET-013, MEET-020, MEET-021, MEET-022, WS-011)
+  clientWants: clientWantsRouter, // Sprint 4 Track B: Client Wants/Needs Tracking (MEET-021)
+  officeSupply: officeSupplyRouter, // Sprint 4 Track B: Office Supply Needs (MEET-055)
+  storage: storageRouter, // Sprint 5 Track E: Storage & Location (MEET-067, MEET-068)
+  productCategories: productCategoriesRouter, // Sprint 5 Track E: Category/Subcategory Data Flow (MEET-069)
+  hourTracking: hourTrackingRouter, // Sprint 5 Track E: Hour Tracking (MEET-048)
+  gamification: gamificationRouter, // Sprint 5 Track B: Gamification (MEET-044, MEET-045, FEAT-006)
+
+  // Sprint 5 Track D: Transaction & Product Features
+  invoiceDisputes: invoiceDisputesRouter, // MEET-017: Invoice History (Debt Disputes)
+  transactionFees: transactionFeesRouter, // MEET-018: Transaction Fee Per Client
+  paymentTerms: paymentTermsRouter, // MEET-035: Payment Terms (Consignment/Cash/COD)
+  productCategoriesExtended: productCategoriesExtendedRouter, // MEET-032: Customizable Categories
+  productGrades: productGradesRouter, // MEET-070: Product Grades (AAAA/AAA/AA/B/C)
+  serviceBilling: serviceBillingRouter, // MEET-009: Billing for Services
+  cryptoPayments: cryptoPaymentsRouter, // MEET-019: Crypto Payment Tracking
+  installmentPayments: installmentPaymentsRouter, // MEET-036: Installment Payments
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 

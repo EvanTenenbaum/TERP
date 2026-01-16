@@ -17,7 +17,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -397,8 +396,24 @@ export function PermissionAssignment() {
                             <TableCell className="text-muted-foreground">
                               {permission.description || "No description"}
                             </TableCell>
+                            {/* FEAT-022: Show role names instead of just count */}
                             <TableCell className="text-center">
-                              <Badge variant="outline">{permission.roleCount || 0}</Badge>
+                              {permission.roleNames && permission.roleNames.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 justify-center">
+                                  {permission.roleNames.slice(0, 3).map((roleName: string, idx: number) => (
+                                    <Badge key={`role-${roleName}-${idx}`} variant="outline" className="text-xs">
+                                      {roleName}
+                                    </Badge>
+                                  ))}
+                                  {permission.roleNames.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{permission.roleNames.length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">No roles</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
                               <Dialog>

@@ -328,12 +328,17 @@ function createDbRepository(db: Database): NotificationRepository {
       limit: number,
       offset: number
     ): Promise<Notification[]> => {
-      return db.query.notifications.findMany({
-        where: notificationRecipientWhere(recipient),
-        orderBy: [desc(notifications.createdAt)],
-        limit,
-        offset,
-      });
+      try {
+        return await db.query.notifications.findMany({
+          where: notificationRecipientWhere(recipient),
+          orderBy: [desc(notifications.createdAt)],
+          limit,
+          offset,
+        });
+      } catch (error) {
+        logger.error("Database error fetching notifications", { error, recipient });
+        throw error; // Let router handle conversion to TRPCError
+      }
     },
     markRead: async (
       id: number,

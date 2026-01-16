@@ -13,3 +13,6 @@ export { TopStrainFamiliesWidget } from "./TopStrainFamiliesWidget";
 export { MatchmakingOpportunitiesWidget } from "./MatchmakingOpportunitiesWidget";
 export { WorkflowQueueWidget } from "./WorkflowQueueWidget";
 export { WorkflowActivityWidget } from "./WorkflowActivityWidget";
+export { AvailableCashWidget } from "./AvailableCashWidget";
+// Sprint 4 Track A: 4.A.4 MEET-025 - Dashboard Aging Quick View
+export { AgingInventoryWidget } from "./AgingInventoryWidget";

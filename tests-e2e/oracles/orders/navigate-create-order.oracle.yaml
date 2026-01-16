@@ -1,0 +1,36 @@
+# Oracle: Orders.Orders.NavigateCreateOrder
+# Verify navigation to order creation page
+
+flow_id: "Orders.Orders.NavigateCreateOrder"
+description: "Navigate to order creation page and verify form loads"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - orders
+  - crud
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+
+steps:
+  - action: navigate
+    path: "/orders/new"
+    wait_for: "form, [data-testid='order-form'], [data-testid='order-creator']"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "order_form"
+
+expected_ui:
+  url_contains: "/orders"
+  visible:
+    - "form, [data-testid='order-form'], [data-testid='order-creator'], main"

@@ -17,7 +17,7 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
-import { orders, orderLineItems, batches } from "../../drizzle/schema";
+import { orders, orderLineItems, batches, products } from "../../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -29,6 +29,8 @@ import { orderValidationService } from "../services/orderValidationService";
 import { orderAuditService } from "../services/orderAuditService";
 import { cogsChangeIntegrationService } from "../services/cogsChangeIntegrationService";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { withTransaction } from "../dbTransaction";
+import { logger } from "../_core/logger";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -132,12 +134,41 @@ export const ordersRouter = router({
 
   /**
    * Get order by ID
+   * BUG-082: Added proper error handling with try-catch wrapper
    */
   getById: protectedProcedure
     .use(requirePermission("orders:read"))
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      return await ordersDb.getOrderById(input.id);
+      try {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available"
+          });
+        }
+
+        const order = await ordersDb.getOrderById(input.id);
+
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Order with ID ${input.id} not found`
+          });
+        }
+
+        return order;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+
+        logger.error("Failed to get order by ID", { error, orderId: input.id });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch order details",
+          cause: error
+        });
+      }
     }),
 
   /**
@@ -323,7 +354,7 @@ export const ordersRouter = router({
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
-          // Get batch info for original COGS
+          // Get batch info for COGS
           const batch = await db.query.batches.findFirst({
             where: eq(batches.id, item.batchId),
           });
@@ -331,6 +362,12 @@ export const ordersRouter = router({
           if (!batch) {
             throw new Error(`Batch ${item.batchId} not found`);
           }
+
+          // Get product info for category lookup
+          const product = await db.query.products.findFirst({
+            where: eq(products.id, batch.productId),
+            columns: { category: true },
+          });
 
           const originalCogs = parseFloat(batch.unitCogs || "0");
           const cogsPerUnit = item.isCogsOverridden
@@ -345,12 +382,26 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
+            // Try to get margin using product category or fallback to "OTHER"
+            const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              "OTHER"
+              productCategory
             );
-            marginPercent = marginResult.marginPercent || 0;
-            marginSource = marginResult.source;
+
+            // If no margin found after all fallbacks, use 30% as last resort
+            // This ensures orders can still be created while alerting the user
+            if (marginResult.marginPercent === null) {
+              console.warn(
+                `[orders.create] No pricing default found for category "${productCategory}". ` +
+                `Using 30% fallback margin. Please seed pricing_defaults table.`
+              );
+              marginPercent = 30; // Safe default margin
+              marginSource = "MANUAL";
+            } else {
+              marginPercent = marginResult.marginPercent;
+              marginSource = marginResult.source;
+            }
           }
 
           const unitPrice =
@@ -519,6 +570,14 @@ export const ordersRouter = router({
             throw new Error(`Batch ${item.batchId} not found`);
           }
 
+          // BUG-086 FIX: Get product category like createDraftEnhanced does
+          const product = batch.productId
+            ? await db.query.products.findFirst({
+                where: eq(products.id, batch.productId),
+                columns: { category: true },
+              })
+            : null;
+
           const originalCogs = parseFloat(batch.unitCogs || "0");
           const cogsPerUnit = item.isCogsOverridden
             ? item.cogsPerUnit
@@ -531,12 +590,25 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
+            // BUG-086 FIX: Use actual product category, not hardcoded "OTHER"
+            const productCategory = product?.category || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               existingOrder.clientId,
-              "OTHER"
+              productCategory
             );
-            marginPercent = marginResult.marginPercent || 0;
-            marginSource = marginResult.source;
+
+            // BUG-086 FIX: Use 30% fallback with warning instead of 0%
+            if (marginResult.marginPercent === null) {
+              console.warn(
+                `[orders.update] No pricing default found for category "${productCategory}". ` +
+                `Using 30% fallback margin. Please seed pricing_defaults table.`
+              );
+              marginPercent = 30; // Safe default margin
+              marginSource = "MANUAL";
+            } else {
+              marginPercent = marginResult.marginPercent;
+              marginSource = marginResult.source;
+            }
           }
 
           const unitPrice =
@@ -586,46 +658,49 @@ export const ordersRouter = router({
         overallMarginPercent: totals.avgMarginPercent,
       });
 
-      // ST-026: Update order with version increment
+      // ST-026: Update order with line items in transaction to prevent orphaned records
       const { sql } = await import("drizzle-orm");
-      await db
-        .update(orders)
-        .set({
-          total: totals.finalTotal.toString(),
-          subtotal: totals.subtotal.toString(),
-          avgMarginPercent: totals.avgMarginPercent.toString(),
-          notes: input.notes,
-          version: sql`version + 1`,
-        })
-        .where(eq(orders.id, input.orderId));
-
-      // Delete existing line items
-      await db
-        .delete(orderLineItems)
-        .where(eq(orderLineItems.orderId, input.orderId));
-
-      // Create new line items
-      await Promise.all(
-        lineItemsWithPrices.map(item =>
-          db.insert(orderLineItems).values({
-            orderId: input.orderId,
-            batchId: item.batchId,
-            productDisplayName: item.productDisplayName || null,
-            quantity: item.quantity.toString(),
-            isSample: item.isSample,
-            cogsPerUnit: item.cogsPerUnit.toString(),
-            originalCogsPerUnit: item.originalCogsPerUnit.toString(),
-            marginPercent: item.marginPercent.toString(),
-            marginDollar: item.marginDollar.toString(),
-            isCogsOverridden: item.isCogsOverridden,
-            cogsOverrideReason: item.cogsOverrideReason || null,
-            isMarginOverridden: item.isMarginOverridden,
-            marginSource: item.marginSource,
-            unitPrice: item.unitPrice.toString(),
-            lineTotal: item.lineTotal.toString(),
+      await withTransaction(async (tx) => {
+        // Update order with version increment
+        await tx
+          .update(orders)
+          .set({
+            total: totals.finalTotal.toString(),
+            subtotal: totals.subtotal.toString(),
+            avgMarginPercent: totals.avgMarginPercent.toString(),
+            notes: input.notes,
+            version: sql`version + 1`,
           })
-        )
-      );
+          .where(eq(orders.id, input.orderId));
+
+        // Delete existing line items
+        await tx
+          .delete(orderLineItems)
+          .where(eq(orderLineItems.orderId, input.orderId));
+
+        // Create new line items
+        await Promise.all(
+          lineItemsWithPrices.map(item =>
+            tx.insert(orderLineItems).values({
+              orderId: input.orderId,
+              batchId: item.batchId,
+              productDisplayName: item.productDisplayName || null,
+              quantity: item.quantity.toString(),
+              isSample: item.isSample,
+              cogsPerUnit: item.cogsPerUnit.toString(),
+              originalCogsPerUnit: item.originalCogsPerUnit.toString(),
+              marginPercent: item.marginPercent.toString(),
+              marginDollar: item.marginDollar.toString(),
+              isCogsOverridden: item.isCogsOverridden,
+              cogsOverrideReason: item.cogsOverrideReason || null,
+              isMarginOverridden: item.isMarginOverridden,
+              marginSource: item.marginSource,
+              unitPrice: item.unitPrice.toString(),
+              lineTotal: item.lineTotal.toString(),
+            })
+          )
+        );
+      });
 
       // Log audit entry
       await orderAuditService.logOrderUpdate(input.orderId, userId, {

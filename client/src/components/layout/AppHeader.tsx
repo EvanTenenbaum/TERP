@@ -120,12 +120,13 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
               )}
             </Button>
           )}
+          {/* UX-010: Updated tooltip to match renamed navigation item */}
           <Button
             variant="ghost"
             size="icon"
             className="hidden sm:flex"
             onClick={() => setLocation("/settings")}
-            title="Settings"
+            title="System Settings"
           >
             <Settings className="h-5 w-5" />
           </Button>
@@ -141,10 +142,11 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                 <ChevronDown className="h-4 w-4 hidden md:inline" />
               </Button>
             </DropdownMenuTrigger>
+            {/* UX-010: Clarified menu items - "My Account" for personal settings, "System Settings" for admin */}
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => setLocation("/account")}>
                 <User className="h-4 w-4 mr-2" />
-                My Profile
+                My Account
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setLocation("/settings/notifications")}
@@ -157,7 +159,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                 className="sm:hidden"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                App Settings
+                System Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

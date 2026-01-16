@@ -15,6 +15,7 @@ import { findHistoricalBuyers } from "./historicalAnalysis";
 import { recordMatch } from "./matchRecordsDb";
 import { strainService } from "./services/strainService";
 import { logger } from "./_core/logger";
+import { calculateSubcategoryScore, getSubcategoryMatchReason } from "./utils/subcategoryMatcher";
 
 /**
  * Match types and confidence levels
@@ -228,13 +229,24 @@ async function calculateMatchConfidence(
     }
   }
 
-  // Subcategory match (15 points)
+  // Subcategory match (15 points) - FEAT-020: Enhanced with related subcategory scoring
   if (need.subcategory && candidate.subcategory) {
-    if (
-      need.subcategory.toLowerCase() === candidate.subcategory.toLowerCase()
-    ) {
+    const subcategoryScore = calculateSubcategoryScore(need.subcategory, candidate.subcategory);
+
+    if (subcategoryScore === 100) {
+      // Exact match
       confidence += 15;
       reasons.push("Subcategory match");
+    } else if (subcategoryScore === 50) {
+      // Related subcategories (e.g., Smalls and Trim)
+      confidence += 7.5; // Half points for related match
+      const reason = getSubcategoryMatchReason(need.subcategory, candidate.subcategory);
+      if (reason) reasons.push(reason);
+    } else if (subcategoryScore === 30) {
+      // Partial match
+      confidence += 4.5; // Partial credit
+      const reason = getSubcategoryMatchReason(need.subcategory, candidate.subcategory);
+      if (reason) reasons.push(reason);
     }
   }
 
@@ -628,6 +640,22 @@ export async function findBuyersForInventory(
     const product = batchData.product;
     const availableQuantity = parseFloat(batch.onHandQty);
 
+    // Look up strain type from strain library if available
+    let strainType: string | null = null;
+    if (product?.strainId) {
+      try {
+        const strainData = await strainService.getStrainWithFamily(product.strainId);
+        strainType = strainData?.category || null;
+      } catch (error) {
+        logger.warn({
+          msg: "[MatchingEngine] Failed to lookup strain type",
+          strainId: product.strainId,
+          error
+        });
+        // Continue without strain type - not critical to matching
+      }
+    }
+
     // Find active client needs that might match
     const activeNeeds = await db
       .select()
@@ -647,7 +675,7 @@ export async function findBuyersForInventory(
       const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: product?.nameCanonical,
         strainId: product?.strainId,
-        strainType: null, // TODO: Get from strain library via strainId
+        strainType,
         category: product?.category,
         subcategory: product?.subcategory,
         grade: batch.grade,

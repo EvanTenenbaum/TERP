@@ -73,7 +73,10 @@ function getClientIp(ctx: unknown): string {
 }
 
 // Secret key for admin setup - set this in your environment
-const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY || "terp-admin-setup-2024";
+const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY;
+if (!ADMIN_SETUP_KEY) {
+  throw new Error("ADMIN_SETUP_KEY environment variable must be set for admin setup functionality");
+}
 
 export const adminSetupRouter = router({
   /**

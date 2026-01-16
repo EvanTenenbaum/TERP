@@ -1,0 +1,33 @@
+# Oracle: Accounting.Invoices.ListInvoices
+# Verify invoices list page loads
+
+flow_id: "Accounting.Invoices.ListInvoices"
+description: "Verify accounting invoices list page loads"
+role: "AccountingManager"
+tags:
+  - tier1
+  - accounting
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure: []
+
+steps:
+  - action: navigate
+    path: "/accounting/invoices"
+    wait_for: "table, [data-testid='invoices-table'], .invoices-list, main"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "invoices_list"
+
+expected_ui:
+  url_contains: "/accounting"
+  visible:
+    - "main, [data-testid='invoices-page'], table"
+  text_present:
+    - "Invoice"

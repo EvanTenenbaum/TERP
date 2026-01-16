@@ -10,6 +10,9 @@ export const SSE_EVENTS = {
   SESSION_STATUS: "SESSION_STATUS",       // Session ended/paused
   CONNECTION_PING: "PING",                // Heartbeat
   ITEM_STATUS_CHANGED: "ITEM_STATUS",     // Item status changed (Sample/Interested/Purchase)
+  NEGOTIATION_REQUESTED: "NEGOTIATION_REQUESTED",     // Client requested price negotiation
+  NEGOTIATION_RESPONSE: "NEGOTIATION_RESPONSE",       // Host responded to negotiation
+  COUNTER_OFFER_ACCEPTED: "COUNTER_OFFER_ACCEPTED",   // Client accepted counter-offer
 } as const;
 
 export type SseEventType = keyof typeof SSE_EVENTS;
@@ -110,6 +113,47 @@ class SessionEventManager extends EventEmitter {
       cartItemId,
       status,
       changedBy,
+    });
+  }
+
+  // ==========================================================================
+  // PRICE NEGOTIATION EVENTS
+  // ==========================================================================
+
+  public emitNegotiationRequested(
+    sessionId: number,
+    cartItemId: number,
+    proposedPrice: number,
+    originalPrice: number
+  ) {
+    this.emitToSession(sessionId, "NEGOTIATION_REQUESTED", {
+      cartItemId,
+      proposedPrice,
+      originalPrice,
+    });
+  }
+
+  public emitNegotiationResponse(
+    sessionId: number,
+    cartItemId: number,
+    response: "ACCEPT" | "REJECT" | "COUNTER",
+    counterPrice?: number
+  ) {
+    this.emitToSession(sessionId, "NEGOTIATION_RESPONSE", {
+      cartItemId,
+      response,
+      counterPrice,
+    });
+  }
+
+  public emitCounterOfferAccepted(
+    sessionId: number,
+    cartItemId: number,
+    finalPrice: number
+  ) {
+    this.emitToSession(sessionId, "COUNTER_OFFER_ACCEPTED", {
+      cartItemId,
+      finalPrice,
     });
   }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Calendar, Clock, FileText } from "lucide-react";
 import { trpc } from "../../lib/trpc";
+import { toast } from "sonner";
 
 interface TimeOffRequestFormProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ export default function TimeOffRequestForm({
       onClose();
     },
     onError: (error) => {
-      alert(error.message || "Failed to submit request");
+      toast.error(error.message || "Failed to submit request");
     },
   });
 
@@ -52,7 +53,7 @@ export default function TimeOffRequestForm({
     e.preventDefault();
 
     if (!startDate || !endDate) {
-      alert("Please select start and end dates");
+      toast.error("Please select start and end dates");
       return;
     }
 

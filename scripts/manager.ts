@@ -101,14 +101,85 @@ import chalk from 'chalk';
 dotenv.config();
 
 // ============================================================================
-// CONFIGURATION
+// CONFIGURATION (INFRA-007: Updated Swarm Manager Configuration)
 // ============================================================================
 
 const ROADMAP_PATH = 'docs/roadmaps/MASTER_ROADMAP.md';
-const GIT_RETRY_ATTEMPTS = 3;
-const GIT_RETRY_DELAY = 2000; // 2 seconds
-const AI_TIMEOUT_MS = 90000; // 90 seconds
+
+// Git Configuration - Optimized for parallel operations
+const GIT_RETRY_ATTEMPTS = 5; // Increased from 3 for better resilience
+const GIT_RETRY_DELAY = 3000; // Increased from 2s to reduce contention
+const GIT_LOCK_STALE_MINUTES = 5; // Reduced from 10 for faster recovery
+
+// AI Agent Configuration
+const AI_TIMEOUT_MS = 120000; // Increased from 90s for complex tasks
+const AI_RATE_LIMIT_MS = 1000; // Minimum delay between API calls
 const GEMINI_MODEL = 'gemini-2.0-flash-exp';
+
+// Resource Allocation Configuration
+const MAX_CONCURRENT_AGENTS = 3; // Optimal for parallel execution
+const MAX_BATCH_SIZE = 5; // Maximum tasks per batch
+const TASK_COOLDOWN_MS = 2000; // Delay between task executions
+
+// Memory and Performance Settings
+const MAX_MEMORY_USAGE_PERCENT = 80; // Trigger GC warning above this
+const LOG_RETENTION_DAYS = 7; // Keep logs for 7 days
+const STATUS_REPORT_INTERVAL_MS = 30000; // Status updates every 30s
+
+// Deployment Integration (INFRA-004)
+const DEPLOYMENT_VERIFY_TIMEOUT_MS = 60000; // Wait for deployment verification
+const HEALTH_CHECK_ENABLED = true;
+
+// ============================================================================
+// RESOURCE MONITORING (INFRA-007)
+// ============================================================================
+
+interface ResourceMetrics {
+  memoryUsedPercent: number;
+  activeAgents: number;
+  lastHealthCheck: string;
+}
+
+function getResourceMetrics(): ResourceMetrics {
+  const memUsage = process.memoryUsage();
+  const heapUsedPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
+
+  return {
+    memoryUsedPercent: Math.round(heapUsedPercent),
+    activeAgents: 0, // Will be tracked during execution
+    lastHealthCheck: new Date().toISOString(),
+  };
+}
+
+function checkResourceHealth(): boolean {
+  const metrics = getResourceMetrics();
+
+  if (metrics.memoryUsedPercent > MAX_MEMORY_USAGE_PERCENT) {
+    console.log(chalk.yellow(`⚠️  High memory usage: ${metrics.memoryUsedPercent}%`));
+    // Trigger garbage collection hint
+    if (global.gc) {
+      console.log(chalk.blue('🧹 Running garbage collection...'));
+      global.gc();
+    }
+    return false;
+  }
+
+  return true;
+}
+
+// Rate limiter for AI API calls
+let lastApiCall = 0;
+async function rateLimitedApiCall<T>(fn: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const elapsed = now - lastApiCall;
+
+  if (elapsed < AI_RATE_LIMIT_MS) {
+    await new Promise(resolve => setTimeout(resolve, AI_RATE_LIMIT_MS - elapsed));
+  }
+
+  lastApiCall = Date.now();
+  return fn();
+}
 
 // ============================================================================
 // TYPES
@@ -212,9 +283,10 @@ function parseRoadmap(): { tasks: Task[]; phase: string } {
 // ============================================================================
 
 /**
- * Check if a git lock file is stale (older than 10 minutes)
+ * Check if a git lock file is stale (older than GIT_LOCK_STALE_MINUTES)
+ * INFRA-007: Reduced stale timeout for faster recovery
  */
-function isLockFileStale(lockPath: string, maxAgeMinutes: number = 10): boolean {
+function isLockFileStale(lockPath: string, maxAgeMinutes: number = GIT_LOCK_STALE_MINUTES): boolean {
   try {
     const stats = require('fs').statSync(lockPath);
     const ageMs = Date.now() - stats.mtimeMs;

@@ -12,6 +12,9 @@ export { FiscalPeriodSelector } from "./FiscalPeriodSelector";
 export { JournalEntryForm } from "./JournalEntryForm";
 export { ReceivePaymentModal } from "./ReceivePaymentModal";
 export { PayVendorModal } from "./PayVendorModal";
+export { RecordPaymentDialog } from "./RecordPaymentDialog"; // FEAT-007
+export { MultiInvoicePaymentForm } from "./MultiInvoicePaymentForm"; // FEAT-007
+export { InvoicePaymentHistory } from "./InvoicePaymentHistory"; // FEAT-007
 
 // Re-export types
 export type { InvoiceStatus, BillStatus, PaymentType, PaymentMethod } from "./StatusBadge";

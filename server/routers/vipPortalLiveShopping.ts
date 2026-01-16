@@ -6,12 +6,74 @@ import {
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { batches, products, productMedia } from "../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, like, gt } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 
 export const vipPortalLiveShoppingRouter = router({
+  // ============================================================================
+  // SESSION DISCOVERY
+  // ============================================================================
+
+  /**
+   * Check if client has an active session
+   * Used to show "active session" banner in VIP Portal
+   */
+  getActiveSession: vipPortalProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
+
+      // Validate client ownership
+      if (input.clientId !== ctx.clientId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Access denied",
+        });
+      }
+
+      // Find active or scheduled session for this client
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: and(
+          eq(liveShoppingSessions.clientId, input.clientId),
+          or(
+            eq(liveShoppingSessions.status, "ACTIVE"),
+            eq(liveShoppingSessions.status, "SCHEDULED"),
+            eq(liveShoppingSessions.status, "PAUSED")
+          )
+        ),
+        with: {
+          host: {
+            columns: {
+              name: true,
+            },
+          },
+        },
+        orderBy: (sessions, { desc }) => [desc(sessions.createdAt)],
+      });
+
+      if (!session) {
+        return { session: null };
+      }
+
+      return {
+        session: {
+          id: session.id,
+          roomCode: session.roomCode,
+          title: session.title,
+          status: session.status,
+          hostName: session.host?.name || "Staff",
+          scheduledAt: session.scheduledAt,
+        },
+      };
+    }),
+
   // ============================================================================
   // SESSION INTERACTION
   // ============================================================================
@@ -61,7 +123,7 @@ export const vipPortalLiveShoppingRouter = router({
           id: session.id,
           title: session.title,
           status: session.status,
-          hostName: session.host.name,
+          hostName: session.host?.name || "Staff",
           roomCode: session.roomCode,
         },
         cart,
@@ -79,7 +141,7 @@ export const vipPortalLiveShoppingRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify session ownership first
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -128,7 +190,7 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -174,7 +236,7 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -215,7 +277,7 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -241,7 +303,7 @@ export const vipPortalLiveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       const session = await db.query.liveShoppingSessions.findFirst({
         where: eq(liveShoppingSessions.id, input.sessionId),
@@ -370,6 +432,65 @@ export const vipPortalLiveShoppingRouter = router({
     }),
 
   /**
+   * Customer searches for products to add to session
+   * Allows customers to find and add items themselves
+   */
+  searchProducts: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        query: z.string().min(1),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+      }
+
+      const trimmedQuery = input.query.trim();
+      if (!trimmedQuery) {
+        return [];
+      }
+
+      // Search for available products - only show basic info to clients
+      const results = await db
+        .select({
+          batchId: batches.id,
+          productId: products.id,
+          productName: products.nameCanonical,
+          batchCode: batches.code,
+          available: batches.onHandQty,
+          // Don't expose COGS or internal pricing to clients
+        })
+        .from(batches)
+        .innerJoin(products, eq(batches.productId, products.id))
+        .where(
+          and(
+            or(
+              like(products.nameCanonical, `%${trimmedQuery}%`),
+              like(batches.code, `%${trimmedQuery}%`)
+            ),
+            gt(batches.onHandQty, "0") // Only show in-stock items (onHandQty is varchar)
+          )
+        )
+        .limit(15);
+
+      return results;
+    }),
+
+  /**
    * Get customer's items grouped by status
    */
   getMyItemsByStatus: vipPortalProcedure
@@ -407,6 +528,242 @@ export const vipPortalLiveShoppingRouter = router({
             0
           ),
         },
+      };
+    }),
+
+  // ============================================================================
+  // PRICE NEGOTIATION (FEATURE-003)
+  // ============================================================================
+
+  /**
+   * Request price negotiation for an item
+   * Customer proposes a new price for a cart item
+   */
+  requestNegotiation: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        proposedPrice: z.number().positive(),
+        reason: z.string().optional(),
+        quantity: z.number().positive().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+      }
+
+      // Get current cart item
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+      }
+
+      const currentPrice = parseFloat(cartItem.unitPrice?.toString() || "0");
+
+      // Store negotiation request in metadata
+      const negotiationData = {
+        status: "PENDING",
+        originalPrice: currentPrice,
+        proposedPrice: input.proposedPrice,
+        proposedQuantity: input.quantity,
+        reason: input.reason,
+        requestedBy: ctx.clientId,
+        requestedAt: new Date().toISOString(),
+        history: [
+          {
+            action: "REQUEST",
+            price: input.proposedPrice,
+            quantity: input.quantity,
+            by: ctx.clientId,
+            at: new Date().toISOString(),
+            reason: input.reason,
+          },
+        ],
+      };
+
+      // Update cart item with negotiation status
+      await db
+        .update(sessionCartItems)
+        .set({
+          negotiationStatus: "PENDING",
+          negotiationData: negotiationData,
+        })
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit negotiation event for real-time updates to staff
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NEGOTIATION_REQUESTED",
+        payload: {
+          cartItemId: input.cartItemId,
+          proposedPrice: input.proposedPrice,
+          originalPrice: currentPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      return { success: true, negotiationId: input.cartItemId };
+    }),
+
+  /**
+   * Accept counter-offer from host
+   * Customer accepts the counter-offer price
+   */
+  acceptCounterOffer: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      // Get current cart item with negotiation data
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem || !cartItem.negotiationData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+      }
+
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData || negotiationData.status !== "COUNTER_OFFERED") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No counter-offer to accept" });
+      }
+
+      // Add acceptance to history
+      negotiationData.history.push({
+        action: "ACCEPT_COUNTER",
+        price: negotiationData.counterPrice,
+        by: ctx.clientId,
+        at: new Date().toISOString(),
+      });
+
+      negotiationData.status = "ACCEPTED";
+      negotiationData.finalPrice = negotiationData.counterPrice;
+      negotiationData.acceptedAt = new Date().toISOString();
+
+      // Apply the counter-offer price
+      await db
+        .update(sessionCartItems)
+        .set({
+          unitPrice: negotiationData.counterPrice.toString(),
+          quantity: negotiationData.counterQuantity?.toString() || cartItem.quantity,
+          negotiationStatus: "ACCEPTED",
+          negotiationData: negotiationData,
+        })
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit acceptance event
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "COUNTER_OFFER_ACCEPTED",
+        payload: {
+          cartItemId: input.cartItemId,
+          finalPrice: negotiationData.counterPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also update cart view
+      await sessionCartService.emitCartUpdate(input.sessionId);
+
+      return { success: true, finalPrice: negotiationData.counterPrice };
+    }),
+
+  /**
+   * Get negotiation history for an item
+   * Customer can view negotiation details
+   */
+  getNegotiationHistory: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+      }
+
+      if (!cartItem.negotiationData) {
+        return { hasNegotiation: false, history: [] };
+      }
+
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData) {
+        return { hasNegotiation: false, history: [] };
+      }
+
+      return {
+        hasNegotiation: true,
+        status: negotiationData.status,
+        originalPrice: negotiationData.originalPrice,
+        proposedPrice: negotiationData.proposedPrice,
+        counterPrice: negotiationData.counterPrice,
+        finalPrice: negotiationData.finalPrice,
+        history: negotiationData.history || [],
       };
     }),
 });

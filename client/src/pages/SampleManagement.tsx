@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Beaker, Filter, AlertCircle, RefreshCw } from "lucide-react";
+import { Beaker, Filter } from "lucide-react";
 import {
   SampleForm,
   type SampleFormOption,
@@ -29,7 +29,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+// Alert components available if needed for error states
 import {
   EmptyState,
   DatabaseErrorState,
@@ -109,11 +109,14 @@ export default function SampleManagement() {
 
   // Return workflow dialog states
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [returnDialogType, setReturnDialogType] = useState<"sample" | "vendor">("sample");
+  const [returnDialogType, setReturnDialogType] = useState<"sample" | "vendor">(
+    "sample"
+  );
   const [selectedSampleId, setSelectedSampleId] = useState<number | null>(null);
   const [vendorShipDialogOpen, setVendorShipDialogOpen] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
-  const [selectedSampleLocation, setSelectedSampleLocation] = useState<SampleLocation | null>(null);
+  const [selectedSampleLocation, setSelectedSampleLocation] =
+    useState<SampleLocation | null>(null);
 
   const debouncedProductSearch = useDebounce(productSearch, 300);
 
@@ -121,15 +124,28 @@ export default function SampleManagement() {
   const { user } = useAuth();
 
   // Fetch all samples instead of just pending with debug logging
-  const { data: samplesData, isLoading: samplesLoading, error: samplesError, refetch: refetchSamples, isError: isSamplesError } =
-    trpc.samples.getAll.useQuery(
-      { limit: 200 },
-      {
-        // Retry logic for stability
-        retry: 2,
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
-      }
-    );
+  // BUG-071 FIX: Enhanced query options to prevent indefinite hanging under memory pressure
+  const {
+    data: samplesData,
+    isLoading: samplesLoading,
+    error: samplesError,
+    refetch: refetchSamples,
+    isError: isSamplesError,
+  } = trpc.samples.getAll.useQuery(
+    { limit: 200 },
+    {
+      // BUG-071 FIX: Retry logic for stability with exponential backoff
+      retry: 2,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
+      // BUG-071 FIX: Keep data fresh but cache for 30 seconds to prevent repeated requests
+      staleTime: 30 * 1000,
+      // BUG-071 FIX: Garbage collect after 5 minutes
+      gcTime: 5 * 60 * 1000,
+      // BUG-071 FIX: Refetch on mount but not on window focus to reduce load
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    }
+  );
 
   // Debug logging for data display issues (QA-050)
   useEffect(() => {
@@ -139,22 +155,28 @@ export default function SampleManagement() {
       [];
     const itemCount = items.length;
 
-    console.log('[SampleManagement] Query state:', {
-      isLoading: samplesLoading,
-      isError: isSamplesError,
-      error: samplesError?.message,
-      itemCount,
-      hasItems: items.length > 0,
-      rawDataType: samplesData ? typeof samplesData : 'undefined',
-      hasItemsProperty: samplesData && 'items' in samplesData,
-      isArray: Array.isArray(samplesData),
-    });
-
-    // Warn if we have a response but no items
-    if (!samplesLoading && !isSamplesError && samplesData && itemCount === 0) {
-      console.warn('[SampleManagement] Zero samples returned - possible data display issue', {
-        response: samplesData,
+    // Debug logging for data display issues (QA-050) - only in development
+    if (import.meta.env.DEV) {
+      console.info("[SampleManagement] Query state:", {
+        isLoading: samplesLoading,
+        isError: isSamplesError,
+        error: samplesError?.message,
+        itemCount,
+        hasItems: items.length > 0,
+        rawDataType: samplesData ? typeof samplesData : "undefined",
+        hasItemsProperty: samplesData && "items" in samplesData,
+        isArray: Array.isArray(samplesData),
       });
+
+      // Warn if we have a response but no items
+      if (!samplesLoading && !isSamplesError && samplesData && itemCount === 0) {
+        console.warn(
+          "[SampleManagement] Zero samples returned - possible data display issue",
+          {
+            response: samplesData,
+          }
+        );
+      }
     }
   }, [samplesData, samplesLoading, isSamplesError, samplesError]);
 
@@ -335,15 +357,16 @@ export default function SampleManagement() {
     },
   });
 
-  const requestVendorReturnMutation = trpc.samples.requestVendorReturn.useMutation({
-    onSuccess: async () => {
-      await utils.samples.getAll.invalidate();
-      toast.success("Vendor return requested.");
-    },
-    onError: error => {
-      toast.error(error.message);
-    },
-  });
+  const requestVendorReturnMutation =
+    trpc.samples.requestVendorReturn.useMutation({
+      onSuccess: async () => {
+        await utils.samples.getAll.invalidate();
+        toast.success("Vendor return requested.");
+      },
+      onError: error => {
+        toast.error(error.message);
+      },
+    });
 
   const shipToVendorMutation = trpc.samples.shipToVendor.useMutation({
     onSuccess: async () => {
@@ -355,15 +378,16 @@ export default function SampleManagement() {
     },
   });
 
-  const confirmVendorReturnMutation = trpc.samples.confirmVendorReturn.useMutation({
-    onSuccess: async () => {
-      await utils.samples.getAll.invalidate();
-      toast.success("Vendor return confirmed.");
-    },
-    onError: error => {
-      toast.error(error.message);
-    },
-  });
+  const confirmVendorReturnMutation =
+    trpc.samples.confirmVendorReturn.useMutation({
+      onSuccess: async () => {
+        await utils.samples.getAll.invalidate();
+        toast.success("Vendor return confirmed.");
+      },
+      onError: error => {
+        toast.error(error.message);
+      },
+    });
 
   const updateLocationMutation = trpc.samples.updateLocation.useMutation({
     onSuccess: async () => {
@@ -604,7 +628,10 @@ export default function SampleManagement() {
           ) : (
             <ErrorState
               title="Failed to load samples"
-              description={samplesError?.message || "An error occurred while loading samples."}
+              description={
+                samplesError?.message ||
+                "An error occurred while loading samples."
+              }
               onRetry={() => refetchSamples()}
               showSupport
             />
@@ -696,10 +723,16 @@ export default function SampleManagement() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                 <Badge variant="secondary">All {statusCounts.ALL}</Badge>
-                <Badge variant="secondary">Pending {statusCounts.PENDING}</Badge>
-                <Badge variant="secondary">Approved {statusCounts.FULFILLED}</Badge>
+                <Badge variant="secondary">
+                  Pending {statusCounts.PENDING}
+                </Badge>
+                <Badge variant="secondary">
+                  Approved {statusCounts.FULFILLED}
+                </Badge>
                 {statusCounts.RETURN_REQUESTED > 0 && (
-                  <Badge variant="outline">Returns {statusCounts.RETURN_REQUESTED}</Badge>
+                  <Badge variant="outline">
+                    Returns {statusCounts.RETURN_REQUESTED}
+                  </Badge>
                 )}
               </div>
             </div>
@@ -721,7 +754,10 @@ export default function SampleManagement() {
           { value: "FULFILLED" as TabFilter, label: "Approved" },
           { value: "RETURN_REQUESTED" as TabFilter, label: "Return Requested" },
           { value: "RETURNED" as TabFilter, label: "Returned" },
-          { value: "VENDOR_RETURN_REQUESTED" as TabFilter, label: "Vendor Returns" },
+          {
+            value: "VENDOR_RETURN_REQUESTED" as TabFilter,
+            label: "Vendor Returns",
+          },
         ].map(tab => (
           <Button
             key={tab.value}
@@ -775,7 +811,8 @@ export default function SampleManagement() {
         type={returnDialogType}
         sampleId={selectedSampleId}
         isSubmitting={
-          requestReturnMutation.isPending || requestVendorReturnMutation.isPending
+          requestReturnMutation.isPending ||
+          requestVendorReturnMutation.isPending
         }
       />
 

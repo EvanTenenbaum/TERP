@@ -1,0 +1,36 @@
+# Oracle: Auth.Login.SuperAdmin
+# Verify Super Admin can login and see admin features
+
+flow_id: "Auth.Login.SuperAdmin"
+description: "Verify Super Admin login and access to admin features"
+role: "SuperAdmin"
+tags:
+  - tier1
+  - auth
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure: []
+
+steps:
+  - action: navigate
+    path: "/login"
+    wait_for: "input[name='username'], input[name='email'], input[type='email']"
+
+  - action: wait
+    network_idle: true
+
+  - action: navigate
+    path: "/"
+    wait_for: "nav, aside, [role='navigation']"
+
+  - action: wait
+    network_idle: true
+
+expected_ui:
+  url_contains: "/"
+  visible:
+    - "nav, aside, [role='navigation']"
+  text_present:
+    - "Dashboard"

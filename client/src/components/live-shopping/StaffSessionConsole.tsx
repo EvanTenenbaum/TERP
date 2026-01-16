@@ -15,6 +15,7 @@ import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp, DollarSign, Check, X as XIcon } from "lucide-react";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
 
@@ -55,6 +56,10 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
   const [convertToOrderOnEnd, setConvertToOrderOnEnd] = useState(false);
 
+  // Price negotiation state
+  const [showNegotiations, setShowNegotiations] = useState(true);
+  const [counterOfferInputs, setCounterOfferInputs] = useState<Record<number, string>>({});
+
   // Queries
   const { data: session, isLoading: sessionLoading } = trpc.liveShopping.getSession.useQuery(
     { sessionId },
@@ -63,7 +68,15 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
 
   const { data: itemsByStatus, refetch } = trpc.liveShopping.getItemsByStatus.useQuery(
     { sessionId },
-    { 
+    {
+      enabled: !!sessionId,
+      refetchInterval: 2000, // Real-time polling
+    }
+  );
+
+  const { data: activeNegotiations, refetch: refetchNegotiations } = trpc.liveShopping.getActiveNegotiations.useQuery(
+    { sessionId },
+    {
       enabled: !!sessionId,
       refetchInterval: 2000, // Real-time polling
     }
@@ -95,6 +108,17 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
   const endSessionMutation = trpc.liveShopping.endSession.useMutation({
     onError: (error) => {
       toast.error(`Failed to end session: ${error.message}`);
+    },
+  });
+
+  const respondToNegotiationMutation = trpc.liveShopping.respondToNegotiation.useMutation({
+    onSuccess: () => {
+      refetch();
+      refetchNegotiations();
+      setCounterOfferInputs({});
+    },
+    onError: (error) => {
+      toast.error(`Failed to respond to negotiation: ${error.message}`);
     },
   });
 
@@ -178,6 +202,19 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
     }
   }, []);
 
+  // Handle price negotiation responses
+  const handleRespondToNegotiation = useCallback(
+    (cartItemId: number, response: "ACCEPT" | "REJECT" | "COUNTER", counterPrice?: number) => {
+      respondToNegotiationMutation.mutate({
+        sessionId,
+        cartItemId,
+        response,
+        counterPrice,
+      });
+    },
+    [sessionId, respondToNegotiationMutation]
+  );
+
   if (sessionLoading || !session) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -259,8 +296,154 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
         </div>
       </header>
 
-      {/* Main Content - Three Columns */}
-      <div className="flex-1 overflow-hidden p-6">
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden p-6 space-y-6">
+        {/* Active Negotiations Panel */}
+        {activeNegotiations && activeNegotiations.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border-2 border-purple-300">
+            <button
+              onClick={() => setShowNegotiations(!showNegotiations)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-purple-600" />
+                <span className="font-semibold text-gray-900">
+                  Price Negotiations ({activeNegotiations.length})
+                </span>
+              </div>
+              {showNegotiations ? (
+                <ChevronUp className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+
+            {showNegotiations && (
+              <div className="p-4 space-y-3 border-t">
+                {activeNegotiations.map((item: any) => {
+                  const negotiation = item.negotiation;
+                  const isPending = item.negotiationStatus === "PENDING";
+                  const isCounterOffered = item.negotiationStatus === "COUNTER_OFFERED";
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-purple-50 rounded-lg p-3 border border-purple-200"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{item.productName}</h4>
+                          <p className="text-xs text-gray-500 font-mono">{item.batchCode || `Batch #${item.batchId}`}</p>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 text-xs rounded-full ${
+                            isPending
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {item.negotiationStatus}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 mb-3 text-sm">
+                        <div>
+                          <span className="text-gray-500">Current:</span>
+                          <p className="font-bold">${parseFloat(negotiation?.originalPrice || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Requested:</span>
+                          <p className="font-bold text-purple-600">
+                            ${parseFloat(negotiation?.proposedPrice || 0).toFixed(2)}
+                          </p>
+                        </div>
+                        {negotiation?.reason && (
+                          <div className="col-span-3">
+                            <span className="text-gray-500">Reason:</span>
+                            <p className="text-sm italic">{negotiation.reason}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {isPending && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleRespondToNegotiation(item.id, "ACCEPT")}
+                            disabled={respondToNegotiationMutation.isPending}
+                            className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center justify-center gap-1"
+                          >
+                            <Check className="h-4 w-4" />
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleRespondToNegotiation(item.id, "REJECT")}
+                            disabled={respondToNegotiationMutation.isPending}
+                            className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center justify-center gap-1"
+                          >
+                            <XIcon className="h-4 w-4" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {isPending && (
+                        <div className="mt-2 pt-2 border-t border-purple-200">
+                          <p className="text-xs text-gray-600 mb-2">Or make a counter-offer:</p>
+                          <div className="flex gap-2">
+                            <div className="flex-1 relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                $
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={counterOfferInputs[item.id] || ""}
+                                onChange={(e) =>
+                                  setCounterOfferInputs((prev) => ({
+                                    ...prev,
+                                    [item.id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Counter price"
+                                className="w-full pl-8 pr-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                            <button
+                              onClick={() => {
+                                const price = parseFloat(counterOfferInputs[item.id] || "0");
+                                if (price > 0) {
+                                  handleRespondToNegotiation(item.id, "COUNTER", price);
+                                } else {
+                                  toast.error("Please enter a valid counter-offer price");
+                                }
+                              }}
+                              disabled={respondToNegotiationMutation.isPending}
+                              className="px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                            >
+                              Send Counter
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isCounterOffered && negotiation?.counterPrice && (
+                        <div className="mt-2 p-2 bg-purple-100 rounded">
+                          <p className="text-xs text-purple-800">
+                            Waiting for customer to respond to your counter-offer of{" "}
+                            <strong>${negotiation.counterPrice.toFixed(2)}</strong>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Three Columns */}
         <div className="grid grid-cols-3 gap-6 h-full">
           {/* Sample Requests Column */}
           <StaffStatusColumn

@@ -358,9 +358,48 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* BUG-091 FIX: Add proper loading/error/empty state handling */}
         {error && (
-          <div className="mb-3 text-sm text-destructive">{error.message}</div>
+          <div className="mb-3 p-4 text-sm text-destructive bg-destructive/10 rounded-md">
+            <p className="font-medium">Unable to load pick/pack queue</p>
+            <p className="text-muted-foreground mt-1">
+              {error.message || "Please try again or contact support."}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="mt-2"
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              Try Again
+            </Button>
+          </div>
         )}
+        {isLoading && !error && (
+          <div className="flex items-center justify-center h-[600px]">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Loading pick/pack queue...
+              </p>
+            </div>
+          </div>
+        )}
+        {!isLoading && !error && rows.length === 0 && (
+          <div className="flex items-center justify-center h-[600px]">
+            <div className="text-center">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto opacity-50" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                No orders in the pick/pack queue
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Orders will appear here when they need to be fulfilled
+              </p>
+            </div>
+          </div>
+        )}
+        {!isLoading && !error && rows.length > 0 && (
         <div className="ag-theme-alpine h-[600px] w-full">
           <AgGridReact<PickPackGridRow>
             rowData={rows}
@@ -383,6 +422,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
             }}
           />
         </div>
+        )}
       </CardContent>
     </Card>
   );

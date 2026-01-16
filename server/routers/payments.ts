@@ -22,6 +22,7 @@ import {
   clients,
   users,
   ledgerEntries,
+  invoicePayments, // FEAT-007: Multi-invoice payment support
 } from "../../drizzle/schema";
 import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -504,7 +505,322 @@ export const paymentsRouter = router({
     }),
 
   /**
+   * Get payment history for a specific invoice (FEAT-007)
+   */
+  getInvoicePaymentHistory: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(z.object({ invoiceId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Get all payments linked to this invoice via invoicePayments junction table
+      const results = await db
+        .select({
+          allocationId: invoicePayments.id,
+          allocatedAmount: invoicePayments.allocatedAmount,
+          paymentNumber: payments.paymentNumber,
+          paymentDate: payments.paymentDate,
+          paymentMethod: payments.paymentMethod,
+          referenceNumber: payments.referenceNumber,
+          notes: payments.notes,
+          recordedBy: users.name,
+        })
+        .from(invoicePayments)
+        .innerJoin(payments, eq(invoicePayments.paymentId, payments.id))
+        .leftJoin(users, eq(payments.createdBy, users.id))
+        .where(
+          and(
+            eq(invoicePayments.invoiceId, input.invoiceId),
+            isNull(payments.deletedAt)
+          )
+        )
+        .orderBy(desc(payments.paymentDate));
+
+      // Also get direct payments (legacy, where payment.invoiceId is set directly)
+      const directPayments = await db
+        .select({
+          allocationId: payments.id,
+          allocatedAmount: payments.amount,
+          paymentNumber: payments.paymentNumber,
+          paymentDate: payments.paymentDate,
+          paymentMethod: payments.paymentMethod,
+          referenceNumber: payments.referenceNumber,
+          notes: payments.notes,
+          recordedBy: users.name,
+        })
+        .from(payments)
+        .leftJoin(users, eq(payments.createdBy, users.id))
+        .where(
+          and(
+            eq(payments.invoiceId, input.invoiceId),
+            isNull(payments.deletedAt)
+          )
+        )
+        .orderBy(desc(payments.paymentDate));
+
+      // Combine and deduplicate by paymentNumber
+      const allPayments = [...results, ...directPayments];
+      const seen = new Set<string>();
+      const uniquePayments = allPayments.filter(p => {
+        if (!p.paymentNumber || seen.has(p.paymentNumber)) return false;
+        seen.add(p.paymentNumber);
+        return true;
+      });
+
+      return uniquePayments;
+    }),
+
+  /**
+   * Get outstanding invoices for a client (FEAT-007)
+   */
+  getClientOutstandingInvoices: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const results = await db
+        .select({
+          id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
+          invoiceDate: invoices.invoiceDate,
+          dueDate: invoices.dueDate,
+          totalAmount: invoices.totalAmount,
+          amountPaid: invoices.amountPaid,
+          amountDue: invoices.amountDue,
+          status: invoices.status,
+        })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.customerId, input.clientId),
+            sql`${invoices.status} NOT IN ('PAID', 'VOID')`,
+            isNull(invoices.deletedAt)
+          )
+        )
+        .orderBy(invoices.dueDate);
+
+      // Add overdue flag
+      const today = new Date();
+      return results.map(inv => ({
+        ...inv,
+        totalAmount: parseFloat(String(inv.totalAmount) || "0"),
+        amountPaid: parseFloat(String(inv.amountPaid) || "0"),
+        amountDue: parseFloat(String(inv.amountDue) || "0"),
+        isOverdue: inv.dueDate ? new Date(inv.dueDate) < today : false,
+      }));
+    }),
+
+  /**
+   * Record payment against multiple invoices (FEAT-007)
+   */
+  recordMultiInvoicePayment: protectedProcedure
+    .use(requirePermission("accounting:create"))
+    .input(
+      z.object({
+        clientId: z.number(),
+        totalAmount: z.number().positive(),
+        allocations: z.array(
+          z.object({
+            invoiceId: z.number(),
+            amount: z.number().positive(),
+          })
+        ),
+        paymentMethod: z.enum([
+          "CASH",
+          "CHECK",
+          "WIRE",
+          "ACH",
+          "CREDIT_CARD",
+          "DEBIT_CARD",
+          "CRYPTO",
+          "OTHER",
+        ]),
+        referenceNumber: z.string().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Validate allocations sum matches totalAmount
+      const allocationsTotal = input.allocations.reduce(
+        (sum, a) => sum + a.amount,
+        0
+      );
+      if (Math.abs(allocationsTotal - input.totalAmount) > 0.01) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Allocations total must equal payment amount",
+        });
+      }
+
+      // Get account IDs for GL entries
+      const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+      const arAccountId = await getAccountIdByName(
+        ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+      );
+      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+
+      return await db.transaction(async tx => {
+        // Generate payment number
+        const paymentNumber = await generatePaymentNumber();
+
+        // Create main payment record
+        const [payment] = await tx
+          .insert(payments)
+          .values({
+            paymentNumber,
+            paymentType: "RECEIVED",
+            customerId: input.clientId,
+            paymentDate: new Date(),
+            amount: input.totalAmount.toFixed(2),
+            paymentMethod:
+              input.paymentMethod === "CRYPTO" ? "OTHER" : input.paymentMethod,
+            referenceNumber: input.referenceNumber,
+            notes: input.notes,
+            createdBy: userId,
+          })
+          .$returningId();
+
+        const paymentId = payment.id;
+
+        // Process each invoice allocation
+        const invoiceAllocations: {
+          invoiceId: number;
+          amount: number;
+          newStatus: string;
+        }[] = [];
+
+        for (const allocation of input.allocations) {
+          // Get invoice
+          const [invoice] = await tx
+            .select()
+            .from(invoices)
+            .where(eq(invoices.id, allocation.invoiceId))
+            .limit(1);
+
+          if (!invoice) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Invoice ${allocation.invoiceId} not found`,
+            });
+          }
+
+          const amountDue = parseFloat(String(invoice.amountDue) || "0");
+          if (allocation.amount > amountDue + 0.01) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Allocation for invoice #${invoice.invoiceNumber} exceeds amount due`,
+            });
+          }
+
+          // Create invoice_payments record
+          await tx.insert(invoicePayments).values({
+            paymentId,
+            invoiceId: allocation.invoiceId,
+            allocatedAmount: allocation.amount.toFixed(2),
+            allocatedBy: userId,
+          });
+
+          // Update invoice amounts
+          const currentPaid = parseFloat(String(invoice.amountPaid) || "0");
+          const newPaid = currentPaid + allocation.amount;
+          const totalAmount = parseFloat(String(invoice.totalAmount) || "0");
+          const newDue = Math.max(0, totalAmount - newPaid);
+
+          let newStatus: string;
+          if (newDue <= 0.01) {
+            newStatus = "PAID";
+          } else if (newPaid > 0) {
+            newStatus = "PARTIAL";
+          } else {
+            newStatus = invoice.status;
+          }
+
+          await tx
+            .update(invoices)
+            .set({
+              amountPaid: newPaid.toFixed(2),
+              amountDue: newDue.toFixed(2),
+              status: newStatus as "PAID" | "PARTIAL",
+            })
+            .where(eq(invoices.id, allocation.invoiceId));
+
+          invoiceAllocations.push({
+            invoiceId: allocation.invoiceId,
+            amount: allocation.amount,
+            newStatus,
+          });
+        }
+
+        // Create GL entries
+        const entryNumber = `PMT-${paymentId}`;
+
+        // Debit Cash
+        await tx.insert(ledgerEntries).values({
+          entryNumber: `${entryNumber}-DR`,
+          entryDate: new Date(),
+          accountId: cashAccountId,
+          debit: input.totalAmount.toFixed(2),
+          credit: "0.00",
+          description: `Multi-invoice payment - ${input.allocations.length} invoices`,
+          referenceType: "PAYMENT",
+          referenceId: paymentId,
+          fiscalPeriodId,
+          isManual: false,
+          createdBy: userId,
+        });
+
+        // Credit AR
+        await tx.insert(ledgerEntries).values({
+          entryNumber: `${entryNumber}-CR`,
+          entryDate: new Date(),
+          accountId: arAccountId,
+          debit: "0.00",
+          credit: input.totalAmount.toFixed(2),
+          description: `Multi-invoice payment - ${input.allocations.length} invoices`,
+          referenceType: "PAYMENT",
+          referenceId: paymentId,
+          fiscalPeriodId,
+          isManual: false,
+          createdBy: userId,
+        });
+
+        // Update client totalOwed
+        await tx
+          .update(clients)
+          .set({
+            totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${input.totalAmount}`,
+          })
+          .where(eq(clients.id, input.clientId));
+
+        logger.info({
+          msg: "[Payments] Multi-invoice payment recorded",
+          paymentId,
+          paymentNumber,
+          clientId: input.clientId,
+          totalAmount: input.totalAmount,
+          invoiceCount: input.allocations.length,
+        });
+
+        return {
+          paymentId,
+          paymentNumber,
+          totalAmount: input.totalAmount,
+          invoiceAllocations,
+        };
+      });
+    }),
+
+  /**
    * Void a payment
+   * FEAT-007: Updated to handle multi-invoice payments via invoice_payments junction table
    */
   void: protectedProcedure
     .use(requirePermission("accounting:delete"))
@@ -533,16 +849,14 @@ export const paymentsRouter = router({
         });
       }
 
-      const paymentAmount = parseFloat(payment.amount || "0");
+      if (payment.deletedAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Payment has already been voided",
+        });
+      }
 
-      // Get the associated invoice
-      const [invoice] = payment.invoiceId
-        ? await db
-            .select()
-            .from(invoices)
-            .where(eq(invoices.id, payment.invoiceId))
-            .limit(1)
-        : [null];
+      const paymentAmount = parseFloat(payment.amount || "0");
 
       return await db.transaction(async tx => {
         // Soft delete the payment
@@ -555,35 +869,91 @@ export const paymentsRouter = router({
           })
           .where(eq(payments.id, input.id));
 
-        // If there's an associated invoice, reverse the payment
-        if (invoice && payment.invoiceId) {
-          const currentPaid = parseFloat(invoice.amountPaid || "0");
-          const newPaid = Math.max(0, currentPaid - paymentAmount);
-          const totalAmount = parseFloat(invoice.totalAmount || "0");
-          const newDue = totalAmount - newPaid;
+        // FEAT-007: Check for multi-invoice allocations first
+        const allocations = await tx
+          .select({
+            invoiceId: invoicePayments.invoiceId,
+            allocatedAmount: invoicePayments.allocatedAmount,
+          })
+          .from(invoicePayments)
+          .where(eq(invoicePayments.paymentId, input.id));
 
-          // Determine new status
-          const newStatus: "SENT" | "PARTIAL" =
-            newPaid > 0 ? "PARTIAL" : "SENT";
+        if (allocations.length > 0) {
+          // Handle multi-invoice payment: reverse each allocation
+          for (const allocation of allocations) {
+            const allocatedAmount = parseFloat(
+              allocation.allocatedAmount || "0"
+            );
 
-          await tx
-            .update(invoices)
-            .set({
-              amountPaid: newPaid.toFixed(2),
-              amountDue: newDue.toFixed(2),
-              status: newStatus,
-            })
-            .where(eq(invoices.id, payment.invoiceId));
+            const [invoice] = await tx
+              .select()
+              .from(invoices)
+              .where(eq(invoices.id, allocation.invoiceId))
+              .limit(1);
 
-          // Restore client totalOwed
-          if (payment.customerId) {
-            await tx
-              .update(clients)
-              .set({
-                totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
-              })
-              .where(eq(clients.id, payment.customerId));
+            if (invoice) {
+              const currentPaid = parseFloat(invoice.amountPaid || "0");
+              const newPaid = Math.max(0, currentPaid - allocatedAmount);
+              const totalAmount = parseFloat(invoice.totalAmount || "0");
+              const newDue = totalAmount - newPaid;
+
+              // Determine new status
+              const newStatus: "SENT" | "PARTIAL" =
+                newPaid > 0 ? "PARTIAL" : "SENT";
+
+              await tx
+                .update(invoices)
+                .set({
+                  amountPaid: newPaid.toFixed(2),
+                  amountDue: newDue.toFixed(2),
+                  status: newStatus,
+                })
+                .where(eq(invoices.id, allocation.invoiceId));
+            }
           }
+
+          // Soft delete the invoice_payments records
+          await tx
+            .update(invoicePayments)
+            .set({ deletedAt: new Date() })
+            .where(eq(invoicePayments.paymentId, input.id));
+        } else if (payment.invoiceId) {
+          // Handle legacy single-invoice payment
+          const [invoice] = await tx
+            .select()
+            .from(invoices)
+            .where(eq(invoices.id, payment.invoiceId))
+            .limit(1);
+
+          if (invoice) {
+            const currentPaid = parseFloat(invoice.amountPaid || "0");
+            const newPaid = Math.max(0, currentPaid - paymentAmount);
+            const totalAmount = parseFloat(invoice.totalAmount || "0");
+            const newDue = totalAmount - newPaid;
+
+            // Determine new status
+            const newStatus: "SENT" | "PARTIAL" =
+              newPaid > 0 ? "PARTIAL" : "SENT";
+
+            await tx
+              .update(invoices)
+              .set({
+                amountPaid: newPaid.toFixed(2),
+                amountDue: newDue.toFixed(2),
+                status: newStatus,
+              })
+              .where(eq(invoices.id, payment.invoiceId));
+          }
+        }
+
+        // Restore client totalOwed
+        if (payment.customerId) {
+          await tx
+            .update(clients)
+            .set({
+              totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
+            })
+            .where(eq(clients.id, payment.customerId));
         }
 
         // Create reversing GL entries
@@ -629,6 +999,7 @@ export const paymentsRouter = router({
           paymentId: input.id,
           reason: input.reason,
           amount: paymentAmount,
+          allocationsReversed: allocations.length,
         });
 
         return { success: true, paymentId: input.id };

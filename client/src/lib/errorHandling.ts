@@ -42,7 +42,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   TOO_MANY_REQUESTS: "Too many requests. Please slow down.",
 
   // Custom TERP codes
-  TERI_CODE_EXISTS: "This TERI code already exists. Please use a different code.",
+  TERI_CODE_EXISTS:
+    "This TERI code already exists. Please use a different code.",
   INSUFFICIENT_QUANTITY: "Insufficient quantity available.",
   INVALID_TRANSITION: "This status change is not allowed.",
 };
@@ -50,12 +51,19 @@ const ERROR_MESSAGES: Record<string, string> = {
 /**
  * BUG-046: Auth error type detection
  */
-export type AuthErrorType = "NOT_LOGGED_IN" | "SESSION_EXPIRED" | "DEMO_USER_RESTRICTED" | "PERMISSION_DENIED" | "UNKNOWN";
+export type AuthErrorType =
+  | "NOT_LOGGED_IN"
+  | "SESSION_EXPIRED"
+  | "DEMO_USER_RESTRICTED"
+  | "PERMISSION_DENIED"
+  | "UNKNOWN";
 
 /**
  * Type guard for tRPC client errors
  */
-export function isTRPCClientError(error: unknown): error is TRPCClientError<AppRouter> {
+export function isTRPCClientError(
+  error: unknown
+): error is TRPCClientError<AppRouter> {
   return error instanceof TRPCClientError;
 }
 
@@ -91,7 +99,10 @@ export function getErrorMessage(error: unknown): string {
     if (error.message.includes("TERI code already exists")) {
       return ERROR_MESSAGES.TERI_CODE_EXISTS;
     }
-    if (error.message.includes("fetch failed") || error.message.includes("network")) {
+    if (
+      error.message.includes("fetch failed") ||
+      error.message.includes("network")
+    ) {
       return "Network error. Please check your connection and try again.";
     }
     return error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR;
@@ -107,20 +118,78 @@ export function getErrorMessage(error: unknown): string {
 
 /**
  * Extract error code from various error types
+ * BUG-046 FIX: Enhanced error code extraction to handle tRPC error shapes correctly
  */
 export function getErrorCode(error: unknown): string {
   if (isTRPCClientError(error)) {
+    // BUG-046 FIX: tRPC errors can have code in multiple locations depending on version
+    // Check .data.code first (tRPC v10+)
     const data = error.data as Record<string, unknown> | undefined;
-    const code = data?.code;
-    return (code as string) || "UNKNOWN";
+    if (data?.code) {
+      return data.code as string;
+    }
+
+    // BUG-046 FIX: Check .shape.data.code (alternative tRPC structure)
+    const shape = error.shape as { data?: { code?: string } } | undefined;
+    if (shape?.data?.code) {
+      return shape.data.code;
+    }
+
+    // BUG-046 FIX: Check the error's code property directly (tRPC v11+)
+    const errorWithCode = error as { code?: string };
+    if (errorWithCode.code) {
+      return errorWithCode.code;
+    }
+
+    // BUG-046 FIX: Parse from message as last resort for known patterns
+    // Use optional chaining and nullish coalescing for safety
+    const message = (error.message ?? "").toLowerCase();
+    if (
+      message.includes("permission denied") ||
+      message.includes("do not have permission") ||
+      message.includes("not have permission") ||
+      message.includes("access denied") ||
+      message.includes("forbidden") ||
+      message.includes("required permission:")
+    ) {
+      return "FORBIDDEN";
+    }
+    if (
+      message.includes("authentication required") ||
+      message.includes("please log in") ||
+      message.includes("not authenticated") ||
+      message.includes("login required") ||
+      message.includes("unauthorized")
+    ) {
+      return "UNAUTHORIZED";
+    }
+
+    return "UNKNOWN";
   }
 
   if (error instanceof Error) {
-    if (error.message.includes("TERI code already exists")) {
+    const message = (error.message ?? "").toLowerCase();
+    if (message.includes("teri code already exists")) {
       return "TERI_CODE_EXISTS";
     }
-    if (error.message.includes("fetch failed") || error.message.includes("network")) {
+    if (message.includes("fetch failed") || message.includes("network")) {
       return "NETWORK_ERROR";
+    }
+    // BUG-046 FIX: Also detect auth errors from generic Error instances
+    if (
+      message.includes("permission denied") ||
+      message.includes("do not have permission") ||
+      message.includes("forbidden") ||
+      message.includes("access denied")
+    ) {
+      return "FORBIDDEN";
+    }
+    if (
+      message.includes("authentication required") ||
+      message.includes("please log in") ||
+      message.includes("unauthorized")
+    ) {
+      return "UNAUTHORIZED";
     }
   }
 
@@ -131,7 +200,9 @@ export function getErrorCode(error: unknown): string {
  * Extract field-level errors from Zod validation errors
  * Returns a map of field names to error messages
  */
-export function extractFieldErrors(error: unknown): Record<string, string[]> | undefined {
+export function extractFieldErrors(
+  error: unknown
+): Record<string, string[]> | undefined {
   if (!isTRPCClientError(error)) {
     return undefined;
   }
@@ -140,14 +211,18 @@ export function extractFieldErrors(error: unknown): Record<string, string[]> | u
   // tRPC wraps Zod errors in a specific format
   try {
     const data = error.data as Record<string, unknown> | undefined;
-    const zodError = data?.zodError as { fieldErrors?: Record<string, string[]> } | undefined;
+    const zodError = data?.zodError as
+      | { fieldErrors?: Record<string, string[]> }
+      | undefined;
 
     if (zodError?.fieldErrors) {
       return zodError.fieldErrors;
     }
 
     // Also check the shape property
-    const shape = error.shape as { data?: { zodError?: { fieldErrors?: Record<string, string[]> } } } | undefined;
+    const shape = error.shape as
+      | { data?: { zodError?: { fieldErrors?: Record<string, string[]> } } }
+      | undefined;
     if (shape?.data?.zodError?.fieldErrors) {
       return shape.data.zodError.fieldErrors;
     }
@@ -179,10 +254,23 @@ export function isErrorCode(error: unknown, code: string): boolean {
 
 /**
  * Check if an error is an authentication error
+ * BUG-046 FIX: More comprehensive auth error detection
  */
 export function isAuthError(error: unknown): boolean {
   const code = getErrorCode(error);
-  return code === "UNAUTHORIZED" || code === "FORBIDDEN";
+  if (code === "UNAUTHORIZED" || code === "FORBIDDEN") {
+    return true;
+  }
+
+  // BUG-046 FIX: Also check auth error type for edge cases
+  // where code extraction fails but message indicates auth error
+  const authType = getAuthErrorType(error);
+  return (
+    authType === "NOT_LOGGED_IN" ||
+    authType === "SESSION_EXPIRED" ||
+    authType === "PERMISSION_DENIED" ||
+    authType === "DEMO_USER_RESTRICTED"
+  );
 }
 
 /**
@@ -191,9 +279,11 @@ export function isAuthError(error: unknown): boolean {
 export function isNetworkError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    return message.includes("fetch failed") ||
-           message.includes("network") ||
-           message.includes("connection");
+    return (
+      message.includes("fetch failed") ||
+      message.includes("network") ||
+      message.includes("connection")
+    );
   }
   return false;
 }
@@ -202,7 +292,10 @@ export function isNetworkError(error: unknown): boolean {
  * Log error with context for debugging
  * In production, this could be sent to a monitoring service
  */
-export function logError(error: unknown, context?: Record<string, unknown>): void {
+export function logError(
+  error: unknown,
+  context?: Record<string, unknown>
+): void {
   const normalized = normalizeError(error);
 
   console.error("[TERP Error]", {
@@ -217,25 +310,31 @@ export function logError(error: unknown, context?: Record<string, unknown>): voi
 
 /**
  * BUG-046: Determine the specific type of auth error
+ * Enhanced to use getErrorCode for consistent code extraction
  */
 export function getAuthErrorType(error: unknown): AuthErrorType {
-  if (!isTRPCClientError(error)) {
-    return "UNKNOWN";
-  }
+  // BUG-046 FIX: Handle both tRPC errors and regular errors
+  const message = (
+    error instanceof Error ? error.message : String(error)
+  ).toLowerCase();
 
-  const data = error.data as Record<string, unknown> | undefined;
-  const code = data?.code as string | undefined;
-  const message = error.message.toLowerCase();
-
-  // Check for session expiry
+  // Check for session expiry first (before checking code)
   if (message.includes("session") && message.includes("expired")) {
     return "SESSION_EXPIRED";
   }
 
   // Check for demo user restriction
-  if (message.includes("demo") || message.includes("not available in demo")) {
+  if (
+    message.includes("demo") ||
+    message.includes("not available in demo") ||
+    message.includes("public user") ||
+    message.includes("public users can only")
+  ) {
     return "DEMO_USER_RESTRICTED";
   }
+
+  // BUG-046 FIX: Use getErrorCode for consistent extraction across tRPC versions
+  const code = getErrorCode(error);
 
   // Differentiate by error code
   if (code === "UNAUTHORIZED") {
@@ -244,6 +343,29 @@ export function getAuthErrorType(error: unknown): AuthErrorType {
 
   if (code === "FORBIDDEN") {
     return "PERMISSION_DENIED";
+  }
+
+  // BUG-046 FIX: Additional message-based detection for edge cases
+  // Permission-related patterns (more specific first)
+  if (
+    message.includes("do not have permission") ||
+    message.includes("not have permission") ||
+    message.includes("required permission:") ||
+    message.includes("access denied") ||
+    message.includes("not allowed") ||
+    message.includes("forbidden")
+  ) {
+    return "PERMISSION_DENIED";
+  }
+
+  // Authentication-related patterns
+  if (
+    message.includes("log in") ||
+    message.includes("authentication required") ||
+    message.includes("not authenticated") ||
+    message.includes("login required")
+  ) {
+    return "NOT_LOGGED_IN";
   }
 
   return "UNKNOWN";
@@ -296,20 +418,37 @@ export function getAuthErrorInfo(error: unknown): AuthErrorInfo {
     case "DEMO_USER_RESTRICTED":
       return {
         type,
-        title: "Feature Not Available",
-        message: "This feature is not available in demo mode. Upgrade your account to access full functionality.",
+        title: "Demo Mode Restriction",
+        message:
+          originalMessage ||
+          "This feature is not available in demo mode. Please log in with a full account.",
         action: {
-          label: "Upgrade Account",
-          href: "/upgrade",
+          label: "Log In",
+          href: `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
         },
       };
 
-    case "PERMISSION_DENIED":
+    case "PERMISSION_DENIED": {
+      // BUG-046 FIX: Extract and display the required permission if available
+      const permissionMatch = originalMessage.match(
+        /required permission[s]?:\s*([^\s.]+)/i
+      );
+      const requiredPermission = permissionMatch?.[1];
+
+      let message = originalMessage;
+      if (requiredPermission) {
+        message = `You do not have the "${requiredPermission}" permission required to access this feature. Please contact your administrator to request access.`;
+      } else if (!message || message === ERROR_MESSAGES.FORBIDDEN) {
+        message =
+          "You do not have permission to access this feature. Please contact your administrator if you believe this is an error.";
+      }
+
       return {
         type,
         title: "Access Denied",
-        message: originalMessage || "You do not have permission to perform this action.",
+        message,
       };
+    }
 
     default:
       return {
@@ -339,4 +478,136 @@ export function isForbiddenError(error: unknown): boolean {
  */
 export function isDemoUserError(error: unknown): boolean {
   return getAuthErrorType(error) === "DEMO_USER_RESTRICTED";
+}
+
+/**
+ * BUG-097: Standardized error toast messages by action type
+ * Maps common actions to user-friendly error messages
+ */
+const ACTION_ERROR_MESSAGES: Record<string, string> = {
+  // CRUD operations
+  create: "Unable to create",
+  update: "Unable to save changes",
+  delete: "Unable to delete",
+  save: "Unable to save",
+  load: "Unable to load data",
+  fetch: "Unable to load data",
+  export: "Unable to export",
+  import: "Unable to import",
+  send: "Unable to send",
+  submit: "Unable to submit",
+
+  // Domain-specific
+  login: "Unable to log in",
+  logout: "Unable to log out",
+  upload: "Unable to upload file",
+  download: "Unable to download",
+  copy: "Unable to copy",
+  share: "Unable to share",
+  convert: "Unable to convert",
+  generate: "Unable to generate",
+};
+
+/**
+ * BUG-097: Options for showErrorToast
+ */
+export interface ShowErrorToastOptions {
+  /** The action being performed (e.g., "create", "update", "delete") */
+  action?: string;
+  /** The resource being acted upon (e.g., "client", "order", "invoice") */
+  resource?: string;
+  /** Custom fallback message if error message is empty */
+  fallback?: string;
+  /** Additional context for logging */
+  context?: Record<string, unknown>;
+  /** Description to show in toast (additional details) */
+  description?: string;
+}
+
+/**
+ * BUG-097: Show a standardized error toast with consistent messaging
+ *
+ * This is the recommended way to show error toasts across the app.
+ * It provides:
+ * - Consistent error message formatting
+ * - User-friendly messages for common error codes
+ * - Automatic error logging
+ * - Optional context-aware descriptions
+ *
+ * @example
+ * ```tsx
+ * // Simple usage
+ * try {
+ *   await mutation.mutateAsync(data);
+ * } catch (error) {
+ *   showErrorToast(error, { action: "save", resource: "client" });
+ * }
+ *
+ * // With custom description
+ * showErrorToast(error, {
+ *   action: "create",
+ *   resource: "order",
+ *   description: "Please check your order details and try again."
+ * });
+ * ```
+ */
+export function showErrorToast(
+  error: unknown,
+  options: ShowErrorToastOptions = {}
+): void {
+  const { action, resource, fallback, context, description } = options;
+  const errorInfo = normalizeError(error);
+
+  // Log the error for debugging
+  logError(error, { ...context, action, resource });
+
+  // Build the error message
+  let message: string;
+
+  // Check for specific error codes that have good default messages
+  if (errorInfo.code !== "UNKNOWN" && ERROR_MESSAGES[errorInfo.code]) {
+    message = ERROR_MESSAGES[errorInfo.code];
+  } else if (errorInfo.message && !errorInfo.message.includes("INTERNAL_SERVER_ERROR")) {
+    // Use the error's message if it's not a generic internal error
+    message = errorInfo.message;
+  } else if (action && resource) {
+    // Build a contextual message
+    const actionMessage = ACTION_ERROR_MESSAGES[action.toLowerCase()] || `Unable to ${action}`;
+    message = `${actionMessage} ${resource}. Please try again.`;
+  } else if (action) {
+    message = ACTION_ERROR_MESSAGES[action.toLowerCase()] || `Unable to ${action}. Please try again.`;
+  } else if (fallback) {
+    message = fallback;
+  } else {
+    message = "An error occurred. Please try again.";
+  }
+
+  // Import toast dynamically to avoid circular dependencies
+  import("sonner").then(({ toast }) => {
+    toast.error(message, description ? { description } : undefined);
+  });
+}
+
+/**
+ * BUG-097: Create a bound error handler for a specific context
+ * Useful for creating consistent error handlers within a component
+ *
+ * @example
+ * ```tsx
+ * const handleError = createErrorHandler({ resource: "invoice" });
+ *
+ * // Later in code:
+ * try {
+ *   await createInvoice();
+ * } catch (error) {
+ *   handleError(error, { action: "create" });
+ * }
+ * ```
+ */
+export function createErrorHandler(
+  defaultOptions: Omit<ShowErrorToastOptions, "action">
+): (error: unknown, options?: Pick<ShowErrorToastOptions, "action" | "description">) => void {
+  return (error, options) => {
+    showErrorToast(error, { ...defaultOptions, ...options });
+  };
 }

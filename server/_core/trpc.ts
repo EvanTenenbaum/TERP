@@ -227,23 +227,36 @@ const requireAuthenticatedUser = t.middleware(async opts => {
     });
   }
 
-  // Reject public demo user (id: -1)
+  // Check if public demo user - but allow if they have Super Admin role
   if (isPublicDemoUser(ctx.user)) {
-    logger.warn({
-      msg: "strictlyProtectedProcedure: Rejecting public demo user for mutation",
+    // Import isSuperAdmin dynamically to avoid circular dependency
+    const { isSuperAdmin } = await import("../services/permissionService");
+    const isSA = await isSuperAdmin(ctx.user.openId);
+
+    if (!isSA) {
+      logger.warn({
+        msg: "strictlyProtectedProcedure: Rejecting public demo user (not Super Admin)",
+        url: ctx.req.url,
+        userId: ctx.user.id,
+      });
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message:
+          "Authentication required. Please log in to perform this action.",
+      });
+    }
+
+    logger.info({
+      msg: "strictlyProtectedProcedure: Allowing public demo user with Super Admin role",
       url: ctx.req.url,
       userId: ctx.user.id,
-    });
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Authentication required. Please log in to perform this action.",
     });
   }
 
   return next({
     ctx: {
       ...ctx,
-      user: ctx.user, // Guaranteed to be a real authenticated user
+      user: ctx.user, // Guaranteed to be a real authenticated user or Super Admin demo user
       actorId: ctx.user.id, // Canonical actor attribution
     },
   });

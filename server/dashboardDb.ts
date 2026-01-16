@@ -1,6 +1,6 @@
 import { getDb } from "./db";
 import { dashboardWidgetLayouts, dashboardKpiConfigs, users } from "../drizzle/schema";
-import { eq, and, or, isNull } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 /**
  * Dashboard Database Access Layer
@@ -57,6 +57,7 @@ export async function getUserWidgetLayout(userId: number) {
 
 /**
  * Save user's widget layout
+ * Uses a transaction to ensure atomic delete + insert (prevents data loss if insert fails)
  */
 export async function saveUserWidgetLayout(
   userId: number,
@@ -72,25 +73,28 @@ export async function saveUserWidgetLayout(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Delete existing user layout
-  await db
-    .delete(dashboardWidgetLayouts)
-    .where(eq(dashboardWidgetLayouts.userId, userId));
+  // Use transaction to ensure atomic delete + insert
+  await db.transaction(async (tx) => {
+    // Delete existing user layout
+    await tx
+      .delete(dashboardWidgetLayouts)
+      .where(eq(dashboardWidgetLayouts.userId, userId));
 
-  // Insert new layout
-  if (widgets.length > 0) {
-    await db.insert(dashboardWidgetLayouts).values(
-      widgets.map((widget) => ({
-        userId,
-        widgetType: widget.widgetType,
-        position: widget.position,
-        width: widget.width,
-        height: widget.height,
-        isVisible: widget.isVisible,
-        config: widget.config,
-      }))
-    );
-  }
+    // Insert new layout
+    if (widgets.length > 0) {
+      await tx.insert(dashboardWidgetLayouts).values(
+        widgets.map((widget) => ({
+          userId,
+          widgetType: widget.widgetType,
+          position: widget.position,
+          width: widget.width,
+          height: widget.height,
+          isVisible: widget.isVisible,
+          config: widget.config,
+        }))
+      );
+    }
+  });
 
   return { success: true };
 }
@@ -133,6 +137,7 @@ export async function getRoleDefaultLayout(role: "user" | "admin") {
 
 /**
  * Save role default widget layout (admin only)
+ * Uses a transaction to ensure atomic delete + insert (prevents data loss if insert fails)
  */
 export async function saveRoleDefaultLayout(
   role: "user" | "admin",
@@ -148,30 +153,33 @@ export async function saveRoleDefaultLayout(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Delete existing role default
-  await db
-    .delete(dashboardWidgetLayouts)
-    .where(
-      and(
-        eq(dashboardWidgetLayouts.role, role),
-        isNull(dashboardWidgetLayouts.userId)
-      )
-    );
+  // Use transaction to ensure atomic delete + insert
+  await db.transaction(async (tx) => {
+    // Delete existing role default
+    await tx
+      .delete(dashboardWidgetLayouts)
+      .where(
+        and(
+          eq(dashboardWidgetLayouts.role, role),
+          isNull(dashboardWidgetLayouts.userId)
+        )
+      );
 
-  // Insert new role default
-  if (widgets.length > 0) {
-    await db.insert(dashboardWidgetLayouts).values(
-      widgets.map((widget) => ({
-        role,
-        widgetType: widget.widgetType,
-        position: widget.position,
-        width: widget.width,
-        height: widget.height,
-        isVisible: widget.isVisible,
-        config: widget.config,
-      }))
-    );
-  }
+    // Insert new role default
+    if (widgets.length > 0) {
+      await tx.insert(dashboardWidgetLayouts).values(
+        widgets.map((widget) => ({
+          role,
+          widgetType: widget.widgetType,
+          position: widget.position,
+          width: widget.width,
+          height: widget.height,
+          isVisible: widget.isVisible,
+          config: widget.config,
+        }))
+      );
+    }
+  });
 
   return { success: true };
 }
@@ -198,6 +206,7 @@ export async function getRoleKpiConfig(role: "user" | "admin") {
 
 /**
  * Save KPI configuration for a role (admin only)
+ * Uses a transaction to ensure atomic delete + insert (prevents data loss if insert fails)
  */
 export async function saveRoleKpiConfig(
   role: "user" | "admin",
@@ -210,22 +219,25 @@ export async function saveRoleKpiConfig(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Delete existing config
-  await db
-    .delete(dashboardKpiConfigs)
-    .where(eq(dashboardKpiConfigs.role, role));
+  // Use transaction to ensure atomic delete + insert
+  await db.transaction(async (tx) => {
+    // Delete existing config
+    await tx
+      .delete(dashboardKpiConfigs)
+      .where(eq(dashboardKpiConfigs.role, role));
 
-  // Insert new config
-  if (kpis.length > 0) {
-    await db.insert(dashboardKpiConfigs).values(
-      kpis.map((kpi) => ({
-        role,
-        kpiType: kpi.kpiType,
-        position: kpi.position,
-        isVisible: kpi.isVisible,
-      }))
-    );
-  }
+    // Insert new config
+    if (kpis.length > 0) {
+      await tx.insert(dashboardKpiConfigs).values(
+        kpis.map((kpi) => ({
+          role,
+          kpiType: kpi.kpiType,
+          position: kpi.position,
+          isVisible: kpi.isVisible,
+        }))
+      );
+    }
+  });
 
   return { success: true };
 }

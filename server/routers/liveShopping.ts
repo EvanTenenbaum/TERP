@@ -7,12 +7,14 @@ import {
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { clients, users, products, batches } from "../../drizzle/schema";
-import { eq, and, desc, like, or, sql } from "drizzle-orm";
+import { eq, and, desc, like, or, sql, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionPricingService } from "../services/live-shopping/sessionPricingService";
 import { sessionOrderService } from "../services/live-shopping/sessionOrderService";
 import { sessionCreditService } from "../services/live-shopping/sessionCreditService";
+import { sessionTimeoutService } from "../services/live-shopping/sessionTimeoutService";
+import { sessionPickListService, warehouseEventManager } from "../services/live-shopping/sessionPickListService";
 // ordersDb available for future direct order operations
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 import { randomUUID } from "crypto";
@@ -38,7 +40,20 @@ export const liveShoppingRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
-      
+
+      // BUG-094 FIX: Validate that client exists before inserting
+      const clientExists = await db.query.clients.findFirst({
+        where: eq(clients.id, input.clientId),
+        columns: { id: true },
+      });
+
+      if (!clientExists) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Client with ID ${input.clientId} does not exist`,
+        });
+      }
+
       const userId = getAuthenticatedUserId(ctx);
       const roomCode = randomUUID(); // Unique room ID
 
@@ -580,7 +595,7 @@ export const liveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const cart = await sessionCartService.getCart(input.sessionId);
-      
+
       const sampleRequests = cart.items.filter(i => i.itemStatus === "SAMPLE_REQUEST");
       const interested = cart.items.filter(i => i.itemStatus === "INTERESTED");
       const toPurchase = cart.items.filter(i => i.itemStatus === "TO_PURCHASE");
@@ -598,6 +613,673 @@ export const liveShoppingRouter = router({
             0
           ),
         },
+      };
+    }),
+
+  // ==========================================================================
+  // PRICE NEGOTIATION WORKFLOW (FEATURE-003)
+  // ==========================================================================
+
+  /**
+   * Request price negotiation for an item
+   * Client can propose a new price for a cart item
+   */
+  requestNegotiation: protectedProcedure
+    .use(requirePermission("orders:read")) // VIP clients can also negotiate
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        proposedPrice: z.number().positive(),
+        reason: z.string().optional(),
+        quantity: z.number().positive().optional(), // Can also negotiate on quantity
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get current cart item
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+      }
+
+      const currentPrice = parseFloat(cartItem.unitPrice?.toString() || "0");
+
+      // Store negotiation request in metadata
+      const negotiationData = {
+        status: "PENDING",
+        originalPrice: currentPrice,
+        proposedPrice: input.proposedPrice,
+        proposedQuantity: input.quantity,
+        reason: input.reason,
+        requestedBy: userId,
+        requestedAt: new Date().toISOString(),
+        history: [
+          {
+            action: "REQUEST",
+            price: input.proposedPrice,
+            quantity: input.quantity,
+            by: userId,
+            at: new Date().toISOString(),
+            reason: input.reason,
+          },
+        ],
+      };
+
+      // Update cart item with negotiation status
+      await db
+        .update(sessionCartItems)
+        .set({
+          negotiationStatus: "PENDING",
+          negotiationData: negotiationData, // Drizzle handles JSON serialization
+        })
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit negotiation event for real-time updates
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NEGOTIATION_REQUESTED",
+        payload: {
+          cartItemId: input.cartItemId,
+          proposedPrice: input.proposedPrice,
+          originalPrice: currentPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      return { success: true, negotiationId: input.cartItemId };
+    }),
+
+  /**
+   * Respond to a negotiation request
+   * Host can accept, reject, or counter-offer
+   */
+  respondToNegotiation: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        response: z.enum(["ACCEPT", "REJECT", "COUNTER"]),
+        counterPrice: z.number().positive().optional(), // Required if response is COUNTER
+        counterQuantity: z.number().positive().optional(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get current cart item with negotiation data
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem || !cartItem.negotiationData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+      }
+
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData || !negotiationData.history) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid negotiation data" });
+      }
+
+      // Add response to history
+      negotiationData.history.push({
+        action: input.response,
+        price: input.response === "COUNTER" ? input.counterPrice : null,
+        quantity: input.counterQuantity,
+        by: userId,
+        at: new Date().toISOString(),
+        reason: input.reason,
+      });
+
+      const updates: Record<string, unknown> = {};
+
+      if (input.response === "ACCEPT") {
+        // Apply the negotiated price
+        updates.unitPrice = negotiationData.proposedPrice.toString();
+        updates.negotiationStatus = "ACCEPTED";
+        negotiationData.status = "ACCEPTED";
+        negotiationData.finalPrice = negotiationData.proposedPrice;
+        negotiationData.acceptedAt = new Date().toISOString();
+        negotiationData.acceptedBy = userId;
+      } else if (input.response === "REJECT") {
+        updates.negotiationStatus = "REJECTED";
+        negotiationData.status = "REJECTED";
+        negotiationData.rejectedAt = new Date().toISOString();
+        negotiationData.rejectedBy = userId;
+        negotiationData.rejectionReason = input.reason;
+      } else if (input.response === "COUNTER") {
+        if (!input.counterPrice) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Counter price is required" });
+        }
+        updates.negotiationStatus = "COUNTER_OFFERED";
+        negotiationData.status = "COUNTER_OFFERED";
+        negotiationData.counterPrice = input.counterPrice;
+        negotiationData.counterQuantity = input.counterQuantity;
+      }
+
+      updates.negotiationData = negotiationData; // Drizzle handles JSON serialization
+
+      await db
+        .update(sessionCartItems)
+        .set(updates as Partial<typeof sessionCartItems.$inferInsert>)
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit negotiation response event
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NEGOTIATION_RESPONSE",
+        payload: {
+          cartItemId: input.cartItemId,
+          response: input.response,
+          counterPrice: input.counterPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also update cart view
+      await sessionCartService.emitCartUpdate(input.sessionId);
+
+      return { success: true };
+    }),
+
+  /**
+   * Accept counter-offer
+   * Client accepts the counter-offer from host
+   */
+  acceptCounterOffer: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get current cart item with negotiation data
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem || !cartItem.negotiationData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+      }
+
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData || negotiationData.status !== "COUNTER_OFFERED") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No counter-offer to accept" });
+      }
+
+      // Add acceptance to history
+      negotiationData.history.push({
+        action: "ACCEPT_COUNTER",
+        price: negotiationData.counterPrice,
+        by: userId,
+        at: new Date().toISOString(),
+      });
+
+      negotiationData.status = "ACCEPTED";
+      negotiationData.finalPrice = negotiationData.counterPrice;
+      negotiationData.acceptedAt = new Date().toISOString();
+
+      // Apply the counter-offer price
+      await db
+        .update(sessionCartItems)
+        .set({
+          unitPrice: negotiationData.counterPrice.toString(),
+          quantity: negotiationData.counterQuantity?.toString() || cartItem.quantity,
+          negotiationStatus: "ACCEPTED",
+          negotiationData: negotiationData, // Drizzle handles JSON serialization
+        })
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit acceptance event
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "COUNTER_OFFER_ACCEPTED",
+        payload: {
+          cartItemId: input.cartItemId,
+          finalPrice: negotiationData.counterPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also update cart view
+      await sessionCartService.emitCartUpdate(input.sessionId);
+
+      return { success: true, finalPrice: negotiationData.counterPrice };
+    }),
+
+  /**
+   * Get negotiation history for an item
+   */
+  getNegotiationHistory: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+      }
+
+      if (!cartItem.negotiationData) {
+        return { hasNegotiation: false, history: [] };
+      }
+
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData) {
+        return { hasNegotiation: false, history: [] };
+      }
+
+      return {
+        hasNegotiation: true,
+        status: negotiationData.status,
+        originalPrice: negotiationData.originalPrice,
+        proposedPrice: negotiationData.proposedPrice,
+        counterPrice: negotiationData.counterPrice,
+        finalPrice: negotiationData.finalPrice,
+        history: negotiationData.history || [],
+      };
+    }),
+
+  /**
+   * Get all active negotiations in a session
+   */
+  getActiveNegotiations: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const items = await db
+        .select({
+          id: sessionCartItems.id,
+          productId: sessionCartItems.productId,
+          batchId: sessionCartItems.batchId,
+          quantity: sessionCartItems.quantity,
+          unitPrice: sessionCartItems.unitPrice,
+          negotiationStatus: sessionCartItems.negotiationStatus,
+          negotiationData: sessionCartItems.negotiationData,
+          productName: products.nameCanonical,
+        })
+        .from(sessionCartItems)
+        .leftJoin(products, eq(sessionCartItems.productId, products.id))
+        .where(
+          and(
+            eq(sessionCartItems.sessionId, input.sessionId),
+            sql`${sessionCartItems.negotiationStatus} IS NOT NULL AND ${sessionCartItems.negotiationStatus} != 'ACCEPTED' AND ${sessionCartItems.negotiationStatus} != 'REJECTED'`
+          )
+        );
+
+      return items.map((item) => {
+        let negotiation = null;
+        if (item.negotiationData) {
+          // Drizzle returns JSON as parsed object, but handle string case for safety
+          negotiation = typeof item.negotiationData === "string"
+            ? JSON.parse(item.negotiationData)
+            : item.negotiationData;
+        }
+        return {
+          ...item,
+          negotiation,
+        };
+      });
+    }),
+
+  // ==========================================================================
+  // ACTIVE SESSIONS (MEET-075-BE)
+  // ==========================================================================
+
+  /**
+   * Get all active sessions across the organization
+   */
+  getActive: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const sessions = await db
+        .select({
+          id: liveShoppingSessions.id,
+          title: liveShoppingSessions.title,
+          status: liveShoppingSessions.status,
+          roomCode: liveShoppingSessions.roomCode,
+          startedAt: liveShoppingSessions.startedAt,
+          expiresAt: liveShoppingSessions.expiresAt,
+          timeoutSeconds: liveShoppingSessions.timeoutSeconds,
+          lastActivityAt: liveShoppingSessions.lastActivityAt,
+          clientId: liveShoppingSessions.clientId,
+          clientName: clients.name,
+          hostUserId: liveShoppingSessions.hostUserId,
+          hostName: users.name,
+          itemCount: sql<number>`(SELECT COUNT(*) FROM ${sessionCartItems} WHERE ${sessionCartItems.sessionId} = ${liveShoppingSessions.id})`,
+          cartValue: sql<string>`(SELECT COALESCE(SUM(${sessionCartItems.quantity} * ${sessionCartItems.unitPrice}), 0) FROM ${sessionCartItems} WHERE ${sessionCartItems.sessionId} = ${liveShoppingSessions.id})`,
+        })
+        .from(liveShoppingSessions)
+        .leftJoin(clients, eq(liveShoppingSessions.clientId, clients.id))
+        .leftJoin(users, eq(liveShoppingSessions.hostUserId, users.id))
+        .where(inArray(liveShoppingSessions.status, ["ACTIVE", "PAUSED"]))
+        .orderBy(desc(liveShoppingSessions.startedAt));
+
+      const now = new Date();
+      return sessions.map((session) => ({
+        ...session,
+        remainingSeconds: session.expiresAt
+          ? Math.max(0, Math.floor((session.expiresAt.getTime() - now.getTime()) / 1000))
+          : -1,
+        isNearingTimeout:
+          session.expiresAt && session.expiresAt.getTime() - now.getTime() < 300000,
+      }));
+    }),
+
+  // ==========================================================================
+  // SESSION TIMEOUT MANAGEMENT (MEET-075-BE)
+  // ==========================================================================
+
+  getTimeoutStatus: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      return await sessionTimeoutService.getTimeoutStatus(input.sessionId);
+    }),
+
+  extendTimeout: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        additionalMinutes: z.number().min(1).max(240).default(60),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const additionalSeconds = input.additionalMinutes * 60;
+      return await sessionTimeoutService.extendTimeout(input.sessionId, additionalSeconds);
+    }),
+
+  configureTimeout: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        timeoutMinutes: z.number().min(0).max(480),
+        autoReleaseEnabled: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const timeoutSeconds = input.timeoutMinutes * 60;
+      await sessionTimeoutService.setSessionTimeout(input.sessionId, {
+        timeoutSeconds,
+        autoReleaseEnabled: input.autoReleaseEnabled,
+      });
+      return await sessionTimeoutService.getTimeoutStatus(input.sessionId);
+    }),
+
+  disableTimeout: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input }) => {
+      await sessionTimeoutService.disableTimeout(input.sessionId);
+      return { success: true };
+    }),
+
+  // ==========================================================================
+  // WAREHOUSE PICK LIST (MEET-075-BE)
+  // ==========================================================================
+
+  getConsolidatedPickList: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      return await sessionPickListService.getConsolidatedPickList();
+    }),
+
+  getSessionPickList: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      return await sessionPickListService.getSessionPickList(input.sessionId);
+    }),
+
+  getActiveSessionsSummary: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      return await sessionPickListService.getActiveSessionsSummary();
+    }),
+
+  // ==========================================================================
+  // SESSION NOTES/COMMENTS (MEET-075-BE)
+  // ==========================================================================
+
+  updateSessionNotes: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        notes: z.string().max(5000),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+      const timestamp = new Date().toISOString();
+
+      await db.update(liveShoppingSessions)
+        .set({
+          internalNotes: input.notes,
+          lastActivityAt: new Date(),
+        })
+        .where(eq(liveShoppingSessions.id, input.sessionId));
+
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NOTES_UPDATED",
+        payload: {
+          sessionId: input.sessionId,
+          notes: input.notes,
+          updatedBy: userId,
+          timestamp,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  getSessionNotes: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+        columns: {
+          internalNotes: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!session) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      }
+
+      return {
+        notes: session.internalNotes || "",
+        lastUpdated: session.updatedAt,
+      };
+    }),
+
+  // ==========================================================================
+  // ENHANCED CANCEL SESSION (MEET-075-BE)
+  // ==========================================================================
+
+  cancelSession: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+      const now = new Date();
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      }
+
+      if (session.status === "CONVERTED" || session.status === "CANCELLED") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Session is already ${session.status.toLowerCase()}`,
+        });
+      }
+
+      const cartItems = await db
+        .select({
+          id: sessionCartItems.id,
+          batchId: sessionCartItems.batchId,
+          quantity: sessionCartItems.quantity,
+        })
+        .from(sessionCartItems)
+        .where(eq(sessionCartItems.sessionId, input.sessionId));
+
+      const cancellationNote = input.reason
+        ? `[CANCELLED] ${now.toISOString()} by user ${userId}: ${input.reason}`
+        : `[CANCELLED] ${now.toISOString()} by user ${userId}`;
+
+      await db.update(liveShoppingSessions)
+        .set({
+          status: "CANCELLED",
+          endedAt: now,
+          internalNotes: sql`CONCAT(COALESCE(${liveShoppingSessions.internalNotes}, ''), '\n', ${cancellationNote})`,
+        })
+        .where(eq(liveShoppingSessions.id, input.sessionId));
+
+      sessionEventManager.emitStatusChange(input.sessionId, "CANCELLED");
+
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "SESSION_CANCELLED",
+        payload: {
+          sessionId: input.sessionId,
+          reason: input.reason,
+          cancelledBy: userId,
+          releasedItems: cartItems.length,
+          timestamp: now.toISOString(),
+        },
+      });
+
+      await sessionPickListService.notifyPickListUpdate(input.sessionId, "ITEM_REMOVED");
+
+      return {
+        success: true,
+        releasedItems: cartItems.length,
+        message: `Session cancelled. ${cartItems.length} items released from soft hold.`,
+      };
+    }),
+
+  // ==========================================================================
+  // ENHANCED CREDIT CHECK (MEET-075-BE)
+  // ==========================================================================
+
+  getDetailedCreditStatus: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const creditResult = await sessionCreditService.validateCartCredit(
+        input.sessionId,
+        session.clientId
+      );
+
+      const exposure = await sessionCreditService.getDraftExposure(input.sessionId);
+
+      const cart = await sessionCartService.getCart(input.sessionId);
+      const toPurchaseItems = cart.items.filter((i) => i.itemStatus === "TO_PURCHASE");
+      const toPurchaseValue = toPurchaseItems.reduce(
+        (sum, i) => sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+        0
+      );
+
+      return {
+        ...creditResult,
+        breakdown: {
+          toPurchaseValue,
+          interestedValue: exposure.totalCartValue - toPurchaseValue - exposure.sampleValue,
+          sampleValue: exposure.sampleValue,
+          totalCartValue: exposure.totalCartValue,
+          toPurchaseCount: toPurchaseItems.length,
+          totalItemCount: cart.itemCount,
+        },
+        percentUtilized: creditResult.creditLimit > 0
+          ? ((creditResult.projectedExposure / creditResult.creditLimit) * 100).toFixed(1)
+          : "N/A",
       };
     }),
 });

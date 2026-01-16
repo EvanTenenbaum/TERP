@@ -54,14 +54,16 @@ export type SeederFunction = (
 /**
  * Seeding order - tables must be seeded in this order to respect FK constraints
  * Requirements: 10.2
+ * BUG-084: pricing_defaults must be seeded early (before orders)
  */
 export const SEEDING_ORDER = [
+  "pricing_defaults",     // No dependencies - BUG-084: Required for order pricing
   "vendors",              // No dependencies
   "clients",              // No dependencies
   "products",             // Depends on vendors (via brands)
   "purchaseOrders",       // Depends on vendors, products (Requirements: 7.1)
   "batches",              // Depends on products, vendors
-  "orders",               // Depends on clients, batches
+  "orders",               // Depends on clients, batches, pricing_defaults
   "client_transactions",  // Depends on clients, orders (Requirements: 6.1, 9.1)
   "invoices",             // Depends on clients, orders
   "payments",             // Depends on invoices, clients
@@ -111,6 +113,7 @@ export function mergeSeederResults(results: SeederResult[]): SeederResult {
 // Exports - Import seeders directly (no auto-registration to avoid circular deps)
 // ============================================================================
 
+export { seedPricingDefaults } from "./seed-pricing-defaults";
 export { seedClients } from "./seed-clients";
 export { seedVendors } from "./seed-vendors";
 export { seedProducts } from "./seed-products";

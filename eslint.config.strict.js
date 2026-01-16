@@ -128,9 +128,10 @@ export default [
       // ============================================================
       // General Rules - STRICT
       // ============================================================
-      
+
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
+      'no-alert': 'error', // Prevent window.alert, use toast notifications
       'no-unused-vars': 'off',
       'prefer-const': 'error',
       'no-var': 'error',

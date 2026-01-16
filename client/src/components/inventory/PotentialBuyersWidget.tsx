@@ -163,7 +163,7 @@ export function PotentialBuyersWidget({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             activeMatches.slice(0, 5).map((match: any, idx: number) => (
               <Card
-                key={idx}
+                key={`match-${match.clientId}-${match.needId || idx}`}
                 className="p-3 hover:bg-accent cursor-pointer transition-colors"
                 onClick={() =>
                   setLocation(`/clients/${match.clientId}?tab=needs`)
@@ -216,7 +216,7 @@ export function PotentialBuyersWidget({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             historicalBuyers.slice(0, 5).map((buyer: any, idx: number) => (
               <Card
-                key={idx}
+                key={`buyer-${buyer.sourceData?.client?.id || idx}`}
                 className="p-3 hover:bg-accent cursor-pointer transition-colors"
                 onClick={() =>
                   setLocation(`/clients/${buyer.sourceData?.client?.id}`)
@@ -271,7 +271,7 @@ export function PotentialBuyersWidget({
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .map((prediction: any, idx: number) => (
                 <Card
-                  key={idx}
+                  key={`prediction-${prediction.clientId}-${prediction.id || idx}`}
                   className={`p-3 hover:bg-accent cursor-pointer transition-colors ${
                     prediction.daysUntilPredictedOrder < 0
                       ? "border-destructive/30"

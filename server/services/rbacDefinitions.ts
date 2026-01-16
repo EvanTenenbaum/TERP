@@ -431,6 +431,8 @@ export const ownerExecutivePermissions = [
   "audit_logs:view",
   "audit_logs:export",
   "audit_logs:search",
+  // BUG-046 FIX: Add users:read so owners can access Settings > Users tab
+  "users:read",
 ];
 
 // Operations Manager: Full access to inventory, orders, POs, vendors, returns
@@ -536,9 +538,15 @@ export const operationsManagerPermissions = [
   "vip_portal:manage",
   // System health for ops monitoring
   "system:health",
+  // BUG-046 FIX: Add users:read and users:manage so operations manager can access Settings > Users tab
+  "users:read",
+  "users:manage",
 ];
 
 // Sales Manager: Full access to clients, orders, quotes, sales sheets
+// BUG-090: Added samples:access, samples:read for viewing samples (BLOCKED-001)
+// BUG-090: Added accounting:reports:view for finance reports access (BLOCKED-003)
+// Note: Pick & Pack (BLOCKED-002) requires adminProcedure - by design for warehouse-only access
 export const salesManagerPermissions = [
   "dashboard:access",
   "dashboard:read",
@@ -546,6 +554,10 @@ export const salesManagerPermissions = [
   "dashboard:customize",
   "analytics:access",
   "analytics:view_reports",
+  // BLOCKED-001 fix: Allow viewing samples (needed for sales context)
+  "samples:access",
+  "samples:read",
+  "samples:inventory:view",
   "clients:access",
   "clients:read",
   "clients:create",
@@ -628,6 +640,9 @@ export const salesManagerPermissions = [
   "alerts:delete",
   // VIP Portal management
   "vip_portal:manage",
+  // BLOCKED-003 fix: Allow viewing finance reports (read-only)
+  "accounting:reports:view",
+  "accounting:transactions:read",
 ];
 
 // Accountant: Full access to accounting, credits, COGS, bad debt

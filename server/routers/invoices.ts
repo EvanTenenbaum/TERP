@@ -50,6 +50,7 @@ const generateFromOrderSchema = z.object({
 
 const updateInvoiceStatusSchema = z.object({
   id: z.number(),
+  version: z.number().optional(), // ST-026: Optional for backward compatibility
   status: z.enum([
     "DRAFT",
     "SENT",
@@ -352,6 +353,7 @@ export const invoicesRouter = router({
 
   /**
    * Update invoice status
+   * ST-026: Added version checking for concurrent edit detection
    */
   updateStatus: protectedProcedure
     .use(requirePermission("accounting:update"))
@@ -359,6 +361,12 @@ export const invoicesRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      // ST-026: Check version if provided for concurrent edit detection
+      if (input.version !== undefined) {
+        const { checkVersion } = await import("../_core/optimisticLocking");
+        await checkVersion(db, invoices, "Invoice", input.id, input.version);
+      }
 
       const [invoice] = await db
         .select()
@@ -388,15 +396,19 @@ export const invoicesRouter = router({
         });
       }
 
-      await db
-        .update(invoices)
-        .set({
-          status: input.status,
-          notes: input.notes
-            ? `${invoice.notes || ""}\n[Status Update]: ${input.notes}`.trim()
-            : invoice.notes,
-        })
-        .where(eq(invoices.id, input.id));
+      // ST-026: If version was provided, increment it
+      const updatePayload: Record<string, unknown> = {
+        status: input.status,
+        notes: input.notes
+          ? `${invoice.notes || ""}\n[Status Update]: ${input.notes}`.trim()
+          : invoice.notes,
+      };
+
+      if (input.version !== undefined) {
+        updatePayload.version = sql`version + 1`;
+      }
+
+      await db.update(invoices).set(updatePayload).where(eq(invoices.id, input.id));
 
       logger.info({
         msg: "[Invoices] Invoice status updated",
@@ -506,13 +518,14 @@ export const invoicesRouter = router({
         conditions.push(eq(invoices.customerId, input.clientId));
       }
 
-      // Get counts by status
+      // BUG-080: Fix column names - schema uses camelCase (totalAmount, amountDue)
+      // not snake_case (total_amount, amount_due)
       const statusCounts = await db
         .select({
           status: invoices.status,
           count: sql<number>`COUNT(*)`,
-          totalAmount: sql<string>`SUM(total_amount)`,
-          amountDue: sql<string>`SUM(amount_due)`,
+          totalAmount: sql<string>`SUM(${invoices.totalAmount})`,
+          amountDue: sql<string>`SUM(${invoices.amountDue})`,
         })
         .from(invoices)
         .where(and(...conditions))

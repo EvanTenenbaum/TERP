@@ -44,6 +44,9 @@ jobs:
           echo "⏳ Waiting 30 seconds for DigitalOcean to detect push..."
           sleep 30
       
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Run Auto Deploy Monitor & Self-Heal
         id: monitor
         env:
@@ -51,6 +54,16 @@ jobs:
         run: |
           chmod +x scripts/auto-deploy-heal.sh
           ./scripts/auto-deploy-heal.sh || echo "FAILED=true" >> $GITHUB_OUTPUT
+
+      - name: INFRA-004 Deployment Enforcement Check
+        id: enforcement
+        if: steps.monitor.outputs.FAILED != 'true'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          echo "Running deployment enforcement checks..."
+          pnpm tsx scripts/deployment-enforcement.ts monitor ${{ github.sha }} || echo "ENFORCEMENT_FAILED=true" >> $GITHUB_OUTPUT
       
       - name: Create Issue on Failure
         if: steps.monitor.outputs.FAILED == 'true'

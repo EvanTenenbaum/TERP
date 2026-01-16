@@ -1,6 +1,10 @@
 /**
- * Export Button Component
+ * Data Export Button Component
  * ENH-003: Unified export functionality for data tables
+ *
+ * UX-011: Renamed to DataExportButton to avoid confusion with
+ * the leaderboard-specific ExportButton component.
+ * Use this for generic data table exports (CSV/Excel).
  */
 
 import { useState } from "react";
@@ -20,7 +24,8 @@ export interface ExportColumn {
   formatter?: (value: unknown) => string;
 }
 
-interface ExportButtonProps {
+// UX-011: Renamed from ExportButtonProps to DataExportButtonProps for consistency
+interface DataExportButtonProps {
   data: Record<string, unknown>[];
   columns: ExportColumn[];
   filename: string;
@@ -181,7 +186,8 @@ function escapeHTML(value: unknown): string {
     .replace(/'/g, "&#039;");
 }
 
-export function ExportButton({
+// UX-011: Renamed from ExportButton to DataExportButton for clarity
+export function DataExportButton({
   data,
   columns,
   filename,
@@ -191,7 +197,7 @@ export function ExportButton({
   className,
   onExportStart,
   onExportComplete,
-}: ExportButtonProps) {
+}: DataExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (format: "csv" | "excel") => {
@@ -316,3 +322,7 @@ export function CSVExportButton({
     </Button>
   );
 }
+
+// UX-011: Backward compatibility alias - prefer DataExportButton for new code
+/** @deprecated Use DataExportButton instead to avoid confusion with leaderboard ExportButton */
+export const ExportButton = DataExportButton;

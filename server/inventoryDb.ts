@@ -31,6 +31,7 @@ import {
   type InsertBatchLocation,
   type InsertAuditLog,
 } from "../drizzle/schema";
+import { isValidStatusTransition, type BatchStatus } from "./inventoryUtils";
 
 // ============================================================================
 // VENDOR QUERIES (DEPRECATED - Use Supplier functions below)
@@ -134,6 +135,7 @@ export interface SupplierWithProfile extends Client {
 /**
  * Get all suppliers (clients with isSeller=true)
  * Replaces deprecated getAllVendors()
+ * DI-004: Filters out soft-deleted clients
  */
 export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
   return await cache.getOrSet(
@@ -142,11 +144,11 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
       const db = await getDb();
       if (!db) return [];
 
-      // Get all clients with isSeller=true
+      // Get all clients with isSeller=true, excluding deleted ones
       const supplierClients = await db
         .select()
         .from(clients)
-        .where(eq(clients.isSeller, true))
+        .where(and(eq(clients.isSeller, true), sql`${clients.deletedAt} IS NULL`))
         .orderBy(asc(clients.name));
 
       // Get all supplier profiles
@@ -170,6 +172,7 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
 
 /**
  * Get supplier by client ID
+ * DI-004: Filters out soft-deleted clients
  */
 export async function getSupplierByClientId(
   clientId: number
@@ -180,7 +183,13 @@ export async function getSupplierByClientId(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.isSeller, true)))
+    .where(
+      and(
+        eq(clients.id, clientId),
+        eq(clients.isSeller, true),
+        sql`${clients.deletedAt} IS NULL`
+      )
+    )
     .limit(1);
 
   if (!client) return null;
@@ -199,6 +208,7 @@ export async function getSupplierByClientId(
 
 /**
  * Get supplier by legacy vendor ID (for backward compatibility during migration)
+ * DI-004: Filters out soft-deleted clients
  */
 export async function getSupplierByLegacyVendorId(
   vendorId: number
@@ -215,11 +225,11 @@ export async function getSupplierByLegacyVendorId(
 
   if (!profile) return null;
 
-  // Get the associated client
+  // Get the associated client, excluding deleted ones
   const [client] = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, profile.clientId))
+    .where(and(eq(clients.id, profile.clientId), sql`${clients.deletedAt} IS NULL`))
     .limit(1);
 
   if (!client) return null;
@@ -232,6 +242,7 @@ export async function getSupplierByLegacyVendorId(
 
 /**
  * Search suppliers by name
+ * DI-004: Filters out soft-deleted clients
  */
 export async function searchSuppliers(
   query: string
@@ -239,11 +250,17 @@ export async function searchSuppliers(
   const db = await getDb();
   if (!db) return [];
 
-  // Search clients with isSeller=true
+  // Search clients with isSeller=true, excluding deleted ones
   const supplierClients = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.isSeller, true), like(clients.name, `%${query}%`)))
+    .where(
+      and(
+        eq(clients.isSeller, true),
+        like(clients.name, `%${query}%`),
+        sql`${clients.deletedAt} IS NULL`
+      )
+    )
     .limit(20);
 
   if (supplierClients.length === 0) return [];
@@ -440,17 +457,36 @@ export async function updateSupplier(
 
 /**
  * Soft-delete supplier (sets deletedAt on client)
- * Note: clients table doesn't have deletedAt yet, so we'll just mark isSeller=false for now
+ * DI-004: Proper soft-delete implementation with deletedAt timestamp
  */
 export async function deleteSupplier(clientId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // For now, just mark as not a seller (soft disable)
-  // TODO: Add deletedAt column to clients table for proper soft delete
+  // Soft delete by setting deletedAt timestamp
   await db
     .update(clients)
-    .set({ isSeller: false })
+    .set({ deletedAt: new Date() })
+    .where(eq(clients.id, clientId));
+
+  // Invalidate cache
+  cache.delete(CacheKeys.suppliers());
+
+  return true;
+}
+
+/**
+ * Restore a soft-deleted supplier (clears deletedAt on client)
+ * DI-004: Allow recovery of soft-deleted suppliers
+ */
+export async function restoreSupplier(clientId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Restore by clearing deletedAt timestamp
+  await db
+    .update(clients)
+    .set({ deletedAt: null })
     .where(eq(clients.id, clientId));
 
   // Invalidate cache
@@ -1553,7 +1589,8 @@ export async function deleteInventoryView(viewId: number, _userId: number) {
 
 /**
  * Bulk update batch status
- * Updates multiple batches at once with validation
+ * Updates multiple batches at once with proper status transition validation
+ * Includes quarantine-quantity synchronization for QUARANTINED status changes
  */
 export async function bulkUpdateBatchStatus(
   batchIds: number[],
@@ -1565,13 +1602,18 @@ export async function bulkUpdateBatchStatus(
     | "QUARANTINED"
     | "SOLD_OUT"
     | "CLOSED",
-  _userId: number
-): Promise<{ success: boolean; updated: number }> {
+  userId: number
+): Promise<{ success: boolean; updated: number; skipped: number; errors: string[] }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Import inventoryMovements for quarantine tracking
+  const { inventoryMovements } = await import("../drizzle/schema");
+
   return await db.transaction(async tx => {
     let updated = 0;
+    let skipped = 0;
+    const errors: string[] = [];
 
     for (const batchId of batchIds) {
       // Get current batch
@@ -1579,11 +1621,80 @@ export async function bulkUpdateBatchStatus(
         .select()
         .from(batches)
         .where(eq(batches.id, batchId));
-      if (!batch) continue;
-
-      // Skip if already SOLD_OUT or CLOSED
-      if (batch.batchStatus === "SOLD_OUT" || batch.batchStatus === "CLOSED") {
+      if (!batch) {
+        skipped++;
+        errors.push(`Batch ${batchId} not found`);
         continue;
+      }
+
+      const currentStatus = batch.batchStatus as BatchStatus;
+
+      // Validate status transition using the same logic as individual updates
+      if (!isValidStatusTransition(currentStatus, newStatus)) {
+        skipped++;
+        errors.push(
+          `Batch ${batchId}: Invalid transition from ${currentStatus} to ${newStatus}`
+        );
+        continue;
+      }
+
+      // Skip if already in the target status
+      if (currentStatus === newStatus) {
+        skipped++;
+        continue;
+      }
+
+      // Quarantine-quantity synchronization:
+      // When changing TO QUARANTINED, move onHandQty to quarantineQty
+      // When changing FROM QUARANTINED to LIVE, move quarantineQty back to onHandQty
+      if (currentStatus !== "QUARANTINED" && newStatus === "QUARANTINED") {
+        const onHandQty = parseFloat(batch.onHandQty || "0");
+        const currentQuarantineQty = parseFloat(batch.quarantineQty || "0");
+        if (onHandQty > 0) {
+          await tx
+            .update(batches)
+            .set({
+              quarantineQty: (currentQuarantineQty + onHandQty).toString(),
+              onHandQty: "0",
+            })
+            .where(eq(batches.id, batchId));
+
+          // Record quarantine movement
+          await tx.insert(inventoryMovements).values({
+            batchId,
+            inventoryMovementType: "QUARANTINE",
+            quantityChange: `-${onHandQty}`,
+            quantityBefore: onHandQty.toString(),
+            quantityAfter: "0",
+            referenceType: "BULK_STATUS_CHANGE",
+            notes: `Bulk status change to QUARANTINED`,
+            performedBy: userId,
+          });
+        }
+      } else if (currentStatus === "QUARANTINED" && newStatus === "LIVE") {
+        const currentOnHandQty = parseFloat(batch.onHandQty || "0");
+        const quarantineQty = parseFloat(batch.quarantineQty || "0");
+        if (quarantineQty > 0) {
+          await tx
+            .update(batches)
+            .set({
+              onHandQty: (currentOnHandQty + quarantineQty).toString(),
+              quarantineQty: "0",
+            })
+            .where(eq(batches.id, batchId));
+
+          // Record release from quarantine movement
+          await tx.insert(inventoryMovements).values({
+            batchId,
+            inventoryMovementType: "RELEASE_FROM_QUARANTINE",
+            quantityChange: `+${quarantineQty}`,
+            quantityBefore: currentOnHandQty.toString(),
+            quantityAfter: (currentOnHandQty + quarantineQty).toString(),
+            referenceType: "BULK_STATUS_CHANGE",
+            notes: `Bulk status change from QUARANTINED to LIVE`,
+            performedBy: userId,
+          });
+        }
       }
 
       // Update status
@@ -1598,7 +1709,7 @@ export async function bulkUpdateBatchStatus(
       updated++;
     }
 
-    return { success: true, updated };
+    return { success: true, updated, skipped, errors };
   });
 }
 

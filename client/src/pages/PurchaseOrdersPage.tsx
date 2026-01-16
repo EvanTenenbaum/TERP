@@ -3,6 +3,14 @@ import { trpc } from "../lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+
+// FEAT-014: Hook to get display settings for conditional field visibility
+const useDisplaySettings = () => {
+  const { data: settings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  return {
+    showExpectedDelivery: settings?.display?.showExpectedDelivery ?? true,
+  };
+};
 import {
   Table,
   TableBody,
@@ -41,6 +49,9 @@ export default function PurchaseOrdersPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPO, setSelectedPO] = useState<any>(null);
+
+  // FEAT-014: Get display settings for conditional field visibility
+  const { showExpectedDelivery } = useDisplaySettings();
 
   // Fetch data - handle paginated responses with error handling
   const { data: posData, refetch, isLoading: posLoading, error: posError } = trpc.purchaseOrders.getAll.useQuery();
@@ -306,17 +317,19 @@ export default function PurchaseOrdersPage() {
               <TableHead>PO Number</TableHead>
               <TableHead>Supplier</TableHead>
               <TableHead>Order Date</TableHead>
-              <TableHead>Expected Delivery</TableHead>
+              {/* FEAT-014: Conditionally show expected delivery column */}
+              {showExpectedDelivery && <TableHead>Expected Delivery</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
+            {/* FEAT-014: Dynamic colSpan based on expected delivery visibility */}
             {posLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={showExpectedDelivery ? 7 : 6}
                   className="text-center text-gray-500 py-8"
                 >
                   Loading purchase orders...
@@ -325,7 +338,7 @@ export default function PurchaseOrdersPage() {
             ) : posError ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={showExpectedDelivery ? 7 : 6}
                   className="text-center text-red-500 py-8"
                 >
                   <div className="flex flex-col items-center gap-2">
@@ -344,7 +357,7 @@ export default function PurchaseOrdersPage() {
             ) : filteredPOs.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={showExpectedDelivery ? 7 : 6}
                   className="text-center text-gray-500 py-8"
                 >
                   No purchase orders found
@@ -362,9 +375,12 @@ export default function PurchaseOrdersPage() {
                     <TableCell>
                       {formatDate(po.orderDate)}
                     </TableCell>
-                    <TableCell>
-                      {formatDate(po.expectedDeliveryDate)}
-                    </TableCell>
+                    {/* FEAT-014: Conditionally show expected delivery cell */}
+                    {showExpectedDelivery && (
+                      <TableCell>
+                        {formatDate(po.expectedDeliveryDate)}
+                      </TableCell>
+                    )}
                     <TableCell>{getStatusBadge(po.purchaseOrderStatus || 'DRAFT')}</TableCell>
                     <TableCell>${parseFloat(po.total || '0').toFixed(2)}</TableCell>
                     <TableCell>
@@ -427,7 +443,7 @@ export default function PurchaseOrdersPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid gap-4 ${showExpectedDelivery ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div>
                 <Label htmlFor="orderDate">Order Date *</Label>
                 <Input
@@ -440,20 +456,23 @@ export default function PurchaseOrdersPage() {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="expectedDeliveryDate">Expected Delivery</Label>
-                <Input
-                  id="expectedDeliveryDate"
-                  type="date"
-                  value={formData.expectedDeliveryDate}
-                  onChange={e =>
-                    setFormData({
-                      ...formData,
-                      expectedDeliveryDate: e.target.value,
-                    })
-                  }
-                />
-              </div>
+              {/* FEAT-014: Conditionally show expected delivery input */}
+              {showExpectedDelivery && (
+                <div>
+                  <Label htmlFor="expectedDeliveryDate">Expected Delivery</Label>
+                  <Input
+                    id="expectedDeliveryDate"
+                    type="date"
+                    value={formData.expectedDeliveryDate}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        expectedDeliveryDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -481,7 +500,7 @@ export default function PurchaseOrdersPage() {
             <div>
               <Label>Line Items *</Label>
               {formData.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 mb-2">
+                <div key={`page-item-${index}`} className="grid grid-cols-12 gap-2 mb-2">
                   <div className="col-span-5">
                     <Select
                       value={item.productId}
