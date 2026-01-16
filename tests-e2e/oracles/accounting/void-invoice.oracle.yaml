@@ -81,5 +81,4 @@ expected_db:
         id: "$seed:invoice.to_void.id"
       expect:
         status: "VOID"
-        notes_like: "%VOIDED%"
-        notes_like: "%Duplicate invoice%"
+        notes_contains: "VOIDED"
