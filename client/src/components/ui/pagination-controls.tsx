@@ -240,22 +240,35 @@ export const PaginationControls = React.memo(function PaginationControls({
 
 /**
  * Hook for managing pagination state
- * 
+ * FE-QA-002: Standardized to use page/pageSize with automatic offset/limit conversion
+ *
+ * @param initialPageSize - Initial page size (default: 50)
+ * @returns Pagination state and controls with both page-based and offset-based parameters
+ *
  * @example
  * ```tsx
- * const { page, pageSize, offset, setPage, setPageSize } = usePagination();
- * 
+ * const { page, pageSize, offset, limit, setPage, setPageSize } = usePagination();
+ *
+ * // Use with tRPC queries - can pass either format
  * const { data } = trpc.items.list.useQuery({
- *   limit: pageSize,
- *   offset,
+ *   limit,      // or pageSize
+ *   offset,     // calculated automatically
  * });
+ *
+ * // Or use the convenience paginationParams object
+ * const { paginationParams } = usePagination();
+ * const { data } = trpc.items.list.useQuery(paginationParams);
  * ```
  */
 export function usePagination(initialPageSize = 50) {
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(initialPageSize);
 
+  // Calculate offset using the standard formula
   const offset = React.useMemo(() => (page - 1) * pageSize, [page, pageSize]);
+
+  // Provide limit as alias to pageSize for backend compatibility
+  const limit = pageSize;
 
   const handlePageSizeChange = React.useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
@@ -266,13 +279,23 @@ export function usePagination(initialPageSize = 50) {
     setPage(1);
   }, []);
 
+  // Convenience object with all pagination parameters
+  const paginationParams = React.useMemo(() => ({
+    page,
+    pageSize,
+    offset,
+    limit,
+  }), [page, pageSize, offset, limit]);
+
   return {
     page,
     pageSize,
     offset,
+    limit,
     setPage,
     setPageSize: handlePageSizeChange,
     reset,
+    paginationParams,
   };
 }
 

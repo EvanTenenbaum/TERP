@@ -26,26 +26,34 @@ export function VendorRedirect() {
 
     if (error || !vendorResponse) {
       // Vendor not found - redirect to suppliers list
-      console.warn(`[VendorRedirect] Vendor ${id} not found, redirecting to suppliers list`);
+      if (import.meta.env.DEV) {
+        console.warn(`[VendorRedirect] Vendor ${id} not found, redirecting to suppliers list`);
+      }
       setLocation("/clients?clientTypes=seller");
       return;
     }
 
     if (vendorResponse.success && vendorResponse.data) {
       const clientId = vendorResponse.data._clientId;
-      
+
       if (clientId) {
         // Redirect to the client profile page
-        console.info(`[VendorRedirect] Redirecting vendor ${id} to client ${clientId}`);
+        if (import.meta.env.DEV) {
+          console.info(`[VendorRedirect] Redirecting vendor ${id} to client ${clientId}`);
+        }
         setLocation(`/clients/${clientId}`);
       } else {
         // Legacy vendor without client mapping - redirect to suppliers list
-        console.warn(`[VendorRedirect] Vendor ${id} has no client mapping, redirecting to suppliers list`);
+        if (import.meta.env.DEV) {
+          console.warn(`[VendorRedirect] Vendor ${id} has no client mapping, redirecting to suppliers list`);
+        }
         setLocation("/clients?clientTypes=seller");
       }
     } else {
       // Error response - redirect to suppliers list
-      console.warn(`[VendorRedirect] Error fetching vendor ${id}, redirecting to suppliers list`);
+      if (import.meta.env.DEV) {
+        console.warn(`[VendorRedirect] Error fetching vendor ${id}, redirecting to suppliers list`);
+      }
       setLocation("/clients?clientTypes=seller");
     }
   }, [id, vendorResponse, isLoading, error, setLocation]);

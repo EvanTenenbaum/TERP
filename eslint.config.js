@@ -90,9 +90,10 @@ export default [
       // ============================================================
       // React Rules
       // ============================================================
-      
+
       'react/react-in-jsx-scope': 'off', // Not needed in React 19
       'react/prop-types': 'off', // Using TypeScript for prop validation
+      'react/no-array-index-key': 'error', // Prevent key={index} anti-pattern
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       

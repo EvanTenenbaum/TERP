@@ -9,6 +9,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { CalendarSettings } from "@/components/calendar/CalendarSettings";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errorHandling";
 import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
@@ -22,17 +23,8 @@ import {
   UnitTypesManager,
   FinanceStatusManager,
 } from "@/components/settings/OrganizationSettings";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TagManagementSettings } from "@/components/settings/TagManagementSettings";
 
 export default function Settings() {
   // FEAT-018: Check if user has admin/dev access for development-only features
@@ -52,7 +44,7 @@ export default function Settings() {
 
       <Tabs defaultValue="users" className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
-          <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-8 gap-1 h-auto">
+          <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-9 gap-1 h-auto">
             <TabsTrigger value="users" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Users</TabsTrigger>
             <TabsTrigger value="rbac" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">User Roles</TabsTrigger>
             <TabsTrigger value="roles" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Roles</TabsTrigger>
@@ -60,6 +52,7 @@ export default function Settings() {
             <TabsTrigger value="locations" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Locations</TabsTrigger>
             <TabsTrigger value="categories" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Categories</TabsTrigger>
             <TabsTrigger value="grades" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Grades</TabsTrigger>
+            <TabsTrigger value="tags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Tags</TabsTrigger>
             {/* FEAT-018: Hide Database tab from non-admin/dev users */}
             {showDevTools && (
               <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
@@ -104,6 +97,10 @@ export default function Settings() {
 
         <TabsContent value="grades" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           <GradesManager />
+        </TabsContent>
+
+        <TabsContent value="tags" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <TagManagementSettings />
         </TabsContent>
 
         {/* FEAT-018: Only show Database tab content for admin/dev users */}
@@ -292,6 +289,7 @@ function LocationsManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   // UX-001: Warn before leaving with unsaved changes
   useBeforeUnloadWarning(hasUnsavedChanges);
@@ -304,6 +302,7 @@ function LocationsManager() {
   }, [newLocation, editingId]);
 
   const { data: locations, refetch } = trpc.settings.locations.list.useQuery();
+  // BUG-097 FIX: Use standardized error handling
   const createMutation = trpc.settings.locations.create.useMutation({
     onSuccess: () => {
       toast.success("Location created successfully");
@@ -311,8 +310,8 @@ function LocationsManager() {
       setHasUnsavedChanges(false);
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to create location");
+    onError: (error) => {
+      showErrorToast(error, { action: "create", resource: "location" });
     },
   });
 
@@ -324,8 +323,8 @@ function LocationsManager() {
       setHasUnsavedChanges(false);
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to update location");
+    onError: (error) => {
+      showErrorToast(error, { action: "update", resource: "location" });
     },
   });
 
@@ -334,8 +333,8 @@ function LocationsManager() {
       toast.success("Location deleted successfully");
       refetch();
     },
-    onError: () => {
-      toast.error("Failed to delete location");
+    onError: (error) => {
+      showErrorToast(error, { action: "delete", resource: "location" });
     },
   });
 
@@ -502,7 +501,7 @@ function LocationsManager() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => deleteMutation.mutate({ id: location.id })}
+                        onClick={() => setDeleteConfirm(location.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -519,6 +518,20 @@ function LocationsManager() {
           </div>
         </div>
       </CardContent>
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Location"
+        description="Are you sure you want to delete this location? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteConfirm) {
+            deleteMutation.mutate({ id: deleteConfirm });
+          }
+          setDeleteConfirm(null);
+        }}
+      />
     </Card>
   );
 }
@@ -529,6 +542,8 @@ function CategoriesManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<number | null>(null);
+  const [deleteSubcategoryConfirm, setDeleteSubcategoryConfirm] = useState<number | null>(null);
 
   // UX-001: Warn before leaving with unsaved changes
   useBeforeUnloadWarning(hasUnsavedChanges);
@@ -574,6 +589,16 @@ function CategoriesManager() {
     onSuccess: () => {
       toast.success("Category deleted successfully");
       refetch();
+    },
+  });
+
+  const deleteSubcategoryMutation = trpc.settings.subcategories.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Subcategory deleted successfully");
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete subcategory");
     },
   });
 
@@ -636,7 +661,7 @@ function CategoriesManager() {
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteCategoryMutation.mutate({ id: category.id })}>
+                      <Button size="sm" variant="ghost" onClick={() => setDeleteCategoryConfirm(category.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </>
@@ -684,7 +709,7 @@ function CategoriesManager() {
                 {category.subcategories?.map((sub: any) => (
                   <div key={sub.id} className="p-2 pl-4 sm:pl-6 flex items-center justify-between gap-2">
                     <span className="text-xs sm:text-sm truncate flex-1 min-w-0">{sub.name}</span>
-                    <Button size="sm" variant="ghost" className="flex-shrink-0">
+                    <Button size="sm" variant="ghost" className="flex-shrink-0" onClick={() => setDeleteSubcategoryConfirm(sub.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -694,6 +719,34 @@ function CategoriesManager() {
           </div>
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={deleteCategoryConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteCategoryConfirm(null)}
+        title="Delete Category"
+        description="Are you sure you want to delete this category? This action cannot be undone and may affect associated products."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteCategoryConfirm) {
+            deleteCategoryMutation.mutate({ id: deleteCategoryConfirm });
+          }
+          setDeleteCategoryConfirm(null);
+        }}
+      />
+      <ConfirmDialog
+        open={deleteSubcategoryConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteSubcategoryConfirm(null)}
+        title="Delete Subcategory"
+        description="Are you sure you want to delete this subcategory? This action cannot be undone and may affect associated products."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteSubcategoryConfirm) {
+            deleteSubcategoryMutation.mutate({ id: deleteSubcategoryConfirm });
+          }
+          setDeleteSubcategoryConfirm(null);
+        }}
+      />
     </div>
   );
 }
@@ -703,6 +756,7 @@ function GradesManager() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   // UX-001: Warn before leaving with unsaved changes
   useBeforeUnloadWarning(hasUnsavedChanges);
@@ -800,7 +854,7 @@ function GradesManager() {
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate({ id: grade.id })}>
+                    <Button size="sm" variant="ghost" onClick={() => setDeleteConfirm(grade.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </>
@@ -815,6 +869,20 @@ function GradesManager() {
           )}
         </div>
       </CardContent>
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Grade"
+        description="Are you sure you want to delete this grade? This action cannot be undone and may affect associated products."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteConfirm) {
+            deleteMutation.mutate({ id: deleteConfirm });
+          }
+          setDeleteConfirm(null);
+        }}
+      />
     </Card>
   );
 }

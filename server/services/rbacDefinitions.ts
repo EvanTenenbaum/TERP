@@ -431,6 +431,8 @@ export const ownerExecutivePermissions = [
   "audit_logs:view",
   "audit_logs:export",
   "audit_logs:search",
+  // BUG-046 FIX: Add users:read so owners can access Settings > Users tab
+  "users:read",
 ];
 
 // Operations Manager: Full access to inventory, orders, POs, vendors, returns
@@ -536,6 +538,9 @@ export const operationsManagerPermissions = [
   "vip_portal:manage",
   // System health for ops monitoring
   "system:health",
+  // BUG-046 FIX: Add users:read and users:manage so operations manager can access Settings > Users tab
+  "users:read",
+  "users:manage",
 ];
 
 // Sales Manager: Full access to clients, orders, quotes, sales sheets

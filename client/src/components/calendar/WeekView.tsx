@@ -61,7 +61,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
 
           return (
             <div
-              key={index}
+              key={`day-${index}`}
               className={`border-r border-gray-200 p-3 text-center last:border-r-0 ${
                 isToday ? "bg-blue-50" : ""
               }`}

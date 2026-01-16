@@ -28,6 +28,8 @@ import {
 import * as liveCatalogService from "../services/liveCatalogService";
 import * as pricingEngine from "../pricingEngine";
 import * as priceAlertsService from "../services/priceAlertsService";
+import * as vipDebtAgingService from "../services/vipDebtAgingService";
+import * as vipCreditService from "../services/vipCreditService";
 import { eq, and, desc, gte, lte, sql, like, or, inArray, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
@@ -528,7 +530,10 @@ export const vipPortalRouter = router({
         // Send password reset email via notification service
         try {
           const { sendNotification } = await import("../services/notificationService");
-          const appUrl = process.env.APP_URL || "https://terp-app-b9s35.ondigitalocean.app";
+          const appUrl = process.env.APP_URL;
+          if (!appUrl) {
+            throw new Error("APP_URL environment variable must be set");
+          }
           await sendNotification({
             userId: authRecord.clientId,
             type: "warning",
@@ -720,7 +725,7 @@ export const vipPortalRouter = router({
         const { clientId, search, status } = input;
         
         // Build query conditions
-        let conditions = [eq(invoices.customerId, clientId)];
+        const conditions = [eq(invoices.customerId, clientId)];
         
         if (search) {
           conditions.push(like(invoices.invoiceNumber, `%${search}%`));
@@ -778,7 +783,7 @@ export const vipPortalRouter = router({
         const { clientId, search, status } = input;
         
         // Build query conditions
-        let conditions = [eq(bills.vendorId, clientId)];
+        const conditions = [eq(bills.vendorId, clientId)];
         
         if (search) {
           conditions.push(like(bills.billNumber, `%${search}%`));
@@ -837,7 +842,7 @@ export const vipPortalRouter = router({
         const { clientId, search, type, status } = input;
         
         // Build query conditions
-        let conditions = [eq(clientTransactions.clientId, clientId)];
+        const conditions = [eq(clientTransactions.clientId, clientId)];
         
         if (search) {
           conditions.push(like(clientTransactions.transactionNumber, `%${search}%`));
@@ -1352,6 +1357,73 @@ export const vipPortalRouter = router({
 
       return calendarsWithTypes;
     }),
+
+    listAppointmentTypes: vipPortalProcedure
+      .input(
+        z
+          .object({
+            calendarId: z.number().optional(),
+            limit: z.number().min(1).max(100).optional().default(50),
+            offset: z.number().min(0).optional().default(0),
+          })
+          .optional()
+      )
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+        }
+
+        const limit = input?.limit ?? 50;
+        const offset = input?.offset ?? 0;
+
+        // Build conditions for active appointment types
+        const conditions = [eq(appointmentTypes.isActive, true)];
+
+        if (input?.calendarId) {
+          conditions.push(eq(appointmentTypes.calendarId, input.calendarId));
+        }
+
+        // Fetch appointment types
+        const types = await db
+          .select({
+            id: appointmentTypes.id,
+            calendarId: appointmentTypes.calendarId,
+            name: appointmentTypes.name,
+            description: appointmentTypes.description,
+            duration: appointmentTypes.duration,
+            bufferBefore: appointmentTypes.bufferBefore,
+            bufferAfter: appointmentTypes.bufferAfter,
+            minNoticeHours: appointmentTypes.minNoticeHours,
+            maxAdvanceDays: appointmentTypes.maxAdvanceDays,
+            color: appointmentTypes.color,
+          })
+          .from(appointmentTypes)
+          .where(and(...conditions))
+          .limit(limit)
+          .offset(offset);
+
+        // Get total count for pagination
+        const countResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(appointmentTypes)
+          .where(and(...conditions));
+
+        const total = Number(countResult[0]?.count ?? 0);
+
+        return {
+          items: types,
+          total,
+          pagination: {
+            limit,
+            offset,
+            hasMore: offset + types.length < total,
+          },
+        };
+      }),
 
     getSlots: vipPortalProcedure
       .input(
@@ -2327,6 +2399,80 @@ export const vipPortalRouter = router({
           }
 
           return result;
+        }),
+    }),
+
+    // ============================================================================
+    // Sprint 5 Track A - Task 5.A.2: MEET-041 - VIP Debt Aging
+    // ============================================================================
+    debtAging: router({
+      /**
+       * Get debt aging summary for the current VIP client
+       */
+      getSummary: vipPortalProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.clientId;
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        return await vipDebtAgingService.getClientDebtAgingSummary(clientId);
+      }),
+
+      /**
+       * Get next scheduled notification for the current VIP client
+       */
+      getNextNotification: vipPortalProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.clientId;
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        return await vipDebtAgingService.getNextScheduledNotification(clientId);
+      }),
+    }),
+
+    // ============================================================================
+    // Sprint 5 Track A - Task 5.A.3: MEET-042 - Credit Usage Display
+    // ============================================================================
+    credit: router({
+      /**
+       * Get credit usage for the current VIP client
+       */
+      getUsage: vipPortalProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.clientId;
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        return await vipCreditService.getClientCreditUsage(clientId);
+      }),
+
+      /**
+       * Get credit utilization history for trends
+       */
+      getHistory: vipPortalProcedure
+        .input(z.object({ days: z.number().min(1).max(365).optional().default(30) }))
+        .query(async ({ ctx, input }) => {
+          const clientId = ctx.clientId;
+          if (!clientId) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          }
+
+          return await vipCreditService.getCreditUtilizationHistory(clientId, input.days);
+        }),
+
+      /**
+       * Check if a purchase amount is within credit availability
+       */
+      checkAvailability: vipPortalProcedure
+        .input(z.object({ amount: z.number().positive() }))
+        .query(async ({ ctx, input }) => {
+          const clientId = ctx.clientId;
+          if (!clientId) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+          }
+
+          return await vipCreditService.checkCreditAvailability(clientId, input.amount);
         }),
     }),
   }),

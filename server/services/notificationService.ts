@@ -85,7 +85,7 @@ function filterChannelsByPreferences(
   if (channels.includes("email") && preferences.emailEnabled) {
     enabled.push("email");
   }
-  if (channels.includes("sms") && preferences.emailEnabled) {
+  if (channels.includes("sms") && preferences.smsEnabled) {
     enabled.push("sms");
   }
   return enabled;
@@ -150,12 +150,27 @@ export async function queueNotification(
     queuedAt: new Date(),
     category: request.category ?? "system",
   });
+
+  // BUG-077 FIX: Auto-process queue after adding notification for near-instant delivery
+  // This ensures critical notifications are sent immediately rather than waiting for cron
+  // Process in background without blocking the caller
+  setImmediate(async () => {
+    try {
+      await processNotificationQueue({ batchSize: 10 });
+    } catch (error) {
+      logger.error({
+        msg: "Failed to auto-process notification queue",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
 }
 
 export async function sendNotification(
   request: NotificationRequest
 ): Promise<void> {
   await queueNotification(request);
+  // Note: Queue is auto-processed via setImmediate in queueNotification
 }
 
 export async function sendBulkNotification(

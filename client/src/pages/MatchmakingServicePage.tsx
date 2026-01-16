@@ -418,7 +418,7 @@ export default function MatchmakingServicePage() {
                 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
                 topMatches.map((match: any, idx: number) => (
                   <div
-                    key={idx}
+                    key={`page-item-${idx}`}
                     className="border rounded-lg p-3 hover:bg-accent transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -444,7 +444,7 @@ export default function MatchmakingServicePage() {
                         </p>
                         <ul className="text-xs space-y-1">
                           {match.reasons.map((reason: string, i: number) => (
-                            <li key={i} className="flex items-start gap-1">
+                            <li key={`page-item-${i}`} className="flex items-start gap-1">
                               <span className="text-green-600">✓</span>
                               <span>{reason}</span>
                             </li>

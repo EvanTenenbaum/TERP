@@ -57,9 +57,9 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
       <div className="space-y-4">
         {topItems.map((item, index) => {
           const percentage = (item.value / maxValue) * 100;
-          
+
           return (
-            <div key={index} className="space-y-1">
+            <div key={item.name} className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium truncate flex-1">{item.name}</span>
                 <span className="text-muted-foreground ml-2 whitespace-nowrap">

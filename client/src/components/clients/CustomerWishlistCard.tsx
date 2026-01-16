@@ -1,6 +1,7 @@
 /**
  * CustomerWishlistCard Component (WS-015)
  * Displays and allows editing of customer product wishes/preferences
+ * ST-026: Added version support for optimistic locking
  */
 
 import { useState } from "react";
@@ -10,18 +11,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { Heart, Edit2, Save, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useToast } from "@/hooks/use-toast";
+import { useOptimisticLocking } from "@/hooks/useOptimisticLocking";
 
 interface CustomerWishlistCardProps {
   clientId: number;
   wishlist: string;
+  version: number; // ST-026: Add version for optimistic locking
+  onRefresh?: () => void; // ST-026: Callback to refresh client data on conflict
 }
 
-export function CustomerWishlistCard({ clientId, wishlist: initialWishlist }: CustomerWishlistCardProps) {
+export function CustomerWishlistCard({
+  clientId,
+  wishlist: initialWishlist,
+  version,
+  onRefresh = () => {},
+}: CustomerWishlistCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [wishlist, setWishlist] = useState(initialWishlist);
   const [editValue, setEditValue] = useState(initialWishlist);
   const { toast } = useToast();
   const utils = trpc.useUtils();
+
+  // ST-026: Optimistic locking for concurrent edit detection
+  const { handleMutationError, ConflictDialogComponent } = useOptimisticLocking({
+    entityType: "Client Wishlist",
+    onRefresh: () => {
+      onRefresh();
+      setIsEditing(false);
+    },
+    onDiscard: () => setIsEditing(false),
+  });
 
   const updateMutation = trpc.clients.update.useMutation({
     onSuccess: () => {
@@ -34,17 +53,21 @@ export function CustomerWishlistCard({ clientId, wishlist: initialWishlist }: Cu
       });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update wishlist",
-        variant: "destructive",
-      });
+      // ST-026: Handle concurrent edit conflicts
+      if (!handleMutationError(error)) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update wishlist",
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const handleSave = () => {
     updateMutation.mutate({
       clientId,
+      version, // ST-026: Include version for optimistic locking
       wishlist: editValue,
     });
   };
@@ -119,6 +142,8 @@ export function CustomerWishlistCard({ clientId, wishlist: initialWishlist }: Cu
           </div>
         )}
       </CardContent>
+      {/* ST-026: Conflict dialog for concurrent edit detection */}
+      {ConflictDialogComponent}
     </Card>
   );
 }

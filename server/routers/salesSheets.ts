@@ -289,24 +289,7 @@ export const salesSheetsRouter = router({
   // LIST & SHARING
   // ============================================================================
 
-  /**
-   * List sales sheets with pagination
-   */
-  list: protectedProcedure.use(requirePermission("orders:read"))
-    .input(
-      z.object({
-        clientId: z.number().positive().optional(),
-        limit: z.number().positive().max(100).default(20),
-        offset: z.number().nonnegative().default(0),
-      }).optional()
-    )
-    .query(async ({ input }) => {
-      return await salesSheetsDb.listSalesSheets(
-        input?.clientId,
-        input?.limit ?? 20,
-        input?.offset ?? 0
-      );
-    }),
+  // NOTE: list procedure is defined at line 71 - API-004 verified
 
   /**
    * Generate a shareable link for a sales sheet

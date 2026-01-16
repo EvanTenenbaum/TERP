@@ -4,11 +4,13 @@
  */
 
 import { db } from "../../db";
-import { 
+import {
   bills,
   batches,
   lots,
   purchaseOrders,
+  returns,
+  orderLineItems,
 } from "../../../drizzle/schema";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import type { MetricResult } from "./types";
@@ -164,16 +166,34 @@ export async function calculateResponseTime(clientId: number): Promise<MetricRes
 }
 
 /**
- * Calculate Quality Score for a supplier (placeholder - needs quality tracking)
+ * Calculate Quality Score for a supplier
+ * Based on defective returns, defective quantity, and overall return rate
+ * Score ranges from 0-100, where 100 is perfect quality
  */
 export async function calculateQualityScore(clientId: number): Promise<MetricResult> {
   const database = getDbOrThrow();
-  
-  // For now, return a placeholder - quality scoring needs to be implemented
-  // This would typically come from batch quality ratings or QC results
-  const result = await database
+
+  // Get total quantity sold from this supplier
+  const totalSoldResult = await database
     .select({
-      count: sql<number>`COUNT(*)`,
+      total: sql<string>`COALESCE(SUM(${orderLineItems.quantity}), 0)`,
+    })
+    .from(orderLineItems)
+    .innerJoin(batches, eq(orderLineItems.batchId, batches.id))
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .where(
+      and(
+        eq(lots.supplierClientId, clientId),
+        isNull(batches.deletedAt)
+      )
+    );
+
+  const totalSold = parseFloat(totalSoldResult[0]?.total || "0");
+
+  // Get defective quantity from batches
+  const defectiveQtyResult = await database
+    .select({
+      defectiveTotal: sql<string>`COALESCE(SUM(${batches.defectiveQty}), 0)`,
     })
     .from(batches)
     .innerJoin(lots, eq(batches.lotId, lots.id))
@@ -184,27 +204,124 @@ export async function calculateQualityScore(clientId: number): Promise<MetricRes
       )
     );
 
-  const sampleSize = result[0]?.count || 0;
+  const defectiveQty = parseFloat(defectiveQtyResult[0]?.defectiveTotal || "0");
 
-  // Placeholder: return null until quality tracking is implemented
+  // Get all batch IDs from this supplier for efficient lookup
+  const supplierBatchesResult = await database
+    .select({
+      batchId: batches.id,
+    })
+    .from(batches)
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .where(
+      and(
+        eq(lots.supplierClientId, clientId),
+        isNull(batches.deletedAt)
+      )
+    );
+
+  const supplierBatchIds = new Set(
+    supplierBatchesResult.map((row) => row.batchId)
+  );
+
+  // Get returns data to calculate defective return rate
+  const returnedItemsResult = await database
+    .select({
+      returnedItems: returns.items,
+      returnReason: returns.returnReason,
+    })
+    .from(returns);
+
+  let totalDefectiveReturns = 0;
+  let totalReturns = 0;
+
+  for (const row of returnedItemsResult) {
+    const items = row.returnedItems as Array<{
+      batchId: number;
+      quantity: number;
+      reason?: string;
+    }>;
+
+    // Check if any of these batches belong to our supplier
+    for (const item of items) {
+      if (supplierBatchIds.has(item.batchId)) {
+        totalReturns += item.quantity;
+        // Count defective returns (from main return reason or item reason)
+        if (row.returnReason === "DEFECTIVE" || item.reason === "DEFECTIVE") {
+          totalDefectiveReturns += item.quantity;
+        }
+      }
+    }
+  }
+
+  const config = METRIC_CONFIGS.quality_score;
+
+  // Need at least some sales to calculate quality score
+  if (totalSold < config.minSampleSize) {
+    return {
+      value: null,
+      sampleSize: Math.round(totalSold),
+      isSignificant: false,
+      calculatedAt: new Date(),
+    };
+  }
+
+  // Calculate quality score (0-100 scale)
+  // Start at 100 and deduct for quality issues
+  const defectiveRate = (defectiveQty / totalSold) * 100;
+  const defectiveReturnRate = (totalDefectiveReturns / totalSold) * 100;
+  const overallReturnRate = (totalReturns / totalSold) * 100;
+
+  // Quality Score Formula:
+  // - Defective returns are weighted heavily (3x penalty)
+  // - Defective inventory is weighted moderately (2x penalty)
+  // - Overall returns have a light penalty (1x penalty)
+  const qualityScore = Math.max(
+    0,
+    100 - defectiveReturnRate * 3 - defectiveRate * 2 - overallReturnRate * 1
+  );
+
   return {
-    value: null,
-    sampleSize,
-    isSignificant: false,
+    value: qualityScore,
+    sampleSize: Math.round(totalSold),
+    isSignificant: totalSold >= config.minSampleSize,
     calculatedAt: new Date(),
+    rawData: {
+      numerator: Math.round(qualityScore),
+      denominator: 100,
+      dataPoints: [defectiveReturnRate, defectiveRate, overallReturnRate],
+    },
   };
 }
 
 /**
- * Calculate Return Rate for a supplier (placeholder - needs return tracking)
+ * Calculate Return Rate for a supplier
+ * Calculates percentage of items returned from this supplier
  */
 export async function calculateReturnRate(clientId: number): Promise<MetricResult> {
   const database = getDbOrThrow();
-  
-  // Placeholder - return tracking needs to be implemented
-  const result = await database
+
+  // Get total quantity sold from this supplier
+  const totalSoldResult = await database
     .select({
-      count: sql<number>`COUNT(*)`,
+      total: sql<string>`COALESCE(SUM(${orderLineItems.quantity}), 0)`,
+    })
+    .from(orderLineItems)
+    .innerJoin(batches, eq(orderLineItems.batchId, batches.id))
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .where(
+      and(
+        eq(lots.supplierClientId, clientId),
+        isNull(batches.deletedAt)
+      )
+    );
+
+  const totalSold = parseFloat(totalSoldResult[0]?.total || "0");
+
+  // Get all batch IDs from this supplier for efficient lookup
+  const supplierBatchesResult = await database
+    .select({
+      batchId: batches.id,
     })
     .from(batches)
     .innerJoin(lots, eq(batches.lotId, lots.id))
@@ -215,12 +332,53 @@ export async function calculateReturnRate(clientId: number): Promise<MetricResul
       )
     );
 
-  const sampleSize = result[0]?.count || 0;
+  const supplierBatchIds = new Set(
+    supplierBatchesResult.map((row) => row.batchId)
+  );
+
+  // Get total quantity returned from this supplier
+  // Returns table has items as JSON: [{ batchId, quantity, reason }]
+  const returnedItemsResult = await database
+    .select({
+      returnedItems: returns.items,
+    })
+    .from(returns);
+
+  let totalReturned = 0;
+  for (const row of returnedItemsResult) {
+    const items = row.returnedItems as Array<{
+      batchId: number;
+      quantity: number;
+      reason?: string;
+    }>;
+
+    // Check if any of these batches belong to our supplier
+    for (const item of items) {
+      if (supplierBatchIds.has(item.batchId)) {
+        totalReturned += item.quantity;
+      }
+    }
+  }
+
+  const config = METRIC_CONFIGS.return_rate;
+
+  // Need at least some sales to calculate return rate
+  if (totalSold < config.minSampleSize) {
+    return {
+      value: null,
+      sampleSize: Math.round(totalSold),
+      isSignificant: false,
+      calculatedAt: new Date(),
+    };
+  }
+
+  const returnRate = (totalReturned / totalSold) * 100;
 
   return {
-    value: null,
-    sampleSize,
-    isSignificant: false,
+    value: returnRate,
+    sampleSize: Math.round(totalSold),
+    isSignificant: totalSold >= config.minSampleSize,
     calculatedAt: new Date(),
+    rawData: { numerator: totalReturned, denominator: totalSold },
   };
 }

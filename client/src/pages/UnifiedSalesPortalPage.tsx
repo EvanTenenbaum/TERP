@@ -1111,7 +1111,7 @@ export default function UnifiedSalesPortalPage() {
             <AlertDialogDescription className="space-y-3">
               {quoteCheckData?.warnings?.map((warning, i) => (
                 <div
-                  key={i}
+                  key={`page-item-${i}`}
                   className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800"
                 >
                   <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />

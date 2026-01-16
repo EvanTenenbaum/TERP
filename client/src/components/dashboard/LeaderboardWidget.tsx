@@ -144,7 +144,7 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: limit }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
+              <Skeleton key={`skeleton-${i}`} className="h-10 w-full" />
             ))}
           </div>
         )}

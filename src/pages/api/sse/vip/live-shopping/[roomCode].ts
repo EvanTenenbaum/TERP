@@ -1,9 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../../../server/db";
-import { vipPortalAuth } from "../../../../../drizzle/schema";
 import { liveShoppingSessions } from "../../../../../drizzle/schema-live-shopping";
-import { eq, and, gte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { sessionEventManager } from "../../../../../server/lib/sse/sessionEventManager";
+import { validateSseSession, invalidateSseSession } from "../auth";
 
 export const config = {
   api: {
@@ -15,7 +15,15 @@ export const config = {
  * VIP Live Shopping SSE Endpoint
  * Allows VIP clients to subscribe to session updates.
  *
- * Authentication: Expects 'token' in query string (since EventSource doesn't support custom headers easily)
+ * SEC-021 Fix: Authentication now uses short-lived SSE session IDs
+ * instead of exposing actual tokens in URL query parameters.
+ *
+ * Flow:
+ * 1. Client first calls /api/sse/vip/auth with token in POST body
+ * 2. Server returns short-lived SSE session ID
+ * 3. Client connects here with SSE session ID (not actual token)
+ *
+ * Authentication: Expects 'sseSessionId' in query string
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Only allow GET for SSE
@@ -24,36 +32,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end("Method Not Allowed");
   }
 
-  const { roomCode, token } = req.query;
+  const { roomCode, sseSessionId } = req.query;
 
   if (!roomCode || typeof roomCode !== "string") {
     return res.status(400).json({ error: "Missing room code" });
   }
 
-  if (!token || typeof token !== "string") {
-    return res.status(401).json({ error: "Missing authentication token" });
+  if (!sseSessionId || typeof sseSessionId !== "string") {
+    return res.status(401).json({ error: "Missing SSE session ID" });
   }
 
-  // 1. Verify Database Connection
+  // 1. Validate SSE Session ID
+  const sseSession = validateSseSession(sseSessionId);
+  if (!sseSession) {
+    return res.status(401).json({ error: "Invalid or expired SSE session" });
+  }
+
+  // 2. Verify Database Connection
   const db = await getDb();
   if (!db) {
     return res.status(500).json({ error: "Database unavailable" });
   }
 
-  // 2. Authenticate Client
-  // We manually verify the token here since this is an API route, not tRPC
-  const authRecord = await db.query.vipPortalAuth.findFirst({
-    where: and(
-      eq(vipPortalAuth.sessionToken, token),
-      gte(vipPortalAuth.sessionExpiresAt, new Date())
-    ),
-  });
-
-  if (!authRecord) {
-    return res.status(401).json({ error: "Invalid or expired session" });
-  }
-
-  // 3. Find Session and Verify Ownership
+  // 3. Find Session and Verify it matches the SSE session
   const session = await db.query.liveShoppingSessions.findFirst({
     where: eq(liveShoppingSessions.roomCode, roomCode),
   });
@@ -62,7 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ error: "Session not found" });
   }
 
-  if (session.clientId !== authRecord.clientId) {
+  // Verify that the session matches what was authorized
+  if (session.id !== sseSession.sessionId || session.clientId !== sseSession.clientId) {
     return res.status(403).json({ error: "Unauthorized for this session" });
   }
 
@@ -107,6 +109,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   req.on("close", () => {
     clearInterval(heartbeat);
     sessionEventManager.unsubscribe(session.id, handleEvent);
+    // Invalidate the SSE session ID to prevent reuse
+    invalidateSseSession(sseSessionId);
     console.log(`[VIP SSE] Client disconnected from session ${session.id}`);
   });
 
@@ -115,5 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error("[VIP SSE] Request error:", error);
     clearInterval(heartbeat);
     sessionEventManager.unsubscribe(session.id, handleEvent);
+    // Invalidate the SSE session ID to prevent reuse
+    invalidateSseSession(sseSessionId);
   });
 }

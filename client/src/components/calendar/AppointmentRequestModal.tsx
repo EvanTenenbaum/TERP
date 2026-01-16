@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Check, Calendar, Clock, User, Phone, Mail, FileText } from "lucide-react";
 import { trpc } from "../../lib/trpc";
+import { toast } from "sonner";
 
 interface AppointmentRequestModalProps {
   requestId: number | null;
@@ -47,7 +48,7 @@ export default function AppointmentRequestModal({
 
   const handleReject = async () => {
     if (!requestId || !responseNotes.trim()) {
-      alert("Please enter a reason for rejection");
+      toast.error("Please enter a reason for rejection");
       return;
     }
     await rejectMutation.mutateAsync({

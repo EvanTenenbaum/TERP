@@ -29,6 +29,9 @@ interface DeploymentConfig {
   healthCheckTimeoutMs: number;
   slackWebhookUrl?: string;
   strictMode: boolean;
+  enableAutoRollback: boolean;
+  digitalOceanToken?: string;
+  digitalOceanAppId?: string;
 }
 
 const DEFAULT_CONFIG: DeploymentConfig = {
@@ -40,6 +43,9 @@ const DEFAULT_CONFIG: DeploymentConfig = {
   healthCheckTimeoutMs: 10000,
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
   strictMode: process.argv.includes('--strict'),
+  enableAutoRollback: process.env.ENABLE_AUTO_ROLLBACK === 'true' || process.argv.includes('--auto-rollback'),
+  digitalOceanToken: process.env.DIGITALOCEAN_TOKEN,
+  digitalOceanAppId: process.env.DIGITALOCEAN_APP_ID,
 };
 
 // ============================================================================
@@ -197,6 +203,121 @@ async function performHealthCheckWithRetries(config: DeploymentConfig): Promise<
 }
 
 // ============================================================================
+// ROLLBACK FUNCTIONALITY
+// ============================================================================
+
+/**
+ * Get the previous successful deployment from Digital Ocean
+ */
+async function getPreviousSuccessfulDeployment(config: DeploymentConfig): Promise<string | null> {
+  if (!config.digitalOceanToken || !config.digitalOceanAppId) {
+    console.log('  [SKIP] Auto-rollback not configured (missing DO credentials)');
+    return null;
+  }
+
+  try {
+    const urlObj = new URL(`https://api.digitalocean.com/v2/apps/${config.digitalOceanAppId}/deployments`);
+    const options = {
+      hostname: urlObj.hostname,
+      port: 443,
+      path: urlObj.pathname,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${config.digitalOceanToken}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`DO API returned ${res.statusCode}: ${data}`));
+            return;
+          }
+
+          try {
+            const response = JSON.parse(data);
+            // Find the most recent ACTIVE deployment (excluding current)
+            const activeDeployments = response.deployments.filter(
+              (d: any) => d.phase === 'ACTIVE'
+            );
+
+            if (activeDeployments.length > 0) {
+              const previousDeployment = activeDeployments[0];
+              resolve(previousDeployment.id);
+            } else {
+              resolve(null);
+            }
+          } catch (parseError) {
+            reject(new Error(`Failed to parse DO API response: ${parseError}`));
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.end();
+    });
+  } catch (error) {
+    console.error(`  [ERROR] Failed to get previous deployment: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
+}
+
+/**
+ * Trigger a rollback to the previous deployment
+ */
+async function triggerRollback(config: DeploymentConfig, previousDeploymentId: string): Promise<boolean> {
+  if (!config.digitalOceanToken || !config.digitalOceanAppId) {
+    return false;
+  }
+
+  console.log(`\n🔄 Triggering rollback to deployment ${previousDeploymentId}...`);
+
+  try {
+    const urlObj = new URL(`https://api.digitalocean.com/v2/apps/${config.digitalOceanAppId}/deployments/${previousDeploymentId}/actions/rollback`);
+    const options = {
+      hostname: urlObj.hostname,
+      port: 443,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.digitalOceanToken}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => {
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            console.log('  [OK] Rollback triggered successfully');
+            resolve(true);
+          } else {
+            console.error(`  [ERROR] Rollback failed with status ${res.statusCode}: ${data}`);
+            resolve(false);
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error(`  [ERROR] Rollback request failed: ${error.message}`);
+        resolve(false);
+      });
+
+      req.end();
+    });
+  } catch (error) {
+    console.error(`  [ERROR] Failed to trigger rollback: ${error instanceof Error ? error.message : error}`);
+    return false;
+  }
+}
+
+// ============================================================================
 // DEPLOYMENT ENFORCEMENT
 // ============================================================================
 
@@ -264,13 +385,36 @@ async function enforceDeployment(commitSha: string, config: DeploymentConfig): P
     result.passed = result.healthCheck.status !== 'unhealthy';
   }
 
-  // Step 4: Send alerts if needed
+  // Step 4: Handle rollback if deployment failed and auto-rollback is enabled
+  if (!result.passed && config.enableAutoRollback) {
+    console.log('\nStep 4: Deployment failed - initiating auto-rollback...');
+
+    const previousDeploymentId = await getPreviousSuccessfulDeployment(config);
+
+    if (previousDeploymentId) {
+      const rollbackSuccess = await triggerRollback(config, previousDeploymentId);
+
+      if (rollbackSuccess) {
+        result.alerts.push('AUTO-ROLLBACK: Rolled back to previous deployment');
+        result.recommendations.push('Review deployment logs to identify root cause');
+        result.recommendations.push('Fix issues and retry deployment');
+      } else {
+        result.alerts.push('CRITICAL: Auto-rollback failed - manual intervention required');
+        result.recommendations.push('Manually rollback via Digital Ocean console');
+      }
+    } else {
+      result.alerts.push('WARNING: No previous deployment found for rollback');
+      result.recommendations.push('Manual recovery required');
+    }
+  }
+
+  // Step 5: Send alerts if needed
   if (result.alerts.length > 0 && config.slackWebhookUrl) {
-    console.log('\nStep 4: Sending alerts...');
+    console.log('\nStep 5: Sending alerts...');
     await sendSlackAlert(result, config);
   }
 
-  // Step 5: Save enforcement result
+  // Step 6: Save enforcement result
   saveEnforcementResult(result);
 
   return result;
@@ -444,18 +588,22 @@ Usage:
   tsx scripts/deployment-enforcement.ts check [--strict]
     Quick health check of the deployed application
 
-  tsx scripts/deployment-enforcement.ts monitor <commit-sha> [--strict]
+  tsx scripts/deployment-enforcement.ts monitor <commit-sha> [--strict] [--auto-rollback]
     Full deployment enforcement check with retries and alerting
 
   tsx scripts/deployment-enforcement.ts health
     Comprehensive health check with retries
 
 Options:
-  --strict    Require all health checks to pass (default: allow degraded)
+  --strict          Require all health checks to pass (default: allow degraded)
+  --auto-rollback   Automatically rollback to previous deployment if health checks fail
 
 Environment Variables:
-  APP_URL              Application URL (default: https://terp-app-b9s35.ondigitalocean.app)
-  SLACK_WEBHOOK_URL    Slack webhook for alerts (optional)
+  APP_URL                Application URL (default: https://terp-app-b9s35.ondigitalocean.app)
+  SLACK_WEBHOOK_URL      Slack webhook for alerts (optional)
+  ENABLE_AUTO_ROLLBACK   Enable automatic rollback on failure (default: false)
+  DIGITALOCEAN_TOKEN     Digital Ocean API token (required for auto-rollback)
+  DIGITALOCEAN_APP_ID    Digital Ocean App ID (required for auto-rollback)
 `);
       process.exit(1);
   }

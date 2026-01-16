@@ -25,11 +25,11 @@ import {
   Package
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
-import { format } from "date-fns";
 import { StatusBadge, AgingBadge, ReceivePaymentModal, PayVendorModal } from "@/components/accounting";
 import { DataCardSection } from "@/components/data-cards";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate } from "@/lib/dateFormat";
 
 
 export default function AccountingDashboard() {
@@ -78,11 +78,6 @@ export default function AccountingDashboard() {
       style: "currency",
       currency: "USD",
     }).format(num);
-  };
-
-  const formatDate = (dateStr: Date | string) => {
-    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-    return format(date, "MMM dd, yyyy");
   };
 
   // Calculate totals - extract from paginated response objects { items: [], pagination: { total } }

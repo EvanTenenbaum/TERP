@@ -91,7 +91,7 @@ export const clientsRouter = router({
 
   // Create new client
   // BLOCK-001: Enhanced error handling for duplicate TERI codes
-  // FEAT-001: Added wishlist/notes field support
+  // FEAT-001: Added wishlist/notes field support and business fields
   create: protectedProcedure
     .use(requirePermission("clients:create"))
     .input(
@@ -101,6 +101,9 @@ export const clientsRouter = router({
         email: z.string().email().optional(),
         phone: z.string().max(50).optional(),
         address: z.string().optional(),
+        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
+        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        paymentTerms: z.number().int().positive().optional().default(30),
         isBuyer: z.boolean().optional(),
         isSeller: z.boolean().optional(),
         isBrand: z.boolean().optional(),
@@ -137,6 +140,7 @@ export const clientsRouter = router({
     }),
 
   // Update client (with optimistic locking - DATA-005)
+  // FEAT-001: Added business fields
   update: protectedProcedure
     .use(requirePermission("clients:update"))
     .input(
@@ -147,6 +151,9 @@ export const clientsRouter = router({
         email: z.string().email().optional(),
         phone: z.string().max(50).optional(),
         address: z.string().optional(),
+        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
+        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        paymentTerms: z.number().int().positive().optional(),
         isBuyer: z.boolean().optional(),
         isSeller: z.boolean().optional(),
         isBrand: z.boolean().optional(),
@@ -162,24 +169,34 @@ export const clientsRouter = router({
       return await clientsDb.updateClient(clientId, ctx.user.id, data, version);
     }),
 
-  // Delete client (hard delete - use archive for soft delete)
+  // Delete client (soft delete - this is the same as archive)
+  // DI-004: Soft delete preserves data integrity and allows recovery
   delete: protectedProcedure
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
-    .mutation(async ({ input }) => {
-      return await clientsDb.deleteClient(input.clientId);
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      return await clientsDb.deleteClient(input.clientId, ctx.user.id);
     }),
 
-  // Archive client (soft delete by marking as inactive)
-  // Note: clients table doesn't have deletedAt column, so we use a different approach
-  // For now, this is an alias for delete until soft delete is implemented
+  // Archive client (soft delete using deletedAt timestamp)
+  // DI-004: Proper soft-delete implementation with audit trail
   archive: protectedProcedure
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
-    .mutation(async ({ input }) => {
-      // TODO: Implement proper soft delete when deletedAt column is added to clients table
-      // For now, we just delete the client (existing behavior)
-      return await clientsDb.deleteClient(input.clientId);
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+    }),
+
+  // Restore archived client (clear deletedAt timestamp)
+  // DI-004: Allow recovery of soft-deleted clients
+  restore: protectedProcedure
+    .use(requirePermission("clients:delete"))
+    .input(z.object({ clientId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      return await clientsDb.restoreClient(input.clientId, ctx.user.id);
     }),
 
   // Transactions
@@ -232,7 +249,7 @@ export const clientsRouter = router({
           paymentDate: z.date().optional(),
           paymentAmount: z.number().optional(),
           notes: z.string().optional(),
-          metadata: z.any().optional(),
+          metadata: z.record(z.string(), z.unknown()).optional(), // Strict object validation
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -295,7 +312,7 @@ export const clientsRouter = router({
 
     // Link transactions (e.g., refund to original sale)
     linkTransaction: protectedProcedure
-      .use(requirePermission("clients:read"))
+      .use(requirePermission("clients:update"))
       .input(
         z.object({
           parentTransactionId: z.number(),

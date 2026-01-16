@@ -15,8 +15,6 @@
  *   SLACK_BOT_TOKEN - Slack Bot OAuth token (xoxb-...)
  *   SLACK_APP_TOKEN - Slack App-level token (xapp-...)
  *   SLACK_SIGNING_SECRET - Slack signing secret
- *   ANTHROPIC_API_KEY - Anthropic API key (optional, for AI features)
- *   OPENAI_API_KEY - OpenAI API key (optional, for AI features)
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';

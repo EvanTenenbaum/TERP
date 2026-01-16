@@ -36,6 +36,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash, Search, Settings } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
+import { showErrorToast } from "@/lib/errorHandling";
 import type { PricingProfile, PricingRule } from "../../../drizzle/schema";
 
 interface ProfileFormData {
@@ -63,6 +64,7 @@ export default function PricingProfilesPage() {
   const { data: profiles, isLoading: profilesLoading } = trpc.pricing.listProfiles.useQuery();
   const { data: rules, isLoading: rulesLoading } = trpc.pricing.listRules.useQuery();
 
+  // BUG-097 FIX: Use standardized error handling
   // Create mutation
   const createMutation = trpc.pricing.createProfile.useMutation({
     onSuccess: () => {
@@ -72,7 +74,7 @@ export default function PricingProfilesPage() {
       setFormData(emptyFormData);
     },
     onError: (error) => {
-      toast.error("Failed to create pricing profile: " + error.message);
+      showErrorToast(error, { action: "create", resource: "pricing profile" });
     },
   });
 
@@ -86,7 +88,7 @@ export default function PricingProfilesPage() {
       setFormData(emptyFormData);
     },
     onError: (error) => {
-      toast.error("Failed to update pricing profile: " + error.message);
+      showErrorToast(error, { action: "update", resource: "pricing profile" });
     },
   });
 
@@ -99,7 +101,7 @@ export default function PricingProfilesPage() {
       setSelectedProfile(null);
     },
     onError: (error) => {
-      toast.error("Failed to delete pricing profile: " + error.message);
+      showErrorToast(error, { action: "delete", resource: "pricing profile" });
     },
   });
 

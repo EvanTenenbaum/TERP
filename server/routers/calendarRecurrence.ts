@@ -87,7 +87,8 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Modify a specific instance
-  modifyInstance: publicProcedure
+  modifyInstance: protectedProcedure
+    .use(requirePermission('calendar:write'))
     .input(
       z.object({
         eventId: idSchema,
@@ -128,7 +129,8 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Cancel a specific instance
-  cancelInstance: publicProcedure
+  cancelInstance: protectedProcedure
+    .use(requirePermission('calendar:write'))
     .input(
       z.object({
         eventId: idSchema,
@@ -166,7 +168,8 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Regenerate instances (admin/background job)
-  regenerateInstances: publicProcedure
+  regenerateInstances: protectedProcedure
+    .use(requirePermission('calendar:write'))
     .input(
       z.object({
         eventId: idSchema,
@@ -223,7 +226,8 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Update recurrence rule
-  updateRecurrenceRule: publicProcedure
+  updateRecurrenceRule: protectedProcedure
+    .use(requirePermission('calendar:write'))
     .input(
       z.object({
         eventId: idSchema,
@@ -267,7 +271,8 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Delete recurrence rule (convert to single event)
-  deleteRecurrenceRule: publicProcedure
+  deleteRecurrenceRule: protectedProcedure
+    .use(requirePermission('calendar:write'))
     .input(z.object({ eventId: idSchema }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);

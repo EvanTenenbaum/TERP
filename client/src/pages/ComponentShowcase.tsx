@@ -198,7 +198,9 @@ export default function ComponentsShowcase() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleDialogSubmit = () => {
-    console.log("Dialog submitted with value:", dialogInput);
+    if (import.meta.env.DEV) {
+      console.log("Dialog submitted with value:", dialogInput);
+    }
     sonnerToast.success("Submitted successfully", {
       description: `Input: ${dialogInput}`,
     });
@@ -1179,7 +1181,7 @@ export default function ComponentsShowcase() {
                 <Carousel className="w-full max-w-xs mx-auto">
                   <CarouselContent>
                     {Array.from({ length: 5 }).map((_, index) => (
-                      <CarouselItem key={index}>
+                      <CarouselItem key={`page-item-${index}`}>
                         <div className="p-1">
                           <Card>
                             <CardContent className="flex aspect-square items-center justify-center p-6">
@@ -1260,7 +1262,7 @@ export default function ComponentsShowcase() {
                     <div className="p-4">
                       <div className="space-y-4">
                         {Array.from({ length: 20 }).map((_, i) => (
-                          <div key={i} className="text-sm">
+                          <div key={`page-item-${i}`} className="text-sm">
                             Item {i + 1}: This is a scrollable content area
                           </div>
                         ))}

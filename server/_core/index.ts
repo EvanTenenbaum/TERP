@@ -34,10 +34,12 @@ import {
   getHealthMetrics,
 } from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
-// import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
+import { seedAllDefaults } from "../services/seedDefaults";
 import { assignRoleToUser } from "../services/seedRBAC";
 import { performRBACStartupCheck } from "../services/rbacValidation";
 import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
+import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
+import { startNotificationQueueCron } from "../cron/notificationQueueCron.js";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 import { runAutoMigrations } from "../autoMigrate";
@@ -158,11 +160,10 @@ async function startServer() {
   }
 
   // Seed default data and create admin user on first startup
-  // TEMPORARILY DISABLED: Schema mismatch causing crashes on Railway
-  // TODO: Fix schema drift and re-enable seeding
+  // DI-005: Re-enabled after fixing schema drift issues
   //
   // NOTE: Seeding can be bypassed by setting SKIP_SEEDING=true environment variable
-  // This allows the app to start even when schema drift prevents seeding
+  // This allows the app to start even when schema issues occur
   try {
     // Check SKIP_SEEDING (case-insensitive)
     const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
@@ -177,8 +178,9 @@ async function startServer() {
         "💡 To enable seeding: remove SKIP_SEEDING or set it to false"
       );
     } else {
-      logger.info("Checking for default data and admin user...");
-      // await seedAllDefaults(); // Currently disabled due to schema drift
+      logger.info("🌱 Seeding default data (roles, categories, accounts, etc.)...");
+      await seedAllDefaults();
+      logger.info("✅ Default data seeding completed");
     }
 
     // Create initial admin user if environment variables are provided
@@ -479,6 +481,24 @@ async function startServer() {
         logger.info("✅ Price alerts cron job started");
       } catch (error) {
         logger.error({ msg: "Failed to start price alerts cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start session timeout cron job (MEET-075-BE)
+      try {
+        startSessionTimeoutCron();
+        logger.info("✅ Session timeout cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start session timeout cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start notification queue processing cron job (BUG-077)
+      try {
+        startNotificationQueueCron();
+        logger.info("✅ Notification queue processing cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start notification queue cron", error });
         // Server continues - cron is non-critical
       }
     });

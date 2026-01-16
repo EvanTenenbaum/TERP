@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { lazy, Suspense, type FC } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -23,8 +23,10 @@ import Payments from "@/pages/accounting/Payments";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import Expenses from "@/pages/accounting/Expenses";
+import CashLocations from "@/pages/CashLocations";
 import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
+import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
@@ -46,6 +48,8 @@ import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
 import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
+import IntakeReceipts from "@/pages/IntakeReceipts"; // FEAT-008: Intake Verification System
+import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
 import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -59,7 +63,11 @@ import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
-import CalendarPage from "@/pages/CalendarPage";
+// MEET-049 FIX: Use lazy loading to isolate CalendarPage import
+// This prevents calendar code errors from breaking the entire navigation
+const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
+// Sprint 4 Track D: Scheduling System
+const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -86,6 +94,22 @@ const withErrorBoundary = (Component: FC<any>) => () => (
   </PageErrorBoundary>
 );
 
+// MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const withLazyErrorBoundary = (Component: FC<any>) => () => (
+  <PageErrorBoundary>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full p-8">
+          Loading...
+        </div>
+      }
+    >
+      <Component />
+    </Suspense>
+  </PageErrorBoundary>
+);
+
 function Router() {
   return (
     <Switch>
@@ -99,6 +123,11 @@ function Router() {
       <Route
         path="/shared/sales-sheet/:token"
         component={withErrorBoundary(SharedSalesSheetPage)}
+      />
+      {/* FEAT-008: Public farmer verification page */}
+      <Route
+        path="/intake/verify/:token"
+        component={withErrorBoundary(FarmerVerification)}
       />
       <Route
         path="/vip-portal/dashboard"
@@ -182,6 +211,11 @@ function Router() {
                   path="/accounting/expenses"
                   component={withErrorBoundary(Expenses)}
                 />
+                {/* FEAT-007: Cash Audit System */}
+                <Route
+                  path="/accounting/cash-locations"
+                  component={withErrorBoundary(CashLocations)}
+                />
                 <Route
                   path="/clients"
                   component={withErrorBoundary(ClientsListPage)}
@@ -189,6 +223,14 @@ function Router() {
                 <Route
                   path="/clients/:id"
                   component={withErrorBoundary(ClientProfilePage)}
+                />
+                <Route
+                  path="/clients/:clientId/ledger"
+                  component={withErrorBoundary(ClientLedger)}
+                />
+                <Route
+                  path="/client-ledger"
+                  component={withErrorBoundary(ClientLedger)}
                 />
                 <Route path="/users" component={withErrorBoundary(UsersPage)} />
                 <Route
@@ -281,6 +323,11 @@ function Router() {
                   path="/locations"
                   component={withErrorBoundary(LocationsPage)}
                 />
+                {/* FEAT-008: Intake Verification System */}
+                <Route
+                  path="/intake-receipts"
+                  component={withErrorBoundary(IntakeReceipts)}
+                />
                 <Route
                   path="/matchmaking"
                   component={withErrorBoundary(MatchmakingServicePage)}
@@ -316,9 +363,15 @@ function Router() {
                   component={withErrorBoundary(NotificationsPage)}
                 />
                 <Route path="/inbox" component={withErrorBoundary(InboxPage)} />
+                {/* MEET-049 FIX: Use lazy loading wrapper for isolated calendar loading */}
                 <Route
                   path="/calendar"
-                  component={withErrorBoundary(CalendarPage)}
+                  component={withLazyErrorBoundary(CalendarPage)}
+                />
+                {/* Sprint 4 Track D: Scheduling System */}
+                <Route
+                  path="/scheduling"
+                  component={withLazyErrorBoundary(SchedulingPage)}
                 />
                 <Route
                   path="/workflow-queue"

@@ -479,3 +479,135 @@ export function isForbiddenError(error: unknown): boolean {
 export function isDemoUserError(error: unknown): boolean {
   return getAuthErrorType(error) === "DEMO_USER_RESTRICTED";
 }
+
+/**
+ * BUG-097: Standardized error toast messages by action type
+ * Maps common actions to user-friendly error messages
+ */
+const ACTION_ERROR_MESSAGES: Record<string, string> = {
+  // CRUD operations
+  create: "Unable to create",
+  update: "Unable to save changes",
+  delete: "Unable to delete",
+  save: "Unable to save",
+  load: "Unable to load data",
+  fetch: "Unable to load data",
+  export: "Unable to export",
+  import: "Unable to import",
+  send: "Unable to send",
+  submit: "Unable to submit",
+
+  // Domain-specific
+  login: "Unable to log in",
+  logout: "Unable to log out",
+  upload: "Unable to upload file",
+  download: "Unable to download",
+  copy: "Unable to copy",
+  share: "Unable to share",
+  convert: "Unable to convert",
+  generate: "Unable to generate",
+};
+
+/**
+ * BUG-097: Options for showErrorToast
+ */
+export interface ShowErrorToastOptions {
+  /** The action being performed (e.g., "create", "update", "delete") */
+  action?: string;
+  /** The resource being acted upon (e.g., "client", "order", "invoice") */
+  resource?: string;
+  /** Custom fallback message if error message is empty */
+  fallback?: string;
+  /** Additional context for logging */
+  context?: Record<string, unknown>;
+  /** Description to show in toast (additional details) */
+  description?: string;
+}
+
+/**
+ * BUG-097: Show a standardized error toast with consistent messaging
+ *
+ * This is the recommended way to show error toasts across the app.
+ * It provides:
+ * - Consistent error message formatting
+ * - User-friendly messages for common error codes
+ * - Automatic error logging
+ * - Optional context-aware descriptions
+ *
+ * @example
+ * ```tsx
+ * // Simple usage
+ * try {
+ *   await mutation.mutateAsync(data);
+ * } catch (error) {
+ *   showErrorToast(error, { action: "save", resource: "client" });
+ * }
+ *
+ * // With custom description
+ * showErrorToast(error, {
+ *   action: "create",
+ *   resource: "order",
+ *   description: "Please check your order details and try again."
+ * });
+ * ```
+ */
+export function showErrorToast(
+  error: unknown,
+  options: ShowErrorToastOptions = {}
+): void {
+  const { action, resource, fallback, context, description } = options;
+  const errorInfo = normalizeError(error);
+
+  // Log the error for debugging
+  logError(error, { ...context, action, resource });
+
+  // Build the error message
+  let message: string;
+
+  // Check for specific error codes that have good default messages
+  if (errorInfo.code !== "UNKNOWN" && ERROR_MESSAGES[errorInfo.code]) {
+    message = ERROR_MESSAGES[errorInfo.code];
+  } else if (errorInfo.message && !errorInfo.message.includes("INTERNAL_SERVER_ERROR")) {
+    // Use the error's message if it's not a generic internal error
+    message = errorInfo.message;
+  } else if (action && resource) {
+    // Build a contextual message
+    const actionMessage = ACTION_ERROR_MESSAGES[action.toLowerCase()] || `Unable to ${action}`;
+    message = `${actionMessage} ${resource}. Please try again.`;
+  } else if (action) {
+    message = ACTION_ERROR_MESSAGES[action.toLowerCase()] || `Unable to ${action}. Please try again.`;
+  } else if (fallback) {
+    message = fallback;
+  } else {
+    message = "An error occurred. Please try again.";
+  }
+
+  // Import toast dynamically to avoid circular dependencies
+  import("sonner").then(({ toast }) => {
+    toast.error(message, description ? { description } : undefined);
+  });
+}
+
+/**
+ * BUG-097: Create a bound error handler for a specific context
+ * Useful for creating consistent error handlers within a component
+ *
+ * @example
+ * ```tsx
+ * const handleError = createErrorHandler({ resource: "invoice" });
+ *
+ * // Later in code:
+ * try {
+ *   await createInvoice();
+ * } catch (error) {
+ *   handleError(error, { action: "create" });
+ * }
+ * ```
+ */
+export function createErrorHandler(
+  defaultOptions: Omit<ShowErrorToastOptions, "action">
+): (error: unknown, options?: Pick<ShowErrorToastOptions, "action" | "description">) => void {
+  return (error, options) => {
+    showErrorToast(error, { ...defaultOptions, ...options });
+  };
+}

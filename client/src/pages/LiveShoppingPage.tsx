@@ -408,7 +408,10 @@ export default function LiveShoppingPage() {
                           size="sm"
                           onClick={() => {
                             // TODO: Implement session console/detail view
-                            alert(`Session ${session.id} - Console view coming soon`);
+                            toast({
+                              title: "Coming Soon",
+                              description: `Session ${session.id} - Console view coming soon`,
+                            });
                           }}
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />

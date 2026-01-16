@@ -6,6 +6,8 @@
  * - SAMPLE_REQUEST: Customer wants to see a sample
  * - INTERESTED: Customer is interested, may negotiate price
  * - TO_PURCHASE: Customer intends to buy
+ *
+ * MEET-075-FE: Enhanced with timer, credit display, notes, and pick list
  */
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -14,6 +16,12 @@ import { trpc } from "../../utils/trpc";
 import { useLiveSessionSSE } from "../../hooks/useLiveSessionSSE";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import {
+  SessionTimer,
+  CreditLimitDisplay,
+  SessionNotes,
+  WarehousePickList,
+} from "../../components/live-shopping";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
 
@@ -121,6 +129,22 @@ export default function LiveSessionConsole() {
   const [itemToRemove, setItemToRemove] = useState<number | null>(null);
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
   const [convertOnEnd, setConvertOnEnd] = useState(false);
+
+  // MEET-075-FE: Panel visibility states
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [activeTab, setActiveTab] = useState<"info" | "notes" | "picklist">("info");
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
+  // MEET-075-FE: Cancel session mutation
+  const cancelSessionMutation = trpc.liveShopping.cancelSession.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      router.push("/live-shopping");
+    },
+    onError: (error) => {
+      toast.error(`Error: ${error.message}`);
+    },
+  });
 
   // Handlers
   const handleStatusChange = useCallback(
@@ -262,8 +286,20 @@ export default function LiveSessionConsole() {
           <span className={`text-xs px-2 py-1 rounded ${
             connectionStatus === "CONNECTED" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
           }`}>
-            {connectionStatus === "CONNECTED" ? "🟢 Live" : "⚪ Connecting..."}
+            {connectionStatus === "CONNECTED" ? "Live" : "Connecting..."}
           </span>
+
+          {/* MEET-075-FE: Session Timer */}
+          {currentStatus === "ACTIVE" && (
+            <SessionTimer
+              sessionId={sessionId}
+              startedAt={session.startedAt}
+              expiresAt={(session as any).expiresAt}
+              onTimeoutWarning={() => toast.warning("Session will expire in 5 minutes!")}
+              onExpired={() => toast.error("Session has expired. Please extend or end the session.")}
+              onExtend={() => refetchSession()}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -332,8 +368,22 @@ export default function LiveSessionConsole() {
               >
                 Convert to Order
               </button>
+              <button
+                onClick={() => setCancelDialogOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"
+              >
+                Cancel
+              </button>
             </>
           )}
+          {/* MEET-075-FE: Sidebar Toggle */}
+          <button
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg"
+            title={showSidebar ? "Hide Sidebar" : "Show Sidebar"}
+          >
+            {showSidebar ? "Hide Panel" : "Show Panel"}
+          </button>
         </div>
       </header>
 
@@ -361,39 +411,116 @@ export default function LiveSessionConsole() {
         )}
       </div>
 
-      {/* Main Content - Three Columns */}
-      <div className="flex-1 overflow-hidden p-6">
-        <div className="grid grid-cols-3 gap-6 h-full">
-          {/* Sample Requests Column */}
-          <StatusColumn
-            status="SAMPLE_REQUEST"
-            items={sampleRequests}
-            onStatusChange={handleStatusChange}
-            onPriceChange={handlePriceChange}
-            onHighlight={handleHighlight}
-            onRemove={handleRemove}
-          />
+      {/* Main Content - Three Columns + Sidebar */}
+      <div className="flex-1 overflow-hidden p-6 flex gap-6">
+        {/* Main Grid - Three Columns */}
+        <div className="flex-1">
+          <div className="grid grid-cols-3 gap-6 h-full">
+            {/* Sample Requests Column */}
+            <StatusColumn
+              status="SAMPLE_REQUEST"
+              items={sampleRequests}
+              onStatusChange={handleStatusChange}
+              onPriceChange={handlePriceChange}
+              onHighlight={handleHighlight}
+              onRemove={handleRemove}
+            />
 
-          {/* Interested Column */}
-          <StatusColumn
-            status="INTERESTED"
-            items={interested}
-            onStatusChange={handleStatusChange}
-            onPriceChange={handlePriceChange}
-            onHighlight={handleHighlight}
-            onRemove={handleRemove}
-          />
+            {/* Interested Column */}
+            <StatusColumn
+              status="INTERESTED"
+              items={interested}
+              onStatusChange={handleStatusChange}
+              onPriceChange={handlePriceChange}
+              onHighlight={handleHighlight}
+              onRemove={handleRemove}
+            />
 
-          {/* To Purchase Column */}
-          <StatusColumn
-            status="TO_PURCHASE"
-            items={toPurchase}
-            onStatusChange={handleStatusChange}
-            onPriceChange={handlePriceChange}
-            onHighlight={handleHighlight}
-            onRemove={handleRemove}
-          />
+            {/* To Purchase Column */}
+            <StatusColumn
+              status="TO_PURCHASE"
+              items={toPurchase}
+              onStatusChange={handleStatusChange}
+              onPriceChange={handlePriceChange}
+              onHighlight={handleHighlight}
+              onRemove={handleRemove}
+            />
+          </div>
         </div>
+
+        {/* MEET-075-FE: Sidebar Panel */}
+        {showSidebar && (
+          <div className="w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+            {/* Tab Navigation */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab("info")}
+                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "info"
+                    ? "bg-white text-gray-900 shadow"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Info
+              </button>
+              <button
+                onClick={() => setActiveTab("notes")}
+                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "notes"
+                    ? "bg-white text-gray-900 shadow"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Notes
+              </button>
+              <button
+                onClick={() => setActiveTab("picklist")}
+                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "picklist"
+                    ? "bg-white text-gray-900 shadow"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Pick List
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === "info" && (
+              <div className="space-y-4">
+                {/* Credit Status */}
+                <CreditLimitDisplay sessionId={sessionId} />
+
+                {/* Session Info Card */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Session Info</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Host</span>
+                      <span className="font-medium">{session.host?.name || "Unknown"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Room Code</span>
+                      <span className="font-mono text-xs">{session.roomCode}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Total Items</span>
+                      <span className="font-medium">{(totals?.sampleRequestCount || 0) + (totals?.interestedCount || 0) + (totals?.toPurchaseCount || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "notes" && (
+              <SessionNotes sessionId={sessionId} initialNotes={session.internalNotes || ""} />
+            )}
+
+            {activeTab === "picklist" && (
+              <WarehousePickList sessionId={sessionId} compact />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Remove Item Confirmation Dialog */}
@@ -425,6 +552,25 @@ export default function LiveSessionConsole() {
         variant={convertOnEnd ? "default" : "destructive"}
         onConfirm={confirmEndSession}
         isLoading={endSessionMutation.isPending}
+      />
+
+      {/* MEET-075-FE: Cancel Session Confirmation Dialog */}
+      <ConfirmDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+        title="Cancel Session"
+        description={`Are you sure you want to cancel this session? This will release ${
+          (totals?.sampleRequestCount || 0) + (totals?.interestedCount || 0) + (totals?.toPurchaseCount || 0)
+        } items from the cart. This action cannot be undone.`}
+        confirmLabel="Cancel Session"
+        variant="destructive"
+        onConfirm={() => {
+          cancelSessionMutation.mutate({
+            sessionId,
+            reason: "Cancelled by host",
+          });
+        }}
+        isLoading={cancelSessionMutation.isPending}
       />
     </div>
   );

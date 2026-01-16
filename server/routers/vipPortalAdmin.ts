@@ -481,4 +481,40 @@ export const vipPortalAdminRouter = router({
         });
       }),
   }),
+
+  // ============================================================================
+  // Sprint 5 Track A - Task 5.A.2: MEET-041 - VIP Debt Aging Admin
+  // ============================================================================
+  debtAging: router({
+    /**
+     * Get all VIP clients with aging debt
+     */
+    getAgingDebt: protectedProcedure
+      .use(requirePermission("vip_portal:manage"))
+      .query(async () => {
+        const { getVipClientsWithAgingDebt } = await import("../services/vipDebtAgingService");
+        return await getVipClientsWithAgingDebt();
+      }),
+
+    /**
+     * Send debt aging notifications to VIP clients
+     */
+    sendNotifications: protectedProcedure
+      .use(requirePermission("vip_portal:manage"))
+      .mutation(async () => {
+        const { sendDebtAgingNotifications } = await import("../services/vipDebtAgingService");
+        return await sendDebtAgingNotifications();
+      }),
+
+    /**
+     * Get debt aging summary for a specific client
+     */
+    getClientSummary: protectedProcedure
+      .use(requirePermission("vip_portal:manage"))
+      .input(z.object({ clientId: z.number() }))
+      .query(async ({ input }) => {
+        const { getClientDebtAgingSummary } = await import("../services/vipDebtAgingService");
+        return await getClientDebtAgingSummary(input.clientId);
+      }),
+  }),
 });

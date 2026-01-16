@@ -14,6 +14,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { StrainInput } from "@/components/inventory/StrainInput";
+import { trpc } from "@/lib/trpc";
 
 /**
  * Supply Form Component
@@ -70,6 +71,11 @@ export function SupplyForm({
 }: SupplyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // FEAT-012: Fetch display settings for grade field visibility
+  const { data: displaySettings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  const showGradeField = displaySettings?.display?.showGradeField ?? true;
+  const gradeFieldRequired = displaySettings?.display?.gradeFieldRequired ?? false;
 
   const [formData, setFormData] = useState<SupplyFormState>({
     strain: initialData?.strain || "",
@@ -141,13 +147,19 @@ export function SupplyForm({
       }
     }
 
+    // FEAT-012: Conditionally validate grade field if required
+    if (showGradeField && gradeFieldRequired && !formData.grade) {
+      validationError = "Grade is required";
+    }
+
     // At least one search criteria required
+    const hasGradeCriteria = showGradeField ? formData.grade : true; // Don't check grade if field is hidden
     if (
       !formData.strain &&
       !formData.productName &&
       !formData.category &&
       !formData.subcategory &&
-      !formData.grade
+      !hasGradeCriteria
     ) {
       validationError = "Please specify at least one product criteria";
     }
@@ -308,15 +320,21 @@ export function SupplyForm({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="grade">Grade</Label>
-                <Input
-                  id="grade"
-                  value={formData.grade}
-                  onChange={e => handleChange("grade", e.target.value)}
-                  placeholder="e.g., A+"
-                />
-              </div>
+              {/* FEAT-012: Conditionally render grade field based on organization settings */}
+              {showGradeField && (
+                <div className="space-y-2">
+                  <Label htmlFor="grade">
+                    Grade{gradeFieldRequired && <span className="text-destructive"> *</span>}
+                  </Label>
+                  <Input
+                    id="grade"
+                    value={formData.grade}
+                    onChange={e => handleChange("grade", e.target.value)}
+                    placeholder="e.g., A+"
+                    required={gradeFieldRequired}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

@@ -28,6 +28,8 @@ import { eq } from "drizzle-orm";
 import * as inventoryUtils from "./inventoryUtils";
 import { findOrCreate } from "./_core/dbUtils";
 import { logger } from "./_core/logger";
+// MEET-005, MEET-006: Import payables service for consigned inventory tracking
+import * as payablesService from "./services/payablesService";
 
 export interface IntakeInput {
   vendorName: string;
@@ -49,6 +51,8 @@ export interface IntakeInput {
     | "NET_30"
     | "CONSIGNMENT"
     | "PARTIAL";
+  // MEET-006: Ownership type for inventory tracking
+  ownershipType?: "CONSIGNED" | "OFFICE_OWNED" | "SAMPLE";
   location: {
     site: string;
     zone?: string;
@@ -182,6 +186,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       );
 
       // 6. Create batch
+      // MEET-006: Determine ownership type based on payment terms if not explicitly set
+      const ownershipType = input.ownershipType ||
+        (input.paymentTerms === "CONSIGNMENT" ? "CONSIGNED" : "OFFICE_OWNED");
+
       const [batchCreated] = await tx
         .insert(batches)
         .values({
@@ -199,6 +207,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           unitCogsMin: input.unitCogsMin,
           unitCogsMax: input.unitCogsMax,
           paymentTerms: input.paymentTerms,
+          ownershipType: ownershipType, // MEET-006
           metadata: (() => {
             const metadata = input.metadata || {};
             if (input.mediaUrls && input.mediaUrls.length > 0) {
@@ -248,6 +257,51 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         after: inventoryUtils.createAuditSnapshot(batch),
         reason: "Initial intake",
       });
+
+      // 9. MEET-005: Create payable for consigned inventory
+      if (ownershipType === "CONSIGNED") {
+        try {
+          // Get COGS for payable calculation
+          const cogsPerUnit = parseFloat(input.unitCogs || "0") ||
+            (parseFloat(input.unitCogsMin || "0") + parseFloat(input.unitCogsMax || "0")) / 2;
+
+          // Find supplier client ID for the vendor
+          const { clients } = await import("../drizzle/schema");
+          const [supplierClient] = await tx
+            .select()
+            .from(clients)
+            .where(eq(clients.name, input.vendorName))
+            .limit(1);
+
+          if (supplierClient) {
+            await payablesService.createPayable({
+              batchId: batch.id,
+              lotId: lot.id,
+              vendorClientId: supplierClient.id,
+              cogsPerUnit,
+              createdBy: input.userId,
+            });
+            logger.info({
+              msg: "[MEET-005] Created payable for consigned batch",
+              batchId: batch.id,
+              vendorClientId: supplierClient.id,
+              cogsPerUnit,
+            });
+          } else {
+            logger.warn({
+              msg: "[MEET-005] Supplier client not found, payable not created",
+              vendorName: input.vendorName,
+              batchId: batch.id,
+            });
+          }
+        } catch (payableError) {
+          logger.error({
+            msg: "[MEET-005] Failed to create payable (non-fatal)",
+            error: payableError instanceof Error ? payableError.message : String(payableError),
+            batchId: batch.id,
+          });
+        }
+      }
 
       return {
         success: true,

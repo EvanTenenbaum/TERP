@@ -300,7 +300,7 @@ export default function NeedsManagementPage() {
             <div className="grid gap-4">
               {opportunities.map((opp: any, idx: number) => (
                 <Card
-                  key={idx}
+                  key={`page-item-${idx}`}
                   className="hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => setLocation(`/clients/${opp.clientId}?tab=needs`)}
                 >

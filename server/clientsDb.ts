@@ -344,6 +344,9 @@ export async function createClient(
     email?: string;
     phone?: string;
     address?: string;
+    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
+    paymentTerms?: number;
     isBuyer?: boolean;
     isSeller?: boolean;
     isBrand?: boolean;
@@ -368,6 +371,9 @@ export async function createClient(
     email: data.email || null,
     phone: data.phone || null,
     address: data.address || null,
+    businessType: data.businessType || null,
+    preferredContact: data.preferredContact || null,
+    paymentTerms: data.paymentTerms || 30,
     isBuyer: data.isBuyer || false,
     isSeller: data.isSeller || false,
     isBrand: data.isBrand || false,
@@ -401,12 +407,16 @@ export async function updateClient(
     email?: string;
     phone?: string;
     address?: string;
+    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
+    paymentTerms?: number;
     isBuyer?: boolean;
     isSeller?: boolean;
     isBrand?: boolean;
     isReferee?: boolean;
     isContractor?: boolean;
     tags?: string[];
+    wishlist?: string; // BUG-090 FIX: Add wishlist field to match createClient
   },
   expectedVersion?: number
 ) {
@@ -419,6 +429,9 @@ export async function updateClient(
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
+  if (data.businessType !== undefined) updateData.businessType = data.businessType;
+  if (data.preferredContact !== undefined) updateData.preferredContact = data.preferredContact;
+  if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms;
   if (data.isBuyer !== undefined) updateData.isBuyer = data.isBuyer;
   if (data.isSeller !== undefined) updateData.isSeller = data.isSeller;
   if (data.isBrand !== undefined) updateData.isBrand = data.isBrand;
@@ -426,6 +439,8 @@ export async function updateClient(
   if (data.isContractor !== undefined)
     updateData.isContractor = data.isContractor;
   if (data.tags !== undefined) updateData.tags = data.tags;
+  // BUG-090 FIX: Handle wishlist field
+  if (data.wishlist !== undefined) updateData.wishlist = data.wishlist;
 
   // If version is provided, use optimistic locking
   if (expectedVersion !== undefined) {
@@ -517,15 +532,18 @@ export async function updateClientStats(clientId: number) {
     .where(eq(clientTransactions.clientId, clientId));
 
   let totalSpent = 0;
-  const totalProfit = 0;
+  let totalProfit = 0; // BUG FIX: Changed from const to let to allow calculation
   let totalOwed = 0;
   let oldestDebtDays = 0;
 
   for (const txn of transactions) {
     const amount = Number(txn.amount);
+    // Calculate profit from transaction margin if available
+    const profit = Number(txn.profit || 0);
 
     if (txn.transactionType === "INVOICE" || txn.transactionType === "ORDER") {
       totalSpent += amount;
+      totalProfit += profit; // BUG FIX: Accumulate profit from transactions
 
       if (txn.paymentStatus !== "PAID") {
         totalOwed += amount;

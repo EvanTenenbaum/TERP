@@ -155,25 +155,28 @@ export default function SampleManagement() {
       [];
     const itemCount = items.length;
 
-    console.info("[SampleManagement] Query state:", {
-      isLoading: samplesLoading,
-      isError: isSamplesError,
-      error: samplesError?.message,
-      itemCount,
-      hasItems: items.length > 0,
-      rawDataType: samplesData ? typeof samplesData : "undefined",
-      hasItemsProperty: samplesData && "items" in samplesData,
-      isArray: Array.isArray(samplesData),
-    });
+    // Debug logging for data display issues (QA-050) - only in development
+    if (import.meta.env.DEV) {
+      console.info("[SampleManagement] Query state:", {
+        isLoading: samplesLoading,
+        isError: isSamplesError,
+        error: samplesError?.message,
+        itemCount,
+        hasItems: items.length > 0,
+        rawDataType: samplesData ? typeof samplesData : "undefined",
+        hasItemsProperty: samplesData && "items" in samplesData,
+        isArray: Array.isArray(samplesData),
+      });
 
-    // Warn if we have a response but no items
-    if (!samplesLoading && !isSamplesError && samplesData && itemCount === 0) {
-      console.warn(
-        "[SampleManagement] Zero samples returned - possible data display issue",
-        {
-          response: samplesData,
-        }
-      );
+      // Warn if we have a response but no items
+      if (!samplesLoading && !isSamplesError && samplesData && itemCount === 0) {
+        console.warn(
+          "[SampleManagement] Zero samples returned - possible data display issue",
+          {
+            response: samplesData,
+          }
+        );
+      }
     }
   }, [samplesData, samplesLoading, isSamplesError, samplesError]);
 

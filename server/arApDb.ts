@@ -148,10 +148,27 @@ export async function createInvoice(
 
 /**
  * Update invoice
+ * FEAT-008: Prevent editing PAID or VOID invoices
  */
 export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // FEAT-008: Check if invoice can be edited based on status
+  const invoice = await db.select().from(invoices).where(and(
+    eq(invoices.id, id),
+    sql`${invoices.deletedAt} IS NULL`
+  )).limit(1);
+
+  if (!invoice[0]) throw new Error("Invoice not found or deleted");
+
+  if (invoice[0].status === "PAID") {
+    throw new Error("Cannot edit a paid invoice");
+  }
+
+  if (invoice[0].status === "VOID") {
+    throw new Error("Cannot edit a voided invoice");
+  }
 
   await db.update(invoices).set(data).where(eq(invoices.id, id));
 }

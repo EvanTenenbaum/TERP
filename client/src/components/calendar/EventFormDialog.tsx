@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface EventFormDialogProps {
   isOpen: boolean;
@@ -192,7 +193,7 @@ export default function EventFormDialog({
       onSaved();
     } catch (error) {
       console.error("Error saving event:", error);
-      window.alert("Failed to save event. Please try again.");
+      toast.error("Failed to save event. Please try again.");
     }
   };
 

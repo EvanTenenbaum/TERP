@@ -2,6 +2,7 @@ import React from "react";
 import { Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Command,
   CommandEmpty,
@@ -44,6 +45,7 @@ export function UserSelector({
   disabled = false,
 }: UserSelectorProps) {
   const [open, setOpen] = React.useState(false);
+  const [deleteUserConfirm, setDeleteUserConfirm] = React.useState<number | null>(null);
 
   const selectedUsers = users.filter(user => selectedUserIds.includes(user.id));
 
@@ -118,7 +120,7 @@ export function UserSelector({
               {user.name || user.email || "Unknown"}
               <button
                 type="button"
-                onClick={() => removeUser(user.id)}
+                onClick={() => setDeleteUserConfirm(user.id)}
                 className="ml-1 rounded-full hover:bg-muted"
                 disabled={disabled}
               >
@@ -128,6 +130,20 @@ export function UserSelector({
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={deleteUserConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteUserConfirm(null)}
+        title="Remove User"
+        description="Are you sure you want to remove this user from the selection?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteUserConfirm) {
+            removeUser(deleteUserConfirm);
+          }
+          setDeleteUserConfirm(null);
+        }}
+      />
     </div>
   );
 }

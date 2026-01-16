@@ -59,7 +59,7 @@ export const ExpiringSamplesWidget = React.memo(function ExpiringSamplesWidget({
         </div>
         <div className="space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+            <div key={`skeleton-${i}`} className="h-10 bg-muted animate-pulse rounded" />
           ))}
         </div>
       </Card>

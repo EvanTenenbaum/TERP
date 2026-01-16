@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   Dialog,
@@ -21,6 +21,16 @@ import {
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
 import { FormSkeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+// Batch status type for type-safe status updates
+type BatchStatus =
+  | "AWAITING_INTAKE"
+  | "AWAITING_STAGING"
+  | "LIVE"
+  | "PHOTOGRAPHY_COMPLETE"
+  | "QUARANTINE"
+  | "SOLD_OUT";
 
 interface EditBatchModalProps {
   open: boolean;
@@ -29,7 +39,12 @@ interface EditBatchModalProps {
   batchId: number;
 }
 
-export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchModalProps) {
+export function EditBatchModal({
+  open,
+  onClose,
+  onSuccess,
+  batchId,
+}: EditBatchModalProps) {
   const [formData, setFormData] = useState({
     status: "",
     locationZone: "",
@@ -40,12 +55,12 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
   });
 
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [deleteMediaConfirm, setDeleteMediaConfirm] = useState<number | null>(null);
 
   // Fetch batch details
-  const { data: batch, isLoading } = trpc.inventory.getById.useQuery(
-    batchId,
-    { enabled: open && batchId > 0 }
-  );
+  const { data: batch, isLoading } = trpc.inventory.getById.useQuery(batchId, {
+    enabled: open && batchId > 0,
+  });
 
   // Fetch settings data
   const { data: locations } = trpc.settings.locations.list.useQuery();
@@ -56,7 +71,7 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
       onClose();
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update product: ${error.message}`);
     },
   });
@@ -79,7 +94,7 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
 
     updateBatchMutation.mutate({
       id: batchId,
-      status: formData.status as any,
+      status: formData.status as BatchStatus,
     });
   };
 
@@ -123,11 +138,13 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm text-gray-600">SKU</Label>
+                {/* MEET-053: User-friendly terminology */}
+                <Label className="text-sm text-gray-600">Product Code</Label>
                 <p className="font-medium">{batch?.batch.sku}</p>
               </div>
               <div>
-                <Label className="text-sm text-gray-600">Batch Code</Label>
+                {/* MEET-053: User-friendly terminology */}
+                <Label className="text-sm text-gray-600">Item Code</Label>
                 <p className="font-medium">{batch?.batch.code}</p>
               </div>
               <div>
@@ -146,16 +163,22 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
             <Label htmlFor="status">Status *</Label>
             <Select
               value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
+              onValueChange={value =>
+                setFormData({ ...formData, status: value })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="AWAITING_INTAKE">Awaiting Intake</SelectItem>
-                <SelectItem value="AWAITING_STAGING">Awaiting Staging</SelectItem>
+                <SelectItem value="AWAITING_STAGING">
+                  Awaiting Staging
+                </SelectItem>
                 <SelectItem value="LIVE">Live</SelectItem>
-                <SelectItem value="PHOTOGRAPHY_COMPLETE">Photography Complete</SelectItem>
+                <SelectItem value="PHOTOGRAPHY_COMPLETE">
+                  Photography Complete
+                </SelectItem>
                 <SelectItem value="QUARANTINE">Quarantine</SelectItem>
                 <SelectItem value="SOLD_OUT">Sold Out</SelectItem>
               </SelectContent>
@@ -170,17 +193,22 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
                 <Label htmlFor="zone">Zone</Label>
                 <Select
                   value={formData.locationZone}
-                  onValueChange={(value) => setFormData({ ...formData, locationZone: value })}
+                  onValueChange={value =>
+                    setFormData({ ...formData, locationZone: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select zone" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locations?.map((loc) => loc.zone && (
-                      <SelectItem key={loc.id} value={loc.zone}>
-                        {loc.zone}
-                      </SelectItem>
-                    ))}
+                    {locations?.map(
+                      loc =>
+                        loc.zone && (
+                          <SelectItem key={loc.id} value={loc.zone}>
+                            {loc.zone}
+                          </SelectItem>
+                        )
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -190,7 +218,9 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
                 <Input
                   id="rack"
                   value={formData.locationRack}
-                  onChange={(e) => setFormData({ ...formData, locationRack: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, locationRack: e.target.value })
+                  }
                   placeholder="e.g., R1"
                 />
               </div>
@@ -200,7 +230,9 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
                 <Input
                   id="shelf"
                   value={formData.locationShelf}
-                  onChange={(e) => setFormData({ ...formData, locationShelf: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, locationShelf: e.target.value })
+                  }
                   placeholder="e.g., S3"
                 />
               </div>
@@ -210,7 +242,9 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
                 <Input
                   id="bin"
                   value={formData.locationBin}
-                  onChange={(e) => setFormData({ ...formData, locationBin: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, locationBin: e.target.value })
+                  }
                   placeholder="e.g., B12"
                 />
               </div>
@@ -234,19 +268,26 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
                 className="flex flex-col items-center justify-center cursor-pointer"
               >
                 <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-600">Click to upload images or videos</span>
+                <span className="text-sm text-gray-600">
+                  Click to upload images or videos
+                </span>
               </label>
 
               {mediaFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {mediaFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm truncate flex-1">{file.name}</span>
+                    <div
+                      key={`${file.name}-${file.size}-${index}`}
+                      className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                    >
+                      <span className="text-sm truncate flex-1">
+                        {file.name}
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeMedia(index)}
+                        onClick={() => setDeleteMediaConfirm(index)}
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -262,13 +303,28 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
               Cancel
             </Button>
             <Button type="submit" disabled={updateBatchMutation.isPending}>
-              {updateBatchMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {updateBatchMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Update Product
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+      <ConfirmDialog
+        open={deleteMediaConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteMediaConfirm(null)}
+        title="Remove Media"
+        description="Are you sure you want to remove this media file?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteMediaConfirm !== null) {
+            removeMedia(deleteMediaConfirm);
+          }
+          setDeleteMediaConfirm(null);
+        }}
+      />
     </Dialog>
   );
 }
-

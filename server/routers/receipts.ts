@@ -6,14 +6,18 @@
 import { z } from "zod";
 import { router, adminProcedure, publicProcedure } from "../_core/trpc";
 import { db } from "../db";
-import { receipts, clients, users } from "../../drizzle/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { receipts, clients } from "../../drizzle/schema";
+import { eq, desc, sql } from "drizzle-orm";
 
-// Helper to generate unique receipt number
-async function generateReceiptNumber(): Promise<string> {
+/**
+ * Generate unique receipt number with retry logic for race conditions
+ * Format: RCP-{YEAR}-{NNNNNN}
+ * Uses retry with incrementing sequence to handle concurrent requests
+ */
+async function generateReceiptNumber(retryCount = 0): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `RCP-${year}-`;
-  
+
   // Get the highest receipt number for this year
   const result = await db
     .select({ receiptNumber: receipts.receiptNumber })
@@ -21,13 +25,16 @@ async function generateReceiptNumber(): Promise<string> {
     .where(sql`${receipts.receiptNumber} LIKE ${prefix + '%'}`)
     .orderBy(desc(receipts.receiptNumber))
     .limit(1);
-  
+
   let nextNum = 1;
   if (result.length > 0) {
     const lastNum = parseInt(result[0].receiptNumber.replace(prefix, ''), 10);
     nextNum = lastNum + 1;
   }
-  
+
+  // Add retry offset to handle concurrent requests
+  nextNum += retryCount;
+
   return `${prefix}${String(nextNum).padStart(6, '0')}`;
 }
 
@@ -450,6 +457,7 @@ export const receiptsRouter = router({
 
   /**
    * Send receipt via email
+   * NOTE: Email integration not configured - this endpoint throws NOT_IMPLEMENTED
    */
   sendEmail: adminProcedure
     .input(z.object({
@@ -458,26 +466,17 @@ export const receiptsRouter = router({
       customMessage: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      // Update receipt with email info
-      await db
-        .update(receipts)
-        .set({
-          emailedTo: input.email,
-          emailedAt: new Date(),
-        })
-        .where(eq(receipts.id, input.receiptId));
-
-      // TODO: Integrate with email service (SendGrid, etc.)
-      // For now, just record that it was "sent"
-      
-      return {
-        success: true,
-        sentAt: new Date(),
-      };
+      // Email integration is not configured
+      // To enable: Set FEATURE_EMAIL_ENABLED=true and configure RESEND_API_KEY
+      throw new TRPCError({
+        code: "NOT_IMPLEMENTED",
+        message: "Email integration not configured. Please contact your system administrator to enable email functionality.",
+      });
     }),
 
   /**
    * Send receipt via SMS
+   * NOTE: SMS integration not configured - this endpoint throws NOT_IMPLEMENTED
    */
   sendSms: adminProcedure
     .input(z.object({
@@ -485,22 +484,12 @@ export const receiptsRouter = router({
       phoneNumber: z.string(),
     }))
     .mutation(async ({ input }) => {
-      // Update receipt with SMS info
-      await db
-        .update(receipts)
-        .set({
-          smsSentTo: input.phoneNumber,
-          smsSentAt: new Date(),
-        })
-        .where(eq(receipts.id, input.receiptId));
-
-      // TODO: Integrate with SMS service (Twilio, etc.)
-      // For now, just record that it was "sent"
-      
-      return {
-        success: true,
-        sentAt: new Date(),
-      };
+      // SMS integration is not configured
+      // To enable: Set FEATURE_SMS_ENABLED=true and configure Twilio credentials
+      throw new TRPCError({
+        code: "NOT_IMPLEMENTED",
+        message: "SMS integration not configured. Please contact your system administrator to enable SMS functionality.",
+      });
     }),
 
   /**
@@ -520,7 +509,10 @@ export const receiptsRouter = router({
       }
 
       // Generate public URL (no expiry for now)
-      const baseUrl = process.env.PUBLIC_URL || 'https://terp.app';
+      const baseUrl = process.env.PUBLIC_URL;
+      if (!baseUrl) {
+        throw new Error("PUBLIC_URL environment variable must be set");
+      }
       return {
         url: `${baseUrl}/receipts/${receipt[0].receiptNumber}`,
         expiresAt: null, // No expiry
@@ -613,6 +605,7 @@ export const receiptsRouter = router({
 
   /**
    * Public endpoint to view receipt by receipt number
+   * SECURITY: Only shows minimal receipt info, no financial balances
    */
   getPublicReceipt: publicProcedure
     .input(z.object({ receiptNumber: z.string() }))
@@ -622,9 +615,8 @@ export const receiptsRouter = router({
           receiptNumber: receipts.receiptNumber,
           clientName: clients.name,
           transactionType: receipts.transactionType,
-          previousBalance: receipts.previousBalance,
+          // SECURITY FIX: Only show transaction amount, not balance details
           transactionAmount: receipts.transactionAmount,
-          newBalance: receipts.newBalance,
           note: receipts.note,
           createdAt: receipts.createdAt,
         })
@@ -638,22 +630,22 @@ export const receiptsRouter = router({
       }
 
       const r = receipt[0];
+      // SECURITY FIX: Public receipt only shows transaction details, not balances
       return {
         receiptNumber: r.receiptNumber,
         clientName: r.clientName || 'Client',
         transactionType: r.transactionType,
-        previousBalance: parseFloat(r.previousBalance as string),
         transactionAmount: parseFloat(r.transactionAmount as string),
-        newBalance: parseFloat(r.newBalance as string),
         note: r.note,
         date: r.createdAt,
+        // Public HTML doesn't include balance information
         html: generateReceiptHtml({
           receiptNumber: r.receiptNumber,
           clientName: r.clientName || 'Client',
           transactionType: r.transactionType,
-          previousBalance: parseFloat(r.previousBalance as string),
+          previousBalance: 0, // Hidden for public view
           transactionAmount: parseFloat(r.transactionAmount as string),
-          newBalance: parseFloat(r.newBalance as string),
+          newBalance: 0, // Hidden for public view
           note: r.note || undefined,
           date: r.createdAt || new Date(),
         }),

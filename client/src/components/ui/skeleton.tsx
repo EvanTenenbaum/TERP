@@ -114,7 +114,7 @@ const GridSkeleton = React.memo(function GridSkeleton({
       )}
     >
       {Array.from({ length: items }).map((_, i) => (
-        <CardSkeleton key={i} showImage={showImage} />
+        <CardSkeleton key={`skeleton-${i}`} showImage={showImage} />
       ))}
     </div>
   );
@@ -137,7 +137,7 @@ const FormSkeleton = React.memo(function FormSkeleton({
   return (
     <div className={cn("space-y-6", className)}>
       {Array.from({ length: fields }).map((_, i) => (
-        <div key={i} className="space-y-2">
+        <div key={`skeleton-${i}`} className="space-y-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-10 w-full" />
         </div>
@@ -167,7 +167,7 @@ const StatsSkeleton = React.memo(function StatsSkeleton({
   return (
     <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4", className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-lg border bg-card p-4">
+        <div key={`skeleton-${i}`} className="rounded-lg border bg-card p-4">
           <Skeleton className="h-4 w-20 mb-2" />
           <Skeleton className="h-8 w-24" />
         </div>
@@ -193,7 +193,7 @@ const ListSkeleton = React.memo(function ListSkeleton({
   return (
     <div className={cn("space-y-3", className)}>
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+        <div key={`skeleton-${i}`} className="flex items-center gap-3 p-3 border rounded-lg">
           {showAvatar && <Skeleton className="h-10 w-10 rounded-full" />}
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -292,7 +292,7 @@ const DrawerSkeleton = React.memo(function DrawerSkeleton({
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-lg border bg-card p-4">
+          <div key={`skeleton-${i}`} className="rounded-lg border bg-card p-4">
             <Skeleton className="h-3 w-16 mb-2" />
             <Skeleton className="h-6 w-20" />
           </div>
@@ -301,7 +301,7 @@ const DrawerSkeleton = React.memo(function DrawerSkeleton({
 
       {/* Sections */}
       {Array.from({ length: sections }).map((_, i) => (
-        <div key={i} className="space-y-3">
+        <div key={`skeleton-${i}`} className="space-y-3">
           <Skeleton className="h-5 w-32" />
           <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
