@@ -10,9 +10,9 @@
 
 ## 🟢 Currently Working
 
-| Session ID | Task | Branch | Module | Status | Started | ETA |
-| ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session ID                             | Task           | Branch | Module        | Status      | Started    | ETA |
+| -------------------------------------- | -------------- | ------ | ------------- | ----------- | ---------- | --- |
+| Session-20260115-DOCS-USERFLOWS-d5ea18 | DOCS-USERFLOWS | -      | Documentation | In Progress | 2026-01-15 | -   |
 
 ## ⏸️ Paused / Waiting
 
