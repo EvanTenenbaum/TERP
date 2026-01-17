@@ -40,6 +40,7 @@ import { performRBACStartupCheck } from "../services/rbacValidation";
 import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
 import { startNotificationQueueCron } from "../cron/notificationQueueCron.js";
+import { startDebtAgingCron } from "../cron/debtAgingCron.js";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 import { runAutoMigrations } from "../autoMigrate";
@@ -178,7 +179,9 @@ async function startServer() {
         "💡 To enable seeding: remove SKIP_SEEDING or set it to false"
       );
     } else {
-      logger.info("🌱 Seeding default data (roles, categories, accounts, etc.)...");
+      logger.info(
+        "🌱 Seeding default data (roles, categories, accounts, etc.)..."
+      );
       await seedAllDefaults();
       logger.info("✅ Default data seeding completed");
     }
@@ -499,6 +502,15 @@ async function startServer() {
         logger.info("✅ Notification queue processing cron job started");
       } catch (error) {
         logger.error({ msg: "Failed to start notification queue cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start debt aging notification cron job (MEET-041)
+      try {
+        startDebtAgingCron();
+        logger.info("✅ Debt aging notification cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start debt aging cron", error });
         // Server continues - cron is non-critical
       }
     });

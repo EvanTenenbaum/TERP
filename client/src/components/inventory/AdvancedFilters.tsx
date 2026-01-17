@@ -54,39 +54,40 @@ export function AdvancedFilters({
     "CLOSED",
   ];
 
-  const paymentStatuses = ["PAID", "PARTIAL", "UNPAID"];
+  // Payment status options matching schema enum: PAID | PENDING | OVERDUE | PARTIAL
+  const paymentStatuses = ["PAID", "PENDING", "OVERDUE", "PARTIAL"];
 
   const toggleStatus = (status: string) => {
     const newStatuses = filters.status.includes(status)
-      ? filters.status.filter((s) => s !== status)
+      ? filters.status.filter(s => s !== status)
       : [...filters.status, status];
     onUpdateFilter("status", newStatuses);
   };
 
   const toggleVendor = (vendor: string) => {
     const newVendors = filters.vendor.includes(vendor)
-      ? filters.vendor.filter((v) => v !== vendor)
+      ? filters.vendor.filter(v => v !== vendor)
       : [...filters.vendor, vendor];
     onUpdateFilter("vendor", newVendors);
   };
 
   const toggleBrand = (brand: string) => {
     const newBrands = filters.brand.includes(brand)
-      ? filters.brand.filter((b) => b !== brand)
+      ? filters.brand.filter(b => b !== brand)
       : [...filters.brand, brand];
     onUpdateFilter("brand", newBrands);
   };
 
   const toggleGrade = (grade: string) => {
     const newGrades = filters.grade.includes(grade)
-      ? filters.grade.filter((g) => g !== grade)
+      ? filters.grade.filter(g => g !== grade)
       : [...filters.grade, grade];
     onUpdateFilter("grade", newGrades);
   };
 
   const togglePaymentStatus = (status: string) => {
     const newStatuses = filters.paymentStatus.includes(status)
-      ? filters.paymentStatus.filter((s) => s !== status)
+      ? filters.paymentStatus.filter(s => s !== status)
       : [...filters.paymentStatus, status];
     onUpdateFilter("paymentStatus", newStatuses);
   };
@@ -117,7 +118,7 @@ export function AdvancedFilters({
           <div className="space-y-2">
             <Label>Status</Label>
             <div className="space-y-2">
-              {statuses.map((status) => (
+              {statuses.map(status => (
                 <div key={status} className="flex items-center space-x-2">
                   <Checkbox
                     id={`status-${status}`}
@@ -140,7 +141,7 @@ export function AdvancedFilters({
             <Label>Category</Label>
             <Select
               value={filters.category || "all"}
-              onValueChange={(value) =>
+              onValueChange={value =>
                 onUpdateFilter("category", value === "all" ? null : value)
               }
             >
@@ -149,7 +150,7 @@ export function AdvancedFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
+                {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
                   </SelectItem>
@@ -164,7 +165,7 @@ export function AdvancedFilters({
               <Label>Subcategory</Label>
               <Select
                 value={filters.subcategory || "all"}
-                onValueChange={(value) =>
+                onValueChange={value =>
                   onUpdateFilter("subcategory", value === "all" ? null : value)
                 }
               >
@@ -173,7 +174,7 @@ export function AdvancedFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Subcategories</SelectItem>
-                  {subcategories.map((sub) => (
+                  {subcategories.map(sub => (
                     <SelectItem key={sub} value={sub}>
                       {sub}
                     </SelectItem>
@@ -188,7 +189,9 @@ export function AdvancedFilters({
             <Label>Stock Level</Label>
             <Select
               value={filters.stockLevel}
-              onValueChange={(value: InventoryFilters["stockLevel"]) => onUpdateFilter("stockLevel", value)}
+              onValueChange={(value: InventoryFilters["stockLevel"]) =>
+                onUpdateFilter("stockLevel", value)
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -207,7 +210,7 @@ export function AdvancedFilters({
             <div className="space-y-2">
               <Label>Vendor</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {vendors.map((vendor) => (
+                {vendors.map(vendor => (
                   <div key={vendor} className="flex items-center space-x-2">
                     <Checkbox
                       id={`vendor-${vendor}`}
@@ -231,7 +234,7 @@ export function AdvancedFilters({
             <div className="space-y-2">
               <Label>{getBrandLabel(filters.category)}</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {brands.map((brand) => (
+                {brands.map(brand => (
                   <div key={brand} className="flex items-center space-x-2">
                     <Checkbox
                       id={`brand-${brand}`}
@@ -255,7 +258,7 @@ export function AdvancedFilters({
             <div className="space-y-2">
               <Label>Grade</Label>
               <div className="space-y-2">
-                {grades.map((grade) => (
+                {grades.map(grade => (
                   <div key={grade} className="flex items-center space-x-2">
                     <Checkbox
                       id={`grade-${grade}`}
@@ -278,7 +281,7 @@ export function AdvancedFilters({
           <div className="space-y-2">
             <Label>Payment Status</Label>
             <div className="space-y-2">
-              {paymentStatuses.map((status) => (
+              {paymentStatuses.map(status => (
                 <div key={status} className="flex items-center space-x-2">
                   <Checkbox
                     id={`payment-${status}`}
@@ -301,7 +304,9 @@ export function AdvancedFilters({
             <Label>Stock Status</Label>
             <Select
               value={filters.stockStatus}
-              onValueChange={(value: InventoryFilters["stockStatus"]) => onUpdateFilter("stockStatus", value)}
+              onValueChange={(value: InventoryFilters["stockStatus"]) =>
+                onUpdateFilter("stockStatus", value)
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -321,7 +326,9 @@ export function AdvancedFilters({
             <Label>Age Bracket</Label>
             <Select
               value={filters.ageBracket}
-              onValueChange={(value: InventoryFilters["ageBracket"]) => onUpdateFilter("ageBracket", value)}
+              onValueChange={(value: InventoryFilters["ageBracket"]) =>
+                onUpdateFilter("ageBracket", value)
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -345,7 +352,7 @@ export function AdvancedFilters({
             <Input
               placeholder="Search by batch code..."
               value={filters.batchId || ""}
-              onChange={(e) => onUpdateFilter("batchId", e.target.value || null)}
+              onChange={e => onUpdateFilter("batchId", e.target.value || null)}
               className="font-mono"
             />
           </div>
@@ -354,4 +361,3 @@ export function AdvancedFilters({
     </Card>
   );
 }
-
