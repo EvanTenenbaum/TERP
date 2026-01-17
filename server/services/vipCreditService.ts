@@ -9,7 +9,7 @@
  */
 
 import { getDb } from "../db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, or } from "drizzle-orm";
 import {
   clients,
   clientTransactions,
@@ -50,7 +50,6 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
       creditLimit: clients.creditLimit,
       creditLimitSource: clients.creditLimitSource,
       creditLimitUpdatedAt: clients.creditLimitUpdatedAt,
-      currentBalance: clients.currentBalance,
     })
     .from(clients)
     .where(eq(clients.id, clientId));
@@ -84,7 +83,7 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
   // Calculate effective credit limit (base * tier multiplier)
   const effectiveCreditLimit = parseFloat(String(client.creditLimit || "0"));
 
-  // Get used credit (sum of unpaid invoices)
+  // Get used credit (sum of unpaid/outstanding invoices)
   const unpaidInvoices = await db
     .select({
       totalUnpaid: sql<string>`COALESCE(SUM(${clientTransactions.amount}), 0)`,
@@ -94,7 +93,11 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
       and(
         eq(clientTransactions.clientId, clientId),
         eq(clientTransactions.transactionType, "INVOICE"),
-        eq(clientTransactions.paymentStatus, "UNPAID")
+        or(
+          eq(clientTransactions.paymentStatus, "PENDING"),
+          eq(clientTransactions.paymentStatus, "OVERDUE"),
+          eq(clientTransactions.paymentStatus, "PARTIAL")
+        )
       )
     );
 
@@ -170,11 +173,11 @@ export async function getCreditUtilizationHistory(
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().split("T")[0];
 
-    // Get balance on that date
+    // Get balance on that date (sum of non-fully-paid invoices)
     const balance = await db
       .select({
         total: sql<string>`COALESCE(SUM(CASE
-          WHEN payment_status = 'UNPAID' AND transaction_date <= ${dateStr} THEN amount
+          WHEN payment_status IN ('PENDING', 'OVERDUE', 'PARTIAL') AND transaction_date <= ${dateStr} THEN amount
           ELSE 0 END), 0)`,
       })
       .from(clientTransactions)

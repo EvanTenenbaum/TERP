@@ -6,7 +6,7 @@
  */
 
 import { getDb } from "../db";
-import { eq, and, lt, isNull } from "drizzle-orm";
+import { eq, and, lt, isNull, or } from "drizzle-orm";
 import {
   clients,
   clientTransactions,
@@ -176,15 +176,16 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  // Get all unpaid invoices for VIP clients that are at least 7 days overdue
+  // Get all outstanding invoices for VIP clients that are at least 7 days old
+  // Note: dueDate is calculated as transactionDate + paymentTerms (default 30 days)
   const agingDebt = await db
     .select({
       clientId: clients.id,
-      clientName: clients.companyName,
+      clientName: clients.name,
       invoiceId: clientTransactions.id,
-      invoiceNumber: clientTransactions.referenceNumber,
+      invoiceNumber: clientTransactions.transactionNumber,
       transactionDate: clientTransactions.transactionDate,
-      dueDate: clientTransactions.dueDate,
+      paymentTerms: clients.paymentTerms,
       amount: clientTransactions.amount,
       tierName: vipTiers.name,
     })
@@ -196,14 +197,24 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
       and(
         eq(clients.vipPortalEnabled, true),
         eq(clientTransactions.transactionType, "INVOICE"),
-        eq(clientTransactions.paymentStatus, "UNPAID"),
+        or(
+          eq(clientTransactions.paymentStatus, "PENDING"),
+          eq(clientTransactions.paymentStatus, "OVERDUE"),
+          eq(clientTransactions.paymentStatus, "PARTIAL")
+        ),
         isNull(clients.deletedAt),
-        lt(clientTransactions.dueDate, sevenDaysAgo)
+        // Filter for invoices at least 7 days old
+        lt(clientTransactions.transactionDate, sevenDaysAgo)
       )
     );
 
   return agingDebt.map((row) => {
-    const dueDate = new Date(row.dueDate || row.transactionDate);
+    // Calculate due date from transaction date + payment terms (default 30 days)
+    const paymentTermsDays = row.paymentTerms || 30;
+    const transactionDate = new Date(row.transactionDate);
+    const dueDate = new Date(transactionDate);
+    dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+
     const daysOverdue = Math.floor(
       (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -213,7 +224,7 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
       clientName: row.clientName || "Unknown",
       invoiceId: row.invoiceId,
       invoiceNumber: row.invoiceNumber || `INV-${row.invoiceId}`,
-      invoiceDate: new Date(row.transactionDate),
+      invoiceDate: transactionDate,
       dueDate,
       amount: parseFloat(String(row.amount || "0")),
       daysOverdue: Math.max(0, daysOverdue),
@@ -257,7 +268,7 @@ export async function sendDebtAgingNotifications(): Promise<DebtNotificationResu
       await queueNotification({
         clientId: debt.clientId,
         recipientType: "client",
-        type: interval === 30 ? "alert" : interval === 14 ? "warning" : "info",
+        type: interval === 30 ? "error" : interval === 14 ? "warning" : "info",
         title: template.title,
         message: personalizedMessage,
         link: `/vip-portal/invoices/${debt.invoiceId}`,
@@ -324,12 +335,19 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
 
   const today = new Date();
 
+  // Get client's payment terms for due date calculation
+  const [client] = await db
+    .select({ paymentTerms: clients.paymentTerms })
+    .from(clients)
+    .where(eq(clients.id, clientId));
+
+  const paymentTermsDays = client?.paymentTerms || 30;
+
   const invoices = await db
     .select({
       invoiceId: clientTransactions.id,
-      invoiceNumber: clientTransactions.referenceNumber,
+      invoiceNumber: clientTransactions.transactionNumber,
       amount: clientTransactions.amount,
-      dueDate: clientTransactions.dueDate,
       transactionDate: clientTransactions.transactionDate,
     })
     .from(clientTransactions)
@@ -337,7 +355,11 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
       and(
         eq(clientTransactions.clientId, clientId),
         eq(clientTransactions.transactionType, "INVOICE"),
-        eq(clientTransactions.paymentStatus, "UNPAID")
+        or(
+          eq(clientTransactions.paymentStatus, "PENDING"),
+          eq(clientTransactions.paymentStatus, "OVERDUE"),
+          eq(clientTransactions.paymentStatus, "PARTIAL")
+        )
       )
     );
 
@@ -350,7 +372,11 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
   };
 
   const processedInvoices = invoices.map((inv) => {
-    const dueDate = new Date(inv.dueDate || inv.transactionDate);
+    // Calculate due date from transaction date + payment terms
+    const transactionDate = new Date(inv.transactionDate);
+    const dueDate = new Date(transactionDate);
+    dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+
     const daysOverdue = Math.floor(
       (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
     );
