@@ -6,7 +6,7 @@
  */
 
 import { getDb } from "../db";
-import { eq, and, lt, isNull, or } from "drizzle-orm";
+import { eq, and, isNull, or } from "drizzle-orm";
 import {
   clients,
   clientTransactions,
@@ -166,19 +166,21 @@ function getNotificationInterval(daysOverdue: number): number | null {
 }
 
 /**
- * Get all VIP clients with aging debt
+ * Get all VIP clients with aging debt (invoices past their due date)
+ *
+ * Due date is calculated as: transactionDate + paymentTerms (default 30 days)
+ * Only returns invoices that are actually OVERDUE (daysOverdue > 0)
  */
 export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const today = new Date();
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  // Get all outstanding invoices for VIP clients that are at least 7 days old
-  // Note: dueDate is calculated as transactionDate + paymentTerms (default 30 days)
-  const agingDebt = await db
+  // Get all outstanding invoices for VIP clients
+  // We fetch all non-paid invoices and filter for overdue in application logic
+  // (because due date = transactionDate + paymentTerms requires calculation)
+  const allOutstandingInvoices = await db
     .select({
       clientId: clients.id,
       clientName: clients.name,
@@ -202,19 +204,20 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
           eq(clientTransactions.paymentStatus, "OVERDUE"),
           eq(clientTransactions.paymentStatus, "PARTIAL")
         ),
-        isNull(clients.deletedAt),
-        // Filter for invoices at least 7 days old
-        lt(clientTransactions.transactionDate, sevenDaysAgo)
+        isNull(clients.deletedAt)
       )
     );
 
-  return agingDebt.map((row) => {
+  // Process invoices and calculate overdue status
+  const processedInvoices = allOutstandingInvoices.map((row) => {
     // Calculate due date from transaction date + payment terms (default 30 days)
+    // Payment terms of 0 or null defaults to 30 days (NET_30)
     const paymentTermsDays = row.paymentTerms || 30;
     const transactionDate = new Date(row.transactionDate);
     const dueDate = new Date(transactionDate);
     dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
+    // Calculate days overdue (negative means not yet due)
     const daysOverdue = Math.floor(
       (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -227,10 +230,19 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
       invoiceDate: transactionDate,
       dueDate,
       amount: parseFloat(String(row.amount || "0")),
-      daysOverdue: Math.max(0, daysOverdue),
+      daysOverdue, // Keep raw value for filtering
       tierName: row.tierName || "default",
     };
   });
+
+  // Filter to only include ACTUALLY OVERDUE invoices (daysOverdue > 0)
+  // and normalize daysOverdue to 0 minimum for display
+  return processedInvoices
+    .filter((invoice) => invoice.daysOverdue > 0)
+    .map((invoice) => ({
+      ...invoice,
+      daysOverdue: Math.max(0, invoice.daysOverdue),
+    }));
 }
 
 /**

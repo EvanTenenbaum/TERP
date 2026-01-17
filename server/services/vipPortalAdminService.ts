@@ -558,8 +558,18 @@ export async function createVipTier(options: CreateVipTierOptions) {
     });
   }
 
+  // Convert decimal fields from number to string for schema compatibility
+  // The vipTiers schema uses decimal type which expects string values
+  const convertedOptions: Record<string, unknown> = { ...options };
+  const decimalFields = ['minSpendYtd', 'minPaymentOnTimeRate', 'discountPercentage', 'creditLimitMultiplier'];
+  for (const field of decimalFields) {
+    if (field in convertedOptions && typeof convertedOptions[field] === 'number') {
+      convertedOptions[field] = String(convertedOptions[field]);
+    }
+  }
+
   // Create tier
-  const [newTier] = await db.insert(vipTiers).values(options as InsertVipTier);
+  const [newTier] = await db.insert(vipTiers).values(convertedOptions as InsertVipTier);
 
   return { success: true, tier: newTier };
 }
