@@ -4,8 +4,8 @@
  */
 
 import { getDb } from "../db";
-import { batches, products, strains, subcategories, categories } from "../../drizzle/schema";
-import { eq, and, like, or, gt, sql, isNull, desc } from "drizzle-orm";
+import { batches, products, strains } from "../../drizzle/schema";
+import { eq, and, like, or, gt, sql, desc } from "drizzle-orm";
 import { strainService } from "./strainService";
 import { logger } from "../_core/logger";
 
@@ -74,15 +74,15 @@ export async function findProductsByStrain(options: {
       // Get related strains if requested
       if (options.includeRelated) {
         const family = await strainService.getStrainFamily(options.strainId);
-        if (family?.children) {
-          targetStrainIds.push(...family.children.map(c => c.id));
+        if (family?.variants) {
+          targetStrainIds.push(...family.variants.map((c: { id: number }) => c.id));
         }
         if (family?.parent) {
           targetStrainIds.push(family.parent.id);
-          // Also get siblings (other children of the parent)
+          // Also get siblings (other variants of the parent)
           const parentFamily = await strainService.getStrainFamily(family.parent.id);
-          if (parentFamily?.children) {
-            targetStrainIds.push(...parentFamily.children.map(c => c.id));
+          if (parentFamily?.variants) {
+            targetStrainIds.push(...parentFamily.variants.map((c: { id: number }) => c.id));
           }
         }
       }
@@ -106,8 +106,8 @@ export async function findProductsByStrain(options: {
         const relatedIds = new Set<number>(targetStrainIds);
         for (const strainId of targetStrainIds) {
           const family = await strainService.getStrainFamily(strainId);
-          if (family?.children) {
-            family.children.forEach(c => relatedIds.add(c.id));
+          if (family?.variants) {
+            family.variants.forEach((c: { id: number }) => relatedIds.add(c.id));
           }
           if (family?.parent) {
             relatedIds.add(family.parent.id);
@@ -158,7 +158,7 @@ export async function findProductsByStrain(options: {
         const family = await strainService.getStrainFamily(strainId);
         const familyIds = [
           family?.parent?.id,
-          ...(family?.children?.map(c => c.id) || [])
+          ...(family?.variants?.map((c: { id: number }) => c.id) || [])
         ].filter(Boolean);
 
         if (familyIds.includes(primaryStrainId)) {
@@ -171,7 +171,7 @@ export async function findProductsByStrain(options: {
         batchId: row.batch.id,
         batchCode: row.batch.code ?? "",
         productId: row.product?.id ?? 0,
-        productName: row.product?.name ?? row.product?.nameCanonical ?? "",
+        productName: row.product?.nameCanonical ?? "",
         strainId: row.product?.strainId ?? null,
         strainName: row.strain?.name ?? null,
         category: row.product?.category ?? null,
@@ -254,7 +254,7 @@ export async function groupProductsBySubcategory(options: {
         batchId: row.batch.id,
         batchCode: row.batch.code ?? "",
         productId: row.product?.id ?? 0,
-        productName: row.product?.name ?? row.product?.nameCanonical ?? "",
+        productName: row.product?.nameCanonical ?? "",
         strainName: row.strain?.name ?? null,
         grade: row.batch.grade ?? null,
         onHandQty: row.batch.onHandQty ?? "0",
@@ -301,14 +301,14 @@ export async function findSimilarStrains(strainId: number, limit: number = 10): 
         matchReason: "Parent strain",
       });
     }
-    if (family?.children) {
-      for (const child of family.children) {
-        if (child.id !== strainId) {
+    if (family?.variants) {
+      for (const variant of family.variants) {
+        if (variant.id !== strainId) {
           results.push({
-            id: child.id,
-            name: child.name,
-            standardizedName: child.standardizedName,
-            category: child.category,
+            id: variant.id,
+            name: variant.name,
+            standardizedName: variant.standardizedName,
+            category: variant.category,
             similarity: 90,
             matchReason: "Same strain family",
           });

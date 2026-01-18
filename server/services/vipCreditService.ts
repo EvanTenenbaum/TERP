@@ -9,16 +9,13 @@
  */
 
 import { getDb } from "../db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, or } from "drizzle-orm";
 import {
   clients,
   clientTransactions,
   clientCreditLimits,
 } from "../../drizzle/schema";
-import {
-  vipTiers,
-  clientVipStatus,
-} from "../../drizzle/schema-vip-portal";
+import { vipTiers, clientVipStatus } from "../../drizzle/schema-vip-portal";
 
 export interface CreditUsageInfo {
   clientId: number;
@@ -39,7 +36,9 @@ export interface CreditUsageInfo {
 /**
  * Get credit usage information for a VIP client
  */
-export async function getClientCreditUsage(clientId: number): Promise<CreditUsageInfo> {
+export async function getClientCreditUsage(
+  clientId: number
+): Promise<CreditUsageInfo> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -50,7 +49,6 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
       creditLimit: clients.creditLimit,
       creditLimitSource: clients.creditLimitSource,
       creditLimitUpdatedAt: clients.creditLimitUpdatedAt,
-      currentBalance: clients.currentBalance,
     })
     .from(clients)
     .where(eq(clients.id, clientId));
@@ -68,7 +66,9 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
     .leftJoin(vipTiers, eq(clientVipStatus.currentTierId, vipTiers.id))
     .where(eq(clientVipStatus.clientId, clientId));
 
-  const tierMultiplier = parseFloat(String(vipStatus?.tier?.creditLimitMultiplier || "1.00"));
+  const tierMultiplier = parseFloat(
+    String(vipStatus?.tier?.creditLimitMultiplier || "1.00")
+  );
   const tierName = vipStatus?.tier?.displayName || null;
 
   // Get base credit limit from client_credit_limits
@@ -79,12 +79,24 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
     .from(clientCreditLimits)
     .where(eq(clientCreditLimits.clientId, clientId));
 
-  const baseCreditLimit = parseFloat(String(creditLimitRecord?.creditLimit || "0"));
+  const baseCreditLimit = parseFloat(
+    String(creditLimitRecord?.creditLimit || "0")
+  );
 
   // Calculate effective credit limit (base * tier multiplier)
   const effectiveCreditLimit = parseFloat(String(client.creditLimit || "0"));
 
-  // Get used credit (sum of unpaid invoices)
+  // Get used credit (sum of outstanding invoices)
+  //
+  // BUSINESS DECISION: Credit usage includes FULL invoice amount for PARTIAL payments.
+  // This is a conservative approach that protects against credit overextension while
+  // partial payments are being reconciled. The remaining balance after partial payment
+  // is NOT tracked separately - the full original invoice amount counts toward credit
+  // usage until the invoice is marked as PAID.
+  //
+  // Example: $10,000 invoice with $3,000 payment (PARTIAL status)
+  //   - Credit usage: $10,000 (full amount)
+  //   - NOT: $7,000 (remaining)
   const unpaidInvoices = await db
     .select({
       totalUnpaid: sql<string>`COALESCE(SUM(${clientTransactions.amount}), 0)`,
@@ -94,15 +106,20 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
       and(
         eq(clientTransactions.clientId, clientId),
         eq(clientTransactions.transactionType, "INVOICE"),
-        eq(clientTransactions.paymentStatus, "UNPAID")
+        or(
+          eq(clientTransactions.paymentStatus, "PENDING"),
+          eq(clientTransactions.paymentStatus, "OVERDUE"),
+          eq(clientTransactions.paymentStatus, "PARTIAL")
+        )
       )
     );
 
   const usedCredit = parseFloat(String(unpaidInvoices[0]?.totalUnpaid || "0"));
   const availableCredit = Math.max(0, effectiveCreditLimit - usedCredit);
-  const utilizationPercentage = effectiveCreditLimit > 0
-    ? Math.round((usedCredit / effectiveCreditLimit) * 100)
-    : 0;
+  const utilizationPercentage =
+    effectiveCreditLimit > 0
+      ? Math.round((usedCredit / effectiveCreditLimit) * 100)
+      : 0;
 
   // Get pending orders (not yet invoiced)
   const pendingOrders = await db
@@ -129,7 +146,8 @@ export async function getClientCreditUsage(clientId: number): Promise<CreditUsag
     usedCredit,
     availableCredit,
     utilizationPercentage,
-    creditLimitSource: (client.creditLimitSource as "CALCULATED" | "MANUAL") || "CALCULATED",
+    creditLimitSource:
+      (client.creditLimitSource as "CALCULATED" | "MANUAL") || "CALCULATED",
     creditLimitUpdatedAt: client.creditLimitUpdatedAt,
     pendingOrders: pendingOrdersCount,
     pendingOrdersValue,
@@ -162,7 +180,8 @@ export async function getCreditUtilizationHistory(
   }
 
   // Generate history based on transaction dates
-  const history: { date: string; utilization: number; usedCredit: number }[] = [];
+  const history: { date: string; utilization: number; usedCredit: number }[] =
+    [];
   const today = new Date();
 
   for (let i = days - 1; i >= 0; i--) {
@@ -170,11 +189,11 @@ export async function getCreditUtilizationHistory(
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().split("T")[0];
 
-    // Get balance on that date
+    // Get balance on that date (sum of non-fully-paid invoices)
     const balance = await db
       .select({
         total: sql<string>`COALESCE(SUM(CASE
-          WHEN payment_status = 'UNPAID' AND transaction_date <= ${dateStr} THEN amount
+          WHEN payment_status IN ('PENDING', 'OVERDUE', 'PARTIAL') AND transaction_date <= ${dateStr} THEN amount
           ELSE 0 END), 0)`,
       })
       .from(clientTransactions)
@@ -204,7 +223,12 @@ export async function getCreditUtilizationHistory(
 export async function checkCreditAvailability(
   clientId: number,
   purchaseAmount: number
-): Promise<{ canPurchase: boolean; availableCredit: number; shortfall: number; message: string }> {
+): Promise<{
+  canPurchase: boolean;
+  availableCredit: number;
+  shortfall: number;
+  message: string;
+}> {
   const usage = await getClientCreditUsage(clientId);
 
   const canPurchase = usage.availableCredit >= purchaseAmount;

@@ -6,62 +6,68 @@
  */
 
 import { getDb } from "../db";
-import { eq, and, lt, isNull } from "drizzle-orm";
-import {
-  clients,
-  clientTransactions,
-} from "../../drizzle/schema";
-import {
-  vipTiers,
-  clientVipStatus,
-} from "../../drizzle/schema-vip-portal";
+import { eq, and, isNull, or } from "drizzle-orm";
+import { clients, clientTransactions } from "../../drizzle/schema";
+import { vipTiers, clientVipStatus } from "../../drizzle/schema-vip-portal";
 import { queueNotification } from "./notificationService";
 
 // Notification intervals in days
 const NOTIFICATION_INTERVALS = [7, 14, 30];
 
 // Message templates by tier and interval
-const MESSAGE_TEMPLATES: Record<string, Record<number, { title: string; message: string }>> = {
+const MESSAGE_TEMPLATES: Record<
+  string,
+  Record<number, { title: string; message: string }>
+> = {
   diamond: {
     7: {
       title: "Friendly Payment Reminder",
-      message: "Hi! This is a gentle reminder that you have an invoice due in 7 days. As a Diamond VIP, we want to ensure you maintain your excellent payment record.",
+      message:
+        "Hi! This is a gentle reminder that you have an invoice due in 7 days. As a Diamond VIP, we want to ensure you maintain your excellent payment record.",
     },
     14: {
       title: "Invoice Due Soon",
-      message: "Your invoice has been outstanding for 14 days. As a valued Diamond VIP, please let us know if you need any assistance or payment arrangements.",
+      message:
+        "Your invoice has been outstanding for 14 days. As a valued Diamond VIP, please let us know if you need any assistance or payment arrangements.",
     },
     30: {
       title: "Action Required: Invoice Past Due",
-      message: "Your invoice is now 30 days past due. As a Diamond VIP, please reach out to your dedicated rep to discuss payment options.",
+      message:
+        "Your invoice is now 30 days past due. As a Diamond VIP, please reach out to your dedicated rep to discuss payment options.",
     },
   },
   platinum: {
     7: {
       title: "Friendly Payment Reminder",
-      message: "Hi! This is a gentle reminder that you have an invoice due in 7 days. As a Platinum VIP, we appreciate your timely payments.",
+      message:
+        "Hi! This is a gentle reminder that you have an invoice due in 7 days. As a Platinum VIP, we appreciate your timely payments.",
     },
     14: {
       title: "Invoice Due Soon",
-      message: "Your invoice has been outstanding for 14 days. Please arrange payment at your earliest convenience to maintain your Platinum status.",
+      message:
+        "Your invoice has been outstanding for 14 days. Please arrange payment at your earliest convenience to maintain your Platinum status.",
     },
     30: {
       title: "Action Required: Invoice Past Due",
-      message: "Your invoice is now 30 days past due. Please contact us to discuss payment options and protect your Platinum VIP status.",
+      message:
+        "Your invoice is now 30 days past due. Please contact us to discuss payment options and protect your Platinum VIP status.",
     },
   },
   gold: {
     7: {
       title: "Payment Reminder",
-      message: "This is a reminder that you have an invoice due in 7 days. Timely payments help you advance to higher VIP tiers.",
+      message:
+        "This is a reminder that you have an invoice due in 7 days. Timely payments help you advance to higher VIP tiers.",
     },
     14: {
       title: "Invoice Due Soon",
-      message: "Your invoice has been outstanding for 14 days. Please arrange payment soon to maintain your Gold VIP benefits.",
+      message:
+        "Your invoice has been outstanding for 14 days. Please arrange payment soon to maintain your Gold VIP benefits.",
     },
     30: {
       title: "Action Required: Invoice Past Due",
-      message: "Your invoice is now 30 days past due. Please contact us immediately to discuss payment options.",
+      message:
+        "Your invoice is now 30 days past due. Please contact us immediately to discuss payment options.",
     },
   },
   silver: {
@@ -71,11 +77,13 @@ const MESSAGE_TEMPLATES: Record<string, Record<number, { title: string; message:
     },
     14: {
       title: "Invoice Reminder",
-      message: "Your invoice has been outstanding for 14 days. Please arrange payment at your earliest convenience.",
+      message:
+        "Your invoice has been outstanding for 14 days. Please arrange payment at your earliest convenience.",
     },
     30: {
       title: "Action Required: Invoice Past Due",
-      message: "Your invoice is now 30 days past due. Please contact us to discuss payment options.",
+      message:
+        "Your invoice is now 30 days past due. Please contact us to discuss payment options.",
     },
   },
   bronze: {
@@ -85,11 +93,13 @@ const MESSAGE_TEMPLATES: Record<string, Record<number, { title: string; message:
     },
     14: {
       title: "Invoice Reminder",
-      message: "Your invoice has been outstanding for 14 days. Please arrange payment at your earliest convenience.",
+      message:
+        "Your invoice has been outstanding for 14 days. Please arrange payment at your earliest convenience.",
     },
     30: {
       title: "Action Required: Invoice Past Due",
-      message: "Your invoice is now 30 days past due. Immediate payment is required to avoid account restrictions.",
+      message:
+        "Your invoice is now 30 days past due. Immediate payment is required to avoid account restrictions.",
     },
   },
   default: {
@@ -99,11 +109,13 @@ const MESSAGE_TEMPLATES: Record<string, Record<number, { title: string; message:
     },
     14: {
       title: "Invoice Reminder",
-      message: "Your invoice has been outstanding for 14 days. Please arrange payment.",
+      message:
+        "Your invoice has been outstanding for 14 days. Please arrange payment.",
     },
     30: {
       title: "Action Required: Invoice Past Due",
-      message: "Your invoice is now 30 days past due. Please contact us immediately.",
+      message:
+        "Your invoice is now 30 days past due. Please contact us immediately.",
     },
   },
 };
@@ -137,13 +149,18 @@ export interface DebtNotificationResult {
 /**
  * Get message template for a tier and interval
  */
-function getMessageTemplate(tierName: string, daysOverdue: number): { title: string; message: string } {
-  const tierTemplates = MESSAGE_TEMPLATES[tierName.toLowerCase()] || MESSAGE_TEMPLATES.default;
+function getMessageTemplate(
+  tierName: string,
+  daysOverdue: number
+): { title: string; message: string } {
+  const tierTemplates =
+    MESSAGE_TEMPLATES[tierName.toLowerCase()] || MESSAGE_TEMPLATES.default;
 
   // Find the appropriate interval (7, 14, or 30)
   let interval = 30; // Default to 30
   for (const int of NOTIFICATION_INTERVALS) {
-    if (daysOverdue <= int + 1) { // Allow 1 day buffer
+    if (daysOverdue <= int + 1) {
+      // Allow 1 day buffer
       interval = int;
       break;
     }
@@ -166,25 +183,28 @@ function getNotificationInterval(daysOverdue: number): number | null {
 }
 
 /**
- * Get all VIP clients with aging debt
+ * Get all VIP clients with aging debt (invoices past their due date)
+ *
+ * Due date is calculated as: transactionDate + paymentTerms (default 30 days)
+ * Only returns invoices that are actually OVERDUE (daysOverdue > 0)
  */
 export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const today = new Date();
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  // Get all unpaid invoices for VIP clients that are at least 7 days overdue
-  const agingDebt = await db
+  // Get all outstanding invoices for VIP clients
+  // We fetch all non-paid invoices and filter for overdue in application logic
+  // (because due date = transactionDate + paymentTerms requires calculation)
+  const allOutstandingInvoices = await db
     .select({
       clientId: clients.id,
-      clientName: clients.companyName,
+      clientName: clients.name,
       invoiceId: clientTransactions.id,
-      invoiceNumber: clientTransactions.referenceNumber,
+      invoiceNumber: clientTransactions.transactionNumber,
       transactionDate: clientTransactions.transactionDate,
-      dueDate: clientTransactions.dueDate,
+      paymentTerms: clients.paymentTerms,
       amount: clientTransactions.amount,
       tierName: vipTiers.name,
     })
@@ -196,14 +216,26 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
       and(
         eq(clients.vipPortalEnabled, true),
         eq(clientTransactions.transactionType, "INVOICE"),
-        eq(clientTransactions.paymentStatus, "UNPAID"),
-        isNull(clients.deletedAt),
-        lt(clientTransactions.dueDate, sevenDaysAgo)
+        or(
+          eq(clientTransactions.paymentStatus, "PENDING"),
+          eq(clientTransactions.paymentStatus, "OVERDUE"),
+          eq(clientTransactions.paymentStatus, "PARTIAL")
+        ),
+        isNull(clients.deletedAt)
       )
     );
 
-  return agingDebt.map((row) => {
-    const dueDate = new Date(row.dueDate || row.transactionDate);
+  // Process invoices and calculate overdue status
+  const processedInvoices = allOutstandingInvoices.map(row => {
+    // Calculate due date from transaction date + payment terms
+    // Payment terms of 0 = due immediately (COD/Cash terms)
+    // Payment terms null/undefined = default NET_30
+    const paymentTermsDays = row.paymentTerms ?? 30;
+    const transactionDate = new Date(row.transactionDate);
+    const dueDate = new Date(transactionDate);
+    dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+
+    // Calculate days overdue (negative means not yet due)
     const daysOverdue = Math.floor(
       (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -213,13 +245,22 @@ export async function getVipClientsWithAgingDebt(): Promise<DebtAgingInfo[]> {
       clientName: row.clientName || "Unknown",
       invoiceId: row.invoiceId,
       invoiceNumber: row.invoiceNumber || `INV-${row.invoiceId}`,
-      invoiceDate: new Date(row.transactionDate),
+      invoiceDate: transactionDate,
       dueDate,
       amount: parseFloat(String(row.amount || "0")),
-      daysOverdue: Math.max(0, daysOverdue),
+      daysOverdue, // Keep raw value for filtering
       tierName: row.tierName || "default",
     };
   });
+
+  // Filter to only include ACTUALLY OVERDUE invoices (daysOverdue > 0)
+  // and normalize daysOverdue to 0 minimum for display
+  return processedInvoices
+    .filter(invoice => invoice.daysOverdue > 0)
+    .map(invoice => ({
+      ...invoice,
+      daysOverdue: Math.max(0, invoice.daysOverdue),
+    }));
 }
 
 /**
@@ -257,7 +298,7 @@ export async function sendDebtAgingNotifications(): Promise<DebtNotificationResu
       await queueNotification({
         clientId: debt.clientId,
         recipientType: "client",
-        type: interval === 30 ? "alert" : interval === 14 ? "warning" : "info",
+        type: interval === 30 ? "error" : interval === 14 ? "warning" : "info",
         title: template.title,
         message: personalizedMessage,
         link: `/vip-portal/invoices/${debt.invoiceId}`,
@@ -324,12 +365,20 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
 
   const today = new Date();
 
+  // Get client's payment terms for due date calculation
+  const [client] = await db
+    .select({ paymentTerms: clients.paymentTerms })
+    .from(clients)
+    .where(eq(clients.id, clientId));
+
+  // Payment terms of 0 = due immediately; null/undefined = NET_30
+  const paymentTermsDays = client?.paymentTerms ?? 30;
+
   const invoices = await db
     .select({
       invoiceId: clientTransactions.id,
-      invoiceNumber: clientTransactions.referenceNumber,
+      invoiceNumber: clientTransactions.transactionNumber,
       amount: clientTransactions.amount,
-      dueDate: clientTransactions.dueDate,
       transactionDate: clientTransactions.transactionDate,
     })
     .from(clientTransactions)
@@ -337,7 +386,11 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
       and(
         eq(clientTransactions.clientId, clientId),
         eq(clientTransactions.transactionType, "INVOICE"),
-        eq(clientTransactions.paymentStatus, "UNPAID")
+        or(
+          eq(clientTransactions.paymentStatus, "PENDING"),
+          eq(clientTransactions.paymentStatus, "OVERDUE"),
+          eq(clientTransactions.paymentStatus, "PARTIAL")
+        )
       )
     );
 
@@ -349,8 +402,12 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
     days31plus: 0,
   };
 
-  const processedInvoices = invoices.map((inv) => {
-    const dueDate = new Date(inv.dueDate || inv.transactionDate);
+  const processedInvoices = invoices.map(inv => {
+    // Calculate due date from transaction date + payment terms
+    const transactionDate = new Date(inv.transactionDate);
+    const dueDate = new Date(transactionDate);
+    dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+
     const daysOverdue = Math.floor(
       (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -378,7 +435,10 @@ export async function getClientDebtAgingSummary(clientId: number): Promise<{
     };
   });
 
-  const totalOutstanding = processedInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+  const totalOutstanding = processedInvoices.reduce(
+    (sum, inv) => sum + inv.amount,
+    0
+  );
 
   return {
     totalOutstanding,
