@@ -433,3 +433,71 @@ To test VIP Portal:
 4. **Don't hardcode credentials** in test files - use fixtures or env vars
 5. **Clean up test data** after tests if modifying database
 6. **Use tRPC endpoint** for auth tokens to avoid rate limiting
+
+---
+
+## QA Test Accounts (Recommended)
+
+For production testing, use the QA test accounts with the unified password:
+
+| Role               | Email                     | Password    |
+| ------------------ | ------------------------- | ----------- |
+| Super Admin        | qa.superadmin@terp.test   | TerpQA2026! |
+| Owner/Executive    | qa.owner@terp.test        | TerpQA2026! |
+| Operations Manager | qa.opsmanager@terp.test   | TerpQA2026! |
+| Sales Manager      | qa.salesmanager@terp.test | TerpQA2026! |
+| Accountant         | qa.accountant@terp.test   | TerpQA2026! |
+| Inventory Manager  | qa.invmanager@terp.test   | TerpQA2026! |
+| Warehouse Staff    | qa.warehouse@terp.test    | TerpQA2026! |
+| Read-Only Auditor  | qa.auditor@terp.test      | TerpQA2026! |
+
+These accounts are seeded in production and work with the live site.
+
+---
+
+## Curl-Based Testing (Proxy Environments)
+
+When browser-based tests cannot run due to proxy restrictions (e.g., JWT-authenticated proxies that Chromium doesn't support), use the curl-based test scripts:
+
+### Available Scripts
+
+```bash
+# Basic live site tests (9 tests)
+pnpm tsx scripts/live-curl-test.ts
+
+# Comprehensive live site tests (22 tests across 8 categories)
+pnpm tsx scripts/live-comprehensive-e2e.ts
+```
+
+### Test Categories (Comprehensive Suite)
+
+1. **System Health** - Health endpoint and database connectivity
+2. **Authentication** - Login API, token endpoints, session handling
+3. **Page Loading** - Dashboard, Products, Inventory, Orders, Settings
+4. **Static Assets** - JS bundles, CSS, proper loading
+5. **API Endpoints** - Key tRPC endpoints respond correctly
+6. **Responsive Design** - Page size checks for mobile
+7. **VIP Portal** - VIP login and portal accessibility
+8. **Security** - Basic security header checks
+
+### When to Use Curl Tests
+
+- Cloud development environments with proxy restrictions
+- CI/CD pipelines without browser support
+- Quick smoke tests before deployment
+- Validating that the live site is responsive
+
+### Limitations
+
+Curl-based tests cannot:
+
+- Test actual button clicks and form submissions
+- Verify JavaScript-rendered content
+- Test complex user interactions
+- Validate visual rendering
+
+For full browser-based testing, use:
+
+- GitHub Actions with the self-hosted runner (`mega-qa-cloud.yml`)
+- Local development machine
+- Environments without proxy restrictions
