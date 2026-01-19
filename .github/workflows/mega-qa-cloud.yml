@@ -16,6 +16,10 @@ permissions:
 
 env:
   NODE_VERSION: "20"
+  # Default QA credentials (match tests-e2e/fixtures/auth.ts)
+  DEFAULT_ADMIN_EMAIL: qa.superadmin@terp.test
+  DEFAULT_ADMIN_PASSWORD: TerpQA2026!
+  DEFAULT_BASE_URL: https://terp-app-b9s35.ondigitalocean.app
 
 jobs:
   mega-qa-cloud:
@@ -49,9 +53,9 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MEGA_QA_CLOUD: "1"
           MEGA_QA_USE_LIVE_DB: "1"
-          # Optional overrides; if unset, defaults from fixtures/script are used.
-          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
-          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          # Use secrets if available, otherwise use QA defaults
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME || env.DEFAULT_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD || env.DEFAULT_ADMIN_PASSWORD }}
           E2E_STANDARD_USERNAME: ${{ secrets.E2E_STANDARD_USERNAME }}
           E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
           E2E_VIP_USERNAME: ${{ secrets.E2E_VIP_USERNAME }}
@@ -62,12 +66,12 @@ jobs:
         env:
           CI: "true"
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MEGA_QA_BASE_URL: ${{ secrets.MEGA_QA_BASE_URL }}
+          MEGA_QA_BASE_URL: ${{ secrets.MEGA_QA_BASE_URL || env.DEFAULT_BASE_URL }}
           MEGA_QA_CLOUD: "1"
           MEGA_QA_USE_LIVE_DB: "1"
-          # Provide creds to Playwright tests (optional overrides)
-          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
-          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          # Use secrets if available, otherwise use QA defaults
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME || env.DEFAULT_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD || env.DEFAULT_ADMIN_PASSWORD }}
           E2E_STANDARD_USERNAME: ${{ secrets.E2E_STANDARD_USERNAME }}
           E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
           E2E_VIP_USERNAME: ${{ secrets.E2E_VIP_USERNAME }}
