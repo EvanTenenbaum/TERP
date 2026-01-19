@@ -1,0 +1,119 @@
+name: E2E Live Site Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - full
+          - critical-paths
+          - accounting
+          - vip-portal
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+
+env:
+  PLAYWRIGHT_BASE_URL: https://terp-app-b9s35.ondigitalocean.app
+  SKIP_E2E_SETUP: "1"
+  MEGA_QA_CLOUD: "1"
+
+jobs:
+  e2e-tests:
+    name: E2E Tests - ${{ matrix.device }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [Desktop, Mobile, Tablet]
+        include:
+          - device: Desktop
+            project: chromium
+          - device: Mobile
+            project: "Mobile Chrome"
+          - device: Tablet
+            project: Tablet
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium webkit
+
+      - name: Run E2E tests
+        run: |
+          if [ "${{ inputs.test_suite }}" = "full" ]; then
+            pnpm exec playwright test --project="${{ matrix.project }}"
+          elif [ "${{ inputs.test_suite }}" = "critical-paths" ]; then
+            pnpm exec playwright test tests-e2e/critical-paths/ --project="${{ matrix.project }}"
+          elif [ "${{ inputs.test_suite }}" = "accounting" ]; then
+            pnpm exec playwright test tests-e2e/critical-paths/accounting* --project="${{ matrix.project }}"
+          elif [ "${{ inputs.test_suite }}" = "vip-portal" ]; then
+            pnpm exec playwright test tests-e2e/critical-paths/vip* --project="${{ matrix.project }}"
+          else
+            pnpm exec playwright test --project=smoke --project="${{ matrix.project }}"
+          fi
+        env:
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results-${{ matrix.device }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshots-${{ matrix.device }}
+          path: test-results/**/*.png
+          retention-days: 7
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate summary
+        run: |
+          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Device | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          for device in Desktop Mobile Tablet; do
+            if [ -d "playwright-results-$device" ]; then
+              echo "| $device | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $device | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
