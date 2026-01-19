@@ -43,7 +43,7 @@ async function main(): Promise<void> {
       process.env.E2E_STANDARD_USERNAME || "qa.salesmanager@terp.test";
     const standardPassword = process.env.E2E_STANDARD_PASSWORD || QA_PASSWORD;
     const vipUsername = process.env.E2E_VIP_USERNAME || "client@greenleaf.com";
-    const vipPassword = process.env.E2E_VIP_PASSWORD || "password123";
+    const vipPassword = process.env.E2E_VIP_PASSWORD || QA_PASSWORD;
 
     // Ensure DB is reachable
     const db = await getDb();

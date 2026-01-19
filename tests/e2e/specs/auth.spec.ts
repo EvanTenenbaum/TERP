@@ -1,8 +1,9 @@
 import { test, expect } from "../fixtures/test-fixtures";
 
+// QA test credentials - password for all QA accounts: TerpQA2026!
 const credentials = {
-  username: process.env.E2E_USERNAME ?? "e2e-user@terp.test",
-  password: process.env.E2E_PASSWORD ?? "Password123!",
+  username: process.env.E2E_ADMIN_USERNAME ?? "qa.superadmin@terp.test",
+  password: process.env.E2E_ADMIN_PASSWORD ?? "TerpQA2026!",
 };
 
 test.describe("Authentication", () => {
