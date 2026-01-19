@@ -21,6 +21,7 @@ Perform a comprehensive red-hat adversarial QA review of PR #242 (atomic UX stra
 
 ## Progress
 
+### Phase 1 - Initial Review
 - [x] Review all foundational docs in PR #242
 - [x] Deep-dive into current codebase (130+ routers, 60+ pages, 258KB schema)
 - [x] Perform red-hat adversarial QA for technical aspects
@@ -28,6 +29,15 @@ Perform a comprehensive red-hat adversarial QA review of PR #242 (atomic UX stra
 - [x] Perform red-hat QA for business logic
 - [x] Create improved comprehensive documentation
 - [x] Commit and push improvements
+
+### Phase 2 - Deep Gap Analysis
+- [x] Resolve all 14 unknown features (3 confirmed, 8 api-only, 1 missing)
+- [x] Discover and document 8 new features (DF-071 to DF-078)
+- [x] Map all 86 pages to feature matrix
+- [x] Analyze 125 tRPC routers
+- [x] Apply product feedback (offline to beta, mobile priorities)
+- [x] Update roadmap with revised priorities
+- [x] Document gap analysis findings
 
 ## Key Findings
 
@@ -61,6 +71,42 @@ Perform a comprehensive red-hat adversarial QA review of PR #242 (atomic UX stra
 2. **X-002**: No i18n/RTL considerations
 3. **X-003**: No print/export considerations
 4. **X-004**: No browser compatibility matrix
+
+### Deep Gap Analysis Findings (Phase 2)
+
+#### Feature Resolution Summary
+| Status | Count | Features |
+|--------|-------|----------|
+| Confirmed (UI exists) | 3 | DF-039, DF-042, DF-065 |
+| API-Only (intentional) | 8 | DF-030, DF-031, DF-034, DF-035, DF-038, DF-046, DF-048, DF-057 |
+| Missing (not implemented) | 1 | DF-067 |
+
+#### Newly Discovered Features
+| Feature ID | Name | Criticality |
+|------------|------|-------------|
+| DF-071 | User Authentication & Login | P0 |
+| DF-072 | VIP Appointment Booking | P1 |
+| DF-073 | VIP Document Downloads | P2 |
+| DF-074 | VIP Session Management | P1 |
+| DF-075 | Help & Documentation System | P2 |
+| DF-076 | Personal Account Settings | P1 |
+| DF-077 | Unified Sales Pipeline (Kanban) | P1 |
+| DF-078 | Gamification & Rewards | P2 |
+
+#### Page Coverage Analysis
+- **Total pages**: 86
+- **Documented**: 72 (84% coverage)
+- **Main navigation pages**: 56
+- **Accounting sub-routes**: 10
+- **VIP portal pages**: 8
+- **Hidden routes**: 11 (accessible but not in sidebar)
+
+#### Router Analysis
+- **Total routers**: 125
+- **Core business**: 50 routers
+- **Admin/System**: 16 routers
+- **Special portals**: 13 routers
+- **Support/Utility**: 46 routers
 
 ## Enhancements Made
 
@@ -144,18 +190,32 @@ Perform a comprehensive red-hat adversarial QA review of PR #242 (atomic UX stra
 - Added 15 new roadmap tasks with priorities
 - Added 16 new risks and 16 new assumptions
 
+**Second Pass - Deep Gap Analysis (2026-01-19):**
+- Resolved all 14 unknown features:
+  - 3 **confirmed** (DF-039 Workflow Queue, DF-042 Cash Audit, DF-065 Vendor Supply)
+  - 8 **api-only** (intentionally backend-only, no UI needed)
+  - 1 **missing** (DF-067 Recurring Orders - not implemented)
+- Discovered 8 new features not in original matrix (DF-071 to DF-078)
+- Mapped all 86 pages in the codebase to features
+- Identified 125 tRPC routers across 4 categories
+
+**Product Decisions Applied:**
+- Offline support (UXS-702, UXS-706) moved to **BETA** priority
+- Mobile prioritization: Inventory, Accounting, Todo/Tasks, Dashboard as **P1**
+- Keep approach simple and straightforward
+
 **What's pending:**
-- UXS-005: Unknown feature validation (14 features need stakeholder input)
 - UXS-006: Ledger + intake verification audit (needs accounting SME)
-- All Layer 7-9 implementation tasks
+- Layer 7-9 implementation tasks (with revised priorities)
+- Decision on DF-067 Recurring Orders (missing feature)
 
 **Known issues:**
-- 14 features remain in "unknown" status requiring product owner validation
-- Mobile usage patterns unclear (assumption A-027)
-- Offline scope decision needed (product input required)
+- 1 feature missing implementation (DF-067 Recurring Orders)
+- 8 features are API-only (may need UI evaluation in future)
+- 11 routes not in main navigation (hidden but accessible)
 
 **Recommendations:**
-1. Schedule stakeholder review for unknown features before UX implementation
-2. Prioritize P0 infrastructure tasks (UXS-703, UXS-704) before any Work Surface pilots
-3. Conduct accessibility audit early to prevent rework
-4. Get product decision on offline scope (P0 or P2)
+1. Prioritize P0 infrastructure tasks (UXS-703, UXS-704) before any Work Surface pilots
+2. Conduct accessibility audit early to prevent rework
+3. Evaluate if any API-only features need UI surfaces
+4. Consider adding DF-067 Recurring Orders to product backlog

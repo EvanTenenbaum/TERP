@@ -332,20 +332,26 @@
 - **Goal**: Ensure Work Surfaces adapt to different screen sizes.
 - **Why**: Warehouse tablets, sales rep phones require adaptive layouts.
 - **Exact scope**: Implement breakpoint-aware Work Surface shell with responsive inspector behavior.
+- **Mobile Priority Modules** (per product decision):
+  1. **Inventory** - P1: Quick stock checks, batch lookups
+  2. **Accounting** - P1: AR/AP overview, quick payments
+  3. **Todo/Tasks** - P1: Task management on the go
+  4. **Dashboard** - P1: KPI visibility, alerts
 - **Acceptance criteria**:
   - Desktop (≥1280px): Grid + inspector side-by-side
   - Tablet (768-1279px): Inspector as slide-over sheet
-  - Mobile (<768px): Single-column card layout
+  - Mobile (<768px): Single-column card layout for priority modules
 - **Files likely touched**: client/src/components/work-surface/WorkSurfaceShell.tsx, client/src/hooks/useBreakpoint.ts
 - **Dependencies**: UXS-103
 - **Risks**: AG Grid responsiveness limitations.
 - **Test plan**: Visual regression tests at each breakpoint.
 - **Rollback plan**: Default to desktop-only layout.
 
-### UXS-702 — Offline queue + sync infrastructure
+### UXS-702 — Offline queue + sync infrastructure ⚠️ BETA PRIORITY
 
 - **Goal**: Prevent data loss during network failures.
 - **Why**: Field operations may have spotty connectivity.
+- **Priority**: **BETA (P2)** - Per product decision, offline support is not required for initial release. Deprioritized to beta phase.
 - **Exact scope**: IndexedDB-backed mutation queue with sync status indicator.
 - **Acceptance criteria**:
   - Mutations queued when offline
@@ -402,10 +408,11 @@
 - **Test plan**: Two-browser test with simultaneous edits.
 - **Rollback plan**: Disable version check (last-write-wins).
 
-### UXS-706 — Session timeout handler
+### UXS-706 — Session timeout handler ⚠️ BETA PRIORITY
 
 - **Goal**: Preserve work when session expires during long data entry.
 - **Why**: Users spend extended time on intake sessions.
+- **Priority**: **BETA (P2)** - Linked to offline infrastructure; deprioritized to beta phase.
 - **Exact scope**: Session expiry warning, auto-save to localStorage, recovery prompt.
 - **Acceptance criteria**:
   - Warning at 5 minutes before expiry
@@ -579,7 +586,9 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 
 ---
 
-## Implementation Priority (Red Hat Refined)
+## Implementation Priority (Product-Refined)
+
+> Updated based on product feedback: Offline to beta, mobile focus on inventory/accounting/todo/dashboard.
 
 ### P0 — Blockers (must complete before any Work Surface deployment)
 
@@ -596,10 +605,8 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 | Task | Description | Estimated Effort |
 |------|-------------|------------------|
 | UXS-103 | Inspector panel shell | 2 days |
-| UXS-701 | Responsive breakpoints | 3 days |
-| UXS-702 | Offline queue | 5 days |
+| UXS-701 | Responsive breakpoints (focus: Inventory, Accounting, Todo, Dashboard) | 3 days |
 | UXS-705 | Concurrent edit detection | 2 days |
-| UXS-706 | Session timeout handler | 2 days |
 | UXS-801 | Accessibility audit | 3 days |
 
 ### P2 — Required for scale
@@ -614,13 +621,27 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 | UXS-903 | Print styles | 1 day |
 | UXS-904 | Export functionality | 2 days |
 
+### BETA — Post-launch improvements
+
+| Task | Description | Estimated Effort |
+|------|-------------|------------------|
+| UXS-702 | Offline queue + sync | 5 days |
+| UXS-706 | Session timeout handler | 2 days |
+
 ---
 
 ## Open Questions Requiring Product Input
 
-1. **Offline scope**: Should offline support include full CRUD or read-only caching?
+1. ~~**Offline scope**: Should offline support include full CRUD or read-only caching?~~ **RESOLVED**: Offline moved to BETA priority. Scope TBD closer to beta phase.
 2. **Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user?
-3. **Session timeout**: What is the current session duration? Can it be extended via heartbeat?
+3. ~~**Session timeout**: What is the current session duration? Can it be extended via heartbeat?~~ **RESOLVED**: Moved to BETA with offline infrastructure.
 4. **Export limits**: Is 10,000 row limit acceptable, or do users need unlimited export?
 5. **Bulk limits**: Is 500 selection / 100 update limit acceptable for power users?
-6. **Mobile support**: Is mobile view P0 or P2? Which workflows are used on mobile?
+6. ~~**Mobile support**: Is mobile view P0 or P2? Which workflows are used on mobile?~~ **RESOLVED**: P1 for Inventory, Accounting, Todo/Tasks, Dashboard. Other modules P2.
+
+### New Questions from Gap Analysis
+
+7. **DF-067 Recurring Orders**: Feature is not implemented. Should it be added to the backlog?
+8. **API-only features**: 8 features have backend routers but no UI. Should any of these get UI surfaces?
+9. **VIP Portal scope**: VIP portal has 8 pages - should these be redesigned with Work Surface patterns?
+10. **Hidden routes**: 11 routes are not in main navigation - should any be surfaced more prominently?
