@@ -33,10 +33,9 @@ permissions:
 
 env:
   NODE_VERSION: "20"
-  PLAYWRIGHT_BASE_URL: https://terp-app-b9s35.ondigitalocean.app
-  # Default QA credentials (can be overridden by secrets)
-  DEFAULT_ADMIN_EMAIL: qa.superadmin@terp.test
-  DEFAULT_ADMIN_PASSWORD: TerpQA2026!
+  PLAYWRIGHT_BASE_URL: "https://terp-app-b9s35.ondigitalocean.app"
+  DEFAULT_ADMIN_EMAIL: "qa.superadmin@terp.test"
+  DEFAULT_ADMIN_PASSWORD: "TerpQA2026!"
 
 jobs:
   e2e-live-site:
