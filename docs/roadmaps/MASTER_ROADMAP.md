@@ -484,14 +484,16 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 ### Improvement Tasks (P3)
 
-| Task        | Description                      | Priority | Status      |
-| ----------- | -------------------------------- | -------- | ----------- |
-| IMPROVE-001 | Fix Backup Script Security       | MEDIUM   | ✅ COMPLETE |
-| IMPROVE-002 | Enhance Health Check Endpoints   | MEDIUM   | ✅ COMPLETE |
-| IMPROVE-003 | Add Composite Database Indexes   | MEDIUM   | ✅ COMPLETE |
-| IMPROVE-004 | Reduce Rate Limiting Thresholds  | LOW      | ✅ COMPLETE |
-| QA-200      | Consolidated QA synthesis report | LOW      | ✅ COMPLETE |
-| DOCS-001    | QA run sheet summary cleanup     | LOW      | ✅ COMPLETE |
+| Task             | Description                      | Priority | Status      |
+| ---------------- | -------------------------------- | -------- | ----------- |
+| IMPROVE-001      | Fix Backup Script Security       | MEDIUM   | ✅ COMPLETE |
+| IMPROVE-002      | Enhance Health Check Endpoints   | MEDIUM   | ✅ COMPLETE |
+| IMPROVE-003      | Add Composite Database Indexes   | MEDIUM   | ✅ COMPLETE |
+| IMPROVE-004      | Reduce Rate Limiting Thresholds  | LOW      | ✅ COMPLETE |
+| QA-200           | Consolidated QA synthesis report | LOW      | ✅ COMPLETE |
+| DOCS-001         | QA run sheet summary cleanup     | LOW      | ✅ COMPLETE |
+| DOCS-UX-STRATEGY | Atomic UX strategy package       | LOW      | ✅ COMPLETE |
+| DOCS-UX-REDHAT   | Redhat QA update to UX strategy  | LOW      | ✅ COMPLETE |
 
 ---
 
@@ -625,11 +627,11 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Data Integrity (QA)   | 8         | 0     | 0       | 8       |
 | Frontend Quality (QA) | 3         | 0     | 0       | 3       |
 | Backend Quality (QA)  | 5         | 0     | 0       | 5       |
-| Improvements          | 5         | 0     | 0       | 5       |
+| Improvements          | 7         | 0     | 0       | 7       |
 | E2E Testing           | 3         | 0     | 0       | 3       |
-| **TOTAL**             | **183**   | **0** | **2**   | **185** |
+| **TOTAL**             | **185**   | **0** | **2**   | **187** |
 
-> **MVP STATUS: 100% RESOLVED** (183 completed + 2 removed, 0 tasks open)
+> **MVP STATUS: 100% RESOLVED** (185 completed + 2 removed, 0 tasks open)
 
 > **E2E Testing Infrastructure (Jan 16, 2026):** All 3 E2E tasks COMPLETED.
 > Final pass rate: 88.5% (54/61 core tests). Full suite has 338 tests across 44 spec files.
@@ -714,9 +716,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
-| MVP       | 183       | 0      | 185     | 100%     |
+| MVP       | 185       | 0      | 187     | 100%     |
 | Beta      | 0         | 17     | 17      | 0%       |
-| **TOTAL** | **183**   | **17** | **202** | ~91%     |
+| **TOTAL** | **185**   | **17** | **204** | ~91%     |
 
 ---
 
