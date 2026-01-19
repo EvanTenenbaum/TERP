@@ -81,7 +81,7 @@ export const TEST_USERS = {
   },
   vipClient: {
     email: process.env.E2E_VIP_USERNAME || "client@greenleaf.com",
-    password: process.env.E2E_VIP_PASSWORD || "password123",
+    password: process.env.E2E_VIP_PASSWORD || QA_PASSWORD,
     role: "VIP Client",
     description: "VIP Portal client access",
   },

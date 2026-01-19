@@ -24,10 +24,11 @@ const BASE_URL =
 
 const IS_PRODUCTION = BASE_URL.includes("ondigitalocean.app");
 
-// Test credentials - use existing E2E admin user (created by ensure-e2e-users.ts)
+// Test credentials - use QA admin user (created by ensure-e2e-users.ts)
+// Password for all QA accounts: TerpQA2026!
 const TEST_CREDENTIALS = {
-  email: process.env.E2E_ADMIN_USERNAME || "admin@terp.test",
-  password: process.env.E2E_ADMIN_PASSWORD || "admin123",
+  email: process.env.E2E_ADMIN_USERNAME || "qa.superadmin@terp.test",
+  password: process.env.E2E_ADMIN_PASSWORD || "TerpQA2026!",
 };
 
 // Increase timeouts for production tests

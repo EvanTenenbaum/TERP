@@ -15,11 +15,12 @@ export interface TestClient {
   teriCode?: string;
 }
 
+// QA test user for E2E tests (matches production QA accounts)
 export const defaultTestUser: TestUser = {
   id: 1,
-  openId: "e2e-user",
-  email: "e2e-user@terp.test",
-  name: "E2E User",
+  openId: "qa.superadmin@terp.test",
+  email: "qa.superadmin@terp.test",
+  name: "QA Super Admin",
   role: "admin",
   lastSignedIn: new Date().toISOString(),
 };
