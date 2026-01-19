@@ -608,6 +608,45 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+### 🔔 Workflow & Notification System (P1)
+
+> Discovered during deep analysis session (Jan 19, 2026).
+> See: `docs/prompts/WF-*.md` for implementation guides.
+
+**Problem Summary:**
+
+1. Notification triggers are defined but 80% are never called
+2. Workflow Queue page is hidden from navigation
+3. Inbox/Notifications are separate systems
+4. Todo Lists buried in Admin section
+
+| Task    | Description                                   | Priority | Status | Estimate | Prompt                    |
+| ------- | --------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| WF-001  | Wire Notification Triggers to Business Events | HIGH     | ready  | 8h       | `docs/prompts/WF-001.md`  |
+| NAV-006 | Add Workflow Queue to Main Navigation         | HIGH     | ready  | 1h       | `docs/prompts/NAV-006.md` |
+| NAV-007 | Add Inbox to Navigation/Header                | MEDIUM   | ready  | 2h       | `docs/prompts/NAV-007.md` |
+| NAV-008 | Promote Todo Lists in Navigation              | MEDIUM   | ready  | 2h       | `docs/prompts/NAV-008.md` |
+| INV-001 | Remove Products Page from Navigation          | MEDIUM   | ready  | 1h       | `docs/prompts/INV-001.md` |
+
+**WF-001 Details:**
+12 of 15 notification triggers in `notificationTriggers.ts` are defined but never called:
+
+- `onOrderConfirmed`, `onOrderShipped`, `onOrderDelivered` - order status changes
+- `onInvoiceOverdue` - needs cron job
+- `onInventoryLow`, `onBatchReceived` - inventory events
+- `onTaskAssigned`, `onTaskDueSoon` - task events
+- `onAppointmentReminder` - needs cron job
+- `onCreditIssued`, `onInterestListSubmitted` - other events
+
+**INV-001 Details:**
+Products page is redundant for the business model:
+
+- SKUs are never reordered (each intake = new batch = unique SKU forever)
+- Products are auto-created during intake
+- Product metadata can be edited inline in Inventory view
+
+---
+
 ## 📊 MVP Summary
 
 | Category              | Completed | Open  | Removed | Total   |
@@ -626,9 +665,10 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Backend Quality (QA)  | 5         | 0     | 0       | 5       |
 | Improvements          | 4         | 0     | 0       | 4       |
 | E2E Testing           | 3         | 0     | 0       | 3       |
-| **TOTAL**             | **182**   | **0** | **2**   | **184** |
+| Workflow & Navigation | 0         | 5     | 0       | 5       |
+| **TOTAL**             | **182**   | **5** | **2**   | **189** |
 
-> **MVP STATUS: 100% RESOLVED** (182 completed + 2 removed, 0 tasks open)
+> **MVP STATUS: 97% RESOLVED** (182 completed + 2 removed, 5 tasks open)
 
 > **E2E Testing Infrastructure (Jan 16, 2026):** All 3 E2E tasks COMPLETED.
 > Final pass rate: 88.5% (54/61 core tests). Full suite has 338 tests across 44 spec files.
@@ -700,12 +740,57 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+## 🔄 Workflow Orchestration Program
+
+**Goal:** Build a unified workflow system where status changes automatically create action items, assign to responsible roles, and track SLA compliance.
+
+**Status:** All tasks ready for implementation (none started)
+
+**Problem Analysis (Jan 19, 2026):**
+
+1. **Dual Status System:** Batches have `batchStatus` (business enum) AND `statusId` (Kanban FK) - unsynced and contradictory
+2. **Parallel Notification Systems:** `notifications` table vs `inbox_items` table - users must check both
+3. **No Workflow Automation:** Status changes don't create tasks or notify responsible parties
+4. **Products/Inventory Disconnect:** Products page is redundant for the business model (SKUs never reordered)
+
+### Beta: Workflow Orchestration Tasks
+
+| Task    | Description                                 | Priority | Status | Estimate | Prompt                    |
+| ------- | ------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| WF-002  | Unify Dual Batch Status Systems             | HIGH     | ready  | 2d       | `docs/prompts/WF-002.md`  |
+| WF-003  | Merge Notifications and Inbox Systems       | HIGH     | ready  | 2d       | `docs/prompts/WF-003.md`  |
+| WF-004  | Add Workflow Automation - Auto-Create Tasks | HIGH     | ready  | 2d       | `docs/prompts/WF-004.md`  |
+| WF-005  | Add SLA Tracking and Escalation             | MEDIUM   | ready  | 16h      | `docs/prompts/WF-005.md`  |
+| INV-002 | Enhance Inventory View with Product Context | MEDIUM   | ready  | 4h       | `docs/prompts/INV-002.md` |
+
+**WF-002 Details (Dual Status):**
+
+- `batchStatus` enum: AWAITING_INTAKE, LIVE, PHOTOGRAPHY_COMPLETE, ON_HOLD, QUARANTINED, SOLD_OUT, CLOSED
+  - Used by 40+ files for business logic
+- `statusId` FK → workflow_statuses: User-defined Kanban columns
+  - Only used by workflow-queue feature, purely visual
+- Solution: Deprecate `statusId`, use `batchStatus` for Kanban with configurable display
+
+**WF-003 Details (Dual Notifications):**
+
+- System A: `notifications` table - multi-channel (in_app, email, sms)
+- System B: `inbox_items` table - mentions, task assignments
+- Solution: Merge into unified inbox with single API
+
+**WF-004 Details (Automation):**
+
+- Add `responsibleRoleId`, `autoCreateTask`, `taskTemplate` to workflow statuses
+- On status change → auto-create task → assign to role → notify users
+
+---
+
 ## 📊 Beta Summary
 
-| Category            | Completed | Open   | Total  |
-| ------------------- | --------- | ------ | ------ |
-| Reliability Program | 0         | 17     | 17     |
-| **TOTAL**           | **0**     | **17** | **17** |
+| Category               | Completed | Open   | Total  |
+| ---------------------- | --------- | ------ | ------ |
+| Reliability Program    | 0         | 17     | 17     |
+| Workflow Orchestration | 0         | 5      | 5      |
+| **TOTAL**              | **0**     | **22** | **22** |
 
 ---
 
@@ -713,9 +798,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
-| MVP       | 179       | 3      | 184     | ~97%     |
-| Beta      | 0         | 17     | 17      | 0%       |
-| **TOTAL** | **179**   | **20** | **201** | ~89%     |
+| MVP       | 182       | 5      | 189     | ~96%     |
+| Beta      | 0         | 22     | 22      | 0%       |
+| **TOTAL** | **182**   | **27** | **211** | ~86%     |
 
 ---
 
