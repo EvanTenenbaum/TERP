@@ -8,12 +8,12 @@
 
 ## Active Roadmap
 
-**Current Focus:** [Prioritized Strategic Roadmap](./PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md)
+**Current Focus:** [MVP Strategic Execution Plan](./MVP_STRATEGIC_EXECUTION_PLAN_2026-01-19.md)
 
 **Status:** 🟡 ACTIVE
-**Estimated Effort:** 741h total (265h with 4 parallel agents)
-**Started:** 2026-01-12
-**Current Phase:** Sprint 0 - Foundation (Bugs, API Registration, RBAC)
+**Estimated Effort:** 979h total (333h with 4-5 parallel agents)
+**Started:** 2026-01-19
+**Current Phase:** Sprint 2 - Wave 1: Stop the Bleeding (Cash Audit, Intake Verification, Client Ledger)
 
 > **This roadmap supersedes all others for execution purposes.** It consolidates:
 > - MASTER_ROADMAP.md (v4.9)
@@ -25,18 +25,19 @@
 
 ## All Roadmaps
 
-### 0. Prioritized Strategic Roadmap (ACTIVE)
+### 0. MVP Strategic Execution Plan (ACTIVE)
 
 **Status:** 🟡 ACTIVE
 **Priority:** Critical
 **Files:**
 
-- [Implementation Roadmap](./PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md) - 6-sprint execution plan
+- [MVP Strategic Execution Plan](./MVP_STRATEGIC_EXECUTION_PLAN_2026-01-19.md) - **Authoritative execution plan**
+- [Prioritized Strategic Roadmap](./PRIORITIZED_STRATEGIC_ROADMAP_2026-01-12.md) - 6-sprint reference plan
 - [Customer Meeting Roadmap](./TERP_STRATEGIC_ROADMAP_2026.md) - 75 MEET items source
 - [Unified Roadmap](./UNIFIED_STRATEGIC_ROADMAP_2026-01-12.md) - Gap analysis integration
 - [Master Roadmap](./MASTER_ROADMAP.md) - Historical task tracking
 
-**Summary:** Frontend-first execution plan with parallel agent support. Consolidates all 75 customer meeting items, bug fixes, API registration, and feature specs into a prioritized sprint structure with QA gates.
+**Summary:** Comprehensive dependency-ordered execution plan with validated task status. Consolidates all 75 customer meeting items across 4 waves (Sprints 2-5), with Sprint 0-1 foundation work completed. Features parallel agent execution tracks and mandatory QA gates.
 
 **Key Features:**
 - 6 Sprints: Foundation → Critical UI → Wave 1-4
