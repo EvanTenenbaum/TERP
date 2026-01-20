@@ -1,15 +1,45 @@
 # Work Surfaces Strategic Execution Roadmap
 
-> **Version**: 1.0.0
+> **Version**: 2.0.0
 > **Date**: 2026-01-20
 > **Classification**: Production Deployment Execution Plan
-> **Reference**: `WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md`
+> **References**:
+> - `WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md` - Full deployment strategy
+> - `ACCELERATED_VALIDATION_PROTOCOL.md` - AI-executable validation (recommended)
 
 ---
 
 ## Executive Summary
 
-This document provides the **step-by-step execution plan** for deploying Work Surfaces to 100% of production users. It translates the deployment strategy into actionable tasks with clear ownership, timelines, and go/no-go criteria.
+This document provides the **step-by-step execution plan** for deploying Work Surfaces to 100% of production users. Two execution paths are available:
+
+### Deployment Path Selection
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        CHOOSE YOUR DEPLOYMENT PATH                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   ┌─────────────────────────┐        ┌─────────────────────────┐            │
+│   │  ACCELERATED VALIDATION │        │  TRADITIONAL ROLLOUT    │            │
+│   │      (RECOMMENDED)      │        │                         │            │
+│   ├─────────────────────────┤        ├─────────────────────────┤            │
+│   │ Duration: 4-6 hours     │        │ Duration: 4+ days       │            │
+│   │ User Risk: None         │        │ User Risk: Progressive  │            │
+│   │ Coverage: 100%          │        │ Coverage: User-driven   │            │
+│   │ When: Minimal users     │        │ When: Active user base  │            │
+│   └─────────────────────────┘        └─────────────────────────┘            │
+│              │                                    │                          │
+│              ▼                                    ▼                          │
+│   bash scripts/validation/           Follow Phase 0 → 1 → 2                 │
+│   run-accelerated-validation.sh      (detailed steps below)                 │
+│              │                                    │                          │
+│              ▼                                    ▼                          │
+│       All tests pass?               Complete all stages                      │
+│       YES → Deploy 100%             with 24h bake periods                   │
+│                                                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ### Success Criteria
 - All 9 Work Surfaces deployed and accessible
@@ -18,7 +48,61 @@ This document provides the **step-by-step execution plan** for deploying Work Su
 - All 6 invariants passing continuously
 - Rollback tested and documented
 
-### Total Execution Estimate
+### Execution Estimates
+
+| Path | Tasks | Duration | Best For |
+|------|-------|----------|----------|
+| **Accelerated (Recommended)** | 4 phases | 4-6 hours | AI agents, no active users |
+| Traditional Staged | 8 tasks | ~31h + 72h bake | Production with active users |
+
+---
+
+## RECOMMENDED: Accelerated Validation Path
+
+**Use this path when**: Minimal/no active users, AI agents available to execute tests.
+
+### Quick Start
+
+```bash
+# Run full accelerated validation
+bash scripts/validation/run-accelerated-validation.sh
+
+# Results saved to: qa-results/accelerated-validation-YYYYMMDD-HHMMSS/
+```
+
+### Accelerated Phases
+
+```
+Phase A (1-2h)       Phase B (2h)        Phase C (1-2h)      Phase D (1h)
+Infrastructure ────► Feature Parity ────► Stress Test ───────► Chaos Test
+• TypeScript build   • Unit tests        • Synthetic load    • Rollback verify
+• Gate scripts       • Golden Flows      • Edge fuzzing      • Failure inject
+• RBAC verify        • A/B comparison    • Invariant monitor
+```
+
+| Phase | What It Validates | Pass Criteria |
+|-------|-------------------|---------------|
+| A | Infrastructure | Build passes, gates pass, RBAC complete |
+| B | Feature Parity | All unit tests pass, 8 Golden Flows × 7 roles |
+| C | Stability | >95% success under load, 0 invariant violations |
+| D | Rollback | Feature flag rollback <1s, data integrity preserved |
+
+### Go/No-Go After Accelerated Validation
+
+| All phases pass? | Action |
+|------------------|--------|
+| ✓ YES | Deploy to 100% immediately |
+| ✗ NO | Review logs, fix issues, re-run |
+
+**See**: `docs/deployment/ACCELERATED_VALIDATION_PROTOCOL.md` for detailed protocol.
+
+---
+
+## ALTERNATIVE: Traditional Staged Rollout
+
+**Use this path when**: Active user base, need real-world observation, regulatory requirements.
+
+### Traditional Execution Estimate
 | Phase | Tasks | Estimate |
 |-------|-------|----------|
 | Phase 0: Infrastructure | DEPLOY-001..004 | 11h |
