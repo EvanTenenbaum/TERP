@@ -793,6 +793,233 @@ Each Work Surface module requires a feature flag for safe deployment:
 | 3 | Bulk selection limit (500 rows): acceptable? | UXS-803 implementation | No |
 | 4 | VIP Portal: full Work Surface or light touch? | Scope planning | No |
 
+### Work Surfaces Deployment Tasks (Added 2026-01-20)
+
+> **Deployment Strategy**: `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md`
+> **Execution Roadmap**: `docs/deployment/WORKSURFACES_EXECUTION_ROADMAP.md`
+> **Accelerated Validation**: `docs/deployment/ACCELERATED_VALIDATION_PROTOCOL.md`
+> **QA Gate Scripts**: `scripts/qa/` (placeholder-scan.sh, rbac-verify.sh, feature-parity.sh, invariant-checks.ts)
+> **Session**: `docs/sessions/completed/Session-20260120-WORKSURFACES-DEPLOYMENT-XpszM.md`
+
+These tasks enable progressive rollout of Work Surfaces to production. All 9 Work Surfaces are implemented (95% complete) but currently not routed in App.tsx.
+
+#### Deployment Path Options
+
+| Path | Duration | When to Use |
+|------|----------|-------------|
+| **Traditional Staged Rollout** | 4+ days | Active user base, need real-world observation |
+| **Accelerated AI Validation** | 4-6 hours | Minimal users, AI agents can execute tests |
+
+**Accelerated Validation** replaces staged rollout observation with comprehensive automated testing:
+- Phase A: Infrastructure validation (builds, types, gates)
+- Phase B: Unit tests + Golden Flow matrix (all flows × all roles)
+- Phase C: E2E tests + invariant monitoring
+- Phase D: Rollback verification
+
+Run: `bash scripts/validation/run-accelerated-validation.sh`
+
+| Task | Description | Priority | Status | Estimate | Dependencies |
+|------|-------------|----------|--------|----------|--------------|
+| DEPLOY-001 | Wire WorkSurfaceGate into App.tsx routes | HIGH | ready | 4h | None |
+| DEPLOY-002 | Add gate scripts to package.json | HIGH | ready | 1h | None |
+| DEPLOY-003 | Seed missing RBAC permissions (40+ accounting) | HIGH | ready | 4h | None |
+| DEPLOY-004 | Capture baseline metrics (latency, error rates) | MEDIUM | ready | 2h | None |
+| DEPLOY-005 | Execute Stage 0 (Internal QA) | HIGH | ready | 8h | DEPLOY-001..004 |
+| DEPLOY-006 | Execute Stage 1 (10% Rollout) | HIGH | ready | 4h | DEPLOY-005 |
+| DEPLOY-007 | Execute Stage 2 (50% Rollout) | HIGH | ready | 4h | DEPLOY-006 |
+| DEPLOY-008 | Execute Stage 3 (100% Rollout) | HIGH | ready | 4h | DEPLOY-007 |
+
+#### DEPLOY-001: Wire WorkSurfaceGate into App.tsx Routes
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/App.tsx`, `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts`
+**Dependencies:** None
+
+**Problem:**
+App.tsx routes to legacy pages. WorkSurfaceGate component exists (line 301-318 in useWorkSurfaceFeatureFlags.ts) but is not imported or used in routing.
+
+**Objectives:**
+1. Import WorkSurfaceGate into App.tsx
+2. Wrap each legacy route with WorkSurfaceGate
+3. Map each legacy page to its WorkSurface equivalent
+4. Verify feature flag controls work correctly
+
+**Deliverables:**
+- [ ] WorkSurfaceGate imported in App.tsx
+- [ ] All 9 WorkSurface routes wrapped
+- [ ] Feature flags default to false (safe deployment)
+- [ ] Manual toggle test passes
+
+---
+
+#### DEPLOY-002: Add Gate Scripts to package.json
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 1h
+**Module:** `package.json`, `scripts/qa/`
+**Dependencies:** None
+
+**Problem:**
+Gate scripts exist in `scripts/qa/` but are not registered as npm commands.
+
+**Objectives:**
+1. Add npm scripts for each gate
+2. Verify scripts are executable
+3. Document gate usage
+
+**Deliverables:**
+- [ ] `npm run gate:placeholder` → placeholder-scan.sh
+- [ ] `npm run gate:rbac` → rbac-verify.sh
+- [ ] `npm run gate:parity` → feature-parity.sh
+- [ ] `npm run gate:invariants` → invariant-checks.ts
+- [ ] All gates pass on current codebase
+
+---
+
+#### DEPLOY-003: Seed Missing RBAC Permissions
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/services/rbacDefinitions.ts`, seed scripts
+**Dependencies:** None
+
+**Problem:**
+USER_FLOW_MATRIX.csv identifies 40+ accounting permissions not present in RBAC seed. Work Surfaces may fail RBAC checks without these permissions.
+
+**Objectives:**
+1. Audit USER_FLOW_MATRIX.csv for all required permissions
+2. Add missing permissions to rbacDefinitions.ts
+3. Create migration to seed permissions
+4. Verify with rbac-verify.sh
+
+**Deliverables:**
+- [ ] All permissions from USER_FLOW_MATRIX.csv present
+- [ ] Migration file created
+- [ ] `npm run gate:rbac` passes
+- [ ] No RBAC errors in Stage 0 testing
+
+---
+
+#### DEPLOY-004: Capture Baseline Metrics
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 2h
+**Module:** Observability stack
+**Dependencies:** None
+
+**Problem:**
+Need baseline metrics before rollout to detect regressions.
+
+**Objectives:**
+1. Capture P50/P95 latency for all 9 Work Surface endpoints
+2. Document current error rates
+3. Establish alert thresholds
+
+**Deliverables:**
+- [ ] Baseline document created
+- [ ] Latency metrics captured
+- [ ] Error rate baseline established
+- [ ] Alert thresholds configured
+
+---
+
+#### DEPLOY-005: Execute Stage 0 (Internal QA)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** All Work Surfaces
+**Dependencies:** DEPLOY-001, DEPLOY-002, DEPLOY-003, DEPLOY-004
+
+**Problem:**
+Work Surfaces need internal validation before any user exposure.
+
+**Objectives:**
+1. Enable feature flags for internal users only
+2. Run all gate scripts
+3. Execute Golden Flows GF-001 through GF-008
+4. Fix any blocking issues
+
+**Deliverables:**
+- [ ] All 8 gates pass
+- [ ] All 8 Golden Flows pass
+- [ ] No P0 bugs discovered
+- [ ] Sign-off for Stage 1
+
+---
+
+#### DEPLOY-006: Execute Stage 1 (10% Rollout)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** Feature flag configuration
+**Dependencies:** DEPLOY-005
+
+**Problem:**
+First external user exposure requires careful monitoring.
+
+**Objectives:**
+1. Enable Work Surfaces for 10% of users
+2. Monitor error rates and latency
+3. 24-hour bake period
+4. Rollback if metrics exceed thresholds
+
+**Deliverables:**
+- [ ] 10% rollout configured
+- [ ] Monitoring dashboard active
+- [ ] 24-hour bake complete
+- [ ] Metrics within thresholds
+
+---
+
+#### DEPLOY-007: Execute Stage 2 (50% Rollout)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** Feature flag configuration
+**Dependencies:** DEPLOY-006
+
+**Objectives:**
+1. Enable Work Surfaces for 50% of users
+2. Monitor for regressions
+3. 24-hour bake period
+4. Validate feature parity at scale
+
+**Deliverables:**
+- [ ] 50% rollout configured
+- [ ] No regression alerts
+- [ ] 24-hour bake complete
+- [ ] Support ticket volume normal
+
+---
+
+#### DEPLOY-008: Execute Stage 3 (100% Rollout)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** Feature flag configuration
+**Dependencies:** DEPLOY-007
+
+**Objectives:**
+1. Enable Work Surfaces for 100% of users
+2. Remove legacy page code (optional, can defer)
+3. Document rollout completion
+4. Update ATOMIC_ROADMAP.md status
+
+**Deliverables:**
+- [ ] 100% rollout configured
+- [ ] All metrics stable
+- [ ] Rollout documented in CHANGELOG.md
+- [ ] ATOMIC_ROADMAP.md updated to 100% deployed
+
 ---
 
 ## 📊 Beta Summary
@@ -801,7 +1028,8 @@ Each Work Surface module requires a feature flag for safe deployment:
 | ------------------- | --------- | ------ | ------ |
 | Reliability Program | 0         | 17     | 17     |
 | UX Work Surface (BETA) | 0      | 2      | 2      |
-| **TOTAL**           | **0**     | **19** | **19** |
+| Work Surfaces Deployment | 0   | 8      | 8      |
+| **TOTAL**           | **0**     | **27** | **27** |
 
 ---
 
@@ -810,10 +1038,10 @@ Each Work Surface module requires a feature flag for safe deployment:
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 19     | 19      | 0%       |
-| **TOTAL** | **185**   | **19** | **206** | ~90%     |
+| Beta      | 0         | 27     | 27      | 0%       |
+| **TOTAL** | **185**   | **27** | **214** | ~86%     |
 
-> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706).
+> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706) + 8 Work Surfaces Deployment tasks (DEPLOY-001..008).
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
 ---
