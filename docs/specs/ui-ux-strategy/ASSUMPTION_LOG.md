@@ -6,7 +6,7 @@
 >
 > **Status Key**: ✅ Validated, ❓ Pending, ❌ Invalidated, 🔄 Partially Validated
 >
-> **Last Updated**: 2026-01-19 (Red Hat QA Deep Review)
+> **Last Updated**: 2026-01-20 (PR #244 Red Hat QA Deep Review)
 
 ## Strategy Assumptions (Original)
 
@@ -52,6 +52,11 @@
 | A-031 | Performance budgets can be enforced via Lighthouse CI | May need custom performance monitoring | CI/CD capabilities | DevOps | Medium | ❓ | - | - |
 | A-032 | Concurrent edit conflicts are rare enough for optimistic locking | Need pessimistic locking | User behavior analysis | Unknown | Medium | ❓ | - | - |
 | A-033 | Warehouse staff have reliable WiFi for most operations | Offline mode is P0 not P2 | Site survey | Operations | Low | ❓ | - | - |
+| A-034 | Feature flag system can handle per-user overrides | Pilot rollout won't work | Check featureFlags router | PR #244 QA | High | ✅ | QA Review | 2026-01-20 |
+| A-035 | Modal inventory in PR #244 is complete | Missing modals cause doctrine violations | Full codebase grep for Dialog | PR #244 QA | Medium | 🔄 | QA Review | 2026-01-20 |
+| A-036 | QA Auth system supports all roles needed for golden flow testing | RBAC testing blocked | Check AUTH-QA-001 implementation | PR #244 QA | High | ✅ | QA Review | 2026-01-20 |
+| A-037 | REL-* tasks will complete before UXS-501..502 requires ledger hardening | Accounting Work Surface has data integrity risks | Dependency tracking | PR #244 QA | Medium | ❓ | - | - |
+| A-038 | VIP Portal pages don't require Work Surface patterns | VIP UX inconsistent with main app | Product decision | PR #244 QA | Low | ❓ | - | - |
 
 ---
 
