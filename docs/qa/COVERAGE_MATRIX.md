@@ -1,7 +1,19 @@
-# Test Coverage Matrix - Work Surfaces
+# Test Coverage Matrix - Work Surfaces (REVISED)
 
 **Generated**: 2026-01-20
+**Revised**: 2026-01-20 (Third-Party Expert Review)
 **Testing Suite**: Work Surfaces Exhaustive Testing
+
+---
+
+## Revision Notes
+
+> **IMPORTANT**: This matrix has been revised following a third-party expert review.
+>
+> **Key Corrections**:
+> - ~~P0-002 (Inventory oversell race condition)~~ - FALSE POSITIVE removed from adversarial findings
+> - InventoryWorkSurface adversarial rating upgraded (locking IS implemented)
+> - Test coverage gaps added as formal issues (P1-009, P2-008, P2-009)
 
 ---
 
@@ -75,7 +87,7 @@
 | QuotesWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
 | DirectIntakeWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
 
-**Critical Issues**: 2 (P0 - FIFO/LIFO, Order status machine)
+**Critical Issues**: 2 (P0-002: FIFO/LIFO not implemented, P0-003: Order status machine incomplete)
 
 ---
 
@@ -135,10 +147,12 @@
 | Concurrent Edit Detection | ⚠️ Optional | ✅ | ✅ | ✅ | ✅ |
 | Rapid State Transitions | ❌ No debounce | ✅ | ✅ | ✅ | ✅ |
 | Privilege Escalation | ✅ Protected | ✅ | ✅ | ✅ | ✅ |
-| Data Integrity | ⚠️ Race | ✅ | ⚠️ No FIFO | ✅ | ✅ |
+| Data Integrity | ✅ Locked | ✅ | ⚠️ No FIFO | ✅ | ✅ |
 | Input Validation | ⚠️ No max len | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
 
-**Critical Issues**: 2 (inventory oversell, rapid transitions)
+**Critical Issues**: 1 (rapid transitions - no debounce on OrdersWS confirm button)
+
+> **Note**: Original report claimed "inventory oversell race condition" but code review confirms `ordersDb.ts:290-296` properly implements `.for("update")` row-level locking.
 
 ---
 
@@ -180,21 +194,25 @@
 
 | Work Surface | Overall Risk | Key Issues |
 |--------------|--------------|------------|
-| OrdersWorkSurface | 🔴 HIGH | Status machine, race conditions, no debounce |
-| InvoicesWorkSurface | 🔴 HIGH | Payment stub, void logic, error display |
-| InventoryWorkSurface | 🔴 HIGH | FIFO/LIFO missing, oversell race |
+| OrdersWorkSurface | 🔴 HIGH | Status machine incomplete, no debounce on confirm |
+| InvoicesWorkSurface | 🔴 HIGH | Payment stub (P0-001), void logic needs clarification, error display missing |
+| InventoryWorkSurface | 🟡 MEDIUM | FIFO/LIFO not implemented (concurrency IS protected via row locks) |
 | ClientsWorkSurface | 🟢 LOW | Type safety only |
 | PurchaseOrdersWorkSurface | 🟢 LOW | Missing E2E tests only |
 | PickPackWorkSurface | 🟡 MEDIUM | Refetch race condition |
-| ClientLedgerWorkSurface | 🟡 MEDIUM | Depends on payment flow |
+| ClientLedgerWorkSurface | 🟡 MEDIUM | Depends on payment flow being fixed |
 | QuotesWorkSurface | 🟢 LOW | No significant issues |
-| DirectIntakeWorkSurface | 🟡 MEDIUM | Deprecated endpoint, type safety |
+| DirectIntakeWorkSurface | 🟡 MEDIUM | Deprecated endpoint (vendors.getAll), type safety |
+
+> **Revision Note**: InventoryWorkSurface risk downgraded from HIGH to MEDIUM after confirming row-level locking is properly implemented.
 
 ---
 
 ## Next Steps
 
-1. **Fix P0 Blockers** (5 issues) - Before production
-2. **Fix P1 Critical** (8 issues) - Within 2 weeks
-3. **Add Component Tests** (9 files) - Ongoing
-4. **Fix P2 Important** (7 issues) - Within 1 month
+1. **Fix P0 Blockers** (4 issues) - Before production
+2. **Fix P1 Critical** (9 issues) - Includes new test coverage issue P1-009
+3. **Add Component Tests** (9 files) - Critical gap identified
+4. **Fix P2 Important** (9 issues) - Includes new E2E/flow coverage issues
+
+> **Updated Counts**: After third-party review: 4 P0 (was 5), 9 P1 (was 8), 9 P2 (was 7), 4 P3 = **26 total**

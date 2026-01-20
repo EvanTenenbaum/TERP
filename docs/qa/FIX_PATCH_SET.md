@@ -1,7 +1,19 @@
-# Fix Patch Set - P0/P1 Critical Issues
+# Fix Patch Set - P0/P1 Critical Issues (REVISED)
 
 **Generated**: 2026-01-20
+**Revised**: 2026-01-20 (Third-Party Expert Review)
 **Scope**: P0 (Blocker) and P1 (Critical) issues only
+
+---
+
+## Revision Notes
+
+> **IMPORTANT**: This patch set has been revised following a third-party expert review.
+>
+> **Key Corrections**:
+> - ~~P0-002 (Inventory race condition)~~ **REMOVED** - False positive. Code already implements `.for("update")` locking at `ordersDb.ts:290-296`
+> - P1-001 (Invoice void logic) - Reworded to clarify semantic issue (business rule vs implementation mismatch)
+> - Added reference to existing working pattern (PaymentInspector.tsx) for P0-001
 
 ---
 
@@ -9,6 +21,7 @@
 
 **File**: `client/src/components/work-surface/InvoicesWorkSurface.tsx`
 **Lines**: 717-724
+**Verified**: ✅ Code inspection confirms stub with comment "In a real implementation..."
 
 ### Current Code (Broken)
 ```typescript
@@ -20,6 +33,18 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
   setShowPaymentDialog(false);
   utils.accounting.invoices.list.invalidate();
 };
+```
+
+### Reference Implementation (PaymentInspector.tsx shows correct pattern)
+```typescript
+// PaymentInspector.tsx uses the mutation correctly - copy this pattern
+const recordPayment = trpc.payments.recordPayment.useMutation({
+  onSuccess: () => {
+    utils.accounting.invoices.list.invalidate();
+    utils.accounting.invoices.getById.invalidate({ id: invoiceId });
+    // ...
+  },
+});
 ```
 
 ### Fixed Code
@@ -45,7 +70,7 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
     invoiceId,
     amount,
     notes: note,
-    paymentMethod: 'CHECK', // or get from form
+    paymentMethod: 'CHECK', // or get from form/dialog
     paymentDate: new Date(),
   });
 };
@@ -53,84 +78,43 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
 
 ---
 
-## P0-002: Inventory Oversell Race Condition
+## ~~P0-002: Inventory Oversell Race Condition~~ - REMOVED (FALSE POSITIVE)
 
-**File**: `server/routers/orders.ts`
-**Lines**: 1198-1220
-
-### Current Code (Vulnerable)
-```typescript
-// Inside confirmOrder
-for (const item of lineItems) {
-  const batch = await ctx.db.query.batches.findFirst({
-    where: eq(batches.id, item.batchId),
-  });
-
-  const availableQty = batch.onHandQty - batch.reservedQty;
-  if (availableQty < item.quantity) {
-    throw new TRPCError({ /* insufficient inventory */ });
-  }
-  // RACE CONDITION: Another transaction could reserve between check and update
-}
-
-// Later: update order status
-```
-
-### Fixed Code
-```typescript
-// Inside confirmOrder - use transaction with row locking
-await ctx.db.transaction(async (tx) => {
-  for (const item of lineItems) {
-    // Lock the batch row to prevent concurrent modifications
-    const [batch] = await tx
-      .select()
-      .from(batches)
-      .where(eq(batches.id, item.batchId))
-      .for('update'); // Row-level lock
-
-    if (!batch) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: `Batch ${item.batchId} not found`,
-      });
-    }
-
-    const availableQty = batch.onHandQty - batch.reservedQty - batch.quarantineQty;
-    if (availableQty < item.quantity) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: `Insufficient inventory for ${batch.batchCode}. Available: ${availableQty}, Requested: ${item.quantity}`,
-      });
-    }
-
-    // Reserve the inventory immediately within lock
-    await tx
-      .update(batches)
-      .set({ reservedQty: sql`${batches.reservedQty} + ${item.quantity}` })
-      .where(eq(batches.id, item.batchId));
-  }
-
-  // Now safe to update order status
-  await tx.update(orders).set({ status: 'CONFIRMED' }).where(eq(orders.id, orderId));
-});
-```
+> **Resolution**: Third-party code review confirms this was incorrectly reported.
+>
+> **Evidence**: `ordersDb.ts:290-296` shows proper implementation:
+> ```typescript
+> const lockedBatch = await tx
+>   .select()
+>   .from(batches)
+>   .where(eq(batches.id, item.batchId))
+>   .limit(1)
+>   .for("update")  // ✅ Row-level lock IS IMPLEMENTED
+>   .then(rows => rows[0]);
+> ```
+>
+> The `confirmDraftOrder` function correctly uses database transactions with row-level locking. No fix needed.
 
 ---
 
-## P0-004: Order Status Machine Incomplete
+## P0-003: Order Status Machine Incomplete
 
 **File**: `server/db/schema.ts` (or relevant enum definition)
+**File**: `server/ordersDb.ts:1564-1570` (validation logic)
+**Verified**: ✅ Code shows only PENDING/PACKED/SHIPPED accepted
 
-### Current Code
+### Current Validation Code
 ```typescript
-export const fulfillmentStatusEnum = pgEnum('fulfillment_status', [
-  'PENDING',
-  'PACKED',
-  'SHIPPED',
-]);
+// ordersDb.ts:1564-1570
+const validStatus =
+  newStatus === "PENDING" ||
+  newStatus === "PACKED" ||
+  newStatus === "SHIPPED"
+    ? newStatus
+    : "PENDING"; // Default to PENDING for unsupported statuses
 ```
 
-### Fixed Code
+### Fixed Schema
 ```typescript
 export const fulfillmentStatusEnum = pgEnum('fulfillment_status', [
   'DRAFT',
@@ -143,9 +127,15 @@ export const fulfillmentStatusEnum = pgEnum('fulfillment_status', [
 ]);
 ```
 
+### Fixed Validation
+```typescript
+const validStatuses = ['DRAFT', 'CONFIRMED', 'PENDING', 'FULFILLED', 'PACKED', 'SHIPPED', 'DELIVERED'];
+const validStatus = validStatuses.includes(newStatus) ? newStatus : 'PENDING';
+```
+
 **Migration Required**:
 ```sql
--- Add new enum values
+-- Add new enum values (PostgreSQL)
 ALTER TYPE fulfillment_status ADD VALUE 'DRAFT' BEFORE 'PENDING';
 ALTER TYPE fulfillment_status ADD VALUE 'CONFIRMED' AFTER 'DRAFT';
 ALTER TYPE fulfillment_status ADD VALUE 'FULFILLED' AFTER 'CONFIRMED';
@@ -154,14 +144,15 @@ ALTER TYPE fulfillment_status ADD VALUE 'DELIVERED' AFTER 'SHIPPED';
 
 ---
 
-## P0-005: Individual Feature Flags Not Seeded
+## P0-004: Individual Feature Flags Not Seeded
 
 **File**: `server/services/seedFeatureFlags.ts`
+**Verified**: ✅ Deployment flags exist, individual surface flags do not
 
 ### Add to seed data
 ```typescript
 const workSurfaceFlags = [
-  // Deployment flags (existing)
+  // Deployment flags (existing - keep these)
   {
     key: 'WORK_SURFACE_INTAKE',
     name: 'Work Surface: Intake Module',
@@ -170,7 +161,7 @@ const workSurfaceFlags = [
   },
   // ... other deployment flags ...
 
-  // Individual surface flags (NEW)
+  // Individual surface flags (NEW - add these)
   {
     key: 'work-surface-direct-intake',
     name: 'Direct Intake Work Surface',
@@ -218,12 +209,13 @@ const workSurfaceFlags = [
 
 ---
 
-## P1-001: Invoice Void Logic Inverted
+## P1-001: Invoice Void Logic - Business Rule Clarification Needed
 
 **File**: `server/routers/invoices.ts`
 **Lines**: 392-397
+**Verified**: ✅ Code exists as reported
 
-### Current Code (Inverted - Allows voiding paid)
+### Current Code
 ```typescript
 if (invoice.status === "PAID" && input.status !== "VOID") {
   throw new TRPCError({
@@ -233,39 +225,43 @@ if (invoice.status === "PAID" && input.status !== "VOID") {
 }
 ```
 
-### Fixed Code
+### Analysis
+The current code says "Paid invoices can **only** be voided" - meaning:
+- If invoice is PAID, you CAN change to VOID (allowed)
+- If invoice is PAID, you CANNOT change to anything else (blocked)
+
+The original QA report claimed the business rule is "Cannot void paid invoices" which is the OPPOSITE.
+
+**Action Required**: Clarify with product owner which behavior is correct:
+
+**Option A**: If voiding paid invoices SHOULD be prevented:
 ```typescript
-// Prevent voiding paid invoices
 if (invoice.status === "PAID" && input.status === "VOID") {
   throw new TRPCError({
     code: "BAD_REQUEST",
-    message: "Cannot void a paid invoice. Record a refund or credit memo instead."
-  });
-}
-
-// Prevent any changes to paid invoices except through proper channels
-if (invoice.status === "PAID") {
-  throw new TRPCError({
-    code: "BAD_REQUEST",
-    message: "Paid invoices cannot be modified. Record adjustments or credits separately."
+    message: "Cannot void a paid invoice. Record a credit memo instead."
   });
 }
 ```
+
+**Option B**: If current behavior is intentional (void is only option for paid):
+- Update business requirements documentation
+- Add additional validation for void reason requirement
+- Mark this issue as "Working As Designed"
 
 ---
 
 ## P1-002: No Debounce on Rapid State Transitions
 
 **File**: `client/src/components/work-surface/OrdersWorkSurface.tsx`
-**Lines**: ~613
+**Verified**: ✅ No debounce or isPending guard found on confirm button
 
-### Current Code (Vulnerable)
+### Current Pattern (Vulnerable)
 ```typescript
 const handleConfirm = () => {
   confirmMutation.mutate({ orderId: selectedOrder.id });
 };
 
-// Button without guards
 <Button onClick={handleConfirm}>Confirm Order</Button>
 ```
 
@@ -278,7 +274,6 @@ const handleConfirm = useDebouncedCallback(() => {
   confirmMutation.mutate({ orderId: selectedOrder.id });
 }, 300);
 
-// Button with loading guard
 <Button
   onClick={handleConfirm}
   disabled={confirmMutation.isPending}
@@ -293,8 +288,9 @@ const handleConfirm = useDebouncedCallback(() => {
 
 **File**: `server/routers/orders.ts`
 **Lines**: ~227
+**Verified**: ✅ Version check uses conditional `if (input.version && ...)`
 
-### Current Code (Optional - Bypassable)
+### Current Code
 ```typescript
 if (input.version && input.version !== existingOrder.version) {
   throw new TRPCError({
@@ -307,7 +303,7 @@ if (input.version && input.version !== existingOrder.version) {
 ### Fixed Code
 ```typescript
 // Make version check mandatory
-if (!input.version) {
+if (input.version === undefined || input.version === null) {
   throw new TRPCError({
     code: 'BAD_REQUEST',
     message: 'Version field is required for update operations',
@@ -317,7 +313,7 @@ if (!input.version) {
 if (input.version !== existingOrder.version) {
   throw new TRPCError({
     code: 'CONFLICT',
-    message: `Order has been modified by another user. Your version: ${input.version}, Current version: ${existingOrder.version}. Please refresh and try again.`,
+    message: `Order has been modified. Your version: ${input.version}, Current: ${existingOrder.version}. Please refresh.`,
   });
 }
 ```
@@ -326,38 +322,35 @@ if (input.version !== existingOrder.version) {
 
 ## P1-006: Query Error States Not Displayed
 
-**File**: `client/src/components/work-surface/InvoicesWorkSurface.tsx`
+**Files**: `InvoicesWorkSurface.tsx`, `InventoryWorkSurface.tsx`
+**Verified**: ✅ Error variables exist but not rendered
 
-### Current Code (Error Not Displayed)
+### Current Pattern
 ```typescript
 const { data, isLoading, error } = trpc.accounting.invoices.list.useQuery({...});
 
-// Only shows loading, not error
-{isLoading ? (
-  <Loader2 className="animate-spin" />
-) : (
-  <Table>...</Table>
-)}
+// Only renders loading state, not error
+{isLoading ? <Loader2 /> : <Table>...</Table>}
 ```
 
 ### Fixed Code
 ```typescript
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+
 const { data, isLoading, error, refetch } = trpc.accounting.invoices.list.useQuery({...});
 
 {isLoading ? (
   <Loader2 className="animate-spin" />
 ) : error ? (
-  <Alert variant="destructive">
-    <AlertTriangle className="h-4 w-4" />
-    <AlertTitle>Failed to load invoices</AlertTitle>
-    <AlertDescription>
-      {error.message || "An error occurred while loading invoices."}
-    </AlertDescription>
-    <Button variant="outline" size="sm" onClick={() => refetch()}>
+  <div className="flex flex-col items-center justify-center p-8 text-center">
+    <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+    <h3 className="text-lg font-semibold mb-2">Failed to load data</h3>
+    <p className="text-muted-foreground mb-4">{error.message}</p>
+    <Button variant="outline" onClick={() => refetch()}>
       <RefreshCw className="h-4 w-4 mr-2" />
       Retry
     </Button>
-  </Alert>
+  </div>
 ) : displayInvoices.length === 0 ? (
   <EmptyState message="No invoices found" />
 ) : (
@@ -370,8 +363,10 @@ const { data, isLoading, error, refetch } = trpc.accounting.invoices.list.useQue
 ## P1-007: Deprecated Vendor Endpoint
 
 **File**: `client/src/components/work-surface/DirectIntakeWorkSurface.tsx`
+**Line**: 507
+**Verified**: ✅ Uses `trpc.vendors.getAll.useQuery()`
 
-### Current Code (Deprecated)
+### Current Code
 ```typescript
 const { data: vendorsData, isLoading: vendorsLoading } =
   trpc.vendors.getAll.useQuery();
@@ -385,7 +380,7 @@ const { data: vendorsData, isLoading: vendorsLoading } =
     pageSize: 1000
   });
 
-// Also update any references to vendorsData structure if needed
+// Update data access pattern if needed
 const vendors = vendorsData?.items ?? [];
 ```
 
@@ -395,59 +390,63 @@ const vendors = vendorsData?.items ?? [];
 
 **File**: `server/routers/featureFlags.ts`
 **Lines**: ~56
+**Verified**: ✅ Uses `protectedProcedure` without additional permission check
 
-### Current Code (Any Auth User)
+### Current Code
 ```typescript
 getEffectiveFlags: protectedProcedure
   .query(async ({ ctx }) => {
-    // Returns all flags for any authenticated user
+    // Returns flags for any authenticated user
   }),
 ```
 
 ### Fixed Code
 ```typescript
 getEffectiveFlags: protectedProcedure
-  .use(requirePermission("system:read"))
-  .query(async ({ ctx }) => {
-    // Now requires system:read permission
-  }),
-```
-
-**Alternative** (if system:read is too restrictive):
-```typescript
-// Create a new permission specifically for feature flags
-getEffectiveFlags: protectedProcedure
   .use(requireAnyPermission(["system:read", "feature_flags:read"]))
   .query(async ({ ctx }) => {
-    // Requires either permission
+    // Now requires permission
   }),
 ```
 
 ---
 
-## Application Instructions
+## Application Priority
 
-### Priority Order
-1. **P0-001**: Payment recording - Critical for accounting flow
-2. **P0-002**: Inventory race condition - Data integrity
-3. **P1-001**: Invoice void logic - Financial compliance
-4. **P1-002**: Debounce - UX and data integrity
-5. **P0-004**: Status machine - Requires migration planning
-6. **P0-005**: Feature flags - Requires seed script update
-7. **P1-003**: Optimistic locking - May need client updates
-8. **P1-006**: Error display - UX improvement
-9. **P1-007**: Deprecated endpoint - Technical debt
-10. **P1-008**: Permission check - Security hardening
+### Immediate (Before next deployment)
+1. **P0-001**: Payment recording - Blocks accounting flow
+2. **P1-002**: Debounce mutations - Prevents duplicate operations
 
-### Testing Requirements
-- P0-001: Test full payment flow in InvoicesWorkSurface
-- P0-002: Test concurrent order confirmations
-- P1-001: Test invoice void attempts on paid invoices
-- P1-002: Test rapid clicking on confirm button
-- All: Run existing E2E golden flow tests
+### This Sprint
+3. **P0-003**: Order status machine - Requires migration
+4. **P0-004**: Feature flags seeding - Script change only
+5. **P1-006**: Error displays - UX improvement
+6. **P1-007**: Deprecated endpoint - Technical debt
 
-### Rollback Plan
+### Next Sprint
+7. **P1-001**: Invoice void logic - Needs product clarification
+8. **P1-003**: Optimistic locking - May need client updates
+9. **P1-008**: Permission check - Security hardening
+
+---
+
+## Testing Requirements
+
+| Fix | Test Requirement |
+|-----|------------------|
+| P0-001 | Full payment flow: record → verify → check ledger |
+| P0-003 | Status transitions through all states |
+| P0-004 | Flag evaluation with and without individual flags |
+| P1-002 | Rapid click test (10 clicks in 1 second) |
+| P1-006 | Network error simulation, verify retry works |
+| P1-007 | Vendor dropdown populates correctly |
+
+---
+
+## Rollback Plan
+
 All changes should be:
-1. Behind feature flags where possible
-2. Have database migrations that can be reverted
+1. Feature flagged where possible (P0-004 enables this)
+2. Database migrations reversible
 3. Tested in staging before production
+4. Deployed during low-traffic windows

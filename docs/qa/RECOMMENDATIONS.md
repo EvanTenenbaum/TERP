@@ -1,19 +1,32 @@
-# QA Recommendations - Work Surfaces
+# QA Recommendations - Work Surfaces (REVISED)
 
 **Generated**: 2026-01-20
+**Revised**: 2026-01-20 (Third-Party Expert Review)
 **Testing Suite**: Work Surfaces Exhaustive Testing
+
+---
+
+## Revision Notes
+
+> **IMPORTANT**: This document has been revised following a third-party expert review.
+>
+> **Key Corrections**:
+> - ~~P0-002 (Inventory oversell race condition)~~ **REMOVED** - False positive. Code properly implements row-level locking.
+> - Concurrency section updated to reflect that database-level locking IS implemented
+> - Issue IDs renumbered to reflect removal
+> - 3 new test coverage issues added (P1-009, P2-008, P2-009)
 
 ---
 
 ## Executive Summary
 
-The Work Surfaces testing suite identified **24 issues** across 9 components:
-- 5 P0 Blockers
-- 8 P1 Critical
-- 7 P2 Important
+The Work Surfaces testing suite identified **26 issues** across 9 components:
+- 4 P0 Blockers
+- 9 P1 Critical
+- 9 P2 Important
 - 4 P3 Minor
 
-The codebase has excellent foundations (RBAC, static analysis, hook tests) but critical gaps in financial flows, concurrency handling, and component testing.
+The codebase has excellent foundations (RBAC, static analysis, hook tests, **proper database concurrency control**) but critical gaps in financial flows and component testing.
 
 ---
 
@@ -29,17 +42,7 @@ The InvoicesWorkSurface payment handler is a stub that shows success without rec
 
 ---
 
-### 2. Add Inventory Concurrency Protection (P0-002)
-**Priority**: IMMEDIATE
-**Impact**: Potential oversells in high-traffic scenarios
-
-Race condition between availability check and order confirmation allows multiple orders to confirm for same inventory.
-
-**Action**: Add `FOR UPDATE` row locks in `confirmOrder` transaction.
-
----
-
-### 3. Implement FIFO/LIFO Cost Tracking (P0-003)
+### 2. Implement FIFO/LIFO Cost Tracking (P0-002)
 **Priority**: HIGH
 **Impact**: COGS calculations incorrect, compliance risk
 
@@ -53,9 +56,11 @@ Current implementation stores single `unitCogs` per batch without cost layer tra
 
 ### A. Concurrency Handling Pattern
 
-**Problem**: Multiple surfaces lack protection against rapid operations and concurrent edits.
+**Problem**: Client-side lacks protection against rapid operations (double-clicks, etc).
 
-**Recommendation**: Implement standardized concurrency control:
+**Good News**: Database-level concurrency IS properly implemented via `.for("update")` row locks in `ordersDb.ts:290-296`.
+
+**Recommendation**: Add client-side debounce to complement existing server-side protection:
 
 ```typescript
 // 1. Client-side debounce wrapper
@@ -252,37 +257,38 @@ if (pendingRequests.has(dedupeKey)) return pendingRequests.get(dedupeKey);
 
 ---
 
-## Roadmap
+## Roadmap (REVISED)
 
-### Week 1: P0 Blockers
-- [ ] P0-001: Wire payment recording mutation
-- [ ] P0-002: Add inventory concurrency locks
-- [ ] P1-001: Fix invoice void logic
-- [ ] P1-002: Add debounce to mutations
+### Immediate: P0 Blockers
+- [ ] P0-001: Wire payment recording mutation (critical financial flow)
+- [ ] P0-003: Add missing order states (requires migration)
+- [ ] P0-004: Seed individual feature flags
+- [ ] P1-002: Add debounce to mutations (prevents duplicate operations)
 
-### Week 2: P1 Critical
-- [ ] P0-004: Add missing order states (requires migration)
-- [ ] P0-005: Seed individual feature flags
+### Week 1: P1 Critical
+- [ ] P1-001: Clarify/fix invoice void logic (needs product input)
 - [ ] P1-003: Make optimistic locking mandatory
-- [ ] P1-006: Add error displays
+- [ ] P1-006: Add query error displays
+- [ ] P1-007: Migrate deprecated vendors.getAll endpoint
+- [ ] P1-008: Add feature flag permission check
 
-### Week 3: Infrastructure
-- [ ] P1-007: Migrate deprecated endpoint
-- [ ] P1-008: Add feature flag permission
-- [ ] Create component test infrastructure
-- [ ] Write tests for 3 highest-risk surfaces
+### Week 2: Test Infrastructure
+- [ ] P1-009: Create component test infrastructure (NEW)
+- [ ] Write tests for 3 highest-risk surfaces (Orders, Invoices, DirectIntake)
+- [ ] P2-008: Add missing golden flow tests (NEW)
+- [ ] P2-009: Add missing E2E coverage (NEW)
 
-### Week 4: P2 Important
+### Week 3-4: P2 Important
 - [ ] P2-001: Manager approval workflow design
-- [ ] P2-005: Add database constraints
-- [ ] P2-006: Fix Pick/Pack refetch pattern
-- [ ] P2-007: Add max length validation
+- [ ] P2-005: Add database CHECK constraints
+- [ ] P2-006: Fix Pick/Pack refetch race condition
+- [ ] P2-007: Add max length validation to string fields
 
 ### Month 2: Complete Coverage
-- [ ] P0-003: FIFO/LIFO implementation
-- [ ] Complete component test coverage
-- [ ] Add integration tests
-- [ ] Expand E2E coverage
+- [ ] P0-002: FIFO/LIFO implementation (may need product clarification)
+- [ ] Complete component test coverage (all 9 surfaces)
+- [ ] Add integration tests for cross-surface flows
+- [ ] Expand E2E coverage to 100%
 
 ---
 
@@ -290,8 +296,9 @@ if (pendingRequests.has(dedupeKey)) return pendingRequests.get(dedupeKey);
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| P0 Issues | 5 | 0 |
-| P1 Issues | 8 | 0 |
+| P0 Issues | 4 | 0 |
+| P1 Issues | 9 | 0 |
+| P2 Issues | 9 | 0 |
 | Component Test Coverage | 0% | 80% |
 | Golden Flow Pass Rate | 67% | 100% |
 | Query Error Display | 6/9 | 9/9 |
@@ -301,12 +308,37 @@ if (pendingRequests.has(dedupeKey)) return pendingRequests.get(dedupeKey);
 
 ## Conclusion
 
-The Work Surfaces implementation is architecturally sound with excellent foundational patterns (RBAC, hooks, keyboard contract). The critical issues are concentrated in:
+The Work Surfaces implementation is architecturally sound with excellent foundational patterns:
+- ✅ RBAC properly enforced
+- ✅ Hook tests comprehensive (6 files, 2500+ lines)
+- ✅ Keyboard contract well-defined
+- ✅ **Database concurrency properly implemented** (row-level locking confirmed)
 
-1. **Financial flows** (payment recording, invoice logic)
-2. **Concurrency** (inventory race conditions, rapid clicks)
-3. **Test coverage** (zero component tests)
+The critical issues are concentrated in:
+
+1. **Financial flows** (payment recording stub, invoice void logic needs clarification)
+2. **Client-side protection** (debounce needed for rapid clicks)
+3. **Test coverage** (zero component tests - 9 surfaces untested)
+4. **Feature flags** (individual flags not seeded)
 
 Addressing the P0/P1 issues in the FIX_PATCH_SET.md will resolve the blocking problems. The architectural recommendations will prevent similar issues in future development.
 
 **Estimated Total Effort**: 3-4 weeks for all P0/P1 fixes + test infrastructure.
+
+---
+
+## Third-Party Review Summary
+
+| Original Finding | Review Result |
+|-----------------|---------------|
+| P0-002: Inventory oversell race | **FALSE POSITIVE** - `.for("update")` locking exists |
+| P0-001: Payment stub | **CONFIRMED** - Critical blocker |
+| P0-003: Order status machine | **CONFIRMED** - Missing states |
+| P0-004: Feature flags not seeded | **CONFIRMED** - Individual flags missing |
+| P1-001: Invoice void logic | **CLARIFIED** - Needs product input |
+| P1-007: Deprecated endpoint | **CONFIRMED** - vendors.getAll usage |
+
+**New Issues Added**:
+- P1-009: Zero component unit tests
+- P2-008: Missing golden flow test coverage
+- P2-009: Missing E2E coverage for 3 surfaces
