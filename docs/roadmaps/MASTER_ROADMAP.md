@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.4
-**Last Updated:** 2026-01-20 (Added Navigation Accessibility Enhancement - 11 tasks to surface hidden routes)
+**Version:** 6.5
+**Last Updated:** 2026-01-20 (Added 22 tasks from Deep Audit - git commit analysis of 484 commits)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -755,30 +755,409 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 
 ---
 
+### Deep Audit Additional Findings (P0-P3) - Added Jan 20, 2026
+
+> Discovered during comprehensive git commit analysis (484 commits, Dec 20 - Jan 20).
+> **Source:** `docs/reports/INCOMPLETE_FEATURES_AUDIT_JAN_2026.md`
+> **Method:** Code analysis, not roadmap-derived (roadmap used only for validation)
+> **Total Additional Tasks:** 22 (4 P0, 5 P1, 10 P2, 3 P3)
+
+#### P0 - Critical (Work Surface Ship Blockers)
+
+| Task    | Description                                     | Priority | Status      | Estimate | Module                         |
+| ------- | ----------------------------------------------- | -------- | ----------- | -------- | ------------------------------ |
+| WSQA-001 | Fix InvoicesWorkSurface Payment Recording Stub  | CRITICAL | NOT STARTED | 4h       | InvoicesWorkSurface.tsx:717-724 |
+| WSQA-002 | Implement Flexible Lot Selection                | CRITICAL | NOT STARTED | 8h       | InventoryWorkSurface.tsx       |
+| WSQA-003 | Add RETURNED Order Status with Processing Paths | CRITICAL | NOT STARTED | 8h       | schema.ts, ordersDb.ts:1564    |
+| ACC-001  | Fix Silent GL Posting Failures                  | CRITICAL | NOT STARTED | 8h       | accountingHooks.ts:173,224,274,323 |
+
+##### WSQA-001: Fix InvoicesWorkSurface Payment Recording Stub
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
+**Line:** 717-724
+
+**Problem:**
+Payment recording mutation is a stub - shows success toast without actually persisting the payment. Users think payments are recorded but they are not saved to database.
+
+**Objectives:**
+1. Wire payment recording to actual mutation
+2. Ensure payment persists to database
+3. Update invoice balance after payment
+
+**Deliverables:**
+- [ ] Payment recording mutation connected to backend
+- [ ] Payment reflected in invoice balance
+- [ ] Audit trail entry created for payment
+- [ ] Success/error handling with proper feedback
+
+---
+
+##### WSQA-002: Implement Flexible Lot Selection
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 8h
+**Module:** `client/src/components/work-surface/InventoryWorkSurface.tsx`, `server/inventoryUtils.ts`
+
+**Problem:**
+Users cannot select specific batches when creating orders. System auto-allocates but doesn't allow manual lot selection, which is critical for regulated inventory management.
+
+**Objectives:**
+1. Add batch selection UI to order creation flow
+2. Allow override of FIFO/LIFO allocation
+3. Preserve selected batches through order lifecycle
+
+**Deliverables:**
+- [ ] Batch picker component added to order flow
+- [ ] Backend supports explicit batch allocation
+- [ ] Selection persists on order save
+- [ ] Validation prevents over-allocation
+
+---
+
+##### WSQA-003: Add RETURNED Order Status with Processing Paths
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 8h
+**Module:** `server/schema.ts`, `server/ordersDb.ts:1564-1570`
+
+**Problem:**
+Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to vendor).
+
+**Objectives:**
+1. Add RETURNED status to order status enum
+2. Implement restock-to-inventory path
+3. Implement return-to-vendor path
+4. Create inventory movements for returns
+
+**Deliverables:**
+- [ ] RETURNED status added to schema
+- [ ] Status transition validation updated
+- [ ] Restock flow creates inventory movements
+- [ ] Return-to-vendor flow updates vendor records
+- [ ] UI for selecting return disposition
+
+---
+
+##### ACC-001: Fix Silent GL Posting Failures
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 8h
+**Module:** `server/accountingHooks.ts`
+**Lines:** 173, 224, 274, 323
+
+**Problem:**
+GL posting failures are silently ignored. When standard accounts are not found, the system logs a warning but allows sales/payments/refunds to complete WITHOUT creating ledger entries. This causes financial records to be incomplete.
+
+**Impact:** Sales may be recorded but accounting ledger remains empty.
+
+**Objectives:**
+1. Make GL posting failures throw errors
+2. Implement transaction rollback on GL failure
+3. Add alerting for missing standard accounts
+4. Ensure all financial transactions have GL entries
+
+**Deliverables:**
+- [ ] `postSaleGLEntries` throws on missing accounts
+- [ ] `postPaymentGLEntries` throws on missing accounts
+- [ ] `postRefundGLEntries` throws on missing accounts
+- [ ] `postCOGSGLEntries` throws on missing accounts
+- [ ] Admin alert for missing standard accounts
+- [ ] GL reconciliation report added
+
+---
+
+#### P1 - High Priority (Feature Completeness)
+
+| Task     | Description                              | Priority | Status      | Estimate | Module                           |
+| -------- | ---------------------------------------- | -------- | ----------- | -------- | -------------------------------- |
+| SSE-001  | Fix Live Shopping SSE Event Naming       | HIGH     | NOT STARTED | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
+| MEET-048 | Create Hour Tracking Frontend            | HIGH     | NOT STARTED | 16h      | client/src/pages/               |
+| WS-010A  | Integrate Photography Module into Page   | HIGH     | NOT STARTED | 4h       | PhotographyPage.tsx             |
+| NAV-017  | Route CreditsPage in App.tsx             | HIGH     | NOT STARTED | 1h       | App.tsx                         |
+| API-016  | Implement Quote Email Sending            | HIGH     | NOT STARTED | 4h       | server/routers/quotes.ts:294    |
+
+##### SSE-001: Fix Live Shopping SSE Event Naming Mismatch
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 2h
+**Module:** `server/services/live-shopping/sessionTimeoutService.ts`, `client/src/hooks/useLiveSessionSSE.ts:135-147`
+**Related:** BE-QA-013 (same file, different issue - extension count validation at line 382)
+
+**Problem:**
+Backend emits `SESSION_TIMEOUT_WARNING` events but frontend listens for `TIMEOUT_WARNING`. Events are never received by the client.
+
+**Deliverables:**
+- [ ] Standardize event naming (prefer backend naming)
+- [ ] Update frontend to match backend event names
+- [ ] Verify timeout warnings display in VIP portal
+
+---
+
+##### MEET-048: Create Hour Tracking Frontend
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 16h
+**Module:** `client/src/pages/`, `server/routers/hourTracking.ts`
+
+**Problem:**
+Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBreak, listTimeEntries, createManualEntry, adjustTimeEntry, approveTimeEntry, getTimesheet, getHoursReport, getOvertimeReport) but there is no frontend UI.
+
+**Deliverables:**
+- [ ] HourTrackingPage.tsx created
+- [ ] Clock in/out component
+- [ ] Timesheet view component
+- [ ] Time entry management UI
+- [ ] Route added to App.tsx
+- [ ] Navigation item added
+
+---
+
+##### WS-010A: Integrate Photography Module into PhotographyPage
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `client/src/pages/PhotographyPage.tsx`, `client/src/components/inventory/PhotographyModule.tsx`
+**Note:** WS-010 is marked ✅ COMPLETE in roadmap but this finding indicates it was prematurely closed.
+
+**Problem:**
+PhotographyModule component (689 lines) is fully built but never used. PhotographyPage only shows queue without upload capability. The module imports are declared (cropping, background removal) but not implemented.
+
+**Deliverables:**
+- [ ] PhotographyModule integrated into PhotographyPage
+- [ ] Upload functionality working
+- [ ] Presigned URLs implemented (`photos.getUploadUrl`)
+- [ ] Photo approval workflow connected
+
+---
+
+##### NAV-017: Route CreditsPage in App.tsx
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 1h
+**Module:** `client/src/App.tsx`, `client/src/pages/CreditsPage.tsx`
+
+**Problem:**
+CreditsPage is a complete page with issue/apply/void functionality. It's imported in App.tsx but NO ROUTE is defined - users cannot access this feature.
+
+**Deliverables:**
+- [ ] Route `/credits` added to App.tsx
+- [ ] Navigation item added to sidebar
+- [ ] Feature flag check added if needed
+
+---
+
+##### API-016: Implement Quote Email Sending
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `server/routers/quotes.ts:294`
+
+**Problem:**
+`sendQuote` mutation has a TODO comment "Send email notification to client" but doesn't actually send emails. Quotes are marked as sent but no email is delivered.
+
+**Deliverables:**
+- [ ] Email sending implemented in sendQuote
+- [ ] Quote PDF attachment generated
+- [ ] Delivery status tracked
+- [ ] Error handling for failed sends
+
+---
+
+#### P2 - Medium Priority (Feature Gaps & Quality)
+
+| Task      | Description                                  | Priority | Status      | Estimate | Module                          |
+| --------- | -------------------------------------------- | -------- | ----------- | -------- | ------------------------------- |
+| FE-QA-009 | Enable VendorSupplyPage Creation             | MEDIUM   | NOT STARTED | 8h       | VendorSupplyPage.tsx:96        |
+| FE-QA-010 | Wire MatchmakingServicePage Action Buttons   | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
+| API-017   | Implement Stock Threshold Configuration      | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
+| DATA-021  | Add Calendar Recurring Events Schema         | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
+| DEPR-001  | Migrate Deprecated Vendor Router Usages      | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
+| SCHEMA-001| Fix products.name vs nameCanonical Mismatch  | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
+| SCHEMA-002| Document batches.quantity vs onHandQty       | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
+| SCHEMA-003| Add clients.tier and clients.isActive Columns| MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
+| BUG-101   | Fix Property Test Bugs (PROP-BUG-001/002/003)| MEDIUM   | NOT STARTED | 4h       | property tests                 |
+| MOB-001   | Address Mobile Responsiveness Issues (38)    | MEDIUM   | NOT STARTED | 24h      | Multiple components            |
+| FE-QA-011 | Integrate Unused Dashboard Widgets (5)       | MEDIUM   | NOT STARTED | 8h       | widgets-v2/                    |
+
+##### FE-QA-009: Enable VendorSupplyPage Creation
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 8h
+**Module:** `client/src/pages/VendorSupplyPage.tsx:96`
+
+**Problem:**
+"Add Supply" button shows "Feature In Development" alert. Supply creation form, edit functionality, and "Find Matching Clients" button are all missing.
+
+**Deliverables:**
+- [ ] Supply creation form implemented
+- [ ] Edit functionality added
+- [ ] "Find Matching Clients" button connected to matchmaking
+- [ ] Development alert removed
+
+---
+
+##### FE-QA-010: Wire MatchmakingServicePage Action Buttons
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `client/src/pages/MatchmakingServicePage.tsx`
+
+**Problem:**
+Four action buttons have no implementation:
+- "View Buyers" button (line 385) - no handler
+- "Reserve" button (line 388) - no handler
+- "Create Quote" button (line 456) - may not connect to workflow
+- "Dismiss" button (line 459) - no dismissal logic
+
+**Deliverables:**
+- [ ] View Buyers opens buyer list modal
+- [ ] Reserve creates reservation record
+- [ ] Create Quote navigates to quote creator with pre-filled data
+- [ ] Dismiss marks match as dismissed with reason
+
+---
+
+##### FE-QA-011: Integrate Unused Dashboard Widgets
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 8h
+**Module:** `client/src/components/dashboard/widgets-v2/`
+**Note:** FE-QA-004 (V3 Migration) is about migrating widgets, not integrating these V2 widgets.
+
+**Problem:**
+5 fully-built dashboard widgets are exported but never used in any dashboard:
+- CashCollectedLeaderboard
+- ClientDebtLeaderboard
+- ClientProfitMarginLeaderboard
+- TopStrainFamiliesWidget
+- SmartOpportunitiesWidget
+
+**Deliverables:**
+- [ ] Determine if widgets should be integrated into DashboardV3 or deprecated
+- [ ] If integrating: Add to dashboard widget registry
+- [ ] If deprecating: Remove unused code and exports
+- [ ] Update dashboard documentation
+
+---
+
+##### API-017: Implement Stock Threshold Configuration
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `server/routers/alerts.ts:379-398`
+
+**Problem:**
+`setThresholds` mutation throws "not yet available - requires schema migration". The `minStockLevel` and `targetStockLevel` columns are missing from schema.
+
+**Deliverables:**
+- [ ] Schema migration adding threshold columns
+- [ ] setThresholds mutation working
+- [ ] Low stock alerts using configurable thresholds
+- [ ] UI for threshold configuration
+
+---
+
+##### SCHEMA-001: Fix products.name vs nameCanonical Mismatch
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `server/storage.ts:1076`
+
+**Problem:**
+Code references `products.name` but actual column is `products.nameCanonical`. This is an active bug from December 31, 2025 migration - Drizzle schema was NOT updated.
+
+**Deliverables:**
+- [ ] Schema updated to match actual database
+- [ ] All code references fixed
+- [ ] Migration script if needed
+
+---
+
+#### P3 - Low Priority (Cleanup & Technical Debt)
+
+| Task        | Description                               | Priority | Status      | Estimate | Module             |
+| ----------- | ----------------------------------------- | -------- | ----------- | -------- | ------------------ |
+| ABANDONED-001| Remove Unused RTL/i18n Utilities          | LOW      | NOT STARTED | 1h       | rtlUtils.ts       |
+| DEPR-002    | Remove Deprecated PO Procedures (3)       | LOW      | NOT STARTED | 2h       | purchaseOrders.ts |
+| QUAL-009    | Replace console.error with Logger (23+ files)| LOW   | NOT STARTED | 8h       | Multiple files    |
+
+##### ABANDONED-001: Remove Unused RTL/i18n Utilities
+
+**Status:** NOT STARTED
+**Priority:** LOW (P3)
+**Estimate:** 1h
+**Module:** `client/src/lib/rtlUtils.ts`
+
+**Problem:**
+11 utility functions exported (`isRTL`, `getDirection`, `getDirectionalIconClasses`, etc.) but 0 usages anywhere in codebase. Right-to-left language support was planned but never implemented.
+
+**Deliverables:**
+- [ ] rtlUtils.ts removed
+- [ ] No breaking changes verified
+- [ ] Documentation updated if RTL was mentioned
+
+---
+
+**Summary: Deep Audit Additional Tasks**
+
+| Priority | Count | Description                              |
+| -------- | ----- | ---------------------------------------- |
+| P0       | 4     | Work surface blockers + GL posting       |
+| P1       | 5     | Feature completeness gaps                |
+| P2       | 11    | Feature gaps, schema fixes, mobile, widgets |
+| P3       | 3     | Cleanup and technical debt               |
+| **TOTAL**| **23**|                                          |
+
+> **QA Note (Jan 20, 2026):** All tasks verified as non-duplicates after skeptical review.
+> Cross-references added where tasks touch same files (SSE-001/BE-QA-013).
+
+---
+
 ## 📊 MVP Summary
 
-| Category              | Completed | Open   | Removed | Total   |
-| --------------------- | --------- | ------ | ------- | ------- |
-| Infrastructure        | 21        | 2      | 1       | 24      |
-| Security              | 17        | 1      | 0       | 18      |
-| Bug Fixes             | 46        | 1      | 0       | 47      |
-| API Registration      | 10        | 5      | 0       | 15      |
-| Stability             | 4         | 0      | 0       | 4       |
-| Quality               | 12        | 2      | 0       | 14      |
-| Features              | 29        | 1      | 1       | 31      |
-| UX                    | 12        | 0      | 0       | 12      |
-| Data & Schema         | 8         | 0      | 0       | 8       |
-| Data Seeding (NEW)    | 0         | 9      | 0       | 9       |
-| Data Integrity (QA)   | 8         | 0      | 0       | 8       |
-| Frontend Quality (QA) | 3         | 5      | 0       | 8       |
-| Backend Quality (QA)  | 5         | 10     | 0       | 15      |
-| Navigation            | 0         | 11     | 0       | 11      |
-| Improvements          | 7         | 0      | 0       | 7       |
-| E2E Testing           | 3         | 0      | 0       | 3       |
-| TypeScript (NEW)      | 0         | 1      | 0       | 1       |
-| **TOTAL**             | **185**   | **48** | **2**   | **235** |
+| Category                     | Completed | Open   | Removed | Total   |
+| ---------------------------- | --------- | ------ | ------- | ------- |
+| Infrastructure               | 21        | 2      | 1       | 24      |
+| Security                     | 17        | 1      | 0       | 18      |
+| Bug Fixes                    | 46        | 2      | 0       | 48      |
+| API Registration             | 10        | 7      | 0       | 17      |
+| Stability                    | 4         | 0      | 0       | 4       |
+| Quality                      | 12        | 3      | 0       | 15      |
+| Features                     | 29        | 2      | 1       | 32      |
+| UX                           | 12        | 0      | 0       | 12      |
+| Data & Schema                | 8         | 4      | 0       | 12      |
+| Data Seeding (NEW)           | 0         | 10     | 0       | 10      |
+| Data Integrity (QA)          | 8         | 0      | 0       | 8       |
+| Frontend Quality (QA)        | 3         | 8      | 0       | 11      |
+| Backend Quality (QA)         | 5         | 10     | 0       | 15      |
+| Navigation                   | 0         | 12     | 0       | 12      |
+| Improvements                 | 7         | 0      | 0       | 7       |
+| E2E Testing                  | 3         | 0      | 0       | 3       |
+| TypeScript (NEW)             | 0         | 1      | 0       | 1       |
+| Work Surface QA (NEW)        | 0         | 4      | 0       | 4       |
+| Mobile Responsiveness (NEW)  | 0         | 1      | 0       | 1       |
+| Deprecation Cleanup (NEW)    | 0         | 2      | 0       | 2       |
+| Schema Fixes (NEW)           | 0         | 3      | 0       | 3       |
+| **TOTAL**                    | **185**   | **71** | **2**   | **258** |
 
-> **MVP STATUS: 80% RESOLVED** (185 completed + 2 removed, 48 tasks open)
+> **MVP STATUS: 72% RESOLVED** (185 completed + 2 removed, 71 tasks open)
+> **Deep Audit (Jan 20, 2026):** 23 additional tasks added from comprehensive git commit analysis (verified non-duplicates).
 > **Incomplete Features Audit (Jan 20, 2026):** 37 new tasks added from RedHat QA audit.
 > **Navigation Enhancement (Jan 20, 2026):** 11 new tasks added to surface hidden routes.
 
