@@ -757,7 +757,7 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 **Goal:** Make "can't be wrong" business data (inventory quantities, money amounts, AR/AP balances, ledger postings) durable, reconstructable, and safe under retries + concurrency.
 
-**Status:** All tasks ready for implementation (none started)
+**Status:** Phase A ready for implementation, Phase B moved to backlog
 
 **Critical Code Anchors (already in repo):**
 
@@ -778,27 +778,19 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 ---
 
-### Beta: Reliability Tasks
+### Phase A: Foundational Reliability (Active - Do Soon)
 
-| Task    | Description                                             | Priority | Status | Estimate | Prompt                    |
-| ------- | ------------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
-| REL-001 | Define Truth Model + Invariants for Inventory and Money | HIGH     | ready  | 8h       | `docs/prompts/REL-001.md` |
-| REL-002 | Migrate Inventory Quantities to DECIMAL                 | HIGH     | ready  | 2d       | `docs/prompts/REL-002.md` |
-| REL-003 | Migrate Money Amounts to DECIMAL                        | HIGH     | ready  | 2d       | `docs/prompts/REL-003.md` |
-| REL-004 | Critical Mutation Wrapper (Transactional + Retry)       | HIGH     | ready  | 16h      | `docs/prompts/REL-004.md` |
-| REL-005 | Idempotency Keys for Critical Mutations                 | HIGH     | ready  | 2d       | `docs/prompts/REL-005.md` |
-| REL-006 | Inventory Concurrency Hardening                         | HIGH     | ready  | 2d       | `docs/prompts/REL-006.md` |
-| REL-007 | Inventory Movements Immutability + Reversal             | HIGH     | ready  | 16h      | `docs/prompts/REL-007.md` |
-| REL-008 | Ledger Immutability + Reversal + Fiscal Period Lock     | HIGH     | ready  | 2d       | `docs/prompts/REL-008.md` |
-| REL-009 | Reconciliation Framework                                | HIGH     | ready  | 2d       | `docs/prompts/REL-009.md` |
-| REL-010 | Inventory Reconciliation Pack                           | HIGH     | ready  | 16h      | `docs/prompts/REL-010.md` |
-| REL-011 | AR/AP Reconciliation Pack                               | HIGH     | ready  | 2d       | `docs/prompts/REL-011.md` |
-| REL-012 | Ledger Reconciliation Pack                              | HIGH     | ready  | 16h      | `docs/prompts/REL-012.md` |
-| REL-013 | RBAC Drift Detector                                     | HIGH     | ready  | 16h      | `docs/prompts/REL-013.md` |
-| REL-014 | Critical Correctness Test Harness                       | HIGH     | ready  | 2d       | `docs/prompts/REL-014.md` |
-| REL-015 | Observability for Critical Mutations                    | HIGH     | ready  | 16h      | `docs/prompts/REL-015.md` |
-| REL-016 | Backup/Restore Reliability Runbook                      | MEDIUM   | ready  | 2d       | `docs/prompts/REL-016.md` |
-| REL-017 | CI/PR Gates for Critical Domains                        | HIGH     | ready  | 16h      | `docs/prompts/REL-017.md` |
+> **Why Phase A first?** These tasks have compounding cost - the longer they're deferred, the more data accumulates (harder migrations) and more code gets written without the patterns (more retrofit work). Prevents precision bugs, race conditions, and duplicate operations.
+
+| Task    | Description                                       | Priority | Status | Estimate | Prompt                    |
+| ------- | ------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| REL-002 | Migrate Inventory Quantities to DECIMAL           | HIGH     | ready  | 2d       | `docs/prompts/REL-002.md` |
+| REL-003 | Migrate Money Amounts to DECIMAL                  | HIGH     | ready  | 2d       | `docs/prompts/REL-003.md` |
+| REL-004 | Critical Mutation Wrapper (Transactional + Retry) | HIGH     | ready  | 16h      | `docs/prompts/REL-004.md` |
+| REL-005 | Idempotency Keys for Critical Mutations           | HIGH     | ready  | 2d       | `docs/prompts/REL-005.md` |
+| REL-006 | Inventory Concurrency Hardening                   | HIGH     | ready  | 2d       | `docs/prompts/REL-006.md` |
+
+**Phase A Effort:** ~9 days
 
 ---
 
@@ -1247,13 +1239,13 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Beta Summary
 
-| Category                  | Completed | Open   | Skipped | Total  |
-| ------------------------- | --------- | ------ | ------- | ------ |
-| Reliability Program       | 0         | 17     | 0       | 17     |
-| UX Work Surface (BETA)    | 0         | 2      | 0       | 2      |
-| Work Surfaces Deployment  | 6         | 0      | 2       | 8      |
-| Work Surfaces QA Blockers | 0         | 3      | 0       | 3      |
-| **TOTAL**                 | **6**     | **22** | **2**   | **30** |
+| Category                      | Completed | Open   | Skipped | Total  |
+| ----------------------------- | --------- | ------ | ------- | ------ |
+| Reliability Program (Phase A) | 0         | 5      | 0       | 5      |
+| UX Work Surface (BETA)        | 0         | 2      | 0       | 2      |
+| Work Surfaces Deployment      | 6         | 0      | 2       | 8      |
+| Work Surfaces QA Blockers     | 0         | 3      | 0       | 3      |
+| **TOTAL**                     | **6**     | **10** | **2**   | **18** |
 
 ---
 
@@ -1262,17 +1254,64 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 11     | 198     | 94%      |
-| Beta      | 6         | 22     | 30      | 20%      |
+| Beta      | 6         | 10     | 18      | 33%      |
+| Backlog   | 0         | 12     | 12      | 0%       |
 | **TOTAL** | **191**   | **33** | **228** | ~84%     |
 
-> **Note**: Beta now includes:
+> **Note**:
 >
-> - 17 Reliability Program tasks (0 complete, 17 open)
-> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706) (0 complete, 2 open)
-> - 8 Work Surfaces Deployment tasks (DEPLOY-001..008) (6 complete, 2 skipped)
-> - 3 Work Surfaces QA Blockers (WSQA-001..003) (0 complete, 3 open)
+> **Beta (Active):**
+>
+> - 5 Reliability Program Phase A tasks (REL-002..006) - foundational, do soon
+> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706)
+> - 8 Work Surfaces Deployment tasks (6 complete, 2 skipped)
+> - 3 Work Surfaces QA Blockers (WSQA-001..003)
+>
+> **Backlog (Deferred):**
+>
+> - 12 Reliability Program Phase B tasks (REL-001, REL-007..017) - can be done later with minimal rework
 >
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
+
+---
+
+# 📦 BACKLOG
+
+> Tasks that can be safely deferred with minimal rework cost. Move to Beta when ready to implement.
+
+---
+
+## 🛡️ Reliability Program Phase B (Deferred)
+
+> **Why deferred?** These tasks are additive - they can be implemented later without significant retrofit or rework. Phase A foundational tasks should be completed first.
+
+| Task    | Description                                             | Priority | Status  | Estimate | Prompt                    |
+| ------- | ------------------------------------------------------- | -------- | ------- | -------- | ------------------------- |
+| REL-001 | Define Truth Model + Invariants for Inventory and Money | HIGH     | backlog | 8h       | `docs/prompts/REL-001.md` |
+| REL-007 | Inventory Movements Immutability + Reversal             | HIGH     | backlog | 16h      | `docs/prompts/REL-007.md` |
+| REL-008 | Ledger Immutability + Reversal + Fiscal Period Lock     | HIGH     | backlog | 2d       | `docs/prompts/REL-008.md` |
+| REL-009 | Reconciliation Framework                                | HIGH     | backlog | 2d       | `docs/prompts/REL-009.md` |
+| REL-010 | Inventory Reconciliation Pack                           | HIGH     | backlog | 16h      | `docs/prompts/REL-010.md` |
+| REL-011 | AR/AP Reconciliation Pack                               | HIGH     | backlog | 2d       | `docs/prompts/REL-011.md` |
+| REL-012 | Ledger Reconciliation Pack                              | HIGH     | backlog | 16h      | `docs/prompts/REL-012.md` |
+| REL-013 | RBAC Drift Detector                                     | HIGH     | backlog | 16h      | `docs/prompts/REL-013.md` |
+| REL-014 | Critical Correctness Test Harness                       | HIGH     | backlog | 2d       | `docs/prompts/REL-014.md` |
+| REL-015 | Observability for Critical Mutations                    | HIGH     | backlog | 16h      | `docs/prompts/REL-015.md` |
+| REL-016 | Backup/Restore Reliability Runbook                      | MEDIUM   | backlog | 2d       | `docs/prompts/REL-016.md` |
+| REL-017 | CI/PR Gates for Critical Domains                        | HIGH     | backlog | 16h      | `docs/prompts/REL-017.md` |
+
+**Phase B Effort:** ~16 days
+
+> **Note:** REL-008 (Ledger Immutability) blocks UXS-501/502 (Accounting Work Surfaces). Move to Beta before implementing Accounting Work Surfaces.
+
+---
+
+## 📊 Backlog Summary
+
+| Category                      | Tasks  | Effort       |
+| ----------------------------- | ------ | ------------ |
+| Reliability Program (Phase B) | 12     | ~16 days     |
+| **TOTAL**                     | **12** | **~16 days** |
 
 ---
 
