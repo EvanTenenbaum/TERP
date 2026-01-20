@@ -10,16 +10,19 @@ This audit identifies features that have **not been fully implemented or rolled 
 
 ### Key Metrics
 
-| Category                     | Count | Status               |
-| ---------------------------- | ----- | -------------------- |
-| **Test Files Failed**        | 44    | Critical             |
-| **Test Files Passed**        | 115   | Good                 |
-| **Individual Tests Failed**  | 122   | Action Required      |
-| **Individual Tests Skipped** | 89    | Needs Review         |
-| **TypeScript Errors**        | 117   | Action Required      |
-| **TODO Comments**            | 30+   | Technical Debt       |
-| **Disabled Features**        | 6     | By Design            |
-| **Stub Implementations**     | 15+   | Needs Implementation |
+| Category                        | Count | Status               |
+| ------------------------------- | ----- | -------------------- |
+| **Test Files Failed**           | 44    | Critical             |
+| **Test Files Passed**           | 115   | Good                 |
+| **Individual Tests Failed**     | 122   | Action Required      |
+| **Individual Tests Skipped**    | 89    | Needs Review         |
+| **TypeScript Errors**           | 117   | Action Required      |
+| **TODO Comments**               | 30+   | Technical Debt       |
+| **Disabled Features**           | 6     | By Design            |
+| **Stub Implementations**        | 15+   | Needs Implementation |
+| **Unseeded Config Tables**      | 14+   | CRITICAL             |
+| **Feature Flags Not Seeded**    | 17+   | CRITICAL             |
+| **Features Without Flag Gates** | 4     | Action Required      |
 
 ---
 
@@ -127,6 +130,164 @@ sendSms:   // throws TRPCError with code: "NOT_IMPLEMENTED"
 
 - `server/services/seedFeatureFlags.ts` - Add individual flag definitions
 - `server/services/seedDefaults.ts` - Add `seedWorkSurfaceDefaults()` function
+
+### 1.7 Gamification Module - No Seed Data
+
+**Status:** Tables exist, completely empty
+
+| Table                        | Purpose                       | Seeded |
+| ---------------------------- | ----------------------------- | ------ |
+| `achievements`               | Achievement/badge definitions | NO     |
+| `rewardCatalog`              | Rewards for point redemption  | NO     |
+| `referralSettings`           | Couch Tax configuration       | NO     |
+| `vipLeaderboardSnapshots`    | Leaderboard data              | NO     |
+| `leaderboardDisplaySettings` | Per-client display prefs      | NO     |
+
+**Impact:** Gamification module non-functional. Users cannot earn achievements or redeem rewards.
+
+**Files:**
+
+- `drizzle/schema-gamification.ts` - 12 tables defined
+- `server/routers/gamification.ts` - Uses all tables, expects data
+
+### 1.8 Scheduling Module - Missing Defaults
+
+**Status:** Core configuration tables empty
+
+| Table              | Purpose                | Should Contain                            |
+| ------------------ | ---------------------- | ----------------------------------------- |
+| `rooms`            | Meeting/loading rooms  | Conference Room A, B, C; Loading Docks    |
+| `shiftTemplates`   | Preset shift patterns  | Day shift, Opening, Closing               |
+| `appointmentTypes` | Appointment categories | Consultation, Pickup, Delivery, Meeting   |
+| `overtimeRules`    | Overtime calculation   | US labor law defaults (8hr/1.5x, 40hr/wk) |
+
+**Impact:** Calendar/scheduling module has no defaults. Manual setup required for each.
+
+**Files:**
+
+- `drizzle/schema-scheduling.ts` - Tables defined
+- `server/routers/scheduling.ts` - Expects configuration data
+
+### 1.9 Storage Module - No Sites/Zones
+
+**Status:** Location tables empty
+
+| Table          | Purpose                      | Should Contain                       |
+| -------------- | ---------------------------- | ------------------------------------ |
+| `sites`        | Physical warehouse locations | Samples, Main Storage, Shipping Dock |
+| `storageZones` | Zones within sites           | Zones A, B, C, D with temp controls  |
+
+**Impact:** Inventory location tracking non-functional without site/zone data.
+
+**Files:**
+
+- `drizzle/schema-storage.ts` - Tables defined
+
+### 1.10 Additional Feature Flags - Not Seeded
+
+**15 Work Surface flags used but NOT seeded:**
+
+| Flag                               | Used In                          | Status     |
+| ---------------------------------- | -------------------------------- | ---------- |
+| `work-surface-enabled`             | useWorkSurfaceFeatureFlags.ts:29 | NOT SEEDED |
+| `work-surface-keyboard-contract`   | useWorkSurfaceFeatureFlags.ts:32 | NOT SEEDED |
+| `work-surface-save-state`          | useWorkSurfaceFeatureFlags.ts:35 | NOT SEEDED |
+| `work-surface-inspector-panel`     | useWorkSurfaceFeatureFlags.ts:38 | NOT SEEDED |
+| `work-surface-validation-timing`   | useWorkSurfaceFeatureFlags.ts:41 | NOT SEEDED |
+| `work-surface-concurrent-edit`     | useWorkSurfaceFeatureFlags.ts:62 | NOT SEEDED |
+| `work-surface-golden-flow-intake`  | useWorkSurfaceFeatureFlags.ts:65 | NOT SEEDED |
+| `work-surface-golden-flow-order`   | useWorkSurfaceFeatureFlags.ts:66 | NOT SEEDED |
+| `work-surface-golden-flow-invoice` | useWorkSurfaceFeatureFlags.ts:67 | NOT SEEDED |
+| `email-enabled`                    | featureFlags.ts mapping          | NOT SEEDED |
+| `sms-enabled`                      | featureFlags.ts mapping          | NOT SEEDED |
+
+**Naming inconsistency:** Seeded flags use UPPERCASE (`WORK_SURFACE_INTAKE`), but code references lowercase (`work-surface-direct-intake`).
+
+### 1.11 Features Without Flag Protection
+
+These features have routes but **no feature flag checks**:
+
+| Feature       | Route            | Flag Exists              | Flag Checked |
+| ------------- | ---------------- | ------------------------ | ------------ |
+| Live Shopping | `/live-shopping` | `live-shopping` ✅       | NO           |
+| Photography   | `/photography`   | `photography` ✅         | NO           |
+| Leaderboard   | `/leaderboard`   | `leaderboard` ✅         | NO           |
+| Analytics     | `/analytics`     | `analytics-dashboard` ✅ | NO           |
+
+**Impact:** Cannot disable these features via feature flags even though flags exist.
+
+### 1.12 Organization Settings - Not Initialized
+
+**Table:** `organizationSettings`
+
+**Status:** Empty - no system-wide defaults
+
+**Impact:** Each admin must manually configure all organization settings. No defaults for:
+
+- Business rules
+- Feature toggles at org level
+- System-wide configuration
+
+### 1.13 VIP Portal Configuration - No Defaults
+
+**Table:** `vipPortalConfigurations`
+
+**Status:** Empty - no per-client defaults
+
+**Impact:** VIP portal has undefined behavior for new clients. Each client needs manual configuration for:
+
+- Module toggles (dashboard, live catalog, AR, AP)
+- Feature visibility settings
+
+### 1.14 Notification Preferences - Not Seeded
+
+**Table:** `notificationPreferences`
+
+**Status:** Empty - no default notification settings
+
+**Impact:** Users have no default notification preferences. Could cause missed alerts.
+
+### 1.15 Credit System Settings - Partial
+
+**Tables:**
+
+- `creditSystemSettings` - Has schema defaults but record may not exist
+- `creditVisibilitySettings` - NOT SEEDED
+
+**Impact:** Credit calculations may fail if settings record doesn't exist.
+
+### 1.16 Pricing Rules - No Defaults
+
+**Tables:**
+
+- `pricingRules` - NOT SEEDED
+- `pricingProfiles` - NOT SEEDED
+- `variableMarkupRules` - NOT SEEDED
+- `cogsRules` - NOT SEEDED
+
+**Impact:** Orders can be created but dynamic pricing won't apply without rules.
+
+---
+
+## SEEDING GAPS SUMMARY
+
+| Category          | Tables Affected | Priority |
+| ----------------- | --------------- | -------- |
+| **Gamification**  | 5+ tables       | CRITICAL |
+| **Scheduling**    | 4 tables        | CRITICAL |
+| **Storage**       | 2 tables        | HIGH     |
+| **Feature Flags** | 15+ flags       | HIGH     |
+| **Organization**  | 1 table         | MEDIUM   |
+| **VIP Portal**    | 1 table         | MEDIUM   |
+| **Notifications** | 1 table         | MEDIUM   |
+| **Credits**       | 2 tables        | MEDIUM   |
+| **Pricing**       | 4 tables        | MEDIUM   |
+
+**Files requiring new seed scripts:**
+
+- `scripts/seed/seeders/seed-gamification-defaults.ts` - Achievements, rewards, referral settings
+- `scripts/seed/seeders/seed-scheduling-defaults.ts` - Rooms, shifts, appointment types, overtime
+- `scripts/seed/seeders/seed-storage-defaults.ts` - Sites, zones
 
 ---
 
@@ -352,20 +513,24 @@ Contains **exposed production database credentials**:
 2. **Fix Missing API Endpoints** - `inventory.batch`, `orders.confirm`
 3. **Implement AR/AP Summaries** - Core accounting features
 4. **Fix Type Mismatches** - null vs undefined throughout
+5. **Seed Critical Configuration Tables** - Sites, rooms, appointment types, shift templates
 
 ### 8.2 Short-Term Actions (P1)
 
-1. **Consolidate Duplicate Migrations** - Fix version numbering
-2. **Enable Email/SMS Features** - Configure external services
-3. **Fix 122 Failing Tests** - Restore test confidence
-4. **Seed Work Surface Feature Flags** - Add 6 missing individual surface flags and dependencies
+1. **Seed Gamification Defaults** - Achievements, rewards, referral settings (entire module non-functional)
+2. **Seed All Feature Flags** - Add 15+ missing work surface flags, fix naming inconsistency
+3. **Seed Scheduling Defaults** - Overtime rules, shift templates, appointment types
+4. **Seed Storage Defaults** - Sites, zones (required for inventory location tracking)
+5. **Fix 122 Failing Tests** - Restore test confidence
+6. **Add Feature Flag Checks** - Live Shopping, Photography, Leaderboard, Analytics routes
 
 ### 8.3 Medium-Term Actions (P2)
 
-1. **Complete Widgets v3 Migration** - Dashboard modernization
-2. **Implement Live Shopping Console** - User experience
-3. **Add Brand/Price Range to Live Catalog** - Feature completion
-4. **Implement Recurring Orders** - Missing feature (DF-067)
+1. **Consolidate Duplicate Migrations** - Fix version numbering
+2. **Enable Email/SMS Features** - Configure external services
+3. **Seed Secondary Configuration** - Pricing rules, notification prefs, VIP portal defaults
+4. **Complete Widgets v3 Migration** - Dashboard modernization
+5. **Implement Recurring Orders** - Missing feature (DF-067)
 
 ### 8.4 Cleanup Tasks
 
@@ -373,6 +538,7 @@ Contains **exposed production database credentials**:
 2. Remove deprecated feature flag code after full migration
 3. Add missing `expirationDate` and `expectedShipDate` columns
 4. Fix RBAC test mock chains
+5. Standardize feature flag naming (uppercase vs lowercase)
 
 ---
 
