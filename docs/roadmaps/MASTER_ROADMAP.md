@@ -1060,7 +1060,7 @@ Work Surfaces need internal validation before any user exposure.
 
 #### DEPLOY-006: Execute Stage 1 (10% Rollout)
 
-**Status:** ready
+**Status:** skipped
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** Feature flag configuration
@@ -1087,7 +1087,7 @@ First external user exposure requires careful monitoring.
 
 #### DEPLOY-007: Execute Stage 2 (50% Rollout)
 
-**Status:** ready
+**Status:** skipped
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** Feature flag configuration
@@ -1111,7 +1111,7 @@ First external user exposure requires careful monitoring.
 
 #### DEPLOY-008: Execute Stage 3 (100% Rollout)
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** Feature flag configuration
