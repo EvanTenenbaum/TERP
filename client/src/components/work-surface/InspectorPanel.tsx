@@ -120,7 +120,7 @@ function useFocusTrap(
   isActive: boolean,
   containerRef: React.RefObject<HTMLElement | null>
 ) {
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const previousActiveElement = useRef<Element | null>(null);
 
   useEffect(() => {
     if (!isActive || !containerRef.current) return;
