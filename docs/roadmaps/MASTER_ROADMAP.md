@@ -1041,6 +1041,43 @@ First external user exposure requires careful monitoring.
 
 ---
 
+### Code Quality Tasks (P1)
+
+> TypeScript strict mode compliance and type safety improvements.
+> Discovered during comprehensive TypeScript audit (Jan 20, 2026).
+
+| Task   | Description                                  | Priority | Status | Estimate | Prompt                   |
+| ------ | -------------------------------------------- | -------- | ------ | -------- | ------------------------ |
+| TS-001 | Fix Remaining TypeScript Errors (117 errors) | HIGH     | ready  | 2d       | `docs/prompts/TS-001.md` |
+
+#### TS-001: Fix Remaining TypeScript Errors
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2d
+**Module:** `client/src/`, `server/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/TS-001.md`
+
+**Problem:**
+The codebase has 117 TypeScript errors preventing strict type checking from passing. These errors span work surfaces, server routers, and service layers, creating potential runtime bugs and blocking CI/CD pipelines that enforce type safety.
+
+**Objectives:**
+
+1. Achieve zero TypeScript errors (`npm run check` passes)
+2. Fix type mismatches without changing runtime behavior
+3. Ensure all fixes are backward compatible
+
+**Deliverables:**
+
+- [ ] Fix 35 Work Surface component errors (InventoryWorkSurface, PickPackWorkSurface, golden flows)
+- [ ] Fix 40 server router errors (hourTracking, clientLedger, intakeReceipts, cogs)
+- [ ] Fix 16 service layer errors (orderPricingService, sessionPickListService, payablesService)
+- [ ] Fix 26 miscellaneous client component errors
+- [ ] All TypeScript errors resolved (`npm run check` passes)
+
+---
+
 ## 📊 Beta Summary
 
 | Category                 | Completed | Open   | Total  |
@@ -1048,7 +1085,8 @@ First external user exposure requires careful monitoring.
 | Reliability Program      | 0         | 17     | 17     |
 | UX Work Surface (BETA)   | 0         | 2      | 2      |
 | Work Surfaces Deployment | 0         | 8      | 8      |
-| **TOTAL**                | **0**     | **27** | **27** |
+| Code Quality             | 0         | 1      | 1      |
+| **TOTAL**                | **0**     | **28** | **28** |
 
 ---
 
@@ -1057,10 +1095,10 @@ First external user exposure requires careful monitoring.
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 27     | 27      | 0%       |
-| **TOTAL** | **185**   | **27** | **214** | ~86%     |
+| Beta      | 0         | 28     | 28      | 0%       |
+| **TOTAL** | **185**   | **28** | **215** | ~86%     |
 
-> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706) + 8 Work Surfaces Deployment tasks (DEPLOY-001..008).
+> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706) + 8 Work Surfaces Deployment tasks (DEPLOY-001..008) + 1 Code Quality task (TS-001).
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
 ---
