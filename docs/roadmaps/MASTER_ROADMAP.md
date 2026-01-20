@@ -782,15 +782,16 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 > **Why Phase A first?** These tasks have compounding cost - the longer they're deferred, the more data accumulates (harder migrations) and more code gets written without the patterns (more retrofit work). Prevents precision bugs, race conditions, and duplicate operations.
 
-| Task    | Description                                       | Priority | Status | Estimate | Prompt                    |
-| ------- | ------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
-| REL-002 | Migrate Inventory Quantities to DECIMAL           | HIGH     | ready  | 2d       | `docs/prompts/REL-002.md` |
-| REL-003 | Migrate Money Amounts to DECIMAL                  | HIGH     | ready  | 2d       | `docs/prompts/REL-003.md` |
-| REL-004 | Critical Mutation Wrapper (Transactional + Retry) | HIGH     | ready  | 16h      | `docs/prompts/REL-004.md` |
-| REL-005 | Idempotency Keys for Critical Mutations           | HIGH     | ready  | 2d       | `docs/prompts/REL-005.md` |
-| REL-006 | Inventory Concurrency Hardening                   | HIGH     | ready  | 2d       | `docs/prompts/REL-006.md` |
+| Task    | Description                                         | Priority | Status | Estimate | Prompt                    |
+| ------- | --------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| REL-002 | Migrate Inventory Quantities to DECIMAL             | HIGH     | ready  | 2d       | `docs/prompts/REL-002.md` |
+| REL-003 | Migrate Money Amounts to DECIMAL                    | HIGH     | ready  | 2d       | `docs/prompts/REL-003.md` |
+| REL-004 | Critical Mutation Wrapper (Transactional + Retry)   | HIGH     | ready  | 16h      | `docs/prompts/REL-004.md` |
+| REL-005 | Idempotency Keys for Critical Mutations             | HIGH     | ready  | 2d       | `docs/prompts/REL-005.md` |
+| REL-006 | Inventory Concurrency Hardening                     | HIGH     | ready  | 2d       | `docs/prompts/REL-006.md` |
+| REL-008 | Ledger Immutability + Reversal + Fiscal Period Lock | HIGH     | ready  | 2d       | `docs/prompts/REL-008.md` |
 
-**Phase A Effort:** ~9 days
+**Phase A Effort:** ~11 days
 
 ---
 
@@ -1241,11 +1242,11 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 | Category                      | Completed | Open   | Skipped | Total  |
 | ----------------------------- | --------- | ------ | ------- | ------ |
-| Reliability Program (Phase A) | 0         | 5      | 0       | 5      |
+| Reliability Program (Phase A) | 0         | 6      | 0       | 6      |
 | UX Work Surface (BETA)        | 0         | 2      | 0       | 2      |
 | Work Surfaces Deployment      | 6         | 0      | 2       | 8      |
 | Work Surfaces QA Blockers     | 0         | 3      | 0       | 3      |
-| **TOTAL**                     | **6**     | **10** | **2**   | **18** |
+| **TOTAL**                     | **6**     | **11** | **2**   | **19** |
 
 ---
 
@@ -1254,22 +1255,22 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 11     | 198     | 94%      |
-| Beta      | 6         | 10     | 18      | 33%      |
-| Backlog   | 0         | 12     | 12      | 0%       |
+| Beta      | 6         | 11     | 19      | 32%      |
+| Backlog   | 0         | 11     | 11      | 0%       |
 | **TOTAL** | **191**   | **33** | **228** | ~84%     |
 
 > **Note**:
 >
 > **Beta (Active):**
 >
-> - 5 Reliability Program Phase A tasks (REL-002..006) - foundational, do soon
+> - 6 Reliability Program Phase A tasks (REL-002..006, REL-008) - foundational, do soon
 > - 2 UX Work Surface BETA tasks (UXS-702, UXS-706)
 > - 8 Work Surfaces Deployment tasks (6 complete, 2 skipped)
 > - 3 Work Surfaces QA Blockers (WSQA-001..003)
 >
 > **Backlog (Deferred):**
 >
-> - 12 Reliability Program Phase B tasks (REL-001, REL-007..017) - can be done later with minimal rework
+> - 11 Reliability Program Phase B tasks (REL-001, REL-007, REL-009..017) - can be done later with minimal rework
 >
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
@@ -1289,7 +1290,6 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 | ------- | ------------------------------------------------------- | -------- | ------- | -------- | ------------------------- |
 | REL-001 | Define Truth Model + Invariants for Inventory and Money | HIGH     | backlog | 8h       | `docs/prompts/REL-001.md` |
 | REL-007 | Inventory Movements Immutability + Reversal             | HIGH     | backlog | 16h      | `docs/prompts/REL-007.md` |
-| REL-008 | Ledger Immutability + Reversal + Fiscal Period Lock     | HIGH     | backlog | 2d       | `docs/prompts/REL-008.md` |
 | REL-009 | Reconciliation Framework                                | HIGH     | backlog | 2d       | `docs/prompts/REL-009.md` |
 | REL-010 | Inventory Reconciliation Pack                           | HIGH     | backlog | 16h      | `docs/prompts/REL-010.md` |
 | REL-011 | AR/AP Reconciliation Pack                               | HIGH     | backlog | 2d       | `docs/prompts/REL-011.md` |
@@ -1300,9 +1300,7 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 | REL-016 | Backup/Restore Reliability Runbook                      | MEDIUM   | backlog | 2d       | `docs/prompts/REL-016.md` |
 | REL-017 | CI/PR Gates for Critical Domains                        | HIGH     | backlog | 16h      | `docs/prompts/REL-017.md` |
 
-**Phase B Effort:** ~16 days
-
-> **Note:** REL-008 (Ledger Immutability) blocks UXS-501/502 (Accounting Work Surfaces). Move to Beta before implementing Accounting Work Surfaces.
+**Phase B Effort:** ~14 days
 
 ---
 
@@ -1310,8 +1308,8 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 | Category                      | Tasks  | Effort       |
 | ----------------------------- | ------ | ------------ |
-| Reliability Program (Phase B) | 12     | ~16 days     |
-| **TOTAL**                     | **12** | **~16 days** |
+| Reliability Program (Phase B) | 11     | ~14 days     |
+| **TOTAL**                     | **11** | **~14 days** |
 
 ---
 
