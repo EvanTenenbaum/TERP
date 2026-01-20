@@ -93,6 +93,41 @@ sendSms:   // throws TRPCError with code: "NOT_IMPLEMENTED"
 - `FEATURE_EMAIL_ENABLED=true` + email service credentials
 - `FEATURE_SMS_ENABLED=true` + Twilio credentials
 
+### 1.6 Work Surfaces - Missing Seeding
+
+**Status:** PARTIALLY IMPLEMENTED - Components built but seeding incomplete
+
+**Deployment flags seeded (working):**
+
+- `WORK_SURFACE_INTAKE` ✅
+- `WORK_SURFACE_ORDERS` ✅
+- `WORK_SURFACE_INVENTORY` ✅
+- `WORK_SURFACE_ACCOUNTING` ✅
+
+**Individual surface flags NOT seeded (broken granular control):**
+
+| Flag                           | Status     | Impact            |
+| ------------------------------ | ---------- | ----------------- |
+| `work-surface-direct-intake`   | NOT SEEDED | Defaults to false |
+| `work-surface-purchase-orders` | NOT SEEDED | Defaults to false |
+| `work-surface-orders`          | NOT SEEDED | Defaults to false |
+| `work-surface-inventory`       | NOT SEEDED | Defaults to false |
+| `work-surface-invoices`        | NOT SEEDED | Defaults to false |
+| `work-surface-clients`         | NOT SEEDED | Defaults to false |
+
+**File:** `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts` references these flags.
+
+**Additional seeding gaps:**
+
+- `userDashboardPreferences` table exists but is never populated
+- No work-surface-specific user preferences fields
+- No flag dependency relationships configured
+
+**Files requiring updates:**
+
+- `server/services/seedFeatureFlags.ts` - Add individual flag definitions
+- `server/services/seedDefaults.ts` - Add `seedWorkSurfaceDefaults()` function
+
 ---
 
 ## 2. HIGH PRIORITY: Schema/Type Drift Issues
@@ -323,6 +358,7 @@ Contains **exposed production database credentials**:
 1. **Consolidate Duplicate Migrations** - Fix version numbering
 2. **Enable Email/SMS Features** - Configure external services
 3. **Fix 122 Failing Tests** - Restore test confidence
+4. **Seed Work Surface Feature Flags** - Add 6 missing individual surface flags and dependencies
 
 ### 8.3 Medium-Term Actions (P2)
 
