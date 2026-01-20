@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.3
-**Last Updated:** 2026-01-20 (Added UX Work Surface Redesign section with Red Hat QA improvements)
+**Version:** 6.4
+**Last Updated:** 2026-01-20 (Added INFRA-014 Cron Leader Election for Multi-Instance)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -78,6 +78,16 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | INFRA-010 | Update Documentation                         | ✅ COMPLETE | Dec 2025        |
 | INFRA-011 | Update Deployment Configuration              | ✅ COMPLETE | Dec 2025        |
 | INFRA-013 | Create RBAC Database Tables Migration        | ✅ COMPLETE | Dec 2025        |
+| INFRA-014 | Cron Leader Election for Multi-Instance      | ✅ COMPLETE | Jan 20, 2026    |
+
+> **INFRA-014 Details:**
+>
+> - Database-backed leader election for cron job coordination
+> - Prevents duplicate cron execution in multi-instance deployments
+> - Lease-based locking with 30s lease, 10s heartbeat
+> - All 4 cron jobs updated: sessionTimeout, notificationQueue, debtAging, priceAlerts
+> - Unit tests: 17 passing
+> - Documentation: `docs/implementation/INFRA-014_HIGH_MEMORY_REMEDIATION_COMPLETION_REPORT.md`
 
 ### ✅ Security (COMPLETE)
 
@@ -615,7 +625,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 | Category              | Completed | Open  | Removed | Total   |
 | --------------------- | --------- | ----- | ------- | ------- |
-| Infrastructure        | 21        | 0     | 1       | 22      |
+| Infrastructure        | 22        | 0     | 1       | 23      |
 | Security              | 17        | 0     | 0       | 17      |
 | Bug Fixes             | 46        | 0     | 0       | 46      |
 | API Registration      | 10        | 0     | 0       | 10      |
@@ -629,9 +639,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Backend Quality (QA)  | 5         | 0     | 0       | 5       |
 | Improvements          | 7         | 0     | 0       | 7       |
 | E2E Testing           | 3         | 0     | 0       | 3       |
-| **TOTAL**             | **185**   | **0** | **2**   | **187** |
+| **TOTAL**             | **186**   | **0** | **2**   | **188** |
 
-> **MVP STATUS: 100% RESOLVED** (185 completed + 2 removed, 0 tasks open)
+> **MVP STATUS: 100% RESOLVED** (186 completed + 2 removed, 0 tasks open)
 
 > **E2E Testing Infrastructure (Jan 16, 2026):** All 3 E2E tasks COMPLETED.
 > Final pass rate: 88.5% (54/61 core tests). Full suite has 338 tests across 44 spec files.
