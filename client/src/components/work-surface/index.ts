@@ -53,3 +53,8 @@ export {
 
 // Status Bar
 export { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
+
+// Inspector Replacements (UXS-601)
+export { PaymentInspector } from "./PaymentInspector";
+export { InvoiceEditInspector } from "./InvoiceEditInspector";
+export { InlinePriceEditor } from "./InlinePriceEditor";

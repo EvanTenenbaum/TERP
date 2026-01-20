@@ -139,10 +139,37 @@
 | Sprint | Status | Gate Passed |
 |--------|--------|-------------|
 | Sprint 4 | COMPLETED | ✅ |
-| Sprint 5 | PENDING | ⏳ |
+| Sprint 5 | COMPLETED | ✅ |
 | Sprint 6 | PENDING | ⏳ |
 | Sprint 7 | PENDING | ⏳ |
 | Sprint 8 | PENDING | ⏳ |
+
+---
+
+## Gate 5 Validation Results (2026-01-20)
+
+### UXS-601 — Modal Audit ✅
+- [x] Modal audit document created (`MODAL_AUDIT.md`)
+- [x] 47+ modals audited and classified
+- [x] 3 modals replaced with inspector pattern:
+  - PaymentInspector (replaces RecordPaymentDialog)
+  - InvoiceEditInspector (replaces EditInvoiceDialog)
+  - InlinePriceEditor (replaces PriceAdjustmentDialog)
+
+### UXS-602 — Golden Flow Tests ✅
+- [x] Test files created in `tests-e2e/golden-flows/`
+- [x] 6 test suites covering:
+  - order-creation.spec.ts
+  - order-to-invoice.spec.ts
+  - invoice-to-payment.spec.ts
+  - pick-pack-fulfillment.spec.ts
+  - work-surface-keyboard.spec.ts
+  - cmd-k-enforcement.spec.ts
+
+### UXS-603 — Cmd+K Enforcement ✅
+- [x] Test coverage for Cmd+K behavior
+- [x] Validates navigation-only scope
+- [x] Ensures no data entry via Cmd+K
 
 ---
 
