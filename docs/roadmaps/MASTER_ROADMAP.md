@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.3
-**Last Updated:** 2026-01-20 (Added UX Work Surface Redesign section with Red Hat QA improvements)
+**Version:** 6.4
+**Last Updated:** 2026-01-20 (Added Navigation Accessibility Enhancement - 11 tasks to surface hidden routes)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -78,6 +78,16 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | INFRA-010 | Update Documentation                         | ✅ COMPLETE | Dec 2025        |
 | INFRA-011 | Update Deployment Configuration              | ✅ COMPLETE | Dec 2025        |
 | INFRA-013 | Create RBAC Database Tables Migration        | ✅ COMPLETE | Dec 2025        |
+| INFRA-014 | Cron Leader Election for Multi-Instance      | ✅ COMPLETE | Jan 20, 2026    |
+
+> **INFRA-014 Details:**
+>
+> - Database-backed leader election for cron job coordination
+> - Prevents duplicate cron execution in multi-instance deployments
+> - Lease-based locking with 30s lease, 10s heartbeat
+> - All 4 cron jobs updated: sessionTimeout, notificationQueue, debtAging, priceAlerts
+> - Unit tests: 17 passing
+> - Documentation: `docs/implementation/INFRA-014_HIGH_MEMORY_REMEDIATION_COMPLETION_REPORT.md`
 
 ### ✅ Security (COMPLETE)
 
@@ -611,27 +621,116 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+### Navigation Accessibility Enhancement (P1) - Added Jan 20, 2026
+
+> Discovered during comprehensive accessibility audit of TERP navigation.
+> **Goal:** Surface 8 hidden high-value routes in sidebar navigation and Command Palette.
+> **Spec:** `docs/specs/NAV_ACCESSIBILITY_ENHANCEMENT_SPEC.md`
+> **Effort:** ~1.5 hours (2 file changes, configuration only)
+
+| Task    | Description                                      | Priority | Status | Estimate | Module                  |
+| ------- | ------------------------------------------------ | -------- | ------ | -------- | ----------------------- |
+| NAV-006 | Add Leaderboard to Sales nav (after Dashboard)   | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-007 | Add Client Needs to Sales nav                    | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-008 | Add Matchmaking to Sales nav                     | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-009 | Add Quotes to Sales nav                          | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-010 | Add Returns to Sales nav                         | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-011 | Add Vendor Supply to Inventory nav               | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-012 | Add Pricing Rules to Finance nav                 | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-013 | Add Workflow Queue to Admin nav                  | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-014 | Add all 8 routes to Command Palette              | MEDIUM   | ready  | 15 min   | CommandPalette.tsx      |
+| NAV-015 | Verify TypeScript compilation                    | LOW      | ready  | 5 min    | -                       |
+| NAV-016 | Manual QA verification of all new nav items      | LOW      | ready  | 15 min   | -                       |
+
+#### NAV-006: Add Leaderboard to Sales Navigation
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 5 min
+**Module:** `client/src/config/navigation.ts`
+**Dependencies:** None
+
+**Implementation:**
+```typescript
+// After Dashboard entry, before Clients:
+{
+  name: "Leaderboard",
+  path: "/leaderboard",
+  icon: Trophy,
+  group: "sales",
+  ariaLabel: "View team performance and rankings",
+},
+```
+
+---
+
+#### NAV-007 through NAV-013: Additional Navigation Items
+
+Each task adds one navigation item to `navigation.ts`:
+
+| Task    | Route            | Group     | Icon          | Position                    |
+| ------- | ---------------- | --------- | ------------- | --------------------------- |
+| NAV-007 | `/needs`         | sales     | Target        | After Invoices              |
+| NAV-008 | `/matchmaking`   | sales     | Sparkles      | After Client Needs          |
+| NAV-009 | `/quotes`        | sales     | FileQuestion  | After Matchmaking           |
+| NAV-010 | `/returns`       | sales     | PackageX      | After Quotes                |
+| NAV-011 | `/vendor-supply` | inventory | PackagePlus   | After Vendors               |
+| NAV-012 | `/pricing/rules` | finance   | DollarSign    | After Credit Settings       |
+| NAV-013 | `/workflow-queue`| admin     | ListOrdered   | After Feature Flags         |
+
+---
+
+#### NAV-014: Add Routes to Command Palette
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 15 min
+**Module:** `client/src/components/CommandPalette.tsx`
+**Dependencies:** NAV-006 through NAV-013
+
+**Implementation:**
+Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, using same icons as sidebar.
+
+---
+
+#### Post-Implementation Metrics
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Navigation items | 24 | 32 | +8 |
+| Command Palette items | 11 | 19 | +8 |
+| Hidden routes | 14 | 6 | -8 |
+| Sales group items | 8 | 13 | +5 |
+| Inventory group items | 7 | 8 | +1 |
+| Finance group items | 3 | 4 | +1 |
+| Admin group items | 6 | 7 | +1 |
+
+---
+
 ## 📊 MVP Summary
 
-| Category              | Completed | Open  | Removed | Total   |
-| --------------------- | --------- | ----- | ------- | ------- |
-| Infrastructure        | 21        | 0     | 1       | 22      |
-| Security              | 17        | 0     | 0       | 17      |
-| Bug Fixes             | 46        | 0     | 0       | 46      |
-| API Registration      | 10        | 0     | 0       | 10      |
-| Stability             | 4         | 0     | 0       | 4       |
-| Quality               | 12        | 0     | 0       | 12      |
-| Features              | 29        | 0     | 1       | 30      |
-| UX                    | 12        | 0     | 0       | 12      |
-| Data & Schema         | 8         | 0     | 0       | 8       |
-| Data Integrity (QA)   | 8         | 0     | 0       | 8       |
-| Frontend Quality (QA) | 3         | 0     | 0       | 3       |
-| Backend Quality (QA)  | 5         | 0     | 0       | 5       |
-| Improvements          | 7         | 0     | 0       | 7       |
-| E2E Testing           | 3         | 0     | 0       | 3       |
-| **TOTAL**             | **185**   | **0** | **2**   | **187** |
+| Category              | Completed | Open   | Removed | Total   |
+| --------------------- | --------- | ------ | ------- | ------- |
+| Infrastructure        | 21        | 0      | 1       | 22      |
+| Security              | 17        | 0      | 0       | 17      |
+| Bug Fixes             | 46        | 0      | 0       | 46      |
+| API Registration      | 10        | 0      | 0       | 10      |
+| Stability             | 4         | 0      | 0       | 4       |
+| Quality               | 12        | 0      | 0       | 12      |
+| Features              | 29        | 0      | 1       | 30      |
+| UX                    | 12        | 0      | 0       | 12      |
+| Data & Schema         | 8         | 0      | 0       | 8       |
+| Data Integrity (QA)   | 8         | 0      | 0       | 8       |
+| Frontend Quality (QA) | 3         | 0      | 0       | 3       |
+| Backend Quality (QA)  | 5         | 0      | 0       | 5       |
+| Navigation (NEW)      | 0         | 11     | 0       | 11      |
+| Improvements          | 7         | 0      | 0       | 7       |
+| E2E Testing           | 3         | 0      | 0       | 3       |
+| Navigation (NEW)      | 0         | 11     | 0       | 11      |
+| **TOTAL**             | **185**   | **11** | **2**   | **198** |
 
-> **MVP STATUS: 100% RESOLVED** (185 completed + 2 removed, 0 tasks open)
+> **MVP STATUS: 94% RESOLVED** (185 completed + 2 removed, 11 tasks open)
+> **Navigation Enhancement (Jan 20, 2026):** 11 new tasks added to surface hidden routes.
 
 > **E2E Testing Infrastructure (Jan 16, 2026):** All 3 E2E tasks COMPLETED.
 > Final pass rate: 88.5% (54/61 core tests). Full suite has 338 tests across 44 spec files.
@@ -1041,52 +1140,119 @@ First external user exposure requires careful monitoring.
 
 ---
 
-### Code Quality Tasks (P1)
+## 🔧 Work Surfaces QA Blockers (Added 2026-01-20)
 
-> TypeScript strict mode compliance and type safety improvements.
-> Discovered during comprehensive TypeScript audit (Jan 20, 2026).
+> **Source:** Work Surfaces Exhaustive Testing Suite (`docs/qa/QA_ISSUE_LEDGER.md`)
+> **QA Report:** `docs/qa/RECOMMENDATIONS.md`, `docs/qa/FIX_PATCH_SET.md`
+> **Product Decisions:** Captured in `docs/qa/QA_ISSUE_LEDGER.md` Product Decisions Log
 
-| Task   | Description                                  | Priority | Status | Estimate | Prompt                   |
-| ------ | -------------------------------------------- | -------- | ------ | -------- | ------------------------ |
-| TS-001 | Fix Remaining TypeScript Errors (117 errors) | HIGH     | ready  | 2d       | `docs/prompts/TS-001.md` |
+These P0 blockers were identified during comprehensive QA testing of the 9 Work Surface components. They must be resolved before Work Surfaces deployment.
 
-#### TS-001: Fix Remaining TypeScript Errors
+### WSQA-001: Wire Payment Recording Mutation
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/WSQA-001.md`
+
+**Problem:**
+The InvoicesWorkSurface payment handler (lines 717-724) is a stub that shows success without recording payments. Comment says "In a real implementation..." but mutation is never called. Breaks Invoice → Payment → Reconciliation flow.
+
+**Objectives:**
+
+1. Wire handlePaymentSubmit to trpc.payments.recordPayment mutation
+2. Add loading state and error handling to payment dialog
+3. Verify backend endpoint exists and accepts expected input
+
+**Deliverables:**
+
+- [ ] Payment mutation hook added to InvoicesWorkSurface
+- [ ] Handler calls mutation instead of showing fake success
+- [ ] Dialog shows loading state during mutation
+- [ ] Submit button disabled while pending
+- [ ] Error handling displays server errors
+- [ ] Golden Flow GF-004 passes end-to-end
+
+---
+
+### WSQA-002: Implement Flexible Lot Selection
 
 **Status:** ready
 **Priority:** HIGH
 **Estimate:** 2d
-**Module:** `client/src/`, `server/`
+**Module:** `server/db/schema.ts`, `client/src/components/order/BatchSelectionDialog.tsx`
 **Dependencies:** None
-**Prompt:** `docs/prompts/TS-001.md`
+**Prompt:** `docs/prompts/WSQA-002.md`
 
 **Problem:**
-The codebase has 117 TypeScript errors preventing strict type checking from passing. These errors span work surfaces, server routers, and service layers, creating potential runtime bugs and blocking CI/CD pipelines that enforce type safety.
+Users need to select specific batches/lots when fulfilling orders based on customer requirements (harvest dates, grades, expiry). Currently only single unitCogs stored per batch with auto-allocation.
+
+**Product Decision:** Flexible lot selection per customer need (not strict FIFO/LIFO).
 
 **Objectives:**
 
-1. Achieve zero TypeScript errors (`npm run check` passes)
-2. Fix type mismatches without changing runtime behavior
-3. Ensure all fixes are backward compatible
+1. Create order_line_item_allocations table to track batch→order mappings
+2. Add backend API for available batches query and allocation mutation
+3. Build BatchSelectionDialog UI component for lot selection
 
 **Deliverables:**
 
-- [ ] Fix 35 Work Surface component errors (InventoryWorkSurface, PickPackWorkSurface, golden flows)
-- [ ] Fix 40 server router errors (hourTracking, clientLedger, intakeReceipts, cogs)
-- [ ] Fix 16 service layer errors (orderPricingService, sessionPickListService, payablesService)
-- [ ] Fix 26 miscellaneous client component errors
-- [ ] All TypeScript errors resolved (`npm run check` passes)
+- [ ] order_line_item_allocations table created and migrated
+- [ ] getAvailableForProduct query returns batches with details
+- [ ] allocateBatchesToLineItem mutation validates and saves allocations
+- [ ] BatchSelectionDialog shows available lots with details
+- [ ] UI validates total selected = quantity needed
+- [ ] Weighted average COGS calculated from selected batches
+- [ ] Concurrent requests handled with row-level locking
+
+---
+
+### WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2d
+**Module:** `server/db/schema.ts`, `server/services/orderStateMachine.ts`, `server/services/returnProcessing.ts`
+**Dependencies:** WSQA-002 (allocations table for restock)
+**Prompt:** `docs/prompts/WSQA-003.md`
+
+**Problem:**
+Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for processing returns.
+
+**Product Decision:** Add RETURNED status with two terminal paths:
+- RESTOCKED: Items returned to inventory (increases batch quantities)
+- RETURNED_TO_VENDOR: Items sent to vendor (creates vendor return record)
+
+**Objectives:**
+
+1. Add new enum values: RETURNED, RESTOCKED, RETURNED_TO_VENDOR
+2. Create vendor_returns and vendor_return_items tables
+3. Implement state machine with valid transitions
+4. Build restock and vendor-return processing logic
+
+**Deliverables:**
+
+- [ ] New enum values added to fulfillment_status
+- [ ] vendor_returns table tracks vendor return requests
+- [ ] State machine validates all status transitions
+- [ ] processRestock increases batch quantities and logs movements
+- [ ] processVendorReturn creates return records
+- [ ] UI shows return actions when order status allows
+- [ ] Terminal states show no further actions
 
 ---
 
 ## 📊 Beta Summary
 
-| Category                 | Completed | Open   | Total  |
-| ------------------------ | --------- | ------ | ------ |
-| Reliability Program      | 0         | 17     | 17     |
-| UX Work Surface (BETA)   | 0         | 2      | 2      |
-| Work Surfaces Deployment | 0         | 8      | 8      |
-| Code Quality             | 0         | 1      | 1      |
-| **TOTAL**                | **0**     | **28** | **28** |
+| Category                   | Completed | Open   | Total  |
+| -------------------------- | --------- | ------ | ------ |
+| Reliability Program        | 0         | 17     | 17     |
+| UX Work Surface (BETA)     | 0         | 2      | 2      |
+| Work Surfaces Deployment   | 0         | 8      | 8      |
+| Work Surfaces QA Blockers  | 0         | 3      | 3      |
+| **TOTAL**                  | **0**     | **30** | **30** |
 
 ---
 
@@ -1095,10 +1261,15 @@ The codebase has 117 TypeScript errors preventing strict type checking from pass
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 28     | 28      | 0%       |
-| **TOTAL** | **185**   | **28** | **215** | ~86%     |
+| Beta      | 0         | 30     | 30      | 0%       |
+| **TOTAL** | **185**   | **30** | **217** | ~85%     |
 
-> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706) + 8 Work Surfaces Deployment tasks (DEPLOY-001..008) + 1 Code Quality task (TS-001).
+> **Note**: Beta now includes:
+> - 17 Reliability Program tasks
+> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706)
+> - 8 Work Surfaces Deployment tasks (DEPLOY-001..008)
+> - 3 Work Surfaces QA Blockers (WSQA-001..003) - Added 2026-01-20
+>
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
 ---

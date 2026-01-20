@@ -1,6 +1,7 @@
 import cron, { type ScheduledTask } from 'node-cron';
 import { processNotificationQueue } from '../services/notificationService';
 import { logger } from '../_core/logger';
+import { isCronLeader } from '../utils/cronLeaderElection';
 
 /**
  * Notification Queue Processing Cron Job
@@ -26,6 +27,14 @@ let taskRef: ScheduledTask | null = null;
 export function startNotificationQueueCron() {
   // Run every minute
   taskRef = cron.schedule('* * * * *', async () => {
+    // Skip if not the leader instance (multi-instance deployment)
+    if (!isCronLeader()) {
+      logger.debug(
+        '[NotificationQueueCron] Skipping - not the leader instance'
+      );
+      return;
+    }
+
     const timestamp = new Date().toISOString();
 
     try {
@@ -52,6 +61,7 @@ export function startNotificationQueueCron() {
 
   logger.info('[NotificationQueueCron] Notification queue processing started (runs every minute)');
   logger.info('[NotificationQueueCron] Queued notifications will be processed and delivered to users');
+  logger.info('[NotificationQueueCron] Leader election: enabled (only leader executes)');
 }
 
 /**

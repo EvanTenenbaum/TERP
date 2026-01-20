@@ -11,6 +11,7 @@
 import cron, { type ScheduledTask } from "node-cron";
 import { sessionTimeoutService } from "../services/live-shopping/sessionTimeoutService";
 import { logger } from "../_core/logger";
+import { isCronLeader } from "../utils/cronLeaderElection";
 
 let isRunningExpiredCheck = false;
 let isRunningWarningCheck = false;
@@ -20,6 +21,14 @@ let isRunningWarningCheck = false;
  * Runs every 30 seconds to ensure timely session cleanup
  */
 async function processExpiredSessions(): Promise<void> {
+  // Skip if not the leader instance (multi-instance deployment)
+  if (!isCronLeader()) {
+    logger.debug(
+      "[SessionTimeoutCron] Skipping expired check - not the leader instance"
+    );
+    return;
+  }
+
   // Prevent overlapping runs
   if (isRunningExpiredCheck) {
     logger.debug(
@@ -53,6 +62,14 @@ async function processExpiredSessions(): Promise<void> {
  * Runs every 60 seconds
  */
 async function sendTimeoutWarnings(): Promise<void> {
+  // Skip if not the leader instance (multi-instance deployment)
+  if (!isCronLeader()) {
+    logger.debug(
+      "[SessionTimeoutCron] Skipping warning check - not the leader instance"
+    );
+    return;
+  }
+
   // Prevent overlapping runs
   if (isRunningWarningCheck) {
     logger.debug(
@@ -102,6 +119,9 @@ export function startSessionTimeoutCron(): void {
     "[SessionTimeoutCron] - Expired sessions check: every 30 seconds"
   );
   logger.info("[SessionTimeoutCron] - Timeout warnings: every minute");
+  logger.info(
+    "[SessionTimeoutCron] - Leader election: enabled (only leader executes)"
+  );
 }
 
 /**
