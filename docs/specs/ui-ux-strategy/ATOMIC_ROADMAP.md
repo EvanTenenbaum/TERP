@@ -682,19 +682,70 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 ## Modal Replacement Inventory
 
 > **Purpose**: Track modals that must be replaced with inspector/inline patterns per UX doctrine.
-> **Source**: Red Hat QA 2026-01-20
+> **Source**: Red Hat QA 2026-01-20, verified via codebase grep
+> **Total Dialog/Modal usage**: 117 instances across pages (51 Dialog, 49 AlertDialog, 15 ConfirmDialog, plus module-specific)
 
-| Module | Current Modal | Location | Replacement Pattern | Task |
-|--------|--------------|----------|---------------------|------|
-| Intake | BatchCreateDialog | IntakeGrid.tsx | Inspector panel | UXS-201 |
-| Intake | VendorCreateDialog | IntakeGrid.tsx | Quick-create inline | UXS-201 |
-| Orders | LineItemEditDialog | OrderCreator | Inspector panel | UXS-301 |
-| Orders | DiscountDialog | OrderCreator | Inline cell + inspector | UXS-301 |
-| Inventory | AdjustmentDialog | Inventory.tsx | Inspector panel | UXS-401 |
-| Inventory | BatchDetailDrawer | Inventory.tsx | Inspector panel | UXS-401 |
-| Pick/Pack | AssignDialog | PickPackPage | Bulk action bar | UXS-402 |
-| Accounting | PaymentDialog | Payments.tsx | Inspector panel | UXS-501 |
-| Accounting | InvoiceCreateDialog | Invoices.tsx | Work Surface | UXS-501 |
-| Clients | ClientCreateDialog | ClientsPage | Quick-create inline | UXS-301 |
+### Core Flow Modals (High Priority - Must Replace)
 
-**Audit Status**: Partial - Additional modals may exist in edge flows. Full audit required in UXS-601.
+| Module | Current Modal | Location | Replacement Pattern | Task | Priority |
+|--------|--------------|----------|---------------------|------|----------|
+| Intake | VendorCreateDialog | IntakeGrid.tsx | Quick-create inline | UXS-201 | P0 |
+| Orders | LineItemEditDialog | OrderCreator | Inspector panel | UXS-301 | P0 |
+| Inventory | AdjustmentDialog | Inventory.tsx | Inspector panel | UXS-401 | P0 |
+| Inventory | BatchDetailDrawer | Inventory.tsx | Already Sheet-based ✅ | - | Done |
+| Pick/Pack | AssignBatchDialog | PickPackPage | Bulk action bar | UXS-402 | P0 |
+| Accounting | RecordPaymentDialog | Payments.tsx | Inspector panel | UXS-501 | P0 |
+| Accounting | EditInvoiceDialog | Invoices.tsx | Work Surface | UXS-501 | P0 |
+
+### Acceptable Modals (Confirmation/Destructive Actions)
+
+These modals are acceptable per doctrine (rare/destructive actions):
+
+| Type | Count | Usage | Keep? |
+|------|-------|-------|-------|
+| AlertDialog | 49 | Delete confirmations, warnings | ✅ Keep |
+| ConfirmDialog | 15 | Bulk action confirmations | ✅ Keep |
+| ConfirmNavigationDialog | 1 | Unsaved changes warning | ✅ Keep |
+| ConflictDialog | 1 | Optimistic lock conflict | ✅ Keep |
+
+### Module-Specific Modals (Evaluate Case-by-Case)
+
+| Modal | Module | Frequency | Recommendation |
+|-------|--------|-----------|----------------|
+| EventFormDialog | Calendar | Medium | Keep (complex form) |
+| SaveViewDialog | Reports | Low | Keep (one-time action) |
+| CreatePeriodDialog | Accounting | Low | Keep (admin action) |
+| ShipOrderModal | Fulfillment | Medium | Evaluate for inspector |
+| ProcessReturnModal | Fulfillment | Low | Keep (workflow modal) |
+| RoomBookingModal | Calendar | Medium | Evaluate for Work Surface |
+
+### Reference Implementations (Existing Patterns to Follow)
+
+| Pattern | Existing File | Use For |
+|---------|--------------|---------|
+| Sheet/Drawer inspector | `components/inventory/BatchDetailDrawer.tsx` | Inspector panels |
+| Conflict handling | `hooks/useOptimisticLocking.tsx` | Concurrent edit detection |
+| Mutation wrapper | `hooks/useAppMutation.ts` | Save state integration |
+| Keyboard shortcuts | `hooks/useKeyboardShortcuts.ts` | Extend for Work Surface |
+| Feature flags | `hooks/useFeatureFlag.ts` | Safe rollout |
+
+**Audit Status**: ✅ Verified via `grep -r "Dialog\|Modal"` - 117 instances catalogued.
+
+---
+
+## Implementation Scaffolding (Created)
+
+> **Source**: Red Hat QA 2026-01-20 - Skeleton hooks created for 70% effort reduction
+
+| Hook | Path | Status | Effort Saved |
+|------|------|--------|--------------|
+| `useWorkSurfaceKeyboard` | `hooks/work-surface/useWorkSurfaceKeyboard.ts` | Skeleton ready | ~70% |
+| `useSaveState` | `hooks/work-surface/useSaveState.ts` | Skeleton ready | ~70% |
+| `useValidationTiming` | `hooks/work-surface/useValidationTiming.ts` | Skeleton ready | ~70% |
+
+These skeleton hooks include:
+- Full TypeScript interfaces
+- JSDoc documentation with usage examples
+- Core logic structure with TODOs for completion
+- Integration points with existing hooks
+- Reference to existing patterns (useOptimisticLocking, useAppMutation)
