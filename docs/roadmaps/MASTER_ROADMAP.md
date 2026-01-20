@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.2
-**Last Updated:** 2026-01-16 (Added E2E Testing Infrastructure tasks)
+**Version:** 6.3
+**Last Updated:** 2026-01-20 (Added UX Work Surface Redesign section with Red Hat QA improvements)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -703,12 +703,105 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+## 🎨 UX Work Surface Redesign (Atomic UX Strategy)
+
+> **Strategy Package**: `docs/specs/ui-ux-strategy/`
+> **Status**: Ready for implementation (P0 infrastructure tasks first)
+> **Last QA Review**: 2026-01-20 (Red Hat Deep Review)
+
+### Scope & Guardrails
+
+- **Feature Preservation**: All DF-001 through DF-070 features must be preserved (see `FEATURE_PRESERVATION_MATRIX.md`)
+- **Golden Flow Coverage**: GF-001 through GF-008 must pass regression tests with RBAC validation
+- **Modal Replacement**: All modals in core flows replaced with inspector/inline patterns
+- **Rollback Strategy**: Feature flags enable safe gradual rollout and instant rollback
+
+### Feature Flags for Rollout
+
+Each Work Surface module requires a feature flag for safe deployment:
+
+| Flag Name | Default | Controls |
+|-----------|---------|----------|
+| `WORK_SURFACE_INTAKE` | false | UXS-201..203 (Intake/PO pilot) |
+| `WORK_SURFACE_ORDERS` | false | UXS-301..302 (Sales/Orders) |
+| `WORK_SURFACE_INVENTORY` | false | UXS-401..402 (Inventory/Pick-Pack) |
+| `WORK_SURFACE_ACCOUNTING` | false | UXS-501..502 (Accounting/Ledger) |
+
+### RBAC Validation Matrix (Per Golden Flow)
+
+| Golden Flow | Entry Point | Required Permissions | Owning Roles |
+|-------------|-------------|---------------------|--------------|
+| GF-001 Direct Intake | /spreadsheet | `inventory:write`, `batches:create` | Inventory, Super Admin |
+| GF-002 Standard PO | /purchase-orders | `purchase_orders:write` | Inventory, Purchasing |
+| GF-003 Sales Order | /orders | `orders:write`, `inventory:read` | Sales Rep, Sales Manager |
+| GF-004 Invoice & Payment | /accounting/invoices | `invoices:write`, `payments:write` | Accounting |
+| GF-005 Pick & Pack | /pick-pack | `pick_pack:write`, `inventory:write` | Fulfillment |
+| GF-006 Client Ledger | /clients/:id/ledger | `clients:read`, `ledger:read` | Sales Rep, Accounting |
+| GF-007 Inventory Adjust | /inventory | `inventory:write` | Inventory |
+| GF-008 Sample Request | /samples | `samples:write` | Sales Rep, Sales Manager |
+
+### Modal Replacement Inventory
+
+| Module | Current Modal | Replacement | Task |
+|--------|--------------|-------------|------|
+| Intake | BatchCreateDialog | Inspector panel | UXS-201 |
+| Intake | VendorCreateDialog | Quick-create inline | UXS-201 |
+| Orders | LineItemEditDialog | Inspector panel | UXS-301 |
+| Orders | DiscountDialog | Inline + inspector | UXS-301 |
+| Inventory | AdjustmentDialog | Inspector panel | UXS-401 |
+| Pick/Pack | AssignDialog | Bulk action bar | UXS-402 |
+| Accounting | PaymentDialog | Inspector panel | UXS-501 |
+
+### Atomic UX Task Summary (From ATOMIC_ROADMAP.md)
+
+| Layer | Tasks | Priority | Dependencies |
+|-------|-------|----------|--------------|
+| Layer 0: Foundation | UXS-001..006 | P0 | None |
+| Layer 1: Primitives | UXS-101..104 | P0 | UXS-002 |
+| Layer 2: Intake Pilot | UXS-201..203 | P1 | UXS-101..104 |
+| Layer 3: Orders | UXS-301..302 | P1 | UXS-101..104 |
+| Layer 4: Inventory | UXS-401..402 | P1 | UXS-101..104 |
+| Layer 5: Accounting | UXS-501..502 | P1 | UXS-101..104, REL-008 |
+| Layer 6: Hardening | UXS-601..603 | P1 | UXS-201..502 |
+| Layer 7: Infrastructure | UXS-701..707 | P1/P2/BETA | Various |
+| Layer 8: A11y/Perf | UXS-801..803 | P1/P2 | UXS-101..104 |
+| Layer 9: Cross-cutting | UXS-901..904 | P2 | None |
+
+### P0 Blockers (Must Complete First)
+
+| Task | Description | Effort | Status |
+|------|-------------|--------|--------|
+| UXS-101 | Keyboard contract hook | 2 days | ready |
+| UXS-102 | Save-state indicator | 1 day | ready |
+| UXS-104 | Validation timing helper | 1 day | ready |
+| UXS-703 | Loading skeletons | 1 day | ready |
+| UXS-704 | Error boundary | 1 day | ready |
+
+### BETA Phase Tasks (UX)
+
+| Task | Description | Effort | Status | Notes |
+|------|-------------|--------|--------|-------|
+| UXS-702 | Offline queue + sync | 5 days | ready | Per product: offline deferred to beta |
+| UXS-706 | Session timeout handler | 2 days | ready | Depends on UXS-702 |
+
+### Open Questions Requiring Product Decision
+
+| # | Question | Impact | Blocking |
+|---|----------|--------|----------|
+| 1 | Concurrent edit policy: prompt vs auto-resolve? | UXS-705 implementation | Yes |
+| 2 | Export limit (10K rows): acceptable? | UXS-904 implementation | No |
+| 3 | Bulk selection limit (500 rows): acceptable? | UXS-803 implementation | No |
+| 4 | VIP Portal: full Work Surface or light touch? | Scope planning | No |
+
+---
+
 ## 📊 Beta Summary
 
 | Category            | Completed | Open   | Total  |
 | ------------------- | --------- | ------ | ------ |
 | Reliability Program | 0         | 17     | 17     |
-| **TOTAL**           | **0**     | **17** | **17** |
+| UX Work Surface (BETA) | 0      | 2      | 2      |
+| **TOTAL**           | **0**     | **19** | **19** |
 
 ---
 
@@ -717,8 +810,11 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 17     | 17      | 0%       |
-| **TOTAL** | **185**   | **17** | **204** | ~91%     |
+| Beta      | 0         | 19     | 19      | 0%       |
+| **TOTAL** | **185**   | **19** | **206** | ~90%     |
+
+> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706).
+> Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
 ---
 

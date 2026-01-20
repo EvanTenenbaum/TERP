@@ -253,3 +253,5 @@ These routes are accessible but not shown in the sidebar navigation:
 | 2026-01-19 | Deep Gap Analysis: Resolved 14 unknown features (3 confirmed, 8 api-only, 1 missing) | Gap Analysis |
 | 2026-01-19 | Added 8 newly discovered features (DF-071 to DF-078) | Gap Analysis |
 | 2026-01-19 | Added page inventory (86 pages mapped) | Gap Analysis |
+| 2026-01-20 | PR #244 QA: Added RBAC validation matrix per golden flow | Red Hat QA Expert |
+| 2026-01-20 | PR #244 QA: Cross-referenced QA Auth system for role testing | Red Hat QA Expert |

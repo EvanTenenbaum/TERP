@@ -300,11 +300,24 @@
 - **Why**: Feature preservation enforcement.
 - **Exact scope**: Define automated checks for intake, order, pick/pack, invoice, ledger, and samples flows.
 - **Acceptance criteria**:
-  - Tests cover top 8 golden flows with pass criteria.
+  - Tests cover top 8 golden flows (GF-001 through GF-008) with pass criteria.
+  - Each golden flow validated under at least one RBAC role that owns the flow.
+  - Modal replacement list documented with inspector/inline equivalents.
+- **RBAC Test Matrix**:
+  | Flow | Test Role | Required Permissions |
+  |------|-----------|---------------------|
+  | GF-001 | Inventory | `inventory:write`, `batches:create` |
+  | GF-002 | Inventory | `purchase_orders:write` |
+  | GF-003 | Sales Rep | `orders:write`, `inventory:read` |
+  | GF-004 | Accounting | `invoices:write`, `payments:write` |
+  | GF-005 | Fulfillment | `pick_pack:write`, `inventory:write` |
+  | GF-006 | Sales Rep | `clients:read`, `ledger:read` |
+  | GF-007 | Inventory | `inventory:write` |
+  | GF-008 | Sales Rep | `samples:write` |
 - **Files likely touched**: tests-e2e/_, docs/specs/ui-ux-strategy/_
 - **Dependencies**: UXS-601
-- **Risks**: E2E flakiness.
-- **Test plan**: Run test suite in CI.
+- **Risks**: E2E flakiness; RBAC role availability in test environment.
+- **Test plan**: Run test suite in CI; use QA Auth system (AUTH-QA-001) for role switching.
 - **Rollback plan**: Revert failing test additions.
 
 ### UXS-603 — Command palette scope enforcement
@@ -402,11 +415,20 @@
   - Stale version detected before save
   - User prompted with conflict resolution options
   - Audit log captures conflict events
+- **Recommended Conflict Resolution Policy** (pending product confirmation):
+  | Data Type | Policy | Rationale |
+  |-----------|--------|-----------|
+  | Inventory quantities | Always prompt | Financial risk |
+  | Order line items | Always prompt | Customer impact |
+  | Notes/comments | Last-write-wins | Low risk |
+  | Status fields | Last-write-wins | Operational speed |
+  | Pricing/costs | Always prompt | Revenue impact |
 - **Files likely touched**: client/src/hooks/useOptimisticLocking.ts, server/src/middleware/versionCheck.ts
-- **Dependencies**: None (schema already has version field)
+- **Dependencies**: REL-004 (Critical Mutation Wrapper), REL-006 (Inventory Concurrency Hardening)
 - **Risks**: User experience friction from conflict dialogs.
-- **Test plan**: Two-browser test with simultaneous edits.
+- **Test plan**: Two-browser test with simultaneous edits; confirm policy matches open question resolution.
 - **Rollback plan**: Disable version check (last-write-wins).
+- **⚠️ BLOCKED**: Requires product decision on conflict resolution policy (see Open Questions #2).
 
 ### UXS-706 — Session timeout handler ⚠️ BETA PRIORITY
 
@@ -632,16 +654,47 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 
 ## Open Questions Requiring Product Input
 
+### Resolved Questions
+
 1. ~~**Offline scope**: Should offline support include full CRUD or read-only caching?~~ **RESOLVED**: Offline moved to BETA priority. Scope TBD closer to beta phase.
-2. **Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user?
-3. ~~**Session timeout**: What is the current session duration? Can it be extended via heartbeat?~~ **RESOLVED**: Moved to BETA with offline infrastructure.
-4. **Export limits**: Is 10,000 row limit acceptable, or do users need unlimited export?
-5. **Bulk limits**: Is 500 selection / 100 update limit acceptable for power users?
-6. ~~**Mobile support**: Is mobile view P0 or P2? Which workflows are used on mobile?~~ **RESOLVED**: P1 for Inventory, Accounting, Todo/Tasks, Dashboard. Other modules P2.
+2. ~~**Session timeout**: What is the current session duration? Can it be extended via heartbeat?~~ **RESOLVED**: Moved to BETA with offline infrastructure.
+3. ~~**Mobile support**: Is mobile view P0 or P2? Which workflows are used on mobile?~~ **RESOLVED**: P1 for Inventory, Accounting, Todo/Tasks, Dashboard. Other modules P2.
 
-### New Questions from Gap Analysis
+### Open Questions (Requiring Decision)
 
-7. **DF-067 Recurring Orders**: Feature is not implemented. Should it be added to the backlog?
-8. **API-only features**: 8 features have backend routers but no UI. Should any of these get UI surfaces?
-9. **VIP Portal scope**: VIP portal has 8 pages - should these be redesigned with Work Surface patterns?
-10. **Hidden routes**: 11 routes are not in main navigation - should any be surfaced more prominently?
+| # | Question | Impact | Blocking Task |
+|---|----------|--------|---------------|
+| 1 | **Export limits**: Is 10,000 row limit acceptable, or do users need unlimited export? | UXS-904 scope | No |
+| 2 | **Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user? | UXS-705 implementation | **YES** |
+| 3 | **Bulk limits**: Is 500 selection / 100 update limit acceptable for power users? | UXS-803 scope | No |
+
+### Additional Questions from Gap Analysis
+
+| # | Question | Impact | Blocking |
+|---|----------|--------|----------|
+| 4 | **DF-067 Recurring Orders**: Feature is not implemented. Should it be added to the backlog? | Feature scope | No |
+| 5 | **API-only features**: 8 features have backend routers but no UI. Should any get UI surfaces? | Feature scope | No |
+| 6 | **VIP Portal scope**: VIP portal has 8 pages - should these be redesigned with Work Surface patterns? | Effort estimation | No |
+| 7 | **Hidden routes**: 11 routes are not in main navigation - should any be surfaced more prominently? | Navigation design | No |
+
+---
+
+## Modal Replacement Inventory
+
+> **Purpose**: Track modals that must be replaced with inspector/inline patterns per UX doctrine.
+> **Source**: Red Hat QA 2026-01-20
+
+| Module | Current Modal | Location | Replacement Pattern | Task |
+|--------|--------------|----------|---------------------|------|
+| Intake | BatchCreateDialog | IntakeGrid.tsx | Inspector panel | UXS-201 |
+| Intake | VendorCreateDialog | IntakeGrid.tsx | Quick-create inline | UXS-201 |
+| Orders | LineItemEditDialog | OrderCreator | Inspector panel | UXS-301 |
+| Orders | DiscountDialog | OrderCreator | Inline cell + inspector | UXS-301 |
+| Inventory | AdjustmentDialog | Inventory.tsx | Inspector panel | UXS-401 |
+| Inventory | BatchDetailDrawer | Inventory.tsx | Inspector panel | UXS-401 |
+| Pick/Pack | AssignDialog | PickPackPage | Bulk action bar | UXS-402 |
+| Accounting | PaymentDialog | Payments.tsx | Inspector panel | UXS-501 |
+| Accounting | InvoiceCreateDialog | Invoices.tsx | Work Surface | UXS-501 |
+| Clients | ClientCreateDialog | ClientsPage | Quick-create inline | UXS-301 |
+
+**Audit Status**: Partial - Additional modals may exist in edge flows. Full audit required in UXS-601.
