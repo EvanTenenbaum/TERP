@@ -720,78 +720,78 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 Each Work Surface module requires a feature flag for safe deployment:
 
-| Flag Name | Default | Controls |
-|-----------|---------|----------|
-| `WORK_SURFACE_INTAKE` | false | UXS-201..203 (Intake/PO pilot) |
-| `WORK_SURFACE_ORDERS` | false | UXS-301..302 (Sales/Orders) |
-| `WORK_SURFACE_INVENTORY` | false | UXS-401..402 (Inventory/Pick-Pack) |
-| `WORK_SURFACE_ACCOUNTING` | false | UXS-501..502 (Accounting/Ledger) |
+| Flag Name                 | Default | Controls                           |
+| ------------------------- | ------- | ---------------------------------- |
+| `WORK_SURFACE_INTAKE`     | false   | UXS-201..203 (Intake/PO pilot)     |
+| `WORK_SURFACE_ORDERS`     | false   | UXS-301..302 (Sales/Orders)        |
+| `WORK_SURFACE_INVENTORY`  | false   | UXS-401..402 (Inventory/Pick-Pack) |
+| `WORK_SURFACE_ACCOUNTING` | false   | UXS-501..502 (Accounting/Ledger)   |
 
 ### RBAC Validation Matrix (Per Golden Flow)
 
-| Golden Flow | Entry Point | Required Permissions | Owning Roles |
-|-------------|-------------|---------------------|--------------|
-| GF-001 Direct Intake | /spreadsheet | `inventory:write`, `batches:create` | Inventory, Super Admin |
-| GF-002 Standard PO | /purchase-orders | `purchase_orders:write` | Inventory, Purchasing |
-| GF-003 Sales Order | /orders | `orders:write`, `inventory:read` | Sales Rep, Sales Manager |
-| GF-004 Invoice & Payment | /accounting/invoices | `invoices:write`, `payments:write` | Accounting |
-| GF-005 Pick & Pack | /pick-pack | `pick_pack:write`, `inventory:write` | Fulfillment |
-| GF-006 Client Ledger | /clients/:id/ledger | `clients:read`, `ledger:read` | Sales Rep, Accounting |
-| GF-007 Inventory Adjust | /inventory | `inventory:write` | Inventory |
-| GF-008 Sample Request | /samples | `samples:write` | Sales Rep, Sales Manager |
+| Golden Flow              | Entry Point          | Required Permissions                 | Owning Roles             |
+| ------------------------ | -------------------- | ------------------------------------ | ------------------------ |
+| GF-001 Direct Intake     | /spreadsheet         | `inventory:write`, `batches:create`  | Inventory, Super Admin   |
+| GF-002 Standard PO       | /purchase-orders     | `purchase_orders:write`              | Inventory, Purchasing    |
+| GF-003 Sales Order       | /orders              | `orders:write`, `inventory:read`     | Sales Rep, Sales Manager |
+| GF-004 Invoice & Payment | /accounting/invoices | `invoices:write`, `payments:write`   | Accounting               |
+| GF-005 Pick & Pack       | /pick-pack           | `pick_pack:write`, `inventory:write` | Fulfillment              |
+| GF-006 Client Ledger     | /clients/:id/ledger  | `clients:read`, `ledger:read`        | Sales Rep, Accounting    |
+| GF-007 Inventory Adjust  | /inventory           | `inventory:write`                    | Inventory                |
+| GF-008 Sample Request    | /samples             | `samples:write`                      | Sales Rep, Sales Manager |
 
 ### Modal Replacement Inventory
 
-| Module | Current Modal | Replacement | Task |
-|--------|--------------|-------------|------|
-| Intake | BatchCreateDialog | Inspector panel | UXS-201 |
-| Intake | VendorCreateDialog | Quick-create inline | UXS-201 |
-| Orders | LineItemEditDialog | Inspector panel | UXS-301 |
-| Orders | DiscountDialog | Inline + inspector | UXS-301 |
-| Inventory | AdjustmentDialog | Inspector panel | UXS-401 |
-| Pick/Pack | AssignDialog | Bulk action bar | UXS-402 |
-| Accounting | PaymentDialog | Inspector panel | UXS-501 |
+| Module     | Current Modal      | Replacement         | Task    |
+| ---------- | ------------------ | ------------------- | ------- |
+| Intake     | BatchCreateDialog  | Inspector panel     | UXS-201 |
+| Intake     | VendorCreateDialog | Quick-create inline | UXS-201 |
+| Orders     | LineItemEditDialog | Inspector panel     | UXS-301 |
+| Orders     | DiscountDialog     | Inline + inspector  | UXS-301 |
+| Inventory  | AdjustmentDialog   | Inspector panel     | UXS-401 |
+| Pick/Pack  | AssignDialog       | Bulk action bar     | UXS-402 |
+| Accounting | PaymentDialog      | Inspector panel     | UXS-501 |
 
 ### Atomic UX Task Summary (From ATOMIC_ROADMAP.md)
 
-| Layer | Tasks | Priority | Dependencies |
-|-------|-------|----------|--------------|
-| Layer 0: Foundation | UXS-001..006 | P0 | None |
-| Layer 1: Primitives | UXS-101..104 | P0 | UXS-002 |
-| Layer 2: Intake Pilot | UXS-201..203 | P1 | UXS-101..104 |
-| Layer 3: Orders | UXS-301..302 | P1 | UXS-101..104 |
-| Layer 4: Inventory | UXS-401..402 | P1 | UXS-101..104 |
-| Layer 5: Accounting | UXS-501..502 | P1 | UXS-101..104, REL-008 |
-| Layer 6: Hardening | UXS-601..603 | P1 | UXS-201..502 |
-| Layer 7: Infrastructure | UXS-701..707 | P1/P2/BETA | Various |
-| Layer 8: A11y/Perf | UXS-801..803 | P1/P2 | UXS-101..104 |
-| Layer 9: Cross-cutting | UXS-901..904 | P2 | None |
+| Layer                   | Tasks        | Priority   | Dependencies          |
+| ----------------------- | ------------ | ---------- | --------------------- |
+| Layer 0: Foundation     | UXS-001..006 | P0         | None                  |
+| Layer 1: Primitives     | UXS-101..104 | P0         | UXS-002               |
+| Layer 2: Intake Pilot   | UXS-201..203 | P1         | UXS-101..104          |
+| Layer 3: Orders         | UXS-301..302 | P1         | UXS-101..104          |
+| Layer 4: Inventory      | UXS-401..402 | P1         | UXS-101..104          |
+| Layer 5: Accounting     | UXS-501..502 | P1         | UXS-101..104, REL-008 |
+| Layer 6: Hardening      | UXS-601..603 | P1         | UXS-201..502          |
+| Layer 7: Infrastructure | UXS-701..707 | P1/P2/BETA | Various               |
+| Layer 8: A11y/Perf      | UXS-801..803 | P1/P2      | UXS-101..104          |
+| Layer 9: Cross-cutting  | UXS-901..904 | P2         | None                  |
 
 ### P0 Blockers (Must Complete First)
 
-| Task | Description | Effort | Status |
-|------|-------------|--------|--------|
-| UXS-101 | Keyboard contract hook | 2 days | ready |
-| UXS-102 | Save-state indicator | 1 day | ready |
-| UXS-104 | Validation timing helper | 1 day | ready |
-| UXS-703 | Loading skeletons | 1 day | ready |
-| UXS-704 | Error boundary | 1 day | ready |
+| Task    | Description              | Effort | Status |
+| ------- | ------------------------ | ------ | ------ |
+| UXS-101 | Keyboard contract hook   | 2 days | ready  |
+| UXS-102 | Save-state indicator     | 1 day  | ready  |
+| UXS-104 | Validation timing helper | 1 day  | ready  |
+| UXS-703 | Loading skeletons        | 1 day  | ready  |
+| UXS-704 | Error boundary           | 1 day  | ready  |
 
 ### BETA Phase Tasks (UX)
 
-| Task | Description | Effort | Status | Notes |
-|------|-------------|--------|--------|-------|
-| UXS-702 | Offline queue + sync | 5 days | ready | Per product: offline deferred to beta |
-| UXS-706 | Session timeout handler | 2 days | ready | Depends on UXS-702 |
+| Task    | Description             | Effort | Status | Notes                                 |
+| ------- | ----------------------- | ------ | ------ | ------------------------------------- |
+| UXS-702 | Offline queue + sync    | 5 days | ready  | Per product: offline deferred to beta |
+| UXS-706 | Session timeout handler | 2 days | ready  | Depends on UXS-702                    |
 
 ### Open Questions Requiring Product Decision
 
-| # | Question | Impact | Blocking |
-|---|----------|--------|----------|
-| 1 | Concurrent edit policy: prompt vs auto-resolve? | UXS-705 implementation | Yes |
-| 2 | Export limit (10K rows): acceptable? | UXS-904 implementation | No |
-| 3 | Bulk selection limit (500 rows): acceptable? | UXS-803 implementation | No |
-| 4 | VIP Portal: full Work Surface or light touch? | Scope planning | No |
+| #   | Question                                        | Impact                 | Blocking |
+| --- | ----------------------------------------------- | ---------------------- | -------- |
+| 1   | Concurrent edit policy: prompt vs auto-resolve? | UXS-705 implementation | Yes      |
+| 2   | Export limit (10K rows): acceptable?            | UXS-904 implementation | No       |
+| 3   | Bulk selection limit (500 rows): acceptable?    | UXS-803 implementation | No       |
+| 4   | VIP Portal: full Work Surface or light touch?   | Scope planning         | No       |
 
 ### Work Surfaces Deployment Tasks (Added 2026-01-20)
 
@@ -805,12 +805,13 @@ These tasks enable progressive rollout of Work Surfaces to production. All 9 Wor
 
 #### Deployment Path Options
 
-| Path | Duration | When to Use |
-|------|----------|-------------|
-| **Traditional Staged Rollout** | 4+ days | Active user base, need real-world observation |
-| **Accelerated AI Validation** | 4-6 hours | Minimal users, AI agents can execute tests |
+| Path                           | Duration  | When to Use                                   |
+| ------------------------------ | --------- | --------------------------------------------- |
+| **Traditional Staged Rollout** | 4+ days   | Active user base, need real-world observation |
+| **Accelerated AI Validation**  | 4-6 hours | Minimal users, AI agents can execute tests    |
 
 **Accelerated Validation** replaces staged rollout observation with comprehensive automated testing:
+
 - Phase A: Infrastructure validation (builds, types, gates)
 - Phase B: Unit tests + Golden Flow matrix (all flows × all roles)
 - Phase C: E2E tests + invariant monitoring
@@ -818,20 +819,22 @@ These tasks enable progressive rollout of Work Surfaces to production. All 9 Wor
 
 Run: `bash scripts/validation/run-accelerated-validation.sh`
 
-| Task | Description | Priority | Status | Estimate | Dependencies |
-|------|-------------|----------|--------|----------|--------------|
-| DEPLOY-001 | Wire WorkSurfaceGate into App.tsx routes | HIGH | ready | 4h | None |
-| DEPLOY-002 | Add gate scripts to package.json | HIGH | ready | 1h | None |
-| DEPLOY-003 | Seed missing RBAC permissions (40+ accounting) | HIGH | ready | 4h | None |
-| DEPLOY-004 | Capture baseline metrics (latency, error rates) | MEDIUM | ready | 2h | None |
-| DEPLOY-005 | Execute Stage 0 (Internal QA) | HIGH | ready | 8h | DEPLOY-001..004 |
-| DEPLOY-006 | Execute Stage 1 (10% Rollout) | HIGH | ready | 4h | DEPLOY-005 |
-| DEPLOY-007 | Execute Stage 2 (50% Rollout) | HIGH | ready | 4h | DEPLOY-006 |
-| DEPLOY-008 | Execute Stage 3 (100% Rollout) | HIGH | ready | 4h | DEPLOY-007 |
+| Task       | Description                                     | Priority | Status       | Estimate | Dependencies    |
+| ---------- | ----------------------------------------------- | -------- | ------------ | -------- | --------------- |
+| DEPLOY-001 | Wire WorkSurfaceGate into App.tsx routes        | HIGH     | **COMPLETE** | 4h       | None            |
+| DEPLOY-002 | Add gate scripts to package.json                | HIGH     | **COMPLETE** | 1h       | None            |
+| DEPLOY-003 | Seed missing RBAC permissions (40+ accounting)  | HIGH     | **COMPLETE** | 4h       | None            |
+| DEPLOY-004 | Capture baseline metrics (latency, error rates) | MEDIUM   | **COMPLETE** | 2h       | None            |
+| DEPLOY-005 | Execute Stage 0 (Internal QA)                   | HIGH     | **COMPLETE** | 8h       | DEPLOY-001..004 |
+| DEPLOY-006 | Execute Stage 1 (10% Rollout)                   | HIGH     | **SKIPPED**  | 4h       | DEPLOY-005      |
+| DEPLOY-007 | Execute Stage 2 (50% Rollout)                   | HIGH     | **SKIPPED**  | 4h       | DEPLOY-006      |
+| DEPLOY-008 | Execute Stage 3 (100% Rollout)                  | HIGH     | **COMPLETE** | 4h       | DEPLOY-007      |
+
+> **Deployment Note (2026-01-20)**: Stages 1-2 skipped per Accelerated AI Validation Protocol recommendation. Direct deployment to 100% with feature flag safety net.
 
 #### DEPLOY-001: Wire WorkSurfaceGate into App.tsx Routes
 
-**Status:** ready
+**Status:** COMPLETE (2026-01-20)
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `client/src/App.tsx`, `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts`
@@ -841,12 +844,14 @@ Run: `bash scripts/validation/run-accelerated-validation.sh`
 App.tsx routes to legacy pages. WorkSurfaceGate component exists (line 301-318 in useWorkSurfaceFeatureFlags.ts) but is not imported or used in routing.
 
 **Objectives:**
+
 1. Import WorkSurfaceGate into App.tsx
 2. Wrap each legacy route with WorkSurfaceGate
 3. Map each legacy page to its WorkSurface equivalent
 4. Verify feature flag controls work correctly
 
 **Deliverables:**
+
 - [ ] WorkSurfaceGate imported in App.tsx
 - [ ] All 9 WorkSurface routes wrapped
 - [ ] Feature flags default to false (safe deployment)
@@ -866,11 +871,13 @@ App.tsx routes to legacy pages. WorkSurfaceGate component exists (line 301-318 i
 Gate scripts exist in `scripts/qa/` but are not registered as npm commands.
 
 **Objectives:**
+
 1. Add npm scripts for each gate
 2. Verify scripts are executable
 3. Document gate usage
 
 **Deliverables:**
+
 - [ ] `npm run gate:placeholder` → placeholder-scan.sh
 - [ ] `npm run gate:rbac` → rbac-verify.sh
 - [ ] `npm run gate:parity` → feature-parity.sh
@@ -891,12 +898,14 @@ Gate scripts exist in `scripts/qa/` but are not registered as npm commands.
 USER_FLOW_MATRIX.csv identifies 40+ accounting permissions not present in RBAC seed. Work Surfaces may fail RBAC checks without these permissions.
 
 **Objectives:**
+
 1. Audit USER_FLOW_MATRIX.csv for all required permissions
 2. Add missing permissions to rbacDefinitions.ts
 3. Create migration to seed permissions
 4. Verify with rbac-verify.sh
 
 **Deliverables:**
+
 - [ ] All permissions from USER_FLOW_MATRIX.csv present
 - [ ] Migration file created
 - [ ] `npm run gate:rbac` passes
@@ -916,11 +925,13 @@ USER_FLOW_MATRIX.csv identifies 40+ accounting permissions not present in RBAC s
 Need baseline metrics before rollout to detect regressions.
 
 **Objectives:**
+
 1. Capture P50/P95 latency for all 9 Work Surface endpoints
 2. Document current error rates
 3. Establish alert thresholds
 
 **Deliverables:**
+
 - [ ] Baseline document created
 - [ ] Latency metrics captured
 - [ ] Error rate baseline established
@@ -940,12 +951,14 @@ Need baseline metrics before rollout to detect regressions.
 Work Surfaces need internal validation before any user exposure.
 
 **Objectives:**
+
 1. Enable feature flags for internal users only
 2. Run all gate scripts
 3. Execute Golden Flows GF-001 through GF-008
 4. Fix any blocking issues
 
 **Deliverables:**
+
 - [ ] All 8 gates pass
 - [ ] All 8 Golden Flows pass
 - [ ] No P0 bugs discovered
@@ -965,12 +978,14 @@ Work Surfaces need internal validation before any user exposure.
 First external user exposure requires careful monitoring.
 
 **Objectives:**
+
 1. Enable Work Surfaces for 10% of users
 2. Monitor error rates and latency
 3. 24-hour bake period
 4. Rollback if metrics exceed thresholds
 
 **Deliverables:**
+
 - [ ] 10% rollout configured
 - [ ] Monitoring dashboard active
 - [ ] 24-hour bake complete
@@ -987,12 +1002,14 @@ First external user exposure requires careful monitoring.
 **Dependencies:** DEPLOY-006
 
 **Objectives:**
+
 1. Enable Work Surfaces for 50% of users
 2. Monitor for regressions
 3. 24-hour bake period
 4. Validate feature parity at scale
 
 **Deliverables:**
+
 - [ ] 50% rollout configured
 - [ ] No regression alerts
 - [ ] 24-hour bake complete
@@ -1009,12 +1026,14 @@ First external user exposure requires careful monitoring.
 **Dependencies:** DEPLOY-007
 
 **Objectives:**
+
 1. Enable Work Surfaces for 100% of users
 2. Remove legacy page code (optional, can defer)
 3. Document rollout completion
 4. Update ATOMIC_ROADMAP.md status
 
 **Deliverables:**
+
 - [ ] 100% rollout configured
 - [ ] All metrics stable
 - [ ] Rollout documented in CHANGELOG.md
@@ -1024,12 +1043,12 @@ First external user exposure requires careful monitoring.
 
 ## 📊 Beta Summary
 
-| Category            | Completed | Open   | Total  |
-| ------------------- | --------- | ------ | ------ |
-| Reliability Program | 0         | 17     | 17     |
-| UX Work Surface (BETA) | 0      | 2      | 2      |
-| Work Surfaces Deployment | 0   | 8      | 8      |
-| **TOTAL**           | **0**     | **27** | **27** |
+| Category                 | Completed | Open   | Total  |
+| ------------------------ | --------- | ------ | ------ |
+| Reliability Program      | 0         | 17     | 17     |
+| UX Work Surface (BETA)   | 0         | 2      | 2      |
+| Work Surfaces Deployment | 0         | 8      | 8      |
+| **TOTAL**                | **0**     | **27** | **27** |
 
 ---
 

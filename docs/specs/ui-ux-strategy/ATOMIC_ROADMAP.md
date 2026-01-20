@@ -623,41 +623,41 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 
 ### P0 — Blockers (must complete before any Work Surface deployment)
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-101 | Keyboard contract hook | 2 days |
-| UXS-102 | Save-state indicator | 1 day |
-| UXS-104 | Validation timing | 1 day |
-| UXS-704 | Error boundary | 1 day |
-| UXS-703 | Loading skeletons | 1 day |
+| Task    | Description            | Estimated Effort |
+| ------- | ---------------------- | ---------------- |
+| UXS-101 | Keyboard contract hook | 2 days           |
+| UXS-102 | Save-state indicator   | 1 day            |
+| UXS-104 | Validation timing      | 1 day            |
+| UXS-704 | Error boundary         | 1 day            |
+| UXS-703 | Loading skeletons      | 1 day            |
 
 ### P1 — Required for production readiness
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-103 | Inspector panel shell | 2 days |
-| UXS-701 | Responsive breakpoints (focus: Inventory, Accounting, Todo, Dashboard) | 3 days |
-| UXS-705 | Concurrent edit detection | 2 days |
-| UXS-801 | Accessibility audit | 3 days |
+| Task    | Description                                                            | Estimated Effort |
+| ------- | ---------------------------------------------------------------------- | ---------------- |
+| UXS-103 | Inspector panel shell                                                  | 2 days           |
+| UXS-701 | Responsive breakpoints (focus: Inventory, Accounting, Todo, Dashboard) | 3 days           |
+| UXS-705 | Concurrent edit detection                                              | 2 days           |
+| UXS-801 | Accessibility audit                                                    | 3 days           |
 
 ### P2 — Required for scale
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-707 | Undo infrastructure | 2 days |
-| UXS-802 | Performance monitoring | 2 days |
-| UXS-803 | Bulk operation limits | 1 day |
-| UXS-901 | Empty states | 1 day |
-| UXS-902 | Toast standardization | 1 day |
-| UXS-903 | Print styles | 1 day |
-| UXS-904 | Export functionality | 2 days |
+| Task    | Description            | Estimated Effort |
+| ------- | ---------------------- | ---------------- |
+| UXS-707 | Undo infrastructure    | 2 days           |
+| UXS-802 | Performance monitoring | 2 days           |
+| UXS-803 | Bulk operation limits  | 1 day            |
+| UXS-901 | Empty states           | 1 day            |
+| UXS-902 | Toast standardization  | 1 day            |
+| UXS-903 | Print styles           | 1 day            |
+| UXS-904 | Export functionality   | 2 days           |
 
 ### BETA — Post-launch improvements
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-702 | Offline queue + sync | 5 days |
-| UXS-706 | Session timeout handler | 2 days |
+| Task    | Description             | Estimated Effort |
+| ------- | ----------------------- | ---------------- |
+| UXS-702 | Offline queue + sync    | 5 days           |
+| UXS-706 | Session timeout handler | 2 days           |
 
 ---
 
@@ -671,22 +671,22 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 
 ### Open Questions (Requiring Decision)
 
-| # | Question | Impact | Blocking Task |
-|---|----------|--------|---------------|
-| 1 | **Export limits**: Is 10,000 row limit acceptable, or do users need unlimited export? | UXS-904 scope | No |
-| ~~2~~ | ~~**Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user?~~ | ~~UXS-705 implementation~~ | **RESOLVED** |
-| 3 | **Bulk limits**: Is 500 selection / 100 update limit acceptable for power users? | UXS-803 scope | No |
+| #     | Question                                                                                            | Impact                     | Blocking Task |
+| ----- | --------------------------------------------------------------------------------------------------- | -------------------------- | ------------- |
+| 1     | **Export limits**: Is 10,000 row limit acceptable, or do users need unlimited export?               | UXS-904 scope              | No            |
+| ~~2~~ | ~~**Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user?~~ | ~~UXS-705 implementation~~ | **RESOLVED**  |
+| 3     | **Bulk limits**: Is 500 selection / 100 update limit acceptable for power users?                    | UXS-803 scope              | No            |
 
 > **Question #2 RESOLVED (2026-01-20)**: Use **Hybrid + Customization** approach. Default to "always prompt" for financial/inventory data, "last-write-wins" for notes/status. Allow admin customization per entity type via Settings.
 
 ### Additional Questions from Gap Analysis
 
-| # | Question | Impact | Blocking |
-|---|----------|--------|----------|
-| 4 | **DF-067 Recurring Orders**: Feature is not implemented. Should it be added to the backlog? | Feature scope | No |
-| 5 | **API-only features**: 8 features have backend routers but no UI. Should any get UI surfaces? | Feature scope | No |
-| 6 | **VIP Portal scope**: VIP portal has 8 pages - should these be redesigned with Work Surface patterns? | Effort estimation | No |
-| 7 | **Hidden routes**: 11 routes are not in main navigation - should any be surfaced more prominently? | Navigation design | No |
+| #   | Question                                                                                              | Impact            | Blocking |
+| --- | ----------------------------------------------------------------------------------------------------- | ----------------- | -------- |
+| 4   | **DF-067 Recurring Orders**: Feature is not implemented. Should it be added to the backlog?           | Feature scope     | No       |
+| 5   | **API-only features**: 8 features have backend routers but no UI. Should any get UI surfaces?         | Feature scope     | No       |
+| 6   | **VIP Portal scope**: VIP portal has 8 pages - should these be redesigned with Work Surface patterns? | Effort estimation | No       |
+| 7   | **Hidden routes**: 11 routes are not in main navigation - should any be surfaced more prominently?    | Navigation design | No       |
 
 ---
 
@@ -698,47 +698,47 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 
 ### Core Flow Modals (High Priority - Must Replace)
 
-| Module | Current Modal | Location | Replacement Pattern | Task | Priority |
-|--------|--------------|----------|---------------------|------|----------|
-| Intake | VendorCreateDialog | IntakeGrid.tsx | Quick-create inline | UXS-201 | P0 |
-| Orders | LineItemEditDialog | OrderCreator | Inspector panel | UXS-301 | P0 |
-| Inventory | AdjustmentDialog | Inventory.tsx | Inspector panel | UXS-401 | P0 |
-| Inventory | BatchDetailDrawer | Inventory.tsx | Already Sheet-based ✅ | - | Done |
-| Pick/Pack | AssignBatchDialog | PickPackPage | Bulk action bar | UXS-402 | P0 |
-| Accounting | RecordPaymentDialog | Payments.tsx | Inspector panel | UXS-501 | P0 |
-| Accounting | EditInvoiceDialog | Invoices.tsx | Work Surface | UXS-501 | P0 |
+| Module     | Current Modal       | Location       | Replacement Pattern    | Task    | Priority |
+| ---------- | ------------------- | -------------- | ---------------------- | ------- | -------- |
+| Intake     | VendorCreateDialog  | IntakeGrid.tsx | Quick-create inline    | UXS-201 | P0       |
+| Orders     | LineItemEditDialog  | OrderCreator   | Inspector panel        | UXS-301 | P0       |
+| Inventory  | AdjustmentDialog    | Inventory.tsx  | Inspector panel        | UXS-401 | P0       |
+| Inventory  | BatchDetailDrawer   | Inventory.tsx  | Already Sheet-based ✅ | -       | Done     |
+| Pick/Pack  | AssignBatchDialog   | PickPackPage   | Bulk action bar        | UXS-402 | P0       |
+| Accounting | RecordPaymentDialog | Payments.tsx   | Inspector panel        | UXS-501 | P0       |
+| Accounting | EditInvoiceDialog   | Invoices.tsx   | Work Surface           | UXS-501 | P0       |
 
 ### Acceptable Modals (Confirmation/Destructive Actions)
 
 These modals are acceptable per doctrine (rare/destructive actions):
 
-| Type | Count | Usage | Keep? |
-|------|-------|-------|-------|
-| AlertDialog | 49 | Delete confirmations, warnings | ✅ Keep |
-| ConfirmDialog | 15 | Bulk action confirmations | ✅ Keep |
-| ConfirmNavigationDialog | 1 | Unsaved changes warning | ✅ Keep |
-| ConflictDialog | 1 | Optimistic lock conflict | ✅ Keep |
+| Type                    | Count | Usage                          | Keep?   |
+| ----------------------- | ----- | ------------------------------ | ------- |
+| AlertDialog             | 49    | Delete confirmations, warnings | ✅ Keep |
+| ConfirmDialog           | 15    | Bulk action confirmations      | ✅ Keep |
+| ConfirmNavigationDialog | 1     | Unsaved changes warning        | ✅ Keep |
+| ConflictDialog          | 1     | Optimistic lock conflict       | ✅ Keep |
 
 ### Module-Specific Modals (Evaluate Case-by-Case)
 
-| Modal | Module | Frequency | Recommendation |
-|-------|--------|-----------|----------------|
-| EventFormDialog | Calendar | Medium | Keep (complex form) |
-| SaveViewDialog | Reports | Low | Keep (one-time action) |
-| CreatePeriodDialog | Accounting | Low | Keep (admin action) |
-| ShipOrderModal | Fulfillment | Medium | Evaluate for inspector |
-| ProcessReturnModal | Fulfillment | Low | Keep (workflow modal) |
-| RoomBookingModal | Calendar | Medium | Evaluate for Work Surface |
+| Modal              | Module      | Frequency | Recommendation            |
+| ------------------ | ----------- | --------- | ------------------------- |
+| EventFormDialog    | Calendar    | Medium    | Keep (complex form)       |
+| SaveViewDialog     | Reports     | Low       | Keep (one-time action)    |
+| CreatePeriodDialog | Accounting  | Low       | Keep (admin action)       |
+| ShipOrderModal     | Fulfillment | Medium    | Evaluate for inspector    |
+| ProcessReturnModal | Fulfillment | Low       | Keep (workflow modal)     |
+| RoomBookingModal   | Calendar    | Medium    | Evaluate for Work Surface |
 
 ### Reference Implementations (Existing Patterns to Follow)
 
-| Pattern | Existing File | Use For |
-|---------|--------------|---------|
-| Sheet/Drawer inspector | `components/inventory/BatchDetailDrawer.tsx` | Inspector panels |
-| Conflict handling | `hooks/useOptimisticLocking.tsx` | Concurrent edit detection |
-| Mutation wrapper | `hooks/useAppMutation.ts` | Save state integration |
-| Keyboard shortcuts | `hooks/useKeyboardShortcuts.ts` | Extend for Work Surface |
-| Feature flags | `hooks/useFeatureFlag.ts` | Safe rollout |
+| Pattern                | Existing File                                | Use For                   |
+| ---------------------- | -------------------------------------------- | ------------------------- |
+| Sheet/Drawer inspector | `components/inventory/BatchDetailDrawer.tsx` | Inspector panels          |
+| Conflict handling      | `hooks/useOptimisticLocking.tsx`             | Concurrent edit detection |
+| Mutation wrapper       | `hooks/useAppMutation.ts`                    | Save state integration    |
+| Keyboard shortcuts     | `hooks/useKeyboardShortcuts.ts`              | Extend for Work Surface   |
+| Feature flags          | `hooks/useFeatureFlag.ts`                    | Safe rollout              |
 
 **Audit Status**: ✅ Verified via `grep -r "Dialog\|Modal"` - 117 instances catalogued.
 
@@ -749,19 +749,19 @@ These modals are acceptable per doctrine (rare/destructive actions):
 > **Source**: Red Hat QA 2026-01-20 - Skeleton hooks created for 70% effort reduction
 > **Updated**: 2026-01-20 - All core hooks COMPLETE per EXECUTION_PLAN_PHASE2.md
 
-| Hook | Path | Status | Notes |
-|------|------|--------|-------|
-| `useWorkSurfaceKeyboard` | `hooks/work-surface/useWorkSurfaceKeyboard.tsx` | **COMPLETE** | Keyboard contract, focus management |
-| `useSaveState` | `hooks/work-surface/useSaveState.tsx` | **COMPLETE** | Save indicator, 4 states |
-| `useValidationTiming` | `hooks/work-surface/useValidationTiming.ts` | **COMPLETE** | Blur/commit validation |
-| `useConcurrentEditDetection` | `hooks/work-surface/useConcurrentEditDetection.tsx` | **COMPLETE** | Optimistic locking |
-| `useBreakpoint` | `hooks/work-surface/useBreakpoint.tsx` | **COMPLETE** | Responsive breakpoints |
-| `useUndo` | `hooks/work-surface/useUndo.tsx` | **COMPLETE** | 10s undo window |
-| `usePerformanceMonitor` | `hooks/work-surface/usePerformanceMonitor.ts` | **COMPLETE** | Performance budgets |
-| `useBulkOperationLimits` | `hooks/work-surface/useBulkOperationLimits.tsx` | **COMPLETE** | Bulk operation limits |
-| `useToastConfig` | `hooks/work-surface/useToastConfig.ts` | **COMPLETE** | Toast standardization |
-| `usePrint` | `hooks/work-surface/usePrint.ts` | **COMPLETE** | Print functionality |
-| `useExport` | `hooks/work-surface/useExport.ts` | **COMPLETE** | Export with row limits |
+| Hook                         | Path                                                | Status       | Notes                               |
+| ---------------------------- | --------------------------------------------------- | ------------ | ----------------------------------- |
+| `useWorkSurfaceKeyboard`     | `hooks/work-surface/useWorkSurfaceKeyboard.tsx`     | **COMPLETE** | Keyboard contract, focus management |
+| `useSaveState`               | `hooks/work-surface/useSaveState.tsx`               | **COMPLETE** | Save indicator, 4 states            |
+| `useValidationTiming`        | `hooks/work-surface/useValidationTiming.ts`         | **COMPLETE** | Blur/commit validation              |
+| `useConcurrentEditDetection` | `hooks/work-surface/useConcurrentEditDetection.tsx` | **COMPLETE** | Optimistic locking                  |
+| `useBreakpoint`              | `hooks/work-surface/useBreakpoint.tsx`              | **COMPLETE** | Responsive breakpoints              |
+| `useUndo`                    | `hooks/work-surface/useUndo.tsx`                    | **COMPLETE** | 10s undo window                     |
+| `usePerformanceMonitor`      | `hooks/work-surface/usePerformanceMonitor.ts`       | **COMPLETE** | Performance budgets                 |
+| `useBulkOperationLimits`     | `hooks/work-surface/useBulkOperationLimits.tsx`     | **COMPLETE** | Bulk operation limits               |
+| `useToastConfig`             | `hooks/work-surface/useToastConfig.ts`              | **COMPLETE** | Toast standardization               |
+| `usePrint`                   | `hooks/work-surface/usePrint.ts`                    | **COMPLETE** | Print functionality                 |
+| `useExport`                  | `hooks/work-surface/useExport.ts`                   | **COMPLETE** | Export with row limits              |
 
 ---
 
@@ -774,88 +774,117 @@ The following task statuses have been verified and corrected based on codebase a
 
 ### Layer 0 Tasks - COMPLETED
 
-| Task | Original Status | Corrected Status | Evidence |
-|------|-----------------|------------------|----------|
-| UXS-001 | ready | **COMPLETE** | `FEATURE_PRESERVATION_MATRIX.md` exists (258 lines, 110 features tracked) |
-| UXS-002 | ready | **COMPLETE** | `ATOMIC_UX_STRATEGY.md` exists with complete primitives section |
-| UXS-003 | ready | **COMPLETE** | `PATTERN_APPLICATION_PLAYBOOK.md` exists with decision trees |
-| UXS-004 | ready | **COMPLETE** | `ASSUMPTION_LOG.md` (33 assumptions) + `RISK_REGISTER.md` (32 risks) exist |
-| UXS-005 | ready | **COMPLETE** | All 14 unknown features resolved in matrix (3 confirmed, 8 api-only, 1 missing) |
+| Task    | Original Status | Corrected Status | Evidence                                                                        |
+| ------- | --------------- | ---------------- | ------------------------------------------------------------------------------- |
+| UXS-001 | ready           | **COMPLETE**     | `FEATURE_PRESERVATION_MATRIX.md` exists (258 lines, 110 features tracked)       |
+| UXS-002 | ready           | **COMPLETE**     | `ATOMIC_UX_STRATEGY.md` exists with complete primitives section                 |
+| UXS-003 | ready           | **COMPLETE**     | `PATTERN_APPLICATION_PLAYBOOK.md` exists with decision trees                    |
+| UXS-004 | ready           | **COMPLETE**     | `ASSUMPTION_LOG.md` (33 assumptions) + `RISK_REGISTER.md` (32 risks) exist      |
+| UXS-005 | ready           | **COMPLETE**     | All 14 unknown features resolved in matrix (3 confirmed, 8 api-only, 1 missing) |
 
 ### Layer 1 Tasks - COMPLETED
 
-| Task | Original Status | Corrected Status | Evidence |
-|------|-----------------|------------------|----------|
-| UXS-101 | IN PROGRESS | **COMPLETE** | `useWorkSurfaceKeyboard.tsx` - full keyboard contract |
-| UXS-102 | IN PROGRESS | **COMPLETE** | `useSaveState.tsx` - all 4 states + indicator |
-| UXS-103 | ready | **COMPLETE** | `InspectorPanel.tsx` exists with sections/fields |
-| UXS-104 | IN PROGRESS | **COMPLETE** | `useValidationTiming.ts` - blur/commit timing |
+| Task    | Original Status | Corrected Status | Evidence                                              |
+| ------- | --------------- | ---------------- | ----------------------------------------------------- |
+| UXS-101 | IN PROGRESS     | **COMPLETE**     | `useWorkSurfaceKeyboard.tsx` - full keyboard contract |
+| UXS-102 | IN PROGRESS     | **COMPLETE**     | `useSaveState.tsx` - all 4 states + indicator         |
+| UXS-103 | ready           | **COMPLETE**     | `InspectorPanel.tsx` exists with sections/fields      |
+| UXS-104 | IN PROGRESS     | **COMPLETE**     | `useValidationTiming.ts` - blur/commit timing         |
 
 ### Layer 2-3 Tasks - COMPLETED (Sprints 4-5)
 
-| Task | Status | Evidence |
-|------|--------|----------|
-| UXS-201 | **COMPLETE** | `DirectIntakeWorkSurface.tsx` |
+| Task    | Status       | Evidence                        |
+| ------- | ------------ | ------------------------------- |
+| UXS-201 | **COMPLETE** | `DirectIntakeWorkSurface.tsx`   |
 | UXS-202 | **COMPLETE** | `PurchaseOrdersWorkSurface.tsx` |
-| UXS-203 | **COMPLETE** | `ClientsWorkSurface.tsx` |
-| UXS-301 | **COMPLETE** | `OrdersWorkSurface.tsx` |
-| UXS-302 | **COMPLETE** | `QuotesWorkSurface.tsx` |
+| UXS-203 | **COMPLETE** | `ClientsWorkSurface.tsx`        |
+| UXS-301 | **COMPLETE** | `OrdersWorkSurface.tsx`         |
+| UXS-302 | **COMPLETE** | `QuotesWorkSurface.tsx`         |
 
 ### Layer 4-5 Tasks - COMPLETED (Sprints 4-5)
 
-| Task | Status | Evidence |
-|------|--------|----------|
-| UXS-401 | **COMPLETE** | `InventoryWorkSurface.tsx` |
-| UXS-402 | **COMPLETE** | `PickPackWorkSurface.tsx` |
-| UXS-501 | **COMPLETE** | `InvoicesWorkSurface.tsx` |
+| Task    | Status       | Evidence                      |
+| ------- | ------------ | ----------------------------- |
+| UXS-401 | **COMPLETE** | `InventoryWorkSurface.tsx`    |
+| UXS-402 | **COMPLETE** | `PickPackWorkSurface.tsx`     |
+| UXS-501 | **COMPLETE** | `InvoicesWorkSurface.tsx`     |
 | UXS-502 | **COMPLETE** | `ClientLedgerWorkSurface.tsx` |
 
 ### Layer 6 Tasks - COMPLETED (Sprint 5)
 
-| Task | Status | Evidence |
-|------|--------|----------|
+| Task    | Status       | Evidence                                    |
+| ------- | ------------ | ------------------------------------------- |
 | UXS-601 | **COMPLETE** | `MODAL_AUDIT.md` + 3 inspector replacements |
-| UXS-602 | **COMPLETE** | `tests-e2e/golden-flows/` - 6 test suites |
-| UXS-603 | **COMPLETE** | `cmd-k-enforcement.spec.ts` |
+| UXS-602 | **COMPLETE** | `tests-e2e/golden-flows/` - 6 test suites   |
+| UXS-603 | **COMPLETE** | `cmd-k-enforcement.spec.ts`                 |
 
 ### Layer 7 Tasks - COMPLETED (Sprints 6-8)
 
-| Task | Status | Evidence |
-|------|--------|----------|
-| UXS-701 | **COMPLETE** | `useBreakpoint.tsx` - responsive breakpoints |
-| UXS-703 | **COMPLETE** | `skeleton.tsx` + `skeleton-loaders.tsx` |
+| Task    | Status       | Evidence                                      |
+| ------- | ------------ | --------------------------------------------- |
+| UXS-701 | **COMPLETE** | `useBreakpoint.tsx` - responsive breakpoints  |
+| UXS-703 | **COMPLETE** | `skeleton.tsx` + `skeleton-loaders.tsx`       |
 | UXS-704 | **COMPLETE** | `ErrorBoundary.tsx` + `PageErrorBoundary.tsx` |
-| UXS-705 | **COMPLETE** | `useConcurrentEditDetection.tsx` |
-| UXS-707 | **COMPLETE** | `useUndo.tsx` - 10s undo window |
+| UXS-705 | **COMPLETE** | `useConcurrentEditDetection.tsx`              |
+| UXS-707 | **COMPLETE** | `useUndo.tsx` - 10s undo window               |
 
 ### Layer 8 Tasks - COMPLETED (Sprints 7-8)
 
-| Task | Status | Evidence |
-|------|--------|----------|
-| UXS-801 | **COMPLETE** | `ACCESSIBILITY_CHECKLIST.md` |
-| UXS-802 | **COMPLETE** | `usePerformanceMonitor.ts` |
-| UXS-803 | **COMPLETE** | `useBulkOperationLimits.tsx` |
+| Task    | Status       | Evidence                                   |
+| ------- | ------------ | ------------------------------------------ |
+| UXS-801 | **COMPLETE** | `ACCESSIBILITY_CHECKLIST.md`               |
+| UXS-802 | **COMPLETE** | `usePerformanceMonitor.ts`                 |
+| UXS-803 | **COMPLETE** | `useBulkOperationLimits.tsx`               |
 | UXS-901 | **COMPLETE** | `empty-state.tsx` (pre-existing, verified) |
-| UXS-902 | **COMPLETE** | `useToastConfig.ts` |
-| UXS-903 | **COMPLETE** | `print.css` + `usePrint.ts` |
-| UXS-904 | **COMPLETE** | `useExport.ts` |
+| UXS-902 | **COMPLETE** | `useToastConfig.ts`                        |
+| UXS-903 | **COMPLETE** | `print.css` + `usePrint.ts`                |
+| UXS-904 | **COMPLETE** | `useExport.ts`                             |
 
 ### Summary After Corrections (2026-01-20)
 
-| Category | Count |
-|----------|-------|
-| **Completed** | 35+ tasks |
-| **In Progress** | 0 tasks |
-| **Ready (Not Started)** | See remaining items below |
-| **Blocked** | 0 tasks |
-| **BETA Deferred** | 2 tasks (UXS-702, UXS-706) |
+| Category                | Count                      |
+| ----------------------- | -------------------------- |
+| **Completed**           | 35+ tasks                  |
+| **In Progress**         | 0 tasks                    |
+| **Ready (Not Started)** | See remaining items below  |
+| **Blocked**             | 0 tasks                    |
+| **BETA Deferred**       | 2 tasks (UXS-702, UXS-706) |
 
 ### Remaining Tasks (Not Yet Started)
 
-| Task | Description | Priority |
-|------|-------------|----------|
-| UXS-006 | Ledger + intake verification UX audit | P1 |
-| UXS-702 | Offline mode (BETA deferred) | P3 |
-| UXS-706 | Dark mode refinements (BETA deferred) | P3 |
+| Task    | Description                           | Priority |
+| ------- | ------------------------------------- | -------- |
+| UXS-006 | Ledger + intake verification UX audit | P1       |
+| UXS-702 | Offline mode (BETA deferred)          | P3       |
+| UXS-706 | Dark mode refinements (BETA deferred) | P3       |
 
 > **UXS-705 COMPLETE (2026-01-20)**: Concurrent edit detection implemented with optimistic locking.
+
+---
+
+## Production Deployment Status (2026-01-20)
+
+> **DEPLOYED: 100%** - All 9 Work Surface components deployed to production
+
+### Deployment Summary
+
+| Route                       | WorkSurface Component     | Feature Flag              | Status       |
+| --------------------------- | ------------------------- | ------------------------- | ------------ |
+| `/orders`                   | OrdersWorkSurface         | `WORK_SURFACE_ORDERS`     | **DEPLOYED** |
+| `/accounting/invoices`      | InvoicesWorkSurface       | `WORK_SURFACE_ACCOUNTING` | **DEPLOYED** |
+| `/inventory`                | InventoryWorkSurface      | `WORK_SURFACE_INVENTORY`  | **DEPLOYED** |
+| `/clients`                  | ClientsWorkSurface        | `WORK_SURFACE_ORDERS`     | **DEPLOYED** |
+| `/purchase-orders`          | PurchaseOrdersWorkSurface | `WORK_SURFACE_INTAKE`     | **DEPLOYED** |
+| `/pick-pack`                | PickPackWorkSurface       | `WORK_SURFACE_INVENTORY`  | **DEPLOYED** |
+| `/clients/:clientId/ledger` | ClientLedgerWorkSurface   | `WORK_SURFACE_ACCOUNTING` | **DEPLOYED** |
+| `/quotes`                   | QuotesWorkSurface         | `WORK_SURFACE_ORDERS`     | **DEPLOYED** |
+| `/spreadsheet-view`         | DirectIntakeWorkSurface   | `WORK_SURFACE_INTAKE`     | **DEPLOYED** |
+
+### Rollback Capability
+
+All deployments use feature flags for instant rollback:
+
+- Set flag to `defaultEnabled: false` to disable Work Surface
+- WorkSurfaceGate component automatically falls back to legacy page
+
+**Session**: `Session-20260120-WORKSURFACES-100-DEPLOY-VjxkT`

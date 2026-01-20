@@ -13,7 +13,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useFeatureFlags } from "@/contexts/FeatureFlagContext";
 
 // ============================================================================
@@ -65,6 +65,12 @@ export const WORK_SURFACE_FLAGS = {
   GOLDEN_FLOW_INTAKE: "work-surface-golden-flow-intake",
   GOLDEN_FLOW_ORDER: "work-surface-golden-flow-order",
   GOLDEN_FLOW_INVOICE: "work-surface-golden-flow-invoice",
+
+  // Deployment Rollout Flags (group-level toggles for staged rollout)
+  WORK_SURFACE_INTAKE: "WORK_SURFACE_INTAKE", // Controls: DirectIntake, PurchaseOrders
+  WORK_SURFACE_ORDERS: "WORK_SURFACE_ORDERS", // Controls: Orders, Quotes, Clients
+  WORK_SURFACE_INVENTORY: "WORK_SURFACE_INVENTORY", // Controls: Inventory, PickPack
+  WORK_SURFACE_ACCOUNTING: "WORK_SURFACE_ACCOUNTING", // Controls: Invoices, ClientLedger
 } as const;
 
 /**
@@ -161,7 +167,13 @@ export interface UseWorkSurfaceFeatureFlagsReturn {
  * ```
  */
 export function useWorkSurfaceFeatureFlags(): UseWorkSurfaceFeatureFlagsReturn {
-  const { flags: rawFlags, isLoading, error, refetch, isEnabled } = useFeatureFlags();
+  const {
+    flags: _rawFlags,
+    isLoading,
+    error,
+    refetch,
+    isEnabled,
+  } = useFeatureFlags();
 
   // Memoize the computed flags
   const flags = useMemo<WorkSurfaceFeatureFlags>(() => {
@@ -187,7 +199,8 @@ export function useWorkSurfaceFeatureFlags(): UseWorkSurfaceFeatureFlagsReturn {
     }
 
     // Check if global Work Surface is enabled - default to TRUE for progressive rollout
-    const globalEnabled = isEnabled(WORK_SURFACE_FLAGS.WORK_SURFACE_ENABLED) ?? true;
+    const globalEnabled =
+      isEnabled(WORK_SURFACE_FLAGS.WORK_SURFACE_ENABLED) ?? true;
 
     return {
       // Global toggle
@@ -195,38 +208,50 @@ export function useWorkSurfaceFeatureFlags(): UseWorkSurfaceFeatureFlagsReturn {
 
       // Foundation features - default to enabled when global is enabled
       keyboardContractEnabled:
-        globalEnabled && (isEnabled(WORK_SURFACE_FLAGS.KEYBOARD_CONTRACT) ?? true),
+        globalEnabled &&
+        (isEnabled(WORK_SURFACE_FLAGS.KEYBOARD_CONTRACT) ?? true),
       saveStateIndicatorEnabled:
-        globalEnabled && (isEnabled(WORK_SURFACE_FLAGS.SAVE_STATE_INDICATOR) ?? true),
+        globalEnabled &&
+        (isEnabled(WORK_SURFACE_FLAGS.SAVE_STATE_INDICATOR) ?? true),
       inspectorPanelEnabled:
-        globalEnabled && (isEnabled(WORK_SURFACE_FLAGS.INSPECTOR_PANEL) ?? true),
+        globalEnabled &&
+        (isEnabled(WORK_SURFACE_FLAGS.INSPECTOR_PANEL) ?? true),
       validationTimingEnabled:
-        globalEnabled && (isEnabled(WORK_SURFACE_FLAGS.VALIDATION_TIMING) ?? true),
+        globalEnabled &&
+        (isEnabled(WORK_SURFACE_FLAGS.VALIDATION_TIMING) ?? true),
 
       // Individual Work Surfaces - must be explicitly enabled
-      directIntakeEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.DIRECT_INTAKE),
-      purchaseOrdersEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.PURCHASE_ORDERS),
+      directIntakeEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.DIRECT_INTAKE),
+      purchaseOrdersEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.PURCHASE_ORDERS),
       clientsEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.CLIENTS),
       ordersEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.ORDERS),
-      inventoryEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.INVENTORY),
+      inventoryEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.INVENTORY),
       invoicesEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.INVOICES),
 
       // Advanced features
-      concurrentEditEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.CONCURRENT_EDIT),
+      concurrentEditEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.CONCURRENT_EDIT),
 
       // Golden flows
-      goldenFlowIntakeEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.GOLDEN_FLOW_INTAKE),
-      goldenFlowOrderEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.GOLDEN_FLOW_ORDER),
-      goldenFlowInvoiceEnabled: globalEnabled && isEnabled(WORK_SURFACE_FLAGS.GOLDEN_FLOW_INVOICE),
+      goldenFlowIntakeEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.GOLDEN_FLOW_INTAKE),
+      goldenFlowOrderEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.GOLDEN_FLOW_ORDER),
+      goldenFlowInvoiceEnabled:
+        globalEnabled && isEnabled(WORK_SURFACE_FLAGS.GOLDEN_FLOW_INVOICE),
     };
-  }, [rawFlags, isLoading, error, isEnabled]);
+  }, [isLoading, error, isEnabled]);
 
   // Check if a specific surface is enabled
   const isWorkSurfaceEnabled = useMemo(
-    () => (surface: keyof typeof WORK_SURFACE_FLAGS): boolean => {
-      if (isLoading || error) return false;
-      return isEnabled(WORK_SURFACE_FLAGS[surface]);
-    },
+    () =>
+      (surface: keyof typeof WORK_SURFACE_FLAGS): boolean => {
+        if (isLoading || error) return false;
+        return isEnabled(WORK_SURFACE_FLAGS[surface]);
+      },
     [isLoading, error, isEnabled]
   );
 
