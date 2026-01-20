@@ -25,3 +25,19 @@ export { PurchaseOrdersWorkSurface } from "./PurchaseOrdersWorkSurface";
 
 // Clients Work Surface - UXS-203
 export { ClientsWorkSurface } from "./ClientsWorkSurface";
+
+// Orders Work Surface - UXS-301
+export { OrdersWorkSurface } from "./OrdersWorkSurface";
+
+// Inventory Work Surface - UXS-401
+export { InventoryWorkSurface } from "./InventoryWorkSurface";
+
+// Invoices Work Surface - UXS-501
+export { InvoicesWorkSurface } from "./InvoicesWorkSurface";
+
+// Golden Flows - UXS-601, UXS-602, UXS-603
+export {
+  IntakeToOrderFlow,
+  OrderToInvoiceFlow,
+  InvoiceToPaymentFlow,
+} from "./golden-flows";

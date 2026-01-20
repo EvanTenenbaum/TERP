@@ -31,3 +31,24 @@ export type {
   UseValidationTimingOptions,
   UseValidationTimingReturn,
 } from "./useValidationTiming";
+
+// UXS-705: Concurrent Edit Detection
+export {
+  useConcurrentEditDetection,
+  useConflictDetection,
+  isConflictError,
+} from "./useConcurrentEditDetection";
+export type {
+  ConflictInfo,
+  ConflictResolution,
+  UseConcurrentEditDetectionOptions,
+  UseConcurrentEditDetectionReturn,
+  VersionedEntity,
+} from "./useConcurrentEditDetection";
+
+// UXS-701: Work Surface Feature Flags
+export { useWorkSurfaceFeatureFlags } from "./useWorkSurfaceFeatureFlags";
+export type {
+  WorkSurfaceFeatureFlags,
+  UseWorkSurfaceFeatureFlagsReturn,
+} from "./useWorkSurfaceFeatureFlags";
