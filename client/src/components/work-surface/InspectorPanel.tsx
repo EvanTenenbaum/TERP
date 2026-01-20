@@ -49,8 +49,8 @@ import { Button } from "@/components/ui/button";
 // ============================================================================
 
 export interface InspectorPanelProps {
-  /** Whether the panel is open */
-  isOpen: boolean;
+  /** Whether the panel is open (defaults to true if not specified) */
+  isOpen?: boolean;
   /** Called when panel should close */
   onClose: () => void;
   /** Panel title */
@@ -91,6 +91,8 @@ export interface InspectorPanelProps {
 
 interface InspectorPanelContextValue {
   isOpen: boolean;
+  /** @deprecated Use isOpen instead - this is a no-op function for backward compatibility */
+  open: (item?: unknown) => void;
   close: () => void;
   isExpanded: boolean;
   toggleExpanded: () => void;
@@ -116,9 +118,9 @@ export const useInspectorPanel = () => {
 
 function useFocusTrap(
   isActive: boolean,
-  containerRef: React.RefObject<HTMLElement>
+  containerRef: React.RefObject<HTMLElement | null>
 ) {
-  const previousActiveElement = useRef<Element | null>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isActive || !containerRef.current) return;
@@ -145,6 +147,7 @@ function useFocusTrap(
     }
 
     // Handle Tab key to trap focus
+    // eslint-disable-next-line no-undef
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
 
@@ -189,7 +192,7 @@ function useFocusTrap(
 // ============================================================================
 
 export function InspectorPanel({
-  isOpen,
+  isOpen = true,
   onClose,
   title,
   subtitle,
@@ -228,6 +231,7 @@ export function InspectorPanel({
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
 
+    // eslint-disable-next-line no-undef
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -245,6 +249,7 @@ export function InspectorPanel({
     if (!isOpen || !closeOnClickOutside) return;
 
     const handleClick = (e: MouseEvent) => {
+      // eslint-disable-next-line no-undef
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         onClose();
       }
@@ -271,6 +276,7 @@ export function InspectorPanel({
   // Context value
   const contextValue: InspectorPanelContextValue = {
     isOpen,
+    open: () => {}, // No-op function for backward compatibility
     close: onClose,
     isExpanded,
     toggleExpanded,
@@ -421,6 +427,8 @@ interface InspectorSectionProps {
   className?: string;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
+  /** @deprecated Use defaultCollapsed instead (note: inverted logic - defaultOpen=true means defaultCollapsed=false) */
+  defaultOpen?: boolean;
 }
 
 export function InspectorSection({
@@ -429,8 +437,11 @@ export function InspectorSection({
   className,
   collapsible = false,
   defaultCollapsed = false,
+  defaultOpen,
 }: InspectorSectionProps) {
-  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  // defaultOpen takes precedence if specified (inverted logic)
+  const initialCollapsed = defaultOpen !== undefined ? !defaultOpen : defaultCollapsed;
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
 
   return (
     <div className={cn("space-y-3", className)}>

@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import { processNotificationQueue } from '../services/notificationService';
 import { logger } from '../_core/logger';
 
@@ -21,7 +21,7 @@ import { logger } from '../_core/logger';
  * appear broken.
  */
 
-let taskRef: cron.ScheduledTask | null = null;
+let taskRef: ScheduledTask | null = null;
 
 export function startNotificationQueueCron() {
   // Run every minute

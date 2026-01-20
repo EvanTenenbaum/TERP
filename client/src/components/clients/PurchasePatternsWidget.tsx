@@ -125,7 +125,7 @@ export function PurchasePatternsWidget({
             ) : (
               <div className="grid gap-4">
                 {purchasePatterns.map((pattern, idx) => (
-                  <Card key={`pattern-${pattern.productName || pattern.sku}-${idx}`}>
+                  <Card key={`pattern-${pattern.strain || pattern.category || idx}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -243,7 +243,7 @@ export function PurchasePatternsWidget({
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       (prediction: any, idx: number) => (
                         <Card
-                          key={`prediction-${prediction.productName || prediction.sku}-${idx}`}
+                          key={`prediction-${prediction.strain || prediction.category || idx}`}
                           className={
                             prediction.daysUntilPredictedOrder < 0
                               ? "border-red-500"
@@ -443,7 +443,7 @@ export function PurchasePatternsWidget({
                       .slice(0, 5)
                       .map((pattern, idx) => (
                         <div
-                          key={`top-pattern-${pattern.productName || pattern.sku}-${idx}`}
+                          key={`top-pattern-${pattern.strain || pattern.category || idx}`}
                           className="flex items-center justify-between"
                         >
                           <div className="flex-1">

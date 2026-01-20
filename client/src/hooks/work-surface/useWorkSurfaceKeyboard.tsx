@@ -27,7 +27,7 @@
  * @see useOptimisticLocking.tsx - Reference pattern for hook structure
  */
 
-import { useCallback, useState, useRef, useEffect, KeyboardEvent } from "react";
+import React, { useCallback, useState, useRef, KeyboardEvent } from "react";
 
 // ============================================================================
 // TYPES
@@ -65,6 +65,9 @@ export interface WorkSurfaceKeyboardOptions {
   /** Container ref for Tab navigation scope */
   containerRef?: React.RefObject<HTMLElement>;
 }
+
+/** @deprecated Use WorkSurfaceKeyboardOptions instead */
+export type KeyboardConfig = WorkSurfaceKeyboardOptions;
 
 export interface FocusState {
   /** Currently focused cell coordinates */
