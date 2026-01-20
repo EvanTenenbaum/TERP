@@ -1,12 +1,14 @@
-import cron from 'node-cron';
-import { runPriceAlertCheck } from '../services/priceAlertsService';
+import cron from "node-cron";
+import { runPriceAlertCheck } from "../services/priceAlertsService";
+import { logger } from "../_core/logger";
+import { isCronLeader } from "../utils/cronLeaderElection";
 
 /**
  * Price Alerts Cron Job
  * Runs every hour to check for triggered price alerts and send notifications
- * 
+ *
  * Schedule: 0 * * * * (every hour at minute 0)
- * 
+ *
  * This cron job:
  * 1. Fetches all active price alerts
  * 2. Compares current prices with target prices
@@ -17,23 +19,41 @@ import { runPriceAlertCheck } from '../services/priceAlertsService';
 
 export function startPriceAlertsCron() {
   // Run every hour at minute 0
-  cron.schedule('0 * * * *', async () => {
+  cron.schedule("0 * * * *", async () => {
+    // Skip if not the leader instance (multi-instance deployment)
+    if (!isCronLeader()) {
+      logger.debug("[PriceAlertsCron] Skipping - not the leader instance");
+      return;
+    }
+
     const timestamp = new Date().toISOString();
-    console.log(`[Cron] [${timestamp}] Running price alerts check...`);
-    
+    logger.info({ timestamp }, "[PriceAlertsCron] Running price alerts check");
+
     try {
       const result = await runPriceAlertCheck();
-      
-      console.log(`[Cron] [${timestamp}] Price alerts check complete:`);
-      console.log(`  - Alerts checked: ${result.checked}`);
-      console.log(`  - Alerts triggered: ${result.triggered}`);
+
+      logger.info(
+        {
+          timestamp,
+          checked: result.checked,
+          triggered: result.triggered,
+        },
+        "[PriceAlertsCron] Price alerts check complete"
+      );
     } catch (error) {
-      console.error(`[Cron] [${timestamp}] Fatal error running price alerts check:`, error);
+      logger.error(
+        {
+          timestamp,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "[PriceAlertsCron] Fatal error running price alerts check"
+      );
     }
   });
-  
-  console.log('[Cron] Price alerts cron job started (runs hourly at minute 0)');
-  console.log('[Cron] Next run will be at the top of the next hour');
+
+  logger.info("[PriceAlertsCron] Price alerts cron job started (runs hourly at minute 0)");
+  logger.info("[PriceAlertsCron] Next run will be at the top of the next hour");
+  logger.info("[PriceAlertsCron] Leader election: enabled (only leader executes)");
 }
 
 /**
@@ -41,7 +61,7 @@ export function startPriceAlertsCron() {
  * (Currently not implemented as node-cron doesn't provide a stop method for individual jobs)
  */
 export function stopPriceAlertsCron() {
-  console.log('[Cron] Price alerts cron job stop requested');
+  logger.info("[PriceAlertsCron] Price alerts cron job stop requested");
   // Note: To stop the cron, you would need to keep a reference to the scheduled task
   // and call task.stop() on it. For now, this is a placeholder.
 }

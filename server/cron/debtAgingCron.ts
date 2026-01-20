@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { sendDebtAgingNotifications } from "../services/vipDebtAgingService";
 import { logger } from "../_core/logger";
+import { isCronLeader } from "../utils/cronLeaderElection";
 
 /**
  * Debt Aging Notifications Cron Job
@@ -21,6 +22,12 @@ import { logger } from "../_core/logger";
 export function startDebtAgingCron() {
   // Run every day at 9:00 AM (business hours)
   cron.schedule("0 9 * * *", async () => {
+    // Skip if not the leader instance (multi-instance deployment)
+    if (!isCronLeader()) {
+      logger.debug("[DebtAgingCron] Skipping - not the leader instance");
+      return;
+    }
+
     const timestamp = new Date().toISOString();
     logger.info({ timestamp }, "Starting debt aging notification job");
 
@@ -53,6 +60,7 @@ export function startDebtAgingCron() {
   });
 
   logger.info("Debt aging cron job started (runs daily at 9:00 AM)");
+  logger.info("Debt aging cron: Leader election enabled (only leader executes)");
 }
 
 /**
