@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.3
-**Last Updated:** 2026-01-20 (Added UX Work Surface Redesign section with Red Hat QA improvements)
+**Version:** 6.4
+**Last Updated:** 2026-01-20 (Added Navigation Accessibility Enhancement - 11 tasks to surface hidden routes)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -611,27 +611,116 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+### Navigation Accessibility Enhancement (P1) - Added Jan 20, 2026
+
+> Discovered during comprehensive accessibility audit of TERP navigation.
+> **Goal:** Surface 8 hidden high-value routes in sidebar navigation and Command Palette.
+> **Spec:** `docs/specs/NAV_ACCESSIBILITY_ENHANCEMENT_SPEC.md`
+> **Effort:** ~1.5 hours (2 file changes, configuration only)
+
+| Task    | Description                                      | Priority | Status | Estimate | Module                  |
+| ------- | ------------------------------------------------ | -------- | ------ | -------- | ----------------------- |
+| NAV-006 | Add Leaderboard to Sales nav (after Dashboard)   | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-007 | Add Client Needs to Sales nav                    | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-008 | Add Matchmaking to Sales nav                     | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-009 | Add Quotes to Sales nav                          | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-010 | Add Returns to Sales nav                         | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-011 | Add Vendor Supply to Inventory nav               | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-012 | Add Pricing Rules to Finance nav                 | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-013 | Add Workflow Queue to Admin nav                  | MEDIUM   | ready  | 5 min    | navigation.ts           |
+| NAV-014 | Add all 8 routes to Command Palette              | MEDIUM   | ready  | 15 min   | CommandPalette.tsx      |
+| NAV-015 | Verify TypeScript compilation                    | LOW      | ready  | 5 min    | -                       |
+| NAV-016 | Manual QA verification of all new nav items      | LOW      | ready  | 15 min   | -                       |
+
+#### NAV-006: Add Leaderboard to Sales Navigation
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 5 min
+**Module:** `client/src/config/navigation.ts`
+**Dependencies:** None
+
+**Implementation:**
+```typescript
+// After Dashboard entry, before Clients:
+{
+  name: "Leaderboard",
+  path: "/leaderboard",
+  icon: Trophy,
+  group: "sales",
+  ariaLabel: "View team performance and rankings",
+},
+```
+
+---
+
+#### NAV-007 through NAV-013: Additional Navigation Items
+
+Each task adds one navigation item to `navigation.ts`:
+
+| Task    | Route            | Group     | Icon          | Position                    |
+| ------- | ---------------- | --------- | ------------- | --------------------------- |
+| NAV-007 | `/needs`         | sales     | Target        | After Invoices              |
+| NAV-008 | `/matchmaking`   | sales     | Sparkles      | After Client Needs          |
+| NAV-009 | `/quotes`        | sales     | FileQuestion  | After Matchmaking           |
+| NAV-010 | `/returns`       | sales     | PackageX      | After Quotes                |
+| NAV-011 | `/vendor-supply` | inventory | PackagePlus   | After Vendors               |
+| NAV-012 | `/pricing/rules` | finance   | DollarSign    | After Credit Settings       |
+| NAV-013 | `/workflow-queue`| admin     | ListOrdered   | After Feature Flags         |
+
+---
+
+#### NAV-014: Add Routes to Command Palette
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 15 min
+**Module:** `client/src/components/CommandPalette.tsx`
+**Dependencies:** NAV-006 through NAV-013
+
+**Implementation:**
+Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, using same icons as sidebar.
+
+---
+
+#### Post-Implementation Metrics
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Navigation items | 24 | 32 | +8 |
+| Command Palette items | 11 | 19 | +8 |
+| Hidden routes | 14 | 6 | -8 |
+| Sales group items | 8 | 13 | +5 |
+| Inventory group items | 7 | 8 | +1 |
+| Finance group items | 3 | 4 | +1 |
+| Admin group items | 6 | 7 | +1 |
+
+---
+
 ## 📊 MVP Summary
 
-| Category              | Completed | Open  | Removed | Total   |
-| --------------------- | --------- | ----- | ------- | ------- |
-| Infrastructure        | 21        | 0     | 1       | 22      |
-| Security              | 17        | 0     | 0       | 17      |
-| Bug Fixes             | 46        | 0     | 0       | 46      |
-| API Registration      | 10        | 0     | 0       | 10      |
-| Stability             | 4         | 0     | 0       | 4       |
-| Quality               | 12        | 0     | 0       | 12      |
-| Features              | 29        | 0     | 1       | 30      |
-| UX                    | 12        | 0     | 0       | 12      |
-| Data & Schema         | 8         | 0     | 0       | 8       |
-| Data Integrity (QA)   | 8         | 0     | 0       | 8       |
-| Frontend Quality (QA) | 3         | 0     | 0       | 3       |
-| Backend Quality (QA)  | 5         | 0     | 0       | 5       |
-| Improvements          | 7         | 0     | 0       | 7       |
-| E2E Testing           | 3         | 0     | 0       | 3       |
-| **TOTAL**             | **185**   | **0** | **2**   | **187** |
+| Category              | Completed | Open   | Removed | Total   |
+| --------------------- | --------- | ------ | ------- | ------- |
+| Infrastructure        | 21        | 0      | 1       | 22      |
+| Security              | 17        | 0      | 0       | 17      |
+| Bug Fixes             | 46        | 0      | 0       | 46      |
+| API Registration      | 10        | 0      | 0       | 10      |
+| Stability             | 4         | 0      | 0       | 4       |
+| Quality               | 12        | 0      | 0       | 12      |
+| Features              | 29        | 0      | 1       | 30      |
+| UX                    | 12        | 0      | 0       | 12      |
+| Data & Schema         | 8         | 0      | 0       | 8       |
+| Data Integrity (QA)   | 8         | 0      | 0       | 8       |
+| Frontend Quality (QA) | 3         | 0      | 0       | 3       |
+| Backend Quality (QA)  | 5         | 0      | 0       | 5       |
+| Navigation (NEW)      | 0         | 11     | 0       | 11      |
+| Improvements          | 7         | 0      | 0       | 7       |
+| E2E Testing           | 3         | 0      | 0       | 3       |
+| Navigation (NEW)      | 0         | 11     | 0       | 11      |
+| **TOTAL**             | **185**   | **11** | **2**   | **198** |
 
-> **MVP STATUS: 100% RESOLVED** (185 completed + 2 removed, 0 tasks open)
+> **MVP STATUS: 94% RESOLVED** (185 completed + 2 removed, 11 tasks open)
+> **Navigation Enhancement (Jan 20, 2026):** 11 new tasks added to surface hidden routes.
 
 > **E2E Testing Infrastructure (Jan 16, 2026):** All 3 E2E tasks COMPLETED.
 > Final pass rate: 88.5% (54/61 core tests). Full suite has 338 tests across 44 spec files.
