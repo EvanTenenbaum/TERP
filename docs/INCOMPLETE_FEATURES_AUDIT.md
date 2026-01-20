@@ -322,8 +322,7 @@ Contains **exposed production database credentials**:
 
 1. **Consolidate Duplicate Migrations** - Fix version numbering
 2. **Enable Email/SMS Features** - Configure external services
-3. **Implement Journal Entries** - Required for audit trail
-4. **Fix 122 Failing Tests** - Restore test confidence
+3. **Fix 122 Failing Tests** - Restore test confidence
 
 ### 8.3 Medium-Term Actions (P2)
 
