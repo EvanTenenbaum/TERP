@@ -406,29 +406,38 @@
 - **Test plan**: Intentionally throw error in test component.
 - **Rollback plan**: Remove boundary (errors bubble to page level).
 
-### UXS-705 — Concurrent edit detection
+### UXS-705 — Concurrent edit detection ✅ UNBLOCKED
 
 - **Goal**: Prevent data overwrites when multiple users edit same record.
 - **Why**: ERP data integrity is critical.
-- **Exact scope**: Version field comparison on save; conflict dialog.
+- **Exact scope**: Version field comparison on save; conflict dialog with customizable policies.
+- **Status**: **READY** (Product decision received 2026-01-20)
 - **Acceptance criteria**:
   - Stale version detected before save
-  - User prompted with conflict resolution options
-  - Audit log captures conflict events
-- **Recommended Conflict Resolution Policy** (pending product confirmation):
-  | Data Type | Policy | Rationale |
-  |-----------|--------|-----------|
-  | Inventory quantities | Always prompt | Financial risk |
-  | Order line items | Always prompt | Customer impact |
-  | Notes/comments | Last-write-wins | Low risk |
-  | Status fields | Last-write-wins | Operational speed |
-  | Pricing/costs | Always prompt | Revenue impact |
-- **Files likely touched**: client/src/hooks/useOptimisticLocking.ts, server/src/middleware/versionCheck.ts
+  - User prompted with conflict resolution options (for prompt-policy fields)
+  - Auto-resolve for last-write-wins fields
+  - Audit log captures all conflict events
+  - **Admin-customizable policy per entity type via Settings**
+- **APPROVED Conflict Resolution Policy** (Hybrid + Customization):
+  | Data Type | Default Policy | Customizable | Rationale |
+  |-----------|----------------|--------------|-----------|
+  | Inventory quantities | Always prompt | Yes | Financial risk |
+  | Order line items | Always prompt | Yes | Customer impact |
+  | Notes/comments | Last-write-wins | Yes | Low risk |
+  | Status fields | Last-write-wins | Yes | Operational speed |
+  | Pricing/costs | Always prompt | Yes | Revenue impact |
+  | Client data | Always prompt | Yes | CRM integrity |
+  | Batch details | Always prompt | Yes | Inventory accuracy |
+- **Customization Requirements**:
+  - Settings page: `/settings/conflict-resolution`
+  - Per-entity-type policy configuration
+  - Role-based override capability (Super Admin only)
+  - Default to hybrid policy if not configured
+- **Files likely touched**: client/src/hooks/useOptimisticLocking.ts, server/src/middleware/versionCheck.ts, client/src/pages/settings/ConflictResolutionSettings.tsx
 - **Dependencies**: REL-004 (Critical Mutation Wrapper), REL-006 (Inventory Concurrency Hardening)
-- **Risks**: User experience friction from conflict dialogs.
-- **Test plan**: Two-browser test with simultaneous edits; confirm policy matches open question resolution.
-- **Rollback plan**: Disable version check (last-write-wins).
-- **⚠️ BLOCKED**: Requires product decision on conflict resolution policy (see Open Questions #2).
+- **Risks**: User experience friction from conflict dialogs (mitigated by customization).
+- **Test plan**: Two-browser test with simultaneous edits; verify both prompt and auto-resolve paths.
+- **Rollback plan**: Disable version check (last-write-wins for all).
 
 ### UXS-706 — Session timeout handler ⚠️ BETA PRIORITY
 
@@ -665,8 +674,10 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 | # | Question | Impact | Blocking Task |
 |---|----------|--------|---------------|
 | 1 | **Export limits**: Is 10,000 row limit acceptable, or do users need unlimited export? | UXS-904 scope | No |
-| 2 | **Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user? | UXS-705 implementation | **YES** |
+| ~~2~~ | ~~**Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user?~~ | ~~UXS-705 implementation~~ | **RESOLVED** |
 | 3 | **Bulk limits**: Is 500 selection / 100 update limit acceptable for power users? | UXS-803 scope | No |
+
+> **Question #2 RESOLVED (2026-01-20)**: Use **Hybrid + Customization** approach. Default to "always prompt" for financial/inventory data, "last-write-wins" for notes/status. Allow admin customization per entity type via Settings.
 
 ### Additional Questions from Gap Analysis
 
@@ -789,6 +800,8 @@ The following task statuses have been verified and corrected based on codebase a
 |----------|-------|
 | **Completed** | 7 tasks (UXS-001..005, UXS-703, UXS-704) |
 | **In Progress** | 3 tasks (UXS-101, UXS-102, UXS-104) |
-| **Ready (Not Started)** | 25 tasks |
-| **Blocked** | 1 task (UXS-705 - needs product decision) |
+| **Ready (Not Started)** | 26 tasks (including UXS-705 - now unblocked) |
+| **Blocked** | 0 tasks |
 | **BETA Deferred** | 2 tasks (UXS-702, UXS-706) |
+
+> **UXS-705 UNBLOCKED (2026-01-20)**: Product decision received - Hybrid + Customization approach approved.
