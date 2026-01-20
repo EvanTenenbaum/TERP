@@ -52,3 +52,35 @@ export type {
   WorkSurfaceFeatureFlags,
   UseWorkSurfaceFeatureFlagsReturn,
 } from "./useWorkSurfaceFeatureFlags";
+
+// UXS-701: Responsive Breakpoints
+export {
+  useBreakpoint,
+  useMediaQuery,
+  useResponsiveValue,
+  useContainerQuery,
+  responsiveClass,
+  BREAKPOINTS,
+  BREAKPOINT_QUERIES,
+} from "./useBreakpoint";
+export type {
+  Breakpoint,
+  BreakpointConfig,
+  BreakpointState,
+} from "./useBreakpoint";
+
+// UXS-707: Undo Infrastructure
+export {
+  useUndo,
+  useUndoContext,
+  UndoProvider,
+  UndoToast,
+} from "./useUndo";
+export type {
+  UndoAction,
+  UndoState,
+  UseUndoOptions,
+  UseUndoReturn,
+  UndoProviderProps,
+  UndoToastProps,
+} from "./useUndo";
