@@ -84,3 +84,31 @@ export type {
   UndoProviderProps,
   UndoToastProps,
 } from "./useUndo";
+
+// UXS-802: Performance Monitoring
+export {
+  usePerformanceMonitor,
+  usePerformanceObserver,
+  useWebVitals,
+} from "./usePerformanceMonitor";
+export type {
+  PerformanceMark,
+  PerformanceBudget,
+  PerformanceViolation,
+  UsePerformanceMonitorOptions,
+  UsePerformanceMonitorReturn,
+  WebVitals,
+} from "./usePerformanceMonitor";
+
+// UXS-803: Bulk Operation Limits
+export {
+  useBulkOperationLimits,
+  BulkProgress,
+} from "./useBulkOperationLimits";
+export type {
+  BulkOperationLimits,
+  BulkOperationState,
+  UseBulkOperationLimitsOptions,
+  UseBulkOperationLimitsReturn,
+  BulkProgressProps,
+} from "./useBulkOperationLimits";
