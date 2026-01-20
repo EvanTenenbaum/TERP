@@ -888,6 +888,7 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 **Priority:** HIGH (P1)
 **Estimate:** 2h
 **Module:** `server/services/live-shopping/sessionTimeoutService.ts`, `client/src/hooks/useLiveSessionSSE.ts:135-147`
+**Related:** BE-QA-013 (same file, different issue - extension count validation at line 382)
 
 **Problem:**
 Backend emits `SESSION_TIMEOUT_WARNING` events but frontend listens for `TIMEOUT_WARNING`. Events are never received by the client.
@@ -925,6 +926,7 @@ Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBr
 **Priority:** HIGH (P1)
 **Estimate:** 4h
 **Module:** `client/src/pages/PhotographyPage.tsx`, `client/src/components/inventory/PhotographyModule.tsx`
+**Note:** WS-010 is marked ✅ COMPLETE in roadmap but this finding indicates it was prematurely closed.
 
 **Problem:**
 PhotographyModule component (689 lines) is fully built but never used. PhotographyPage only shows queue without upload capability. The module imports are declared (cropping, background removal) but not implemented.
@@ -986,6 +988,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 | SCHEMA-003| Add clients.tier and clients.isActive Columns| MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
 | BUG-101   | Fix Property Test Bugs (PROP-BUG-001/002/003)| MEDIUM   | NOT STARTED | 4h       | property tests                 |
 | MOB-001   | Address Mobile Responsiveness Issues (38)    | MEDIUM   | NOT STARTED | 24h      | Multiple components            |
+| FE-QA-011 | Integrate Unused Dashboard Widgets (5)       | MEDIUM   | NOT STARTED | 8h       | widgets-v2/                    |
 
 ##### FE-QA-009: Enable VendorSupplyPage Creation
 
@@ -1024,6 +1027,30 @@ Four action buttons have no implementation:
 - [ ] Reserve creates reservation record
 - [ ] Create Quote navigates to quote creator with pre-filled data
 - [ ] Dismiss marks match as dismissed with reason
+
+---
+
+##### FE-QA-011: Integrate Unused Dashboard Widgets
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 8h
+**Module:** `client/src/components/dashboard/widgets-v2/`
+**Note:** FE-QA-004 (V3 Migration) is about migrating widgets, not integrating these V2 widgets.
+
+**Problem:**
+5 fully-built dashboard widgets are exported but never used in any dashboard:
+- CashCollectedLeaderboard
+- ClientDebtLeaderboard
+- ClientProfitMarginLeaderboard
+- TopStrainFamiliesWidget
+- SmartOpportunitiesWidget
+
+**Deliverables:**
+- [ ] Determine if widgets should be integrated into DashboardV3 or deprecated
+- [ ] If integrating: Add to dashboard widget registry
+- [ ] If deprecating: Remove unused code and exports
+- [ ] Update dashboard documentation
 
 ---
 
@@ -1093,9 +1120,12 @@ Code references `products.name` but actual column is `products.nameCanonical`. T
 | -------- | ----- | ---------------------------------------- |
 | P0       | 4     | Work surface blockers + GL posting       |
 | P1       | 5     | Feature completeness gaps                |
-| P2       | 10    | Feature gaps, schema fixes, mobile       |
+| P2       | 11    | Feature gaps, schema fixes, mobile, widgets |
 | P3       | 3     | Cleanup and technical debt               |
-| **TOTAL**| **22**|                                          |
+| **TOTAL**| **23**|                                          |
+
+> **QA Note (Jan 20, 2026):** All tasks verified as non-duplicates after skeptical review.
+> Cross-references added where tasks touch same files (SSE-001/BE-QA-013).
 
 ---
 
@@ -1114,7 +1144,7 @@ Code references `products.name` but actual column is `products.nameCanonical`. T
 | Data & Schema                | 8         | 4      | 0       | 12      |
 | Data Seeding (NEW)           | 0         | 10     | 0       | 10      |
 | Data Integrity (QA)          | 8         | 0      | 0       | 8       |
-| Frontend Quality (QA)        | 3         | 7      | 0       | 10      |
+| Frontend Quality (QA)        | 3         | 8      | 0       | 11      |
 | Backend Quality (QA)         | 5         | 10     | 0       | 15      |
 | Navigation                   | 0         | 12     | 0       | 12      |
 | Improvements                 | 7         | 0      | 0       | 7       |
@@ -1124,10 +1154,10 @@ Code references `products.name` but actual column is `products.nameCanonical`. T
 | Mobile Responsiveness (NEW)  | 0         | 1      | 0       | 1       |
 | Deprecation Cleanup (NEW)    | 0         | 2      | 0       | 2       |
 | Schema Fixes (NEW)           | 0         | 3      | 0       | 3       |
-| **TOTAL**                    | **185**   | **70** | **2**   | **257** |
+| **TOTAL**                    | **185**   | **71** | **2**   | **258** |
 
-> **MVP STATUS: 73% RESOLVED** (185 completed + 2 removed, 70 tasks open)
-> **Deep Audit (Jan 20, 2026):** 22 additional tasks added from comprehensive git commit analysis.
+> **MVP STATUS: 72% RESOLVED** (185 completed + 2 removed, 71 tasks open)
+> **Deep Audit (Jan 20, 2026):** 23 additional tasks added from comprehensive git commit analysis (verified non-duplicates).
 > **Incomplete Features Audit (Jan 20, 2026):** 37 new tasks added from RedHat QA audit.
 > **Navigation Enhancement (Jan 20, 2026):** 11 new tasks added to surface hidden routes.
 
