@@ -51,6 +51,8 @@ import { Separator } from "@/components/ui/separator";
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
+import { useToastConfig } from "@/hooks/work-surface/useToastConfig";
+import { usePrint } from "@/hooks/work-surface/usePrint";
 import {
   InspectorPanel,
   InspectorSection,
@@ -77,6 +79,7 @@ import {
   CreditCard,
   Mail,
   Download,
+  Printer,
   CalendarClock,
   AlertTriangle,
   TrendingUp,
@@ -232,8 +235,10 @@ interface InvoiceInspectorProps {
   onMarkPaid: (invoiceId: number) => void;
   onSendReminder: (invoiceId: number) => void;
   onDownloadPDF: (invoiceId: number) => void;
+  onPrint: (invoiceId: number) => void;
   onRecordPayment: (invoiceId: number) => void;
   onVoid: (invoiceId: number) => void;
+  isPrinting?: boolean;
 }
 
 function InvoiceInspectorContent({
@@ -242,8 +247,10 @@ function InvoiceInspectorContent({
   onMarkPaid,
   onSendReminder,
   onDownloadPDF,
+  onPrint,
   onRecordPayment,
   onVoid,
+  isPrinting,
 }: InvoiceInspectorProps) {
   if (!invoice) {
     return (
@@ -386,6 +393,16 @@ function InvoiceInspectorContent({
             Download PDF
           </Button>
 
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onPrint(invoice.id)}
+            disabled={isPrinting}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrinting ? "Printing..." : "Print Invoice"}
+          </Button>
+
           {invoice.status !== "VOID" && invoice.status !== "PAID" && (
             <Button
               variant="outline"
@@ -512,6 +529,8 @@ export function InvoicesWorkSurface() {
   // Work Surface hooks
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
+  const toasts = useToastConfig();
+  const { print, isPrinting } = usePrint();
 
   // tRPC utils
   const utils = trpc.useUtils();
@@ -582,13 +601,13 @@ export function InvoicesWorkSurface() {
   const markPaidMutation = trpc.accounting.invoices.updateStatus.useMutation({
     onMutate: () => setSaving("Marking as paid..."),
     onSuccess: () => {
-      toast.success("Invoice marked as paid");
+      toasts.success("Invoice marked as paid");
       setSaved();
       utils.accounting.invoices.list.invalidate();
       inspector.close();
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to mark as paid");
+      toasts.error(err.message || "Failed to mark as paid");
       setError(err.message);
     },
   });
@@ -596,14 +615,14 @@ export function InvoicesWorkSurface() {
   const voidMutation = trpc.accounting.invoices.updateStatus.useMutation({
     onMutate: () => setSaving("Voiding invoice..."),
     onSuccess: () => {
-      toast.success("Invoice voided");
+      toasts.success("Invoice voided");
       setSaved();
       utils.accounting.invoices.list.invalidate();
       setShowVoidDialog(false);
       inspector.close();
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to void invoice");
+      toasts.error(err.message || "Failed to void invoice");
       setError(err.message);
     },
   });
@@ -665,12 +684,24 @@ export function InvoicesWorkSurface() {
 
   const handleSendReminder = (invoiceId: number) => {
     const invoice = invoices.find((i) => i.id === invoiceId);
-    toast.success(`Payment reminder sent for ${invoice?.invoiceNumber}`);
+    toasts.success(`Payment reminder sent for ${invoice?.invoiceNumber}`);
   };
 
   const handleDownloadPDF = (invoiceId: number) => {
     const invoice = invoices.find((i) => i.id === invoiceId);
-    toast.success(`Downloading PDF for ${invoice?.invoiceNumber}`);
+    toasts.info(`Downloading PDF for ${invoice?.invoiceNumber}`);
+  };
+
+  const handlePrintInvoice = async (invoiceId: number) => {
+    const invoice = invoices.find((i) => i.id === invoiceId);
+    if (invoice) {
+      await print({
+        title: `Invoice ${invoice.invoiceNumber}`,
+        addTimestamp: true,
+        onBeforePrint: () => toasts.info("Preparing invoice for print..."),
+        onAfterPrint: () => toasts.success("Print dialog closed"),
+      });
+    }
   };
 
   const handleRecordPayment = (invoiceId: number) => {
@@ -686,7 +717,7 @@ export function InvoicesWorkSurface() {
   const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) => {
     setSaving("Recording payment...");
     // In a real implementation, this would call a recordPayment mutation
-    toast.success(`Payment of ${formatCurrency(amount)} recorded`);
+    toasts.success(`Payment of ${formatCurrency(amount)} recorded`);
     setSaved();
     setShowPaymentDialog(false);
     utils.accounting.invoices.list.invalidate();
@@ -900,8 +931,10 @@ export function InvoicesWorkSurface() {
             onMarkPaid={handleMarkPaid}
             onSendReminder={handleSendReminder}
             onDownloadPDF={handleDownloadPDF}
+            onPrint={handlePrintInvoice}
             onRecordPayment={handleRecordPayment}
             onVoid={handleVoid}
+            isPrinting={isPrinting}
           />
         </InspectorPanel>
       </div>
