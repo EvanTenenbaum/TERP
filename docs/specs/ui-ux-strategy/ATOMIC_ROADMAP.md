@@ -288,6 +288,7 @@
 - **Exact scope**: Inventory, intake, orders, pick/pack modal audit and replacement with inspector/inline.
 - **Acceptance criteria**:
   - No nested modal usage in core flows.
+  - Modal replacement list documented with inspector/inline equivalents.
 - **Files likely touched**: client/src/components/inventory/_, client/src/components/orders/_
 - **Dependencies**: UXS-201..502
 - **Risks**: Missing functionality hidden in modals.
@@ -301,6 +302,7 @@
 - **Exact scope**: Define automated checks for intake, order, pick/pack, invoice, ledger, and samples flows.
 - **Acceptance criteria**:
   - Tests cover top 8 golden flows with pass criteria.
+  - Each golden flow validated under at least one RBAC role that owns the flow.
 - **Files likely touched**: tests-e2e/_, docs/specs/ui-ux-strategy/_
 - **Dependencies**: UXS-601
 - **Risks**: E2E flakiness.
@@ -338,9 +340,11 @@
   3. **Todo/Tasks** - P1: Task management on the go
   4. **Dashboard** - P1: KPI visibility, alerts
 - **Acceptance criteria**:
-  - Desktop (≥1280px): Grid + inspector side-by-side
-  - Tablet (768-1279px): Inspector as slide-over sheet
-  - Mobile (<768px): Single-column card layout for priority modules
+  - ≥1440px: Grid + 400px inspector side-by-side
+  - 1280-1439px: Grid + 360px inspector side-by-side
+  - 1024-1279px: Inspector as slide-over sheet
+  - 768-1023px: Inspector as full-screen sheet
+  - <768px: Single-column card layout for priority modules
 - **Files likely touched**: client/src/components/work-surface/WorkSurfaceShell.tsx, client/src/hooks/useBreakpoint.ts
 - **Dependencies**: UXS-103
 - **Risks**: AG Grid responsiveness limitations.
@@ -400,12 +404,12 @@
 - **Exact scope**: Version field comparison on save; conflict dialog.
 - **Acceptance criteria**:
   - Stale version detected before save
-  - User prompted with conflict resolution options
+  - User prompted with conflict resolution options (default until policy confirmed)
   - Audit log captures conflict events
 - **Files likely touched**: client/src/hooks/useOptimisticLocking.ts, server/src/middleware/versionCheck.ts
 - **Dependencies**: None (schema already has version field)
 - **Risks**: User experience friction from conflict dialogs.
-- **Test plan**: Two-browser test with simultaneous edits.
+- **Test plan**: Two-browser test with simultaneous edits; confirm policy matches open question resolution.
 - **Rollback plan**: Disable version check (last-write-wins).
 
 ### UXS-706 — Session timeout handler ⚠️ BETA PRIORITY
@@ -479,7 +483,7 @@
 - **Why**: Bulk select 1000+ items causes problems.
 - **Exact scope**: Implement selection limits; progress indicators for large operations.
 - **Acceptance criteria**:
-  - Selection limit: 500 rows
+  - Selection limit: 500 rows (confirm with product; see open question in handoff report)
   - Bulk update limit: 100 rows per request
   - Progress indicator for operations >50 items
 - **Files likely touched**: client/src/components/work-surface/BulkActionBar.tsx, client/src/hooks/useBulkOperation.ts
@@ -545,7 +549,7 @@
 - **Acceptance criteria**:
   - Export button in status bar
   - CSV: all visible columns
-  - Row limit: 10,000 (paginated for more)
+  - Row limit: 10,000 (confirm with product; see open question in handoff report)
 - **Files likely touched**: client/src/components/work-surface/ExportButton.tsx, client/src/lib/export.ts
 - **Dependencies**: None
 - **Risks**: Large export performance.
@@ -592,41 +596,41 @@ Layer 7-9 (Infrastructure) - Can parallel with Layers 2-5
 
 ### P0 — Blockers (must complete before any Work Surface deployment)
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-101 | Keyboard contract hook | 2 days |
-| UXS-102 | Save-state indicator | 1 day |
-| UXS-104 | Validation timing | 1 day |
-| UXS-704 | Error boundary | 1 day |
-| UXS-703 | Loading skeletons | 1 day |
+| Task    | Description            | Estimated Effort |
+| ------- | ---------------------- | ---------------- |
+| UXS-101 | Keyboard contract hook | 2 days           |
+| UXS-102 | Save-state indicator   | 1 day            |
+| UXS-104 | Validation timing      | 1 day            |
+| UXS-704 | Error boundary         | 1 day            |
+| UXS-703 | Loading skeletons      | 1 day            |
 
 ### P1 — Required for production readiness
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-103 | Inspector panel shell | 2 days |
-| UXS-701 | Responsive breakpoints (focus: Inventory, Accounting, Todo, Dashboard) | 3 days |
-| UXS-705 | Concurrent edit detection | 2 days |
-| UXS-801 | Accessibility audit | 3 days |
+| Task    | Description                                                            | Estimated Effort |
+| ------- | ---------------------------------------------------------------------- | ---------------- |
+| UXS-103 | Inspector panel shell                                                  | 2 days           |
+| UXS-701 | Responsive breakpoints (focus: Inventory, Accounting, Todo, Dashboard) | 3 days           |
+| UXS-705 | Concurrent edit detection                                              | 2 days           |
+| UXS-801 | Accessibility audit                                                    | 3 days           |
 
 ### P2 — Required for scale
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-707 | Undo infrastructure | 2 days |
-| UXS-802 | Performance monitoring | 2 days |
-| UXS-803 | Bulk operation limits | 1 day |
-| UXS-901 | Empty states | 1 day |
-| UXS-902 | Toast standardization | 1 day |
-| UXS-903 | Print styles | 1 day |
-| UXS-904 | Export functionality | 2 days |
+| Task    | Description            | Estimated Effort |
+| ------- | ---------------------- | ---------------- |
+| UXS-707 | Undo infrastructure    | 2 days           |
+| UXS-802 | Performance monitoring | 2 days           |
+| UXS-803 | Bulk operation limits  | 1 day            |
+| UXS-901 | Empty states           | 1 day            |
+| UXS-902 | Toast standardization  | 1 day            |
+| UXS-903 | Print styles           | 1 day            |
+| UXS-904 | Export functionality   | 2 days           |
 
 ### BETA — Post-launch improvements
 
-| Task | Description | Estimated Effort |
-|------|-------------|------------------|
-| UXS-702 | Offline queue + sync | 5 days |
-| UXS-706 | Session timeout handler | 2 days |
+| Task    | Description             | Estimated Effort |
+| ------- | ----------------------- | ---------------- |
+| UXS-702 | Offline queue + sync    | 5 days           |
+| UXS-706 | Session timeout handler | 2 days           |
 
 ---
 

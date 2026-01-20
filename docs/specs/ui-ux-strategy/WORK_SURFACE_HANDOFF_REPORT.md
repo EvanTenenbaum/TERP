@@ -39,6 +39,7 @@ TERP is an **enterprise resource planning (ERP) system** built for cannabis/whol
 ### Business Context
 
 TERP users perform **high-velocity, repetitive data entry** operations:
+
 - Intake specialists enter 50-100 product lines per session
 - Sales reps create multiple orders per day
 - Warehouse staff pick/pack dozens of orders continuously
@@ -47,16 +48,16 @@ Current pain point: **Modal-heavy workflows** slow down these operations with ex
 
 ### Current Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18 + TypeScript + Vite |
+| Layer         | Technology                                  |
+| ------------- | ------------------------------------------- |
+| Frontend      | React 18 + TypeScript + Vite                |
 | UI Components | shadcn/ui (Radix primitives) + Tailwind CSS |
-| Data Grid | AG Grid Community |
-| State/Data | tRPC + React Query |
-| Routing | Wouter (lightweight router) |
-| Backend | Express + tRPC + Drizzle ORM |
-| Database | MySQL |
-| Notifications | Sonner (toast library) |
+| Data Grid     | AG Grid Community                           |
+| State/Data    | tRPC + React Query                          |
+| Routing       | Wouter (lightweight router)                 |
+| Backend       | Express + tRPC + Drizzle ORM                |
+| Database      | MySQL                                       |
+| Notifications | Sonner (toast library)                      |
 
 ### Codebase Stats
 
@@ -74,12 +75,12 @@ Current pain point: **Modal-heavy workflows** slow down these operations with ex
 
 ### Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| Time-to-entry | Reduce median time from opening workflow to committing a valid row |
-| Keystroke count | Reduce average keystrokes + pointer interactions per row/record |
-| Error recovery time | Reduce time from validation failure to corrected commit |
-| Context switching | Minimize view/surface changes per workflow completion |
+| Metric              | Target                                                             |
+| ------------------- | ------------------------------------------------------------------ |
+| Time-to-entry       | Reduce median time from opening workflow to committing a valid row |
+| Keystroke count     | Reduce average keystrokes + pointer interactions per row/record    |
+| Error recovery time | Reduce time from validation failure to corrected commit            |
+| Context switching   | Minimize view/surface changes per workflow completion              |
 
 ### Non-Goals
 
@@ -95,14 +96,14 @@ Current pain point: **Modal-heavy workflows** slow down these operations with ex
 
 These rules must never be violated:
 
-| Priority | Principle | Meaning |
-|----------|-----------|---------|
-| 1 | **Velocity → Safety → Context** | Always optimize for speed first, then correctness, then information |
-| 2 | **Keyboard-first contracts** | Tab/Enter/Esc must work consistently across all Work Surfaces |
-| 3 | **Deterministic focus** | No unexpected focus jumps; user always knows where they are |
-| 4 | **No core-flow modals** | High-frequency operations never use blocking modals |
-| 5 | **Hybrid editing** | Inline for primitives, inspector for complex objects |
-| 6 | **Save state always visible** | User always sees: Saved / Saving / Needs attention |
+| Priority | Principle                       | Meaning                                                             |
+| -------- | ------------------------------- | ------------------------------------------------------------------- |
+| 1        | **Velocity → Safety → Context** | Always optimize for speed first, then correctness, then information |
+| 2        | **Keyboard-first contracts**    | Tab/Enter/Esc must work consistently across all Work Surfaces       |
+| 3        | **Deterministic focus**         | No unexpected focus jumps; user always knows where they are         |
+| 4        | **No core-flow modals**         | High-frequency operations never use blocking modals                 |
+| 5        | **Hybrid editing**              | Inline for primitives, inspector for complex objects                |
+| 6        | **Save state always visible**   | User always sees: Saved / Saving / Needs attention                  |
 
 ### Explicit Violations (Never Do This)
 
@@ -144,34 +145,34 @@ A **Work Surface** is the universal execution shell for high-frequency workflows
 
 ### Components
 
-| Component | Purpose | Behavior |
-|-----------|---------|----------|
-| **Context Header** | Batch-level defaults (vendor, location, date) | Sticky; applies to all new rows |
-| **Primary Grid** | Fast row entry with inline editing | Keyboard-navigable; virtualized for performance |
-| **Inspector Panel** | Complex edits and audit context | Non-modal; Esc closes; never blocks grid |
-| **Status Bar** | Save state, totals, error summary | Sticky bottom; always visible |
+| Component           | Purpose                                       | Behavior                                        |
+| ------------------- | --------------------------------------------- | ----------------------------------------------- |
+| **Context Header**  | Batch-level defaults (vendor, location, date) | Sticky; applies to all new rows                 |
+| **Primary Grid**    | Fast row entry with inline editing            | Keyboard-navigable; virtualized for performance |
+| **Inspector Panel** | Complex edits and audit context               | Non-modal; Esc closes; never blocks grid        |
+| **Status Bar**      | Save state, totals, error summary             | Sticky bottom; always visible                   |
 
 ### When to Use Work Surface vs Other Patterns
 
-| Condition | Use |
-|-----------|-----|
-| >5 similar actions per session | Work Surface |
-| Editing rows in sequence | Work Surface + Primary Grid |
-| Single record edited rarely | Form |
-| Read-only analysis/reporting | Review Surface |
-| Complex fields with audit needs | Inspector Panel |
+| Condition                       | Use                         |
+| ------------------------------- | --------------------------- |
+| >5 similar actions per session  | Work Surface                |
+| Editing rows in sequence        | Work Surface + Primary Grid |
+| Single record edited rarely     | Form                        |
+| Read-only analysis/reporting    | Review Surface              |
+| Complex fields with audit needs | Inspector Panel             |
 
 ### Review Surface (Read-Only Variant)
 
 For dashboards, reports, and analysis views:
 
-| Aspect | Work Surface | Review Surface |
-|--------|--------------|----------------|
-| Primary action | Create/Edit | Filter/Export |
-| Grid behavior | Inline edit | Click to navigate |
-| Inspector | Edit form | Read-only details |
-| Context header | Editable defaults | Filter controls |
-| Background | `bg-background` | `bg-muted/30` |
+| Aspect         | Work Surface      | Review Surface    |
+| -------------- | ----------------- | ----------------- |
+| Primary action | Create/Edit       | Filter/Export     |
+| Grid behavior  | Inline edit       | Click to navigate |
+| Inspector      | Edit form         | Read-only details |
+| Context header | Editable defaults | Filter controls   |
+| Background     | `bg-background`   | `bg-muted/30`     |
 
 ---
 
@@ -181,14 +182,14 @@ For dashboards, reports, and analysis views:
 
 Every Work Surface must implement this exactly:
 
-| Key | Action |
-|-----|--------|
-| **Tab** | Move to next field/cell |
-| **Shift+Tab** | Move to previous field/cell |
-| **Enter** | Commit edit; if row valid, create next row |
-| **Esc** | Cancel edit or close inspector |
-| **Cmd/Ctrl+Z** | Undo last destructive action |
-| **Cmd+K** | Open command palette (navigation/actions ONLY, not field selection) |
+| Key            | Action                                                              |
+| -------------- | ------------------------------------------------------------------- |
+| **Tab**        | Move to next field/cell                                             |
+| **Shift+Tab**  | Move to previous field/cell                                         |
+| **Enter**      | Commit edit; if row valid, create next row                          |
+| **Esc**        | Cancel edit or close inspector                                      |
+| **Cmd/Ctrl+Z** | Undo last destructive action                                        |
+| **Cmd+K**      | Open command palette (navigation/actions ONLY, not field selection) |
 
 ### Validation Timing ("Reward Early, Punish Late")
 
@@ -206,42 +207,42 @@ User commits row → Final validation, errors block commit
 
 Only three states allowed:
 
-| State | Visual | Meaning |
-|-------|--------|---------|
-| ✅ Saved | Green checkmark | Persisted to server |
-| 🟡 Saving... | Yellow spinner | Request in flight |
-| 🔴 Needs attention | Red warning | Validation error or conflict |
+| State              | Visual          | Meaning                      |
+| ------------------ | --------------- | ---------------------------- |
+| ✅ Saved           | Green checkmark | Persisted to server          |
+| 🟡 Saving...       | Yellow spinner  | Request in flight            |
+| 🔴 Needs attention | Red warning     | Validation error or conflict |
 
 ### Responsive Breakpoints
 
-| Breakpoint | Grid | Inspector | Mobile Priority Modules |
-|------------|------|-----------|------------------------|
-| ≥1440px | Full | 400px fixed right | — |
-| 1280-1439px | Full | 360px fixed right | — |
-| 1024-1279px | Full | Slide-over sheet | — |
-| 768-1023px | Reduced | Full-screen sheet | — |
-| <768px | Card layout | Full-screen | **Inventory, Accounting, Todo/Tasks, Dashboard** |
+| Breakpoint  | Grid        | Inspector         | Mobile Priority Modules                          |
+| ----------- | ----------- | ----------------- | ------------------------------------------------ |
+| ≥1440px     | Full        | 400px fixed right | —                                                |
+| 1280-1439px | Full        | 360px fixed right | —                                                |
+| 1024-1279px | Full        | Slide-over sheet  | —                                                |
+| 768-1023px  | Reduced     | Full-screen sheet | —                                                |
+| <768px      | Card layout | Full-screen       | **Inventory, Accounting, Todo/Tasks, Dashboard** |
 
 ### Grid Specifications
 
-| Property | Value |
-|----------|-------|
-| Row height | 40px (touch-friendly) |
-| Cell padding | 8px horizontal |
-| Min column width | 80px |
-| Max column width | 400px |
-| Header row height | 44px |
+| Property            | Value                       |
+| ------------------- | --------------------------- |
+| Row height          | 40px (touch-friendly)       |
+| Cell padding        | 8px horizontal              |
+| Min column width    | 80px                        |
+| Max column width    | 400px                       |
+| Header row height   | 44px                        |
 | Max visible columns | 8-10 (no horizontal scroll) |
 
 ### Animation Tokens
 
-| Animation | Duration | Easing |
-|-----------|----------|--------|
-| Inspector open | 200ms | ease-out |
-| Inspector close | 150ms | ease-in |
-| Row creation | 150ms | ease-out |
-| Row deletion | 150ms + 100ms collapse | ease-in |
-| Save state change | 300ms | ease-in-out |
+| Animation         | Duration               | Easing      |
+| ----------------- | ---------------------- | ----------- |
+| Inspector open    | 200ms                  | ease-out    |
+| Inspector close   | 150ms                  | ease-in     |
+| Row creation      | 150ms                  | ease-out    |
+| Row deletion      | 150ms + 100ms collapse | ease-in     |
+| Save state change | 300ms                  | ease-in-out |
 
 When `prefers-reduced-motion: reduce`: All animations become instant (0ms).
 
@@ -251,58 +252,63 @@ When `prefers-reduced-motion: reduce`: All animations become instant (0ms).
 
 ### Summary
 
-| Status | Count | Description |
-|--------|-------|-------------|
-| ✅ Confirmed | 99 | Features with working UI |
-| ⚙️ API-Only | 8 | Backend-only, no UI needed |
-| ❌ Missing | 1 | DF-067 Recurring Orders (not implemented) |
-| **Total** | **110** | |
+| Status       | Count   | Description                               |
+| ------------ | ------- | ----------------------------------------- |
+| ✅ Confirmed | 99      | Features with working UI                  |
+| ⚙️ API-Only  | 8       | Backend-only, no UI needed                |
+| ❌ Missing   | 1       | DF-067 Recurring Orders (not implemented) |
+| **Total**    | **110** |                                           |
 
 ### Criticality Breakdown
 
-| Priority | Count | Test Requirement |
-|----------|-------|------------------|
-| P0 (Critical) | 24 | Full E2E coverage |
-| P1 (High) | 48 | E2E coverage |
-| P2 (Medium) | 38 | UI smoke tests |
+| Priority      | Count | Test Requirement  |
+| ------------- | ----- | ----------------- |
+| P0 (Critical) | 24    | Full E2E coverage |
+| P1 (High)     | 48    | E2E coverage      |
+| P2 (Medium)   | 38    | UI smoke tests    |
 
 ### Modules Requiring Work Surface
 
-| Module | Features | P0 Count | Work Surface Required |
-|--------|----------|----------|----------------------|
-| Accounting | 22 | 10 | Yes |
-| Inventory | 10 | 4 | Yes |
-| Sales | 13 | 3 | Yes |
-| Fulfillment | 2 | 1 | Yes |
-| CRM | 6 | 0 | Partial |
+| Module      | Features | P0 Count | Work Surface Required |
+| ----------- | -------- | -------- | --------------------- |
+| Accounting  | 22       | 10       | Yes                   |
+| Inventory   | 10       | 4        | Yes                   |
+| Sales       | 13       | 3        | Yes                   |
+| Fulfillment | 2        | 1        | Yes                   |
+| CRM         | 6        | 0        | Partial               |
 
 ### Golden Flows (Must Never Break)
 
-| Flow | Entry | Key Steps |
-|------|-------|-----------|
-| **GF-001 Direct Intake** | /spreadsheet | Create session → Add items → Set vendor → Finalize |
-| **GF-002 Standard PO** | /purchase-orders | Create PO → Submit → Receive goods |
-| **GF-003 Sales Order** | /orders | Select client → Add items → Finalize |
-| **GF-004 Invoice & Payment** | /accounting/invoices | Generate → Send → Receive payment |
-| **GF-005 Pick & Pack** | /pick-pack | View → Pick → Pack → Ship |
-| **GF-006 Client Ledger** | /clients/:id/ledger | View → Filter → Export |
-| **GF-007 Inventory Adjust** | /inventory | Select batch → Adjust qty → Confirm |
-| **GF-008 Sample Request** | /samples | Create → Approve → Fulfill |
+| Flow                         | Entry                | Key Steps                                          |
+| ---------------------------- | -------------------- | -------------------------------------------------- |
+| **GF-001 Direct Intake**     | /spreadsheet         | Create session → Add items → Set vendor → Finalize |
+| **GF-002 Standard PO**       | /purchase-orders     | Create PO → Submit → Receive goods                 |
+| **GF-003 Sales Order**       | /orders              | Select client → Add items → Finalize               |
+| **GF-004 Invoice & Payment** | /accounting/invoices | Generate → Send → Receive payment                  |
+| **GF-005 Pick & Pack**       | /pick-pack           | View → Pick → Pack → Ship                          |
+| **GF-006 Client Ledger**     | /clients/:id/ledger  | View → Filter → Export                             |
+| **GF-007 Inventory Adjust**  | /inventory           | Select batch → Adjust qty → Confirm                |
+| **GF-008 Sample Request**    | /samples             | Create → Approve → Fulfill                         |
+
+**Golden flow enforcement notes:**
+
+- Each golden flow must be mapped to its Feature Preservation Matrix P0/P1 entries.
+- Each golden flow must be validated under at least one RBAC role that owns the flow.
 
 ### API-Only Features (No UI Needed)
 
 These features intentionally have no UI:
 
-| Feature | Rationale |
-|---------|-----------|
-| DF-030 Crypto Payments | Backend payment processor integration |
-| DF-031 Installment Payments | Payment plan management via API |
-| DF-034 Transaction Fees | Automated fee calculation |
-| DF-035 Invoice Disputes | Dispute workflow via API |
-| DF-038 Catalog Publishing | External integration API |
-| DF-046 System Monitoring | Admin diagnostics tool |
-| DF-048 Vendor Reminders | Automated notification system |
-| DF-057 Deployment Tracking | DevOps tool |
+| Feature                     | Rationale                             |
+| --------------------------- | ------------------------------------- |
+| DF-030 Crypto Payments      | Backend payment processor integration |
+| DF-031 Installment Payments | Payment plan management via API       |
+| DF-034 Transaction Fees     | Automated fee calculation             |
+| DF-035 Invoice Disputes     | Dispute workflow via API              |
+| DF-038 Catalog Publishing   | External integration API              |
+| DF-046 System Monitoring    | Admin diagnostics tool                |
+| DF-048 Vendor Reminders     | Automated notification system         |
+| DF-057 Deployment Tracking  | DevOps tool                           |
 
 ---
 
@@ -310,41 +316,43 @@ These features intentionally have no UI:
 
 ### P0 — Blockers (Before Any Work Surface Deployment)
 
-| Task | Description | Dependencies |
-|------|-------------|--------------|
-| UXS-101 | Keyboard contract hook | None |
-| UXS-102 | Save-state indicator component | None |
-| UXS-104 | Validation timing helper | None |
-| UXS-703 | Loading skeleton components | None |
-| UXS-704 | Error boundary wrapper | None |
+| Task    | Description                    | Dependencies |
+| ------- | ------------------------------ | ------------ |
+| UXS-101 | Keyboard contract hook         | None         |
+| UXS-102 | Save-state indicator component | None         |
+| UXS-104 | Validation timing helper       | None         |
+| UXS-703 | Loading skeleton components    | None         |
+| UXS-704 | Error boundary wrapper         | None         |
 
 ### P1 — Production Readiness
 
-| Task | Description | Dependencies |
-|------|-------------|--------------|
-| UXS-103 | Inspector panel shell | UXS-101 |
-| UXS-701 | Responsive breakpoints | UXS-103 |
-| UXS-705 | Concurrent edit detection | None |
-| UXS-801 | Accessibility audit | UXS-101..104 |
+| Task    | Description               | Dependencies |
+| ------- | ------------------------- | ------------ |
+| UXS-103 | Inspector panel shell     | UXS-101      |
+| UXS-701 | Responsive breakpoints    | UXS-103      |
+| UXS-705 | Concurrent edit detection | None         |
+| UXS-801 | Accessibility audit       | UXS-101..104 |
+
+**Dependency reminder:** Responsive breakpoints (UXS-701) require the inspector shell (UXS-103) to avoid modal regressions on tablet/mobile layouts.
 
 ### P2 — Scale
 
-| Task | Description |
-|------|-------------|
-| UXS-707 | Undo infrastructure |
+| Task    | Description            |
+| ------- | ---------------------- |
+| UXS-707 | Undo infrastructure    |
 | UXS-802 | Performance monitoring |
-| UXS-803 | Bulk operation limits |
+| UXS-803 | Bulk operation limits  |
 | UXS-901 | Empty state components |
-| UXS-902 | Toast standardization |
-| UXS-903 | Print stylesheet |
-| UXS-904 | Export functionality |
+| UXS-902 | Toast standardization  |
+| UXS-903 | Print stylesheet       |
+| UXS-904 | Export functionality   |
 
 ### BETA — Post-Launch
 
-| Task | Description | Notes |
-|------|-------------|-------|
-| UXS-702 | Offline queue + sync | Deprioritized per product decision |
-| UXS-706 | Session timeout handler | Depends on UXS-702 |
+| Task    | Description             | Notes                              |
+| ------- | ----------------------- | ---------------------------------- |
+| UXS-702 | Offline queue + sync    | Deprioritized per product decision |
+| UXS-706 | Session timeout handler | Depends on UXS-702                 |
 
 ---
 
@@ -354,15 +362,15 @@ These decisions have been made and should not be revisited without explicit prod
 
 ### Locked Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **Offline Support** | BETA priority (not P0/P1) | Not required for initial release |
-| **Mobile Priority Modules** | Inventory, Accounting, Todo/Tasks, Dashboard | These workflows are used on mobile |
-| **Other Modules Mobile** | P2 | Desktop-first for other modules |
-| **Cmd+K Scope** | Actions/navigation only | Never use for field selection |
-| **Direct Intake Schema** | Compress UX, not schema | Auto-create PO + receipt + batch, but keep distinct records |
-| **Complex Field Editing** | Inspector panel only | Never inline for multi-field objects |
-| **Validation Timing** | Reward early, punish late | Errors on blur/commit only |
+| Decision                    | Choice                                       | Rationale                                                   |
+| --------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
+| **Offline Support**         | BETA priority (not P0/P1)                    | Not required for initial release                            |
+| **Mobile Priority Modules** | Inventory, Accounting, Todo/Tasks, Dashboard | These workflows are used on mobile                          |
+| **Other Modules Mobile**    | P2                                           | Desktop-first for other modules                             |
+| **Cmd+K Scope**             | Actions/navigation only                      | Never use for field selection                               |
+| **Direct Intake Schema**    | Compress UX, not schema                      | Auto-create PO + receipt + batch, but keep distinct records |
+| **Complex Field Editing**   | Inspector panel only                         | Never inline for multi-field objects                        |
+| **Validation Timing**       | Reward early, punish late                    | Errors on blur/commit only                                  |
 
 ### Firm Constraints
 
@@ -378,15 +386,15 @@ These decisions have been made and should not be revisited without explicit prod
 
 These require product input before implementation:
 
-| # | Question | Impact |
-|---|----------|--------|
-| 1 | **Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user? | Affects concurrent edit UX |
-| 2 | **Export limits**: Is 10,000 row limit acceptable? | Affects large data exports |
-| 3 | **Bulk limits**: Is 500 selection / 100 update limit acceptable? | Affects power user workflows |
-| 4 | **DF-067 Recurring Orders**: Should this missing feature be added to backlog? | Sales workflow expansion |
-| 5 | **API-only features**: Should any of the 8 API-only features get UI surfaces? | Scope expansion |
-| 6 | **VIP Portal scope**: Should VIP portal pages be redesigned with Work Surface patterns? | VIP experience |
-| 7 | **Hidden routes**: Should any of the 11 hidden routes be surfaced in main navigation? | Discoverability |
+| #   | Question                                                                                        | Impact                       |
+| --- | ----------------------------------------------------------------------------------------------- | ---------------------------- |
+| 1   | **Conflict resolution**: Should conflicts auto-resolve (last-write-wins) or always prompt user? | Affects concurrent edit UX   |
+| 2   | **Export limits**: Is 10,000 row limit acceptable?                                              | Affects large data exports   |
+| 3   | **Bulk limits**: Is 500 selection / 100 update limit acceptable?                                | Affects power user workflows |
+| 4   | **DF-067 Recurring Orders**: Should this missing feature be added to backlog?                   | Sales workflow expansion     |
+| 5   | **API-only features**: Should any of the 8 API-only features get UI surfaces?                   | Scope expansion              |
+| 6   | **VIP Portal scope**: Should VIP portal pages be redesigned with Work Surface patterns?         | VIP experience               |
+| 7   | **Hidden routes**: Should any of the 11 hidden routes be surfaced in main navigation?           | Discoverability              |
 
 ---
 
@@ -420,17 +428,20 @@ These require product input before implementation:
 - [ ] Undo available for destructive actions
 - [ ] Focus indicators visible (2px, ≥3:1 contrast)
 - [ ] Feature Preservation Matrix updated or referenced
+- [ ] Modal replacements documented when retiring modals
+- [ ] Golden flows validated under RBAC roles that own the workflows
+- [ ] Rollback path documented (feature flag or revert plan)
 
 ### File Reference
 
-| Document | Purpose |
-|----------|---------|
-| `ATOMIC_UX_STRATEGY.md` | Complete UX doctrine, primitives, and design decisions |
-| `ATOMIC_ROADMAP.md` | Implementation tasks with dependencies |
-| `FEATURE_PRESERVATION_MATRIX.md` | All 110 features with status and test requirements |
-| `PATTERN_APPLICATION_PLAYBOOK.md` | Decision rules for applying patterns |
-| `RISK_REGISTER.md` | Known risks with mitigation strategies |
-| `ASSUMPTION_LOG.md` | Assumptions requiring validation |
+| Document                          | Purpose                                                |
+| --------------------------------- | ------------------------------------------------------ |
+| `ATOMIC_UX_STRATEGY.md`           | Complete UX doctrine, primitives, and design decisions |
+| `ATOMIC_ROADMAP.md`               | Implementation tasks with dependencies                 |
+| `FEATURE_PRESERVATION_MATRIX.md`  | All 110 features with status and test requirements     |
+| `PATTERN_APPLICATION_PLAYBOOK.md` | Decision rules for applying patterns                   |
+| `RISK_REGISTER.md`                | Known risks with mitigation strategies                 |
+| `ASSUMPTION_LOG.md`               | Assumptions requiring validation                       |
 
 ---
 

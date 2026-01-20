@@ -703,12 +703,67 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+## 🎨 UX Work Surface Redesign (Atomic UX Strategy)
+
+> **Source of truth:** `docs/specs/ui-ux-strategy/ATOMIC_ROADMAP.md`  
+> **Goal:** Roll out the Work Surface execution shell across high-frequency workflows without losing any preserved features.
+
+### Scope & Guardrails
+
+- **Must preserve** all DF-001..DF-070 and flow-matrix features in `FEATURE_PRESERVATION_MATRIX.md`.
+- **Golden flows** GF-001..GF-008 must be covered by E2E tests under at least one RBAC role that owns the flow.
+- **No modal-heavy core flows**; inspectors/inline edits replace modals.
+
+### Atomic Task Roadmap (All UXS tasks)
+
+| Task    | Description                                | Priority | Status | Dependencies | Estimate | Spec           |
+| ------- | ------------------------------------------ | -------- | ------ | ------------ | -------- | -------------- |
+| UXS-001 | Feature preservation matrix baseline       | HIGH     | ready  | -            | 1d       | ATOMIC_ROADMAP |
+| UXS-002 | System primitives + constraints            | HIGH     | ready  | UXS-001      | 1d       | ATOMIC_ROADMAP |
+| UXS-003 | Pattern application playbook               | HIGH     | ready  | UXS-002      | 1d       | ATOMIC_ROADMAP |
+| UXS-004 | Risk + assumption registry                 | HIGH     | ready  | UXS-001      | 1d       | ATOMIC_ROADMAP |
+| UXS-005 | Unknown feature validation audit           | HIGH     | ready  | UXS-001      | 1d       | ATOMIC_ROADMAP |
+| UXS-006 | Ledger + intake verification UX audit      | HIGH     | ready  | UXS-001      | 1d       | ATOMIC_ROADMAP |
+| UXS-101 | Keyboard contract hook                     | HIGH     | ready  | UXS-002      | 2d       | ATOMIC_ROADMAP |
+| UXS-102 | Save-state indicator component             | HIGH     | ready  | UXS-101      | 1d       | ATOMIC_ROADMAP |
+| UXS-103 | Inspector panel shell                      | HIGH     | ready  | UXS-101      | 2d       | ATOMIC_ROADMAP |
+| UXS-104 | Inline validation timing contract          | HIGH     | ready  | UXS-101      | 1d       | ATOMIC_ROADMAP |
+| UXS-201 | Direct Intake Work Surface pilot           | HIGH     | ready  | UXS-101..104 | 3d       | ATOMIC_ROADMAP |
+| UXS-202 | Standard PO Work Surface alignment         | HIGH     | ready  | UXS-201      | 2d       | ATOMIC_ROADMAP |
+| UXS-203 | Intake/PO decision logic banner            | MEDIUM   | ready  | UXS-201      | 1d       | ATOMIC_ROADMAP |
+| UXS-301 | Orders Work Surface shell                  | HIGH     | ready  | UXS-101..104 | 3d       | ATOMIC_ROADMAP |
+| UXS-302 | Quotes + Sales Sheet alignment             | MEDIUM   | ready  | UXS-301      | 2d       | ATOMIC_ROADMAP |
+| UXS-401 | Inventory Work Surface alignment           | HIGH     | ready  | UXS-101..104 | 3d       | ATOMIC_ROADMAP |
+| UXS-402 | Pick & Pack Work Surface alignment         | HIGH     | ready  | UXS-401      | 2d       | ATOMIC_ROADMAP |
+| UXS-501 | Accounting module Work Surface alignment   | HIGH     | ready  | UXS-101..104 | 3d       | ATOMIC_ROADMAP |
+| UXS-502 | Client ledger Work Surface alignment       | HIGH     | ready  | UXS-501      | 2d       | ATOMIC_ROADMAP |
+| UXS-601 | Modal audit + retirement plan              | HIGH     | ready  | UXS-201..502 | 2d       | ATOMIC_ROADMAP |
+| UXS-602 | Golden flow regression suite               | HIGH     | ready  | UXS-601      | 3d       | ATOMIC_ROADMAP |
+| UXS-603 | Command palette scope enforcement          | MEDIUM   | ready  | UXS-003      | 1d       | ATOMIC_ROADMAP |
+| UXS-701 | Responsive breakpoint system               | MEDIUM   | ready  | UXS-103      | 3d       | ATOMIC_ROADMAP |
+| UXS-702 | Offline queue + sync infrastructure (BETA) | LOW      | ready  | UXS-102      | 5d       | ATOMIC_ROADMAP |
+| UXS-703 | Loading skeleton components                | HIGH     | ready  | -            | 1d       | ATOMIC_ROADMAP |
+| UXS-704 | Error boundary wrapper                     | HIGH     | ready  | -            | 1d       | ATOMIC_ROADMAP |
+| UXS-705 | Concurrent edit detection                  | MEDIUM   | ready  | -            | 2d       | ATOMIC_ROADMAP |
+| UXS-706 | Session timeout handler (BETA)             | LOW      | ready  | UXS-702      | 2d       | ATOMIC_ROADMAP |
+| UXS-707 | Undo infrastructure                        | MEDIUM   | ready  | -            | 2d       | ATOMIC_ROADMAP |
+| UXS-801 | Accessibility audit + fixes                | MEDIUM   | ready  | UXS-101..104 | 3d       | ATOMIC_ROADMAP |
+| UXS-802 | Performance monitoring integration         | MEDIUM   | ready  | -            | 2d       | ATOMIC_ROADMAP |
+| UXS-803 | Bulk operation limits + progress UI        | MEDIUM   | ready  | UXS-402      | 1d       | ATOMIC_ROADMAP |
+| UXS-901 | Empty state components                     | MEDIUM   | ready  | -            | 1d       | ATOMIC_ROADMAP |
+| UXS-902 | Toast notification standardization         | MEDIUM   | ready  | -            | 1d       | ATOMIC_ROADMAP |
+| UXS-903 | Print stylesheet support                   | MEDIUM   | ready  | -            | 1d       | ATOMIC_ROADMAP |
+| UXS-904 | Export functionality standardization       | MEDIUM   | ready  | -            | 2d       | ATOMIC_ROADMAP |
+
+---
+
 ## 📊 Beta Summary
 
 | Category            | Completed | Open   | Total  |
 | ------------------- | --------- | ------ | ------ |
 | Reliability Program | 0         | 17     | 17     |
-| **TOTAL**           | **0**     | **17** | **17** |
+| UX Work Surface     | 0         | 36     | 36     |
+| **TOTAL**           | **0**     | **53** | **53** |
 
 ---
 
@@ -717,8 +772,8 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 17     | 17      | 0%       |
-| **TOTAL** | **185**   | **17** | **204** | ~91%     |
+| Beta      | 0         | 53     | 53      | 0%       |
+| **TOTAL** | **185**   | **53** | **238** | ~78%     |
 
 ---
 
