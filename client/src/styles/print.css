@@ -1,0 +1,416 @@
+/**
+ * Print Stylesheet (UXS-903)
+ *
+ * Print-friendly styles for TERP application.
+ * Hides navigation, optimizes layout for paper.
+ *
+ * Import this in index.css or main entry point.
+ *
+ * Usage:
+ * - Elements with .no-print will be hidden
+ * - Elements with .print-only will only show when printing
+ * - Tables and grids are optimized for print
+ * - Page breaks are controlled with .page-break-before, .page-break-after
+ */
+
+/* ==========================================================================
+   Print Media Queries
+   ========================================================================== */
+
+@media print {
+  /* --------------------------------------------------------------------------
+     Base Reset for Print
+     -------------------------------------------------------------------------- */
+
+  *,
+  *::before,
+  *::after {
+    /* Ensure consistent colors */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0.5in !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Hide Non-Print Elements
+     -------------------------------------------------------------------------- */
+
+  /* Navigation and UI chrome */
+  nav,
+  header:has(nav),
+  aside,
+  .sidebar,
+  .navigation,
+  .nav-bar,
+  .command-palette,
+  .toast,
+  .toaster,
+  .modal-backdrop,
+  .dropdown-menu,
+  .popover,
+  .tooltip,
+  [role="dialog"],
+  [role="alertdialog"],
+  .fixed:not(.print-keep),
+  .sticky:not(.print-keep) {
+    display: none !important;
+  }
+
+  /* Interactive elements */
+  button:not(.print-keep),
+  .btn:not(.print-keep),
+  input[type="button"]:not(.print-keep),
+  input[type="submit"]:not(.print-keep),
+  [role="button"]:not(.print-keep) {
+    display: none !important;
+  }
+
+  /* Form controls (hide unless explicitly kept) */
+  input:not([type="text"]):not([type="number"]):not(.print-keep),
+  select:not(.print-keep),
+  textarea:not(.print-keep) {
+    display: none !important;
+  }
+
+  /* Explicit no-print class */
+  .no-print,
+  [data-no-print="true"] {
+    display: none !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Show Print-Only Elements
+     -------------------------------------------------------------------------- */
+
+  .print-only,
+  [data-print-only="true"] {
+    display: block !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Page Layout
+     -------------------------------------------------------------------------- */
+
+  /* Full width for main content */
+  main,
+  .main-content,
+  [role="main"] {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Remove shadows and rounded corners */
+  .card,
+  .panel,
+  .box,
+  [class*="shadow"],
+  [class*="rounded"] {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Ensure borders are visible */
+  .border,
+  [class*="border"] {
+    border-color: #000 !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Typography
+     -------------------------------------------------------------------------- */
+
+  h1 {
+    font-size: 18pt !important;
+    margin-bottom: 12pt !important;
+  }
+
+  h2 {
+    font-size: 16pt !important;
+    margin-bottom: 10pt !important;
+  }
+
+  h3 {
+    font-size: 14pt !important;
+    margin-bottom: 8pt !important;
+  }
+
+  h4, h5, h6 {
+    font-size: 12pt !important;
+    margin-bottom: 6pt !important;
+  }
+
+  p {
+    margin-bottom: 8pt !important;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* --------------------------------------------------------------------------
+     Links
+     -------------------------------------------------------------------------- */
+
+  a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Show URL after link text for external links */
+  a[href^="http"]:not(.no-print-url)::after {
+    content: " (" attr(href) ")" !important;
+    font-size: 9pt !important;
+    color: #666 !important;
+    word-break: break-all;
+  }
+
+  /* Don't show URL for internal links */
+  a[href^="/"]:after,
+  a[href^="#"]:after {
+    content: none !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Tables
+     -------------------------------------------------------------------------- */
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    padding: 6pt 8pt !important;
+    border: 1px solid #000 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+
+  /* Alternate row colors */
+  tbody tr:nth-child(even) {
+    background-color: #f9f9f9 !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Data Grids
+     -------------------------------------------------------------------------- */
+
+  .data-grid,
+  .ag-root,
+  [data-grid="true"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .data-grid .header,
+  .ag-header {
+    display: table-header-group !important;
+  }
+
+  .data-grid .row,
+  .ag-row {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Images
+     -------------------------------------------------------------------------- */
+
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Page Breaks
+     -------------------------------------------------------------------------- */
+
+  .page-break-before,
+  [data-page-break="before"] {
+    page-break-before: always !important;
+  }
+
+  .page-break-after,
+  [data-page-break="after"] {
+    page-break-after: always !important;
+  }
+
+  .avoid-break,
+  [data-avoid-break="true"] {
+    page-break-inside: avoid !important;
+  }
+
+  /* Break before major sections */
+  .work-surface,
+  .report-section,
+  section {
+    page-break-before: auto;
+    page-break-inside: avoid;
+  }
+
+  /* --------------------------------------------------------------------------
+     Print Header/Footer (via CSS)
+     -------------------------------------------------------------------------- */
+
+  @page {
+    size: letter;
+    margin: 0.75in;
+  }
+
+  @page :first {
+    margin-top: 1in;
+  }
+
+  /* --------------------------------------------------------------------------
+     Work Surface Specific
+     -------------------------------------------------------------------------- */
+
+  /* Inspector panels - hide or show based on context */
+  .inspector-panel {
+    display: none !important;
+  }
+
+  .inspector-panel.print-keep {
+    display: block !important;
+    border-left: none !important;
+    padding: 0 !important;
+  }
+
+  /* Status bar - hide */
+  .work-surface-status-bar {
+    display: none !important;
+  }
+
+  /* Action bars - hide */
+  .action-bar,
+  .toolbar {
+    display: none !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Invoice/Receipt Specific
+     -------------------------------------------------------------------------- */
+
+  .invoice-print,
+  .receipt-print {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .invoice-header,
+  .receipt-header {
+    margin-bottom: 24pt !important;
+  }
+
+  .invoice-totals,
+  .receipt-totals {
+    margin-top: 24pt !important;
+    border-top: 2px solid #000 !important;
+    padding-top: 12pt !important;
+  }
+
+  .invoice-footer,
+  .receipt-footer {
+    margin-top: 36pt !important;
+    font-size: 10pt !important;
+    color: #666 !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Chart/Graph Handling
+     -------------------------------------------------------------------------- */
+
+  /* Charts often don't print well - provide fallback */
+  .chart-container {
+    page-break-inside: avoid !important;
+  }
+
+  .chart-fallback {
+    display: block !important;
+  }
+
+  canvas {
+    max-width: 100% !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     Badge/Status Colors
+     -------------------------------------------------------------------------- */
+
+  .badge,
+  .status-badge {
+    border: 1px solid currentColor !important;
+    background: transparent !important;
+  }
+
+  /* Ensure status colors are visible */
+  .badge-success,
+  .status-success {
+    color: #059669 !important;
+  }
+
+  .badge-warning,
+  .status-warning {
+    color: #d97706 !important;
+  }
+
+  .badge-error,
+  .status-error {
+    color: #dc2626 !important;
+  }
+
+  .badge-info,
+  .status-info {
+    color: #2563eb !important;
+  }
+}
+
+/* ==========================================================================
+   Print-Only Classes (visible only when printing)
+   ========================================================================== */
+
+.print-only,
+[data-print-only="true"] {
+  display: none;
+}
+
+/* ==========================================================================
+   Screen-Only Classes
+   ========================================================================== */
+
+@media screen {
+  .screen-only {
+    display: block;
+  }
+}
