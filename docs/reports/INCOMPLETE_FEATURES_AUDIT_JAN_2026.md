@@ -480,5 +480,196 @@ The `vipPortal.ts.backup` file contains stub implementations:
 
 ---
 
+---
+
+## Deep QA Pass - Critical Additional Findings
+
+A more thorough QA pass uncovered significant additional issues:
+
+### 1. Silent Financial Data Loss (CRITICAL)
+
+**File:** `server/accountingHooks.ts`
+
+GL posting failures are **silently ignored**, allowing financial transactions to complete without creating ledger entries:
+
+| Function | Line | Issue |
+|----------|------|-------|
+| `postSaleGLEntries` | 173 | Standard accounts not found → GL skipped but sale completes |
+| `postPaymentGLEntries` | 224 | Standard accounts not found → GL skipped but payment completes |
+| `postRefundGLEntries` | 274 | Standard accounts not found → GL skipped but refund completes |
+| `postCOGSGLEntries` | 323 | Standard accounts not found → GL skipped but COGS completes |
+
+**Impact:** Financial records may be incomplete. Sales/payments recorded but accounting ledger entries missing.
+
+---
+
+### 2. PII Leak Detection Triggers (SECURITY)
+
+**File:** `server/services/leaderboard/privacySanitizer.ts`
+
+The privacy sanitizer is actively detecting and blocking PII leaks:
+
+| Line | Detection |
+|------|-----------|
+| 126 | "CRITICAL: PII detected in sanitized response, returning empty" |
+| 154 | "PII LEAK DETECTED: Found forbidden field..." (client names) |
+| 162 | "PII LEAK DETECTED: Found TERI code pattern..." |
+| 169 | "PII LEAK DETECTED: Found email pattern..." |
+| 176 | "PII LEAK DETECTED: Found phone pattern..." |
+
+**Impact:** These defensive checks indicate production PII leak attempts are being blocked.
+
+---
+
+### 3. Database Schema Mismatches (Active Bugs)
+
+| Column Reference | Actual Column | Status | Files |
+|------------------|---------------|--------|-------|
+| `products.name` | `products.nameCanonical` | **ACTIVE BUG** | storage.ts:1076 |
+| `batches.quantity` | `batches.onHandQty` | **DOCUMENTED** | photography.ts, analytics.ts |
+| `clients.tier` | N/A (doesn't exist) | **WORKAROUND** | referrals.ts:5, alerts.ts:538 |
+| `clients.isActive` | N/A (doesn't exist) | **DOCUMENTED** | referrals.ts:499 |
+
+**Root Cause:** December 31, 2025 migration created columns in database but Drizzle schema NOT updated.
+
+---
+
+### 4. Deprecated Vendor Router (Migration Incomplete)
+
+**File:** `server/routers/vendors.ts`
+
+All 6 procedures deprecated but still in use:
+
+| Procedure | Line | Replacement |
+|-----------|------|-------------|
+| `vendors.getAll` | 29 | `clients.list` with `clientTypes=['seller']` |
+| `vendors.getById` | 71 | `clients.getById` |
+| `vendors.search` | 133 | `clients.list` with search |
+| `vendors.create` | 181 | `clients.create` with `isSeller=true` |
+| `vendors.update` | 243 | `clients.update` |
+| `vendors.delete` | 325 | `clients.delete` |
+
+**Also:** `purchaseOrders.ts` has 3 deprecated procedures (lines 103, 194, 431)
+
+---
+
+### 5. Unused Dashboard Widgets (Abandoned Features)
+
+**Location:** `client/src/components/dashboard/widgets-v2/`
+
+5 fully-built widgets exported but NEVER used in DashboardV3:
+
+| Widget | Backend Procedure | Status |
+|--------|-------------------|--------|
+| CashCollectedLeaderboard | `dashboard.getCashCollected` | NOT INTEGRATED |
+| ClientDebtLeaderboard | `dashboard.getClientDebt` | NOT INTEGRATED |
+| ClientProfitMarginLeaderboard | `dashboard.getClientProfitMargin` | NOT INTEGRATED |
+| TopStrainFamiliesWidget | `useTopStrainFamilies` hook | NOT INTEGRATED |
+| SmartOpportunitiesWidget | `clientNeeds.getSmartOpportunities` | NOT INTEGRATED |
+
+**Also:** 3 stub components (ActivityLogPanel, CommentsPanel, TemplateSelector)
+
+---
+
+### 6. RTL/i18n Support (Planned But Abandoned)
+
+**File:** `client/src/lib/rtlUtils.ts`
+
+11 utility functions exported but **0 usages** anywhere:
+- `isRTL()`, `getDirection()`, `getDirectionalIconClasses()`
+- `getIconWrapperClasses()`, `shouldIconBeMirrored()`
+- `getLogicalSpacing()`, `neverMirrorIcons`, `shouldMirrorIcons`, `logicalProperties`
+
+**Indicates:** Right-to-left language support was planned but never implemented.
+
+---
+
+### 7. Known Property Test Bugs (Unfixed)
+
+**Tests skipped due to discovered bugs:**
+
+| Bug ID | File | Issue |
+|--------|------|-------|
+| PROP-BUG-001 | `adversarial.property.test.ts:128` | `calculateAvailableQty` returns NaN for adversarial inputs |
+| PROP-BUG-002 | `validation.property.test.ts:88` | `normalizeProductName` fails to trim whitespace |
+| PROP-BUG-003 | `validation.property.test.ts:67` | `normalizeProductName` is NOT idempotent |
+
+---
+
+### 8. Hardcoded Values Requiring Configuration
+
+| File | Line | Value | Issue |
+|------|------|-------|-------|
+| `vipPortal.ts` | 690 | `creditUtilization = 0` | creditLimit field missing |
+| `dashboard.ts` | 192 | `lowStockCount = 0` | Query not implemented |
+| `liveCatalogService.ts` | 357 | `brands = []` | Brand data not available |
+| `liveCatalogService.ts` | 367 | `priceRange.max = 1000` | Pricing engine not integrated |
+| `BatchDetailDrawer.tsx` | 891 | `currentAvgPrice = 0` | Profitability data missing |
+| `matchingEngine.ts` | 291, 428 | `strainType: null` | Product join not implemented |
+
+---
+
+### 9. Skipped Test Suites (Features Not Implemented)
+
+| Test File | Line | Reason |
+|-----------|------|--------|
+| `vipPortal.liveCatalog.test.ts` | 57 | Mixed mock/real DB pattern needs refactoring |
+| `calendarInvitations.test.ts` | 24 | Requires real database connection |
+| `accounting.test.ts` | 248-375 | 6 tests skipped - sub-routers not implemented |
+| `rbac-permissions.test.ts` | 61, 188, 215 | Mock chain issues (TODO comments) |
+| `rbac-roles.test.ts` | 124, 160, 512, 561 | Mock chain issues (TODO comments) |
+| `inventory.test.ts` | 224, 233 | Dynamic imports hard to mock |
+| `credits.test.ts` | 209 | Complex invoice updates |
+| `badDebt.test.ts` | 197 | Aggregated data complexity |
+
+---
+
+### 10. Feature Flags Disabled By Default
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `FEATURE_LIVE_CATALOG` | false | VIP Portal Live Catalog |
+| `FEATURE_EMAIL_ENABLED` | false | Email integration |
+| `FEATURE_SMS_ENABLED` | false | SMS integration |
+| `FEATURE_LIVE_SHOPPING_ENABLED` | false | Live Shopping Module |
+| `spreadsheet-view` | false | Spreadsheet View nav item |
+| Work Surface flags (8) | false | All Work Surface components |
+
+---
+
+### 11. Poor Error Handling (23+ Files)
+
+**Console.error instead of proper logging:**
+- 15 router files use `console.error()` instead of logger
+- 8 service files use `console.error()` instead of logger
+
+**Silent failures returning empty arrays:**
+- `priceAlertsService.ts` - Lines 193-197, 303-309
+- `strainMatchingService.ts` - Lines 64, 121, 277, 287
+- `audit.ts` - Lines 647, 685-687
+- `analytics.ts` - Lines 218, 262
+- `productCategories.ts` - Line 594
+
+---
+
+## Final Summary
+
+| Category | Initial | QA Pass 1 | QA Pass 2 | Total |
+|----------|---------|-----------|-----------|-------|
+| P0 Blockers | 4 | 0 | 1 (GL silent failures) | 5 |
+| Missing Features | 15 | 10 | 8 | 33 |
+| Hidden Routes | 8 | 13 | 0 | 21 |
+| Stub/Placeholder Code | 2 | 8 | 6 | 16 |
+| Disabled UI Actions | 0 | 4 | 5 | 9 |
+| Schema Mismatches | 0 | 0 | 5 | 5 |
+| Abandoned Features | 0 | 0 | 3 | 3 |
+| Known Bugs (unfixed) | 0 | 0 | 3 | 3 |
+| Deprecated Code | 0 | 0 | 9 | 9 |
+| Poor Error Handling | 0 | 0 | 23+ files | 23+ |
+| Skipped Tests | 0 | 0 | 20+ | 20+ |
+
+---
+
 *This report was generated by analyzing 484 commits from December 20, 2025 to January 20, 2026.*
-*QA pass completed 2026-01-20 to verify completeness.*
+*QA pass 1 completed 2026-01-20 to verify completeness.*
+*Deep QA pass 2 completed 2026-01-20 for thorough analysis.*
