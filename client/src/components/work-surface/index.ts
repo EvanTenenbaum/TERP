@@ -37,7 +37,7 @@ export { InvoicesWorkSurface } from "./InvoicesWorkSurface";
 
 // Golden Flows - UXS-601, UXS-602, UXS-603
 export {
-  IntakeToOrderFlow,
+  OrderCreationFlow,
   OrderToInvoiceFlow,
   InvoiceToPaymentFlow,
 } from "./golden-flows";

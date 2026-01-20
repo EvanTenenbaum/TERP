@@ -1,11 +1,11 @@
 /**
- * IntakeToOrderFlow - UXS-601: Intake-to-Order Golden Flow
+ * OrderCreationFlow - UXS-601: Order Creation Golden Flow
  *
- * Guided workflow for converting received inventory (intake) into a sales order.
+ * Guided workflow for creating a sales order from inventory.
  * This flow helps users:
- * 1. Review received batches from an intake
- * 2. Select products to include in a new order
- * 3. Set quantities and pricing
+ * 1. Select products from available inventory batches
+ * 2. Set quantities and pricing
+ * 3. Choose the client
  * 4. Create and optionally confirm the order
  *
  * @see ATOMIC_UX_STRATEGY.md - Golden Flow specification
@@ -554,19 +554,20 @@ function ReviewStep({
 // MAIN COMPONENT
 // ============================================================================
 
-interface IntakeToOrderFlowProps {
+interface OrderCreationFlowProps {
+  /** Optional: filter batches by a specific intake */
   intakeId?: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderCreated?: (orderId: number) => void;
 }
 
-export function IntakeToOrderFlow({
+export function OrderCreationFlow({
   intakeId,
   open,
   onOpenChange,
   onOrderCreated,
-}: IntakeToOrderFlowProps) {
+}: OrderCreationFlowProps) {
   // State
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());
@@ -789,4 +790,4 @@ export function IntakeToOrderFlow({
   );
 }
 
-export default IntakeToOrderFlow;
+export default OrderCreationFlow;

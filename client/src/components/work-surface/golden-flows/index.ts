@@ -7,8 +7,8 @@
  * @see ATOMIC_UX_STRATEGY.md - Golden Flow specification
  */
 
-// UXS-601: Intake-to-Order Golden Flow
-export { IntakeToOrderFlow } from "./IntakeToOrderFlow";
+// UXS-601: Order Creation Golden Flow
+export { OrderCreationFlow } from "./OrderCreationFlow";
 
 // UXS-602: Order-to-Invoice Golden Flow
 export { OrderToInvoiceFlow } from "./OrderToInvoiceFlow";
