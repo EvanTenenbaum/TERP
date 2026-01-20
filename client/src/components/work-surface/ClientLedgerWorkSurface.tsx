@@ -68,7 +68,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { ClientCombobox, type ClientOption } from '@/components/ui/client-combobox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useWorkSurfaceKeyboard, type KeyboardConfig } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
-import { useSaveState, SaveStateIndicator } from '@/hooks/work-surface/useSaveState';
+import { useSaveState } from '@/hooks/work-surface/useSaveState';
 import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
 import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
 
@@ -582,7 +582,7 @@ export function ClientLedgerWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Save state
-  const { state: saveState, setSaving, setSaved, setError } = useSaveState();
+  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
 
   // Queries
   const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({
@@ -795,7 +795,7 @@ export function ClientLedgerWorkSurface() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <SaveStateIndicator state={saveState} />
+          {SaveStateIndicator}
           <Button
             variant="outline"
             onClick={handleExport}

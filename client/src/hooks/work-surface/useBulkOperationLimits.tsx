@@ -272,7 +272,7 @@ export function useBulkOperationLimits<T>(
   }, [selectedMap, limits.maxSelection]);
 
   // Execute bulk operation with batching
-  const executeBulk = useCallback(async <R>(
+  const executeBulk = useCallback(async <R,>(
     operation: (batch: T[]) => Promise<R>,
     batchOptions?: { onBatchComplete?: (results: R[], batch: number) => void }
   ): Promise<R[]> => {

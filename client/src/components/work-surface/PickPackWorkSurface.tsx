@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkSurfaceKeyboard, type KeyboardConfig } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
-import { useSaveState, SaveStateIndicator } from '@/hooks/work-surface/useSaveState';
+import { useSaveState } from '@/hooks/work-surface/useSaveState';
 import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
 import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
 
@@ -493,7 +493,7 @@ export function PickPackWorkSurface() {
   );
 
   // Save state
-  const { state: saveState, setSaving, setSaved, setError, setQueued } = useSaveState();
+  const { saveState, setSaving, setSaved, setError, setQueued, SaveStateIndicator } = useSaveState();
 
   // Mutations
   const packItemsMutation = trpc.pickPack.packItems.useMutation({
@@ -746,7 +746,7 @@ export function PickPackWorkSurface() {
               Pick & Pack
             </h1>
             <div className="flex items-center gap-2">
-              <SaveStateIndicator state={saveState} />
+              {SaveStateIndicator}
               <Button
                 variant="ghost"
                 size="icon"
