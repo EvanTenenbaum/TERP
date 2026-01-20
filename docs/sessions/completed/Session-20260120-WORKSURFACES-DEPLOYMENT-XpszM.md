@@ -62,6 +62,7 @@ Created improved strategy with all P0s addressed:
 |------|---------|
 | `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY.md` | Initial deployment strategy (v1) |
 | `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md` | QA-reviewed deployment strategy (v2) |
+| `docs/deployment/WORKSURFACES_EXECUTION_ROADMAP.md` | Strategic execution roadmap with step-by-step instructions |
 | `scripts/qa/placeholder-scan.sh` | Gate G4: Placeholder detection |
 | `scripts/qa/rbac-verify.sh` | Gate G5: RBAC coverage verification |
 | `scripts/qa/feature-parity.sh` | Gate G6: tRPC call comparison |
@@ -110,6 +111,7 @@ Created improved strategy with all P0s addressed:
 - [x] Executable scripts committed
 - [x] Session documented
 - [x] Roadmap tasks added to MASTER_ROADMAP.md (DEPLOY-001 through DEPLOY-008)
+- [x] Strategic execution roadmap created (WORKSURFACES_EXECUTION_ROADMAP.md)
 
 ## Branch
 

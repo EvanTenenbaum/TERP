@@ -25,8 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY.md` - Initial deployment strategy
 - `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md` - QA-reviewed strategy with fixes
+- `docs/deployment/WORKSURFACES_EXECUTION_ROADMAP.md` - Strategic execution roadmap with step-by-step instructions
 - `docs/specs/ui-ux-strategy/ATOMIC_ROADMAP.md` - Updated with Sprint 4-8 completion status
 - `docs/specs/ui-ux-strategy/FEATURE_PRESERVATION_MATRIX.md` - Updated with Work Surface status
+- `docs/roadmaps/MASTER_ROADMAP.md` - Added DEPLOY-001..008 tasks for Work Surfaces rollout
 
 ### QA Findings (RedHat-Grade Audit)
 
