@@ -1,19 +1,21 @@
 # Fix Patch Set - P0/P1 Critical Issues (REVISED)
 
 **Generated**: 2026-01-20
-**Revised**: 2026-01-20 (Third-Party Expert Review)
+**Revised**: 2026-01-20 (Third-Party Expert Review + Product Decisions)
 **Scope**: P0 (Blocker) and P1 (Critical) issues only
 
 ---
 
 ## Revision Notes
 
-> **IMPORTANT**: This patch set has been revised following a third-party expert review.
+> **IMPORTANT**: This patch set has been revised following a third-party expert review and product decision clarifications.
 >
 > **Key Corrections**:
-> - ~~P0-002 (Inventory race condition)~~ **REMOVED** - False positive. Code already implements `.for("update")` locking at `ordersDb.ts:290-296`
-> - P1-001 (Invoice void logic) - Reworded to clarify semantic issue (business rule vs implementation mismatch)
-> - Added reference to existing working pattern (PaymentInspector.tsx) for P0-001
+> - ~~P0-002 (Inventory race condition)~~ **REMOVED** - False positive. Code already implements `.for("update")` locking
+> - ~~P0-004 (Individual feature flags)~~ **REMOVED** - Product decision: deployment-level flags sufficient
+> - **P0-002 (NEW)**: Flexible lot selection - users select specific batches per customer needs (not strict FIFO/LIFO)
+> - **P0-003**: Updated to add RETURNED status with restocking/vendor-return paths
+> - **P1-001**: Confirmed current void logic is correct; add void reason field
 
 ---
 
@@ -97,11 +99,58 @@ const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) =>
 
 ---
 
-## P0-003: Order Status Machine Incomplete
+## P0-002: Flexible Lot Selection Not Implemented
+
+**File**: `server/inventoryUtils.ts`, `client/src/components/work-surface/InventoryWorkSurface.tsx`
+**Product Decision**: Users need to select specific batches/lots per customer needs (not strict FIFO/LIFO)
+
+### Current Behavior
+Single `unitCogs` stored per batch. System auto-allocates without user choice.
+
+### Required Changes
+
+**1. Add lot selection UI to order creation:**
+```typescript
+// OrderLineItemEditor.tsx
+const [selectedBatches, setSelectedBatches] = useState<BatchAllocation[]>([]);
+
+// Show available batches with cost, quantity, expiry
+<BatchSelectionDialog
+  productId={lineItem.productId}
+  quantityNeeded={lineItem.quantity}
+  onSelect={(batches) => setSelectedBatches(batches)}
+/>
+```
+
+**2. Update order line item schema:**
+```typescript
+// schema.ts - add batch allocations
+export const orderLineItemAllocations = pgTable('order_line_item_allocations', {
+  id: serial('id').primaryKey(),
+  orderLineItemId: integer('order_line_item_id').references(() => orderLineItems.id),
+  batchId: integer('batch_id').references(() => batches.id),
+  quantityAllocated: integer('quantity_allocated').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+});
+```
+
+**3. Update COGS calculation:**
+```typescript
+// Calculate weighted average COGS from selected batches
+const calculateCogs = (allocations: BatchAllocation[]) => {
+  const totalQty = allocations.reduce((sum, a) => sum + a.quantity, 0);
+  const totalCost = allocations.reduce((sum, a) => sum + (a.quantity * a.unitCost), 0);
+  return totalCost / totalQty;
+};
+```
+
+---
+
+## P0-003: Order Status Machine - Add RETURNED Status
 
 **File**: `server/db/schema.ts` (or relevant enum definition)
 **File**: `server/ordersDb.ts:1564-1570` (validation logic)
-**Verified**: ✅ Code shows only PENDING/PACKED/SHIPPED accepted
+**Product Decision**: Add RETURNED status with two paths: (a) restocked to inventory, (b) returned to vendor
 
 ### Current Validation Code
 ```typescript
@@ -120,17 +169,55 @@ export const fulfillmentStatusEnum = pgEnum('fulfillment_status', [
   'DRAFT',
   'CONFIRMED',
   'PENDING',
-  'FULFILLED',
   'PACKED',
   'SHIPPED',
   'DELIVERED',
+  'RETURNED',           // NEW
+  'RESTOCKED',          // NEW - returned items back in inventory
+  'RETURNED_TO_VENDOR', // NEW - returned items sent back to vendor
 ]);
 ```
 
-### Fixed Validation
+### Fixed Validation with State Machine
 ```typescript
-const validStatuses = ['DRAFT', 'CONFIRMED', 'PENDING', 'FULFILLED', 'PACKED', 'SHIPPED', 'DELIVERED'];
-const validStatus = validStatuses.includes(newStatus) ? newStatus : 'PENDING';
+const validTransitions: Record<string, string[]> = {
+  'DRAFT': ['CONFIRMED', 'CANCELLED'],
+  'CONFIRMED': ['PENDING', 'CANCELLED'],
+  'PENDING': ['PACKED', 'CANCELLED'],
+  'PACKED': ['SHIPPED'],
+  'SHIPPED': ['DELIVERED', 'RETURNED'],
+  'DELIVERED': ['RETURNED'],
+  'RETURNED': ['RESTOCKED', 'RETURNED_TO_VENDOR'],
+  'RESTOCKED': [],        // Terminal
+  'RETURNED_TO_VENDOR': [], // Terminal
+  'CANCELLED': [],        // Terminal
+};
+
+const canTransition = (from: string, to: string) =>
+  validTransitions[from]?.includes(to) ?? false;
+```
+
+### Return Processing Logic
+```typescript
+// When transitioning to RESTOCKED
+const processRestock = async (orderId: number) => {
+  // Get returned items and add back to inventory batches
+  const order = await getOrderWithItems(orderId);
+  for (const item of order.lineItems) {
+    await adjustBatchQuantity(item.batchId, item.quantity, 'RESTOCK');
+  }
+};
+
+// When transitioning to RETURNED_TO_VENDOR
+const processVendorReturn = async (orderId: number, vendorId: number) => {
+  // Create vendor return record (separate from inventory)
+  await createVendorReturnRecord({
+    orderId,
+    vendorId,
+    items: order.lineItems,
+    status: 'PENDING_VENDOR_CREDIT',
+  });
+};
 ```
 
 **Migration Required**:
@@ -138,84 +225,29 @@ const validStatus = validStatuses.includes(newStatus) ? newStatus : 'PENDING';
 -- Add new enum values (PostgreSQL)
 ALTER TYPE fulfillment_status ADD VALUE 'DRAFT' BEFORE 'PENDING';
 ALTER TYPE fulfillment_status ADD VALUE 'CONFIRMED' AFTER 'DRAFT';
-ALTER TYPE fulfillment_status ADD VALUE 'FULFILLED' AFTER 'CONFIRMED';
 ALTER TYPE fulfillment_status ADD VALUE 'DELIVERED' AFTER 'SHIPPED';
+ALTER TYPE fulfillment_status ADD VALUE 'RETURNED' AFTER 'DELIVERED';
+ALTER TYPE fulfillment_status ADD VALUE 'RESTOCKED' AFTER 'RETURNED';
+ALTER TYPE fulfillment_status ADD VALUE 'RETURNED_TO_VENDOR' AFTER 'RESTOCKED';
 ```
 
 ---
 
-## P0-004: Individual Feature Flags Not Seeded
+## ~~P0-004: Individual Feature Flags Not Seeded~~ - CLOSED
 
-**File**: `server/services/seedFeatureFlags.ts`
-**Verified**: ✅ Deployment flags exist, individual surface flags do not
-
-### Add to seed data
-```typescript
-const workSurfaceFlags = [
-  // Deployment flags (existing - keep these)
-  {
-    key: 'WORK_SURFACE_INTAKE',
-    name: 'Work Surface: Intake Module',
-    description: 'Enable Work Surface UI for intake workflows',
-    defaultEnabled: true,
-  },
-  // ... other deployment flags ...
-
-  // Individual surface flags (NEW - add these)
-  {
-    key: 'work-surface-direct-intake',
-    name: 'Direct Intake Work Surface',
-    description: 'Enable Direct Intake Work Surface component',
-    defaultEnabled: true,
-    dependsOn: ['WORK_SURFACE_INTAKE'],
-  },
-  {
-    key: 'work-surface-purchase-orders',
-    name: 'Purchase Orders Work Surface',
-    description: 'Enable Purchase Orders Work Surface component',
-    defaultEnabled: true,
-    dependsOn: ['WORK_SURFACE_INTAKE'],
-  },
-  {
-    key: 'work-surface-orders',
-    name: 'Orders Work Surface',
-    description: 'Enable Orders Work Surface component',
-    defaultEnabled: true,
-    dependsOn: ['WORK_SURFACE_ORDERS'],
-  },
-  {
-    key: 'work-surface-clients',
-    name: 'Clients Work Surface',
-    description: 'Enable Clients Work Surface component',
-    defaultEnabled: true,
-    dependsOn: ['WORK_SURFACE_ORDERS'],
-  },
-  {
-    key: 'work-surface-inventory',
-    name: 'Inventory Work Surface',
-    description: 'Enable Inventory Work Surface component',
-    defaultEnabled: true,
-    dependsOn: ['WORK_SURFACE_INVENTORY'],
-  },
-  {
-    key: 'work-surface-invoices',
-    name: 'Invoices Work Surface',
-    description: 'Enable Invoices Work Surface component',
-    defaultEnabled: true,
-    dependsOn: ['WORK_SURFACE_ACCOUNTING'],
-  },
-];
-```
+> **Product Decision (2026-01-20)**: Deployment-level flags are sufficient. Individual surface flags not needed.
+>
+> No changes required. Existing deployment flags (`WORK_SURFACE_INTAKE`, `WORK_SURFACE_ORDERS`, etc.) provide adequate control.
 
 ---
 
-## P1-001: Invoice Void Logic - Business Rule Clarification Needed
+## P1-001: Add Void Reason Field to Invoice Void
 
 **File**: `server/routers/invoices.ts`
 **Lines**: 392-397
-**Verified**: ✅ Code exists as reported
+**Product Decision**: Current void logic is CORRECT (paid invoices CAN be voided). Add field to capture reason.
 
-### Current Code
+### Current Code (Confirmed Correct)
 ```typescript
 if (invoice.status === "PAID" && input.status !== "VOID") {
   throw new TRPCError({
@@ -225,29 +257,63 @@ if (invoice.status === "PAID" && input.status !== "VOID") {
 }
 ```
 
-### Analysis
-The current code says "Paid invoices can **only** be voided" - meaning:
-- If invoice is PAID, you CAN change to VOID (allowed)
-- If invoice is PAID, you CANNOT change to anything else (blocked)
+### Required Changes
 
-The original QA report claimed the business rule is "Cannot void paid invoices" which is the OPPOSITE.
-
-**Action Required**: Clarify with product owner which behavior is correct:
-
-**Option A**: If voiding paid invoices SHOULD be prevented:
+**1. Update void mutation input schema:**
 ```typescript
-if (invoice.status === "PAID" && input.status === "VOID") {
-  throw new TRPCError({
-    code: "BAD_REQUEST",
-    message: "Cannot void a paid invoice. Record a credit memo instead."
-  });
-}
+// invoices.ts
+void: protectedProcedure
+  .input(z.object({
+    invoiceId: z.number(),
+    voidReason: z.string().min(1, "Void reason is required").max(500),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    // Store reason with void
+  }),
 ```
 
-**Option B**: If current behavior is intentional (void is only option for paid):
-- Update business requirements documentation
-- Add additional validation for void reason requirement
-- Mark this issue as "Working As Designed"
+**2. Add voidReason column to invoices table:**
+```sql
+ALTER TABLE invoices ADD COLUMN void_reason TEXT;
+ALTER TABLE invoices ADD COLUMN voided_at TIMESTAMP;
+ALTER TABLE invoices ADD COLUMN voided_by INTEGER REFERENCES users(id);
+```
+
+**3. Update void mutation to store reason:**
+```typescript
+await db.update(invoices)
+  .set({
+    status: 'VOID',
+    voidReason: input.voidReason,
+    voidedAt: new Date(),
+    voidedBy: ctx.user.id,
+  })
+  .where(eq(invoices.id, input.invoiceId));
+```
+
+**4. Update UI to require reason:**
+```typescript
+// InvoicesWorkSurface.tsx - void dialog
+<Dialog open={showVoidDialog}>
+  <DialogContent>
+    <DialogHeader>Void Invoice #{invoice.number}</DialogHeader>
+    <Textarea
+      placeholder="Enter reason for voiding this invoice..."
+      value={voidReason}
+      onChange={(e) => setVoidReason(e.target.value)}
+      required
+    />
+    <DialogFooter>
+      <Button
+        onClick={() => voidMutation.mutate({ invoiceId: invoice.id, voidReason })}
+        disabled={!voidReason.trim() || voidMutation.isPending}
+      >
+        Confirm Void
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
 
 ---
 
@@ -418,15 +484,15 @@ getEffectiveFlags: protectedProcedure
 2. **P1-002**: Debounce mutations - Prevents duplicate operations
 
 ### This Sprint
-3. **P0-003**: Order status machine - Requires migration
-4. **P0-004**: Feature flags seeding - Script change only
-5. **P1-006**: Error displays - UX improvement
-6. **P1-007**: Deprecated endpoint - Technical debt
+3. **P0-002**: Flexible lot selection - Core business requirement
+4. **P0-003**: Order status machine with RETURNED - Requires migration
+5. **P1-001**: Add void reason field - Minor schema + UI change
+6. **P1-005**: Error displays - UX improvement
 
 ### Next Sprint
-7. **P1-001**: Invoice void logic - Needs product clarification
-8. **P1-003**: Optimistic locking - May need client updates
-9. **P1-008**: Permission check - Security hardening
+7. **P1-003**: Optimistic locking - May need client updates
+8. **P1-006**: Deprecated endpoint - Technical debt
+9. **P1-007**: Permission check - Security hardening
 
 ---
 
@@ -435,11 +501,11 @@ getEffectiveFlags: protectedProcedure
 | Fix | Test Requirement |
 |-----|------------------|
 | P0-001 | Full payment flow: record → verify → check ledger |
-| P0-003 | Status transitions through all states |
-| P0-004 | Flag evaluation with and without individual flags |
+| P0-002 | Lot selection: user selects batches, verify COGS calculated correctly |
+| P0-003 | Status transitions: SHIPPED → RETURNED → RESTOCKED or RETURNED_TO_VENDOR |
+| P1-001 | Void with reason: verify reason stored, displayed in audit |
 | P1-002 | Rapid click test (10 clicks in 1 second) |
-| P1-006 | Network error simulation, verify retry works |
-| P1-007 | Vendor dropdown populates correctly |
+| P1-005 | Network error simulation, verify retry works |
 
 ---
 

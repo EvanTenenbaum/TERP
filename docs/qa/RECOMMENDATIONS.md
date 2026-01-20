@@ -1,28 +1,41 @@
 # QA Recommendations - Work Surfaces (REVISED)
 
 **Generated**: 2026-01-20
-**Revised**: 2026-01-20 (Third-Party Expert Review)
+**Revised**: 2026-01-20 (Third-Party Expert Review + Product Decisions)
 **Testing Suite**: Work Surfaces Exhaustive Testing
 
 ---
 
 ## Revision Notes
 
-> **IMPORTANT**: This document has been revised following a third-party expert review.
+> **IMPORTANT**: This document has been revised following a third-party expert review and product decision clarifications.
 >
 > **Key Corrections**:
 > - ~~P0-002 (Inventory oversell race condition)~~ **REMOVED** - False positive. Code properly implements row-level locking.
-> - Concurrency section updated to reflect that database-level locking IS implemented
-> - Issue IDs renumbered to reflect removal
-> - 3 new test coverage issues added (P1-009, P2-008, P2-009)
+> - ~~P0-004 (Individual feature flags)~~ **CLOSED** - Product decision: deployment-level flags sufficient
+> - **P1-001 RESOLVED** - Current void logic confirmed correct; add void reason field
+> - **P0-002 CLARIFIED** - Flexible lot selection needed (not strict FIFO/LIFO)
+> - **P0-003 CLARIFIED** - Add RETURNED status with restocking/vendor-return paths
+
+---
+
+## Product Decisions Applied
+
+| Issue | Decision | Impact |
+|-------|----------|--------|
+| Invoice void logic | Paid invoices CAN be voided; add reason field | P1-001 becomes simple enhancement |
+| Lot costing | Flexible lot selection per customer need | P0-002 implementation clarified |
+| Order returns | Add RETURNED → RESTOCKED or RETURNED_TO_VENDOR paths | P0-003 scope expanded |
+| Manager approval | Build infrastructure, no rules active yet | P2-001 becomes framework build |
+| Feature flags | Deployment-level sufficient | P0-004 + P1-004 CLOSED |
 
 ---
 
 ## Executive Summary
 
-The Work Surfaces testing suite identified **26 issues** across 9 components:
-- 4 P0 Blockers
-- 9 P1 Critical
+The Work Surfaces testing suite identified **24 issues** across 9 components:
+- 3 P0 Blockers
+- 8 P1 Critical
 - 9 P2 Important
 - 4 P3 Minor
 
@@ -42,13 +55,28 @@ The InvoicesWorkSurface payment handler is a stub that shows success without rec
 
 ---
 
-### 2. Implement FIFO/LIFO Cost Tracking (P0-002)
+### 2. Implement Flexible Lot Selection (P0-002)
 **Priority**: HIGH
-**Impact**: COGS calculations incorrect, compliance risk
+**Impact**: Users cannot fulfill customer-specific lot requirements
 
-Current implementation stores single `unitCogs` per batch without cost layer tracking. FIFO/LIFO costing is a stated business requirement but not implemented.
+**Product Decision**: Users need to select specific batches/lots per customer needs rather than strict FIFO/LIFO costing. This is a core business workflow.
 
-**Action**: Design and implement cost layers table and allocation logic.
+**Action**:
+- Add batch selection UI during order creation
+- Create `order_line_item_allocations` table to track batch→order mappings
+- Calculate weighted-average COGS from selected batches
+
+---
+
+### 3. Add RETURNED Order Status (P0-003)
+**Priority**: HIGH
+**Impact**: Cannot process returns properly
+
+**Product Decision**: Add RETURNED status with two terminal paths:
+- **RESTOCKED**: Items returned to inventory (increase batch quantities)
+- **RETURNED_TO_VENDOR**: Items sent back to vendor (create vendor return record)
+
+**Action**: Add enum values, state transitions, and processing logic for both paths.
 
 ---
 
@@ -257,35 +285,35 @@ if (pendingRequests.has(dedupeKey)) return pendingRequests.get(dedupeKey);
 
 ---
 
-## Roadmap (REVISED)
+## Roadmap (REVISED - With Product Decisions)
 
 ### Immediate: P0 Blockers
 - [ ] P0-001: Wire payment recording mutation (critical financial flow)
-- [ ] P0-003: Add missing order states (requires migration)
-- [ ] P0-004: Seed individual feature flags
+- [ ] P0-002: Implement flexible lot selection (core business requirement)
+- [ ] P0-003: Add RETURNED status with restocking/vendor-return paths
 - [ ] P1-002: Add debounce to mutations (prevents duplicate operations)
 
 ### Week 1: P1 Critical
-- [ ] P1-001: Clarify/fix invoice void logic (needs product input)
+- [ ] P1-001: Add void reason field (confirmed: void logic is correct)
 - [ ] P1-003: Make optimistic locking mandatory
-- [ ] P1-006: Add query error displays
-- [ ] P1-007: Migrate deprecated vendors.getAll endpoint
-- [ ] P1-008: Add feature flag permission check
+- [ ] P1-004: Standardize flag evaluation patterns
+- [ ] P1-005: Add query error displays
+- [ ] P1-006: Migrate deprecated vendors.getAll endpoint
+- [ ] P1-007: Add feature flag permission check
 
 ### Week 2: Test Infrastructure
-- [ ] P1-009: Create component test infrastructure (NEW)
+- [ ] P1-008: Create component test infrastructure
 - [ ] Write tests for 3 highest-risk surfaces (Orders, Invoices, DirectIntake)
-- [ ] P2-008: Add missing golden flow tests (NEW)
-- [ ] P2-009: Add missing E2E coverage (NEW)
+- [ ] P2-008: Add missing golden flow tests
+- [ ] P2-009: Add missing E2E coverage
 
 ### Week 3-4: P2 Important
-- [ ] P2-001: Manager approval workflow design
+- [ ] P2-001: Build approval workflow infrastructure (disabled by default)
 - [ ] P2-005: Add database CHECK constraints
 - [ ] P2-006: Fix Pick/Pack refetch race condition
 - [ ] P2-007: Add max length validation to string fields
 
 ### Month 2: Complete Coverage
-- [ ] P0-002: FIFO/LIFO implementation (may need product clarification)
 - [ ] Complete component test coverage (all 9 surfaces)
 - [ ] Add integration tests for cross-surface flows
 - [ ] Expand E2E coverage to 100%
@@ -296,8 +324,8 @@ if (pendingRequests.has(dedupeKey)) return pendingRequests.get(dedupeKey);
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| P0 Issues | 4 | 0 |
-| P1 Issues | 9 | 0 |
+| P0 Issues | 3 | 0 |
+| P1 Issues | 8 | 0 |
 | P2 Issues | 9 | 0 |
 | Component Test Coverage | 0% | 80% |
 | Golden Flow Pass Rate | 67% | 100% |
@@ -313,13 +341,14 @@ The Work Surfaces implementation is architecturally sound with excellent foundat
 - ✅ Hook tests comprehensive (6 files, 2500+ lines)
 - ✅ Keyboard contract well-defined
 - ✅ **Database concurrency properly implemented** (row-level locking confirmed)
+- ✅ **Feature flag architecture is sufficient** (deployment-level flags adequate)
 
 The critical issues are concentrated in:
 
-1. **Financial flows** (payment recording stub, invoice void logic needs clarification)
-2. **Client-side protection** (debounce needed for rapid clicks)
-3. **Test coverage** (zero component tests - 9 surfaces untested)
-4. **Feature flags** (individual flags not seeded)
+1. **Financial flows** (payment recording stub, need void reason field)
+2. **Inventory management** (flexible lot selection not implemented)
+3. **Order lifecycle** (missing RETURNED status and return processing)
+4. **Test coverage** (zero component tests - 9 surfaces untested)
 
 Addressing the P0/P1 issues in the FIX_PATCH_SET.md will resolve the blocking problems. The architectural recommendations will prevent similar issues in future development.
 
@@ -327,18 +356,17 @@ Addressing the P0/P1 issues in the FIX_PATCH_SET.md will resolve the blocking pr
 
 ---
 
-## Third-Party Review Summary
+## Third-Party Review + Product Decisions Summary
 
-| Original Finding | Review Result |
-|-----------------|---------------|
-| P0-002: Inventory oversell race | **FALSE POSITIVE** - `.for("update")` locking exists |
-| P0-001: Payment stub | **CONFIRMED** - Critical blocker |
-| P0-003: Order status machine | **CONFIRMED** - Missing states |
-| P0-004: Feature flags not seeded | **CONFIRMED** - Individual flags missing |
-| P1-001: Invoice void logic | **CLARIFIED** - Needs product input |
-| P1-007: Deprecated endpoint | **CONFIRMED** - vendors.getAll usage |
+| Original Finding | Review Result | Product Decision |
+|-----------------|---------------|------------------|
+| P0-002: Inventory oversell race | **FALSE POSITIVE** - Locking exists | N/A |
+| P0-001: Payment stub | **CONFIRMED** - Critical blocker | Fix immediately |
+| P0-003: Order status machine | **CONFIRMED** - Missing states | Add RETURNED with restock/vendor paths |
+| P0-004: Feature flags not seeded | ~~CONFIRMED~~ | **CLOSED** - Deployment flags sufficient |
+| P1-001: Invoice void logic | **CLARIFIED** | Current logic correct; add reason field |
+| P0-002 (NEW): Lot selection | N/A | Flexible selection, not strict FIFO/LIFO |
+| P2-001: Manager approval | CONFIRMED | Build infrastructure, no rules yet |
 
-**New Issues Added**:
-- P1-009: Zero component unit tests
-- P2-008: Missing golden flow test coverage
-- P2-009: Missing E2E coverage for 3 surfaces
+**Issues Closed by Product Decision**: 2 (P0-004, P1-004)
+**Final Issue Count**: 24 (3 P0, 8 P1, 9 P2, 4 P3)

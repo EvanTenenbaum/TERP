@@ -1,19 +1,22 @@
 # Test Coverage Matrix - Work Surfaces (REVISED)
 
 **Generated**: 2026-01-20
-**Revised**: 2026-01-20 (Third-Party Expert Review)
+**Revised**: 2026-01-20 (Third-Party Expert Review + Product Decisions)
 **Testing Suite**: Work Surfaces Exhaustive Testing
 
 ---
 
 ## Revision Notes
 
-> **IMPORTANT**: This matrix has been revised following a third-party expert review.
+> **IMPORTANT**: This matrix has been revised following a third-party expert review and product decisions.
 >
 > **Key Corrections**:
-> - ~~P0-002 (Inventory oversell race condition)~~ - FALSE POSITIVE removed from adversarial findings
-> - InventoryWorkSurface adversarial rating upgraded (locking IS implemented)
-> - Test coverage gaps added as formal issues (P1-009, P2-008, P2-009)
+> - ~~P0-002 (Inventory oversell race condition)~~ - FALSE POSITIVE removed
+> - ~~P0-004 (Individual feature flags)~~ - CLOSED (deployment flags sufficient per product)
+> - InventoryWorkSurface risk upgraded (locking IS implemented)
+> - P0-002 (NEW): Flexible lot selection needed (not strict FIFO/LIFO)
+> - P0-003: RETURNED status with restock/vendor-return paths
+> - P1-001: Current void logic correct; add void reason field
 
 ---
 
@@ -77,9 +80,9 @@
 
 | Work Surface | Calculations | Status Transitions | Validation | Constraints |
 |--------------|-------------|-------------------|------------|-------------|
-| OrdersWorkSurface | ✅ Correct | ❌ Incomplete | ⚠️ | ⚠️ |
-| InvoicesWorkSurface | ✅ Correct | ✅ Correct | ❌ Void logic | ✅ |
-| InventoryWorkSurface | ✅ Correct | ✅ Correct | ⚠️ Negative avail | ❌ FIFO/LIFO |
+| OrdersWorkSurface | ✅ Correct | ❌ Missing RETURNED | ⚠️ | ⚠️ |
+| InvoicesWorkSurface | ✅ Correct | ✅ Correct | ⚠️ Need void reason | ✅ |
+| InventoryWorkSurface | ✅ Correct | ✅ Correct | ⚠️ Negative avail | ❌ Lot selection |
 | ClientsWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
 | PurchaseOrdersWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
 | PickPackWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
@@ -87,7 +90,7 @@
 | QuotesWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
 | DirectIntakeWorkSurface | ✅ Correct | ✅ Correct | ✅ | ✅ |
 
-**Critical Issues**: 2 (P0-002: FIFO/LIFO not implemented, P0-003: Order status machine incomplete)
+**Critical Issues**: 2 (P0-002: Flexible lot selection needed, P0-003: Order status needs RETURNED with restock/vendor-return paths)
 
 ---
 
@@ -112,19 +115,19 @@
 
 ### Feature Flags
 
-| Work Surface | Deployment Flag | Individual Flag | Fallback | Gating |
-|--------------|----------------|-----------------|----------|--------|
-| OrdersWorkSurface | ✅ WORK_SURFACE_ORDERS | ❌ Not seeded | ✅ Legacy page | ✅ |
-| InvoicesWorkSurface | ✅ WORK_SURFACE_ACCOUNTING | ❌ Not seeded | ✅ Legacy page | ✅ |
-| InventoryWorkSurface | ✅ WORK_SURFACE_INVENTORY | ❌ Not seeded | ✅ Legacy page | ✅ |
-| ClientsWorkSurface | ✅ WORK_SURFACE_ORDERS | ❌ Not seeded | ✅ Legacy page | ✅ |
-| PurchaseOrdersWorkSurface | ✅ WORK_SURFACE_INTAKE | ❌ Not seeded | ✅ Legacy page | ✅ |
-| PickPackWorkSurface | ✅ WORK_SURFACE_INVENTORY | ❌ Not seeded | ✅ Legacy page | ✅ |
-| ClientLedgerWorkSurface | ✅ WORK_SURFACE_ACCOUNTING | ❌ Not seeded | ✅ Legacy page | ✅ |
-| QuotesWorkSurface | ✅ WORK_SURFACE_ORDERS | ❌ Not seeded | ✅ Legacy page | ✅ |
-| DirectIntakeWorkSurface | ✅ WORK_SURFACE_INTAKE | ❌ Not seeded | ✅ Legacy page | ✅ |
+| Work Surface | Deployment Flag | Fallback | Gating |
+|--------------|----------------|----------|--------|
+| OrdersWorkSurface | ✅ WORK_SURFACE_ORDERS | ✅ Legacy page | ✅ |
+| InvoicesWorkSurface | ✅ WORK_SURFACE_ACCOUNTING | ✅ Legacy page | ✅ |
+| InventoryWorkSurface | ✅ WORK_SURFACE_INVENTORY | ✅ Legacy page | ✅ |
+| ClientsWorkSurface | ✅ WORK_SURFACE_ORDERS | ✅ Legacy page | ✅ |
+| PurchaseOrdersWorkSurface | ✅ WORK_SURFACE_INTAKE | ✅ Legacy page | ✅ |
+| PickPackWorkSurface | ✅ WORK_SURFACE_INVENTORY | ✅ Legacy page | ✅ |
+| ClientLedgerWorkSurface | ✅ WORK_SURFACE_ACCOUNTING | ✅ Legacy page | ✅ |
+| QuotesWorkSurface | ✅ WORK_SURFACE_ORDERS | ✅ Legacy page | ✅ |
+| DirectIntakeWorkSurface | ✅ WORK_SURFACE_INTAKE | ✅ Legacy page | ✅ |
 
-**Issue**: Deployment flags work, individual surface flags not seeded (P0-005)
+**Status**: ✅ All deployment flags working. Product decision: individual surface flags not needed.
 
 ---
 
@@ -194,9 +197,9 @@
 
 | Work Surface | Overall Risk | Key Issues |
 |--------------|--------------|------------|
-| OrdersWorkSurface | 🔴 HIGH | Status machine incomplete, no debounce on confirm |
-| InvoicesWorkSurface | 🔴 HIGH | Payment stub (P0-001), void logic needs clarification, error display missing |
-| InventoryWorkSurface | 🟡 MEDIUM | FIFO/LIFO not implemented (concurrency IS protected via row locks) |
+| OrdersWorkSurface | 🔴 HIGH | Missing RETURNED status, no debounce on confirm |
+| InvoicesWorkSurface | 🔴 HIGH | Payment stub (P0-001), need void reason field, error display missing |
+| InventoryWorkSurface | 🟡 MEDIUM | Flexible lot selection needed (concurrency IS protected via row locks) |
 | ClientsWorkSurface | 🟢 LOW | Type safety only |
 | PurchaseOrdersWorkSurface | 🟢 LOW | Missing E2E tests only |
 | PickPackWorkSurface | 🟡 MEDIUM | Refetch race condition |
@@ -204,15 +207,15 @@
 | QuotesWorkSurface | 🟢 LOW | No significant issues |
 | DirectIntakeWorkSurface | 🟡 MEDIUM | Deprecated endpoint (vendors.getAll), type safety |
 
-> **Revision Note**: InventoryWorkSurface risk downgraded from HIGH to MEDIUM after confirming row-level locking is properly implemented.
+> **Revision Note**: InventoryWorkSurface risk stayed MEDIUM - row-level locking confirmed, but lot selection still needed.
 
 ---
 
 ## Next Steps
 
-1. **Fix P0 Blockers** (4 issues) - Before production
-2. **Fix P1 Critical** (9 issues) - Includes new test coverage issue P1-009
+1. **Fix P0 Blockers** (3 issues) - Before production
+2. **Fix P1 Critical** (8 issues) - Includes test coverage issue P1-008
 3. **Add Component Tests** (9 files) - Critical gap identified
 4. **Fix P2 Important** (9 issues) - Includes new E2E/flow coverage issues
 
-> **Updated Counts**: After third-party review: 4 P0 (was 5), 9 P1 (was 8), 9 P2 (was 7), 4 P3 = **26 total**
+> **Updated Counts**: After product decisions: 3 P0, 8 P1, 9 P2, 4 P3 = **24 total**
