@@ -225,6 +225,43 @@ const DEFAULT_FLAGS = [
   },
 
   // ========================================================================
+  // WORK SURFACE DEPLOYMENT FLAGS (100% ROLLOUT)
+  // ========================================================================
+  {
+    key: "WORK_SURFACE_INTAKE",
+    name: "Work Surface: Intake",
+    description:
+      "Enable Work Surface UI for Direct Intake and Purchase Orders pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_ORDERS",
+    name: "Work Surface: Orders",
+    description: "Enable Work Surface UI for Orders, Quotes, and Clients pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_INVENTORY",
+    name: "Work Surface: Inventory",
+    description: "Enable Work Surface UI for Inventory and Pick & Pack pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_ACCOUNTING",
+    name: "Work Surface: Accounting",
+    description: "Enable Work Surface UI for Invoices and Client Ledger pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+
+  // ========================================================================
   // CALENDAR MODULE FLAGS (CAL-003/CAL-004)
   // ========================================================================
   {

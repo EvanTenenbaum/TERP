@@ -5,47 +5,56 @@
 export const ROLES = [
   {
     name: "Super Admin",
-    description: "Unrestricted access to the entire system. Can manage users, roles, permissions, and all system settings.",
+    description:
+      "Unrestricted access to the entire system. Can manage users, roles, permissions, and all system settings.",
     isSystemRole: 1,
   },
   {
     name: "Owner/Executive",
-    description: "Read-only access to all financial data and analytics. Cannot make changes for safety.",
+    description:
+      "Read-only access to all financial data and analytics. Cannot make changes for safety.",
     isSystemRole: 1,
   },
   {
     name: "Operations Manager",
-    description: "Full access to inventory, orders, POs, vendors, and returns. Read access to clients, accounting, and pricing.",
+    description:
+      "Full access to inventory, orders, POs, vendors, and returns. Read access to clients, accounting, and pricing.",
     isSystemRole: 1,
   },
   {
     name: "Sales Manager",
-    description: "Full access to clients, orders, quotes, and sales sheets. Read access to inventory and pricing.",
+    description:
+      "Full access to clients, orders, quotes, and sales sheets. Read access to inventory and pricing.",
     isSystemRole: 1,
   },
   {
     name: "Accountant",
-    description: "Full access to accounting, credits, COGS, and bad debt. Read access to orders, clients, and vendors.",
+    description:
+      "Full access to accounting, credits, COGS, and bad debt. Read access to orders, clients, and vendors.",
     isSystemRole: 1,
   },
   {
     name: "Inventory Manager",
-    description: "Full access to inventory, locations, transfers, and product intake. Can create POs and samples.",
+    description:
+      "Full access to inventory, locations, transfers, and product intake. Can create POs and samples.",
     isSystemRole: 1,
   },
   {
     name: "Buyer/Procurement",
-    description: "Full access to POs, vendors, and vendor supply. Can create inventory intake.",
+    description:
+      "Full access to POs, vendors, and vendor supply. Can create inventory intake.",
     isSystemRole: 1,
   },
   {
     name: "Customer Service",
-    description: "Full access to clients, orders, returns, and refunds. Can manage calendar and tasks.",
+    description:
+      "Full access to clients, orders, returns, and refunds. Can manage calendar and tasks.",
     isSystemRole: 1,
   },
   {
     name: "Warehouse Staff",
-    description: "Can receive POs, adjust inventory, transfer inventory, and process returns.",
+    description:
+      "Can receive POs, adjust inventory, transfer inventory, and process returns.",
     isSystemRole: 1,
   },
   {
@@ -61,317 +70,1308 @@ export const ROLES = [
 
 export const PERMISSIONS = [
   // Dashboard & Analytics (11)
-  { name: "dashboard:access", description: "Can access the dashboard", module: "dashboard" },
-  { name: "dashboard:read", description: "Can read dashboard data and widgets", module: "dashboard" },
-  { name: "dashboard:view_kpis", description: "Can view KPI metrics", module: "dashboard" },
-  { name: "dashboard:customize", description: "Can customize dashboard layout", module: "dashboard" },
-  { name: "dashboard:preferences:edit", description: "Can edit dashboard preferences", module: "dashboard" },
-  { name: "analytics:access", description: "Can access analytics module", module: "analytics" },
-  { name: "analytics:view_reports", description: "Can view analytics reports", module: "analytics" },
-  { name: "analytics:export", description: "Can export analytics data", module: "analytics" },
-  { name: "metrics:view", description: "Can view data card metrics", module: "metrics" },
-  { name: "metrics:create", description: "Can create custom metrics", module: "metrics" },
-  { name: "metrics:edit", description: "Can edit metrics configuration", module: "metrics" },
+  {
+    name: "dashboard:access",
+    description: "Can access the dashboard",
+    module: "dashboard",
+  },
+  {
+    name: "dashboard:read",
+    description: "Can read dashboard data and widgets",
+    module: "dashboard",
+  },
+  {
+    name: "dashboard:view_kpis",
+    description: "Can view KPI metrics",
+    module: "dashboard",
+  },
+  {
+    name: "dashboard:customize",
+    description: "Can customize dashboard layout",
+    module: "dashboard",
+  },
+  {
+    name: "dashboard:preferences:edit",
+    description: "Can edit dashboard preferences",
+    module: "dashboard",
+  },
+  {
+    name: "analytics:access",
+    description: "Can access analytics module",
+    module: "analytics",
+  },
+  {
+    name: "analytics:view_reports",
+    description: "Can view analytics reports",
+    module: "analytics",
+  },
+  {
+    name: "analytics:export",
+    description: "Can export analytics data",
+    module: "analytics",
+  },
+  {
+    name: "metrics:view",
+    description: "Can view data card metrics",
+    module: "metrics",
+  },
+  {
+    name: "metrics:create",
+    description: "Can create custom metrics",
+    module: "metrics",
+  },
+  {
+    name: "metrics:edit",
+    description: "Can edit metrics configuration",
+    module: "metrics",
+  },
 
   // Client Management (15)
-  { name: "clients:access", description: "Can access clients module", module: "clients" },
-  { name: "clients:read", description: "Can view client list and details", module: "clients" },
-  { name: "clients:create", description: "Can create new clients", module: "clients" },
-  { name: "clients:update", description: "Can edit client information", module: "clients" },
-  { name: "clients:delete", description: "Can delete clients", module: "clients" },
-  { name: "clients:archive", description: "Can archive/unarchive clients", module: "clients" },
-  { name: "clients:export", description: "Can export client data", module: "clients" },
-  { name: "clients:needs:read", description: "Can view client needs", module: "clients" },
-  { name: "clients:needs:create", description: "Can create client needs", module: "clients" },
-  { name: "clients:needs:update", description: "Can update client needs", module: "clients" },
-  { name: "clients:needs:delete", description: "Can delete client needs", module: "clients" },
-  { name: "clients:transactions:view", description: "Can view client transactions", module: "clients" },
-  { name: "clients:notes:add", description: "Can add notes to clients", module: "clients" },
-  { name: "clients:profile:view_full", description: "Can view full client profile including sensitive data", module: "clients" },
-  { name: "clients:bulk_operations", description: "Can perform bulk operations on clients", module: "clients" },
+  {
+    name: "clients:access",
+    description: "Can access clients module",
+    module: "clients",
+  },
+  {
+    name: "clients:read",
+    description: "Can view client list and details",
+    module: "clients",
+  },
+  {
+    name: "clients:create",
+    description: "Can create new clients",
+    module: "clients",
+  },
+  {
+    name: "clients:update",
+    description: "Can edit client information",
+    module: "clients",
+  },
+  {
+    name: "clients:delete",
+    description: "Can delete clients",
+    module: "clients",
+  },
+  {
+    name: "clients:archive",
+    description: "Can archive/unarchive clients",
+    module: "clients",
+  },
+  {
+    name: "clients:export",
+    description: "Can export client data",
+    module: "clients",
+  },
+  {
+    name: "clients:needs:read",
+    description: "Can view client needs",
+    module: "clients",
+  },
+  {
+    name: "clients:needs:create",
+    description: "Can create client needs",
+    module: "clients",
+  },
+  {
+    name: "clients:needs:update",
+    description: "Can update client needs",
+    module: "clients",
+  },
+  {
+    name: "clients:needs:delete",
+    description: "Can delete client needs",
+    module: "clients",
+  },
+  {
+    name: "clients:transactions:view",
+    description: "Can view client transactions",
+    module: "clients",
+  },
+  {
+    name: "clients:notes:add",
+    description: "Can add notes to clients",
+    module: "clients",
+  },
+  {
+    name: "clients:profile:view_full",
+    description: "Can view full client profile including sensitive data",
+    module: "clients",
+  },
+  {
+    name: "clients:bulk_operations",
+    description: "Can perform bulk operations on clients",
+    module: "clients",
+  },
 
   // Orders & Sales (20)
-  { name: "orders:access", description: "Can access orders module", module: "orders" },
+  {
+    name: "orders:access",
+    description: "Can access orders module",
+    module: "orders",
+  },
   { name: "orders:read", description: "Can view orders", module: "orders" },
-  { name: "orders:create", description: "Can create new orders", module: "orders" },
+  {
+    name: "orders:create",
+    description: "Can create new orders",
+    module: "orders",
+  },
   { name: "orders:update", description: "Can edit orders", module: "orders" },
   { name: "orders:delete", description: "Can delete orders", module: "orders" },
   { name: "orders:cancel", description: "Can cancel orders", module: "orders" },
-  { name: "orders:fulfill", description: "Can mark orders as fulfilled", module: "orders" },
-  { name: "orders:export", description: "Can export order data", module: "orders" },
-  { name: "quotes:access", description: "Can access quotes module", module: "orders" },
+  {
+    name: "orders:fulfill",
+    description: "Can mark orders as fulfilled",
+    module: "orders",
+  },
+  {
+    name: "orders:export",
+    description: "Can export order data",
+    module: "orders",
+  },
+  {
+    name: "quotes:access",
+    description: "Can access quotes module",
+    module: "orders",
+  },
   { name: "quotes:create", description: "Can create quotes", module: "orders" },
   { name: "quotes:update", description: "Can edit quotes", module: "orders" },
   { name: "quotes:delete", description: "Can delete quotes", module: "orders" },
-  { name: "quotes:convert_to_order", description: "Can convert quotes to orders", module: "orders" },
-  { name: "sales_sheets:access", description: "Can access sales sheets", module: "orders" },
-  { name: "sales_sheets:create", description: "Can create sales sheets", module: "orders" },
-  { name: "sales_sheets:update", description: "Can edit sales sheets", module: "orders" },
-  { name: "sales_sheets:delete", description: "Can delete sales sheets", module: "orders" },
-  { name: "sales_sheets:export", description: "Can export sales sheets", module: "orders" },
-  { name: "orders:view_pricing", description: "Can view order pricing details", module: "orders" },
-  { name: "orders:edit_pricing", description: "Can edit order pricing", module: "orders" },
+  {
+    name: "quotes:convert_to_order",
+    description: "Can convert quotes to orders",
+    module: "orders",
+  },
+  {
+    name: "sales_sheets:access",
+    description: "Can access sales sheets",
+    module: "orders",
+  },
+  {
+    name: "sales_sheets:create",
+    description: "Can create sales sheets",
+    module: "orders",
+  },
+  {
+    name: "sales_sheets:update",
+    description: "Can edit sales sheets",
+    module: "orders",
+  },
+  {
+    name: "sales_sheets:delete",
+    description: "Can delete sales sheets",
+    module: "orders",
+  },
+  {
+    name: "sales_sheets:export",
+    description: "Can export sales sheets",
+    module: "orders",
+  },
+  {
+    name: "orders:view_pricing",
+    description: "Can view order pricing details",
+    module: "orders",
+  },
+  {
+    name: "orders:edit_pricing",
+    description: "Can edit order pricing",
+    module: "orders",
+  },
 
   // Inventory Management (25)
-  { name: "inventory:access", description: "Can access inventory module", module: "inventory" },
-  { name: "inventory:read", description: "Can view inventory", module: "inventory" },
-  { name: "inventory:create", description: "Can create new batches", module: "inventory" },
-  { name: "inventory:update", description: "Can edit batch information", module: "inventory" },
-  { name: "inventory:delete", description: "Can delete batches", module: "inventory" },
-  { name: "inventory:quantity:adjust", description: "Can adjust inventory quantities", module: "inventory" },
-  { name: "inventory:quantity:view", description: "Can view inventory quantities", module: "inventory" },
-  { name: "inventory:intake", description: "Can perform product intake", module: "inventory" },
-  { name: "inventory:transfer", description: "Can transfer inventory between locations", module: "inventory" },
-  { name: "inventory:movements:view", description: "Can view inventory movement history", module: "inventory" },
-  { name: "inventory:status:update", description: "Can update batch status", module: "inventory" },
-  { name: "inventory:export", description: "Can export inventory data", module: "inventory" },
-  { name: "strains:read", description: "Can view strains", module: "inventory" },
-  { name: "strains:create", description: "Can create strains", module: "inventory" },
-  { name: "strains:update", description: "Can edit strains", module: "inventory" },
-  { name: "strains:delete", description: "Can delete strains", module: "inventory" },
-  { name: "locations:read", description: "Can view locations", module: "inventory" },
-  { name: "locations:create", description: "Can create locations", module: "inventory" },
-  { name: "locations:update", description: "Can edit locations", module: "inventory" },
-  { name: "locations:delete", description: "Can delete locations", module: "inventory" },
-  { name: "warehouse_transfers:create", description: "Can create warehouse transfers", module: "inventory" },
-  { name: "warehouse_transfers:approve", description: "Can approve warehouse transfers", module: "inventory" },
-  { name: "warehouse_transfers:receive", description: "Can receive warehouse transfers", module: "inventory" },
-  { name: "product_intake:access", description: "Can access product intake module", module: "inventory" },
-  { name: "product_intake:process", description: "Can process product intake", module: "inventory" },
+  {
+    name: "inventory:access",
+    description: "Can access inventory module",
+    module: "inventory",
+  },
+  {
+    name: "inventory:read",
+    description: "Can view inventory",
+    module: "inventory",
+  },
+  {
+    name: "inventory:create",
+    description: "Can create new batches",
+    module: "inventory",
+  },
+  {
+    name: "inventory:update",
+    description: "Can edit batch information",
+    module: "inventory",
+  },
+  {
+    name: "inventory:delete",
+    description: "Can delete batches",
+    module: "inventory",
+  },
+  {
+    name: "inventory:quantity:adjust",
+    description: "Can adjust inventory quantities",
+    module: "inventory",
+  },
+  {
+    name: "inventory:quantity:view",
+    description: "Can view inventory quantities",
+    module: "inventory",
+  },
+  {
+    name: "inventory:intake",
+    description: "Can perform product intake",
+    module: "inventory",
+  },
+  {
+    name: "inventory:transfer",
+    description: "Can transfer inventory between locations",
+    module: "inventory",
+  },
+  {
+    name: "inventory:movements:view",
+    description: "Can view inventory movement history",
+    module: "inventory",
+  },
+  {
+    name: "inventory:status:update",
+    description: "Can update batch status",
+    module: "inventory",
+  },
+  {
+    name: "inventory:export",
+    description: "Can export inventory data",
+    module: "inventory",
+  },
+  {
+    name: "strains:read",
+    description: "Can view strains",
+    module: "inventory",
+  },
+  {
+    name: "strains:create",
+    description: "Can create strains",
+    module: "inventory",
+  },
+  {
+    name: "strains:update",
+    description: "Can edit strains",
+    module: "inventory",
+  },
+  {
+    name: "strains:delete",
+    description: "Can delete strains",
+    module: "inventory",
+  },
+  {
+    name: "locations:read",
+    description: "Can view locations",
+    module: "inventory",
+  },
+  {
+    name: "locations:create",
+    description: "Can create locations",
+    module: "inventory",
+  },
+  {
+    name: "locations:update",
+    description: "Can edit locations",
+    module: "inventory",
+  },
+  {
+    name: "locations:delete",
+    description: "Can delete locations",
+    module: "inventory",
+  },
+  {
+    name: "warehouse_transfers:create",
+    description: "Can create warehouse transfers",
+    module: "inventory",
+  },
+  {
+    name: "warehouse_transfers:approve",
+    description: "Can approve warehouse transfers",
+    module: "inventory",
+  },
+  {
+    name: "warehouse_transfers:receive",
+    description: "Can receive warehouse transfers",
+    module: "inventory",
+  },
+  {
+    name: "product_intake:access",
+    description: "Can access product intake module",
+    module: "inventory",
+  },
+  {
+    name: "product_intake:process",
+    description: "Can process product intake",
+    module: "inventory",
+  },
 
   // Purchase Orders & Vendors (18)
-  { name: "purchase_orders:access", description: "Can access purchase orders module", module: "purchase_orders" },
-  { name: "purchase_orders:read", description: "Can view purchase orders", module: "purchase_orders" },
-  { name: "purchase_orders:create", description: "Can create purchase orders", module: "purchase_orders" },
-  { name: "purchase_orders:update", description: "Can edit purchase orders", module: "purchase_orders" },
-  { name: "purchase_orders:delete", description: "Can delete purchase orders", module: "purchase_orders" },
-  { name: "purchase_orders:approve", description: "Can approve purchase orders", module: "purchase_orders" },
-  { name: "purchase_orders:receive", description: "Can receive purchase orders", module: "purchase_orders" },
-  { name: "purchase_orders:cancel", description: "Can cancel purchase orders", module: "purchase_orders" },
-  { name: "vendors:access", description: "Can access vendors module", module: "vendors" },
+  {
+    name: "purchase_orders:access",
+    description: "Can access purchase orders module",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:read",
+    description: "Can view purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:create",
+    description: "Can create purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:update",
+    description: "Can edit purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:delete",
+    description: "Can delete purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:approve",
+    description: "Can approve purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:receive",
+    description: "Can receive purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "purchase_orders:cancel",
+    description: "Can cancel purchase orders",
+    module: "purchase_orders",
+  },
+  {
+    name: "vendors:access",
+    description: "Can access vendors module",
+    module: "vendors",
+  },
   { name: "vendors:read", description: "Can view vendors", module: "vendors" },
-  { name: "vendors:create", description: "Can create vendors", module: "vendors" },
-  { name: "vendors:update", description: "Can edit vendors", module: "vendors" },
-  { name: "vendors:delete", description: "Can delete vendors", module: "vendors" },
-  { name: "vendors:archive", description: "Can archive vendors", module: "vendors" },
-  { name: "vendor_supply:read", description: "Can view vendor supply", module: "vendors" },
-  { name: "vendor_supply:create", description: "Can create vendor supply records", module: "vendors" },
-  { name: "vendor_supply:update", description: "Can update vendor supply", module: "vendors" },
-  { name: "vendor_supply:delete", description: "Can delete vendor supply", module: "vendors" },
+  {
+    name: "vendors:create",
+    description: "Can create vendors",
+    module: "vendors",
+  },
+  {
+    name: "vendors:update",
+    description: "Can edit vendors",
+    module: "vendors",
+  },
+  {
+    name: "vendors:delete",
+    description: "Can delete vendors",
+    module: "vendors",
+  },
+  {
+    name: "vendors:archive",
+    description: "Can archive vendors",
+    module: "vendors",
+  },
+  {
+    name: "vendor_supply:read",
+    description: "Can view vendor supply",
+    module: "vendors",
+  },
+  {
+    name: "vendor_supply:create",
+    description: "Can create vendor supply records",
+    module: "vendors",
+  },
+  {
+    name: "vendor_supply:update",
+    description: "Can update vendor supply",
+    module: "vendors",
+  },
+  {
+    name: "vendor_supply:delete",
+    description: "Can delete vendor supply",
+    module: "vendors",
+  },
 
   // Accounting & Finance (30)
-  { name: "accounting:access", description: "Can access accounting module", module: "accounting" },
-  { name: "accounting:transactions:read", description: "Can view transactions", module: "accounting" },
-  { name: "accounting:transactions:create", description: "Can create transactions", module: "accounting" },
-  { name: "accounting:transactions:update", description: "Can edit transactions", module: "accounting" },
-  { name: "accounting:transactions:delete", description: "Can delete transactions", module: "accounting" },
-  { name: "accounting:gl:view", description: "Can view general ledger", module: "accounting" },
-  { name: "accounting:gl:create_entry", description: "Can create GL entries", module: "accounting" },
-  { name: "accounting:gl:edit_entry", description: "Can edit GL entries", module: "accounting" },
-  { name: "accounting:reconcile", description: "Can reconcile accounts", module: "accounting" },
-  { name: "accounting:export", description: "Can export accounting data", module: "accounting" },
-  { name: "credits:access", description: "Can access credits module", module: "accounting" },
-  { name: "credits:read", description: "Can view credits", module: "accounting" },
-  { name: "credits:create", description: "Can create credits", module: "accounting" },
-  { name: "credits:update", description: "Can edit credits", module: "accounting" },
-  { name: "credits:delete", description: "Can delete credits", module: "accounting" },
-  { name: "credits:apply", description: "Can apply credits to transactions", module: "accounting" },
-  { name: "cogs:access", description: "Can access COGS settings", module: "accounting" },
-  { name: "cogs:view", description: "Can view COGS configuration", module: "accounting" },
-  { name: "cogs:edit", description: "Can edit COGS settings", module: "accounting" },
-  { name: "bad_debt:access", description: "Can access bad debt module", module: "accounting" },
-  { name: "bad_debt:view", description: "Can view bad debt records", module: "accounting" },
-  { name: "bad_debt:write_off", description: "Can write off bad debt", module: "accounting" },
-  { name: "bad_debt:recover", description: "Can record bad debt recovery", module: "accounting" },
-  { name: "accounting:reports:view", description: "Can view accounting reports", module: "accounting" },
-  { name: "accounting:reports:export", description: "Can export accounting reports", module: "accounting" },
-  { name: "accounting:close_period", description: "Can close accounting periods", module: "accounting" },
-  { name: "accounting:hooks:configure", description: "Can configure accounting hooks/automations", module: "accounting" },
-  { name: "calendar_financials:view", description: "Can view calendar financial data", module: "accounting" },
-  { name: "calendar_financials:edit", description: "Can edit calendar financial settings", module: "accounting" },
-  { name: "accounting:audit_trail:view", description: "Can view accounting audit trail", module: "accounting" },
+  {
+    name: "accounting:access",
+    description: "Can access accounting module",
+    module: "accounting",
+  },
+  {
+    name: "accounting:transactions:read",
+    description: "Can view transactions",
+    module: "accounting",
+  },
+  {
+    name: "accounting:transactions:create",
+    description: "Can create transactions",
+    module: "accounting",
+  },
+  {
+    name: "accounting:transactions:update",
+    description: "Can edit transactions",
+    module: "accounting",
+  },
+  {
+    name: "accounting:transactions:delete",
+    description: "Can delete transactions",
+    module: "accounting",
+  },
+  {
+    name: "accounting:gl:view",
+    description: "Can view general ledger",
+    module: "accounting",
+  },
+  {
+    name: "accounting:gl:create_entry",
+    description: "Can create GL entries",
+    module: "accounting",
+  },
+  {
+    name: "accounting:gl:edit_entry",
+    description: "Can edit GL entries",
+    module: "accounting",
+  },
+  {
+    name: "accounting:reconcile",
+    description: "Can reconcile accounts",
+    module: "accounting",
+  },
+  {
+    name: "accounting:export",
+    description: "Can export accounting data",
+    module: "accounting",
+  },
+  {
+    name: "credits:access",
+    description: "Can access credits module",
+    module: "accounting",
+  },
+  {
+    name: "credits:read",
+    description: "Can view credits",
+    module: "accounting",
+  },
+  {
+    name: "credits:create",
+    description: "Can create credits",
+    module: "accounting",
+  },
+  {
+    name: "credits:update",
+    description: "Can edit credits",
+    module: "accounting",
+  },
+  {
+    name: "credits:delete",
+    description: "Can delete credits",
+    module: "accounting",
+  },
+  {
+    name: "credits:apply",
+    description: "Can apply credits to transactions",
+    module: "accounting",
+  },
+  {
+    name: "cogs:access",
+    description: "Can access COGS settings",
+    module: "accounting",
+  },
+  {
+    name: "cogs:view",
+    description: "Can view COGS configuration",
+    module: "accounting",
+  },
+  {
+    name: "cogs:edit",
+    description: "Can edit COGS settings",
+    module: "accounting",
+  },
+  {
+    name: "bad_debt:access",
+    description: "Can access bad debt module",
+    module: "accounting",
+  },
+  {
+    name: "bad_debt:view",
+    description: "Can view bad debt records",
+    module: "accounting",
+  },
+  {
+    name: "bad_debt:write_off",
+    description: "Can write off bad debt",
+    module: "accounting",
+  },
+  {
+    name: "bad_debt:recover",
+    description: "Can record bad debt recovery",
+    module: "accounting",
+  },
+  {
+    name: "accounting:reports:view",
+    description: "Can view accounting reports",
+    module: "accounting",
+  },
+  {
+    name: "accounting:reports:export",
+    description: "Can export accounting reports",
+    module: "accounting",
+  },
+  {
+    name: "accounting:close_period",
+    description: "Can close accounting periods",
+    module: "accounting",
+  },
+  {
+    name: "accounting:hooks:configure",
+    description: "Can configure accounting hooks/automations",
+    module: "accounting",
+  },
+  {
+    name: "calendar_financials:view",
+    description: "Can view calendar financial data",
+    module: "accounting",
+  },
+  {
+    name: "calendar_financials:edit",
+    description: "Can edit calendar financial settings",
+    module: "accounting",
+  },
+  {
+    name: "accounting:audit_trail:view",
+    description: "Can view accounting audit trail",
+    module: "accounting",
+  },
+  // Work Surface simplified permissions (WS-001..WS-002 compatible)
+  {
+    name: "accounting:read",
+    description: "Can read/view accounting data (Work Surface compatible)",
+    module: "accounting",
+  },
+  {
+    name: "accounting:create",
+    description: "Can create accounting entries (Work Surface compatible)",
+    module: "accounting",
+  },
+  {
+    name: "accounting:update",
+    description: "Can update accounting entries (Work Surface compatible)",
+    module: "accounting",
+  },
+  {
+    name: "accounting:delete",
+    description: "Can delete accounting entries (Work Surface compatible)",
+    module: "accounting",
+  },
+  {
+    name: "accounting:manage",
+    description: "Can manage accounting (bad debt, reconciliation)",
+    module: "accounting",
+  },
 
   // Pricing (12)
-  { name: "pricing:access", description: "Can access pricing module", module: "pricing" },
-  { name: "pricing:rules:read", description: "Can view pricing rules", module: "pricing" },
-  { name: "pricing:rules:create", description: "Can create pricing rules", module: "pricing" },
-  { name: "pricing:rules:update", description: "Can edit pricing rules", module: "pricing" },
-  { name: "pricing:rules:delete", description: "Can delete pricing rules", module: "pricing" },
-  { name: "pricing:profiles:read", description: "Can view pricing profiles", module: "pricing" },
-  { name: "pricing:profiles:create", description: "Can create pricing profiles", module: "pricing" },
-  { name: "pricing:profiles:update", description: "Can edit pricing profiles", module: "pricing" },
-  { name: "pricing:profiles:delete", description: "Can delete pricing profiles", module: "pricing" },
-  { name: "pricing:defaults:view", description: "Can view pricing defaults", module: "pricing" },
-  { name: "pricing:defaults:edit", description: "Can edit pricing defaults", module: "pricing" },
-  { name: "pricing:test", description: "Can test pricing calculations", module: "pricing" },
+  {
+    name: "pricing:access",
+    description: "Can access pricing module",
+    module: "pricing",
+  },
+  {
+    name: "pricing:rules:read",
+    description: "Can view pricing rules",
+    module: "pricing",
+  },
+  {
+    name: "pricing:rules:create",
+    description: "Can create pricing rules",
+    module: "pricing",
+  },
+  {
+    name: "pricing:rules:update",
+    description: "Can edit pricing rules",
+    module: "pricing",
+  },
+  {
+    name: "pricing:rules:delete",
+    description: "Can delete pricing rules",
+    module: "pricing",
+  },
+  {
+    name: "pricing:profiles:read",
+    description: "Can view pricing profiles",
+    module: "pricing",
+  },
+  {
+    name: "pricing:profiles:create",
+    description: "Can create pricing profiles",
+    module: "pricing",
+  },
+  {
+    name: "pricing:profiles:update",
+    description: "Can edit pricing profiles",
+    module: "pricing",
+  },
+  {
+    name: "pricing:profiles:delete",
+    description: "Can delete pricing profiles",
+    module: "pricing",
+  },
+  {
+    name: "pricing:defaults:view",
+    description: "Can view pricing defaults",
+    module: "pricing",
+  },
+  {
+    name: "pricing:defaults:edit",
+    description: "Can edit pricing defaults",
+    module: "pricing",
+  },
+  {
+    name: "pricing:test",
+    description: "Can test pricing calculations",
+    module: "pricing",
+  },
 
   // Returns & Refunds (10)
-  { name: "returns:access", description: "Can access returns module", module: "returns" },
+  {
+    name: "returns:access",
+    description: "Can access returns module",
+    module: "returns",
+  },
   { name: "returns:read", description: "Can view returns", module: "returns" },
-  { name: "returns:create", description: "Can create returns", module: "returns" },
-  { name: "returns:update", description: "Can edit returns", module: "returns" },
-  { name: "returns:process", description: "Can process returns", module: "returns" },
-  { name: "returns:cancel", description: "Can cancel returns", module: "returns" },
-  { name: "refunds:access", description: "Can access refunds module", module: "returns" },
-  { name: "refunds:issue", description: "Can issue refunds", module: "returns" },
-  { name: "refunds:approve", description: "Can approve refunds", module: "returns" },
-  { name: "refunds:cancel", description: "Can cancel refunds", module: "returns" },
+  {
+    name: "returns:create",
+    description: "Can create returns",
+    module: "returns",
+  },
+  {
+    name: "returns:update",
+    description: "Can edit returns",
+    module: "returns",
+  },
+  {
+    name: "returns:process",
+    description: "Can process returns",
+    module: "returns",
+  },
+  {
+    name: "returns:cancel",
+    description: "Can cancel returns",
+    module: "returns",
+  },
+  {
+    name: "refunds:access",
+    description: "Can access refunds module",
+    module: "returns",
+  },
+  {
+    name: "refunds:issue",
+    description: "Can issue refunds",
+    module: "returns",
+  },
+  {
+    name: "refunds:approve",
+    description: "Can approve refunds",
+    module: "returns",
+  },
+  {
+    name: "refunds:cancel",
+    description: "Can cancel refunds",
+    module: "returns",
+  },
 
   // Calendar & Scheduling (15)
-  { name: "calendar:access", description: "Can access calendar", module: "calendar" },
-  { name: "calendar:events:read", description: "Can view calendar events", module: "calendar" },
-  { name: "calendar:events:create", description: "Can create calendar events", module: "calendar" },
-  { name: "calendar:events:update", description: "Can edit calendar events", module: "calendar" },
-  { name: "calendar:events:delete", description: "Can delete calendar events", module: "calendar" },
-  { name: "calendar:meetings:schedule", description: "Can schedule meetings", module: "calendar" },
-  { name: "calendar:meetings:cancel", description: "Can cancel meetings", module: "calendar" },
-  { name: "calendar:reminders:set", description: "Can set reminders", module: "calendar" },
-  { name: "calendar:views:customize", description: "Can customize calendar views", module: "calendar" },
-  { name: "calendar:participants:add", description: "Can add participants to events", module: "calendar" },
-  { name: "calendar:recurrence:create", description: "Can create recurring events", module: "calendar" },
-  { name: "calendar:export", description: "Can export calendar data", module: "calendar" },
-  { name: "calendar:share", description: "Can share calendar with others", module: "calendar" },
-  { name: "calendar:financials:view", description: "Can view calendar financial data", module: "calendar" },
-  { name: "calendar:financials:edit", description: "Can edit calendar financial settings", module: "calendar" },
+  {
+    name: "calendar:access",
+    description: "Can access calendar",
+    module: "calendar",
+  },
+  {
+    name: "calendar:events:read",
+    description: "Can view calendar events",
+    module: "calendar",
+  },
+  {
+    name: "calendar:events:create",
+    description: "Can create calendar events",
+    module: "calendar",
+  },
+  {
+    name: "calendar:events:update",
+    description: "Can edit calendar events",
+    module: "calendar",
+  },
+  {
+    name: "calendar:events:delete",
+    description: "Can delete calendar events",
+    module: "calendar",
+  },
+  {
+    name: "calendar:meetings:schedule",
+    description: "Can schedule meetings",
+    module: "calendar",
+  },
+  {
+    name: "calendar:meetings:cancel",
+    description: "Can cancel meetings",
+    module: "calendar",
+  },
+  {
+    name: "calendar:reminders:set",
+    description: "Can set reminders",
+    module: "calendar",
+  },
+  {
+    name: "calendar:views:customize",
+    description: "Can customize calendar views",
+    module: "calendar",
+  },
+  {
+    name: "calendar:participants:add",
+    description: "Can add participants to events",
+    module: "calendar",
+  },
+  {
+    name: "calendar:recurrence:create",
+    description: "Can create recurring events",
+    module: "calendar",
+  },
+  {
+    name: "calendar:export",
+    description: "Can export calendar data",
+    module: "calendar",
+  },
+  {
+    name: "calendar:share",
+    description: "Can share calendar with others",
+    module: "calendar",
+  },
+  {
+    name: "calendar:financials:view",
+    description: "Can view calendar financial data",
+    module: "calendar",
+  },
+  {
+    name: "calendar:financials:edit",
+    description: "Can edit calendar financial settings",
+    module: "calendar",
+  },
 
   // Tasks & To-Do (12)
-  { name: "todo:access", description: "Can access todo module", module: "todo" },
-  { name: "todo:lists:read", description: "Can view todo lists", module: "todo" },
-  { name: "todo:lists:create", description: "Can create todo lists", module: "todo" },
-  { name: "todo:lists:update", description: "Can edit todo lists", module: "todo" },
-  { name: "todo:lists:delete", description: "Can delete todo lists", module: "todo" },
+  {
+    name: "todo:access",
+    description: "Can access todo module",
+    module: "todo",
+  },
+  {
+    name: "todo:lists:read",
+    description: "Can view todo lists",
+    module: "todo",
+  },
+  {
+    name: "todo:lists:create",
+    description: "Can create todo lists",
+    module: "todo",
+  },
+  {
+    name: "todo:lists:update",
+    description: "Can edit todo lists",
+    module: "todo",
+  },
+  {
+    name: "todo:lists:delete",
+    description: "Can delete todo lists",
+    module: "todo",
+  },
   { name: "todo:tasks:read", description: "Can view tasks", module: "todo" },
-  { name: "todo:tasks:create", description: "Can create tasks", module: "todo" },
+  {
+    name: "todo:tasks:create",
+    description: "Can create tasks",
+    module: "todo",
+  },
   { name: "todo:tasks:update", description: "Can edit tasks", module: "todo" },
-  { name: "todo:tasks:delete", description: "Can delete tasks", module: "todo" },
-  { name: "todo:tasks:assign", description: "Can assign tasks to users", module: "todo" },
-  { name: "todo:tasks:complete", description: "Can mark tasks as complete", module: "todo" },
-  { name: "todo:activity:view", description: "Can view task activity", module: "todo" },
+  {
+    name: "todo:tasks:delete",
+    description: "Can delete tasks",
+    module: "todo",
+  },
+  {
+    name: "todo:tasks:assign",
+    description: "Can assign tasks to users",
+    module: "todo",
+  },
+  {
+    name: "todo:tasks:complete",
+    description: "Can mark tasks as complete",
+    module: "todo",
+  },
+  {
+    name: "todo:activity:view",
+    description: "Can view task activity",
+    module: "todo",
+  },
 
   // VIP Portal (12) - Updated for FEATURE-012
-  { name: "vip_portal:access", description: "Can access VIP portal admin", module: "vip_portal" },
-  { name: "vip_portal:config:view", description: "Can view VIP portal configuration", module: "vip_portal" },
-  { name: "vip_portal:config:edit", description: "Can edit VIP portal configuration", module: "vip_portal" },
-  { name: "vip_portal:clients:manage", description: "Can manage client access to VIP portal", module: "vip_portal" },
-  { name: "vip_portal:catalog:manage", description: "Can manage live catalog", module: "vip_portal" },
-  { name: "vip_portal:pricing:view", description: "Can view VIP portal pricing", module: "vip_portal" },
-  { name: "vip_portal:pricing:edit", description: "Can edit VIP portal pricing", module: "vip_portal" },
-  { name: "vip_portal:alerts:manage", description: "Can manage price alerts", module: "vip_portal" },
-  { name: "vip_portal:customization", description: "Can customize VIP portal appearance", module: "vip_portal" },
-  { name: "vip_portal:analytics:view", description: "Can view VIP portal analytics", module: "vip_portal" },
+  {
+    name: "vip_portal:access",
+    description: "Can access VIP portal admin",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:config:view",
+    description: "Can view VIP portal configuration",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:config:edit",
+    description: "Can edit VIP portal configuration",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:clients:manage",
+    description: "Can manage client access to VIP portal",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:catalog:manage",
+    description: "Can manage live catalog",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:pricing:view",
+    description: "Can view VIP portal pricing",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:pricing:edit",
+    description: "Can edit VIP portal pricing",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:alerts:manage",
+    description: "Can manage price alerts",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:customization",
+    description: "Can customize VIP portal appearance",
+    module: "vip_portal",
+  },
+  {
+    name: "vip_portal:analytics:view",
+    description: "Can view VIP portal analytics",
+    module: "vip_portal",
+  },
   // Admin Impersonation (FEATURE-012)
-  { name: "admin:impersonate", description: "Can impersonate clients in VIP portal with full audit logging", module: "admin" },
-  { name: "admin:impersonate:audit", description: "Can view impersonation audit logs and session history", module: "admin" },
+  {
+    name: "admin:impersonate",
+    description:
+      "Can impersonate clients in VIP portal with full audit logging",
+    module: "admin",
+  },
+  {
+    name: "admin:impersonate:audit",
+    description: "Can view impersonation audit logs and session history",
+    module: "admin",
+  },
 
   // Matching & Recommendations (8)
-  { name: "matching:access", description: "Can access matching module", module: "matching" },
-  { name: "matching:run", description: "Can run matching algorithms", module: "matching" },
-  { name: "matching:view_results", description: "Can view matching results", module: "matching" },
-  { name: "matching:configure", description: "Can configure matching parameters", module: "matching" },
-  { name: "matching:records:view", description: "Can view match records", module: "matching" },
-  { name: "matching:records:create", description: "Can create match records", module: "matching" },
-  { name: "matching:records:update", description: "Can update match records", module: "matching" },
-  { name: "matching:records:delete", description: "Can delete match records", module: "matching" },
+  {
+    name: "matching:access",
+    description: "Can access matching module",
+    module: "matching",
+  },
+  {
+    name: "matching:run",
+    description: "Can run matching algorithms",
+    module: "matching",
+  },
+  {
+    name: "matching:view_results",
+    description: "Can view matching results",
+    module: "matching",
+  },
+  {
+    name: "matching:configure",
+    description: "Can configure matching parameters",
+    module: "matching",
+  },
+  {
+    name: "matching:records:view",
+    description: "Can view match records",
+    module: "matching",
+  },
+  {
+    name: "matching:records:create",
+    description: "Can create match records",
+    module: "matching",
+  },
+  {
+    name: "matching:records:update",
+    description: "Can update match records",
+    module: "matching",
+  },
+  {
+    name: "matching:records:delete",
+    description: "Can delete match records",
+    module: "matching",
+  },
 
   // Samples (8)
-  { name: "samples:access", description: "Can access samples module", module: "samples" },
+  {
+    name: "samples:access",
+    description: "Can access samples module",
+    module: "samples",
+  },
   { name: "samples:read", description: "Can view samples", module: "samples" },
-  { name: "samples:create", description: "Can create samples", module: "samples" },
-  { name: "samples:update", description: "Can edit samples", module: "samples" },
-  { name: "samples:delete", description: "Can delete samples", module: "samples" },
-  { name: "samples:allocate", description: "Can allocate samples to clients", module: "samples" },
-  { name: "samples:track", description: "Can track sample usage", module: "samples" },
-  { name: "samples:inventory:view", description: "Can view sample inventory", module: "samples" },
+  {
+    name: "samples:create",
+    description: "Can create samples",
+    module: "samples",
+  },
+  {
+    name: "samples:update",
+    description: "Can edit samples",
+    module: "samples",
+  },
+  {
+    name: "samples:delete",
+    description: "Can delete samples",
+    module: "samples",
+  },
+  {
+    name: "samples:allocate",
+    description: "Can allocate samples to clients",
+    module: "samples",
+  },
+  {
+    name: "samples:track",
+    description: "Can track sample usage",
+    module: "samples",
+  },
+  {
+    name: "samples:inventory:view",
+    description: "Can view sample inventory",
+    module: "samples",
+  },
 
   // Comments & Notes (10)
-  { name: "comments:access", description: "Can access comments", module: "comments" },
-  { name: "comments:read", description: "Can view comments", module: "comments" },
-  { name: "comments:create", description: "Can create comments", module: "comments" },
-  { name: "comments:update", description: "Can edit own comments", module: "comments" },
-  { name: "comments:update_all", description: "Can edit all comments", module: "comments" },
-  { name: "comments:delete", description: "Can delete own comments", module: "comments" },
-  { name: "comments:delete_all", description: "Can delete all comments", module: "comments" },
-  { name: "notes:create", description: "Can create freeform notes", module: "comments" },
+  {
+    name: "comments:access",
+    description: "Can access comments",
+    module: "comments",
+  },
+  {
+    name: "comments:read",
+    description: "Can view comments",
+    module: "comments",
+  },
+  {
+    name: "comments:create",
+    description: "Can create comments",
+    module: "comments",
+  },
+  {
+    name: "comments:update",
+    description: "Can edit own comments",
+    module: "comments",
+  },
+  {
+    name: "comments:update_all",
+    description: "Can edit all comments",
+    module: "comments",
+  },
+  {
+    name: "comments:delete",
+    description: "Can delete own comments",
+    module: "comments",
+  },
+  {
+    name: "comments:delete_all",
+    description: "Can delete all comments",
+    module: "comments",
+  },
+  {
+    name: "notes:create",
+    description: "Can create freeform notes",
+    module: "comments",
+  },
   { name: "notes:update", description: "Can edit notes", module: "comments" },
-  { name: "scratchpad:use", description: "Can use scratchpad", module: "comments" },
+  {
+    name: "scratchpad:use",
+    description: "Can use scratchpad",
+    module: "comments",
+  },
 
   // Inbox & Notifications (6)
   { name: "inbox:access", description: "Can access inbox", module: "inbox" },
   { name: "inbox:read", description: "Can view inbox items", module: "inbox" },
-  { name: "inbox:mark_read", description: "Can mark items as read", module: "inbox" },
-  { name: "inbox:delete", description: "Can delete inbox items", module: "inbox" },
-  { name: "inbox:configure", description: "Can configure inbox settings", module: "inbox" },
-  { name: "notifications:manage", description: "Can manage notification preferences", module: "inbox" },
+  {
+    name: "inbox:mark_read",
+    description: "Can mark items as read",
+    module: "inbox",
+  },
+  {
+    name: "inbox:delete",
+    description: "Can delete inbox items",
+    module: "inbox",
+  },
+  {
+    name: "inbox:configure",
+    description: "Can configure inbox settings",
+    module: "inbox",
+  },
+  {
+    name: "notifications:manage",
+    description: "Can manage notification preferences",
+    module: "inbox",
+  },
 
   // Audit Logs (4)
-  { name: "audit_logs:access", description: "Can access audit logs", module: "audit_logs" },
-  { name: "audit_logs:view", description: "Can view audit logs", module: "audit_logs" },
-  { name: "audit_logs:export", description: "Can export audit logs", module: "audit_logs" },
-  { name: "audit_logs:search", description: "Can search audit logs", module: "audit_logs" },
+  {
+    name: "audit_logs:access",
+    description: "Can access audit logs",
+    module: "audit_logs",
+  },
+  {
+    name: "audit_logs:view",
+    description: "Can view audit logs",
+    module: "audit_logs",
+  },
+  {
+    name: "audit_logs:export",
+    description: "Can export audit logs",
+    module: "audit_logs",
+  },
+  {
+    name: "audit_logs:search",
+    description: "Can search audit logs",
+    module: "audit_logs",
+  },
 
   // User Management (12)
-  { name: "users:access", description: "Can access user management", module: "users" },
+  {
+    name: "users:access",
+    description: "Can access user management",
+    module: "users",
+  },
   { name: "users:read", description: "Can view users", module: "users" },
-  { name: "users:create", description: "Can create/invite users", module: "users" },
-  { name: "users:update", description: "Can edit user information", module: "users" },
+  {
+    name: "users:create",
+    description: "Can create/invite users",
+    module: "users",
+  },
+  {
+    name: "users:update",
+    description: "Can edit user information",
+    module: "users",
+  },
   { name: "users:delete", description: "Can delete users", module: "users" },
-  { name: "users:deactivate", description: "Can deactivate/reactivate users", module: "users" },
+  {
+    name: "users:deactivate",
+    description: "Can deactivate/reactivate users",
+    module: "users",
+  },
   { name: "roles:read", description: "Can view roles", module: "users" },
   { name: "roles:create", description: "Can create roles", module: "users" },
   { name: "roles:update", description: "Can edit roles", module: "users" },
   { name: "roles:delete", description: "Can delete roles", module: "users" },
-  { name: "permissions:assign", description: "Can assign permissions to roles", module: "users" },
-  { name: "permissions:override", description: "Can override permissions for individual users", module: "users" },
+  {
+    name: "permissions:assign",
+    description: "Can assign permissions to roles",
+    module: "users",
+  },
+  {
+    name: "permissions:override",
+    description: "Can override permissions for individual users",
+    module: "users",
+  },
 
   // System Configuration (12)
-  { name: "settings:access", description: "Can access settings", module: "settings" },
-  { name: "settings:view", description: "Can view system settings", module: "settings" },
-  { name: "settings:edit", description: "Can edit system settings", module: "settings" },
-  { name: "configuration:access", description: "Can access configuration module", module: "settings" },
-  { name: "configuration:view", description: "Can view configuration", module: "settings" },
-  { name: "configuration:edit", description: "Can edit configuration", module: "settings" },
-  { name: "preferences:view", description: "Can view preferences", module: "settings" },
-  { name: "preferences:edit", description: "Can edit own preferences", module: "settings" },
-  { name: "preferences:edit_all", description: "Can edit all users' preferences", module: "settings" },
-  { name: "system:backup", description: "Can create system backups", module: "settings" },
-  { name: "system:restore", description: "Can restore from backups", module: "settings" },
-  { name: "system:maintenance_mode", description: "Can enable/disable maintenance mode", module: "settings" },
+  {
+    name: "settings:access",
+    description: "Can access settings",
+    module: "settings",
+  },
+  {
+    name: "settings:view",
+    description: "Can view system settings",
+    module: "settings",
+  },
+  {
+    name: "settings:edit",
+    description: "Can edit system settings",
+    module: "settings",
+  },
+  {
+    name: "configuration:access",
+    description: "Can access configuration module",
+    module: "settings",
+  },
+  {
+    name: "configuration:view",
+    description: "Can view configuration",
+    module: "settings",
+  },
+  {
+    name: "configuration:edit",
+    description: "Can edit configuration",
+    module: "settings",
+  },
+  {
+    name: "preferences:view",
+    description: "Can view preferences",
+    module: "settings",
+  },
+  {
+    name: "preferences:edit",
+    description: "Can edit own preferences",
+    module: "settings",
+  },
+  {
+    name: "preferences:edit_all",
+    description: "Can edit all users' preferences",
+    module: "settings",
+  },
+  {
+    name: "system:backup",
+    description: "Can create system backups",
+    module: "settings",
+  },
+  {
+    name: "system:restore",
+    description: "Can restore from backups",
+    module: "settings",
+  },
+  {
+    name: "system:maintenance_mode",
+    description: "Can enable/disable maintenance mode",
+    module: "settings",
+  },
 
   // Admin Tools (10)
-  { name: "admin:access", description: "Can access admin tools", module: "admin" },
-  { name: "admin:migrations:run", description: "Can run database migrations", module: "admin" },
-  { name: "admin:migrations:rollback", description: "Can rollback migrations", module: "admin" },
-  { name: "admin:import:data", description: "Can import data", module: "admin" },
-  { name: "admin:export:data", description: "Can export system data", module: "admin" },
-  { name: "admin:quick_fix", description: "Can use quick fix tools", module: "admin" },
-  { name: "admin:schema:push", description: "Can push schema changes", module: "admin" },
-  { name: "admin:logs:view", description: "Can view system logs", module: "admin" },
-  { name: "admin:cache:clear", description: "Can clear system cache", module: "admin" },
-  { name: "admin:jobs:manage", description: "Can manage background jobs", module: "admin" },
+  {
+    name: "admin:access",
+    description: "Can access admin tools",
+    module: "admin",
+  },
+  {
+    name: "admin:migrations:run",
+    description: "Can run database migrations",
+    module: "admin",
+  },
+  {
+    name: "admin:migrations:rollback",
+    description: "Can rollback migrations",
+    module: "admin",
+  },
+  {
+    name: "admin:import:data",
+    description: "Can import data",
+    module: "admin",
+  },
+  {
+    name: "admin:export:data",
+    description: "Can export system data",
+    module: "admin",
+  },
+  {
+    name: "admin:quick_fix",
+    description: "Can use quick fix tools",
+    module: "admin",
+  },
+  {
+    name: "admin:schema:push",
+    description: "Can push schema changes",
+    module: "admin",
+  },
+  {
+    name: "admin:logs:view",
+    description: "Can view system logs",
+    module: "admin",
+  },
+  {
+    name: "admin:cache:clear",
+    description: "Can clear system cache",
+    module: "admin",
+  },
+  {
+    name: "admin:jobs:manage",
+    description: "Can manage background jobs",
+    module: "admin",
+  },
 
   // Advanced Features (8)
-  { name: "tags:access", description: "Can access tags module", module: "tags" },
+  {
+    name: "tags:access",
+    description: "Can access tags module",
+    module: "tags",
+  },
   { name: "tags:read", description: "Can view tags", module: "tags" },
   { name: "tags:create", description: "Can create tags", module: "tags" },
   { name: "tags:update", description: "Can edit tags", module: "tags" },
   { name: "tags:delete", description: "Can delete tags", module: "tags" },
-  { name: "tags:assign", description: "Can assign tags to entities", module: "tags" },
-  { name: "tags:advanced:access", description: "Can access advanced tag features", module: "tags" },
-  { name: "tags:bulk_operations", description: "Can perform bulk tag operations", module: "tags" },
+  {
+    name: "tags:assign",
+    description: "Can assign tags to entities",
+    module: "tags",
+  },
+  {
+    name: "tags:advanced:access",
+    description: "Can access advanced tag features",
+    module: "tags",
+  },
+  {
+    name: "tags:bulk_operations",
+    description: "Can perform bulk tag operations",
+    module: "tags",
+  },
 
   // Alerts (5) - User alert configurations for orders/inventory
-  { name: "alerts:read", description: "Can view own alert configurations", module: "alerts" },
-  { name: "alerts:create", description: "Can create alert configurations", module: "alerts" },
-  { name: "alerts:update", description: "Can edit own alert configurations", module: "alerts" },
-  { name: "alerts:delete", description: "Can delete own alert configurations", module: "alerts" },
-  { name: "alerts:admin", description: "Can view all users' alert configurations", module: "alerts" },
+  {
+    name: "alerts:read",
+    description: "Can view own alert configurations",
+    module: "alerts",
+  },
+  {
+    name: "alerts:create",
+    description: "Can create alert configurations",
+    module: "alerts",
+  },
+  {
+    name: "alerts:update",
+    description: "Can edit own alert configurations",
+    module: "alerts",
+  },
+  {
+    name: "alerts:delete",
+    description: "Can delete own alert configurations",
+    module: "alerts",
+  },
+  {
+    name: "alerts:admin",
+    description: "Can view all users' alert configurations",
+    module: "alerts",
+  },
 
   // System Health & Metrics (2)
-  { name: "system:health", description: "Can view detailed system health information", module: "system" },
-  { name: "system:metrics", description: "Can view system performance metrics", module: "system" },
+  {
+    name: "system:health",
+    description: "Can view detailed system health information",
+    module: "system",
+  },
+  {
+    name: "system:metrics",
+    description: "Can view system performance metrics",
+    module: "system",
+  },
 
   // VIP Portal Admin (1) - General VIP portal management
-  { name: "vip_portal:manage", description: "Can manage VIP portal settings and clients", module: "vip_portal" },
+  {
+    name: "vip_portal:manage",
+    description: "Can manage VIP portal settings and clients",
+    module: "vip_portal",
+  },
 ];
 
 // ============================================================================
@@ -379,14 +1379,18 @@ export const PERMISSIONS = [
 // ============================================================================
 
 // Helper function to get permission IDs by names
-function getPermissionIds(permissionNames: string[], allPermissions: any[]) {
-  return allPermissions
-    .filter((p) => permissionNames.includes(p.name))
-    .map((p) => p.id);
+// Note: This function is unused but kept for reference/future use
+function _getPermissionIds(
+  permissionNames: string[],
+  allPermissions: unknown[]
+) {
+  return (allPermissions as Array<{ name: string; id: number }>)
+    .filter(p => permissionNames.includes(p.name))
+    .map(p => p.id);
 }
 
 // Super Admin: ALL permissions
-export const superAdminPermissions = PERMISSIONS.map((p) => p.name);
+export const superAdminPermissions = PERMISSIONS.map(p => p.name);
 
 // Owner/Executive: Read-only access to all modules
 export const ownerExecutivePermissions = [
@@ -416,6 +1420,8 @@ export const ownerExecutivePermissions = [
   "accounting:gl:view",
   "accounting:reports:view",
   "accounting:reports:export",
+  // Work Surface simplified permissions
+  "accounting:read",
   "pricing:access",
   "pricing:rules:read",
   "pricing:profiles:read",
@@ -489,6 +1495,8 @@ export const operationsManagerPermissions = [
   "vendor_supply:update",
   "accounting:access",
   "accounting:transactions:read",
+  // Work Surface simplified permissions
+  "accounting:read",
   "pricing:access",
   "pricing:rules:read",
   "pricing:profiles:read",
@@ -643,6 +1651,8 @@ export const salesManagerPermissions = [
   // BLOCKED-003 fix: Allow viewing finance reports (read-only)
   "accounting:reports:view",
   "accounting:transactions:read",
+  // Work Surface simplified permissions
+  "accounting:read",
 ];
 
 // Accountant: Full access to accounting, credits, COGS, bad debt
@@ -690,6 +1700,12 @@ export const accountantPermissions = [
   "calendar_financials:view",
   "calendar_financials:edit",
   "accounting:audit_trail:view",
+  // Work Surface simplified permissions
+  "accounting:read",
+  "accounting:create",
+  "accounting:update",
+  "accounting:delete",
+  "accounting:manage",
   "pricing:access",
   "pricing:rules:read",
   "pricing:profiles:read",
@@ -993,6 +2009,8 @@ export const readOnlyAuditorPermissions = [
   "accounting:reports:view",
   "accounting:reports:export",
   "accounting:audit_trail:view",
+  // Work Surface simplified permissions
+  "accounting:read",
   "pricing:access",
   "pricing:rules:read",
   "pricing:profiles:read",
@@ -1035,12 +2053,24 @@ export const readOnlyAuditorPermissions = [
 export const ROLE_PERMISSION_MAPPINGS = [
   { roleName: "Super Admin", permissionNames: superAdminPermissions },
   { roleName: "Owner/Executive", permissionNames: ownerExecutivePermissions },
-  { roleName: "Operations Manager", permissionNames: operationsManagerPermissions },
+  {
+    roleName: "Operations Manager",
+    permissionNames: operationsManagerPermissions,
+  },
   { roleName: "Sales Manager", permissionNames: salesManagerPermissions },
   { roleName: "Accountant", permissionNames: accountantPermissions },
-  { roleName: "Inventory Manager", permissionNames: inventoryManagerPermissions },
-  { roleName: "Buyer/Procurement", permissionNames: buyerProcurementPermissions },
+  {
+    roleName: "Inventory Manager",
+    permissionNames: inventoryManagerPermissions,
+  },
+  {
+    roleName: "Buyer/Procurement",
+    permissionNames: buyerProcurementPermissions,
+  },
   { roleName: "Customer Service", permissionNames: customerServicePermissions },
   { roleName: "Warehouse Staff", permissionNames: warehouseStaffPermissions },
-  { roleName: "Read-Only Auditor", permissionNames: readOnlyAuditorPermissions },
+  {
+    roleName: "Read-Only Auditor",
+    permissionNames: readOnlyAuditorPermissions,
+  },
 ];
