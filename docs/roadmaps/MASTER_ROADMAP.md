@@ -628,19 +628,19 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 > **Spec:** `docs/specs/NAV_ACCESSIBILITY_ENHANCEMENT_SPEC.md`
 > **Effort:** ~1.5 hours (2 file changes, configuration only)
 
-| Task    | Description                                      | Priority | Status | Estimate | Module                  |
-| ------- | ------------------------------------------------ | -------- | ------ | -------- | ----------------------- |
-| NAV-006 | Add Leaderboard to Sales nav (after Dashboard)   | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-007 | Add Client Needs to Sales nav                    | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-008 | Add Matchmaking to Sales nav                     | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-009 | Add Quotes to Sales nav                          | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-010 | Add Returns to Sales nav                         | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-011 | Add Vendor Supply to Inventory nav               | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-012 | Add Pricing Rules to Finance nav                 | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-013 | Add Workflow Queue to Admin nav                  | MEDIUM   | ready  | 5 min    | navigation.ts           |
-| NAV-014 | Add all 8 routes to Command Palette              | MEDIUM   | ready  | 15 min   | CommandPalette.tsx      |
-| NAV-015 | Verify TypeScript compilation                    | LOW      | ready  | 5 min    | -                       |
-| NAV-016 | Manual QA verification of all new nav items      | LOW      | ready  | 15 min   | -                       |
+| Task    | Description                                    | Priority | Status | Estimate | Module             |
+| ------- | ---------------------------------------------- | -------- | ------ | -------- | ------------------ |
+| NAV-006 | Add Leaderboard to Sales nav (after Dashboard) | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-007 | Add Client Needs to Sales nav                  | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-008 | Add Matchmaking to Sales nav                   | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-009 | Add Quotes to Sales nav                        | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-010 | Add Returns to Sales nav                       | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-011 | Add Vendor Supply to Inventory nav             | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-012 | Add Pricing Rules to Finance nav               | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-013 | Add Workflow Queue to Admin nav                | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-014 | Add all 8 routes to Command Palette            | MEDIUM   | ready  | 15 min   | CommandPalette.tsx |
+| NAV-015 | Verify TypeScript compilation                  | LOW      | ready  | 5 min    | -                  |
+| NAV-016 | Manual QA verification of all new nav items    | LOW      | ready  | 15 min   | -                  |
 
 #### NAV-006: Add Leaderboard to Sales Navigation
 
@@ -651,6 +651,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 **Dependencies:** None
 
 **Implementation:**
+
 ```typescript
 // After Dashboard entry, before Clients:
 {
@@ -668,15 +669,15 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 Each task adds one navigation item to `navigation.ts`:
 
-| Task    | Route            | Group     | Icon          | Position                    |
-| ------- | ---------------- | --------- | ------------- | --------------------------- |
-| NAV-007 | `/needs`         | sales     | Target        | After Invoices              |
-| NAV-008 | `/matchmaking`   | sales     | Sparkles      | After Client Needs          |
-| NAV-009 | `/quotes`        | sales     | FileQuestion  | After Matchmaking           |
-| NAV-010 | `/returns`       | sales     | PackageX      | After Quotes                |
-| NAV-011 | `/vendor-supply` | inventory | PackagePlus   | After Vendors               |
-| NAV-012 | `/pricing/rules` | finance   | DollarSign    | After Credit Settings       |
-| NAV-013 | `/workflow-queue`| admin     | ListOrdered   | After Feature Flags         |
+| Task    | Route             | Group     | Icon         | Position              |
+| ------- | ----------------- | --------- | ------------ | --------------------- |
+| NAV-007 | `/needs`          | sales     | Target       | After Invoices        |
+| NAV-008 | `/matchmaking`    | sales     | Sparkles     | After Client Needs    |
+| NAV-009 | `/quotes`         | sales     | FileQuestion | After Matchmaking     |
+| NAV-010 | `/returns`        | sales     | PackageX     | After Quotes          |
+| NAV-011 | `/vendor-supply`  | inventory | PackagePlus  | After Vendors         |
+| NAV-012 | `/pricing/rules`  | finance   | DollarSign   | After Credit Settings |
+| NAV-013 | `/workflow-queue` | admin     | ListOrdered  | After Feature Flags   |
 
 ---
 
@@ -695,15 +696,15 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 #### Post-Implementation Metrics
 
-| Metric | Before | After | Change |
-|--------|--------|-------|--------|
-| Navigation items | 24 | 32 | +8 |
-| Command Palette items | 11 | 19 | +8 |
-| Hidden routes | 14 | 6 | -8 |
-| Sales group items | 8 | 13 | +5 |
-| Inventory group items | 7 | 8 | +1 |
-| Finance group items | 3 | 4 | +1 |
-| Admin group items | 6 | 7 | +1 |
+| Metric                | Before | After | Change |
+| --------------------- | ------ | ----- | ------ |
+| Navigation items      | 24     | 32    | +8     |
+| Command Palette items | 11     | 19    | +8     |
+| Hidden routes         | 14     | 6     | -8     |
+| Sales group items     | 8      | 13    | +5     |
+| Inventory group items | 7      | 8     | +1     |
+| Finance group items   | 3      | 4     | +1     |
+| Admin group items     | 6      | 7     | +1     |
 
 ---
 
@@ -726,7 +727,6 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 | Navigation (NEW)      | 0         | 11     | 0       | 11      |
 | Improvements          | 7         | 0      | 0       | 7       |
 | E2E Testing           | 3         | 0      | 0       | 3       |
-| Navigation (NEW)      | 0         | 11     | 0       | 11      |
 | **TOTAL**             | **185**   | **11** | **2**   | **198** |
 
 > **MVP STATUS: 94% RESOLVED** (185 completed + 2 removed, 11 tasks open)
@@ -960,7 +960,7 @@ App.tsx routes to legacy pages. WorkSurfaceGate component exists (line 301-318 i
 
 #### DEPLOY-002: Add Gate Scripts to package.json
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 1h
 **Module:** `package.json`, `scripts/qa/`
@@ -987,7 +987,7 @@ Gate scripts exist in `scripts/qa/` but are not registered as npm commands.
 
 #### DEPLOY-003: Seed Missing RBAC Permissions
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `server/services/rbacDefinitions.ts`, seed scripts
@@ -1014,7 +1014,7 @@ USER_FLOW_MATRIX.csv identifies 40+ accounting permissions not present in RBAC s
 
 #### DEPLOY-004: Capture Baseline Metrics
 
-**Status:** ready
+**Status:** complete
 **Priority:** MEDIUM
 **Estimate:** 2h
 **Module:** Observability stack
@@ -1040,7 +1040,7 @@ Need baseline metrics before rollout to detect regressions.
 
 #### DEPLOY-005: Execute Stage 0 (Internal QA)
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 8h
 **Module:** All Work Surfaces
@@ -1222,6 +1222,7 @@ Users need to select specific batches/lots when fulfilling orders based on custo
 Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for processing returns.
 
 **Product Decision:** Add RETURNED status with two terminal paths:
+
 - RESTOCKED: Items returned to inventory (increases batch quantities)
 - RETURNED_TO_VENDOR: Items sent to vendor (creates vendor return record)
 
@@ -1246,13 +1247,13 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Beta Summary
 
-| Category                   | Completed | Open   | Total  |
-| -------------------------- | --------- | ------ | ------ |
-| Reliability Program        | 0         | 17     | 17     |
-| UX Work Surface (BETA)     | 0         | 2      | 2      |
-| Work Surfaces Deployment   | 0         | 8      | 8      |
-| Work Surfaces QA Blockers  | 0         | 3      | 3      |
-| **TOTAL**                  | **0**     | **30** | **30** |
+| Category                  | Completed | Open   | Skipped | Total  |
+| ------------------------- | --------- | ------ | ------- | ------ |
+| Reliability Program       | 0         | 17     | 0       | 17     |
+| UX Work Surface (BETA)    | 0         | 2      | 0       | 2      |
+| Work Surfaces Deployment  | 6         | 0      | 2       | 8      |
+| Work Surfaces QA Blockers | 0         | 3      | 0       | 3      |
+| **TOTAL**                 | **6**     | **22** | **2**   | **30** |
 
 ---
 
@@ -1260,15 +1261,16 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
-| MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 30     | 30      | 0%       |
-| **TOTAL** | **185**   | **30** | **217** | ~85%     |
+| MVP       | 185       | 11     | 198     | 94%      |
+| Beta      | 6         | 22     | 30      | 20%      |
+| **TOTAL** | **191**   | **33** | **228** | ~84%     |
 
 > **Note**: Beta now includes:
-> - 17 Reliability Program tasks
-> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706)
-> - 8 Work Surfaces Deployment tasks (DEPLOY-001..008)
-> - 3 Work Surfaces QA Blockers (WSQA-001..003) - Added 2026-01-20
+>
+> - 17 Reliability Program tasks (0 complete, 17 open)
+> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706) (0 complete, 2 open)
+> - 8 Work Surfaces Deployment tasks (DEPLOY-001..008) (6 complete, 2 skipped)
+> - 3 Work Surfaces QA Blockers (WSQA-001..003) (0 complete, 3 open)
 >
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
