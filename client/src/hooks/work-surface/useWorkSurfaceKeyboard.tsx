@@ -52,6 +52,18 @@ export interface WorkSurfaceKeyboardOptions {
   customHandlers?: Record<string, (e: KeyboardEvent) => void>;
   /** Disable keyboard handling (e.g., when in non-Work Surface mode) */
   disabled?: boolean;
+  /**
+   * Grid mode - when true, Tab navigation is handled by AG Grid
+   * When false, this hook manages Tab navigation between focusable elements
+   * @default true
+   */
+  gridMode?: boolean;
+  /** Focusable element selector for non-grid Tab navigation */
+  focusableSelector?: string;
+  /** Called when Tab navigates to next/previous element */
+  onTabNavigate?: (direction: "next" | "prev", element: HTMLElement) => void;
+  /** Container ref for Tab navigation scope */
+  containerRef?: React.RefObject<HTMLElement>;
 }
 
 export interface FocusState {
@@ -67,20 +79,31 @@ export interface UseWorkSurfaceKeyboardReturn {
   keyboardProps: {
     onKeyDown: (e: KeyboardEvent) => void;
     tabIndex: number;
+    ref?: (node: HTMLElement | null) => void;
   };
   /** Current focus state */
   focusState: FocusState;
-  /** Programmatically set focus */
+  /** Programmatically set focus by row/col (for grid mode) */
   setFocus: (row: number, col: number) => void;
   /** Enter edit mode on current cell */
   startEditing: () => void;
   /** Exit edit mode */
   stopEditing: () => void;
+  /** Focus the first focusable element in container (for non-grid mode) */
+  focusFirst: () => void;
+  /** Focus the last focusable element in container (for non-grid mode) */
+  focusLast: () => void;
+  /** Reset focus state */
+  resetFocus: () => void;
 }
 
 // ============================================================================
 // HOOK IMPLEMENTATION
 // ============================================================================
+
+// Default focusable elements selector
+const DEFAULT_FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function useWorkSurfaceKeyboard({
   onRowCommit,
@@ -92,6 +115,10 @@ export function useWorkSurfaceKeyboard({
   validateRow,
   customHandlers = {},
   disabled = false,
+  gridMode = true,
+  focusableSelector = DEFAULT_FOCUSABLE_SELECTOR,
+  onTabNavigate,
+  containerRef,
 }: WorkSurfaceKeyboardOptions): UseWorkSurfaceKeyboardReturn {
   // Focus tracking
   const [focusState, setFocusState] = useState<FocusState>({
@@ -100,51 +127,110 @@ export function useWorkSurfaceKeyboard({
     isEditing: false,
   });
 
-  // Ref for tracking if we're in a text input (to not intercept normal typing)
-  const isInTextInput = useRef(false);
+  // Internal container ref if none provided
+  const internalContainerRef = useRef<HTMLElement | null>(null);
+  const activeContainerRef = containerRef || internalContainerRef;
+
+  // Track current focus index for non-grid navigation
+  const focusIndexRef = useRef<number>(-1);
 
   // ============================================================================
-  // TODO: Implement Tab/Shift+Tab navigation
-  // - Track focusable cells in grid
-  // - Move focus linearly through cells
-  // - Wrap at row boundaries
-  // - Consider AG Grid's built-in navigation
+  // Get focusable elements within container
   // ============================================================================
-  const handleTab = useCallback((e: KeyboardEvent, reverse: boolean) => {
-    // TODO: Implement cell-to-cell navigation
-    // For now, let browser handle tab
-    // e.preventDefault();
-    // const nextCell = reverse ? getPreviousCell() : getNextCell();
-    // setFocus(nextCell.row, nextCell.col);
-  }, []);
+  const getFocusableElements = useCallback((): HTMLElement[] => {
+    const container = activeContainerRef.current;
+    if (!container) return [];
+
+    const elements = Array.from(
+      container.querySelectorAll<HTMLElement>(focusableSelector)
+    ).filter((el) => {
+      // Filter out hidden or invisible elements
+      const style = window.getComputedStyle(el);
+      return (
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        el.offsetParent !== null
+      );
+    });
+
+    return elements;
+  }, [focusableSelector, activeContainerRef]);
 
   // ============================================================================
-  // TODO: Implement Enter commit + new row creation
-  // - Validate current row
-  // - Commit if valid
-  // - Create new row if at end
-  // - Focus first editable cell of new row
+  // Tab/Shift+Tab navigation for non-grid mode
+  // In grid mode, let AG Grid handle Tab navigation
+  // ============================================================================
+  const handleTab = useCallback(
+    (e: KeyboardEvent, reverse: boolean) => {
+      // In grid mode, let AG Grid handle Tab navigation
+      if (gridMode) {
+        return; // Don't prevent default, let AG Grid handle it
+      }
+
+      const elements = getFocusableElements();
+      if (elements.length === 0) return;
+
+      e.preventDefault();
+
+      // Find current focused element
+      const currentIndex = elements.findIndex(
+        (el) => el === document.activeElement
+      );
+
+      let nextIndex: number;
+      if (currentIndex === -1) {
+        // No element focused, start from beginning or end
+        nextIndex = reverse ? elements.length - 1 : 0;
+      } else if (reverse) {
+        // Shift+Tab: go to previous, wrap to end
+        nextIndex = currentIndex === 0 ? elements.length - 1 : currentIndex - 1;
+      } else {
+        // Tab: go to next, wrap to beginning
+        nextIndex = currentIndex === elements.length - 1 ? 0 : currentIndex + 1;
+      }
+
+      const nextElement = elements[nextIndex];
+      if (nextElement) {
+        nextElement.focus();
+        focusIndexRef.current = nextIndex;
+        onTabNavigate?.(reverse ? "prev" : "next", nextElement);
+      }
+    },
+    [gridMode, getFocusableElements, onTabNavigate]
+  );
+
+  // ============================================================================
+  // Enter: Commit current edit, optionally create new row
   // ============================================================================
   const handleEnter = useCallback(
     async (e: KeyboardEvent) => {
-      if (focusState.isEditing) {
-        e.preventDefault();
+      // Only handle Enter when in editing mode or if we have a commit handler
+      if (!focusState.isEditing && !onRowCommit) {
+        return; // Let browser handle Enter normally
+      }
 
-        // Validate before commit
-        const isValid = validateRow ? validateRow() : true;
-        if (!isValid) {
-          // TODO: Show validation errors via blur timing
-          return;
-        }
+      e.preventDefault();
 
-        // Commit the row
-        if (onRowCommit) {
+      // Validate before commit
+      const isValid = validateRow ? validateRow() : true;
+      if (!isValid) {
+        // Validation failed - don't commit
+        // Validation timing hook will handle showing errors on blur
+        return;
+      }
+
+      // Commit the row
+      if (onRowCommit) {
+        try {
           await onRowCommit();
-        }
 
-        // Create new row
-        if (onRowCreate) {
-          onRowCreate();
+          // After successful commit, create new row if handler provided
+          if (onRowCreate) {
+            onRowCreate();
+          }
+        } catch (error) {
+          // Commit failed - error handling should be done by the caller
+          console.error("Row commit failed:", error);
         }
       }
     },
@@ -238,15 +324,51 @@ export function useWorkSurfaceKeyboard({
     setFocusState((prev) => ({ ...prev, isEditing: false }));
   }, []);
 
+  const focusFirst = useCallback(() => {
+    const elements = getFocusableElements();
+    if (elements.length > 0) {
+      elements[0].focus();
+      focusIndexRef.current = 0;
+    }
+  }, [getFocusableElements]);
+
+  const focusLast = useCallback(() => {
+    const elements = getFocusableElements();
+    if (elements.length > 0) {
+      elements[elements.length - 1].focus();
+      focusIndexRef.current = elements.length - 1;
+    }
+  }, [getFocusableElements]);
+
+  const resetFocus = useCallback(() => {
+    setFocusState({
+      row: null,
+      col: null,
+      isEditing: false,
+    });
+    focusIndexRef.current = -1;
+  }, []);
+
+  // Ref callback for container (for non-grid mode Tab navigation)
+  const containerRefCallback = useCallback((node: HTMLElement | null) => {
+    if (!containerRef) {
+      internalContainerRef.current = node;
+    }
+  }, [containerRef]);
+
   return {
     keyboardProps: {
       onKeyDown: handleKeyDown,
       tabIndex: 0, // Make container focusable
+      ...(gridMode ? {} : { ref: containerRefCallback }),
     },
     focusState,
     setFocus,
     startEditing,
     stopEditing,
+    focusFirst,
+    focusLast,
+    resetFocus,
   };
 }
 
