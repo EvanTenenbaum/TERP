@@ -796,10 +796,27 @@ Each Work Surface module requires a feature flag for safe deployment:
 ### Work Surfaces Deployment Tasks (Added 2026-01-20)
 
 > **Deployment Strategy**: `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md`
+> **Execution Roadmap**: `docs/deployment/WORKSURFACES_EXECUTION_ROADMAP.md`
+> **Accelerated Validation**: `docs/deployment/ACCELERATED_VALIDATION_PROTOCOL.md`
 > **QA Gate Scripts**: `scripts/qa/` (placeholder-scan.sh, rbac-verify.sh, feature-parity.sh, invariant-checks.ts)
 > **Session**: `docs/sessions/completed/Session-20260120-WORKSURFACES-DEPLOYMENT-XpszM.md`
 
 These tasks enable progressive rollout of Work Surfaces to production. All 9 Work Surfaces are implemented (95% complete) but currently not routed in App.tsx.
+
+#### Deployment Path Options
+
+| Path | Duration | When to Use |
+|------|----------|-------------|
+| **Traditional Staged Rollout** | 4+ days | Active user base, need real-world observation |
+| **Accelerated AI Validation** | 4-6 hours | Minimal users, AI agents can execute tests |
+
+**Accelerated Validation** replaces staged rollout observation with comprehensive automated testing:
+- Phase A: Infrastructure validation (builds, types, gates)
+- Phase B: Unit tests + Golden Flow matrix (all flows × all roles)
+- Phase C: E2E tests + invariant monitoring
+- Phase D: Rollback verification
+
+Run: `bash scripts/validation/run-accelerated-validation.sh`
 
 | Task | Description | Priority | Status | Estimate | Dependencies |
 |------|-------------|----------|--------|----------|--------------|
