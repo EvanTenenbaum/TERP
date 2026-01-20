@@ -1130,14 +1130,119 @@ First external user exposure requires careful monitoring.
 
 ---
 
+## 🔧 Work Surfaces QA Blockers (Added 2026-01-20)
+
+> **Source:** Work Surfaces Exhaustive Testing Suite (`docs/qa/QA_ISSUE_LEDGER.md`)
+> **QA Report:** `docs/qa/RECOMMENDATIONS.md`, `docs/qa/FIX_PATCH_SET.md`
+> **Product Decisions:** Captured in `docs/qa/QA_ISSUE_LEDGER.md` Product Decisions Log
+
+These P0 blockers were identified during comprehensive QA testing of the 9 Work Surface components. They must be resolved before Work Surfaces deployment.
+
+### WSQA-001: Wire Payment Recording Mutation
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/WSQA-001.md`
+
+**Problem:**
+The InvoicesWorkSurface payment handler (lines 717-724) is a stub that shows success without recording payments. Comment says "In a real implementation..." but mutation is never called. Breaks Invoice → Payment → Reconciliation flow.
+
+**Objectives:**
+
+1. Wire handlePaymentSubmit to trpc.payments.recordPayment mutation
+2. Add loading state and error handling to payment dialog
+3. Verify backend endpoint exists and accepts expected input
+
+**Deliverables:**
+
+- [ ] Payment mutation hook added to InvoicesWorkSurface
+- [ ] Handler calls mutation instead of showing fake success
+- [ ] Dialog shows loading state during mutation
+- [ ] Submit button disabled while pending
+- [ ] Error handling displays server errors
+- [ ] Golden Flow GF-004 passes end-to-end
+
+---
+
+### WSQA-002: Implement Flexible Lot Selection
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2d
+**Module:** `server/db/schema.ts`, `client/src/components/order/BatchSelectionDialog.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/WSQA-002.md`
+
+**Problem:**
+Users need to select specific batches/lots when fulfilling orders based on customer requirements (harvest dates, grades, expiry). Currently only single unitCogs stored per batch with auto-allocation.
+
+**Product Decision:** Flexible lot selection per customer need (not strict FIFO/LIFO).
+
+**Objectives:**
+
+1. Create order_line_item_allocations table to track batch→order mappings
+2. Add backend API for available batches query and allocation mutation
+3. Build BatchSelectionDialog UI component for lot selection
+
+**Deliverables:**
+
+- [ ] order_line_item_allocations table created and migrated
+- [ ] getAvailableForProduct query returns batches with details
+- [ ] allocateBatchesToLineItem mutation validates and saves allocations
+- [ ] BatchSelectionDialog shows available lots with details
+- [ ] UI validates total selected = quantity needed
+- [ ] Weighted average COGS calculated from selected batches
+- [ ] Concurrent requests handled with row-level locking
+
+---
+
+### WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2d
+**Module:** `server/db/schema.ts`, `server/services/orderStateMachine.ts`, `server/services/returnProcessing.ts`
+**Dependencies:** WSQA-002 (allocations table for restock)
+**Prompt:** `docs/prompts/WSQA-003.md`
+
+**Problem:**
+Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for processing returns.
+
+**Product Decision:** Add RETURNED status with two terminal paths:
+- RESTOCKED: Items returned to inventory (increases batch quantities)
+- RETURNED_TO_VENDOR: Items sent to vendor (creates vendor return record)
+
+**Objectives:**
+
+1. Add new enum values: RETURNED, RESTOCKED, RETURNED_TO_VENDOR
+2. Create vendor_returns and vendor_return_items tables
+3. Implement state machine with valid transitions
+4. Build restock and vendor-return processing logic
+
+**Deliverables:**
+
+- [ ] New enum values added to fulfillment_status
+- [ ] vendor_returns table tracks vendor return requests
+- [ ] State machine validates all status transitions
+- [ ] processRestock increases batch quantities and logs movements
+- [ ] processVendorReturn creates return records
+- [ ] UI shows return actions when order status allows
+- [ ] Terminal states show no further actions
+
+---
+
 ## 📊 Beta Summary
 
-| Category                 | Completed | Open   | Total  |
-| ------------------------ | --------- | ------ | ------ |
-| Reliability Program      | 0         | 17     | 17     |
-| UX Work Surface (BETA)   | 0         | 2      | 2      |
-| Work Surfaces Deployment | 0         | 8      | 8      |
-| **TOTAL**                | **0**     | **27** | **27** |
+| Category                   | Completed | Open   | Total  |
+| -------------------------- | --------- | ------ | ------ |
+| Reliability Program        | 0         | 17     | 17     |
+| UX Work Surface (BETA)     | 0         | 2      | 2      |
+| Work Surfaces Deployment   | 0         | 8      | 8      |
+| Work Surfaces QA Blockers  | 0         | 3      | 3      |
+| **TOTAL**                  | **0**     | **30** | **30** |
 
 ---
 
@@ -1146,10 +1251,15 @@ First external user exposure requires careful monitoring.
 | Milestone | Completed | Open   | Total   | Progress |
 | --------- | --------- | ------ | ------- | -------- |
 | MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 27     | 27      | 0%       |
-| **TOTAL** | **185**   | **27** | **214** | ~86%     |
+| Beta      | 0         | 30     | 30      | 0%       |
+| **TOTAL** | **185**   | **30** | **217** | ~85%     |
 
-> **Note**: Beta now includes 17 Reliability Program tasks + 2 UX Work Surface BETA tasks (UXS-702, UXS-706) + 8 Work Surfaces Deployment tasks (DEPLOY-001..008).
+> **Note**: Beta now includes:
+> - 17 Reliability Program tasks
+> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706)
+> - 8 Work Surfaces Deployment tasks (DEPLOY-001..008)
+> - 3 Work Surfaces QA Blockers (WSQA-001..003) - Added 2026-01-20
+>
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
 
 ---
