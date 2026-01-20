@@ -739,9 +739,9 @@ These modals are acceptable per doctrine (rare/destructive actions):
 
 | Hook | Path | Status | Effort Saved |
 |------|------|--------|--------------|
-| `useWorkSurfaceKeyboard` | `hooks/work-surface/useWorkSurfaceKeyboard.ts` | Skeleton ready | ~70% |
-| `useSaveState` | `hooks/work-surface/useSaveState.ts` | Skeleton ready | ~70% |
-| `useValidationTiming` | `hooks/work-surface/useValidationTiming.ts` | Skeleton ready | ~70% |
+| `useWorkSurfaceKeyboard` | `hooks/work-surface/useWorkSurfaceKeyboard.ts` | **IN PROGRESS (~70%)** | ~70% |
+| `useSaveState` | `hooks/work-surface/useSaveState.ts` | **IN PROGRESS (~70%)** | ~70% |
+| `useValidationTiming` | `hooks/work-surface/useValidationTiming.ts` | **IN PROGRESS (~70%)** | ~70% |
 
 These skeleton hooks include:
 - Full TypeScript interfaces
@@ -749,3 +749,46 @@ These skeleton hooks include:
 - Core logic structure with TODOs for completion
 - Integration points with existing hooks
 - Reference to existing patterns (useOptimisticLocking, useAppMutation)
+
+---
+
+## Status Corrections (2026-01-20 Roadmap Review)
+
+> **Source**: Comprehensive Roadmap Review - `docs/roadmaps/COMPREHENSIVE_ROADMAP_REVIEW_2026-01-20.md`
+
+The following task statuses have been verified and corrected based on codebase analysis:
+
+### Layer 0 Tasks - COMPLETED
+
+| Task | Original Status | Corrected Status | Evidence |
+|------|-----------------|------------------|----------|
+| UXS-001 | ready | **COMPLETE** | `FEATURE_PRESERVATION_MATRIX.md` exists (258 lines, 110 features tracked) |
+| UXS-002 | ready | **COMPLETE** | `ATOMIC_UX_STRATEGY.md` exists with complete primitives section |
+| UXS-003 | ready | **COMPLETE** | `PATTERN_APPLICATION_PLAYBOOK.md` exists with decision trees |
+| UXS-004 | ready | **COMPLETE** | `ASSUMPTION_LOG.md` (33 assumptions) + `RISK_REGISTER.md` (32 risks) exist |
+| UXS-005 | ready | **COMPLETE** | All 14 unknown features resolved in matrix (3 confirmed, 8 api-only, 1 missing) |
+
+### Layer 1 Tasks - IN PROGRESS
+
+| Task | Original Status | Corrected Status | Evidence |
+|------|-----------------|------------------|----------|
+| UXS-101 | ready | **IN PROGRESS (~70%)** | `useWorkSurfaceKeyboard.ts` exists (254 lines), needs Tab navigation completion |
+| UXS-102 | ready | **IN PROGRESS (~70%)** | `useSaveState.ts` exists (293 lines), needs integration testing |
+| UXS-104 | ready | **IN PROGRESS (~70%)** | `useValidationTiming.ts` exists (363 lines), needs integration testing |
+
+### Layer 7 Tasks - COMPLETED
+
+| Task | Original Status | Corrected Status | Evidence |
+|------|-----------------|------------------|----------|
+| UXS-703 | ready | **COMPLETE** | `skeleton.tsx` + `skeleton-loaders.tsx` exist in `components/ui/` |
+| UXS-704 | ready | **COMPLETE** | `ErrorBoundary.tsx` + `PageErrorBoundary.tsx` exist |
+
+### Summary After Corrections
+
+| Category | Count |
+|----------|-------|
+| **Completed** | 7 tasks (UXS-001..005, UXS-703, UXS-704) |
+| **In Progress** | 3 tasks (UXS-101, UXS-102, UXS-104) |
+| **Ready (Not Started)** | 25 tasks |
+| **Blocked** | 1 task (UXS-705 - needs product decision) |
+| **BETA Deferred** | 2 tasks (UXS-702, UXS-706) |
