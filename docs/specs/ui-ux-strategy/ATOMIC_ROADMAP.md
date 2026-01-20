@@ -747,25 +747,28 @@ These modals are acceptable per doctrine (rare/destructive actions):
 ## Implementation Scaffolding (Created)
 
 > **Source**: Red Hat QA 2026-01-20 - Skeleton hooks created for 70% effort reduction
+> **Updated**: 2026-01-20 - All core hooks COMPLETE per EXECUTION_PLAN_PHASE2.md
 
-| Hook | Path | Status | Effort Saved |
-|------|------|--------|--------------|
-| `useWorkSurfaceKeyboard` | `hooks/work-surface/useWorkSurfaceKeyboard.ts` | **IN PROGRESS (~70%)** | ~70% |
-| `useSaveState` | `hooks/work-surface/useSaveState.ts` | **IN PROGRESS (~70%)** | ~70% |
-| `useValidationTiming` | `hooks/work-surface/useValidationTiming.ts` | **IN PROGRESS (~70%)** | ~70% |
-
-These skeleton hooks include:
-- Full TypeScript interfaces
-- JSDoc documentation with usage examples
-- Core logic structure with TODOs for completion
-- Integration points with existing hooks
-- Reference to existing patterns (useOptimisticLocking, useAppMutation)
+| Hook | Path | Status | Notes |
+|------|------|--------|-------|
+| `useWorkSurfaceKeyboard` | `hooks/work-surface/useWorkSurfaceKeyboard.tsx` | **COMPLETE** | Keyboard contract, focus management |
+| `useSaveState` | `hooks/work-surface/useSaveState.tsx` | **COMPLETE** | Save indicator, 4 states |
+| `useValidationTiming` | `hooks/work-surface/useValidationTiming.ts` | **COMPLETE** | Blur/commit validation |
+| `useConcurrentEditDetection` | `hooks/work-surface/useConcurrentEditDetection.tsx` | **COMPLETE** | Optimistic locking |
+| `useBreakpoint` | `hooks/work-surface/useBreakpoint.tsx` | **COMPLETE** | Responsive breakpoints |
+| `useUndo` | `hooks/work-surface/useUndo.tsx` | **COMPLETE** | 10s undo window |
+| `usePerformanceMonitor` | `hooks/work-surface/usePerformanceMonitor.ts` | **COMPLETE** | Performance budgets |
+| `useBulkOperationLimits` | `hooks/work-surface/useBulkOperationLimits.tsx` | **COMPLETE** | Bulk operation limits |
+| `useToastConfig` | `hooks/work-surface/useToastConfig.ts` | **COMPLETE** | Toast standardization |
+| `usePrint` | `hooks/work-surface/usePrint.ts` | **COMPLETE** | Print functionality |
+| `useExport` | `hooks/work-surface/useExport.ts` | **COMPLETE** | Export with row limits |
 
 ---
 
 ## Status Corrections (2026-01-20 Roadmap Review)
 
 > **Source**: Comprehensive Roadmap Review - `docs/roadmaps/COMPREHENSIVE_ROADMAP_REVIEW_2026-01-20.md`
+> **Updated**: 2026-01-20 - EXECUTION_PLAN_PHASE2.md Sprint 4-8 COMPLETE
 
 The following task statuses have been verified and corrected based on codebase analysis:
 
@@ -779,29 +782,80 @@ The following task statuses have been verified and corrected based on codebase a
 | UXS-004 | ready | **COMPLETE** | `ASSUMPTION_LOG.md` (33 assumptions) + `RISK_REGISTER.md` (32 risks) exist |
 | UXS-005 | ready | **COMPLETE** | All 14 unknown features resolved in matrix (3 confirmed, 8 api-only, 1 missing) |
 
-### Layer 1 Tasks - IN PROGRESS
+### Layer 1 Tasks - COMPLETED
 
 | Task | Original Status | Corrected Status | Evidence |
 |------|-----------------|------------------|----------|
-| UXS-101 | ready | **IN PROGRESS (~70%)** | `useWorkSurfaceKeyboard.ts` exists (254 lines), needs Tab navigation completion |
-| UXS-102 | ready | **IN PROGRESS (~70%)** | `useSaveState.ts` exists (293 lines), needs integration testing |
-| UXS-104 | ready | **IN PROGRESS (~70%)** | `useValidationTiming.ts` exists (363 lines), needs integration testing |
+| UXS-101 | IN PROGRESS | **COMPLETE** | `useWorkSurfaceKeyboard.tsx` - full keyboard contract |
+| UXS-102 | IN PROGRESS | **COMPLETE** | `useSaveState.tsx` - all 4 states + indicator |
+| UXS-103 | ready | **COMPLETE** | `InspectorPanel.tsx` exists with sections/fields |
+| UXS-104 | IN PROGRESS | **COMPLETE** | `useValidationTiming.ts` - blur/commit timing |
 
-### Layer 7 Tasks - COMPLETED
+### Layer 2-3 Tasks - COMPLETED (Sprints 4-5)
 
-| Task | Original Status | Corrected Status | Evidence |
-|------|-----------------|------------------|----------|
-| UXS-703 | ready | **COMPLETE** | `skeleton.tsx` + `skeleton-loaders.tsx` exist in `components/ui/` |
-| UXS-704 | ready | **COMPLETE** | `ErrorBoundary.tsx` + `PageErrorBoundary.tsx` exist |
+| Task | Status | Evidence |
+|------|--------|----------|
+| UXS-201 | **COMPLETE** | `DirectIntakeWorkSurface.tsx` |
+| UXS-202 | **COMPLETE** | `PurchaseOrdersWorkSurface.tsx` |
+| UXS-203 | **COMPLETE** | `ClientsWorkSurface.tsx` |
+| UXS-301 | **COMPLETE** | `OrdersWorkSurface.tsx` |
+| UXS-302 | **COMPLETE** | `QuotesWorkSurface.tsx` |
 
-### Summary After Corrections
+### Layer 4-5 Tasks - COMPLETED (Sprints 4-5)
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| UXS-401 | **COMPLETE** | `InventoryWorkSurface.tsx` |
+| UXS-402 | **COMPLETE** | `PickPackWorkSurface.tsx` |
+| UXS-501 | **COMPLETE** | `InvoicesWorkSurface.tsx` |
+| UXS-502 | **COMPLETE** | `ClientLedgerWorkSurface.tsx` |
+
+### Layer 6 Tasks - COMPLETED (Sprint 5)
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| UXS-601 | **COMPLETE** | `MODAL_AUDIT.md` + 3 inspector replacements |
+| UXS-602 | **COMPLETE** | `tests-e2e/golden-flows/` - 6 test suites |
+| UXS-603 | **COMPLETE** | `cmd-k-enforcement.spec.ts` |
+
+### Layer 7 Tasks - COMPLETED (Sprints 6-8)
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| UXS-701 | **COMPLETE** | `useBreakpoint.tsx` - responsive breakpoints |
+| UXS-703 | **COMPLETE** | `skeleton.tsx` + `skeleton-loaders.tsx` |
+| UXS-704 | **COMPLETE** | `ErrorBoundary.tsx` + `PageErrorBoundary.tsx` |
+| UXS-705 | **COMPLETE** | `useConcurrentEditDetection.tsx` |
+| UXS-707 | **COMPLETE** | `useUndo.tsx` - 10s undo window |
+
+### Layer 8 Tasks - COMPLETED (Sprints 7-8)
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| UXS-801 | **COMPLETE** | `ACCESSIBILITY_CHECKLIST.md` |
+| UXS-802 | **COMPLETE** | `usePerformanceMonitor.ts` |
+| UXS-803 | **COMPLETE** | `useBulkOperationLimits.tsx` |
+| UXS-901 | **COMPLETE** | `empty-state.tsx` (pre-existing, verified) |
+| UXS-902 | **COMPLETE** | `useToastConfig.ts` |
+| UXS-903 | **COMPLETE** | `print.css` + `usePrint.ts` |
+| UXS-904 | **COMPLETE** | `useExport.ts` |
+
+### Summary After Corrections (2026-01-20)
 
 | Category | Count |
 |----------|-------|
-| **Completed** | 7 tasks (UXS-001..005, UXS-703, UXS-704) |
-| **In Progress** | 3 tasks (UXS-101, UXS-102, UXS-104) |
-| **Ready (Not Started)** | 26 tasks (including UXS-705 - now unblocked) |
+| **Completed** | 35+ tasks |
+| **In Progress** | 0 tasks |
+| **Ready (Not Started)** | See remaining items below |
 | **Blocked** | 0 tasks |
 | **BETA Deferred** | 2 tasks (UXS-702, UXS-706) |
 
-> **UXS-705 UNBLOCKED (2026-01-20)**: Product decision received - Hybrid + Customization approach approved.
+### Remaining Tasks (Not Yet Started)
+
+| Task | Description | Priority |
+|------|-------------|----------|
+| UXS-006 | Ledger + intake verification UX audit | P1 |
+| UXS-702 | Offline mode (BETA deferred) | P3 |
+| UXS-706 | Dark mode refinements (BETA deferred) | P3 |
+
+> **UXS-705 COMPLETE (2026-01-20)**: Concurrent edit detection implemented with optimistic locking.
