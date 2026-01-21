@@ -991,7 +991,8 @@ async function main() {
 
     await seedBills(connection, vendorIds, userIds, counts.bills);
 
-    await seedCashLocations(connection);
+    // Skip cash_locations - table doesn't exist in production
+    // await seedCashLocations(connection);
 
     await seedLeaderboardData(connection, clientIds);
 
