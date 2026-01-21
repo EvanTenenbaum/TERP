@@ -20,6 +20,14 @@ import {
   Plus,
   Heart,
   DollarSign,
+  Trophy,       // NAV-014: Leaderboard
+  Target,       // NAV-014: Client Needs
+  GitMerge,     // NAV-014: Matchmaking
+  ClipboardList, // NAV-014: Quotes
+  RotateCcw,    // NAV-014: Returns
+  Store,        // NAV-014: Vendor Supply
+  Tag,          // NAV-014: Pricing Rules
+  Workflow,     // NAV-014: Workflow Queue
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -120,6 +128,79 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           shortcut: "S",
           action: () => {
             setLocation("/settings");
+            onOpenChange(false);
+          },
+        },
+        // NAV-014: Add new routes to Command Palette
+        {
+          id: "leaderboard",
+          label: "Leaderboard",
+          icon: Trophy,
+          action: () => {
+            setLocation("/leaderboard");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "client-needs",
+          label: "Client Needs",
+          icon: Target,
+          action: () => {
+            setLocation("/client-needs");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "matchmaking",
+          label: "Matchmaking",
+          icon: GitMerge,
+          action: () => {
+            setLocation("/matchmaking");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "quotes",
+          label: "Quotes",
+          icon: ClipboardList,
+          action: () => {
+            setLocation("/quotes");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "returns",
+          label: "Returns",
+          icon: RotateCcw,
+          action: () => {
+            setLocation("/returns");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "vendor-supply",
+          label: "Vendor Supply",
+          icon: Store,
+          action: () => {
+            setLocation("/vendor-supply");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "pricing-rules",
+          label: "Pricing Rules",
+          icon: Tag,
+          action: () => {
+            setLocation("/pricing-rules");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "workflow-queue",
+          label: "Workflow Queue",
+          icon: Workflow,
+          action: () => {
+            setLocation("/workflow-queue");
             onOpenChange(false);
           },
         },
