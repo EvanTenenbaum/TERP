@@ -202,14 +202,14 @@ async function seedUsers(connection: mysql.Connection) {
 async function seedPricingDefaults(connection: mysql.Connection) {
   console.log('💰 Seeding pricing defaults...');
 
-  // Schema: product_category (varchar), default_margin_percent (decimal)
+  // Schema: category (varchar), default_margin_percent (decimal)
   const categories = ['Flower', 'Pre-Roll', 'Concentrate', 'Edible', 'Vape', 'Topical', 'Tincture', 'Accessories'];
 
   for (const category of categories) {
     const defaultMargin = faker.number.float({ min: 20, max: 40, fractionDigits: 2 });
 
     await connection.query(
-      `INSERT INTO pricing_defaults (product_category, default_margin_percent)
+      `INSERT INTO pricing_defaults (category, default_margin_percent)
        VALUES (?, ?)
        ON DUPLICATE KEY UPDATE default_margin_percent = VALUES(default_margin_percent)`,
       [category, defaultMargin]
