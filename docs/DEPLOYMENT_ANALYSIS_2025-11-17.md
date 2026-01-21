@@ -72,7 +72,7 @@ mysql -u doadmin -p \
   defaultdb
 ```
 
-**Password:** `AVNS_Q_RGkS7-uB3Bk7xC2am`
+**Password:** `<REDACTED>`
 
 ### Step 2: Run Migration
 

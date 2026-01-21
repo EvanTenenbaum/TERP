@@ -67,7 +67,7 @@ A task is **100% COMPLETE** only when:
 
 **Problem:** Production database credentials exposed in `drizzle/migrations/0007_DEPLOYMENT_INSTRUCTIONS.md`:
 - Host: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- Password: `AVNS_Q_RGkS7-uB3Bk7xC2am`
+- Password: `<REDACTED>`
 
 **HUMAN ACTIONS REQUIRED:**
 1. [ ] Log into DigitalOcean control panel
