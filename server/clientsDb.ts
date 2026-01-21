@@ -539,7 +539,8 @@ export async function updateClientStats(clientId: number) {
   for (const txn of transactions) {
     const amount = Number(txn.amount);
     // Calculate profit from transaction margin if available
-    const profit = Number(txn.profit || 0);
+    // Note: profit field may not exist on all transactions
+    const profit = Number((txn as { profit?: string | number | null }).profit || 0);
 
     if (txn.transactionType === "INVOICE" || txn.transactionType === "ORDER") {
       totalSpent += amount;

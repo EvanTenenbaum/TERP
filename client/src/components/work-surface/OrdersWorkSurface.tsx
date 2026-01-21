@@ -387,7 +387,7 @@ export function OrdersWorkSurface() {
   }), [draftOrders, confirmedOrders]);
 
   // Mutations
-  const confirmOrderMutation = trpc.orders.confirm.useMutation({
+  const confirmOrderMutation = trpc.orders.confirmDraftOrder.useMutation({
     onMutate: () => setSaving("Confirming order..."),
     onSuccess: () => {
       toast.success("Order confirmed");
@@ -610,7 +610,10 @@ export function OrdersWorkSurface() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>Cancel</Button>
             <Button
-              onClick={() => selectedOrderId && confirmOrderMutation.mutate({ orderId: selectedOrderId })}
+              onClick={() => selectedOrderId && confirmOrderMutation.mutate({
+                orderId: selectedOrderId,
+                paymentTerms: "NET_30" // Default payment terms
+              })}
               disabled={confirmOrderMutation.isPending}
             >
               {confirmOrderMutation.isPending ? "Confirming..." : "Confirm Order"}

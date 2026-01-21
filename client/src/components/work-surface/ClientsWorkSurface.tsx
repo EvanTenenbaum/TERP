@@ -193,7 +193,7 @@ function ClientInspectorContent({ client, onUpdate, onNavigate, onArchive }: Cli
   // Validation
   const validation = useValidationTiming({
     schema: clientSchema,
-    initialValues: client || {},
+    initialValues: client ? { name: client.name, email: client.email ?? undefined, phone: client.phone ?? undefined, notes: client.notes ?? undefined } : undefined,
   });
 
   useEffect(() => {
@@ -779,7 +779,7 @@ export function ClientsWorkSurface() {
           isOpen={inspector.isOpen}
           onClose={inspector.close}
           title={selectedClient?.name || "Client Details"}
-          subtitle={selectedClient?.email || undefined}
+          subtitle={selectedClient?.email ?? undefined}
         >
           <ClientInspectorContent
             client={selectedClient}

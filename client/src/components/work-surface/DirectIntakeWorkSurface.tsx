@@ -609,7 +609,7 @@ export function DirectIntakeWorkSurface() {
       },
       {
         headerName: "",
-        field: "actions",
+        colId: "actions",
         width: 50,
         cellRenderer: (params: any) => (
           <Button
@@ -734,7 +734,7 @@ export function DirectIntakeWorkSurface() {
     // Validate
     const result = intakeRowSchema.safeParse(row);
     if (!result.success) {
-      const firstError = result.error.errors[0];
+      const firstError = result.error.issues[0];
       toast.error(firstError?.message || "Validation failed");
       return;
     }

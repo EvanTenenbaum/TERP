@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 
 interface OrderItem {
+  id?: number;
   batchId: number;
   displayName: string;
   quantity: number;

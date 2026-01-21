@@ -67,7 +67,7 @@ import {
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { ClientCombobox, type ClientOption } from '@/components/ui/client-combobox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useWorkSurfaceKeyboard, type KeyboardConfig } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
+import { useWorkSurfaceKeyboard } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
 import { useSaveState } from '@/hooks/work-surface/useSaveState';
 import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
 import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
@@ -731,42 +731,46 @@ export function ClientLedgerWorkSurface() {
   }, [inspectorTransaction]);
 
   // Keyboard configuration
-  const keyboardConfig: KeyboardConfig = useMemo(() => ({
-    onArrowUp: () => {
-      setFocusedRowIndex((prev) => Math.max(0, prev - 1));
-    },
-    onArrowDown: () => {
-      setFocusedRowIndex((prev) => Math.min(transactions.length - 1, prev + 1));
-    },
-    onEnter: () => {
-      if (transactions[focusedRowIndex]) {
-        openInspector(transactions[focusedRowIndex]);
-      }
-    },
-    onEscape: () => {
-      if (inspectorTransaction) {
-        closeInspector();
-      } else {
-        setSelectedTransactionId(null);
-      }
-    },
-    onTab: () => {
-      // Move to next page if at end
-      if (focusedRowIndex === transactions.length - 1 && page < totalPages - 1) {
-        setPage((p) => p + 1);
-        setFocusedRowIndex(0);
-      }
-    },
-    onCmdK: () => {
-      searchInputRef.current?.focus();
-    },
-    customBindings: {
+  const keyboardConfig = useMemo(() => ({
+    customHandlers: {
+      arrowup: () => {
+        setFocusedRowIndex((prev) => Math.max(0, prev - 1));
+      },
+      arrowdown: () => {
+        setFocusedRowIndex((prev) => Math.min(transactions.length - 1, prev + 1));
+      },
+      enter: () => {
+        if (transactions[focusedRowIndex]) {
+          openInspector(transactions[focusedRowIndex]);
+        }
+      },
+      tab: () => {
+        // Move to next page if at end
+        if (focusedRowIndex === transactions.length - 1 && page < totalPages - 1) {
+          setPage((p) => p + 1);
+          setFocusedRowIndex(0);
+        }
+      },
+      'cmd+k': () => {
+        searchInputRef.current?.focus();
+      },
+      'ctrl+k': () => {
+        searchInputRef.current?.focus();
+      },
       'a': () => setShowAdjustmentDialog(true),
       'e': () => handleExport(),
       '[': () => setPage((p) => Math.max(0, p - 1)),
       ']': () => setPage((p) => Math.min(totalPages - 1, p + 1)),
       'c': () => handleClearFilters(),
     },
+    onCancel: () => {
+      if (inspectorTransaction) {
+        closeInspector();
+      } else {
+        setSelectedTransactionId(null);
+      }
+    },
+    containerRef,
   }), [
     focusedRowIndex,
     transactions,
@@ -777,9 +781,10 @@ export function ClientLedgerWorkSurface() {
     closeInspector,
     handleExport,
     handleClearFilters,
+    containerRef,
   ]);
 
-  useWorkSurfaceKeyboard(keyboardConfig, { containerRef });
+  useWorkSurfaceKeyboard(keyboardConfig);
 
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-background" tabIndex={0}>

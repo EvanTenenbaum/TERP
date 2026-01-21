@@ -64,8 +64,8 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
         setActiveSession({
           id: data.session.id,
           roomCode: data.session.roomCode,
-          title: data.session.title,
-          hostName: data.session.hostName || "Host",
+          title: data.session.title ?? "",
+          hostName: data.session.hostName ?? "Host",
           status: data.session.status,
         });
         setIsSessionActive(true);
@@ -82,8 +82,8 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
       setActiveSession({
         id: activeSessions.session.id,
         roomCode: activeSessions.session.roomCode,
-        title: activeSessions.session.title || "Live Shopping Session",
-        hostName: activeSessions.session.hostName || "Staff",
+        title: activeSessions.session.title ?? "Live Shopping Session",
+        hostName: activeSessions.session.hostName ?? "Staff",
         status: activeSessions.session.status,
       });
       // Don't auto-enter, let user click to join

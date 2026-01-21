@@ -341,42 +341,46 @@ export function InventoryWorkSurface() {
     isLoading,
     refetch,
   } = trpc.inventory.list.useQuery({
-    search: search || undefined,
-    status: statusFilter !== "ALL" ? statusFilter : undefined,
+    query: search || undefined,
+    status: statusFilter !== "ALL" ? statusFilter as "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED" : undefined,
     category: categoryFilter !== "ALL" ? categoryFilter : undefined,
     limit: pageSize,
-    offset: page * pageSize,
+    cursor: page * pageSize,
   });
 
-  const items = inventoryData?.items ?? [];
-  const totalCount = inventoryData?.pagination?.total ?? items.length;
+  const rawItems = inventoryData?.items ?? [];
+  // Cast to our local interface type for easier manipulation
+  const items = rawItems as unknown as InventoryItem[];
+  // Note: inventory.list returns { items, hasMore, nextCursor }, not pagination.total
+  // Use items.length as approximation; hasMore indicates if there are additional pages
+  const hasMore = (inventoryData as { hasMore?: boolean })?.hasMore ?? false;
+  const totalCount = hasMore ? items.length + pageSize : items.length;
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Selected item
   const selectedItem = useMemo(
-    () => items.find((i: InventoryItem) => i.batch?.id === selectedBatchId) || null,
+    () => items.find((i) => i.batch?.id === selectedBatchId) || null,
     [items, selectedBatchId]
   );
 
   // Statistics
   const stats = useMemo(() => {
-    const all = items as InventoryItem[];
-    const totalQty = all.reduce((sum, i) => sum + parseFloat(i.batch?.onHandQty || "0"), 0);
-    const totalValue = all.reduce((sum, i) => {
+    const totalQty = items.reduce((sum, i) => sum + parseFloat(i.batch?.onHandQty || "0"), 0);
+    const totalValue = items.reduce((sum, i) => {
       const qty = parseFloat(i.batch?.onHandQty || "0");
       const cost = parseFloat(i.batch?.unitCogs || "0");
       return sum + qty * cost;
     }, 0);
-    const liveCount = all.filter((i) => i.batch?.batchStatus === "LIVE").length;
-    return { total: all.length, totalQty, totalValue, liveCount };
+    const liveCount = items.filter((i) => i.batch?.batchStatus === "LIVE").length;
+    return { total: items.length, totalQty, totalValue, liveCount };
   }, [items]);
 
   // Sort items
   const displayItems = useMemo(() => {
     if (!sortColumn) return items;
-    return [...items].sort((a: InventoryItem, b: InventoryItem) => {
-      let aVal: any;
-      let bVal: any;
+    return [...items].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
       if (sortColumn === "product") {
         aVal = a.product?.nameCanonical || "";
         bVal = b.product?.nameCanonical || "";
@@ -386,6 +390,8 @@ export function InventoryWorkSurface() {
       } else if (sortColumn === "unitCogs") {
         aVal = parseFloat(a.batch?.unitCogs || "0");
         bVal = parseFloat(b.batch?.unitCogs || "0");
+      } else {
+        return 0;
       }
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
@@ -394,14 +400,14 @@ export function InventoryWorkSurface() {
   }, [items, sortColumn, sortDirection]);
 
   // Mutations
-  const updateStatusMutation = trpc.inventory.batch.updateStatus.useMutation({
+  const updateStatusMutation = trpc.inventory.updateStatus.useMutation({
     onMutate: () => setSaving("Updating status..."),
     onSuccess: () => {
       toast.success("Status updated");
       setSaved();
       refetch();
     },
-    onError: (err) => {
+    onError: (err: { message: string }) => {
       toast.error(err.message || "Failed to update status");
       setError(err.message);
     },
@@ -413,24 +419,24 @@ export function InventoryWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
-      "ctrl+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
-      arrowdown: (e) => {
-        e.preventDefault();
+      "cmd+k": (e: KeyboardEvent) => { e?.preventDefault(); searchInputRef.current?.focus(); },
+      "ctrl+k": (e: KeyboardEvent) => { e?.preventDefault(); searchInputRef.current?.focus(); },
+      arrowdown: (e: KeyboardEvent) => {
+        e?.preventDefault();
         const newIndex = Math.min(displayItems.length - 1, selectedIndex + 1);
         setSelectedIndex(newIndex);
         const item = displayItems[newIndex];
         if (item?.batch) setSelectedBatchId(item.batch.id);
       },
-      arrowup: (e) => {
-        e.preventDefault();
+      arrowup: (e: KeyboardEvent) => {
+        e?.preventDefault();
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const item = displayItems[newIndex];
         if (item?.batch) setSelectedBatchId(item.batch.id);
       },
-      enter: (e) => {
-        if (selectedItem) { e.preventDefault(); inspector.open(); }
+      enter: (e: KeyboardEvent) => {
+        if (selectedItem) { e?.preventDefault(); inspector.open(); }
       },
     },
     onCancel: () => { if (inspector.isOpen) inspector.close(); },
@@ -448,8 +454,9 @@ export function InventoryWorkSurface() {
 
   const handleEdit = (batchId: number) => setLocation(`/inventory/${batchId}`);
 
-  const handleStatusChange = (batchId: number, status: string) => {
-    updateStatusMutation.mutate({ batchId, status: status as any });
+  type BatchStatus = "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED";
+  const handleStatusChange = (batchId: number, newStatus: string) => {
+    updateStatusMutation.mutate({ id: batchId, status: newStatus as BatchStatus });
   };
 
   const SortIcon = ({ column }: { column: string }) => {

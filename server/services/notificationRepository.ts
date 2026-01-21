@@ -139,6 +139,7 @@ const normalizePreferenceRecord = (
     inAppEnabled:
       preference.inAppEnabled ?? defaultPreferences.inAppEnabled,
     emailEnabled: preference.emailEnabled ?? defaultPreferences.emailEnabled,
+    smsEnabled: preference.smsEnabled ?? false,
     appointmentReminders:
       preference.appointmentReminders ?? defaultPreferences.appointmentReminders,
     orderUpdates: preference.orderUpdates ?? defaultPreferences.orderUpdates,
@@ -336,7 +337,7 @@ function createDbRepository(db: Database): NotificationRepository {
           offset,
         });
       } catch (error) {
-        logger.error("Database error fetching notifications", { error, recipient });
+        logger.error({ error, recipient }, "Database error fetching notifications");
         throw error; // Let router handle conversion to TRPCError
       }
     },

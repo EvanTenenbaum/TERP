@@ -162,7 +162,7 @@ export const ordersRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
-        logger.error("Failed to get order by ID", { error, orderId: input.id });
+        logger.error({ error, orderId: input.id }, "Failed to get order by ID");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch order details",
