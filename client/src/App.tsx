@@ -80,6 +80,8 @@ import { NotificationsPage } from "@/pages/NotificationsPage";
 const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 // Sprint 4 Track D: Scheduling System
 const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
+// MEET-048: Hour Tracking / Time Clock
+const TimeClockPage = lazy(() => import("@/pages/TimeClockPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -465,6 +467,11 @@ function Router() {
                 <Route
                   path="/scheduling"
                   component={withLazyErrorBoundary(SchedulingPage)}
+                />
+                {/* MEET-048: Hour Tracking / Time Clock */}
+                <Route
+                  path="/time-clock"
+                  component={withLazyErrorBoundary(TimeClockPage)}
                 />
                 <Route
                   path="/workflow-queue"

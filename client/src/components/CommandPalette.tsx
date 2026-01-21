@@ -29,6 +29,7 @@ import {
   Tag, // NAV-014: Pricing Rules
   Workflow, // NAV-014: Workflow Queue
   CreditCard, // NAV-017: Credits
+  Clock, // MEET-048: Time Clock
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -214,6 +215,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           icon: CreditCard,
           action: () => {
             setLocation("/credits");
+            onOpenChange(false);
+          },
+        },
+        {
+          // MEET-048: Time Clock for hour tracking
+          id: "time-clock",
+          label: "Time Clock",
+          icon: Clock,
+          action: () => {
+            setLocation("/time-clock");
             onOpenChange(false);
           },
         },

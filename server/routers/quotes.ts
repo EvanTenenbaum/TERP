@@ -21,6 +21,12 @@ import { eq, desc, and, sql, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import * as ordersDb from "../ordersDb";
+import {
+  sendEmail,
+  isEmailEnabled,
+  generateQuoteEmailHtml,
+  generateQuoteEmailText,
+} from "../services/emailService";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -254,24 +260,39 @@ export const quotesRouter = router({
     }),
 
   /**
-   * Update quote status to SENT
+   * Update quote status to SENT and optionally send email
+   * API-016: Quote email sending
    */
   send: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({ id: z.number() }))
+    .input(
+      z.object({
+        id: z.number(),
+        sendEmail: z.boolean().default(true),
+        customMessage: z.string().optional(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const [quote] = await db
-        .select()
+      // Get quote with client info
+      const [result] = await db
+        .select({
+          orders: orders,
+          clients: clients,
+        })
         .from(orders)
+        .leftJoin(clients, eq(orders.clientId, clients.id))
         .where(and(eq(orders.id, input.id), eq(orders.orderType, "QUOTE")))
         .limit(1);
 
-      if (!quote) {
+      if (!result) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Quote not found" });
       }
+
+      const quote = result.orders;
+      const client = result.clients;
 
       if (quote.quoteStatus === "CONVERTED") {
         throw new TRPCError({
@@ -280,20 +301,113 @@ export const quotesRouter = router({
         });
       }
 
+      // Update quote status
       await db
         .update(orders)
-        .set({
-          quoteStatus: "SENT",
-          // Using a workaround since sentAt doesn't exist in schema
-          // We can add this to notes or use updatedAt
-        })
+        .set({ quoteStatus: "SENT" })
         .where(eq(orders.id, input.id));
 
-      logger.info({ msg: "[Quotes] Quote sent", quoteId: input.id });
+      logger.info({
+        msg: "[Quotes] Quote status updated to SENT",
+        quoteId: input.id,
+      });
 
-      // TODO: Send email notification to client
-      // Email integration not configured - requires FEATURE_EMAIL_ENABLED=true
-      // and email service provider configuration (Resend/SendGrid)
+      // Send email if requested and client has email
+      let emailResult = null;
+      if (input.sendEmail && client?.email) {
+        try {
+          // Parse quote items
+          let items: Array<{
+            name: string;
+            quantity: number;
+            unitPrice: number;
+            total: number;
+          }> = [];
+
+          try {
+            const parsedItems =
+              typeof quote.items === "string"
+                ? JSON.parse(quote.items)
+                : quote.items;
+
+            items = (parsedItems || []).map(
+              (item: {
+                displayName?: string;
+                productName?: string;
+                quantity: number;
+                unitPrice: number;
+              }) => ({
+                name: item.displayName || item.productName || "Product",
+                quantity: Number(item.quantity),
+                unitPrice: Number(item.unitPrice),
+                total: Number(item.quantity) * Number(item.unitPrice),
+              })
+            );
+          } catch {
+            logger.warn(
+              { quoteId: input.id },
+              "[Quotes] Failed to parse quote items"
+            );
+          }
+
+          const subtotal = Number(quote.subtotal || 0);
+          const total = Number(quote.total || quote.subtotal || 0);
+          const validUntil =
+            quote.validUntil?.toString() ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+          // Generate email content
+          const htmlContent = generateQuoteEmailHtml({
+            quoteNumber: quote.orderNumber,
+            clientName: client.name || "Valued Customer",
+            items,
+            subtotal,
+            total,
+            validUntil,
+            notes: input.customMessage || quote.notes || undefined,
+          });
+
+          const textContent = generateQuoteEmailText({
+            quoteNumber: quote.orderNumber,
+            clientName: client.name || "Valued Customer",
+            items,
+            subtotal,
+            total,
+            validUntil,
+            notes: input.customMessage || quote.notes || undefined,
+          });
+
+          // Send email
+          emailResult = await sendEmail({
+            to: client.email,
+            subject: `Quote ${quote.orderNumber} from TERP`,
+            html: htmlContent,
+            text: textContent,
+          });
+
+          if (emailResult.success) {
+            logger.info(
+              {
+                quoteId: input.id,
+                to: client.email,
+                provider: emailResult.provider,
+              },
+              "[Quotes] Quote email sent"
+            );
+          } else {
+            logger.error(
+              { quoteId: input.id, error: emailResult.error },
+              "[Quotes] Failed to send quote email"
+            );
+          }
+        } catch (error) {
+          logger.error(
+            { error, quoteId: input.id },
+            "[Quotes] Email send error"
+          );
+          emailResult = { success: false, error: String(error) };
+        }
+      }
 
       // Refetch the updated quote
       const [updated] = await db
@@ -302,7 +416,21 @@ export const quotesRouter = router({
         .where(eq(orders.id, input.id))
         .limit(1);
 
-      return updated || quote;
+      return {
+        quote: updated || quote,
+        emailSent: emailResult?.success || false,
+        emailProvider: emailResult?.provider,
+        emailError: emailResult?.error,
+      };
+    }),
+
+  /**
+   * Check if email sending is enabled
+   */
+  isEmailEnabled: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(() => {
+      return { enabled: isEmailEnabled() };
     }),
 
   /**

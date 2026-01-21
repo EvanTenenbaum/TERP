@@ -31,6 +31,7 @@ import {
   Store, // NAV-011: Vendor Supply
   Tag, // NAV-012: Pricing Rules
   Workflow, // NAV-013: Workflow Queue
+  Clock, // MEET-048: Time Clock
   type LucideIcon,
 } from "lucide-react";
 
@@ -241,6 +242,14 @@ export const navigationItems: NavigationItem[] = [
     path: "/scheduling",
     icon: CalendarClock,
     group: "admin",
+  },
+  // MEET-048: Time Clock for hour tracking
+  {
+    name: "Time Clock",
+    path: "/time-clock",
+    icon: Clock,
+    group: "admin",
+    ariaLabel: "Clock in/out and manage timesheets",
   },
   // FEAT-017: Direct access to Feature Flags for improved discoverability
   {
