@@ -578,13 +578,13 @@ export function OrderCreationFlow({
   const { saveState, setSaving, setSaved, setError } = useSaveState();
 
   // Data queries
-  const { data: batchesData, isLoading: loadingBatches } = trpc.inventory.batches.getAll.useQuery(
-    { intakeId },
+  const { data: batchesData, isLoading: loadingBatches } = trpc.inventory.getEnhanced.useQuery(
+    { intakeId } as any,
     { enabled: open }
   );
   const batches: IntakeBatch[] = Array.isArray(batchesData)
     ? batchesData
-    : (batchesData as any)?.items ?? [];
+    : (batchesData as any)?.batches ?? (batchesData as any)?.items ?? [];
 
   const { data: clientsData, isLoading: loadingClients } = trpc.clients.list.useQuery(
     { limit: 500 },
@@ -647,7 +647,8 @@ export function OrderCreationFlow({
     onSuccess: (data) => {
       setSaved();
       toast.success("Order created successfully!");
-      onOrderCreated?.(data.id);
+      const orderId = typeof data === 'number' ? data : (data as any).id;
+      onOrderCreated?.(orderId);
       onOpenChange(false);
       // Reset state
       setCurrentStep(1);
@@ -669,15 +670,15 @@ export function OrderCreationFlow({
       }
 
       createOrderMutation.mutate({
+        orderType: "SALE",
         clientId: selectedClientId,
-        isDraft: asDraft,
-        lineItems: products.map((p) => ({
-          productId: p.productId,
-          quantity: p.selectedQuantity,
-          unitPrice: p.unitPrice,
+        items: products.map((p) => ({
           batchId: p.batchId,
+          quantity: p.selectedQuantity,
+          unitPrice: parseFloat(p.unitPrice),
+          isSample: false,
         })),
-      });
+      } as unknown as Parameters<typeof createOrderMutation.mutate>[0]);
     },
     [selectedClientId, products, createOrderMutation]
   );
@@ -695,7 +696,7 @@ export function OrderCreationFlow({
         handlePrevStep();
       },
     },
-    onCommit: () => {
+    onRowCommit: () => {
       if (currentStep === FLOW_STEPS.length && canProceed) {
         handleCreateOrder(false);
       } else if (canProceed) {

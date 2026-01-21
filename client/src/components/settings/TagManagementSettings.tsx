@@ -325,7 +325,13 @@ export function TagManagementSettings() {
                   {tags.map((tag) => (
                     <TableRow key={tag.id}>
                       <TableCell>
-                        <ColorTagBadge tag={tag} />
+                        <ColorTagBadge tag={{
+                          id: tag.id,
+                          name: tag.name,
+                          color: tag.color ?? undefined,
+                          category: tag.category ?? undefined,
+                          description: tag.description ?? undefined,
+                        }} />
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{tag.category || "CUSTOM"}</Badge>

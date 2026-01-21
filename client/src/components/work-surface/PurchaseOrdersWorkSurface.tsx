@@ -385,8 +385,8 @@ export function PurchaseOrdersWorkSurface() {
   const suppliers = useMemo(() => {
     const items = Array.isArray(suppliersRawData)
       ? suppliersRawData
-      : (suppliersRawData as any)?.items ?? [];
-    return items.map((client: any) => ({
+      : (suppliersRawData as { items?: Array<{ id: number; name: string }> })?.items ?? [];
+    return items.map((client: { id: number; name: string }) => ({
       id: client.id,
       name: client.name,
     }));
@@ -394,8 +394,8 @@ export function PurchaseOrdersWorkSurface() {
 
   const { data: productsData } = trpc.inventory.list.useQuery({});
   const products = useMemo(() => {
-    const items = productsData?.items ?? [];
-    return items.map((item: any) => ({
+    const items = (productsData?.items ?? []) as Array<{ batch?: { id?: number; sku?: string }; product?: { id?: number; nameCanonical?: string } | null }>;
+    return items.map((item) => ({
       id: item.batch?.id || item.product?.id || 0,
       name: item.product?.nameCanonical || item.batch?.sku || "Unknown",
     }));

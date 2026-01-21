@@ -575,7 +575,7 @@ function ConfirmStep({
         </div>
         <Switch
           checked={config.sendReceipt}
-          onCheckedChange={(checked) => onRecord && void 0}
+          onCheckedChange={() => {}}
         />
       </div>
 
@@ -653,8 +653,8 @@ export function InvoiceToPaymentFlow({
         invoiceNumber: invoiceData.invoiceNumber,
         customerId: invoiceData.customerId,
         customerName: (invoiceData as any).customerName || "Unknown",
-        invoiceDate: invoiceData.invoiceDate,
-        dueDate: invoiceData.dueDate,
+        invoiceDate: invoiceData.invoiceDate instanceof Date ? invoiceData.invoiceDate.toISOString() : String(invoiceData.invoiceDate),
+        dueDate: invoiceData.dueDate instanceof Date ? invoiceData.dueDate.toISOString() : String(invoiceData.dueDate),
         totalAmount: invoiceData.totalAmount,
         amountPaid: invoiceData.amountPaid,
         amountDue: invoiceData.amountDue,
@@ -686,7 +686,8 @@ export function InvoiceToPaymentFlow({
     onSuccess: (data) => {
       setSaved();
       toast.success("Payment recorded successfully!");
-      onPaymentRecorded?.(data.id);
+      const paymentId = typeof data === 'number' ? data : (data as any).id;
+      onPaymentRecorded?.(paymentId);
       onOpenChange(false);
       setCurrentStep(1);
     },
@@ -713,12 +714,12 @@ export function InvoiceToPaymentFlow({
       recordPaymentMutation.mutate({
         invoiceId: invoice.id,
         amount: paymentAmount.toString(),
-        paymentMethod: config.paymentMethod,
+        paymentMethod: config.paymentMethod as "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER",
         paymentDate: new Date(config.paymentDate),
         reference: config.reference || undefined,
         notes: config.notes || undefined,
         sendReceipt,
-      });
+      } as unknown as Parameters<typeof recordPaymentMutation.mutate>[0]);
     },
     [invoice, config, amountDue, recordPaymentMutation]
   );

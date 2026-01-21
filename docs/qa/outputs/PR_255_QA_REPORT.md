@@ -112,7 +112,7 @@ The PR is a **documentation-only** artifact. It does not modify any business log
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
 ```
 
 **This is a pre-existing security vulnerability, NOT introduced by this PR.**

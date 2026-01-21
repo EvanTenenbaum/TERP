@@ -121,6 +121,9 @@ export function useValidationTiming<T extends z.ZodType>({
   // Values state
   const [values, setValues] = useState<FormValues>(initialValues);
 
+  // Ref to track latest values (for use in handleBlur before state flushes)
+  const valuesRef = useRef<FormValues>(initialValues);
+
   // Field states
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
 
@@ -165,8 +168,10 @@ export function useValidationTiming<T extends z.ZodType>({
     (field: keyof z.infer<T>, value: unknown) => {
       const fieldKey = String(field);
 
-      // Update value
-      setValues((prev) => ({ ...prev, [fieldKey]: value }));
+      // Update value (both state and ref for immediate access)
+      const newValues = { ...valuesRef.current, [fieldKey]: value };
+      valuesRef.current = newValues;
+      setValues(newValues);
 
       // Clear any existing typing timeout
       if (typingTimeouts.current[fieldKey]) {
@@ -211,7 +216,8 @@ export function useValidationTiming<T extends z.ZodType>({
   const handleBlur = useCallback(
     (field: keyof z.infer<T>) => {
       const fieldKey = String(field);
-      const value = values[field as keyof FormValues];
+      // Use ref for immediate access to latest value (state may not have flushed yet)
+      const value = valuesRef.current[field as keyof FormValues];
 
       // Clear typing timeout
       if (typingTimeouts.current[fieldKey]) {
@@ -316,10 +322,19 @@ export function useValidationTiming<T extends z.ZodType>({
   );
 
   // ============================================================================
+  // Programmatic value setting (keeps ref in sync)
+  // ============================================================================
+  const setValuesWithRef = useCallback((newValues: FormValues) => {
+    valuesRef.current = newValues;
+    setValues(newValues);
+  }, []);
+
+  // ============================================================================
   // Reset validation state
   // ============================================================================
   const reset = useCallback(() => {
     setFieldStates({});
+    valuesRef.current = initialValues;
     setValues(initialValues);
     Object.values(typingTimeouts.current).forEach(clearTimeout);
     typingTimeouts.current = {};
@@ -353,7 +368,7 @@ export function useValidationTiming<T extends z.ZodType>({
     validateAll,
     reset,
     values,
-    setValues,
+    setValues: setValuesWithRef,
     validationState,
     isFieldValid,
   };

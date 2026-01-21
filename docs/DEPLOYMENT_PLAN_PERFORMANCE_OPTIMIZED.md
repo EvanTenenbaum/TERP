@@ -67,7 +67,7 @@ if command -v mysql &> /dev/null; then
   DB_HOST="${DB_HOST:-terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com}"
   DB_PORT="${DB_PORT:-25060}"
   DB_USER="${DB_USER:-doadmin}"
-  DB_PASS="${DB_PASS:-AVNS_Q_RGkS7-uB3Bk7xC2am}"
+  DB_PASS="${DB_PASS:-<REDACTED>}"
   DB_NAME="${DB_NAME:-defaultdb}"
   
   QUICK_CHECK=$(mysql --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \

@@ -48,7 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useWorkSurfaceKeyboard, type KeyboardConfig } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
+import { useWorkSurfaceKeyboard } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
 import { useSaveState } from '@/hooks/work-surface/useSaveState';
 import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
 import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
@@ -98,7 +98,7 @@ interface OrderDetails {
     clientId: number;
     clientName: string;
     pickPackStatus: PickPackStatus;
-    fulfillmentStatus: string;
+    fulfillmentStatus: string | null;
     total: string;
     notes: string | null;
     createdAt: Date | null;
@@ -506,8 +506,8 @@ export function PickPackWorkSurface() {
       setSaved();
       toast.success('Items packed successfully');
     },
-    onError: (error) => {
-      setError();
+    onError: (error: { message: string }) => {
+      setError(error.message || 'Failed to pack items');
       toast.error(`Failed to pack items: ${error.message}`);
     },
   });
@@ -521,8 +521,8 @@ export function PickPackWorkSurface() {
       setSaved();
       toast.success('All items packed');
     },
-    onError: (error) => {
-      setError();
+    onError: (error: { message: string }) => {
+      setError(error.message || 'Failed to pack items');
       toast.error(`Failed to pack items: ${error.message}`);
     },
   });
@@ -536,8 +536,8 @@ export function PickPackWorkSurface() {
       setSaved();
       toast.success('Order marked ready for shipping');
     },
-    onError: (error) => {
-      setError();
+    onError: (error: { message: string }) => {
+      setError(error.message || 'Failed to mark ready');
       toast.error(`Failed to mark ready: ${error.message}`);
     },
   });
@@ -619,74 +619,67 @@ export function PickPackWorkSurface() {
   }, []);
 
   // Keyboard configuration
-  const keyboardConfig: KeyboardConfig = useMemo(() => ({
-    onArrowUp: () => {
-      if (focusZone === 'list') {
-        setFocusedOrderIndex((prev) => Math.max(0, prev - 1));
-      } else if (orderDetails) {
-        setFocusedItemIndex((prev) => Math.max(0, prev - 1));
-      }
-    },
-    onArrowDown: () => {
-      if (focusZone === 'list') {
-        setFocusedOrderIndex((prev) =>
-          Math.min(filteredPickList.length - 1, prev + 1)
-        );
-      } else if (orderDetails) {
-        setFocusedItemIndex((prev) =>
-          Math.min(orderDetails.items.length - 1, prev + 1)
-        );
-      }
-    },
-    onArrowLeft: () => {
-      if (focusZone === 'items') {
-        setFocusZone('list');
-      }
-    },
-    onArrowRight: () => {
-      if (focusZone === 'list' && selectedOrderId) {
-        setFocusZone('items');
-      }
-    },
-    onEnter: () => {
-      if (focusZone === 'list' && filteredPickList[focusedOrderIndex]) {
-        handleSelectOrder(filteredPickList[focusedOrderIndex].orderId);
-      } else if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
-        const item = orderDetails.items[focusedItemIndex];
-        if (!item.isPacked) {
-          toggleItemSelection(item.id);
+  const keyboardConfig = useMemo(() => ({
+    customHandlers: {
+      arrowup: () => {
+        if (focusZone === 'list') {
+          setFocusedOrderIndex((prev) => Math.max(0, prev - 1));
+        } else if (orderDetails) {
+          setFocusedItemIndex((prev) => Math.max(0, prev - 1));
         }
-      }
-    },
-    onEscape: () => {
-      if (inspectorMode) {
-        closeInspector();
-      } else if (focusZone === 'items') {
-        setFocusZone('list');
-        setSelectedItems([]);
-      } else {
-        setSelectedOrderId(null);
-      }
-    },
-    onTab: () => {
-      if (focusZone === 'list') {
-        setFocusZone('items');
-      } else {
-        setFocusZone('list');
-      }
-    },
-    onCmdK: () => {
-      searchInputRef.current?.focus();
-    },
-    onSpace: () => {
-      if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
-        const item = orderDetails.items[focusedItemIndex];
-        if (!item.isPacked) {
-          toggleItemSelection(item.id);
+      },
+      arrowdown: () => {
+        if (focusZone === 'list') {
+          setFocusedOrderIndex((prev) =>
+            Math.min(filteredPickList.length - 1, prev + 1)
+          );
+        } else if (orderDetails) {
+          setFocusedItemIndex((prev) =>
+            Math.min(orderDetails.items.length - 1, prev + 1)
+          );
         }
-      }
-    },
-    customBindings: {
+      },
+      arrowleft: () => {
+        if (focusZone === 'items') {
+          setFocusZone('list');
+        }
+      },
+      arrowright: () => {
+        if (focusZone === 'list' && selectedOrderId) {
+          setFocusZone('items');
+        }
+      },
+      enter: () => {
+        if (focusZone === 'list' && filteredPickList[focusedOrderIndex]) {
+          handleSelectOrder(filteredPickList[focusedOrderIndex].orderId);
+        } else if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
+          const item = orderDetails.items[focusedItemIndex];
+          if (!item.isPacked) {
+            toggleItemSelection(item.id);
+          }
+        }
+      },
+      tab: () => {
+        if (focusZone === 'list') {
+          setFocusZone('items');
+        } else {
+          setFocusZone('list');
+        }
+      },
+      'cmd+k': () => {
+        searchInputRef.current?.focus();
+      },
+      'ctrl+k': () => {
+        searchInputRef.current?.focus();
+      },
+      ' ': () => {
+        if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
+          const item = orderDetails.items[focusedItemIndex];
+          if (!item.isPacked) {
+            toggleItemSelection(item.id);
+          }
+        }
+      },
       'p': () => handlePackSelected(),
       'a': () => selectAllUnpacked(),
       'r': () => handleMarkReady(),
@@ -698,6 +691,17 @@ export function PickPackWorkSurface() {
         }
       },
     },
+    onCancel: () => {
+      if (inspectorMode) {
+        closeInspector();
+      } else if (focusZone === 'items') {
+        setFocusZone('list');
+        setSelectedItems([]);
+      } else {
+        setSelectedOrderId(null);
+      }
+    },
+    containerRef,
   }), [
     focusZone,
     focusedOrderIndex,
@@ -714,9 +718,10 @@ export function PickPackWorkSurface() {
     handleMarkReady,
     openItemInspector,
     openOrderInspector,
+    containerRef,
   ]);
 
-  useWorkSurfaceKeyboard(keyboardConfig, { containerRef });
+  useWorkSurfaceKeyboard(keyboardConfig);
 
   // Get inspected item
   const inspectedItem = useMemo(() => {

@@ -28,6 +28,7 @@ import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
+import CreditsPage from "@/pages/CreditsPage"; // NAV-017: Credits management page
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -79,6 +80,8 @@ import { NotificationsPage } from "@/pages/NotificationsPage";
 const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 // Sprint 4 Track D: Scheduling System
 const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
+// MEET-048: Hour Tracking / Time Clock
+const TimeClockPage = lazy(() => import("@/pages/TimeClockPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -360,6 +363,11 @@ function Router() {
                   path="/credit-settings"
                   component={withErrorBoundary(CreditSettingsPage)}
                 />
+                {/* NAV-017: Credits management page */}
+                <Route
+                  path="/credits"
+                  component={withErrorBoundary(CreditsPage)}
+                />
                 <Route
                   path="/needs"
                   component={withErrorBoundary(NeedsManagementPage)}
@@ -459,6 +467,11 @@ function Router() {
                 <Route
                   path="/scheduling"
                   component={withLazyErrorBoundary(SchedulingPage)}
+                />
+                {/* MEET-048: Hour Tracking / Time Clock */}
+                <Route
+                  path="/time-clock"
+                  component={withLazyErrorBoundary(TimeClockPage)}
                 />
                 <Route
                   path="/workflow-queue"

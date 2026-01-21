@@ -138,7 +138,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_yEKEhPWr5qFJwqJaQnC \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED
 
@@ -264,7 +264,7 @@ curl -s -H "Authorization: Bearer dop_v1_528408bf76b243af7d996080a71ac8059484bea
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_yEKEhPWr5qFJwqJaQnC \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SHOW PROCESSLIST;"

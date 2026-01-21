@@ -65,7 +65,7 @@
 ### Step 1: Set Production Database URL
 
 ```bash
-export DATABASE_URL="mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={\"rejectUnauthorized\":true}"
+export DATABASE_URL="mysql://doadmin:<REDACTED>@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={\"rejectUnauthorized\":true}"
 ```
 
 ### Step 2: Run the Re-Seeding Script
@@ -82,7 +82,7 @@ pnpm reseed:prod
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT 'strains' as table_name, COUNT(*) as count FROM strains
@@ -94,7 +94,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT name, address FROM clients LIMIT 10;"
@@ -167,7 +167,7 @@ If something goes wrong, you can restore from a backup:
 mysqldump --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
           --port=25060 \
           --user=doadmin \
-          --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+          --password=<REDACTED> \
           --database=defaultdb \
           --ssl-mode=REQUIRED \
           > backup_before_reseed_$(date +%Y%m%d_%H%M%S).sql
@@ -176,7 +176,7 @@ mysqldump --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       < backup_before_reseed_YYYYMMDD_HHMMSS.sql
@@ -207,7 +207,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 ```bash
 # From the sandbox
 cd /home/ubuntu/TERP
-export DATABASE_URL="mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={\"rejectUnauthorized\":true}"
+export DATABASE_URL="mysql://doadmin:<REDACTED>@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={\"rejectUnauthorized\":true}"
 pnpm reseed:prod
 ```
 

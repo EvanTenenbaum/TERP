@@ -14,6 +14,7 @@ import type { BatchStatus } from "../inventoryUtils";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { storagePut, storageDelete } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { getDb } from "../db";
 
 // =============================================================================
 // SPRINT 4 TRACK A - Enhanced Inventory APIs
@@ -719,6 +720,92 @@ export const inventoryRouter = router({
         };
       } catch (error) {
         handleError(error, "inventory.getById");
+        throw error;
+      }
+    }),
+
+  // WSQA-002: Get available batches for a product (lot selection)
+  getAvailableForProduct: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(z.object({
+      productId: z.number(),
+      minQuantity: z.number().optional().default(1),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { batches } = await import("../../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+
+        // Get batches for product with LIVE status
+        const productBatches = await db
+          .select({
+            id: batches.id,
+            sku: batches.sku,
+            code: batches.code,
+            onHandQty: batches.onHandQty,
+            reservedQty: batches.reservedQty,
+            quarantineQty: batches.quarantineQty,
+            holdQty: batches.holdQty,
+            unitCogs: batches.unitCogs,
+            grade: batches.grade,
+            batchStatus: batches.batchStatus,
+            createdAt: batches.createdAt,
+            lotId: batches.lotId,
+            metadata: batches.metadata,
+          })
+          .from(batches)
+          .where(
+            and(
+              eq(batches.productId, input.productId),
+              eq(batches.batchStatus, "LIVE")
+            )
+          )
+          .orderBy(batches.createdAt);
+
+        // Calculate available quantity and filter
+        type BatchRow = typeof productBatches[number];
+        const availableBatches = productBatches
+          .map((batch: BatchRow) => {
+            const onHand = parseFloat(String(batch.onHandQty || "0"));
+            const reserved = parseFloat(String(batch.reservedQty || "0"));
+            const quarantine = parseFloat(String(batch.quarantineQty || "0"));
+            const hold = parseFloat(String(batch.holdQty || "0"));
+            const availableQty = Math.max(0, onHand - reserved - quarantine - hold);
+
+            let harvestDate: string | null = null;
+            let expiryDate: string | null = null;
+            if (batch.metadata) {
+              try {
+                const meta = typeof batch.metadata === "string"
+                  ? JSON.parse(batch.metadata)
+                  : batch.metadata;
+                harvestDate = meta.harvestDate || meta.harvest_date || null;
+                expiryDate = meta.expiryDate || meta.expiry_date || null;
+              } catch {
+                // Ignore parse errors
+              }
+            }
+
+            return {
+              id: batch.id,
+              sku: batch.sku,
+              code: batch.code,
+              availableQty,
+              unitCogs: batch.unitCogs ? parseFloat(String(batch.unitCogs)) : null,
+              grade: batch.grade,
+              harvestDate,
+              expiryDate,
+              lotId: batch.lotId,
+            };
+          })
+          .filter((batch: { availableQty: number }) => batch.availableQty >= input.minQuantity);
+
+        return availableBatches;
+      } catch (error) {
+        handleError(error, "inventory.getAvailableForProduct");
         throw error;
       }
     }),

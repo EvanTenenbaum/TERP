@@ -238,11 +238,13 @@ export function useToastConfig(
         error: string | ((error: unknown) => string);
       }
     ): Promise<T> => {
-      return toast.promise(promise, {
+      const actualPromise = typeof promise === 'function' ? promise() : promise;
+      toast.promise(actualPromise, {
         loading: options.loading,
         success: options.success,
         error: options.error,
       });
+      return actualPromise;
     },
     []
   );

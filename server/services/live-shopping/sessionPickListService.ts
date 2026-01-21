@@ -14,7 +14,7 @@ import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../../drizzle/schema-live-shopping";
-import { batches, products, locations, clients } from "../../../drizzle/schema";
+import { batches, products, batchLocations, clients } from "../../../drizzle/schema";
 import { sessionEventManager } from "../../lib/sse/sessionEventManager";
 import { EventEmitter } from "events";
 import { logger } from "../../_core/logger";
@@ -148,7 +148,6 @@ export const sessionPickListService = {
         batchId: sessionCartItems.batchId,
         batchCode: batches.code,
         quantity: sessionCartItems.quantity,
-        locationId: batches.locationId,
         itemStatus: sessionCartItems.itemStatus,
         addedAt: sessionCartItems.createdAt,
         clientName: clients.name,
@@ -168,33 +167,34 @@ export const sessionPickListService = {
       )
       .orderBy(desc(sessionCartItems.createdAt));
 
-    // Get location details for items
-    const locationIds = items
-      .map((i) => i.locationId)
-      .filter((id): id is number => id !== null);
+    // Get location details for items from batchLocations table
+    const batchIds = [...new Set(items.map((i) => i.batchId))];
 
-    let locationMap: Record<number, { name: string; aisle: string | null; shelf: string | null; bin: string | null }> = {};
+    let locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
 
-    if (locationIds.length > 0) {
+    if (batchIds.length > 0) {
       const locationData = await db
         .select({
-          id: locations.id,
-          name: locations.name,
-          aisle: locations.aisle,
-          shelf: locations.shelf,
-          bin: locations.bin,
+          batchId: batchLocations.batchId,
+          site: batchLocations.site,
+          zone: batchLocations.zone,
+          shelf: batchLocations.shelf,
+          bin: batchLocations.bin,
         })
-        .from(locations)
-        .where(sql`${locations.id} IN (${sql.join(locationIds.map((id) => sql`${id}`), sql`, `)})`);
+        .from(batchLocations)
+        .where(sql`${batchLocations.batchId} IN (${sql.join(batchIds.map((id) => sql`${id}`), sql`, `)})`);
 
-      locationMap = Object.fromEntries(
-        locationData.map((loc) => [loc.id, { name: loc.name, aisle: loc.aisle, shelf: loc.shelf, bin: loc.bin }])
-      );
+      // Use first location for each batch
+      for (const loc of locationData) {
+        if (!locationMap[loc.batchId]) {
+          locationMap[loc.batchId] = { site: loc.site, zone: loc.zone, shelf: loc.shelf, bin: loc.bin };
+        }
+      }
     }
 
     // Build pick list items with priority calculation
     const pickListItems: PickListItem[] = items.map((item) => {
-      const location = item.locationId ? locationMap[item.locationId] : null;
+      const location = locationMap[item.batchId] || null;
 
       // Priority: TO_PURCHASE > INTERESTED > SAMPLE_REQUEST
       let priority: "HIGH" | "MEDIUM" | "LOW" = "MEDIUM";
@@ -212,9 +212,9 @@ export const sessionPickListService = {
         batchId: item.batchId,
         batchCode: item.batchCode || "",
         quantity: parseFloat(item.quantity?.toString() || "0"),
-        location: location?.name || null,
-        locationId: item.locationId,
-        aisle: location?.aisle || null,
+        location: location?.site || null,
+        locationId: null, // Location is now looked up by batchId, not stored as ID
+        aisle: location?.zone || null, // Using zone as aisle equivalent
         shelf: location?.shelf || null,
         bin: location?.bin || null,
         itemStatus: item.itemStatus,
@@ -311,7 +311,6 @@ export const sessionPickListService = {
         batchId: sessionCartItems.batchId,
         batchCode: batches.code,
         quantity: sessionCartItems.quantity,
-        locationId: batches.locationId,
         itemStatus: sessionCartItems.itemStatus,
         addedAt: sessionCartItems.createdAt,
         clientName: clients.name,
@@ -329,32 +328,33 @@ export const sessionPickListService = {
         )
       );
 
-    // Get location details
-    const locationIds = items
-      .map((i) => i.locationId)
-      .filter((id): id is number => id !== null);
+    // Get location details from batchLocations table
+    const batchIds = [...new Set(items.map((i) => i.batchId))];
 
-    let locationMap: Record<number, { name: string; aisle: string | null; shelf: string | null; bin: string | null }> = {};
+    let locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
 
-    if (locationIds.length > 0) {
+    if (batchIds.length > 0) {
       const locationData = await db
         .select({
-          id: locations.id,
-          name: locations.name,
-          aisle: locations.aisle,
-          shelf: locations.shelf,
-          bin: locations.bin,
+          batchId: batchLocations.batchId,
+          site: batchLocations.site,
+          zone: batchLocations.zone,
+          shelf: batchLocations.shelf,
+          bin: batchLocations.bin,
         })
-        .from(locations)
-        .where(sql`${locations.id} IN (${sql.join(locationIds.map((id) => sql`${id}`), sql`, `)})`);
+        .from(batchLocations)
+        .where(sql`${batchLocations.batchId} IN (${sql.join(batchIds.map((id) => sql`${id}`), sql`, `)})`);
 
-      locationMap = Object.fromEntries(
-        locationData.map((loc) => [loc.id, { name: loc.name, aisle: loc.aisle, shelf: loc.shelf, bin: loc.bin }])
-      );
+      // Use first location for each batch
+      for (const loc of locationData) {
+        if (!locationMap[loc.batchId]) {
+          locationMap[loc.batchId] = { site: loc.site, zone: loc.zone, shelf: loc.shelf, bin: loc.bin };
+        }
+      }
     }
 
     return items.map((item) => {
-      const location = item.locationId ? locationMap[item.locationId] : null;
+      const location = locationMap[item.batchId] || null;
 
       let priority: "HIGH" | "MEDIUM" | "LOW" = "MEDIUM";
       if (item.itemStatus === "TO_PURCHASE") {
@@ -371,9 +371,9 @@ export const sessionPickListService = {
         batchId: item.batchId,
         batchCode: item.batchCode || "",
         quantity: parseFloat(item.quantity?.toString() || "0"),
-        location: location?.name || null,
-        locationId: item.locationId,
-        aisle: location?.aisle || null,
+        location: location?.site || null,
+        locationId: null, // Location is now looked up by batchId, not stored as ID
+        aisle: location?.zone || null, // Using zone as aisle equivalent
         shelf: location?.shelf || null,
         bin: location?.bin || null,
         itemStatus: item.itemStatus,

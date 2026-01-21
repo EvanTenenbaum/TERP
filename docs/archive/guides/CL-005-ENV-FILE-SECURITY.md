@@ -15,7 +15,7 @@ The following production credentials were exposed in Git history:
 1. **Database Credentials**
    - Host: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
    - User: `doadmin`
-   - Password: `AVNS_Q_RGkS7-uB3Bk7xC2am`
+   - Password: `<REDACTED>`
    - Database: `defaultdb`
    - Port: 25060
 

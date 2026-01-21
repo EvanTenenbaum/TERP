@@ -576,9 +576,7 @@ function GenerateStep({
         </div>
         <Switch
           checked={config.autoSend}
-          onCheckedChange={(checked) =>
-            onGenerate && void 0 // This is just for display, actual toggle is in parent
-          }
+          onCheckedChange={() => {}}
         />
       </div>
 
@@ -659,8 +657,8 @@ export function OrderToInvoiceFlow({
         clientId: orderData.clientId,
         clientName: (orderData as any).clientName || "Unknown",
         total: orderData.total,
-        confirmedAt: orderData.confirmedAt,
-        lineItems: orderData.lineItems || [],
+        confirmedAt: orderData.confirmedAt ? (orderData.confirmedAt instanceof Date ? orderData.confirmedAt.toISOString() : String(orderData.confirmedAt)) : undefined,
+        lineItems: (orderData as any).lineItems || [],
       }
     : null;
 
@@ -677,7 +675,8 @@ export function OrderToInvoiceFlow({
     onSuccess: (data) => {
       setSaved();
       toast.success("Invoice created successfully!");
-      onInvoiceCreated?.(data.id);
+      const invoiceId = typeof data === 'number' ? data : (data as any).id;
+      onInvoiceCreated?.(invoiceId);
       onOpenChange(false);
       setCurrentStep(1);
     },
@@ -699,7 +698,6 @@ export function OrderToInvoiceFlow({
       const invoiceTotal = orderTotal - discountAmount + chargesTotal;
 
       createInvoiceMutation.mutate({
-        orderId: order.id,
         customerId: order.clientId,
         dueDate: new Date(config.dueDate),
         totalAmount: invoiceTotal.toString(),
@@ -707,7 +705,7 @@ export function OrderToInvoiceFlow({
         sendEmail,
         discount: discountAmount,
         additionalCharges: config.additionalCharges,
-      });
+      } as unknown as Parameters<typeof createInvoiceMutation.mutate>[0]);
     },
     [order, config, orderTotal, createInvoiceMutation]
   );

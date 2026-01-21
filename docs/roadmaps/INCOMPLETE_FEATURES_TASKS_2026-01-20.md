@@ -33,7 +33,7 @@
 Production database credentials are exposed in `drizzle/migrations/0007_DEPLOYMENT_INSTRUCTIONS.md`:
 
 - Host: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- Password: `AVNS_Q_RGkS7-uB3Bk7xC2am`
+- Password: `<REDACTED>`
 
 **Objectives:**
 

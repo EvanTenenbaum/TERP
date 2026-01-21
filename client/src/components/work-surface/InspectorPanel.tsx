@@ -102,14 +102,39 @@ const InspectorPanelContext = createContext<InspectorPanelContextValue | null>(
   null
 );
 
-export const useInspectorPanel = () => {
+/**
+ * Hook to access inspector panel context when used inside an InspectorPanel.
+ * For standalone state management outside InspectorPanel, use useInspectorPanelState instead.
+ */
+export const useInspectorPanelContext = () => {
   const context = useContext(InspectorPanelContext);
   if (!context) {
     throw new Error(
-      "useInspectorPanel must be used within an InspectorPanel"
+      "useInspectorPanelContext must be used within an InspectorPanel"
     );
   }
   return context;
+};
+
+/**
+ * Standalone hook for managing inspector panel open/close state.
+ * Use this in Work Surface components to control the InspectorPanel.
+ */
+export const useInspectorPanel = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
+  const toggleExpanded = useCallback(() => setIsExpanded((prev) => !prev), []);
+
+  return {
+    isOpen,
+    open,
+    close,
+    isExpanded,
+    toggleExpanded,
+  };
 };
 
 // ============================================================================
