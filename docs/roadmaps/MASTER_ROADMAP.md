@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.6
-**Last Updated:** 2026-01-21 (Added 11 tasks from Second-Pass Security Audit)
+**Version:** 6.7
+**Last Updated:** 2026-01-21 (Added DATA-021: Mock product image seeding for live catalog)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -724,12 +724,66 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 #### P1 - High Priority (Data Seeding)
 
-| Task     | Description                           | Priority | Status      | Estimate |
-| -------- | ------------------------------------- | -------- | ----------- | -------- |
-| DATA-012 | Seed work surface feature flags (17+) | HIGH     | NOT STARTED | 4h       |
-| DATA-013 | Seed gamification module defaults     | HIGH     | NOT STARTED | 4-8h     |
-| DATA-014 | Seed scheduling module defaults       | HIGH     | NOT STARTED | 4h       |
-| DATA-015 | Seed storage sites and zones          | HIGH     | NOT STARTED | 2-4h     |
+| Task     | Description                               | Priority | Status      | Estimate | Prompt                     |
+| -------- | ----------------------------------------- | -------- | ----------- | -------- | -------------------------- |
+| DATA-012 | Seed work surface feature flags (17+)     | HIGH     | NOT STARTED | 4h       | -                          |
+| DATA-013 | Seed gamification module defaults         | HIGH     | NOT STARTED | 4-8h     | -                          |
+| DATA-014 | Seed scheduling module defaults           | HIGH     | NOT STARTED | 4h       | -                          |
+| DATA-015 | Seed storage sites and zones              | HIGH     | NOT STARTED | 2-4h     | -                          |
+| DATA-021 | Seed mock product images for live catalog | HIGH     | NOT STARTED | 6h       | `docs/prompts/DATA-021.md` |
+
+##### DATA-021: Seed Mock Product Images for Live Catalog Testing
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 6h
+**Module:** `scripts/seed/seeders/`, `productMedia`, `productImages` tables
+**Prompt:** `docs/prompts/DATA-021.md`
+
+**Problem:**
+Live catalog and VIP portal shipping features cannot be tested because products lack images. Currently shows placeholder emojis (🌿) instead of actual product images, blocking:
+
+- Live catalog visual experience testing
+- VIP portal shopping experience
+- Stakeholder demos
+- Image loading/error handling verification
+
+**Image Sources (Free, Reliable):**
+
+| Source          | Use Case          | URL Pattern                                                |
+| --------------- | ----------------- | ---------------------------------------------------------- |
+| Picsum Photos   | Default/fallback  | `https://picsum.photos/seed/{seed}/400/400`                |
+| Unsplash Source | Category-specific | `https://source.unsplash.com/400x400/?{keywords}`          |
+| PlaceHolder.com | Offline fallback  | `https://via.placeholder.com/400x400/{color}?text={label}` |
+
+**Category Mapping (visually similar alternatives):**
+
+| Category     | Keywords                            | Seed Prefix    |
+| ------------ | ----------------------------------- | -------------- |
+| Flower       | `nature,botanical,green,plant,herb` | `flower-`      |
+| Concentrates | `amber,honey,gold,crystal`          | `concentrate-` |
+| Edibles      | `candy,gummy,chocolate,treat`       | `edible-`      |
+| PreRolls     | `paper,texture,natural,craft`       | `preroll-`     |
+| Vapes        | `technology,device,modern,sleek`    | `vape-`        |
+
+**Deliverables:**
+
+- [ ] Enhanced `seed-product-media-v2.ts` with multi-source fallback
+- [ ] New `seed-batch-images.ts` for batch-level images
+- [ ] Combined `seed-all-images.ts` runner with --dry-run and --force options
+- [ ] URL verification before insert
+- [ ] ≥95% products with images, ≥90% batches with primary image
+- [ ] Documentation updated
+
+**Commands:**
+
+```bash
+npx tsx scripts/seed/seeders/seed-all-images.ts           # Full seeding
+npx tsx scripts/seed/seeders/seed-all-images.ts --dry-run # Preview only
+npx tsx scripts/seed/seeders/seed-all-images.ts --force   # Re-seed all
+```
+
+---
 
 #### P1 - High Priority (Backend Completeness)
 
@@ -1463,7 +1517,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 | Features                    | 29        | 2      | 1       | 32      |
 | UX                          | 12        | 0      | 0       | 12      |
 | Data & Schema               | 8         | 4      | 0       | 12      |
-| Data Seeding (NEW)          | 0         | 10     | 0       | 10      |
+| Data Seeding (NEW)          | 0         | 11     | 0       | 11      |
 | Data Integrity (QA)         | 8         | 0      | 0       | 8       |
 | Frontend Quality (QA)       | 3         | 8      | 0       | 11      |
 | Backend Quality (QA)        | 5         | 10     | 0       | 15      |
@@ -1476,9 +1530,10 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 | Deprecation Cleanup (NEW)   | 0         | 2      | 0       | 2       |
 | Schema Fixes (NEW)          | 0         | 3      | 0       | 3       |
 | Security Audit (Jan 21)     | 0         | 11     | 0       | 11      |
-| **TOTAL**                   | **185**   | **82** | **2**   | **269** |
+| **TOTAL**                   | **185**   | **83** | **2**   | **270** |
 
-> **MVP STATUS: 70% RESOLVED** (185 completed + 2 removed, 82 tasks open)
+> **MVP STATUS: 69% RESOLVED** (185 completed + 2 removed, 83 tasks open)
+> **Data Seeding (Jan 21, 2026):** DATA-021 added for mock product image seeding (live catalog testing).
 > **Security Audit (Jan 21, 2026):** 11 new tasks added from second-pass security audit.
 > **Deep Audit (Jan 20, 2026):** 23 additional tasks added from comprehensive git commit analysis (verified non-duplicates).
 > **Incomplete Features Audit (Jan 20, 2026):** 37 new tasks added from RedHat QA audit.
