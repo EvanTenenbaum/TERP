@@ -566,11 +566,11 @@ async function seedOrders(connection: mysql.Connection, clientIds: number[], bat
   return rows as any[];
 }
 
-async function seedInvoices(connection: mysql.Connection, orderData: any[], count: number) {
+async function seedInvoices(connection: mysql.Connection, orderData: any[], userIds: number[], count: number) {
   console.log('💵 Seeding invoices...');
 
   // Schema: invoiceNumber, customerId, invoiceDate, dueDate, subtotal, taxAmount,
-  // discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId
+  // discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId, createdBy
 
   for (let i = 0; i < Math.min(count, orderData.length); i++) {
     const order = orderData[i];
@@ -583,8 +583,8 @@ async function seedInvoices(connection: mysql.Connection, orderData: any[], coun
     const status = paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : (dueDate < new Date() ? 'OVERDUE' : 'SENT'));
 
     await connection.query(
-      `INSERT INTO invoices (invoiceNumber, customerId, invoiceDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'ORDER', ?)`,
+      `INSERT INTO invoices (invoiceNumber, customerId, invoiceDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId, createdBy)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'ORDER', ?, ?)`,
       [
         `INV-${String(i + 1).padStart(6, '0')}`,
         order.clientId,
@@ -597,6 +597,7 @@ async function seedInvoices(connection: mysql.Connection, orderData: any[], coun
         (total - paidAmount).toFixed(2),
         status,
         order.id,
+        userIds[0],
       ]
     );
   }
@@ -977,7 +978,7 @@ async function main() {
 
     const orderList = await seedOrders(connection, clientIds, batchList, userIds, counts.orders);
 
-    const invoiceList = await seedInvoices(connection, orderList, counts.invoices);
+    const invoiceList = await seedInvoices(connection, orderList, userIds, counts.invoices);
 
     await seedPayments(connection, invoiceList, counts.payments);
 
