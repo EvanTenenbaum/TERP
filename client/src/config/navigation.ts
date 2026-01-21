@@ -198,6 +198,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Coins,
     group: "finance",
   },
+  // NAV-017: Credits management page - issue, apply, void credits
+  {
+    name: "Credits",
+    path: "/credits",
+    icon: CreditCard,
+    group: "finance",
+    ariaLabel: "Issue and manage customer credits",
+  },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
   // NAV-012: Pricing Rules for managing pricing strategies
   // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules to match App.tsx route

@@ -28,6 +28,7 @@ import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
+import CreditsPage from "@/pages/CreditsPage"; // NAV-017: Credits management page
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -359,6 +360,11 @@ function Router() {
                 <Route
                   path="/credit-settings"
                   component={withErrorBoundary(CreditSettingsPage)}
+                />
+                {/* NAV-017: Credits management page */}
+                <Route
+                  path="/credits"
+                  component={withErrorBoundary(CreditsPage)}
                 />
                 <Route
                   path="/needs"

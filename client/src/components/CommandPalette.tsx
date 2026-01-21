@@ -28,6 +28,7 @@ import {
   Store, // NAV-014: Vendor Supply
   Tag, // NAV-014: Pricing Rules
   Workflow, // NAV-014: Workflow Queue
+  CreditCard, // NAV-017: Credits
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -203,6 +204,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           icon: Workflow,
           action: () => {
             setLocation("/workflow-queue");
+            onOpenChange(false);
+          },
+        },
+        {
+          // NAV-017: Credits management page
+          id: "credits",
+          label: "Credits",
+          icon: CreditCard,
+          action: () => {
+            setLocation("/credits");
             onOpenChange(false);
           },
         },
