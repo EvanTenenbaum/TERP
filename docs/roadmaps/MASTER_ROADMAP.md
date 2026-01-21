@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.5
-**Last Updated:** 2026-01-20 (Added 22 tasks from Deep Audit - git commit analysis of 484 commits)
+**Version:** 6.6
+**Last Updated:** 2026-01-21 (Added 11 tasks from Second-Pass Security Audit)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -764,11 +764,11 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 
 #### P0 - Critical (Work Surface Ship Blockers)
 
-| Task    | Description                                     | Priority | Status      | Estimate | Module                         |
-| ------- | ----------------------------------------------- | -------- | ----------- | -------- | ------------------------------ |
-| WSQA-001 | Fix InvoicesWorkSurface Payment Recording Stub  | CRITICAL | NOT STARTED | 4h       | InvoicesWorkSurface.tsx:717-724 |
-| WSQA-002 | Implement Flexible Lot Selection                | CRITICAL | NOT STARTED | 8h       | InventoryWorkSurface.tsx       |
-| WSQA-003 | Add RETURNED Order Status with Processing Paths | CRITICAL | NOT STARTED | 8h       | schema.ts, ordersDb.ts:1564    |
+| Task     | Description                                     | Priority | Status      | Estimate | Module                             |
+| -------- | ----------------------------------------------- | -------- | ----------- | -------- | ---------------------------------- |
+| WSQA-001 | Fix InvoicesWorkSurface Payment Recording Stub  | CRITICAL | NOT STARTED | 4h       | InvoicesWorkSurface.tsx:717-724    |
+| WSQA-002 | Implement Flexible Lot Selection                | CRITICAL | NOT STARTED | 8h       | InventoryWorkSurface.tsx           |
+| WSQA-003 | Add RETURNED Order Status with Processing Paths | CRITICAL | NOT STARTED | 8h       | schema.ts, ordersDb.ts:1564        |
 | ACC-001  | Fix Silent GL Posting Failures                  | CRITICAL | NOT STARTED | 8h       | accountingHooks.ts:173,224,274,323 |
 
 ##### WSQA-001: Fix InvoicesWorkSurface Payment Recording Stub
@@ -783,11 +783,13 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 Payment recording mutation is a stub - shows success toast without actually persisting the payment. Users think payments are recorded but they are not saved to database.
 
 **Objectives:**
+
 1. Wire payment recording to actual mutation
 2. Ensure payment persists to database
 3. Update invoice balance after payment
 
 **Deliverables:**
+
 - [ ] Payment recording mutation connected to backend
 - [ ] Payment reflected in invoice balance
 - [ ] Audit trail entry created for payment
@@ -806,11 +808,13 @@ Payment recording mutation is a stub - shows success toast without actually pers
 Users cannot select specific batches when creating orders. System auto-allocates but doesn't allow manual lot selection, which is critical for regulated inventory management.
 
 **Objectives:**
+
 1. Add batch selection UI to order creation flow
 2. Allow override of FIFO/LIFO allocation
 3. Preserve selected batches through order lifecycle
 
 **Deliverables:**
+
 - [ ] Batch picker component added to order flow
 - [ ] Backend supports explicit batch allocation
 - [ ] Selection persists on order save
@@ -829,12 +833,14 @@ Users cannot select specific batches when creating orders. System auto-allocates
 Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to vendor).
 
 **Objectives:**
+
 1. Add RETURNED status to order status enum
 2. Implement restock-to-inventory path
 3. Implement return-to-vendor path
 4. Create inventory movements for returns
 
 **Deliverables:**
+
 - [ ] RETURNED status added to schema
 - [ ] Status transition validation updated
 - [ ] Restock flow creates inventory movements
@@ -857,12 +863,14 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 **Impact:** Sales may be recorded but accounting ledger remains empty.
 
 **Objectives:**
+
 1. Make GL posting failures throw errors
 2. Implement transaction rollback on GL failure
 3. Add alerting for missing standard accounts
 4. Ensure all financial transactions have GL entries
 
 **Deliverables:**
+
 - [ ] `postSaleGLEntries` throws on missing accounts
 - [ ] `postPaymentGLEntries` throws on missing accounts
 - [ ] `postRefundGLEntries` throws on missing accounts
@@ -874,13 +882,13 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 
 #### P1 - High Priority (Feature Completeness)
 
-| Task     | Description                              | Priority | Status      | Estimate | Module                           |
-| -------- | ---------------------------------------- | -------- | ----------- | -------- | -------------------------------- |
-| SSE-001  | Fix Live Shopping SSE Event Naming       | HIGH     | NOT STARTED | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
-| MEET-048 | Create Hour Tracking Frontend            | HIGH     | NOT STARTED | 16h      | client/src/pages/               |
-| WS-010A  | Integrate Photography Module into Page   | HIGH     | NOT STARTED | 4h       | PhotographyPage.tsx             |
-| NAV-017  | Route CreditsPage in App.tsx             | HIGH     | NOT STARTED | 1h       | App.tsx                         |
-| API-016  | Implement Quote Email Sending            | HIGH     | NOT STARTED | 4h       | server/routers/quotes.ts:294    |
+| Task     | Description                            | Priority | Status      | Estimate | Module                                         |
+| -------- | -------------------------------------- | -------- | ----------- | -------- | ---------------------------------------------- |
+| SSE-001  | Fix Live Shopping SSE Event Naming     | HIGH     | NOT STARTED | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
+| MEET-048 | Create Hour Tracking Frontend          | HIGH     | NOT STARTED | 16h      | client/src/pages/                              |
+| WS-010A  | Integrate Photography Module into Page | HIGH     | NOT STARTED | 4h       | PhotographyPage.tsx                            |
+| NAV-017  | Route CreditsPage in App.tsx           | HIGH     | NOT STARTED | 1h       | App.tsx                                        |
+| API-016  | Implement Quote Email Sending          | HIGH     | NOT STARTED | 4h       | server/routers/quotes.ts:294                   |
 
 ##### SSE-001: Fix Live Shopping SSE Event Naming Mismatch
 
@@ -894,6 +902,7 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 Backend emits `SESSION_TIMEOUT_WARNING` events but frontend listens for `TIMEOUT_WARNING`. Events are never received by the client.
 
 **Deliverables:**
+
 - [ ] Standardize event naming (prefer backend naming)
 - [ ] Update frontend to match backend event names
 - [ ] Verify timeout warnings display in VIP portal
@@ -911,6 +920,7 @@ Backend emits `SESSION_TIMEOUT_WARNING` events but frontend listens for `TIMEOUT
 Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBreak, listTimeEntries, createManualEntry, adjustTimeEntry, approveTimeEntry, getTimesheet, getHoursReport, getOvertimeReport) but there is no frontend UI.
 
 **Deliverables:**
+
 - [ ] HourTrackingPage.tsx created
 - [ ] Clock in/out component
 - [ ] Timesheet view component
@@ -932,6 +942,7 @@ Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBr
 PhotographyModule component (689 lines) is fully built but never used. PhotographyPage only shows queue without upload capability. The module imports are declared (cropping, background removal) but not implemented.
 
 **Deliverables:**
+
 - [ ] PhotographyModule integrated into PhotographyPage
 - [ ] Upload functionality working
 - [ ] Presigned URLs implemented (`photos.getUploadUrl`)
@@ -950,6 +961,7 @@ PhotographyModule component (689 lines) is fully built but never used. Photograp
 CreditsPage is a complete page with issue/apply/void functionality. It's imported in App.tsx but NO ROUTE is defined - users cannot access this feature.
 
 **Deliverables:**
+
 - [ ] Route `/credits` added to App.tsx
 - [ ] Navigation item added to sidebar
 - [ ] Feature flag check added if needed
@@ -967,6 +979,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 `sendQuote` mutation has a TODO comment "Send email notification to client" but doesn't actually send emails. Quotes are marked as sent but no email is delivered.
 
 **Deliverables:**
+
 - [ ] Email sending implemented in sendQuote
 - [ ] Quote PDF attachment generated
 - [ ] Delivery status tracked
@@ -976,19 +989,19 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 
 #### P2 - Medium Priority (Feature Gaps & Quality)
 
-| Task      | Description                                  | Priority | Status      | Estimate | Module                          |
-| --------- | -------------------------------------------- | -------- | ----------- | -------- | ------------------------------- |
-| FE-QA-009 | Enable VendorSupplyPage Creation             | MEDIUM   | NOT STARTED | 8h       | VendorSupplyPage.tsx:96        |
-| FE-QA-010 | Wire MatchmakingServicePage Action Buttons   | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
-| API-017   | Implement Stock Threshold Configuration      | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
-| DATA-021  | Add Calendar Recurring Events Schema         | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
-| DEPR-001  | Migrate Deprecated Vendor Router Usages      | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
-| SCHEMA-001| Fix products.name vs nameCanonical Mismatch  | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
-| SCHEMA-002| Document batches.quantity vs onHandQty       | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
-| SCHEMA-003| Add clients.tier and clients.isActive Columns| MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
-| BUG-101   | Fix Property Test Bugs (PROP-BUG-001/002/003)| MEDIUM   | NOT STARTED | 4h       | property tests                 |
-| MOB-001   | Address Mobile Responsiveness Issues (38)    | MEDIUM   | NOT STARTED | 24h      | Multiple components            |
-| FE-QA-011 | Integrate Unused Dashboard Widgets (5)       | MEDIUM   | NOT STARTED | 8h       | widgets-v2/                    |
+| Task       | Description                                   | Priority | Status      | Estimate | Module                         |
+| ---------- | --------------------------------------------- | -------- | ----------- | -------- | ------------------------------ |
+| FE-QA-009  | Enable VendorSupplyPage Creation              | MEDIUM   | NOT STARTED | 8h       | VendorSupplyPage.tsx:96        |
+| FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
+| API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
+| DATA-021   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
+| DEPR-001   | Migrate Deprecated Vendor Router Usages       | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
+| SCHEMA-001 | Fix products.name vs nameCanonical Mismatch   | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
+| SCHEMA-002 | Document batches.quantity vs onHandQty        | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
+| SCHEMA-003 | Add clients.tier and clients.isActive Columns | MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
+| BUG-101    | Fix Property Test Bugs (PROP-BUG-001/002/003) | MEDIUM   | NOT STARTED | 4h       | property tests                 |
+| MOB-001    | Address Mobile Responsiveness Issues (38)     | MEDIUM   | NOT STARTED | 24h      | Multiple components            |
+| FE-QA-011  | Integrate Unused Dashboard Widgets (5)        | MEDIUM   | NOT STARTED | 8h       | widgets-v2/                    |
 
 ##### FE-QA-009: Enable VendorSupplyPage Creation
 
@@ -1001,6 +1014,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 "Add Supply" button shows "Feature In Development" alert. Supply creation form, edit functionality, and "Find Matching Clients" button are all missing.
 
 **Deliverables:**
+
 - [ ] Supply creation form implemented
 - [ ] Edit functionality added
 - [ ] "Find Matching Clients" button connected to matchmaking
@@ -1017,12 +1031,14 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 
 **Problem:**
 Four action buttons have no implementation:
+
 - "View Buyers" button (line 385) - no handler
 - "Reserve" button (line 388) - no handler
 - "Create Quote" button (line 456) - may not connect to workflow
 - "Dismiss" button (line 459) - no dismissal logic
 
 **Deliverables:**
+
 - [ ] View Buyers opens buyer list modal
 - [ ] Reserve creates reservation record
 - [ ] Create Quote navigates to quote creator with pre-filled data
@@ -1040,6 +1056,7 @@ Four action buttons have no implementation:
 
 **Problem:**
 5 fully-built dashboard widgets are exported but never used in any dashboard:
+
 - CashCollectedLeaderboard
 - ClientDebtLeaderboard
 - ClientProfitMarginLeaderboard
@@ -1047,6 +1064,7 @@ Four action buttons have no implementation:
 - SmartOpportunitiesWidget
 
 **Deliverables:**
+
 - [ ] Determine if widgets should be integrated into DashboardV3 or deprecated
 - [ ] If integrating: Add to dashboard widget registry
 - [ ] If deprecating: Remove unused code and exports
@@ -1065,6 +1083,7 @@ Four action buttons have no implementation:
 `setThresholds` mutation throws "not yet available - requires schema migration". The `minStockLevel` and `targetStockLevel` columns are missing from schema.
 
 **Deliverables:**
+
 - [ ] Schema migration adding threshold columns
 - [ ] setThresholds mutation working
 - [ ] Low stock alerts using configurable thresholds
@@ -1083,6 +1102,7 @@ Four action buttons have no implementation:
 Code references `products.name` but actual column is `products.nameCanonical`. This is an active bug from December 31, 2025 migration - Drizzle schema was NOT updated.
 
 **Deliverables:**
+
 - [ ] Schema updated to match actual database
 - [ ] All code references fixed
 - [ ] Migration script if needed
@@ -1091,11 +1111,11 @@ Code references `products.name` but actual column is `products.nameCanonical`. T
 
 #### P3 - Low Priority (Cleanup & Technical Debt)
 
-| Task        | Description                               | Priority | Status      | Estimate | Module             |
-| ----------- | ----------------------------------------- | -------- | ----------- | -------- | ------------------ |
-| ABANDONED-001| Remove Unused RTL/i18n Utilities          | LOW      | NOT STARTED | 1h       | rtlUtils.ts       |
-| DEPR-002    | Remove Deprecated PO Procedures (3)       | LOW      | NOT STARTED | 2h       | purchaseOrders.ts |
-| QUAL-009    | Replace console.error with Logger (23+ files)| LOW   | NOT STARTED | 8h       | Multiple files    |
+| Task          | Description                                   | Priority | Status      | Estimate | Module            |
+| ------------- | --------------------------------------------- | -------- | ----------- | -------- | ----------------- |
+| ABANDONED-001 | Remove Unused RTL/i18n Utilities              | LOW      | NOT STARTED | 1h       | rtlUtils.ts       |
+| DEPR-002      | Remove Deprecated PO Procedures (3)           | LOW      | NOT STARTED | 2h       | purchaseOrders.ts |
+| QUAL-009      | Replace console.error with Logger (23+ files) | LOW      | NOT STARTED | 8h       | Multiple files    |
 
 ##### ABANDONED-001: Remove Unused RTL/i18n Utilities
 
@@ -1108,6 +1128,7 @@ Code references `products.name` but actual column is `products.nameCanonical`. T
 11 utility functions exported (`isRTL`, `getDirection`, `getDirectionalIconClasses`, etc.) but 0 usages anywhere in codebase. Right-to-left language support was planned but never implemented.
 
 **Deliverables:**
+
 - [ ] rtlUtils.ts removed
 - [ ] No breaking changes verified
 - [ ] Documentation updated if RTL was mentioned
@@ -1116,47 +1137,349 @@ Code references `products.name` but actual column is `products.nameCanonical`. T
 
 **Summary: Deep Audit Additional Tasks**
 
-| Priority | Count | Description                              |
-| -------- | ----- | ---------------------------------------- |
-| P0       | 4     | Work surface blockers + GL posting       |
-| P1       | 5     | Feature completeness gaps                |
-| P2       | 11    | Feature gaps, schema fixes, mobile, widgets |
-| P3       | 3     | Cleanup and technical debt               |
-| **TOTAL**| **23**|                                          |
+| Priority  | Count  | Description                                 |
+| --------- | ------ | ------------------------------------------- |
+| P0        | 4      | Work surface blockers + GL posting          |
+| P1        | 5      | Feature completeness gaps                   |
+| P2        | 11     | Feature gaps, schema fixes, mobile, widgets |
+| P3        | 3      | Cleanup and technical debt                  |
+| **TOTAL** | **23** |                                             |
 
 > **QA Note (Jan 20, 2026):** All tasks verified as non-duplicates after skeptical review.
 > Cross-references added where tasks touch same files (SSE-001/BE-QA-013).
 
 ---
 
+### Second-Pass Security Audit Findings (P0-P2) - Added Jan 21, 2026
+
+> Discovered during comprehensive second-pass security audit of last 36 hours of work.
+> **Source:** `docs/qa/SECOND_PASS_SECURITY_AUDIT_2026-01-21.md`
+> **Method:** Build verification, test execution, code analysis, contract drift detection
+> **Verification:** TypeScript ✅ Build ✅ Tests 1949/2065 pass
+> **Total Tasks:** 11 (1 P0, 4 P1, 6 P2)
+
+#### P0 - Critical (Silent Failure)
+
+| Task     | Description                                        | Priority | Status      | Estimate | Module                               |
+| -------- | -------------------------------------------------- | -------- | ----------- | -------- | ------------------------------------ |
+| PERF-001 | Fix Empty Catch Blocks in usePerformanceMonitor.ts | CRITICAL | NOT STARTED | 15 min   | usePerformanceMonitor.ts:375,387,403 |
+
+##### PERF-001: Fix Empty Catch Blocks in usePerformanceMonitor.ts
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 15 min
+**Module:** `client/src/hooks/work-surface/usePerformanceMonitor.ts`
+**Lines:** 375, 387, 403
+
+**Problem:**
+Three empty catch blocks silently swallow Performance Observer errors. Production monitoring may silently fail without any indication, hiding browser compatibility issues and preventing debugging.
+
+```typescript
+// Lines 373-375
+} catch (e) {}  // LCP observer - SILENT FAILURE
+// Lines 385-387
+} catch (e) {}  // FID observer - SILENT FAILURE
+// Lines 401-403
+} catch (e) {}  // CLS observer - SILENT FAILURE
+```
+
+**Objectives:**
+
+1. Add debug logging to catch blocks
+2. Ensure monitoring failures are visible in dev tools
+3. Prevent silent failures in production
+
+**Deliverables:**
+
+- [ ] Add `console.debug('[WebVitals] Observer not supported:', e)` to all 3 catch blocks
+- [ ] Verify in browser that errors are logged when observers fail
+- [ ] No functional changes to monitoring behavior
+
+---
+
+#### P1 - High Priority (Test Infrastructure + Feature Gaps)
+
+| Task        | Description                                       | Priority | Status      | Estimate | Module                                  |
+| ----------- | ------------------------------------------------- | -------- | ----------- | -------- | --------------------------------------- |
+| TEST-QA-001 | Fix React Hook Test Infrastructure (JSDOM Setup)  | HIGH     | NOT STARTED | 2h       | hooks/work-surface/**tests**/\*.test.ts |
+| LIVE-001    | Implement or Remove Live Shopping Session Console | HIGH     | NOT STARTED | 4h       | LiveShoppingPage.tsx:410                |
+| DI-009      | Add Vendor ID Validation in Return Processing     | HIGH     | NOT STARTED | 30 min   | returnProcessing.ts:135-140             |
+| SEC-024     | Validate Quote Email XSS Prevention               | HIGH     | NOT STARTED | 1h       | emailService.ts (viewUrl escaping)      |
+
+##### TEST-QA-001: Fix React Hook Test Infrastructure
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 2h
+**Module:** `client/src/hooks/work-surface/__tests__/*.test.ts`
+
+**Problem:**
+14+ tests fail with "Target container is not a DOM element" error. useExport and usePrint tests cannot run, blocking CI/CD verification of Work Surface hooks.
+
+**Objectives:**
+
+1. Add proper DOM setup in test files
+2. Configure JSDOM environment correctly
+3. Ensure all hook tests pass
+
+**Deliverables:**
+
+- [ ] Fix JSDOM configuration in vitest setup
+- [ ] All useExport tests pass (currently 10 failing)
+- [ ] All usePrint tests pass (currently 4 failing)
+- [ ] CI pipeline green for hook tests
+
+---
+
+##### LIVE-001: Implement or Remove Live Shopping Session Console
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `client/src/pages/LiveShoppingPage.tsx:410`
+
+**Problem:**
+TODO comment indicates session console/detail view is unimplemented. Feature appears complete in UI but clicking session row triggers no action - creates user dead-end.
+
+**Objectives:**
+
+1. Either implement session detail view OR
+2. Remove/disable the UI control that suggests this feature exists
+
+**Deliverables:**
+
+- [ ] Session row click navigates to detail view, OR
+- [ ] Session row click disabled with appropriate styling
+- [ ] No user-facing dead-ends
+
+---
+
+##### DI-009: Add Vendor ID Validation in Return Processing
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 30 min
+**Module:** `server/services/returnProcessing.ts:135-140`
+
+**Problem:**
+`processVendorReturn` accepts vendorId without validating it exists in the database. Can create orphan vendor return records with invalid vendorId, causing referential integrity issues.
+
+**Objectives:**
+
+1. Validate vendorId exists before creating vendor return
+2. Throw appropriate error if vendor not found
+
+**Deliverables:**
+
+- [ ] Add vendor existence check at start of `processVendorReturn`
+- [ ] Throw TRPCError NOT_FOUND if vendor doesn't exist
+- [ ] Add unit test for invalid vendorId case
+
+---
+
+##### SEC-024: Validate Quote Email XSS Prevention
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 1h
+**Module:** `server/services/emailService.ts`
+
+**Problem:**
+Hypothesis: `viewUrl` in email template may not be fully escaped. If viewUrl contains `javascript:` protocol, it could execute on click.
+
+**Objectives:**
+
+1. Audit email template for XSS vectors
+2. Ensure all user input is properly escaped
+3. Add test for XSS prevention
+
+**Deliverables:**
+
+- [ ] Audit `sendQuoteEmail` template for XSS vectors
+- [ ] Add URL protocol validation (only allow http/https)
+- [ ] Add unit test with `javascript:alert(1)` as viewUrl
+- [ ] Verify email renders safely
+
+---
+
+#### P2 - Medium Priority (Type Safety + Stubs)
+
+| Task     | Description                                     | Priority | Status      | Estimate | Module                                        |
+| -------- | ----------------------------------------------- | -------- | ----------- | -------- | --------------------------------------------- |
+| TYPE-001 | Fix `as any` Casts in Work Surface Golden Flows | MEDIUM   | NOT STARTED | 4h       | OrderCreationFlow, InvoiceToPaymentFlow, etc. |
+| STUB-001 | Implement Live Catalog Brand Extraction         | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:357                     |
+| STUB-002 | Implement Live Catalog Price Range              | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:367                     |
+| SEC-025  | Implement Session Extension Limit               | MEDIUM   | NOT STARTED | 1h       | sessionTimeoutService.ts:382                  |
+| RBAC-002 | Verify Time Clock Route Permission Gate         | MEDIUM   | NOT STARTED | 30 min   | TimeClockPage.tsx, hourTracking.ts            |
+| SEC-026  | Validate Cron Leader Election Race Condition    | MEDIUM   | NOT STARTED | 2h       | cronLeaderElection.ts                         |
+
+##### TYPE-001: Fix `as any` Casts in Work Surface Golden Flows
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/golden-flows/`
+
+**Problem:**
+50+ `as any` casts bypass TypeScript type safety in Golden Flow components:
+
+- `OrderCreationFlow.tsx`: lines 582, 587, 593, 596, 613, 650
+- `InvoiceToPaymentFlow.tsx`: lines 655, 665, 679, 689
+- `OrderToInvoiceFlow.tsx`: lines 658, 661, 668, 678
+
+**Objectives:**
+
+1. Define proper types for tRPC response shapes
+2. Remove `as any` casts
+3. Ensure type errors surface at compile time
+
+**Deliverables:**
+
+- [ ] Define response types in shared types file
+- [ ] Replace `as any` with proper type assertions
+- [ ] TypeScript compilation still passes
+- [ ] No runtime behavior changes
+
+---
+
+##### STUB-001: Implement Live Catalog Brand Extraction
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `server/services/liveCatalogService.ts:357`
+
+**Problem:**
+TODO comment indicates brand extraction is not implemented. Returns empty array instead of actual brand data.
+
+**Deliverables:**
+
+- [ ] Extract unique brands from inventory data
+- [ ] Return brands in catalog filter options
+- [ ] Add test for brand extraction
+
+---
+
+##### STUB-002: Implement Live Catalog Price Range
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `server/services/liveCatalogService.ts:367`
+
+**Problem:**
+TODO comment indicates price range calculation is not implemented. Users cannot filter by price in live catalog.
+
+**Deliverables:**
+
+- [ ] Calculate min/max price from inventory
+- [ ] Return price range in catalog response
+- [ ] Add test for price range calculation
+
+---
+
+##### SEC-025: Implement Session Extension Limit
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 1h
+**Module:** `server/services/sessionTimeoutService.ts:382`
+
+**Problem:**
+`canExtend: true` is hardcoded with TODO comment "Check count". Sessions can be extended infinitely, potentially allowing unlimited session duration.
+
+**Deliverables:**
+
+- [ ] Add extension count tracking
+- [ ] Implement max extension limit (e.g., 3 extensions)
+- [ ] Return `canExtend: false` when limit reached
+- [ ] Add unit test for extension limit
+
+---
+
+##### RBAC-002: Verify Time Clock Route Permission Gate
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 30 min
+**Module:** `client/src/pages/TimeClockPage.tsx`, `server/routers/hourTracking.ts`
+
+**Problem:**
+Hypothesis: Route uses `requirePermission("scheduling:read")` on backend but may lack UI-level permission gate. Users without permission may see the page before API calls fail.
+
+**Deliverables:**
+
+- [ ] Verify TimeClockPage has permission check
+- [ ] Add ProtectedRoute wrapper if missing
+- [ ] Test with user lacking scheduling:read permission
+
+---
+
+##### SEC-026: Validate Cron Leader Election Race Condition
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `server/utils/cronLeaderElection.ts`
+
+**Problem:**
+Hypothesis: Two instances could acquire leader lock simultaneously due to race condition in `tryAcquireLock`.
+
+**Deliverables:**
+
+- [ ] Add logging before/after lock acquisition
+- [ ] Deploy 2 instances and verify only one runs cron
+- [ ] Add mutex/transaction around lock acquisition if needed
+- [ ] Add integration test for concurrent acquisition
+
+---
+
+**Summary: Second-Pass Security Audit Tasks**
+
+| Priority  | Count  | Description                                   |
+| --------- | ------ | --------------------------------------------- |
+| P0        | 1      | Silent monitoring failure                     |
+| P1        | 4      | Test infrastructure + feature gaps + security |
+| P2        | 6      | Type safety + stubs + validation              |
+| **TOTAL** | **11** |                                               |
+
+> **Audit Note (Jan 21, 2026):** All tasks from second-pass security audit.
+> Build verification: TypeScript ✅ Build ✅ Tests 1949/2065 pass (116 test infra failures)
+> Full report: `docs/qa/SECOND_PASS_SECURITY_AUDIT_2026-01-21.md`
+
+---
+
 ## 📊 MVP Summary
 
-| Category                     | Completed | Open   | Removed | Total   |
-| ---------------------------- | --------- | ------ | ------- | ------- |
-| Infrastructure               | 21        | 2      | 1       | 24      |
-| Security                     | 17        | 1      | 0       | 18      |
-| Bug Fixes                    | 46        | 2      | 0       | 48      |
-| API Registration             | 10        | 7      | 0       | 17      |
-| Stability                    | 4         | 0      | 0       | 4       |
-| Quality                      | 12        | 3      | 0       | 15      |
-| Features                     | 29        | 2      | 1       | 32      |
-| UX                           | 12        | 0      | 0       | 12      |
-| Data & Schema                | 8         | 4      | 0       | 12      |
-| Data Seeding (NEW)           | 0         | 10     | 0       | 10      |
-| Data Integrity (QA)          | 8         | 0      | 0       | 8       |
-| Frontend Quality (QA)        | 3         | 8      | 0       | 11      |
-| Backend Quality (QA)         | 5         | 10     | 0       | 15      |
-| Navigation                   | 0         | 12     | 0       | 12      |
-| Improvements                 | 7         | 0      | 0       | 7       |
-| E2E Testing                  | 3         | 0      | 0       | 3       |
-| TypeScript (NEW)             | 0         | 1      | 0       | 1       |
-| Work Surface QA (NEW)        | 0         | 4      | 0       | 4       |
-| Mobile Responsiveness (NEW)  | 0         | 1      | 0       | 1       |
-| Deprecation Cleanup (NEW)    | 0         | 2      | 0       | 2       |
-| Schema Fixes (NEW)           | 0         | 3      | 0       | 3       |
-| **TOTAL**                    | **185**   | **71** | **2**   | **258** |
+| Category                    | Completed | Open   | Removed | Total   |
+| --------------------------- | --------- | ------ | ------- | ------- |
+| Infrastructure              | 21        | 2      | 1       | 24      |
+| Security                    | 17        | 1      | 0       | 18      |
+| Bug Fixes                   | 46        | 2      | 0       | 48      |
+| API Registration            | 10        | 7      | 0       | 17      |
+| Stability                   | 4         | 0      | 0       | 4       |
+| Quality                     | 12        | 3      | 0       | 15      |
+| Features                    | 29        | 2      | 1       | 32      |
+| UX                          | 12        | 0      | 0       | 12      |
+| Data & Schema               | 8         | 4      | 0       | 12      |
+| Data Seeding (NEW)          | 0         | 10     | 0       | 10      |
+| Data Integrity (QA)         | 8         | 0      | 0       | 8       |
+| Frontend Quality (QA)       | 3         | 8      | 0       | 11      |
+| Backend Quality (QA)        | 5         | 10     | 0       | 15      |
+| Navigation                  | 0         | 12     | 0       | 12      |
+| Improvements                | 7         | 0      | 0       | 7       |
+| E2E Testing                 | 3         | 0      | 0       | 3       |
+| TypeScript (NEW)            | 0         | 1      | 0       | 1       |
+| Work Surface QA (NEW)       | 0         | 4      | 0       | 4       |
+| Mobile Responsiveness (NEW) | 0         | 1      | 0       | 1       |
+| Deprecation Cleanup (NEW)   | 0         | 2      | 0       | 2       |
+| Schema Fixes (NEW)          | 0         | 3      | 0       | 3       |
+| Security Audit (Jan 21)     | 0         | 11     | 0       | 11      |
+| **TOTAL**                   | **185**   | **82** | **2**   | **269** |
 
-> **MVP STATUS: 72% RESOLVED** (185 completed + 2 removed, 71 tasks open)
+> **MVP STATUS: 70% RESOLVED** (185 completed + 2 removed, 82 tasks open)
+> **Security Audit (Jan 21, 2026):** 11 new tasks added from second-pass security audit.
 > **Deep Audit (Jan 20, 2026):** 23 additional tasks added from comprehensive git commit analysis (verified non-duplicates).
 > **Incomplete Features Audit (Jan 20, 2026):** 37 new tasks added from RedHat QA audit.
 > **Navigation Enhancement (Jan 20, 2026):** 11 new tasks added to surface hidden routes.
