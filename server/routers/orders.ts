@@ -17,8 +17,8 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
-import { orders, orderLineItems, batches, products } from "../../drizzle/schema";
-import { eq, inArray } from "drizzle-orm";
+import { orders, orderLineItems, orderLineItemAllocations, batches, products } from "../../drizzle/schema";
+import { eq, inArray, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
 import { pricingService } from "../services/pricingService";
@@ -1462,22 +1462,23 @@ export const ordersRouter = router({
       if (input.signature) deliveryNotes += `Signature: ${input.signature}\n`;
       if (input.notes) deliveryNotes += input.notes;
 
-      // Note: Schema doesn't have DELIVERED status, so we'll record in notes
-      // and keep as SHIPPED (which is the terminal fulfillment state)
+      // WSQA-003: Now using proper DELIVERED status
       await db
         .update(orders)
         .set({
+          fulfillmentStatus: "DELIVERED",
           notes: `${order.notes || ""}\n[Delivered]: ${deliveryNotes}`.trim(),
+          updatedAt: new Date(),
         })
         .where(eq(orders.id, input.id));
 
-      // Log to status history with notes indicating delivery
+      // Log to status history
       const { orderStatusHistory } = await import("../../drizzle/schema");
       await db.insert(orderStatusHistory).values({
         orderId: input.id,
-        fulfillmentStatus: "SHIPPED", // Schema limitation - no DELIVERED status
+        fulfillmentStatus: "DELIVERED",
         changedBy: userId,
-        notes: `DELIVERED: ${deliveryNotes}`,
+        notes: deliveryNotes,
       });
 
       return {
@@ -1485,5 +1486,324 @@ export const ordersRouter = router({
         orderId: input.id,
         deliveredAt: input.deliveredAt || new Date().toISOString(),
       };
+    }),
+
+  // WSQA-003: Mark order as returned
+  markAsReturned: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(z.object({
+      orderId: z.number(),
+      returnReason: z.string().min(1, "Return reason is required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Import state machine
+      const { canTransition } = await import("../services/orderStateMachine");
+
+      // Get order
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order not found",
+        });
+      }
+
+      // Validate transition
+      if (!canTransition(order.fulfillmentStatus || "PENDING", "RETURNED")) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot mark order as returned from ${order.fulfillmentStatus} status. Order must be SHIPPED or DELIVERED.`,
+        });
+      }
+
+      // Update order status
+      await db
+        .update(orders)
+        .set({
+          fulfillmentStatus: "RETURNED",
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, input.orderId));
+
+      // Log status change
+      const { orderStatusHistory } = await import("../../drizzle/schema");
+      await db.insert(orderStatusHistory).values({
+        orderId: input.orderId,
+        fulfillmentStatus: "RETURNED",
+        changedBy: userId,
+        notes: input.returnReason,
+      });
+
+      logger.info({
+        msg: "WSQA-003: Order marked as returned",
+        orderId: input.orderId,
+        returnReason: input.returnReason,
+        userId,
+      });
+
+      return { success: true };
+    }),
+
+  // WSQA-003: Process restock - return items to inventory
+  processRestock: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(z.object({ orderId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = getAuthenticatedUserId(ctx);
+
+      const { processRestock } = await import("../services/returnProcessing");
+      await processRestock(input.orderId, userId);
+
+      return { success: true };
+    }),
+
+  // WSQA-003: Process vendor return
+  processVendorReturn: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(z.object({
+      orderId: z.number(),
+      vendorId: z.number(),
+      returnReason: z.string().min(1, "Return reason is required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = getAuthenticatedUserId(ctx);
+
+      const { processVendorReturn } = await import("../services/returnProcessing");
+      const vendorReturnId = await processVendorReturn(
+        input.orderId,
+        input.vendorId,
+        input.returnReason,
+        userId
+      );
+
+      return { vendorReturnId };
+    }),
+
+  // WSQA-003: Get valid next statuses for an order
+  getNextStatuses: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ orderId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const [order] = await db
+        .select({ fulfillmentStatus: orders.fulfillmentStatus })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order not found",
+        });
+      }
+
+      const { getNextStatuses, STATUS_LABELS } = await import("../services/orderStateMachine");
+      const nextStatuses = getNextStatuses(order.fulfillmentStatus || "PENDING");
+
+      return nextStatuses.map(status => ({
+        status,
+        label: STATUS_LABELS[status],
+      }));
+    }),
+
+  // WSQA-002: Allocate specific batches to an order line item (Flexible Lot Selection)
+  allocateBatchesToLineItem: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(z.object({
+      lineItemId: z.number(),
+      allocations: z.array(z.object({
+        batchId: z.number(),
+        quantity: z.number().positive(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = getAuthenticatedUserId(ctx);
+
+      return await withTransaction(async (tx) => {
+        // 1. Validate line item exists and order is in editable state
+        const [lineItem] = await tx
+          .select()
+          .from(orderLineItems)
+          .where(eq(orderLineItems.id, input.lineItemId))
+          .limit(1);
+
+        if (!lineItem) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Line item not found",
+          });
+        }
+
+        // Get order to check status
+        const [order] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, lineItem.orderId))
+          .limit(1);
+
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
+
+        // Only allow allocation for draft orders or orders awaiting fulfillment
+        const editableStatuses = ["DRAFT", "PENDING", "PROCESSING", "CONFIRMED"];
+        if (!editableStatuses.includes(order.fulfillmentStatus || "")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot allocate batches for order in ${order.fulfillmentStatus} status`,
+          });
+        }
+
+        // 2. Clear existing allocations for this line item
+        await tx
+          .delete(orderLineItemAllocations)
+          .where(eq(orderLineItemAllocations.orderLineItemId, input.lineItemId));
+
+        // 3. Validate total quantity matches line item quantity
+        const totalAllocated = input.allocations.reduce((sum, a) => sum + a.quantity, 0);
+        const lineItemQty = parseFloat(String(lineItem.quantity || "0"));
+
+        if (Math.abs(totalAllocated - lineItemQty) > 0.01) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Allocated quantity (${totalAllocated}) must match line item quantity (${lineItemQty})`,
+          });
+        }
+
+        // 4. Create new allocations with validation
+        const createdAllocations = [];
+        let totalCost = 0;
+
+        for (const alloc of input.allocations) {
+          // Lock batch row to prevent concurrent allocation
+          const [batch] = await tx
+            .select()
+            .from(batches)
+            .where(eq(batches.id, alloc.batchId))
+            .for("update")
+            .limit(1);
+
+          if (!batch) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Batch ${alloc.batchId} not found`,
+            });
+          }
+
+          // Calculate available quantity
+          const onHand = parseFloat(String(batch.onHandQty || "0"));
+          const reserved = parseFloat(String(batch.reservedQty || "0"));
+          const quarantine = parseFloat(String(batch.quarantineQty || "0"));
+          const hold = parseFloat(String(batch.holdQty || "0"));
+          const availableQty = Math.max(0, onHand - reserved - quarantine - hold);
+
+          if (availableQty < alloc.quantity) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient quantity in batch ${batch.sku || batch.id}. Available: ${availableQty}, Requested: ${alloc.quantity}`,
+            });
+          }
+
+          const unitCost = batch.unitCogs ? parseFloat(String(batch.unitCogs)) : 0;
+
+          // Insert allocation record
+          await tx.insert(orderLineItemAllocations).values({
+            orderLineItemId: input.lineItemId,
+            batchId: alloc.batchId,
+            quantityAllocated: alloc.quantity.toString(),
+            unitCost: unitCost.toFixed(4),
+            allocatedBy: userId,
+          });
+
+          createdAllocations.push({
+            batchId: alloc.batchId,
+            batchSku: batch.sku,
+            quantity: alloc.quantity,
+            unitCost,
+          });
+
+          totalCost += alloc.quantity * unitCost;
+        }
+
+        // Calculate weighted average COGS
+        const weightedAvgCogs = totalAllocated > 0 ? totalCost / totalAllocated : 0;
+
+        // 5. Update line item COGS if allocations changed it
+        await tx
+          .update(orderLineItems)
+          .set({
+            cogsPerUnit: weightedAvgCogs.toFixed(2),
+          })
+          .where(eq(orderLineItems.id, input.lineItemId));
+
+        logger.info({
+          msg: "WSQA-002: Batch allocations saved",
+          lineItemId: input.lineItemId,
+          orderId: order.id,
+          allocationCount: createdAllocations.length,
+          totalCost,
+          weightedAvgCogs,
+        });
+
+        return {
+          lineItemId: input.lineItemId,
+          allocations: createdAllocations,
+          totalCogs: totalCost,
+          weightedAverageCost: weightedAvgCogs,
+        };
+      });
+    }),
+
+  // WSQA-002: Get allocations for an order line item
+  getLineItemAllocations: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({
+      lineItemId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const allocations = await db
+        .select({
+          id: orderLineItemAllocations.id,
+          batchId: orderLineItemAllocations.batchId,
+          quantityAllocated: orderLineItemAllocations.quantityAllocated,
+          unitCost: orderLineItemAllocations.unitCost,
+          allocatedAt: orderLineItemAllocations.allocatedAt,
+          batchSku: batches.sku,
+          batchCode: batches.code,
+          batchGrade: batches.grade,
+        })
+        .from(orderLineItemAllocations)
+        .leftJoin(batches, eq(orderLineItemAllocations.batchId, batches.id))
+        .where(eq(orderLineItemAllocations.orderLineItemId, input.lineItemId));
+
+      return allocations.map(alloc => ({
+        id: alloc.id,
+        batchId: alloc.batchId,
+        batchSku: alloc.batchSku,
+        batchCode: alloc.batchCode,
+        batchGrade: alloc.batchGrade,
+        quantity: parseFloat(String(alloc.quantityAllocated || "0")),
+        unitCost: parseFloat(String(alloc.unitCost || "0")),
+        allocatedAt: alloc.allocatedAt,
+      }));
     }),
 });

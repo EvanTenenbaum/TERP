@@ -2586,11 +2586,19 @@ export const saleStatusEnum = mysqlEnum("saleStatus", [
  * Fulfillment Status Enum
  * Lifecycle states for order fulfillment (SHIPPING STATUS)
  * Separate from payment status to track physical order processing
+ * WSQA-003: Added RETURNED, RESTOCKED, RETURNED_TO_VENDOR, DELIVERED, CANCELLED
  */
 export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
+  "DRAFT",
+  "CONFIRMED",
   "PENDING",
   "PACKED",
   "SHIPPED",
+  "DELIVERED",
+  "RETURNED",
+  "RESTOCKED",
+  "RETURNED_TO_VENDOR",
+  "CANCELLED",
 ]);
 
 /**
@@ -2744,6 +2752,69 @@ export const orderStatusHistory = mysqlTable(
 
 export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
+
+/**
+ * WSQA-003: Vendor Returns Table
+ * Tracks items returned to vendors for credit
+ */
+export const vendorReturnStatusEnum = mysqlEnum("vendorReturnStatus", [
+  "PENDING_VENDOR_CREDIT",
+  "CREDIT_RECEIVED",
+  "DISPUTED",
+  "CLOSED",
+]);
+
+export const vendorReturns = mysqlTable(
+  "vendor_returns",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderId: int("order_id")
+      .notNull()
+      .references(() => orders.id),
+    vendorId: int("vendor_id")
+      .notNull()
+      .references(() => clients.id), // Vendors are clients with isSeller=true
+    status: vendorReturnStatusEnum.notNull().default("PENDING_VENDOR_CREDIT"),
+    returnReason: text("return_reason"),
+    totalValue: decimal("total_value", { precision: 12, scale: 2 }),
+    creditReceived: decimal("credit_received", { precision: 12, scale: 2 }),
+    creditReceivedAt: timestamp("credit_received_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdBy: int("created_by").references(() => users.id),
+  },
+  table => ({
+    orderIdIdx: index("idx_vendor_returns_order").on(table.orderId),
+    vendorIdIdx: index("idx_vendor_returns_vendor").on(table.vendorId),
+  })
+);
+
+export type VendorReturn = typeof vendorReturns.$inferSelect;
+export type InsertVendorReturn = typeof vendorReturns.$inferInsert;
+
+/**
+ * WSQA-003: Vendor Return Items Table
+ * Tracks individual items in a vendor return
+ */
+export const vendorReturnItems = mysqlTable(
+  "vendor_return_items",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    vendorReturnId: int("vendor_return_id")
+      .notNull()
+      .references(() => vendorReturns.id, { onDelete: "cascade" }),
+    batchId: int("batch_id")
+      .notNull()
+      .references(() => batches.id),
+    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+    unitCost: decimal("unit_cost", { precision: 12, scale: 4 }).notNull(),
+  },
+  table => ({
+    vendorReturnIdIdx: index("idx_vendor_return_items_return").on(table.vendorReturnId),
+  })
+);
+
+export type VendorReturnItem = typeof vendorReturnItems.$inferSelect;
+export type InsertVendorReturnItem = typeof vendorReturnItems.$inferInsert;
 
 /**
  * WS-003: Order Bags Table
@@ -4349,6 +4420,27 @@ export const orderLineItems = mysqlTable(
 
 export type OrderLineItem = typeof orderLineItems.$inferSelect;
 export type InsertOrderLineItem = typeof orderLineItems.$inferInsert;
+
+// WSQA-002: Order Line Item Allocations (Flexible Lot Selection)
+export const orderLineItemAllocations = mysqlTable(
+  "order_line_item_allocations",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderLineItemId: int("order_line_item_id").notNull(),
+    batchId: int("batch_id").notNull(),
+    quantityAllocated: decimal("quantity_allocated", { precision: 10, scale: 2 }).notNull(),
+    unitCost: decimal("unit_cost", { precision: 12, scale: 4 }).notNull(),
+    allocatedAt: timestamp("allocated_at").defaultNow().notNull(),
+    allocatedBy: int("allocated_by"),
+  },
+  table => ({
+    lineItemIdx: index("idx_allocations_line_item").on(table.orderLineItemId),
+    batchIdx: index("idx_allocations_batch").on(table.batchId),
+  })
+);
+
+export type OrderLineItemAllocation = typeof orderLineItemAllocations.$inferSelect;
+export type InsertOrderLineItemAllocation = typeof orderLineItemAllocations.$inferInsert;
 
 // Order Audit Log (v2.0 Sales Order Enhancements)
 export const orderAuditLog = mysqlTable(
@@ -7123,7 +7215,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
 }));
 
 // Relations for orderLineItems
-export const orderLineItemsRelations = relations(orderLineItems, ({ one }) => ({
+export const orderLineItemsRelations = relations(orderLineItems, ({ one, many }) => ({
   order: one(orders, {
     fields: [orderLineItems.orderId],
     references: [orders.id],
@@ -7131,6 +7223,23 @@ export const orderLineItemsRelations = relations(orderLineItems, ({ one }) => ({
   batch: one(batches, {
     fields: [orderLineItems.batchId],
     references: [batches.id],
+  }),
+  allocations: many(orderLineItemAllocations),
+}));
+
+// WSQA-002: Relations for orderLineItemAllocations
+export const orderLineItemAllocationsRelations = relations(orderLineItemAllocations, ({ one }) => ({
+  lineItem: one(orderLineItems, {
+    fields: [orderLineItemAllocations.orderLineItemId],
+    references: [orderLineItems.id],
+  }),
+  batch: one(batches, {
+    fields: [orderLineItemAllocations.batchId],
+    references: [batches.id],
+  }),
+  allocatedByUser: one(users, {
+    fields: [orderLineItemAllocations.allocatedBy],
+    references: [users.id],
   }),
 }));
 
