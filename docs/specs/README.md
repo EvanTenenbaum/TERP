@@ -7,6 +7,7 @@ This directory contains detailed product specifications for all major features a
 | Status | Count |
 |--------|-------|
 | Approved | 27 |
+| Ready for Implementation | 1 |
 | In Review | 0 |
 | Draft | 14 |
 
@@ -26,6 +27,19 @@ The following specs were identified as **MISSING** during strategic roadmap revi
 > - FEAT-007: Use dynamic locations (Location 1, Location 2), admin can add/rename
 > - FEAT-008: Discrepancy notifications go to responsible person (not generic admin)
 > - FEAT-009: Use real-time queries, integrate with all system tracking/calculations
+
+---
+
+## Backlog: Ready for Implementation (2026-01-20)
+
+| Task ID | Title | Spec | Priority | Estimate | Module | Status |
+|---------|-------|------|----------|----------|--------|--------|
+| FEAT-SIGNAL-001 | Signal Messaging Integration | [FEAT-SIGNAL-001-SPEC.md](./FEAT-SIGNAL-001-SPEC.md) | **HIGH** | 6 weeks | Communications / Client Management | ✅ READY |
+
+> **Notes (2026-01-20):**
+> - Complete spec with database schema, backend service, tRPC router, and frontend components
+> - Designed for autonomous implementation by Claude Code
+> - Phased implementation approach across 6 weeks
 
 ---
 
