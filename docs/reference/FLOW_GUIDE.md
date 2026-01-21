@@ -1,4 +1,4 @@
-# TERP User Flow Guide (v3.2)
+# TERP User Flow Guide (v3.3)
 
 _Generated: 2026-01-21 | Source: Comprehensive codebase analysis of 124 server routers, 55 client pages, and RBAC definitions_
 
@@ -11,18 +11,25 @@ This guide documents all user flows in the TERP application, organized by busine
 - **Permission**: Required RBAC permission string (if any)
 - **Roles**: User roles that can access this flow
 
-**Statistics (v3.2 - 100% Coverage):**
+**Statistics (v3.3 - 100% Coverage):**
 - Total Routers: 124 (120 main + 4 subdirectory)
 - Total Procedures: 1,450+
 - Total Domains: 27
-- Total Features: 73
+- Total Features: 83
 - Client Routes: 55 pages, 42 defined routes
+- Work Surface Components: 10
+- Golden Flows: 3
+- Work Surface Hooks: 12
 - Documentation Coverage: 100%
 
 **Wave 5 Updates (January 21, 2026):**
 - Added Domain 27: Hour Tracking (hourTracking router - 14 procedures)
 - Added quote email procedures (quotes.send, quotes.isEmailEnabled)
 - Added client route: /time-clock
+- Added Work Surface Framework (10 components, Sprints 0-8)
+- Added Golden Flows (3 multi-step wizards)
+- Added Work Surface Hooks (12 reusable hooks)
+- Added E2E Testing Infrastructure (Puppeteer-based)
 
 ### Authentication Levels
 
@@ -1361,4 +1368,65 @@ The `vendors` router is deprecated. All vendor operations should use the `client
 
 ---
 
-_End of TERP User Flow Guide v3.2 - 100% Router Coverage_
+## Appendix: Work Surface Components (Wave 5)
+
+The Work Surface Framework provides a consistent, keyboard-first data entry experience.
+
+### Component Matrix
+
+| Component | File | Domain | Implements |
+|-----------|------|--------|------------|
+| DirectIntakeWorkSurface | `work-surface/DirectIntakeWorkSurface.tsx` | Inventory | UXS-201 |
+| OrdersWorkSurface | `work-surface/OrdersWorkSurface.tsx` | Orders | UXS-301 |
+| InventoryWorkSurface | `work-surface/InventoryWorkSurface.tsx` | Inventory | UXS-401 |
+| InvoicesWorkSurface | `work-surface/InvoicesWorkSurface.tsx` | Accounting | UXS-501 |
+| ClientsWorkSurface | `work-surface/ClientsWorkSurface.tsx` | CRM | UXS-203 |
+| PurchaseOrdersWorkSurface | `work-surface/PurchaseOrdersWorkSurface.tsx` | Purchasing | UXS-202 |
+| QuotesWorkSurface | `work-surface/QuotesWorkSurface.tsx` | Sales | - |
+| ClientLedgerWorkSurface | `work-surface/ClientLedgerWorkSurface.tsx` | Accounting | - |
+| PickPackWorkSurface | `work-surface/PickPackWorkSurface.tsx` | Warehouse | - |
+| InspectorPanel | `work-surface/InspectorPanel.tsx` | Shared | UXS-103 |
+
+### Golden Flow Matrix
+
+| Flow | File | Steps | Implements |
+|------|------|-------|------------|
+| OrderCreationFlow | `golden-flows/OrderCreationFlow.tsx` | Select → Price → Review → Create | UXS-601 |
+| OrderToInvoiceFlow | `golden-flows/OrderToInvoiceFlow.tsx` | Select → Terms → Adjust → Generate | UXS-602 |
+| InvoiceToPaymentFlow | `golden-flows/InvoiceToPaymentFlow.tsx` | Select → Amount → Method → Record | UXS-603 |
+
+### Work Surface Hooks Matrix
+
+| Hook | File | Purpose | Sprint |
+|------|------|---------|--------|
+| useWorkSurfaceKeyboard | `hooks/work-surface/` | Grid navigation | Sprint 0 |
+| useSaveState | `hooks/work-surface/` | Save indicator | Sprint 0 |
+| useValidationTiming | `hooks/work-surface/` | Validation timing | Sprint 0 |
+| useWorkSurfaceFeatureFlags | `hooks/work-surface/` | Feature flags | Sprint 2 |
+| useConcurrentEditDetection | `hooks/work-surface/` | Edit conflicts | Sprint 2 |
+| usePerformanceMonitor | `hooks/work-surface/` | Performance | Sprint 7 |
+| useToastConfig | `hooks/work-surface/` | Toast messages | Sprint 8 |
+| usePrint | `hooks/work-surface/` | Print controls | Sprint 8 |
+| useExport | `hooks/work-surface/` | Export CSV/Excel | Sprint 8 |
+| useSessionTimeout | `hooks/` | Session expiry | Sprint 8 |
+
+### Keyboard Contract
+
+All Work Surfaces implement:
+- **Tab**: Navigate between cells/fields
+- **Enter**: Open inspector panel / confirm
+- **Esc**: Close inspector panel / cancel
+- **Cmd+Z**: Undo last action
+- **Arrow keys**: Grid navigation
+
+### Save State Lifecycle
+
+```
+idle → saving → saved
+         ↓
+       error → queued → saving
+```
+
+---
+
+_End of TERP User Flow Guide v3.3 - 100% Router Coverage_
