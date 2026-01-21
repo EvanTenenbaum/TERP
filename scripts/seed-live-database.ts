@@ -18,7 +18,7 @@
 
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import { seedRealisticData } from './seed-realistic-main';
+import { seedRealisticData } from './legacy/seed-realistic-main';
 import { execSync } from 'child_process';
 
 // DigitalOcean Database Credentials (from The Bible)
