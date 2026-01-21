@@ -70,12 +70,7 @@ export type {
 } from "./useBreakpoint";
 
 // UXS-707: Undo Infrastructure
-export {
-  useUndo,
-  useUndoContext,
-  UndoProvider,
-  UndoToast,
-} from "./useUndo";
+export { useUndo, useUndoContext, UndoProvider, UndoToast } from "./useUndo";
 export type {
   UndoAction,
   UndoState,
@@ -101,10 +96,7 @@ export type {
 } from "./usePerformanceMonitor";
 
 // UXS-803: Bulk Operation Limits
-export {
-  useBulkOperationLimits,
-  BulkProgress,
-} from "./useBulkOperationLimits";
+export { useBulkOperationLimits, BulkProgress } from "./useBulkOperationLimits";
 export type {
   BulkOperationLimits,
   BulkOperationState,
@@ -139,10 +131,7 @@ export type {
 } from "./usePrint";
 
 // UXS-904: Export Functionality
-export {
-  useExport,
-  DEFAULT_EXPORT_LIMITS,
-} from "./useExport";
+export { useExport, DEFAULT_EXPORT_LIMITS } from "./useExport";
 export type {
   ExportColumn,
   ExportLimits,
@@ -151,3 +140,11 @@ export type {
   UseExportReturn,
   ExportProgressProps,
 } from "./useExport";
+
+// UXS-706: Session Timeout Handler
+export { useSessionTimeout } from "./useSessionTimeout";
+export type {
+  SessionTimeoutOptions,
+  SessionState,
+  UseSessionTimeoutReturn,
+} from "./useSessionTimeout";
