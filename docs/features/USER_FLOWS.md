@@ -1,22 +1,23 @@
 # TERP User Flow Mapping
 
 **Date Created:** November 5, 2025
-**Last Updated:** January 15, 2026
-**Status:** v3.0 - Comprehensive Feature Inventory
+**Last Updated:** January 21, 2026
+**Status:** v3.2 - Wave 5 Features Complete
 
 ---
 
 ## Overview
 
-This document maps user flows for all **70 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
+This document maps user flows for all **73 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
 
 **Statistics:**
 - Original Documented Features: 15
 - Newly Discovered Features: 55
-- Total Feature Modules: 70
-- Total tRPC Routers: 123
-- Total tRPC Procedures: 1,414+
-- Total Client Routes: 54 pages
+- Wave 5 New Features: 3 (Hour Tracking, Quote Email, Session Timeout)
+- Total Feature Modules: 73
+- Total tRPC Routers: 124
+- Total tRPC Procedures: 1,450+
+- Total Client Routes: 55 pages
 - Documentation Coverage: 100%
 
 Each section outlines the primary user journeys, the actors involved, and specific functionalities that should be included or explicitly excluded based on your comments.
@@ -126,6 +127,11 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-068: Health & Diagnostics](#df-068-health--diagnostics)
 - [DF-069: Admin Tools Suite](#df-069-admin-tools-suite)
 - [DF-070: User Management](#df-070-user-management)
+
+### Wave 5 Features (DF-071 to DF-073) - Added January 2026
+- [DF-071: Hour Tracking System](#df-071-hour-tracking-system)
+- [DF-072: Quote Email System](#df-072-quote-email-system)
+- [DF-073: Work Surface Session Management](#df-073-work-surface-session-management)
 
 ---
 ## DF-001: Calendar & Event Management System
@@ -1720,4 +1726,88 @@ _No specific exclusions noted for this module._
 
 ---
 
-_End of TERP User Flow Mapping v3.1 - 100% Coverage_
+## DF-071: Hour Tracking System
+
+**Category:** HR Operations
+**Status:** Fully Implemented (Wave 5 - January 2026)
+**Implements:** MEET-048
+
+Complete time clock and hour tracking system with clock in/out, break management, timesheet views, overtime calculation, and reporting.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Employee clocks in for shift | All Users |
+| Employee starts break | All Users |
+| Employee ends break | All Users |
+| Employee clocks out | All Users |
+| Employee views current clock status | All Users |
+| Employee views weekly timesheet | All Users |
+| Manager creates manual time entry | Manager |
+| Manager adjusts time entry | Manager |
+| Manager approves time entry | Manager |
+| Manager views hours report | Manager |
+| Manager views overtime report | Manager |
+| Admin creates overtime rule | Admin |
+| Admin updates overtime rule | Admin |
+
+### Exclusions & User-Defined Constraints
+
+- Hour tracking designed for small teams (originally 2 hourly employees)
+- Focus on simple time tracking without complex scheduling integration
+
+---
+
+## DF-072: Quote Email System
+
+**Category:** Sales Operations
+**Status:** Fully Implemented (Wave 5 - January 2026)
+**Implements:** API-016
+
+Email sending functionality for quotes with configurable email service (Resend/SendGrid) support.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Sales rep sends quote via email | Sales Rep |
+| System generates quote email (HTML + plain text) | System |
+| Admin checks if email is enabled | Admin |
+| Client receives quote email | Client |
+
+### Exclusions & User-Defined Constraints
+
+- Requires email service configuration (RESEND_API_KEY or SENDGRID_API_KEY)
+- Email templates match UI styling for consistency
+
+---
+
+## DF-073: Work Surface Session Management
+
+**Category:** User Experience
+**Status:** Fully Implemented (Wave 5 - January 2026)
+**Implements:** UXS-706
+
+Session timeout detection and handling for Work Surfaces with graceful logout and session extension capabilities.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| System detects approaching session expiry | System |
+| User receives session timeout warning | All Users |
+| User extends session via callback | All Users |
+| System handles graceful logout on timeout | System |
+| System preserves session state in localStorage | System |
+| System detects user idle activity | System |
+
+### Exclusions & User-Defined Constraints
+
+- Configurable warning threshold (default 5 minutes before expiry)
+- Optional idle detection with activity events
+- Session state preserved for recovery
+
+---
+
+_End of TERP User Flow Mapping v3.2 - 100% Coverage_

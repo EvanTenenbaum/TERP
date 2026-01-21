@@ -1,6 +1,6 @@
-# TERP User Flow Guide (v3.1)
+# TERP User Flow Guide (v3.2)
 
-_Generated: 2026-01-15 | Source: Comprehensive codebase analysis of 123 server routers, 54 client pages, and RBAC definitions_
+_Generated: 2026-01-21 | Source: Comprehensive codebase analysis of 124 server routers, 55 client pages, and RBAC definitions_
 
 ## Overview
 
@@ -11,13 +11,18 @@ This guide documents all user flows in the TERP application, organized by busine
 - **Permission**: Required RBAC permission string (if any)
 - **Roles**: User roles that can access this flow
 
-**Statistics (v3.1 - 100% Coverage):**
-- Total Routers: 123 (119 main + 4 subdirectory)
-- Total Procedures: 1,414+
-- Total Domains: 26
-- Total Features: 70
-- Client Routes: 54 pages, 41 defined routes
+**Statistics (v3.2 - 100% Coverage):**
+- Total Routers: 124 (120 main + 4 subdirectory)
+- Total Procedures: 1,450+
+- Total Domains: 27
+- Total Features: 73
+- Client Routes: 55 pages, 42 defined routes
 - Documentation Coverage: 100%
+
+**Wave 5 Updates (January 21, 2026):**
+- Added Domain 27: Hour Tracking (hourTracking router - 14 procedures)
+- Added quote email procedures (quotes.send, quotes.isEmailEnabled)
+- Added client route: /time-clock
 
 ### Authentication Levels
 
@@ -1151,6 +1156,62 @@ DRAFT → SENT → CONFIRMED → RECEIVING → RECEIVED
 
 ---
 
+## Domain 27: Hour Tracking (Wave 5 - January 2026)
+
+**Implements:** MEET-048
+
+### 27.1 Clock In/Out
+
+| Flow | Procedure | Type | Auth | Permission | Roles |
+|------|-----------|------|------|------------|-------|
+| Clock In | `hourTracking.clockIn` | mutation | protected | scheduling:read | All Users |
+| Clock Out | `hourTracking.clockOut` | mutation | protected | scheduling:read | All Users |
+| Start Break | `hourTracking.startBreak` | mutation | protected | scheduling:read | All Users |
+| End Break | `hourTracking.endBreak` | mutation | protected | scheduling:read | All Users |
+| Get Current Status | `hourTracking.getCurrentStatus` | query | protected | scheduling:read | All Users |
+
+### 27.2 Time Entry Management
+
+| Flow | Procedure | Type | Auth | Permission | Roles |
+|------|-----------|------|------|------------|-------|
+| List Time Entries | `hourTracking.listTimeEntries` | query | protected | scheduling:read | All Users (own), Manager (all) |
+| Create Manual Entry | `hourTracking.createManualEntry` | mutation | protected | scheduling:manage | Manager |
+| Adjust Time Entry | `hourTracking.adjustTimeEntry` | mutation | protected | scheduling:manage | Manager |
+| Approve Time Entry | `hourTracking.approveTimeEntry` | mutation | protected | scheduling:manage | Manager |
+
+### 27.3 Timesheets & Reports
+
+| Flow | Procedure | Type | Auth | Permission | Roles |
+|------|-----------|------|------|------------|-------|
+| Get Timesheet | `hourTracking.getTimesheet` | query | protected | scheduling:read | All Users (own), Manager (all) |
+| Get Hours Report | `hourTracking.getHoursReport` | query | protected | scheduling:read | Manager |
+| Get Overtime Report | `hourTracking.getOvertimeReport` | query | protected | scheduling:read | Manager |
+
+### 27.4 Overtime Rules
+
+| Flow | Procedure | Type | Auth | Permission | Roles |
+|------|-----------|------|------|------------|-------|
+| List Overtime Rules | `hourTracking.listOvertimeRules` | query | protected | scheduling:read | All Users |
+| Create Overtime Rule | `hourTracking.createOvertimeRule` | mutation | protected | admin | Admin |
+| Update Overtime Rule | `hourTracking.updateOvertimeRule` | mutation | protected | admin | Admin |
+
+**Time Entry Status Lifecycle:**
+```
+active → completed → adjusted → approved
+                          ↓
+                      rejected
+```
+
+**Entry Types:**
+- `regular` - Standard work hours
+- `overtime` - Overtime hours
+- `sick` - Sick leave
+- `vacation` - Vacation time
+- `holiday` - Holiday hours
+- `training` - Training time
+
+---
+
 ## Known Issues & RBAC Gaps
 
 ### Permission Strings Not in RBAC Seed
@@ -1286,6 +1347,7 @@ The `vendors` router is deprecated. All vendor operations should use the `client
 | `/workflow-queue` | WorkflowQueuePage | Workflow |
 | `/calendar` | CalendarPage | Events |
 | `/scheduling` | SchedulingPage | Scheduling |
+| `/time-clock` | TimeClockPage | Hour Tracking (Wave 5) |
 
 ### Protected Routes - Tasks & Communication
 
@@ -1299,4 +1361,4 @@ The `vendors` router is deprecated. All vendor operations should use the `client
 
 ---
 
-_End of TERP User Flow Guide v3.1 - 100% Router Coverage_
+_End of TERP User Flow Guide v3.2 - 100% Router Coverage_
