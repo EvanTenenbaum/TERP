@@ -17,8 +17,14 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
-import { orders, orderLineItems, orderLineItemAllocations, batches, products } from "../../drizzle/schema";
-import { eq, inArray, and } from "drizzle-orm";
+import {
+  orders,
+  orderLineItems,
+  orderLineItemAllocations,
+  batches,
+  products,
+} from "../../drizzle/schema";
+import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
 import { pricingService } from "../services/pricingService";
@@ -145,7 +151,7 @@ export const ordersRouter = router({
         if (!db) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database not available"
+            message: "Database not available",
           });
         }
 
@@ -154,7 +160,7 @@ export const ordersRouter = router({
         if (!order) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: `Order with ID ${input.id} not found`
+            message: `Order with ID ${input.id} not found`,
           });
         }
 
@@ -166,7 +172,7 @@ export const ordersRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch order details",
-          cause: error
+          cause: error,
         });
       }
     }),
@@ -394,7 +400,7 @@ export const ordersRouter = router({
             if (marginResult.marginPercent === null) {
               console.warn(
                 `[orders.create] No pricing default found for category "${productCategory}". ` +
-                `Using 30% fallback margin. Please seed pricing_defaults table.`
+                  `Using 30% fallback margin. Please seed pricing_defaults table.`
               );
               marginPercent = 30; // Safe default margin
               marginSource = "MANUAL";
@@ -542,13 +548,7 @@ export const ordersRouter = router({
 
       // ST-026: Check version for concurrent edit detection
       const { checkVersion } = await import("../_core/optimisticLocking");
-      await checkVersion(
-        db,
-        orders,
-        "Order",
-        input.orderId,
-        input.version
-      );
+      await checkVersion(db, orders, "Order", input.orderId, input.version);
 
       // Get full existing order
       const existingOrder = await db.query.orders.findFirst({
@@ -601,7 +601,7 @@ export const ordersRouter = router({
             if (marginResult.marginPercent === null) {
               console.warn(
                 `[orders.update] No pricing default found for category "${productCategory}". ` +
-                `Using 30% fallback margin. Please seed pricing_defaults table.`
+                  `Using 30% fallback margin. Please seed pricing_defaults table.`
               );
               marginPercent = 30; // Safe default margin
               marginSource = "MANUAL";
@@ -660,7 +660,7 @@ export const ordersRouter = router({
 
       // ST-026: Update order with line items in transaction to prevent orphaned records
       const { sql } = await import("drizzle-orm");
-      await withTransaction(async (tx) => {
+      await withTransaction(async tx => {
         // Update order with version increment
         await tx
           .update(orders)
@@ -734,13 +734,7 @@ export const ordersRouter = router({
 
       // ST-026: Check version for concurrent edit detection
       const { checkVersion } = await import("../_core/optimisticLocking");
-      await checkVersion(
-        db,
-        orders,
-        "Order",
-        input.orderId,
-        input.version
-      );
+      await checkVersion(db, orders, "Order", input.orderId, input.version);
 
       // Get full existing order
       const existingOrder = await db.query.orders.findFirst({
@@ -1171,13 +1165,17 @@ export const ordersRouter = router({
       let orderItems;
       try {
         orderItems =
-          typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+          typeof order.items === "string"
+            ? JSON.parse(order.items)
+            : order.items;
       } catch {
         throw new Error("Failed to parse order items - data may be corrupted");
       }
 
       // FIXED: Batch query instead of N+1 individual queries
-      const batchIds = orderItems.map((item: { batchId: number }) => item.batchId);
+      const batchIds = orderItems.map(
+        (item: { batchId: number }) => item.batchId
+      );
       const batchRecords = await db
         .select()
         .from(batches)
@@ -1202,7 +1200,8 @@ export const ordersRouter = router({
         if (availableQty < item.quantity) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
+            message:
+              `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
               `Available: ${availableQty}, Required: ${item.quantity}`,
           });
         }
@@ -1266,7 +1265,9 @@ export const ordersRouter = router({
       let orderItems;
       try {
         orderItems =
-          typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+          typeof order.items === "string"
+            ? JSON.parse(order.items)
+            : order.items;
       } catch {
         throw new Error("Failed to parse order items - data may be corrupted");
       }
@@ -1491,10 +1492,12 @@ export const ordersRouter = router({
   // WSQA-003: Mark order as returned
   markAsReturned: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      orderId: z.number(),
-      returnReason: z.string().min(1, "Return reason is required"),
-    }))
+    .input(
+      z.object({
+        orderId: z.number(),
+        returnReason: z.string().min(1, "Return reason is required"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -1570,15 +1573,18 @@ export const ordersRouter = router({
   // WSQA-003: Process vendor return
   processVendorReturn: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      orderId: z.number(),
-      vendorId: z.number(),
-      returnReason: z.string().min(1, "Return reason is required"),
-    }))
+    .input(
+      z.object({
+        orderId: z.number(),
+        vendorId: z.number(),
+        returnReason: z.string().min(1, "Return reason is required"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);
 
-      const { processVendorReturn } = await import("../services/returnProcessing");
+      const { processVendorReturn } =
+        await import("../services/returnProcessing");
       const vendorReturnId = await processVendorReturn(
         input.orderId,
         input.vendorId,
@@ -1610,8 +1616,11 @@ export const ordersRouter = router({
         });
       }
 
-      const { getNextStatuses, STATUS_LABELS } = await import("../services/orderStateMachine");
-      const nextStatuses = getNextStatuses(order.fulfillmentStatus || "PENDING");
+      const { getNextStatuses, STATUS_LABELS } =
+        await import("../services/orderStateMachine");
+      const nextStatuses = getNextStatuses(
+        order.fulfillmentStatus || "PENDING"
+      );
 
       return nextStatuses.map(status => ({
         status,
@@ -1622,17 +1631,21 @@ export const ordersRouter = router({
   // WSQA-002: Allocate specific batches to an order line item (Flexible Lot Selection)
   allocateBatchesToLineItem: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      lineItemId: z.number(),
-      allocations: z.array(z.object({
-        batchId: z.number(),
-        quantity: z.number().positive(),
-      })),
-    }))
+    .input(
+      z.object({
+        lineItemId: z.number(),
+        allocations: z.array(
+          z.object({
+            batchId: z.number(),
+            quantity: z.number().positive(),
+          })
+        ),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = getAuthenticatedUserId(ctx);
 
-      return await withTransaction(async (tx) => {
+      return await withTransaction(async tx => {
         // 1. Validate line item exists and order is in editable state
         const [lineItem] = await tx
           .select()
@@ -1662,7 +1675,12 @@ export const ordersRouter = router({
         }
 
         // Only allow allocation for draft orders or orders awaiting fulfillment
-        const editableStatuses = ["DRAFT", "PENDING", "PROCESSING", "CONFIRMED"];
+        const editableStatuses = [
+          "DRAFT",
+          "PENDING",
+          "PROCESSING",
+          "CONFIRMED",
+        ];
         if (!editableStatuses.includes(order.fulfillmentStatus || "")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -1671,12 +1689,54 @@ export const ordersRouter = router({
         }
 
         // 2. Clear existing allocations for this line item
+        // QA-001 FIX: First release reservedQty from existing allocations
+        const existingAllocations = await tx
+          .select({
+            batchId: orderLineItemAllocations.batchId,
+            quantityAllocated: orderLineItemAllocations.quantityAllocated,
+          })
+          .from(orderLineItemAllocations)
+          .where(
+            eq(orderLineItemAllocations.orderLineItemId, input.lineItemId)
+          );
+
+        // Release reserved quantities from existing allocations
+        for (const existing of existingAllocations) {
+          const [batch] = await tx
+            .select({ reservedQty: batches.reservedQty })
+            .from(batches)
+            .where(eq(batches.id, existing.batchId))
+            .for("update")
+            .limit(1);
+
+          if (batch) {
+            const currentReserved = parseFloat(
+              String(batch.reservedQty || "0")
+            );
+            const allocatedQty = parseFloat(
+              String(existing.quantityAllocated || "0")
+            );
+            const newReserved = Math.max(0, currentReserved - allocatedQty);
+
+            await tx
+              .update(batches)
+              .set({ reservedQty: newReserved.toString() })
+              .where(eq(batches.id, existing.batchId));
+          }
+        }
+
+        // Now delete the allocation records
         await tx
           .delete(orderLineItemAllocations)
-          .where(eq(orderLineItemAllocations.orderLineItemId, input.lineItemId));
+          .where(
+            eq(orderLineItemAllocations.orderLineItemId, input.lineItemId)
+          );
 
         // 3. Validate total quantity matches line item quantity
-        const totalAllocated = input.allocations.reduce((sum, a) => sum + a.quantity, 0);
+        const totalAllocated = input.allocations.reduce(
+          (sum, a) => sum + a.quantity,
+          0
+        );
         const lineItemQty = parseFloat(String(lineItem.quantity || "0"));
 
         if (Math.abs(totalAllocated - lineItemQty) > 0.01) {
@@ -1711,7 +1771,10 @@ export const ordersRouter = router({
           const reserved = parseFloat(String(batch.reservedQty || "0"));
           const quarantine = parseFloat(String(batch.quarantineQty || "0"));
           const hold = parseFloat(String(batch.holdQty || "0"));
-          const availableQty = Math.max(0, onHand - reserved - quarantine - hold);
+          const availableQty = Math.max(
+            0,
+            onHand - reserved - quarantine - hold
+          );
 
           if (availableQty < alloc.quantity) {
             throw new TRPCError({
@@ -1720,7 +1783,9 @@ export const ordersRouter = router({
             });
           }
 
-          const unitCost = batch.unitCogs ? parseFloat(String(batch.unitCogs)) : 0;
+          const unitCost = batch.unitCogs
+            ? parseFloat(String(batch.unitCogs))
+            : 0;
 
           // Insert allocation record
           await tx.insert(orderLineItemAllocations).values({
@@ -1730,6 +1795,14 @@ export const ordersRouter = router({
             unitCost: unitCost.toFixed(4),
             allocatedBy: userId,
           });
+
+          // QA-001 FIX: Update reservedQty to prevent double-selling
+          // This ensures concurrent allocations see the reduced available quantity
+          const newReserved = reserved + alloc.quantity;
+          await tx
+            .update(batches)
+            .set({ reservedQty: newReserved.toString() })
+            .where(eq(batches.id, alloc.batchId));
 
           createdAllocations.push({
             batchId: alloc.batchId,
@@ -1742,7 +1815,8 @@ export const ordersRouter = router({
         }
 
         // Calculate weighted average COGS
-        const weightedAvgCogs = totalAllocated > 0 ? totalCost / totalAllocated : 0;
+        const weightedAvgCogs =
+          totalAllocated > 0 ? totalCost / totalAllocated : 0;
 
         // 5. Update line item COGS if allocations changed it
         await tx
@@ -1773,9 +1847,11 @@ export const ordersRouter = router({
   // WSQA-002: Get allocations for an order line item
   getLineItemAllocations: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({
-      lineItemId: z.number(),
-    }))
+    .input(
+      z.object({
+        lineItemId: z.number(),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");

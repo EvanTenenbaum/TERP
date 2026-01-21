@@ -23,14 +23,14 @@ import {
   CheckSquare,
   Building2,
   Camera,
-  Trophy,       // NAV-006: Leaderboard
-  Target,       // NAV-007: Client Needs
-  GitMerge,     // NAV-008: Matchmaking
+  Trophy, // NAV-006: Leaderboard
+  Target, // NAV-007: Client Needs
+  GitMerge, // NAV-008: Matchmaking
   ClipboardList, // NAV-009: Quotes
-  RotateCcw,    // NAV-010: Returns
-  Store,        // NAV-011: Vendor Supply
-  Tag,          // NAV-012: Pricing Rules
-  Workflow,     // NAV-013: Workflow Queue
+  RotateCcw, // NAV-010: Returns
+  Store, // NAV-011: Vendor Supply
+  Tag, // NAV-012: Pricing Rules
+  Workflow, // NAV-013: Workflow Queue
   type LucideIcon,
 } from "lucide-react";
 
@@ -106,9 +106,10 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Sales performance leaderboard",
   },
   // NAV-007: Client Needs for tracking customer requirements
+  // QA-002 FIX: Changed path from /client-needs to /needs to match App.tsx route
   {
     name: "Client Needs",
-    path: "/client-needs",
+    path: "/needs",
     icon: Target,
     group: "sales",
     ariaLabel: "Track client product needs and requirements",
@@ -199,9 +200,10 @@ export const navigationItems: NavigationItem[] = [
   },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
   // NAV-012: Pricing Rules for managing pricing strategies
+  // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules to match App.tsx route
   {
     name: "Pricing Rules",
-    path: "/pricing-rules",
+    path: "/pricing/rules",
     icon: Tag,
     group: "finance",
     ariaLabel: "Configure pricing rules and strategies",

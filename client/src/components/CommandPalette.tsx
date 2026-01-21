@@ -20,14 +20,14 @@ import {
   Plus,
   Heart,
   DollarSign,
-  Trophy,       // NAV-014: Leaderboard
-  Target,       // NAV-014: Client Needs
-  GitMerge,     // NAV-014: Matchmaking
+  Trophy, // NAV-014: Leaderboard
+  Target, // NAV-014: Client Needs
+  GitMerge, // NAV-014: Matchmaking
   ClipboardList, // NAV-014: Quotes
-  RotateCcw,    // NAV-014: Returns
-  Store,        // NAV-014: Vendor Supply
-  Tag,          // NAV-014: Pricing Rules
-  Workflow,     // NAV-014: Workflow Queue
+  RotateCcw, // NAV-014: Returns
+  Store, // NAV-014: Vendor Supply
+  Tag, // NAV-014: Pricing Rules
+  Workflow, // NAV-014: Workflow Queue
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -142,11 +142,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
+          // QA-002 FIX: Changed path from /client-needs to /needs
           id: "client-needs",
           label: "Client Needs",
           icon: Target,
           action: () => {
-            setLocation("/client-needs");
+            setLocation("/needs");
             onOpenChange(false);
           },
         },
@@ -187,11 +188,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
+          // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules
           id: "pricing-rules",
           label: "Pricing Rules",
           icon: Tag,
           action: () => {
-            setLocation("/pricing-rules");
+            setLocation("/pricing/rules");
             onOpenChange(false);
           },
         },
