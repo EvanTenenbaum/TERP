@@ -17,6 +17,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { hasPermission, isSuperAdmin } from "../services/permissionService";
 import { getDb } from "../db";
 import { timeEntries, overtimeRules } from "../../drizzle/schema-scheduling";
 import { users } from "../../drizzle/schema";
@@ -393,6 +394,28 @@ export const hourTrackingRouter = router({
       const authUserId = getAuthenticatedUserId(ctx);
       const targetUserId = input.userId || authUserId;
 
+      // QA-W5-011 FIX: Only managers can view other users' entries
+      if (targetUserId !== authUserId) {
+        const userOpenId = ctx.user?.openId;
+        if (!userOpenId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot view other users' time entries",
+          });
+        }
+
+        const isAdmin = await isSuperAdmin(userOpenId);
+        const canManage = await hasPermission(userOpenId, "scheduling:manage");
+
+        if (!isAdmin && !canManage) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to view other users' time entries",
+          });
+        }
+      }
+
       const conditions = [eq(timeEntries.userId, targetUserId)];
 
       if (input.startDate) {
@@ -640,6 +663,28 @@ export const hourTrackingRouter = router({
 
       const authUserId = getAuthenticatedUserId(ctx);
       const targetUserId = input.userId || authUserId;
+
+      // QA-W5-011 FIX: Only managers can view other users' timesheets
+      if (targetUserId !== authUserId) {
+        const userOpenId = ctx.user?.openId;
+        if (!userOpenId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot view other users' timesheets",
+          });
+        }
+
+        const isAdmin = await isSuperAdmin(userOpenId);
+        const canManage = await hasPermission(userOpenId, "scheduling:manage");
+
+        if (!isAdmin && !canManage) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to view other users' timesheets",
+          });
+        }
+      }
 
       const entries = await db
         .select()

@@ -41,7 +41,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BackButton } from "@/components/common/BackButton";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
 
@@ -55,6 +58,8 @@ export default function TimeClockPage() {
   const {
     data: status,
     isLoading: statusLoading,
+    isError: statusError,
+    error: statusErrorDetails,
     refetch: refetchStatus,
   } = trpc.hourTracking.getCurrentStatus.useQuery();
 
@@ -65,11 +70,16 @@ export default function TimeClockPage() {
   const {
     data: timesheet,
     isLoading: timesheetLoading,
+    isError: timesheetError,
+    error: timesheetErrorDetails,
     refetch: refetchTimesheet,
   } = trpc.hourTracking.getTimesheet.useQuery({
     startDate: format(weekStart, "yyyy-MM-dd"),
     endDate: format(weekEnd, "yyyy-MM-dd"),
   });
+
+  // Combined error state
+  const hasError = statusError || timesheetError;
 
   // Mutations
   const clockIn = trpc.hourTracking.clockIn.useMutation({
@@ -192,6 +202,33 @@ export default function TimeClockPage() {
         </div>
         {getStatusBadge()}
       </div>
+
+      {/* QA-W5-003/004 FIX: Error state display */}
+      {hasError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Data</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              {statusError
+                ? statusErrorDetails?.message || "Failed to load clock status"
+                : timesheetErrorDetails?.message || "Failed to load timesheet"}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                refetchStatus();
+                refetchTimesheet();
+              }}
+              className="ml-4"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Clock In/Out Widget */}
       <Card className="border-2">

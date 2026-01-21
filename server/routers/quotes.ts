@@ -301,19 +301,11 @@ export const quotesRouter = router({
         });
       }
 
-      // Update quote status
-      await db
-        .update(orders)
-        .set({ quoteStatus: "SENT" })
-        .where(eq(orders.id, input.id));
-
-      logger.info({
-        msg: "[Quotes] Quote status updated to SENT",
-        quoteId: input.id,
-      });
-
-      // Send email if requested and client has email
+      // QA-W5-009 FIX: Send email BEFORE updating status
+      // This ensures status accurately reflects whether email was sent
       let emailResult = null;
+      let shouldUpdateStatus = true;
+
       if (input.sendEmail && client?.email) {
         try {
           // Parse quote items
@@ -406,7 +398,32 @@ export const quotesRouter = router({
             "[Quotes] Email send error"
           );
           emailResult = { success: false, error: String(error) };
+          // QA-W5-009 FIX: Don't update status if email was requested but failed
+          shouldUpdateStatus = false;
         }
+
+        // QA-W5-009 FIX: Only update status if email succeeded
+        if (!emailResult?.success) {
+          shouldUpdateStatus = false;
+        }
+      }
+
+      // QA-W5-009 FIX: Update status only after email succeeds (or if email not requested)
+      if (shouldUpdateStatus) {
+        await db
+          .update(orders)
+          .set({ quoteStatus: "SENT" })
+          .where(eq(orders.id, input.id));
+
+        logger.info({
+          msg: "[Quotes] Quote status updated to SENT",
+          quoteId: input.id,
+        });
+      } else if (input.sendEmail && client?.email) {
+        logger.warn({
+          msg: "[Quotes] Quote NOT marked as SENT because email failed",
+          quoteId: input.id,
+        });
       }
 
       // Refetch the updated quote
@@ -421,6 +438,7 @@ export const quotesRouter = router({
         emailSent: emailResult?.success || false,
         emailProvider: emailResult?.provider,
         emailError: emailResult?.error,
+        statusUpdated: shouldUpdateStatus,
       };
     }),
 

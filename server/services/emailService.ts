@@ -52,6 +52,9 @@ const DEFAULT_FROM_EMAIL =
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 
+// QA-W5-012 FIX: Email API request timeout (30 seconds)
+const EMAIL_TIMEOUT_MS = 30000;
+
 // ============================================================================
 // EMAIL PROVIDERS
 // ============================================================================
@@ -92,14 +95,25 @@ async function sendViaResend(options: EmailOptions): Promise<EmailResult> {
     })),
   };
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  // QA-W5-012 FIX: Add timeout to prevent hanging requests
+  // eslint-disable-next-line no-undef
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), EMAIL_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -168,14 +182,25 @@ async function sendViaSendGrid(options: EmailOptions): Promise<EmailResult> {
     })),
   };
 
-  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${SENDGRID_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  // QA-W5-012 FIX: Add timeout to prevent hanging requests
+  // eslint-disable-next-line no-undef
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), EMAIL_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SENDGRID_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -304,6 +329,18 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 // ============================================================================
 
 /**
+ * QA-W5-001/002 FIX: Escape HTML to prevent XSS in email templates
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Generate quote email HTML
  */
 export function generateQuoteEmailHtml(data: {
@@ -327,11 +364,12 @@ export function generateQuoteEmailHtml(data: {
       currency: "USD",
     });
 
+  // QA-W5-001 FIX: Escape item names to prevent XSS
   const itemRows = data.items
     .map(
       item => `
     <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee;">${escapeHtml(item.name)}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.unitPrice)}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(item.total)}</td>
@@ -352,12 +390,12 @@ export function generateQuoteEmailHtml(data: {
     <!-- Header -->
     <div style="text-align: center; border-bottom: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px;">
       <h1 style="margin: 0; color: #333; font-size: 28px;">Quote</h1>
-      <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">${data.quoteNumber}</p>
+      <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">${escapeHtml(data.quoteNumber)}</p>
     </div>
 
     <!-- Greeting -->
     <p style="color: #333; font-size: 16px; line-height: 1.6;">
-      Dear ${data.clientName},
+      Dear ${escapeHtml(data.clientName)},
     </p>
     <p style="color: #666; font-size: 14px; line-height: 1.6;">
       Thank you for your interest. Please find your quote below.
@@ -401,7 +439,7 @@ export function generateQuoteEmailHtml(data: {
     <!-- Notes -->
     <div style="background: #f9fafb; border-radius: 6px; padding: 15px; margin: 20px 0;">
       <p style="margin: 0 0 5px 0; color: #333; font-weight: bold; font-size: 14px;">Notes:</p>
-      <p style="margin: 0; color: #666; font-size: 14px;">${data.notes}</p>
+      <p style="margin: 0; color: #666; font-size: 14px;">${escapeHtml(data.notes)}</p>
     </div>
     `
         : ""
