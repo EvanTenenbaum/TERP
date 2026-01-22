@@ -935,8 +935,8 @@ async function seedBills(connection: mysql.Connection, vendorClientIds: number[]
     const status = paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : (dueDate < new Date() ? 'OVERDUE' : 'PENDING'));
 
     await connection.query(
-      `INSERT INTO bills (billNumber, vendorId, billDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy, version, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+      `INSERT INTO bills (billNumber, vendorId, billDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         `BILL-${formatDate(billDate).replace(/-/g, '')}-${String(i + 1).padStart(5, '0')}`,
         vendorClientIds[i % vendorClientIds.length],
@@ -1186,8 +1186,8 @@ async function seedCalendarAvailability(connection: mysql.Connection, calendarId
   for (const calId of calendarIds) {
     for (const hours of businessHours) {
       await connection.query(
-        `INSERT INTO calendar_availability (calendar_id, day_of_week, start_time, end_time, is_available, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 1, NOW(), NOW())`,
+        `INSERT INTO calendar_availability (calendar_id, day_of_week, start_time, end_time, created_at, updated_at)
+         VALUES (?, ?, ?, ?, NOW(), NOW())`,
         [calId, hours.dayOfWeek, hours.startTime, hours.endTime]
       );
       created++;
