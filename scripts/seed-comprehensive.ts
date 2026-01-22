@@ -1003,6 +1003,60 @@ async function seedClientTransactions(connection: mysql.Connection, orderData: a
   console.log(`   ✓ Created ${created} client transactions`);
 }
 
+// DATA-002 FIX: Add bank accounts seeder for cash balance
+async function seedBankAccounts(connection: mysql.Connection) {
+  console.log('🏦 Seeding bank accounts...');
+
+  const exists = await tableExists(connection, 'bankAccounts');
+  if (!exists) {
+    console.log('   - Skipped: bankAccounts table not exists');
+    return;
+  }
+
+  // Production schema: accountName, accountNumber, bankName, accountType, currency, currentBalance, isActive
+  const bankAccountData = [
+    {
+      accountName: 'Operating Account',
+      accountNumber: '****4567',
+      bankName: 'Chase Business',
+      accountType: 'CHECKING',
+      currentBalance: 1250000.00, // $1.25M operating cash
+    },
+    {
+      accountName: 'Payroll Account',
+      accountNumber: '****8901',
+      bankName: 'Chase Business',
+      accountType: 'CHECKING',
+      currentBalance: 350000.00, // $350K payroll reserve
+    },
+    {
+      accountName: 'Reserve Account',
+      accountNumber: '****2345',
+      bankName: 'Bank of America',
+      accountType: 'SAVINGS',
+      currentBalance: 500000.00, // $500K reserve
+    },
+    {
+      accountName: 'Business Credit Card',
+      accountNumber: '****6789',
+      bankName: 'American Express',
+      accountType: 'CREDIT_CARD',
+      currentBalance: -25000.00, // $25K outstanding balance
+    },
+  ];
+
+  for (const account of bankAccountData) {
+    await connection.query(
+      `INSERT INTO bankAccounts (accountName, accountNumber, bankName, accountType, currency, currentBalance, isActive, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, 'USD', ?, 1, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE currentBalance = VALUES(currentBalance)`,
+      [account.accountName, account.accountNumber, account.bankName, account.accountType, account.currentBalance.toFixed(2)]
+    );
+  }
+
+  console.log(`   ✓ Created ${bankAccountData.length} bank accounts with total balance: $${bankAccountData.reduce((sum, a) => sum + a.currentBalance, 0).toLocaleString()}`);
+}
+
 async function seedBatchStatusHistory(connection: mysql.Connection, batchIds: number[], workflowStatusIds: number[], userIds: number[]) {
   console.log('📜 Seeding batch status history...');
 
@@ -1071,6 +1125,76 @@ async function seedCalendars(connection: mysql.Connection, userIds: number[]) {
   console.log(`   ✓ Created ${calendarData.length} calendars`);
   const [rows] = await connection.query('SELECT id, name FROM calendars');
   return rows as any[];
+}
+
+// SEED-006: Appointment Types Seeder
+async function seedAppointmentTypes(connection: mysql.Connection, calendarIds: number[]) {
+  console.log('📅 Seeding appointment types...');
+
+  const exists = await tableExists(connection, 'appointment_types');
+  if (!exists) {
+    console.log('   - Skipped: appointment_types table not exists');
+    return;
+  }
+
+  // Production schema: calendar_id, name, description, duration, buffer_before, buffer_after, min_notice_hours, max_advance_days, color, is_active
+  const appointmentTypeData = [
+    { name: 'Client Meeting', description: 'Standard client meeting', duration: 60, bufferBefore: 15, bufferAfter: 15, color: '#3B82F6' },
+    { name: 'Payment Pickup', description: 'Client payment pickup appointment', duration: 30, bufferBefore: 0, bufferAfter: 0, color: '#10B981' },
+    { name: 'Product Demo', description: 'Product demonstration session', duration: 45, bufferBefore: 10, bufferAfter: 10, color: '#F59E0B' },
+    { name: 'Intake Appointment', description: 'Product intake session', duration: 120, bufferBefore: 30, bufferAfter: 30, color: '#8B5CF6' },
+    { name: 'Quick Consultation', description: 'Brief phone or video consultation', duration: 15, bufferBefore: 5, bufferAfter: 5, color: '#EC4899' },
+  ];
+
+  let created = 0;
+  for (const calId of calendarIds) {
+    for (const apt of appointmentTypeData) {
+      await connection.query(
+        `INSERT INTO appointment_types (calendar_id, name, description, duration, buffer_before, buffer_after, min_notice_hours, max_advance_days, color, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 24, 30, ?, 1, NOW(), NOW())`,
+        [calId, apt.name, apt.description, apt.duration, apt.bufferBefore, apt.bufferAfter, apt.color]
+      );
+      created++;
+    }
+  }
+
+  console.log(`   ✓ Created ${created} appointment types across ${calendarIds.length} calendars`);
+}
+
+// SEED-006: Calendar Availability Seeder
+async function seedCalendarAvailability(connection: mysql.Connection, calendarIds: number[]) {
+  console.log('📅 Seeding calendar availability...');
+
+  const exists = await tableExists(connection, 'calendar_availability');
+  if (!exists) {
+    console.log('   - Skipped: calendar_availability table not exists');
+    return;
+  }
+
+  // Production schema: calendar_id, day_of_week, start_time, end_time, is_available
+  // dayOfWeek: 0 = Sunday, 6 = Saturday
+  const businessHours = [
+    { dayOfWeek: 1, startTime: '09:00:00', endTime: '17:00:00' }, // Monday
+    { dayOfWeek: 2, startTime: '09:00:00', endTime: '17:00:00' }, // Tuesday
+    { dayOfWeek: 3, startTime: '09:00:00', endTime: '17:00:00' }, // Wednesday
+    { dayOfWeek: 4, startTime: '09:00:00', endTime: '17:00:00' }, // Thursday
+    { dayOfWeek: 5, startTime: '09:00:00', endTime: '17:00:00' }, // Friday
+    { dayOfWeek: 6, startTime: '10:00:00', endTime: '14:00:00' }, // Saturday (limited hours)
+  ];
+
+  let created = 0;
+  for (const calId of calendarIds) {
+    for (const hours of businessHours) {
+      await connection.query(
+        `INSERT INTO calendar_availability (calendar_id, day_of_week, start_time, end_time, is_available, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 1, NOW(), NOW())`,
+        [calId, hours.dayOfWeek, hours.startTime, hours.endTime]
+      );
+      created++;
+    }
+  }
+
+  console.log(`   ✓ Created ${created} availability slots across ${calendarIds.length} calendars`);
 }
 
 async function seedCalendarEvents(connection: mysql.Connection, userIds: number[], clientIds: number[], vendorIds: number[], calendarIds: number[], count: number) {
@@ -1709,6 +1833,8 @@ async function main() {
     const billVendorIds = sellerClientIds.length > 0 ? sellerClientIds : vendorIds;
     await seedBills(connection, billVendorIds, userIds, counts.bills);
     await seedClientTransactions(connection, orderList, invoiceList);
+    // DATA-002 FIX: Seed bank accounts for cash balance display
+    await seedBankAccounts(connection);
     await seedBatchStatusHistory(connection, batchIds, workflowStatusIds, userIds);
 
     // ==================== TIER 4: Calendar & Tasks ====================
@@ -1716,6 +1842,10 @@ async function main() {
 
     const calendarList = await seedCalendars(connection, userIds);
     const calendarIds = calendarList.map((c: any) => c.id);
+
+    // SEED-006 FIX: Add scheduling tables seeding
+    await seedAppointmentTypes(connection, calendarIds);
+    await seedCalendarAvailability(connection, calendarIds);
 
     await seedCalendarEvents(connection, userIds, clientIds, vendorIds, calendarIds, counts.calendarEvents);
 
