@@ -447,14 +447,11 @@ async function seedLots(connection: mysql.Connection, vendorIds: number[]) {
 async function seedBatches(connection: mysql.Connection, productIds: number[], lotIds: number[], workflowStatusIds: number[], count: number) {
   console.log('📦 Seeding batches...');
 
-  // CORRECT schema from drizzle/schema.ts:
-  // code (not batchCode), sku (REQUIRED), productId, lotId, batchStatus, statusId,
-  // grade, cogsMode (REQUIRED), unitCogs, paymentTerms (REQUIRED), onHandQty
-  // NOTE: vendorId, initialQty, soldQty, intakeDate DO NOT EXIST
+  // Production schema requires: code, sku, productId, lotId, batchStatus, cogsMode, paymentTerms, onHandQty,
+  // sampleQty, reservedQty, quarantineQty, holdQty, defectiveQty, publishEcom, publishB2b
 
   const statuses = ['AWAITING_INTAKE', 'LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD', 'SOLD_OUT'];
   const paymentTermsOptions = ['COD', 'NET_7', 'NET_15', 'NET_30', 'CONSIGNMENT'];
-  const cogsModes = ['FIXED', 'RANGE', 'CALCULATED'];
 
   for (let i = 0; i < count; i++) {
     const status = i < count * 0.6 ? 'LIVE' : statuses[i % statuses.length];
@@ -462,8 +459,8 @@ async function seedBatches(connection: mysql.Connection, productIds: number[], l
     const onHandQty = faker.number.float({ min: 10, max: 500, fractionDigits: 2 });
 
     await connection.query(
-      `INSERT INTO batches (code, sku, productId, lotId, batchStatus, statusId, grade, cogsMode, unitCogs, paymentTerms, onHandQty)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO batches (code, sku, productId, lotId, batchStatus, statusId, grade, cogsMode, unitCogs, paymentTerms, onHandQty, sampleQty, reservedQty, quarantineQty, holdQty, defectiveQty, publishEcom, publishB2b)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'FIXED', ?, ?, ?, 0, 0, 0, 0, 0, 0, 0)`,
       [
         `BATCH-${String(i + 1).padStart(6, '0')}`,
         `SKU-${String(i + 1).padStart(8, '0')}`,
@@ -472,7 +469,6 @@ async function seedBatches(connection: mysql.Connection, productIds: number[], l
         status,
         workflowStatusIds[statuses.indexOf(status) % workflowStatusIds.length],
         faker.helpers.arrayElement(['A', 'B', 'C', null]),
-        'FIXED',
         unitCogs,
         paymentTermsOptions[i % paymentTermsOptions.length],
         onHandQty,
@@ -566,11 +562,11 @@ async function seedOrders(connection: mysql.Connection, clientIds: number[], bat
   return rows as any[];
 }
 
-async function seedInvoices(connection: mysql.Connection, orderData: any[], count: number) {
+async function seedInvoices(connection: mysql.Connection, orderData: any[], userIds: number[], count: number) {
   console.log('💵 Seeding invoices...');
 
   // Schema: invoiceNumber, customerId, invoiceDate, dueDate, subtotal, taxAmount,
-  // discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId
+  // discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId, createdBy
 
   for (let i = 0; i < Math.min(count, orderData.length); i++) {
     const order = orderData[i];
@@ -583,8 +579,8 @@ async function seedInvoices(connection: mysql.Connection, orderData: any[], coun
     const status = paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : (dueDate < new Date() ? 'OVERDUE' : 'SENT'));
 
     await connection.query(
-      `INSERT INTO invoices (invoiceNumber, customerId, invoiceDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'ORDER', ?)`,
+      `INSERT INTO invoices (invoiceNumber, customerId, invoiceDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, referenceType, referenceId, createdBy)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'ORDER', ?, ?)`,
       [
         `INV-${String(i + 1).padStart(6, '0')}`,
         order.clientId,
@@ -597,6 +593,7 @@ async function seedInvoices(connection: mysql.Connection, orderData: any[], coun
         (total - paidAmount).toFixed(2),
         status,
         order.id,
+        userIds[0],
       ]
     );
   }
@@ -606,10 +603,10 @@ async function seedInvoices(connection: mysql.Connection, orderData: any[], coun
   return rows as any[];
 }
 
-async function seedPayments(connection: mysql.Connection, invoiceData: any[], count: number) {
+async function seedPayments(connection: mysql.Connection, invoiceData: any[], userIds: number[], count: number) {
   console.log('💳 Seeding payments...');
 
-  // Schema: paymentNumber, paymentType, paymentDate, amount, paymentMethod, customerId, referenceNumber, notes
+  // Production schema requires: createdBy (NO)
   const paymentMethods = ['CASH', 'CHECK', 'WIRE', 'ACH'];
   const paidInvoices = invoiceData.filter((inv: any) => parseFloat(inv.amountPaid || '0') > 0);
   let created = 0;
@@ -619,8 +616,8 @@ async function seedPayments(connection: mysql.Connection, invoiceData: any[], co
     const amount = parseFloat(invoice.amountPaid || '0');
 
     await connection.query(
-      `INSERT INTO payments (paymentNumber, paymentType, paymentDate, amount, paymentMethod, customerId, referenceNumber, notes)
-       VALUES (?, 'RECEIVED', ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO payments (paymentNumber, paymentType, paymentDate, amount, paymentMethod, customerId, referenceNumber, notes, createdBy)
+       VALUES (?, 'RECEIVED', ?, ?, ?, ?, ?, ?, ?)`,
       [
         `PAY-${String(i + 1).padStart(6, '0')}`,
         formatDate(faker.date.recent({ days: 60 })),
@@ -629,6 +626,7 @@ async function seedPayments(connection: mysql.Connection, invoiceData: any[], co
         invoice.customerId,
         `REF-${faker.string.alphanumeric(8)}`,
         faker.lorem.sentence(),
+        userIds[0],
       ]
     );
     created++;
@@ -775,8 +773,7 @@ async function seedInboxItems(connection: mysql.Connection, userIds: number[], c
 async function seedCalendarEvents(connection: mysql.Connection, userIds: number[], clientIds: number[], count: number) {
   console.log('📅 Seeding calendar events...');
 
-  // CORRECT schema: start_date, end_date, start_time, end_time, module, event_type,
-  // created_by, client_id (NOT related_client_id), is_floating_time
+  // Production schema requires: timezone, priority, status, visibility, is_auto_generated, is_recurring, created_by
   const modules = ['INVENTORY', 'ACCOUNTING', 'CLIENTS', 'ORDERS', 'GENERAL'];
   const eventTypes = ['MEETING', 'DELIVERY', 'TASK', 'REMINDER', 'INTAKE'];
 
@@ -786,8 +783,8 @@ async function seedCalendarEvents(connection: mysql.Connection, userIds: number[
     endDate.setDate(endDate.getDate() + 1);
 
     await connection.query(
-      `INSERT INTO calendar_events (title, description, start_date, end_date, start_time, end_time, module, event_type, created_by, client_id, is_floating_time)
-       VALUES (?, ?, ?, ?, '09:00:00', '10:00:00', ?, ?, ?, ?, 0)`,
+      `INSERT INTO calendar_events (title, description, start_date, end_date, start_time, end_time, timezone, module, event_type, priority, status, visibility, is_auto_generated, is_recurring, is_floating_time, created_by, client_id)
+       VALUES (?, ?, ?, ?, '09:00:00', '10:00:00', 'America/Los_Angeles', ?, ?, 'MEDIUM', 'SCHEDULED', 'PRIVATE', 0, 0, 0, ?, ?)`,
       [
         faker.lorem.sentence({ min: 3, max: 6 }),
         faker.lorem.paragraph(),
@@ -804,11 +801,10 @@ async function seedCalendarEvents(connection: mysql.Connection, userIds: number[
   console.log(`   ✓ Created ${count} calendar events`);
 }
 
-async function seedBills(connection: mysql.Connection, vendorIds: number[], count: number) {
+async function seedBills(connection: mysql.Connection, vendorIds: number[], userIds: number[], count: number) {
   console.log('📄 Seeding bills (AP)...');
 
-  // Schema: billNumber, vendorId, billDate, dueDate, subtotal, taxAmount,
-  // discountAmount, totalAmount, amountPaid, amountDue, status, notes
+  // Production schema requires: createdBy (NO)
 
   for (let i = 0; i < count; i++) {
     const subtotal = faker.number.float({ min: 1000, max: 50000, fractionDigits: 2 });
@@ -821,8 +817,8 @@ async function seedBills(connection: mysql.Connection, vendorIds: number[], coun
     const status = paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : (dueDate < new Date() ? 'OVERDUE' : 'PENDING'));
 
     await connection.query(
-      `INSERT INTO bills (billNumber, vendorId, billDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, notes)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+      `INSERT INTO bills (billNumber, vendorId, billDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
       [
         `BILL-${String(i + 1).padStart(6, '0')}`,
         vendorIds[i % vendorIds.length],
@@ -835,6 +831,7 @@ async function seedBills(connection: mysql.Connection, vendorIds: number[], coun
         (total - paidAmount).toFixed(2),
         status,
         faker.lorem.sentence(),
+        userIds[0],
       ]
     );
   }
@@ -977,23 +974,25 @@ async function main() {
 
     const orderList = await seedOrders(connection, clientIds, batchList, userIds, counts.orders);
 
-    const invoiceList = await seedInvoices(connection, orderList, counts.invoices);
+    const invoiceList = await seedInvoices(connection, orderList, userIds, counts.invoices);
 
-    await seedPayments(connection, invoiceList, counts.payments);
+    await seedPayments(connection, invoiceList, userIds, counts.payments);
 
     await seedClientTransactions(connection, orderList, invoiceList);
 
     await seedBatchStatusHistory(connection, batchIds, workflowStatusIds, userIds);
 
-    await seedNotifications(connection, userIds, counts.notifications);
+    // Skip notifications - table doesn't exist in production
+    // await seedNotifications(connection, userIds, counts.notifications);
 
     await seedInboxItems(connection, userIds, Math.floor(counts.notifications / 2));
 
     await seedCalendarEvents(connection, userIds, clientIds, counts.calendarEvents);
 
-    await seedBills(connection, vendorIds, counts.bills);
+    await seedBills(connection, vendorIds, userIds, counts.bills);
 
-    await seedCashLocations(connection);
+    // Skip cash_locations - table doesn't exist in production
+    // await seedCashLocations(connection);
 
     await seedLeaderboardData(connection, clientIds);
 
