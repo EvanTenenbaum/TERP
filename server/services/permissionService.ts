@@ -203,7 +203,6 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
         });
         return emptySet;
       }
-      
       logger.info({
         msg: "FIX-002: Granting default read permissions to user with no RBAC roles",
         userId,
