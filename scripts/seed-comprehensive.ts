@@ -1460,11 +1460,19 @@ async function seedSampleRequests(connection: mysql.Connection, clientIds: numbe
   console.log(`   ✓ Created ${count} sample requests`);
 }
 
-async function seedIntakeSessions(connection: mysql.Connection, vendorIds: number[], userIds: number[], count: number) {
+async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds: number[], userIds: number[], count: number) {
   console.log('📥 Seeding intake sessions...');
 
+  // IMPORTANT: vendor_id in intake_sessions references clients.id (NOT vendors.id!)
+  // The supplier must be a client with is_seller=1
   // Production schema: session_number, vendor_id, status, receive_date, received_by,
   // payment_terms, total_amount, amount_paid, internal_notes, receipt_generated
+
+  if (sellerClientIds.length === 0) {
+    console.log('   - Skipped: no seller clients available');
+    return;
+  }
+
   const statuses = ['IN_PROGRESS', 'COMPLETED', 'COMPLETED', 'COMPLETED'];
   const paymentTerms = ['COD', 'NET_7', 'NET_15', 'NET_30'];
 
@@ -1478,7 +1486,7 @@ async function seedIntakeSessions(connection: mysql.Connection, vendorIds: numbe
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         `INTAKE-${formatDate(receiveDate).replace(/-/g, '')}-${String(i + 1).padStart(4, '0')}`,
-        vendorIds[i % vendorIds.length],
+        sellerClientIds[i % sellerClientIds.length], // Use seller client IDs, not vendor IDs
         status,
         formatDate(receiveDate),
         userIds[i % userIds.length],
@@ -1658,6 +1666,7 @@ async function main() {
 
     const clientList = await seedClients(connection, counts.clients);
     const clientIds = clientList.map((c: any) => c.id);
+    const sellerClientIds = clientList.filter((c: any) => c.is_seller === 1).map((c: any) => c.id);
 
     const brandList = await seedBrands(connection, vendorIds);
     const brandIds = brandList.map((b: any) => b.id);
@@ -1721,7 +1730,7 @@ async function main() {
     console.log('\n📌 TIER 6: Additional Features\n');
 
     await seedSampleRequests(connection, clientIds, productIds, userIds, counts.sampleRequests);
-    await seedIntakeSessions(connection, vendorIds, userIds, counts.intakeSessions);
+    await seedIntakeSessions(connection, sellerClientIds, userIds, counts.intakeSessions);
     await seedRecurringOrders(connection, clientIds, productIds, userIds, counts.recurringOrders);
     await seedReferralCredits(connection, clientIds, orderIds, counts.referralCredits);
     await seedLeaderboardData(connection, clientIds);
