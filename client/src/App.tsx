@@ -96,7 +96,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect, useSearch } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 
@@ -107,6 +107,15 @@ const withErrorBoundary = (Component: FC<any>) => () => (
     <Component />
   </PageErrorBoundary>
 );
+
+// QA-003 FIX: Helper component for legacy route redirects that preserves query params
+const RedirectWithSearch = (to: string) => {
+  const RedirectComponent: FC = () => {
+    const search = useSearch();
+    return <Redirect to={`${to}${search || ''}`} />;
+  };
+  return RedirectComponent;
+};
 
 // MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -496,6 +505,18 @@ function Router() {
                     component={withErrorBoundary(ComponentShowcase)}
                   />
                 )}
+
+                {/* E2E-FIX: Legacy route redirects for backward compatibility */}
+                {/* QA-003 FIX: Preserve query parameters during redirect */}
+                <Route path="/invoices" component={RedirectWithSearch("/accounting/invoices")} />
+                <Route path="/client-needs" component={RedirectWithSearch("/needs")} />
+                <Route path="/ar-ap" component={RedirectWithSearch("/accounting")} />
+                <Route path="/reports" component={RedirectWithSearch("/analytics")} />
+                <Route path="/pricing-rules" component={RedirectWithSearch("/pricing/rules")} />
+                <Route path="/system-settings" component={RedirectWithSearch("/settings")} />
+                <Route path="/feature-flags" component={RedirectWithSearch("/settings/feature-flags")} />
+                <Route path="/todo-lists" component={RedirectWithSearch("/todos")} />
+
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
                 {/* Final fallback route */}
                 <Route component={withErrorBoundary(NotFound)} />

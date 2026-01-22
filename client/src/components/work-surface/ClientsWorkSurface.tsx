@@ -11,7 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import { toast } from "sonner";
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+// Label used in form fields - import available if needed
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -45,7 +45,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+// Checkbox available for bulk selection features
 import { Textarea } from "@/components/ui/textarea";
 
 // Work Surface Hooks
@@ -56,7 +56,6 @@ import {
   InspectorPanel,
   InspectorSection,
   InspectorField,
-  InspectorActions,
   useInspectorPanel,
 } from "./InspectorPanel";
 
@@ -72,12 +71,8 @@ import {
   RefreshCw,
   Mail,
   Phone,
-  Building,
-  DollarSign,
   Calendar,
-  Tag,
   Edit,
-  Trash2,
   Archive,
   ExternalLink,
   ArrowUpDown,
@@ -366,11 +361,36 @@ function ClientInspectorContent({ client, onUpdate, onNavigate, onArchive }: Cli
 
       <InspectorSection title="Quick Actions">
         <div className="space-y-2">
-          <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate(client.id)}>
+          {/* E2E-FIX C-01: Added type="button" and stopPropagation to prevent event handling issues */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              // QA-002 FIX: Added null check for client.id
+              if (client?.id !== null && client?.id !== undefined) {
+                onNavigate(client.id);
+              }
+            }}
+          >
             <ExternalLink className="h-4 w-4 mr-2" />
             View Full Profile
           </Button>
-          <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" onClick={() => onArchive(client.id)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start text-red-600 hover:text-red-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              // QA-002 FIX: Added null check for client.id
+              if (client?.id !== null && client?.id !== undefined) {
+                onArchive(client.id);
+              }
+            }}
+          >
             <Archive className="h-4 w-4 mr-2" />
             Archive Client
           </Button>
@@ -402,7 +422,8 @@ export function ClientsWorkSurface() {
   const limit = 50;
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  // QA-005 FIX: Removed unused saveState variable
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Data queries
