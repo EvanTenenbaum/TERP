@@ -12,7 +12,7 @@ You are assigned to execute **Sprint E** of the TERP ERP parallel sprint plan. T
 
 ## Before ANY Work
 
-1. Read `UNIVERSAL_AGENT_RULES.md` for complete protocols
+1. Read `.kiro/steering/00-core-identity.md` and `.kiro/steering/08-adaptive-qa-protocol.md`
 2. Pull latest: `git pull origin main`
 3. Check active sessions: `cat docs/ACTIVE_SESSIONS.md`
 4. Check roadmap: `cat docs/roadmaps/MASTER_ROADMAP.md`
@@ -28,13 +28,15 @@ You are assigned to execute **Sprint E** of the TERP ERP parallel sprint plan. T
 - ❌ **NO editing files another agent is working on** - Check ACTIVE_SESSIONS.md
 - ❌ **NO editing files outside your Sprint E domain** - See File Ownership below
 - ❌ **NO marking tasks complete without deployment verification**
-- ❌ **NO committing without validation** - Run `pnpm typecheck && pnpm lint && pnpm test`
+- ❌ **NO committing without validation** - Run `pnpm check && pnpm lint && pnpm test`
+- ❌ **NO unverified claims** - Follow SAFE/STRICT/RED verification modes
 
 ---
 
 ## Session Registration (MANDATORY)
 
 Before starting work:
+
 ```bash
 SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-E-$(openssl rand -hex 3)"
 # Create docs/sessions/active/$SESSION_ID.md
@@ -47,21 +49,25 @@ SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-E-$(openssl rand -hex 3)"
 ## Development Standards
 
 ### TypeScript
+
 - Explicit return types on all functions
 - Use type guards, not assertions
 - Handle null/undefined explicitly
 
 ### React
+
 - Use `React.memo` for reusable components
 - Use `useCallback` for event handlers
 - Use `useMemo` for expensive computations
 
 ### Testing
+
 - Write tests BEFORE implementation (TDD)
 - 80%+ coverage for business logic
 - Test behavior, not implementation
 
 ### Database
+
 - snake_case for tables/columns
 - Index ALL foreign keys
 - Use soft deletes (`is_deleted`)
@@ -94,7 +100,7 @@ curl https://terp-app-b9s35.ondigitalocean.app/health  # Verify
 
 ## Pre-Commit Checklist
 
-- [ ] `pnpm typecheck` - No errors
+- [ ] `pnpm check` - No errors
 - [ ] `pnpm lint` - No errors
 - [ ] `pnpm test` - All pass
 - [ ] `pnpm roadmap:validate` - If roadmap changed
@@ -111,7 +117,7 @@ curl https://terp-app-b9s35.ondigitalocean.app/health  # Verify
 pnpm roadmap:validate          # Validate roadmap
 pnpm roadmap:capacity          # Check capacity
 pnpm test                      # Run tests
-pnpm typecheck                 # Check types
+pnpm check                     # Check types
 pnpm lint                      # Check linting
 pnpm generate                  # Regenerate types after schema changes
 bash scripts/watch-deploy.sh   # Monitor deployment
@@ -124,15 +130,15 @@ bash scripts/watch-deploy.sh   # Monitor deployment
 - `docs/roadmaps/MASTER_ROADMAP.md` - Task tracking
 - `docs/roadmaps/PARALLEL_SPRINT_PLAN.md` - Sprint coordination
 - `docs/ACTIVE_SESSIONS.md` - Who's working on what
-- `UNIVERSAL_AGENT_RULES.md` - Complete protocols
+- `.kiro/steering/` - Complete protocols
 
 ---
 
 ## When Stuck
 
-1. Read `UNIVERSAL_AGENT_RULES.md`
+1. Read `.kiro/steering/00-core-identity.md`
 2. Check existing code for patterns
-3. Search: `grep -r "pattern" src/`
+3. Search: `rg "pattern" src/`
 4. Check related router files for examples
 5. Ask user for clarification
 
@@ -143,18 +149,22 @@ bash scripts/watch-deploy.sh   # Monitor deployment
 **#Terp-Dev #Sprint-E**
 
 ---
+
 ---
 
 ## 🚨 SPRINT E SPECIFIC INSTRUCTIONS
 
 ### Prerequisites
+
 1. **Sprint A must be complete** - Verify schema is stable before starting
 2. **Pull latest code** - `git pull origin main` to get Sprint A changes
 3. **Regenerate types** - `pnpm generate` to update TypeScript types
 4. **Create your branch** - `git checkout -b sprint-e/calendar-vendors-crm`
 
 ### File Ownership Rules (STRICTLY ENFORCED)
+
 You have **EXCLUSIVE WRITE ACCESS** to these files only:
+
 ```
 # Backend Routers - Calendar
 server/routers/calendar.ts
@@ -189,6 +199,7 @@ client/src/components/inbox/
 ```
 
 **DO NOT MODIFY** any files outside this list. Other agents are working on:
+
 - Sprint B owns: `client/src/components/ui/`, `client/src/pages/Orders.tsx`, `client/src/pages/DashboardPage.tsx`
 - Sprint C owns: `server/routers/accounting.ts`, `server/routers/vipPortal*.ts`, `client/src/pages/accounting/`, `client/src/pages/ClientProfilePage.tsx`
 - Sprint D owns: `server/routers/salesSheets.ts`, `server/routers/inventory.ts`, `client/src/pages/SalesSheetCreatorPage.tsx`, `tests/`
@@ -202,11 +213,13 @@ client/src/components/inbox/
 ### Phase 1: Vendor Supply Management (22h)
 
 #### QA-054: Implement Vendor Supply Management Backend (18h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** Vendor supply management has incomplete backend implementation
 
 **Deliverables:**
+
 - [ ] Implement vendor supply CRUD operations
 - [ ] Add vendor supply tracking (quantities, prices, availability)
 - [ ] Create vendor supply history/audit log
@@ -215,6 +228,7 @@ client/src/components/inbox/
 - [ ] Connect frontend VendorSupplyPage to backend
 
 **🔴 REDHAT QA GATE 1.1:**
+
 ```
 Before marking QA-054 complete:
 □ Create new vendor supply entry
@@ -228,24 +242,27 @@ Before marking QA-054 complete:
 ```
 
 #### VENDOR-001: Vendor Reminders System (4h)
+
 **Source:** Sprint E Plan
 
 **Problem:** No automated reminder system for vendor follow-ups
 
 **Deliverables:**
+
 - [ ] Implement vendor reminder creation
 - [ ] Add reminder scheduling (one-time, recurring)
 - [ ] Create reminder notification system
 - [ ] Add reminder completion tracking
 
 **🔴 REDHAT QA GATE 1.2 (PHASE 1 COMPLETE):**
+
 ```
 Before proceeding to Phase 2:
 □ Vendor supply CRUD fully functional
 □ Vendor reminders work
 □ Alerts trigger correctly
 □ CSV import works
-□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
+□ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Commit with message: "feat(sprint-e): Phase 1 - Vendor Supply Management [REDHAT QA PASSED]"
 □ Push to sprint-e/calendar-vendors-crm branch
@@ -256,11 +273,13 @@ Before proceeding to Phase 2:
 ### Phase 2: CRM Communication Features (20h)
 
 #### QA-057: Implement CRM Sub-Features (12h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** CRM is missing key sub-features for client relationship management
 
 **Deliverables:**
+
 - [ ] Implement client needs tracking system
 - [ ] Add client preference management
 - [ ] Create client interaction logging
@@ -269,6 +288,7 @@ Before proceeding to Phase 2:
 - [ ] Create client activity timeline view
 
 **🔴 REDHAT QA GATE 2.1:**
+
 ```
 Before marking QA-057 complete:
 □ Add client need - verify saved
@@ -281,11 +301,13 @@ Before marking QA-057 complete:
 ```
 
 #### QA-067: Implement CRM Communication Features (8h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** CRM is missing communication log, meeting scheduling, and activity timeline
 
 **Deliverables:**
+
 - [ ] Create communication_logs table schema (if not exists)
 - [ ] Implement communication log component
 - [ ] Add meeting scheduling integration with calendar
@@ -293,13 +315,14 @@ Before marking QA-057 complete:
 - [ ] Add communication templates
 
 **🔴 REDHAT QA GATE 2.2 (PHASE 2 COMPLETE):**
+
 ```
 Before proceeding to Phase 3:
 □ Communication log records calls/emails
 □ Meeting scheduling creates calendar event
 □ Activity timeline shows all interactions
 □ Communication templates work
-□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
+□ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Commit with message: "feat(sprint-e): Phase 2 - CRM Communication Features [REDHAT QA PASSED]"
 □ Push to sprint-e/calendar-vendors-crm branch
@@ -310,11 +333,13 @@ Before proceeding to Phase 3:
 ### Phase 3: Calendar Enhancements (16h)
 
 #### CALENDAR-001: Fix Calendar Event Management (8h)
+
 **Source:** Sprint E Plan
 
 **Problem:** Calendar has incomplete event management features
 
 **Deliverables:**
+
 - [ ] Fix event creation flow
 - [ ] Implement event editing
 - [ ] Add event deletion with confirmation
@@ -323,6 +348,7 @@ Before proceeding to Phase 3:
 - [ ] Add event color coding by type
 
 **🔴 REDHAT QA GATE 3.1:**
+
 ```
 Before marking CALENDAR-001 complete:
 □ Create single event - verify on calendar
@@ -335,11 +361,13 @@ Before marking CALENDAR-001 complete:
 ```
 
 #### CALENDAR-002: Calendar Views & Invitations (8h)
+
 **Source:** Sprint E Plan
 
 **Problem:** Calendar missing multiple views and invitation management
 
 **Deliverables:**
+
 - [ ] Implement day/week/month view switching
 - [ ] Add agenda/list view
 - [ ] Implement event invitations
@@ -348,6 +376,7 @@ Before marking CALENDAR-001 complete:
 - [ ] Add calendar sharing/permissions
 
 **🔴 REDHAT QA GATE 3.2 (PHASE 3 COMPLETE):**
+
 ```
 Before marking sprint complete:
 □ Day view works correctly
@@ -357,7 +386,7 @@ Before marking sprint complete:
 □ Send invitation to participant
 □ Accept/decline invitation
 □ Participant status shows on event
-□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
+□ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Full manual regression test
 □ Commit with message: "feat(sprint-e): Phase 3 - Calendar Enhancements [REDHAT QA PASSED]"
@@ -371,7 +400,8 @@ Before marking sprint complete:
 Before submitting your branch for merge:
 
 ### Code Quality
-- [ ] `pnpm typecheck` - No errors
+
+- [ ] `pnpm check` - No errors
 - [ ] `pnpm lint` - No errors
 - [ ] `pnpm test` - All tests pass
 - [ ] `pnpm build` - Zero TypeScript errors
@@ -382,6 +412,7 @@ Before submitting your branch for merge:
 - [ ] No `any` types introduced
 
 ### Functional Verification
+
 - [ ] Vendor supply CRUD works end-to-end
 - [ ] Vendor reminders trigger correctly
 - [ ] CRM needs tracking works
@@ -392,23 +423,27 @@ Before submitting your branch for merge:
 - [ ] No regressions in existing functionality
 
 ### Integration Verification
+
 - [ ] Calendar events link to CRM activities
 - [ ] Vendor reminders appear in calendar
 - [ ] Communication logs show in activity timeline
 - [ ] No conflicts with other sprint domains
 
 ### Documentation
+
 - [ ] Update task status in MASTER_ROADMAP.md
 - [ ] Document any deviations from spec
 - [ ] Note any technical debt created
 - [ ] Update session file
 
 ### Git Hygiene
+
 - [ ] All commits have descriptive messages (conventional commits)
 - [ ] No merge conflicts with main
 - [ ] Branch is rebased on latest main
 
 ### Final Commit
+
 ```bash
 git add .
 git commit -m "feat(sprint-e): Complete - Calendar, Vendors & CRM [REDHAT QA PASSED]
@@ -442,17 +477,20 @@ git push origin sprint-e/calendar-vendors-crm
 If you introduce a regression or break existing functionality:
 
 ### Level 1: Revert Last Commit
+
 ```bash
 git revert HEAD
 ```
 
 ### Level 2: Revert to Phase Checkpoint
+
 ```bash
 git log --oneline  # Find checkpoint commit
 git revert <commit_hash>..HEAD
 ```
 
 ### Level 3: Abandon Branch
+
 ```bash
 git checkout main
 git branch -D sprint-e/calendar-vendors-crm
@@ -464,6 +502,7 @@ git checkout -b sprint-e/calendar-vendors-crm  # Start fresh
 ## 📞 ESCALATION
 
 If you encounter:
+
 - **File conflicts with other sprints** → STOP and report immediately
 - **Schema/type errors after Sprint A** → Run `pnpm generate` and retry
 - **Blocking bugs in Sprint A code** → Document and escalate
@@ -475,18 +514,19 @@ If you encounter:
 
 ## ⏱️ TIME ESTIMATES
 
-| Phase | Tasks | Estimate | Checkpoint |
-|-------|-------|----------|------------|
-| Phase 1 | QA-054, VENDOR-001 | 22h | QA Gate 1.2 |
-| Phase 2 | QA-057, QA-067 | 20h | QA Gate 2.2 |
-| Phase 3 | CALENDAR-001, CALENDAR-002 | 16h | QA Gate 3.2 |
-| **Total** | | **58h** | Final QA Gate |
+| Phase     | Tasks                      | Estimate | Checkpoint    |
+| --------- | -------------------------- | -------- | ------------- |
+| Phase 1   | QA-054, VENDOR-001         | 22h      | QA Gate 1.2   |
+| Phase 2   | QA-057, QA-067             | 20h      | QA Gate 2.2   |
+| Phase 3   | CALENDAR-001, CALENDAR-002 | 16h      | QA Gate 3.2   |
+| **Total** |                            | **58h**  | Final QA Gate |
 
 ---
 
 ## 🎯 SUCCESS CRITERIA
 
 Sprint E is successful when:
+
 1. All 6 tasks completed and verified
 2. All Redhat QA gates passed
 3. Zero regressions in existing functionality
@@ -504,6 +544,7 @@ Sprint E is successful when:
 ## 📊 TESTING CHECKLIST
 
 ### Vendor Supply Flow
+
 - [ ] Create vendor
 - [ ] Add supply entry
 - [ ] Update supply quantity
@@ -515,6 +556,7 @@ Sprint E is successful when:
 - [ ] Delete supply entry
 
 ### Vendor Reminder Flow
+
 - [ ] Create one-time reminder
 - [ ] Create recurring reminder
 - [ ] Reminder notification triggers
@@ -523,6 +565,7 @@ Sprint E is successful when:
 - [ ] Delete reminder
 
 ### CRM Flow
+
 - [ ] Add client need
 - [ ] Update client preferences
 - [ ] Log interaction (call/email/meeting)
@@ -532,6 +575,7 @@ Sprint E is successful when:
 - [ ] Filter by segment
 
 ### Communication Flow
+
 - [ ] Log phone call
 - [ ] Log email
 - [ ] Schedule meeting (creates calendar event)
@@ -539,6 +583,7 @@ Sprint E is successful when:
 - [ ] View communication history
 
 ### Calendar Flow
+
 - [ ] Create single event
 - [ ] Create recurring event
 - [ ] Edit event
@@ -557,19 +602,24 @@ Sprint E is successful when:
 ## 🔗 INTEGRATION POINTS
 
 ### Calendar ↔ CRM Integration
+
 When a meeting is scheduled via CRM:
+
 1. Create calendar event
 2. Add participants
 3. Log in communication history
 4. Show in activity timeline
 
 ### Calendar ↔ Vendor Integration
+
 When a vendor reminder is created:
+
 1. Create calendar event (optional)
 2. Set reminder notification
 3. Link to vendor record
 
 ### Verify Integration Works
+
 - [ ] CRM meeting creates calendar event
 - [ ] Calendar event shows in CRM timeline
 - [ ] Vendor reminder appears in calendar
@@ -588,19 +638,25 @@ When a vendor reminder is created:
 ## 🔧 ENVIRONMENT NOTES
 
 ### Calendar Integration
+
 The calendar system uses:
+
 - `calendar` table for events
 - `calendar_participants` table for invitations
 - `calendar_reminders` table for notifications
 
 ### Vendor System
+
 The vendor system uses:
+
 - `vendors` table for vendor records
 - `vendor_supply` table for supply tracking
 - `vendor_reminders` table for follow-ups
 
 ### CRM System
+
 The CRM system uses:
+
 - `clients` table (shared, be careful)
 - `client_needs` table for needs tracking
 - `communication_logs` table for interaction history

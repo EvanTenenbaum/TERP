@@ -54,11 +54,13 @@ Different AI agents work on TERP from different environments. Use the tools appr
 ### Determine Your Environment
 
 **You are in Kiro IDE if:**
+
 - You have access to tools like `readFile`, `strReplace`, `grepSearch`, `getDiagnostics`
 - Steering files are automatically included in your context
 - You see a token budget indicator
 
 **You are an External Agent if:**
+
 - You're working from Claude, ChatGPT, Cursor, or another platform
 - You need to use bash commands to read files
 - You must manually read steering files
@@ -71,15 +73,15 @@ Kiro provides specialized tools optimized for this codebase. **Use them instead 
 
 #### Kiro Tools Reference
 
-| Task | Kiro Tool | Why |
-|------|-----------|-----|
-| Read files | `readFile`, `readMultipleFiles` | Optimized, provides context |
-| Search content | `grepSearch` | Faster, integrated results |
-| Find files | `fileSearch` | Fuzzy matching, efficient |
-| Edit files | `strReplace` | Safe, atomic edits |
-| Check errors | `getDiagnostics` | Real-time TypeScript/lint errors |
-| Run commands | `executeBash` | For git, npm, scripts |
-| Long processes | `controlBashProcess` | Dev servers, watchers |
+| Task           | Kiro Tool                       | Why                              |
+| -------------- | ------------------------------- | -------------------------------- |
+| Read files     | `readFile`, `readMultipleFiles` | Optimized, provides context      |
+| Search content | `grepSearch`                    | Faster, integrated results       |
+| Find files     | `fileSearch`                    | Fuzzy matching, efficient        |
+| Edit files     | `strReplace`                    | Safe, atomic edits               |
+| Check errors   | `getDiagnostics`                | Real-time TypeScript/lint errors |
+| Run commands   | `executeBash`                   | For git, npm, scripts            |
+| Long processes | `controlBashProcess`            | Dev servers, watchers            |
 
 #### Kiro Best Practices
 
@@ -101,23 +103,24 @@ You don't have Kiro tools. Use standard bash commands and follow the external ag
 
 #### Standard Tools Reference
 
-| Task | Command | Example |
-|------|---------|---------|
-| Read file | `cat` | `cat server/routers/calendar.ts` |
-| Read multiple | `cat` | `cat file1.ts file2.ts` |
-| Search content | `grep -r` | `grep -r "pattern" src/` |
-| Find files | `find` | `find . -name "*.ts" -path "*/routers/*"` |
-| Edit files | Manual or `sed` | Direct editing in your IDE |
-| Check errors | `pnpm typecheck` | Run after changes |
-| Run commands | Direct bash | `pnpm test`, `git status` |
+| Task           | Command         | Example                                   |
+| -------------- | --------------- | ----------------------------------------- |
+| Read file      | `cat`           | `cat server/routers/calendar.ts`          |
+| Read multiple  | `cat`           | `cat file1.ts file2.ts`                   |
+| Search content | `rg`            | `rg "pattern" src/`                       |
+| Find files     | `find`          | `find . -name "*.ts" -path "*/routers/*"` |
+| Edit files     | Manual or `sed` | Direct editing in your IDE                |
+| Check errors   | `pnpm check`    | Run after changes                         |
+| Run commands   | Direct bash     | `pnpm test`, `git status`                 |
 
 #### External Agent Requirements
 
 1. **Read steering files manually**: `cat .kiro/steering/*.md`
 2. **Register session**: Create file in `docs/sessions/active/`
 3. **Check active sessions**: `cat docs/ACTIVE_SESSIONS.md`
-4. **Validate before commit**: `pnpm typecheck && pnpm lint && pnpm test`
-5. **Archive session when done**: Move to `docs/sessions/completed/`
+4. **Follow adaptive verification**: `cat .kiro/steering/08-adaptive-qa-protocol.md`
+5. **Validate before commit**: `pnpm check && pnpm lint && pnpm test`
+6. **Archive session when done**: Move to `docs/sessions/completed/`
 
 #### Quick Start for External Agents
 
@@ -128,6 +131,7 @@ cat .kiro/steering/01-development-standards.md
 cat .kiro/steering/02-workflows.md
 cat .kiro/steering/03-agent-coordination.md
 cat .kiro/steering/04-infrastructure.md
+cat .kiro/steering/08-adaptive-qa-protocol.md
 cat .kiro/steering/05-external-agent-handoff.md
 
 # 2. Check current state
@@ -184,6 +188,17 @@ Covers:
 - Environment variables
 - Monitoring and logging
 
+### 5. Adaptive Verification
+
+📖 **Read**: `.kiro/steering/08-adaptive-qa-protocol.md`
+
+Covers:
+
+- Verification-over-persuasion mandate
+- SAFE/STRICT/RED modes
+- Definition of Done requirements
+- Mandatory verification commands
+
 ## Role-Specific Instructions
 
 Once you understand your role, read the appropriate guide:
@@ -220,6 +235,13 @@ pnpm roadmap:next-batch
 # Run tests
 pnpm test
 
+# Typecheck + lint
+pnpm check
+pnpm lint
+
+# Build
+pnpm build
+
 # Check deployment
 ./scripts/watch-deploy.sh
 ```
@@ -237,14 +259,15 @@ pnpm test
 3. **Check sessions**: Review `docs/ACTIVE_SESSIONS.md`
 4. **Understand context**: Read relevant protocol files
 5. **Verify role**: Confirm which agent type you are
+6. **Select verification mode**: SAFE/STRICT/RED per `08-adaptive-qa-protocol.md`
 
 ## After Every Task
 
 1. **Run validation**: `pnpm roadmap:validate` (if roadmap changed)
 2. **Update roadmap**: Mark tasks complete
 3. **Archive session**: Move to `docs/sessions/completed/`
-4. **Push changes**: `git push origin main`
-5. **Verify deployment**: Check DigitalOcean build status
+4. **Push changes**: `git push` (feature branch)
+5. **Verify deployment**: Check DigitalOcean build status (post-merge)
 
 ## Critical Rules (NEVER BREAK)
 
@@ -253,8 +276,8 @@ pnpm test
 3. ❌ **No broken links**: Verify all references exist
 4. ❌ **No stale sessions**: Archive completed work
 5. ❌ **No unverified deployments**: Confirm builds succeed
-6. ❌ **No direct main pushes**: Use feature branches (except hotfixes)
-7. ❌ **No skipped tests**: All code must have tests
+6. ❌ **No direct main pushes**: Use feature branches (except emergency hotfixes)
+7. ❌ **No skipped tests**: All code must have tests or documented justification
 8. ❌ **No `any` types**: Use proper TypeScript types
 9. ❌ **No uncommitted changes**: Push after every phase
 10. ❌ **No solo decisions on breaking changes**: Get approval first
@@ -262,6 +285,7 @@ pnpm test
 ## When You're Stuck
 
 ### In Kiro IDE:
+
 1. **Check diagnostics**: `getDiagnostics(["file.ts"])`
 2. **Search codebase**: `grepSearch` for similar patterns
 3. **Read protocols**: Review relevant `.kiro/steering/` files
@@ -269,8 +293,9 @@ pnpm test
 5. **Ask user**: When truly uncertain, ask for clarification
 
 ### External Agents:
-1. **Check errors**: `pnpm typecheck`
-2. **Search codebase**: `grep -r "pattern" src/`
+
+1. **Check errors**: `pnpm check`
+2. **Search codebase**: `rg "pattern" src/`
 3. **Read protocols**: `cat .kiro/steering/*.md`
 4. **Check sessions**: `cat docs/ACTIVE_SESSIONS.md`
 5. **Ask user**: When truly uncertain, ask for clarification
