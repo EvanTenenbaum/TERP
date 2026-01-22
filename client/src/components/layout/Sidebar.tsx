@@ -212,7 +212,7 @@ export const Sidebar = React.memo(function Sidebar({
           </Button>
           {/* TODO: Remove for production - seed image attribution */}
           <p className="text-[10px] text-muted-foreground/50 text-center mt-3">
-            Seed images from Pexels.com
+            Placeholder images from picsum.photos
           </p>
         </div>
       </aside>

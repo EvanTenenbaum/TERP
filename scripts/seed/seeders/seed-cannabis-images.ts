@@ -9,8 +9,8 @@
  * - 1% of batches left without images (for testing photography queue)
  *
  * Image Sources:
- * - Pexels.com (free for commercial use, no attribution required)
- * - Images are category-specific (flower, concentrates, edibles, etc.)
+ * - picsum.photos (Lorem Picsum - free placeholder image service)
+ * - Images are category-aware with deterministic seeding
  *
  * Tables seeded:
  * - productMedia (product-level, used by LiveCatalog/VIP Portal)
@@ -31,101 +31,49 @@ config({ path: ".env.production" });
 const DATABASE_URL = process.env.DATABASE_URL || "";
 
 // ============================================================================
-// Curated Cannabis Image URLs by Category
-// Source: Pexels.com - Free for commercial use
-// URL Format: https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=400
+// Image URL Generation
+//
+// Uses picsum.photos which is specifically designed for placeholder images.
+// Images are deterministic (same seed = same image) and category-aware.
+//
+// For actual cannabis images in production, replace with:
+// - Real product photography via the photography workflow
+// - A paid stock photo API with proper licensing
 // ============================================================================
 
-const PEXELS_BASE = "https://images.pexels.com/photos";
-const PEXELS_PARAMS = "?auto=compress&cs=tinysrgb&w=400";
+/**
+ * Generate a category-aware placeholder image URL
+ * Uses picsum.photos with deterministic seeding for reproducibility
+ *
+ * @param category - Product category (affects seed prefix for visual grouping)
+ * @param id - Product or batch ID
+ * @param index - Image index (for multiple images per item)
+ * @returns Placeholder image URL
+ */
+function generateImageUrl(category: string, id: number, index: number = 0): string {
+  // Use category + id + index as seed for deterministic, category-grouped images
+  // Different categories get different seed prefixes to create visual variety
+  const categorySeeds: Record<string, number> = {
+    "Flower": 1000,
+    "Concentrates": 2000,
+    "Edibles": 3000,
+    "PreRolls": 4000,
+    "Vapes": 5000,
+  };
 
-// Helper to construct Pexels URL
-const pexelsUrl = (id: number) => `${PEXELS_BASE}/${id}/pexels-photo-${id}.jpeg${PEXELS_PARAMS}`;
+  const baseSeed = categorySeeds[category] || 0;
+  const seed = `terp-${category.toLowerCase()}-${baseSeed + id}-${index}`;
 
-// Cannabis flower/bud images (for Flower category)
-const FLOWER_IMAGES = [
-  pexelsUrl(4917602),  // Macro marijuana bud
-  pexelsUrl(7667737),  // Close-up cannabis bud
-  pexelsUrl(7773109),  // Cannabis flowers in glass container
-  pexelsUrl(8062435),  // Cannabis bud detail
-  pexelsUrl(7668038),  // Green cannabis flower
-  pexelsUrl(7667739),  // Cannabis nug
-  pexelsUrl(8062103),  // Marijuana bud macro
-  pexelsUrl(7667897),  // Cannabis flower close-up
-  pexelsUrl(7667874),  // Dried cannabis bud
-  pexelsUrl(7667731),  // Cannabis macro photography
-  pexelsUrl(7668015),  // Green marijuana bud
-  pexelsUrl(7667915),  // Cannabis flower detail
-  pexelsUrl(6069256),  // Cannabis plant bud
-  pexelsUrl(7667735),  // Marijuana flower
-  pexelsUrl(7668043),  // Cannabis nug close-up
-];
-
-// Concentrate/extract images (amber, golden, resin-like)
-const CONCENTRATE_IMAGES = [
-  pexelsUrl(7667858),  // Cannabis concentrate
-  pexelsUrl(7667862),  // Golden extract
-  pexelsUrl(8062088),  // Cannabis wax
-  pexelsUrl(7667866),  // Amber concentrate
-  pexelsUrl(7667870),  // Cannabis shatter
-];
-
-// Edibles images (gummies, chocolates, treats)
-const EDIBLE_IMAGES = [
-  pexelsUrl(4016522),  // Colorful gummies
-  pexelsUrl(5765828),  // Gummy bears
-  pexelsUrl(6087694),  // Gummy candies
-  pexelsUrl(8365688),  // Cannabis gummies
-  pexelsUrl(6087699),  // Assorted gummies
-];
-
-// Pre-roll images (joints, rolled products)
-const PREROLL_IMAGES = [
-  pexelsUrl(7667742),  // Cannabis joint
-  pexelsUrl(7667750),  // Pre-rolled joint
-  pexelsUrl(7667754),  // Marijuana cigarette
-  pexelsUrl(7667758),  // Pre-roll cannabis
-  pexelsUrl(7667762),  // Rolled joint
-];
-
-// Vape/cartridge images
-const VAPE_IMAGES = [
-  pexelsUrl(7667906),  // Cannabis vape
-  pexelsUrl(3572408),  // Vape cartridge
-  pexelsUrl(7667910),  // Vaporizer pen
-  pexelsUrl(3571551),  // Vape device
-  pexelsUrl(7667914),  // Cannabis cartridge
-];
-
-// Default/generic cannabis images (fallback)
-const DEFAULT_IMAGES = [
-  pexelsUrl(7667737),  // Cannabis bud
-  pexelsUrl(7773109),  // Cannabis in container
-  pexelsUrl(4917602),  // Marijuana macro
-  pexelsUrl(7668038),  // Green cannabis
-  pexelsUrl(8062435),  // Cannabis detail
-];
-
-// Category to image mapping
-const CATEGORY_IMAGES: Record<string, string[]> = {
-  "Flower": FLOWER_IMAGES,
-  "Concentrates": CONCENTRATE_IMAGES,
-  "Edibles": EDIBLE_IMAGES,
-  "PreRolls": PREROLL_IMAGES,
-  "Pre-Rolls": PREROLL_IMAGES,
-  "Vapes": VAPE_IMAGES,
-  "Cartridges": VAPE_IMAGES,
-  // Add more category mappings as needed
-};
+  // 400x400 is good for product cards on mobile and desktop
+  return `https://picsum.photos/seed/${seed}/400/400`;
+}
 
 /**
  * Get image URL for a product based on category
  * Uses deterministic selection based on product ID for reproducibility
  */
 function getImageForProduct(productId: number, category: string, imageIndex: number = 0): string {
-  const images = CATEGORY_IMAGES[category] || DEFAULT_IMAGES;
-  const index = (productId + imageIndex) % images.length;
-  return images[index];
+  return generateImageUrl(category, productId, imageIndex);
 }
 
 /**
@@ -133,9 +81,8 @@ function getImageForProduct(productId: number, category: string, imageIndex: num
  * Uses deterministic selection based on batch ID
  */
 function getImageForBatch(batchId: number, category: string, imageIndex: number = 0): string {
-  const images = CATEGORY_IMAGES[category] || DEFAULT_IMAGES;
-  const index = (batchId + imageIndex) % images.length;
-  return images[index];
+  // Offset batch IDs by 10000 to differentiate from product images
+  return generateImageUrl(category, batchId + 10000, imageIndex);
 }
 
 /**
@@ -191,7 +138,7 @@ async function main() {
     console.log("Step 1: Verifying system user...");
 
     const [users] = await connection.query(
-      "SELECT id, name FROM users WHERE id = 1 OR role = 'admin' ORDER BY id LIMIT 1"
+      "SELECT id, COALESCE(name, email, 'System') as displayName FROM users ORDER BY id LIMIT 1"
     ) as any;
 
     if (users.length === 0) {
@@ -201,7 +148,7 @@ async function main() {
     }
 
     const systemUserId = users[0].id;
-    console.log(`   Using user ID ${systemUserId} (${users[0].name}) for uploads\n`);
+    console.log(`   Using user ID ${systemUserId} (${users[0].displayName}) for uploads\n`);
 
     // ========================================================================
     // Step 2: Check existing data
@@ -375,9 +322,10 @@ Coverage:
   Batch photography workflow:    ${((batchesUpdated / batches.length) * 100).toFixed(1)}%
 
 Image Sources:
-  Pexels.com - Free for commercial use
+  picsum.photos - Lorem Picsum placeholder images
 
-Note: Add attribution to your app (see scripts/seed/seeders/ATTRIBUTION.md)
+Note: These are placeholder images for testing. For production,
+      use real product photography via the Photography Module.
 `);
 
   } catch (error: any) {

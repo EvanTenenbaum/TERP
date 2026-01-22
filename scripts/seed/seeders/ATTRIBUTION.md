@@ -2,26 +2,31 @@
 
 ## Seed Data Images
 
-The cannabis images used in seed data are sourced from **Pexels.com**.
+The placeholder images used in seed data are sourced from **Lorem Picsum** (picsum.photos).
 
 ### License
-All images from Pexels are free to use for commercial and personal projects. No attribution is required, but appreciated.
+Lorem Picsum provides free placeholder images for developers. Images are from Unsplash and are free to use.
 
-**Pexels License Summary:**
-- Free for commercial use
+**Picsum License Summary:**
+- Free for all uses (commercial and personal)
 - No attribution required
-- Can be modified
+- Designed specifically for placeholder/testing use
 
-### Sources
-- Cannabis flower/bud images: [Pexels Cannabis Collection](https://www.pexels.com/search/cannabis/)
-- Edibles/gummies images: [Pexels Gummies Collection](https://www.pexels.com/search/gummies/)
-- Vape/cartridge images: [Pexels Vape Collection](https://www.pexels.com/search/vape/)
+### How It Works
+- Images are generated using deterministic seeds based on product/batch IDs
+- Same seed always returns the same image (reproducible)
+- Categories get different seed ranges for visual variety
 
 ### Note for Production
-These seed images are for **development and testing only**. For production use:
-1. Replace with actual product photography
-2. Remove this attribution notice
-3. Run fresh database migration
+These seed images are **placeholder images for development and testing only**. For production use:
+1. Replace with actual product photography through the photography workflow
+2. Remove the attribution notice from the Sidebar
+3. Run fresh database migration with real product images
+
+### To Add Real Cannabis Images
+1. Use the Photography Module (`/photography`) to upload real product photos
+2. Or integrate with a licensed stock photo API
+3. Or host your own curated image collection
 
 ---
 
