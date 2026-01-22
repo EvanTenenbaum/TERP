@@ -15,6 +15,7 @@
 
 import { useState, useCallback, useMemo, useRef } from "react";
 import { TRPCClientError } from "@trpc/client";
+import { useWorkSurfaceFeatureFlags } from "./useWorkSurfaceFeatureFlags";
 
 // ============================================================================
 // TYPES
@@ -201,6 +202,10 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
 ): UseConcurrentEditDetectionReturn<T> {
   const { entityType, onRefresh, onConflictDetected, onConflictResolved } = options;
 
+  // Check feature flag - UXS-705
+  const { flags } = useWorkSurfaceFeatureFlags();
+  const isEnabled = flags.concurrentEditEnabled;
+
   // State
   const [conflict, setConflict] = useState<ConflictInfo | null>(null);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -208,6 +213,9 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
 
   // Version tracking map
   const versionMapRef = useRef<Map<number, number>>(new Map());
+
+  // No-op ConflictDialog when feature is disabled
+  const DisabledConflictDialog: React.FC = () => null;
 
   /**
    * Track version for an entity
@@ -398,6 +406,22 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
       );
     };
   }, [conflict, showConflictDialog, resolveConflict, isResolving]);
+
+  // Return no-ops when feature is disabled (UXS-705)
+  if (!isEnabled) {
+    return {
+      conflict: null,
+      showConflictDialog: false,
+      handleError: () => false, // Don't intercept errors
+      resolveConflict: async () => {},
+      dismissConflict: () => {},
+      trackVersion: () => {},
+      getTrackedVersion: () => undefined,
+      isVersionStale: () => false,
+      clearTrackedVersions: () => {},
+      ConflictDialog: DisabledConflictDialog,
+    };
+  }
 
   return {
     conflict,
