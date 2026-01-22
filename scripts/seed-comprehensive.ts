@@ -1116,7 +1116,7 @@ async function seedCalendars(connection: mysql.Connection, userIds: number[]) {
   for (let i = 0; i < calendarData.length; i++) {
     const cal = calendarData[i];
     await connection.query(
-      `INSERT INTO calendars (name, description, color, type, isDefault, isArchived, ownerId, createdAt, updatedAt)
+      `INSERT INTO calendars (name, description, color, type, is_default, is_archived, owner_id, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 0, ?, NOW(), NOW())`,
       [cal.name, cal.description, cal.color, cal.type, i === 0 ? 1 : 0, userIds[0]]
     );
