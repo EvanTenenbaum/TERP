@@ -16,9 +16,9 @@ This document defines all operational workflows for TERP development.
 
 ### Branch Strategy
 
-**Main branch**: `main` (production)
-**Feature branches**: `feature/TASK-ID-description`
-**Hotfix branches**: `hotfix/description`
+**Main branch**: `main` (production)  
+**Feature branches**: created via `pnpm start-task`  
+**Hotfix branches**: `hotfix/description` (emergency only)
 
 ### Standard Development Flow
 
@@ -26,21 +26,19 @@ This document defines all operational workflows for TERP development.
 # 1. Pull latest
 git pull origin main
 
-# 2. Create feature branch
-git checkout -b feature/BUG-123-fix-login
+# 2. Start a task (creates branch + session + roadmap entry for ad-hoc)
+pnpm start-task "BUG-123"
+# or
+pnpm start-task --adhoc "Fix login timeout" --category bug
 
 # 3. Make changes, commit frequently
 git add .
-git commit -m "fix: resolve login timeout issue"
+git commit -m "fix(auth): resolve login timeout issue"
 
-# 4. Push to remote
-git push origin feature/BUG-123-fix-login
+# 4. Push to remote (feature branch)
+git push
 
-# 5. Create PR (or push to main for small fixes)
-# 6. After merge, delete branch
-git checkout main
-git pull origin main
-git branch -d feature/BUG-123-fix-login
+# 5. Open a PR to main and let CI/deploy run
 ```
 
 ### Commit Message Format
@@ -56,6 +54,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -66,12 +65,12 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 - `chore`: Maintenance tasks
 
 **Examples**:
+
 ```bash
 git commit -m "feat(calendar): add recurring event support"
 git commit -m "fix(auth): resolve session timeout issue"
 git commit -m "docs: update API documentation"
 ```
-
 
 ### Conflict Resolution
 
@@ -98,29 +97,19 @@ git add <resolved-files>
 git rebase --continue
 
 # 6. Push
-git push origin main
+git push
 ```
 
 **Auto-resolution script** (for common conflicts):
+
 ```bash
 bash scripts/auto-resolve-conflicts.sh
 ```
 
 ### When to Push Directly to Main
 
-**Allowed**:
-- Small bug fixes (< 50 lines changed)
-- Documentation updates
-- Hotfixes for production issues
-- Roadmap updates
-- Session file updates
-
-**Requires PR**:
-- New features
-- Breaking changes
-- Large refactors (> 100 lines)
-- Database schema changes
-- Security-related changes
+**Default**: Use PRs for all changes.  
+**Exception**: Emergency hotfixes with explicit approval and documented rollback plan.
 
 ---
 
@@ -156,7 +145,6 @@ cat .deployment-status-*.log
 # 6. Monitor active deployments
 bash scripts/manage-deployment-monitors.sh status
 ```
-
 
 ### Deployment Verification
 
@@ -240,8 +228,8 @@ pnpm test:watch
 # Run tests with coverage
 pnpm test:coverage
 
-# Run integration tests
-pnpm test:integration
+# Run unit tests
+pnpm test:unit
 
 # Run E2E tests
 pnpm test:e2e
@@ -256,16 +244,16 @@ After every implementation phase:
 pnpm test
 
 # 2. Check TypeScript errors
-pnpm typecheck
+pnpm check
 
 # 3. Run linter
 pnpm lint
 
-# 4. Check formatting
-pnpm format:check
+# 4. Format (if needed)
+pnpm format
 
-# 5. Run all checks together
-pnpm check
+# 5. Build (if code ships)
+pnpm build
 ```
 
 **Fix all issues before proceeding to next phase.**
@@ -594,8 +582,8 @@ When working in Kiro IDE:
 
 # External Agents (Claude, ChatGPT, Cursor, etc.):
 # - Use cat to read files
-# - Use pnpm typecheck after editing
-# - Use grep -r for finding code
+# - Use pnpm check after editing
+# - Use rg for finding code
 # - Use find for locating files
 ```
 

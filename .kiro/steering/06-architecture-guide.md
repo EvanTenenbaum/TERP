@@ -548,7 +548,7 @@ pnpm test:coverage     # With coverage
 # Development
 pnpm dev               # Start dev server
 pnpm build             # Build for production
-pnpm typecheck         # TypeScript check
+pnpm check             # TypeScript check
 pnpm lint              # ESLint check
 
 # Database

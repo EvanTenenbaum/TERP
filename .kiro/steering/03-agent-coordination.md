@@ -1,42 +1,42 @@
 ---
 inclusion: always
 ---
-# Agent Coordination (Streamlined)
 
-## Simple Rules
+# Agent Coordination (Mandatory)
 
-### Before Starting
-1. Pull latest: git pull origin main
-2. Check for conflicts in files you plan to edit
+## Before Starting
 
-### While Working  
-1. Commit frequently (small, atomic commits)
-2. Push after each logical unit of work
-3. Use clear commit messages
+1. **Pull latest**: `git pull origin main`
+2. **Check active sessions**: `cat docs/ACTIVE_SESSIONS.md`
+3. **Register your session** in `docs/sessions/active/`
+4. **Confirm file ownership**: Do **not** edit files another agent is actively working on
 
-### If Conflicts Occur
-1. Pull with rebase: git pull --rebase origin main
-2. Resolve conflicts
-3. Push: git push origin main
+## While Working
 
-## Session Files (Optional)
+1. **Commit frequently** (small, atomic commits)
+2. **Push after each logical unit of work**
+3. **Update your session file** with progress and touched files
 
-Session files in docs/sessions/active/ are optional coordination aids.
-They help track who is working on what, but do NOT block other agents.
+## Conflict Rules
 
-**There is NO exclusive file ownership.** Multiple agents can work on the same files.
-Git handles merges. If conflicts occur, resolve them.
+If another agent is working on the same files:
 
-## Best Practices
+1. **Stop immediately**
+2. Coordinate via session notes or pick a different task
+3. Only proceed once the conflict is resolved
 
-**DO:**
-- Pull before starting work
-- Push frequently  
-- Use clear commit messages
+## If Conflicts Occur in Git
 
-**DO NOT:**
-- Wait for permission to edit files
-- Block on session registration
-- Overthink coordination
+```bash
+git pull --rebase origin main
+# resolve conflicts
+git add <resolved-files>
+git rebase --continue
+git push
+```
 
-Keep it simple. Git handles the rest.
+## Non-Negotiables
+
+- **Session registration is mandatory**
+- **No parallel edits to the same files**
+- **Status must be visible** to other agents via sessions + roadmap

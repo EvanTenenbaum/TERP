@@ -2,7 +2,14 @@
 
 **Role**: Transform user ideas into fully documented initiatives in the TERP Product Management system.
 
+---
 
+## ✅ Verification Over Persuasion (Mandatory)
+
+Follow `.kiro/steering/08-adaptive-qa-protocol.md` when defining verification requirements for initiatives.
+
+- Define SAFE/STRICT/RED expectations per scope
+- Require explicit verification commands in deliverables
 
 ---
 
@@ -23,6 +30,7 @@ You are an Initiative Creator Agent. Your job is to:
 ⚠️ **You are working in an isolated sandbox.** Changes you make are NOT visible to other agents or in the GitHub repository until you push them.
 
 **This means**:
+
 - ❌ Creating files locally does NOT make them visible to others
 - ❌ The PM Agent cannot see your work until you push to GitHub
 - ❌ Other agents cannot see your work until you push to GitHub
@@ -54,6 +62,7 @@ git pull origin main
 Ask the user clarifying questions to fully understand their vision:
 
 **Questions to ask**:
+
 1. What problem does this solve?
 2. Who will use this feature?
 3. What are the key capabilities it must have?
@@ -80,6 +89,7 @@ pwd
 **If you see anything else, STOP. You're in the wrong directory.**
 
 Troubleshooting:
+
 ```bash
 # If lost, start over
 cd /home/ubuntu/TERP/product-management
@@ -93,6 +103,7 @@ python3 _system/scripts/initiative-manager.py create "Your Initiative Title" --t
 ```
 
 **Example**:
+
 ```bash
 python3 _system/scripts/initiative-manager.py create "Calendar Feature: Event Scheduling & Management" --tags calendar events scheduling ui backend
 ```
@@ -166,7 +177,7 @@ EOF
 
 #### Step 3.2: Create Technical Specification
 
-```bash
+````bash
 mkdir -p initiatives/$INIT_ID/docs
 
 cat > initiatives/$INIT_ID/docs/technical-spec.md << 'EOF'
@@ -195,9 +206,10 @@ CREATE TABLE table_name (
   id INTEGER PRIMARY KEY,
   ...
 );
-```
+````
 
 ### Type Definitions
+
 ```typescript
 interface TypeName {
   field: string;
@@ -208,29 +220,36 @@ interface TypeName {
 ## API Endpoints
 
 ### Endpoint 1
+
 - **Method**: POST
 - **Path**: `/api/resource`
 - **Request**: `{ field: value }`
 - **Response**: `{ result: value }`
 
 ## Integration Points
+
 [How does this integrate with existing systems?]
 
 ## Technology Stack
+
 - Frontend: [Technologies]
 - Backend: [Technologies]
 - Database: [Technologies]
 
 ## Security Considerations
+
 [Authentication, authorization, data protection]
 
 ## Performance Requirements
+
 [Response time targets, scalability needs]
 
 ## Testing Strategy
+
 [How will this be tested?]
 EOF
-```
+
+````
 
 #### Step 3.3: Create Implementation Roadmap
 
@@ -239,7 +258,7 @@ cat > initiatives/$INIT_ID/docs/roadmap.md << 'EOF'
 # Implementation Roadmap: [Initiative Title]
 
 ## Phase 0: Pre-Implementation
-**Duration**: 1-2 days  
+**Duration**: 1-2 days
 **Goal**: Set up infrastructure
 
 **Tasks**:
@@ -249,7 +268,7 @@ cat > initiatives/$INIT_ID/docs/roadmap.md << 'EOF'
 - [ ] Review Bible protocols
 
 ## Phase 1: [Phase Name]
-**Duration**: [Timeframe]  
+**Duration**: [Timeframe]
 **Goal**: [What this phase accomplishes]
 
 **Tasks**:
@@ -290,7 +309,7 @@ cat > initiatives/$INIT_ID/docs/roadmap.md << 'EOF'
 ## Rollback Plan
 [How to roll back if something goes wrong]
 EOF
-```
+````
 
 ---
 
@@ -311,6 +330,7 @@ sleep 5
 ```
 
 The PM system will:
+
 - Check for conflicts with other initiatives
 - Check for duplicates in the existing codebase
 - Assign a priority score (0-100)
@@ -323,6 +343,7 @@ cat pm-evaluation/feedback/${INIT_ID}-feedback.md
 ```
 
 **The feedback will tell you**:
+
 - ✅ Approval status (Approved / Review Required / Rejected)
 - 📊 Priority level and score
 - 🗓️ Roadmap position (Sprint X, Position Y)
@@ -439,6 +460,7 @@ Your initiative is now in the centralized PM system and visible to all agents!
 Location: `/home/ubuntu/TERP/docs/bible/DEVELOPMENT_PROTOCOLS.md`
 
 Key protocols:
+
 - Zero placeholders/stubs policy
 - Breaking change protocol
 - Self-healing checkpoints
@@ -460,6 +482,7 @@ cat _system/context/system-summary.md
 ```
 
 This helps you:
+
 - Avoid duplicating existing features
 - Identify integration points
 - Understand current architecture
@@ -534,6 +557,7 @@ ls _system/scripts/
 ## Best Practices
 
 ### ✅ DO:
+
 - Pull latest before starting
 - Ask clarifying questions
 - Create comprehensive documentation
@@ -544,6 +568,7 @@ ls _system/scripts/
 - Report complete results
 
 ### ❌ DON'T:
+
 - Skip the git pull
 - Skip clarifying questions
 - Create minimal documentation
@@ -576,6 +601,7 @@ Before reporting completion, verify:
 ## Context Files
 
 **Read these for context**:
+
 - `/home/ubuntu/TERP/product-management/START_HERE.md` - System overview
 - `/home/ubuntu/TERP/docs/bible/DEVELOPMENT_PROTOCOLS.md` - The Bible
 - `/home/ubuntu/TERP/docs/PROJECT_CONTEXT.md` - Current project state
