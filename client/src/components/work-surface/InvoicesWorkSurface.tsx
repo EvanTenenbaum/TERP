@@ -53,6 +53,7 @@ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeybo
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useToastConfig } from "@/hooks/work-surface/useToastConfig";
 import { usePrint } from "@/hooks/work-surface/usePrint";
+import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -101,6 +102,7 @@ interface Invoice {
   amountPaid: string;
   amountDue: string;
   status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
+  version?: number;
   lineItems?: Array<{
     id: number;
     description: string;
@@ -532,6 +534,18 @@ export function InvoicesWorkSurface() {
   const toasts = useToastConfig();
   const { print, isPrinting } = usePrint();
 
+  // Concurrent edit detection for optimistic locking (UXS-705)
+  const {
+    handleError: handleConflictError,
+    ConflictDialog,
+    trackVersion,
+  } = useConcurrentEditDetection<Invoice>({
+    entityType: "Invoice",
+    onRefresh: async () => {
+      await refetchInvoices();
+    },
+  });
+
   // tRPC utils
   const utils = trpc.useUtils();
 
@@ -607,8 +621,11 @@ export function InvoicesWorkSurface() {
       inspector.close();
     },
     onError: (err) => {
-      toasts.error(err.message || "Failed to mark as paid");
-      setError(err.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(err)) {
+        toasts.error(err.message || "Failed to mark as paid");
+        setError(err.message);
+      }
     },
   });
 
@@ -622,10 +639,20 @@ export function InvoicesWorkSurface() {
       inspector.close();
     },
     onError: (err) => {
-      toasts.error(err.message || "Failed to void invoice");
-      setError(err.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(err)) {
+        toasts.error(err.message || "Failed to void invoice");
+        setError(err.message);
+      }
     },
   });
+
+  // Track version for optimistic locking when invoice is selected (UXS-705)
+  useEffect(() => {
+    if (selectedInvoice && selectedInvoice.version !== undefined) {
+      trackVersion(selectedInvoice);
+    }
+  }, [selectedInvoice, trackVersion]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
@@ -972,6 +999,9 @@ export function InvoicesWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Concurrent Edit Conflict Dialog (UXS-705) */}
+      <ConflictDialog />
     </div>
   );
 }

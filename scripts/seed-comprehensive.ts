@@ -15,6 +15,8 @@
 
 import mysql from 'mysql2/promise';
 import { faker } from '@faker-js/faker';
+// DATA-004: Import feature flags seeder
+import { seedFeatureFlags } from '../server/services/seedFeatureFlags';
 
 // ============================================================================
 // Configuration
@@ -397,13 +399,13 @@ async function seedWorkflowStatuses(connection: mysql.Connection) {
 async function seedPricingDefaults(connection: mysql.Connection) {
   console.log('💰 Seeding pricing defaults...');
 
-  // Production schema: category, default_margin_percent
+  // Production schema: product_category, default_margin_percent
   const categories = ['Flower', 'Pre-Roll', 'Concentrate', 'Edible', 'Vape', 'Topical', 'Tincture', 'Accessories'];
 
   for (const category of categories) {
     const defaultMargin = faker.number.float({ min: 20, max: 40, fractionDigits: 2 });
     await connection.query(
-      `INSERT INTO pricing_defaults (category, default_margin_percent, created_at, updated_at)
+      `INSERT INTO pricing_defaults (product_category, default_margin_percent, created_at, updated_at)
        VALUES (?, ?, NOW(), NOW())
        ON DUPLICATE KEY UPDATE default_margin_percent = VALUES(default_margin_percent)`,
       [category, defaultMargin]
@@ -615,21 +617,22 @@ async function seedTags(connection: mysql.Connection) {
   console.log('🏷️ Seeding tags...');
 
   // Production schema: name, standardizedName, category, description
+  // Valid ENUM values: STATUS, PRIORITY, TYPE, CUSTOM, STRAIN, FLAVOR, EFFECT
   const tagData = [
-    { name: 'Indoor', category: 'cultivation' },
-    { name: 'Outdoor', category: 'cultivation' },
-    { name: 'Greenhouse', category: 'cultivation' },
-    { name: 'Light Dep', category: 'cultivation' },
-    { name: 'Organic', category: 'quality' },
-    { name: 'Premium', category: 'quality' },
-    { name: 'Budget', category: 'quality' },
-    { name: 'High THC', category: 'potency' },
-    { name: 'High CBD', category: 'potency' },
-    { name: 'Award Winner', category: 'recognition' },
-    { name: 'New Arrival', category: 'status' },
-    { name: 'Limited Edition', category: 'status' },
-    { name: 'Best Seller', category: 'status' },
-    { name: 'Staff Pick', category: 'status' },
+    { name: 'Indoor', category: 'CUSTOM' },
+    { name: 'Outdoor', category: 'CUSTOM' },
+    { name: 'Greenhouse', category: 'CUSTOM' },
+    { name: 'Light Dep', category: 'CUSTOM' },
+    { name: 'Organic', category: 'CUSTOM' },
+    { name: 'Premium', category: 'CUSTOM' },
+    { name: 'Budget', category: 'CUSTOM' },
+    { name: 'High THC', category: 'EFFECT' },
+    { name: 'High CBD', category: 'EFFECT' },
+    { name: 'Award Winner', category: 'STATUS' },
+    { name: 'New Arrival', category: 'STATUS' },
+    { name: 'Limited Edition', category: 'STATUS' },
+    { name: 'Best Seller', category: 'STATUS' },
+    { name: 'Staff Pick', category: 'STATUS' },
   ];
 
   for (const tag of tagData) {
@@ -672,8 +675,8 @@ async function seedProducts(connection: mysql.Connection, brandIds: number[], st
     const brand = brandIds[i % brandIds.length];
 
     await connection.query(
-      `INSERT INTO products (brandId, strainId, nameCanonical, category, subcategory, uomSellable, description, margin, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO products (brandId, strainId, nameCanonical, category, subcategory, uomSellable, description, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         brand,
         strain,
@@ -682,7 +685,6 @@ async function seedProducts(connection: mysql.Connection, brandIds: number[], st
         subs.length > 0 ? subs[i % subs.length] : null,
         category === 'Flower' ? 'LB' : 'EA',
         faker.lorem.sentence(),
-        faker.number.float({ min: 20, max: 40, fractionDigits: 2 }),
       ]
     );
   }
@@ -913,9 +915,11 @@ async function seedPayments(connection: mysql.Connection, invoiceData: any[], us
   console.log(`   ✓ Created ${created} payments`);
 }
 
-async function seedBills(connection: mysql.Connection, vendorIds: number[], userIds: number[], count: number) {
+async function seedBills(connection: mysql.Connection, vendorClientIds: number[], userIds: number[], count: number) {
   console.log('📄 Seeding bills (AP)...');
 
+  // DATA-001: vendorId in bills references clients.id (where is_seller=true), NOT vendors.id
+  // This ensures accounting dashboard can join bills to clients for vendor name display
   // Production schema: billNumber, vendorId, billDate, dueDate, subtotal, taxAmount,
   // discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy, version
   for (let i = 0; i < count; i++) {
@@ -931,11 +935,11 @@ async function seedBills(connection: mysql.Connection, vendorIds: number[], user
     const status = paidAmount >= total ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : (dueDate < new Date() ? 'OVERDUE' : 'PENDING'));
 
     await connection.query(
-      `INSERT INTO bills (billNumber, vendorId, billDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy, version, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+      `INSERT INTO bills (billNumber, vendorId, billDate, dueDate, subtotal, taxAmount, discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         `BILL-${formatDate(billDate).replace(/-/g, '')}-${String(i + 1).padStart(5, '0')}`,
-        vendorIds[i % vendorIds.length],
+        vendorClientIds[i % vendorClientIds.length],
         formatDate(billDate),
         formatDate(dueDate),
         subtotal.toFixed(2),
@@ -999,6 +1003,60 @@ async function seedClientTransactions(connection: mysql.Connection, orderData: a
   console.log(`   ✓ Created ${created} client transactions`);
 }
 
+// DATA-002 FIX: Add bank accounts seeder for cash balance
+async function seedBankAccounts(connection: mysql.Connection) {
+  console.log('🏦 Seeding bank accounts...');
+
+  const exists = await tableExists(connection, 'bankAccounts');
+  if (!exists) {
+    console.log('   - Skipped: bankAccounts table not exists');
+    return;
+  }
+
+  // Production schema: accountName, accountNumber, bankName, accountType, currency, currentBalance, isActive
+  const bankAccountData = [
+    {
+      accountName: 'Operating Account',
+      accountNumber: '****4567',
+      bankName: 'Chase Business',
+      accountType: 'CHECKING',
+      currentBalance: 1250000.00, // $1.25M operating cash
+    },
+    {
+      accountName: 'Payroll Account',
+      accountNumber: '****8901',
+      bankName: 'Chase Business',
+      accountType: 'CHECKING',
+      currentBalance: 350000.00, // $350K payroll reserve
+    },
+    {
+      accountName: 'Reserve Account',
+      accountNumber: '****2345',
+      bankName: 'Bank of America',
+      accountType: 'SAVINGS',
+      currentBalance: 500000.00, // $500K reserve
+    },
+    {
+      accountName: 'Business Credit Card',
+      accountNumber: '****6789',
+      bankName: 'American Express',
+      accountType: 'CREDIT_CARD',
+      currentBalance: -25000.00, // $25K outstanding balance
+    },
+  ];
+
+  for (const account of bankAccountData) {
+    await connection.query(
+      `INSERT INTO bankAccounts (accountName, accountNumber, bankName, accountType, currency, currentBalance, isActive, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, 'USD', ?, 1, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE currentBalance = VALUES(currentBalance)`,
+      [account.accountName, account.accountNumber, account.bankName, account.accountType, account.currentBalance.toFixed(2)]
+    );
+  }
+
+  console.log(`   ✓ Created ${bankAccountData.length} bank accounts with total balance: $${bankAccountData.reduce((sum, a) => sum + a.currentBalance, 0).toLocaleString()}`);
+}
+
 async function seedBatchStatusHistory(connection: mysql.Connection, batchIds: number[], workflowStatusIds: number[], userIds: number[]) {
   console.log('📜 Seeding batch status history...');
 
@@ -1058,7 +1116,7 @@ async function seedCalendars(connection: mysql.Connection, userIds: number[]) {
   for (let i = 0; i < calendarData.length; i++) {
     const cal = calendarData[i];
     await connection.query(
-      `INSERT INTO calendars (name, description, color, type, isDefault, isArchived, ownerId, createdAt, updatedAt)
+      `INSERT INTO calendars (name, description, color, type, is_default, is_archived, owner_id, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 0, ?, NOW(), NOW())`,
       [cal.name, cal.description, cal.color, cal.type, i === 0 ? 1 : 0, userIds[0]]
     );
@@ -1067,6 +1125,76 @@ async function seedCalendars(connection: mysql.Connection, userIds: number[]) {
   console.log(`   ✓ Created ${calendarData.length} calendars`);
   const [rows] = await connection.query('SELECT id, name FROM calendars');
   return rows as any[];
+}
+
+// SEED-006: Appointment Types Seeder
+async function seedAppointmentTypes(connection: mysql.Connection, calendarIds: number[]) {
+  console.log('📅 Seeding appointment types...');
+
+  const exists = await tableExists(connection, 'appointment_types');
+  if (!exists) {
+    console.log('   - Skipped: appointment_types table not exists');
+    return;
+  }
+
+  // Production schema: calendar_id, name, description, duration, buffer_before, buffer_after, min_notice_hours, max_advance_days, color, is_active
+  const appointmentTypeData = [
+    { name: 'Client Meeting', description: 'Standard client meeting', duration: 60, bufferBefore: 15, bufferAfter: 15, color: '#3B82F6' },
+    { name: 'Payment Pickup', description: 'Client payment pickup appointment', duration: 30, bufferBefore: 0, bufferAfter: 0, color: '#10B981' },
+    { name: 'Product Demo', description: 'Product demonstration session', duration: 45, bufferBefore: 10, bufferAfter: 10, color: '#F59E0B' },
+    { name: 'Intake Appointment', description: 'Product intake session', duration: 120, bufferBefore: 30, bufferAfter: 30, color: '#8B5CF6' },
+    { name: 'Quick Consultation', description: 'Brief phone or video consultation', duration: 15, bufferBefore: 5, bufferAfter: 5, color: '#EC4899' },
+  ];
+
+  let created = 0;
+  for (const calId of calendarIds) {
+    for (const apt of appointmentTypeData) {
+      await connection.query(
+        `INSERT INTO appointment_types (calendar_id, name, description, duration, buffer_before, buffer_after, min_notice_hours, max_advance_days, color, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 24, 30, ?, 1, NOW(), NOW())`,
+        [calId, apt.name, apt.description, apt.duration, apt.bufferBefore, apt.bufferAfter, apt.color]
+      );
+      created++;
+    }
+  }
+
+  console.log(`   ✓ Created ${created} appointment types across ${calendarIds.length} calendars`);
+}
+
+// SEED-006: Calendar Availability Seeder
+async function seedCalendarAvailability(connection: mysql.Connection, calendarIds: number[]) {
+  console.log('📅 Seeding calendar availability...');
+
+  const exists = await tableExists(connection, 'calendar_availability');
+  if (!exists) {
+    console.log('   - Skipped: calendar_availability table not exists');
+    return;
+  }
+
+  // Production schema: calendar_id, day_of_week, start_time, end_time, is_available
+  // dayOfWeek: 0 = Sunday, 6 = Saturday
+  const businessHours = [
+    { dayOfWeek: 1, startTime: '09:00:00', endTime: '17:00:00' }, // Monday
+    { dayOfWeek: 2, startTime: '09:00:00', endTime: '17:00:00' }, // Tuesday
+    { dayOfWeek: 3, startTime: '09:00:00', endTime: '17:00:00' }, // Wednesday
+    { dayOfWeek: 4, startTime: '09:00:00', endTime: '17:00:00' }, // Thursday
+    { dayOfWeek: 5, startTime: '09:00:00', endTime: '17:00:00' }, // Friday
+    { dayOfWeek: 6, startTime: '10:00:00', endTime: '14:00:00' }, // Saturday (limited hours)
+  ];
+
+  let created = 0;
+  for (const calId of calendarIds) {
+    for (const hours of businessHours) {
+      await connection.query(
+        `INSERT INTO calendar_availability (calendar_id, day_of_week, start_time, end_time, created_at, updated_at)
+         VALUES (?, ?, ?, ?, NOW(), NOW())`,
+        [calId, hours.dayOfWeek, hours.startTime, hours.endTime]
+      );
+      created++;
+    }
+  }
+
+  console.log(`   ✓ Created ${created} availability slots across ${calendarIds.length} calendars`);
 }
 
 async function seedCalendarEvents(connection: mysql.Connection, userIds: number[], clientIds: number[], vendorIds: number[], calendarIds: number[], count: number) {
@@ -1229,7 +1357,8 @@ async function seedInboxItems(connection: mysql.Connection, userIds: number[], c
   console.log('📥 Seeding inbox items...');
 
   // Production schema: user_id, source_type, source_id, reference_type, reference_id, title, description, status
-  const sourceTypes = ['mention', 'task_assignment', 'task_update', 'order_notification', 'payment_received'];
+  // Valid ENUM values: mention, task_assignment, task_update
+  const sourceTypes = ['mention', 'task_assignment', 'task_update'];
   const referenceTypes = ['order', 'client', 'batch', 'invoice', 'task'];
   const statuses = ['unread', 'seen', 'completed'];
 
@@ -1698,8 +1827,14 @@ async function main() {
     const invoiceList = await seedInvoices(connection, orderList, userIds, counts.invoices);
 
     await seedPayments(connection, invoiceList, userIds, counts.payments);
-    await seedBills(connection, vendorIds, userIds, counts.bills);
+    // DATA-001 FIX: Use sellerClientIds instead of vendorIds for bills
+    // Bills.vendorId should reference clients.id (where is_seller=1), not vendors.id
+    // This ensures vendor names display correctly in accounting dashboard
+    const billVendorIds = sellerClientIds.length > 0 ? sellerClientIds : vendorIds;
+    await seedBills(connection, billVendorIds, userIds, counts.bills);
     await seedClientTransactions(connection, orderList, invoiceList);
+    // DATA-002 FIX: Seed bank accounts for cash balance display
+    await seedBankAccounts(connection);
     await seedBatchStatusHistory(connection, batchIds, workflowStatusIds, userIds);
 
     // ==================== TIER 4: Calendar & Tasks ====================
@@ -1707,6 +1842,10 @@ async function main() {
 
     const calendarList = await seedCalendars(connection, userIds);
     const calendarIds = calendarList.map((c: any) => c.id);
+
+    // SEED-006 FIX: Add scheduling tables seeding
+    await seedAppointmentTypes(connection, calendarIds);
+    await seedCalendarAvailability(connection, calendarIds);
 
     await seedCalendarEvents(connection, userIds, clientIds, vendorIds, calendarIds, counts.calendarEvents);
 
@@ -1734,6 +1873,18 @@ async function main() {
     await seedRecurringOrders(connection, clientIds, productIds, userIds, counts.recurringOrders);
     await seedReferralCredits(connection, clientIds, orderIds, counts.referralCredits);
     await seedLeaderboardData(connection, clientIds);
+
+    // ==================== TIER 7: System Configuration ====================
+    console.log('\n📌 TIER 7: System Configuration\n');
+
+    // DATA-004 FIX: Seed feature flags using the dedicated seeder
+    // This uses Drizzle ORM and is idempotent (won't duplicate flags)
+    console.log('🚩 Seeding feature flags...');
+    const featureFlagResult = await seedFeatureFlags('system');
+    console.log(`   ✓ Feature flags: ${featureFlagResult.created} created, ${featureFlagResult.skipped} skipped`);
+    if (featureFlagResult.errors.length > 0) {
+      console.log(`   ⚠️ ${featureFlagResult.errors.length} errors:`, featureFlagResult.errors);
+    }
 
     // ==================== COMPLETE ====================
     console.log('\n' + '='.repeat(70));

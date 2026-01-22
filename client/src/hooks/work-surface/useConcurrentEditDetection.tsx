@@ -15,6 +15,7 @@
 
 import { useState, useCallback, useMemo, useRef } from "react";
 import { TRPCClientError } from "@trpc/client";
+import { useWorkSurfaceFeatureFlags } from "./useWorkSurfaceFeatureFlags";
 
 // ============================================================================
 // TYPES
@@ -90,10 +91,11 @@ export interface UseConcurrentEditDetectionReturn<T extends VersionedEntity> {
 
 /**
  * Entity with version for optimistic locking
+ * Version is optional to handle entities that may not have version tracking enabled
  */
 export interface VersionedEntity {
   id: number;
-  version: number;
+  version?: number;
 }
 
 // ============================================================================
@@ -200,6 +202,10 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
 ): UseConcurrentEditDetectionReturn<T> {
   const { entityType, onRefresh, onConflictDetected, onConflictResolved } = options;
 
+  // Check feature flag - UXS-705
+  const { flags } = useWorkSurfaceFeatureFlags();
+  const isEnabled = flags.concurrentEditEnabled;
+
   // State
   const [conflict, setConflict] = useState<ConflictInfo | null>(null);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -208,11 +214,17 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
   // Version tracking map
   const versionMapRef = useRef<Map<number, number>>(new Map());
 
+  // No-op ConflictDialog when feature is disabled
+  const DisabledConflictDialog: React.FC = () => null;
+
   /**
    * Track version for an entity
+   * Only tracks if entity has a version defined
    */
   const trackVersion = useCallback((entity: T) => {
-    versionMapRef.current.set(entity.id, entity.version);
+    if (entity.version !== undefined) {
+      versionMapRef.current.set(entity.id, entity.version);
+    }
   }, []);
 
   /**
@@ -394,6 +406,22 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
       );
     };
   }, [conflict, showConflictDialog, resolveConflict, isResolving]);
+
+  // Return no-ops when feature is disabled (UXS-705)
+  if (!isEnabled) {
+    return {
+      conflict: null,
+      showConflictDialog: false,
+      handleError: () => false, // Don't intercept errors
+      resolveConflict: async () => {},
+      dismissConflict: () => {},
+      trackVersion: () => {},
+      getTrackedVersion: () => undefined,
+      isVersionStale: () => false,
+      clearTrackedVersions: () => {},
+      ConflictDialog: DisabledConflictDialog,
+    };
+  }
 
   return {
     conflict,

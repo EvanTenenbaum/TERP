@@ -11,7 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -52,6 +52,7 @@ import { toast } from "sonner";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
+import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -118,6 +119,7 @@ interface PurchaseOrder {
   paymentTerms?: string;
   notes?: string;
   vendorNotes?: string;
+  version?: number;
   items?: Array<{
     id: number;
     productId: number;
@@ -365,6 +367,18 @@ export function PurchaseOrdersWorkSurface() {
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator, isDirty } = useSaveState();
   const inspector = useInspectorPanel();
 
+  // Concurrent edit detection for optimistic locking (UXS-705)
+  const {
+    handleError: handleConflictError,
+    ConflictDialog,
+    trackVersion,
+  } = useConcurrentEditDetection<PurchaseOrder>({
+    entityType: "Purchase Order",
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
+
   // Display settings
   const { data: settingsData } = trpc.organizationSettings.getDisplaySettings.useQuery();
   const showExpectedDelivery = settingsData?.display?.showExpectedDelivery ?? true;
@@ -434,8 +448,11 @@ export function PurchaseOrdersWorkSurface() {
       if (inspector.isOpen) inspector.close();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to delete purchase order");
-      setError(error.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(error)) {
+        toast.error(error.message || "Failed to delete purchase order");
+        setError(error.message);
+      }
     },
   });
 
@@ -447,10 +464,20 @@ export function PurchaseOrdersWorkSurface() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update status");
-      setError(error.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(error)) {
+        toast.error(error.message || "Failed to update status");
+        setError(error.message);
+      }
     },
   });
+
+  // Track version for optimistic locking when PO is selected (UXS-705)
+  useEffect(() => {
+    if (selectedPO && selectedPO.version !== undefined) {
+      trackVersion(selectedPO);
+    }
+  }, [selectedPO, trackVersion]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
@@ -944,6 +971,9 @@ export function PurchaseOrdersWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Concurrent Edit Conflict Dialog (UXS-705) */}
+      <ConflictDialog />
     </div>
   );
 }

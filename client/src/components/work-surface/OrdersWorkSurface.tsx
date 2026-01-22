@@ -49,6 +49,7 @@ import {
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
+import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -93,6 +94,7 @@ interface Order {
   total: string;
   createdAt?: string;
   confirmedAt?: string;
+  version?: number;
   lineItems?: Array<{
     id: number;
     productName: string;
@@ -325,6 +327,19 @@ export function OrdersWorkSurface() {
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
+  // Concurrent edit detection for optimistic locking (UXS-705)
+  const {
+    handleError: handleConflictError,
+    ConflictDialog,
+    trackVersion,
+  } = useConcurrentEditDetection<Order>({
+    entityType: "Order",
+    onRefresh: async () => {
+      await refetchDrafts();
+      await refetchConfirmed();
+    },
+  });
+
   // Data queries
   const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
   const clients = Array.isArray(clientsData) ? clientsData : (clientsData as any)?.items ?? [];
@@ -398,8 +413,11 @@ export function OrdersWorkSurface() {
       inspector.close();
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to confirm order");
-      setError(err.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to confirm order");
+        setError(err.message);
+      }
     },
   });
 
@@ -414,10 +432,20 @@ export function OrdersWorkSurface() {
       inspector.close();
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to delete draft");
-      setError(err.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to delete draft");
+        setError(err.message);
+      }
     },
   });
+
+  // Track version for optimistic locking when order is selected (UXS-705)
+  useEffect(() => {
+    if (selectedOrder && selectedOrder.version !== undefined) {
+      trackVersion(selectedOrder);
+    }
+  }, [selectedOrder, trackVersion]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
@@ -641,6 +669,9 @@ export function OrdersWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Concurrent Edit Conflict Dialog (UXS-705) */}
+      <ConflictDialog />
     </div>
   );
 }
