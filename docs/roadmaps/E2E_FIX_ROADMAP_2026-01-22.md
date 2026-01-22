@@ -26,45 +26,45 @@ The "View Full Profile" button in ClientsWorkSurface may have event propagation 
 
 ## Strategic Execution Plan
 
-### Wave 1: Route Redirects (7 issues) - PRIORITY: HIGH
+### Wave 1: Route Redirects (7 issues) - PRIORITY: HIGH - COMPLETE
 Add legacy route redirects for backward compatibility.
 
 | Issue | Legacy Path | Correct Path | Status |
 |-------|-------------|--------------|--------|
-| C-03 | `/invoices` | `/accounting/invoices` | Pending |
-| C-04 | `/client-needs` | `/needs` | Pending |
-| C-07 | `/ar-ap` | `/accounting` | Pending |
-| C-08 | `/reports` | `/analytics` | Pending |
-| C-09 | `/pricing-rules` | `/pricing/rules` | Pending |
-| C-10 | `/system-settings` | `/settings` | Pending |
-| C-11 | `/feature-flags` | `/settings/feature-flags` | Pending |
+| C-03 | `/invoices` | `/accounting/invoices` | ✅ Complete |
+| C-04 | `/client-needs` | `/needs` | ✅ Complete |
+| C-07 | `/ar-ap` | `/accounting` | ✅ Complete |
+| C-08 | `/reports` | `/analytics` | ✅ Complete |
+| C-09 | `/pricing-rules` | `/pricing/rules` | ✅ Complete |
+| C-10 | `/system-settings` | `/settings` | ✅ Complete |
+| C-11 | `/feature-flags` | `/settings/feature-flags` | ✅ Complete |
 
-### Wave 2: Data Display Issues (4 issues) - PRIORITY: HIGH
+### Wave 2: Data Display Issues (4 issues) - PRIORITY: HIGH - NEEDS INVESTIGATION
 Fix data loading and display issues.
 
 | Issue | Page | Problem | Root Cause | Status |
 |-------|------|---------|------------|--------|
-| C-02 | Orders | No orders displayed | isDraft boolean handling | Pending |
-| C-05 | Inventory | No inventory displayed | Query/filter mismatch | Pending |
-| C-06 | Vendors | No data | Derived from empty inventory | Pending |
-| M-03 | Dashboard | Broken client links | Hardcoded `/clients/1` | Pending |
+| C-02 | Orders | No orders displayed | isDraft boolean handling | ⏳ Needs DB investigation |
+| C-05 | Inventory | No inventory displayed | Query/filter mismatch | ⏳ Needs DB investigation |
+| C-06 | Vendors | No data | Derived from empty inventory | ⏳ Needs DB investigation |
+| M-03 | Dashboard | Broken client links | Hardcoded `/clients/1` | ⏳ Needs DB investigation |
 
-### Wave 3: Functionality Issues (3 issues) - PRIORITY: MEDIUM
+### Wave 3: Functionality Issues (3 issues) - PRIORITY: MEDIUM - PARTIAL
 Fix component-level bugs.
 
 | Issue | Component | Problem | Status |
 |-------|-----------|---------|--------|
-| C-01 | ClientsWorkSurface | View Profile triggers Archive | Pending |
-| M-01 | CalendarPage | Database error | Pending |
-| m-01 | GlobalSearch | Double search required | Pending |
+| C-01 | ClientsWorkSurface | View Profile triggers Archive | ✅ Complete |
+| M-01 | CalendarPage | Database error | ⏳ Needs backend debugging |
+| m-01 | GlobalSearch | Double search required | ⏳ Low priority |
 
-### Wave 4: Authentication/Minor Issues (2 issues) - PRIORITY: LOW
+### Wave 4: Authentication/Minor Issues (2 issues) - PRIORITY: LOW - COMPLETE
 Fix authentication and minor UX issues.
 
 | Issue | Page | Problem | Status |
 |-------|------|---------|--------|
-| M-02 | TimeClock | Auth error despite logged in | Pending |
-| m-02 | Navigation | /todo-lists vs /todos inconsistency | Already fixed |
+| M-02 | TimeClock | Auth error despite logged in | ✅ Complete (FIX-002) |
+| m-02 | Navigation | /todo-lists vs /todos inconsistency | ✅ Complete |
 
 ---
 
