@@ -397,13 +397,13 @@ async function seedWorkflowStatuses(connection: mysql.Connection) {
 async function seedPricingDefaults(connection: mysql.Connection) {
   console.log('💰 Seeding pricing defaults...');
 
-  // Production schema: category, default_margin_percent
+  // Production schema: product_category, default_margin_percent
   const categories = ['Flower', 'Pre-Roll', 'Concentrate', 'Edible', 'Vape', 'Topical', 'Tincture', 'Accessories'];
 
   for (const category of categories) {
     const defaultMargin = faker.number.float({ min: 20, max: 40, fractionDigits: 2 });
     await connection.query(
-      `INSERT INTO pricing_defaults (category, default_margin_percent, created_at, updated_at)
+      `INSERT INTO pricing_defaults (product_category, default_margin_percent, created_at, updated_at)
        VALUES (?, ?, NOW(), NOW())
        ON DUPLICATE KEY UPDATE default_margin_percent = VALUES(default_margin_percent)`,
       [category, defaultMargin]
@@ -615,21 +615,22 @@ async function seedTags(connection: mysql.Connection) {
   console.log('🏷️ Seeding tags...');
 
   // Production schema: name, standardizedName, category, description
+  // Valid ENUM values: STATUS, PRIORITY, TYPE, CUSTOM, STRAIN, FLAVOR, EFFECT
   const tagData = [
-    { name: 'Indoor', category: 'cultivation' },
-    { name: 'Outdoor', category: 'cultivation' },
-    { name: 'Greenhouse', category: 'cultivation' },
-    { name: 'Light Dep', category: 'cultivation' },
-    { name: 'Organic', category: 'quality' },
-    { name: 'Premium', category: 'quality' },
-    { name: 'Budget', category: 'quality' },
-    { name: 'High THC', category: 'potency' },
-    { name: 'High CBD', category: 'potency' },
-    { name: 'Award Winner', category: 'recognition' },
-    { name: 'New Arrival', category: 'status' },
-    { name: 'Limited Edition', category: 'status' },
-    { name: 'Best Seller', category: 'status' },
-    { name: 'Staff Pick', category: 'status' },
+    { name: 'Indoor', category: 'CUSTOM' },
+    { name: 'Outdoor', category: 'CUSTOM' },
+    { name: 'Greenhouse', category: 'CUSTOM' },
+    { name: 'Light Dep', category: 'CUSTOM' },
+    { name: 'Organic', category: 'CUSTOM' },
+    { name: 'Premium', category: 'CUSTOM' },
+    { name: 'Budget', category: 'CUSTOM' },
+    { name: 'High THC', category: 'EFFECT' },
+    { name: 'High CBD', category: 'EFFECT' },
+    { name: 'Award Winner', category: 'STATUS' },
+    { name: 'New Arrival', category: 'STATUS' },
+    { name: 'Limited Edition', category: 'STATUS' },
+    { name: 'Best Seller', category: 'STATUS' },
+    { name: 'Staff Pick', category: 'STATUS' },
   ];
 
   for (const tag of tagData) {
@@ -672,8 +673,8 @@ async function seedProducts(connection: mysql.Connection, brandIds: number[], st
     const brand = brandIds[i % brandIds.length];
 
     await connection.query(
-      `INSERT INTO products (brandId, strainId, nameCanonical, category, subcategory, uomSellable, description, margin, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO products (brandId, strainId, nameCanonical, category, subcategory, uomSellable, description, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         brand,
         strain,
@@ -682,7 +683,6 @@ async function seedProducts(connection: mysql.Connection, brandIds: number[], st
         subs.length > 0 ? subs[i % subs.length] : null,
         category === 'Flower' ? 'LB' : 'EA',
         faker.lorem.sentence(),
-        faker.number.float({ min: 20, max: 40, fractionDigits: 2 }),
       ]
     );
   }
@@ -1229,7 +1229,8 @@ async function seedInboxItems(connection: mysql.Connection, userIds: number[], c
   console.log('📥 Seeding inbox items...');
 
   // Production schema: user_id, source_type, source_id, reference_type, reference_id, title, description, status
-  const sourceTypes = ['mention', 'task_assignment', 'task_update', 'order_notification', 'payment_received'];
+  // Valid ENUM values: mention, task_assignment, task_update
+  const sourceTypes = ['mention', 'task_assignment', 'task_update'];
   const referenceTypes = ['order', 'client', 'batch', 'invoice', 'task'];
   const statuses = ['unread', 'seen', 'completed'];
 
