@@ -50,6 +50,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkSurfaceKeyboard } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
 import { useSaveState } from '@/hooks/work-surface/useSaveState';
+import { useConcurrentEditDetection } from '@/hooks/work-surface/useConcurrentEditDetection';
 import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
 import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
 
@@ -102,6 +103,7 @@ interface OrderDetails {
     total: string;
     notes: string | null;
     createdAt: Date | null;
+    version?: number;
   };
   items: OrderItem[];
   bags: Bag[];
@@ -110,6 +112,12 @@ interface OrderDetails {
     packedItems: number;
     bagCount: number;
   };
+}
+
+// Helper type for version tracking
+interface PickPackOrderEntity {
+  id: number;
+  version: number;
 }
 
 // ============================================================================
@@ -495,6 +503,30 @@ export function PickPackWorkSurface() {
   // Save state
   const { saveState, setSaving, setSaved, setError, setQueued, SaveStateIndicator } = useSaveState();
 
+  // Concurrent edit detection for optimistic locking (UXS-705)
+  const {
+    handleError: handleConflictError,
+    ConflictDialog,
+    trackVersion,
+  } = useConcurrentEditDetection<PickPackOrderEntity>({
+    entityType: "Order",
+    onRefresh: async () => {
+      await refetchOrderDetails();
+      await refetchPickList();
+    },
+  });
+
+  // Track version when order details are loaded (UXS-705)
+  // Cast to access version if available from API response
+  useEffect(() => {
+    if (orderDetails?.order) {
+      const order = orderDetails.order as typeof orderDetails.order & { version?: number };
+      if (order.version !== undefined) {
+        trackVersion({ id: order.id, version: order.version });
+      }
+    }
+  }, [orderDetails, trackVersion]);
+
   // Mutations
   const packItemsMutation = trpc.pickPack.packItems.useMutation({
     onMutate: () => setSaving(),
@@ -507,8 +539,11 @@ export function PickPackWorkSurface() {
       toast.success('Items packed successfully');
     },
     onError: (error: { message: string }) => {
-      setError(error.message || 'Failed to pack items');
-      toast.error(`Failed to pack items: ${error.message}`);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(error)) {
+        setError(error.message || 'Failed to pack items');
+        toast.error(`Failed to pack items: ${error.message}`);
+      }
     },
   });
 
@@ -522,8 +557,11 @@ export function PickPackWorkSurface() {
       toast.success('All items packed');
     },
     onError: (error: { message: string }) => {
-      setError(error.message || 'Failed to pack items');
-      toast.error(`Failed to pack items: ${error.message}`);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(error)) {
+        setError(error.message || 'Failed to pack items');
+        toast.error(`Failed to pack items: ${error.message}`);
+      }
     },
   });
 
@@ -537,8 +575,11 @@ export function PickPackWorkSurface() {
       toast.success('Order marked ready for shipping');
     },
     onError: (error: { message: string }) => {
-      setError(error.message || 'Failed to mark ready');
-      toast.error(`Failed to mark ready: ${error.message}`);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(error)) {
+        setError(error.message || 'Failed to mark ready');
+        toast.error(`Failed to mark ready: ${error.message}`);
+      }
     },
   });
 
@@ -1001,6 +1042,9 @@ export function PickPackWorkSurface() {
           onClose={closeInspector}
         />
       )}
+
+      {/* Concurrent Edit Conflict Dialog (UXS-705) */}
+      <ConflictDialog />
     </div>
   );
 }

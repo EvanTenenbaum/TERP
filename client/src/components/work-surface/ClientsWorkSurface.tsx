@@ -52,6 +52,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
+import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -419,6 +420,18 @@ export function ClientsWorkSurface() {
   const { saveState: _saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
+  // Concurrent edit detection for optimistic locking (UXS-705)
+  const {
+    handleError: handleConflictError,
+    ConflictDialog,
+    trackVersion,
+  } = useConcurrentEditDetection<Client>({
+    entityType: "Client",
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
+
   // Data queries
   const {
     data: clientsData,
@@ -458,8 +471,11 @@ export function ClientsWorkSurface() {
       utils.clients.list.invalidate();
     },
     onError: (err) => {
-      toast.error(err.message || "Failed to update client");
-      setError(err.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to update client");
+        setError(err.message);
+      }
     },
   });
 
@@ -563,6 +579,13 @@ export function ClientsWorkSurface() {
       totalValue: all.reduce((sum, c) => sum + parseFloat(String(c.lifetimeValue || 0)), 0),
     };
   }, [clients, totalCount]);
+
+  // Track version for optimistic locking when client is selected (UXS-705)
+  useEffect(() => {
+    if (selectedClient && selectedClient.version !== undefined) {
+      trackVersion(selectedClient);
+    }
+  }, [selectedClient, trackVersion]);
 
   // Handlers
   const handleSort = (column: string) => {
@@ -824,6 +847,9 @@ export function ClientsWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Concurrent Edit Conflict Dialog (UXS-705) */}
+      <ConflictDialog />
     </div>
   );
 }

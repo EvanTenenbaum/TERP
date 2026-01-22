@@ -11,7 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,7 @@ import {
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
+import { useConcurrentEditDetection, type VersionedEntity } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
   InspectorSection,
@@ -95,6 +96,7 @@ interface InventoryItem {
     unitCogs?: string;
     createdAt?: string;
     intakeDate?: string;
+    version?: number;
   };
   product?: {
     id: number;
@@ -110,6 +112,12 @@ interface InventoryItem {
     id: number;
     name: string;
   };
+}
+
+// Helper type for version tracking (batch contains id and version)
+interface BatchVersionEntity {
+  id: number;
+  version: number;
 }
 
 // ============================================================================
@@ -335,6 +343,18 @@ export function InventoryWorkSurface() {
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
+  // Concurrent edit detection for optimistic locking (UXS-705)
+  const {
+    handleError: handleConflictError,
+    ConflictDialog,
+    trackVersion,
+  } = useConcurrentEditDetection<BatchVersionEntity>({
+    entityType: "Batch",
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
+
   // Data query
   const {
     data: inventoryData,
@@ -408,10 +428,20 @@ export function InventoryWorkSurface() {
       refetch();
     },
     onError: (err: { message: string }) => {
-      toast.error(err.message || "Failed to update status");
-      setError(err.message);
+      // Check for concurrent edit conflict first (UXS-705)
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to update status");
+        setError(err.message);
+      }
     },
   });
+
+  // Track version for optimistic locking when batch is selected (UXS-705)
+  useEffect(() => {
+    if (selectedItem?.batch && selectedItem.batch.version !== undefined) {
+      trackVersion({ id: selectedItem.batch.id, version: selectedItem.batch.version });
+    }
+  }, [selectedItem, trackVersion]);
 
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
@@ -638,6 +668,9 @@ export function InventoryWorkSurface() {
           />
         </InspectorPanel>
       </div>
+
+      {/* Concurrent Edit Conflict Dialog (UXS-705) */}
+      <ConflictDialog />
     </div>
   );
 }
