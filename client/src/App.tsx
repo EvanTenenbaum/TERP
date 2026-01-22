@@ -416,6 +416,18 @@ function Router() {
                   path="/intake-receipts"
                   component={withErrorBoundary(IntakeReceipts)}
                 />
+                {/* ROUTE-001: Direct Intake WorkSurface */}
+                <Route
+                  path="/intake"
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INTAKE"
+                      fallback={<SpreadsheetViewPage />}
+                    >
+                      <DirectIntakeWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
+                />
                 <Route
                   path="/matchmaking"
                   component={withErrorBoundary(MatchmakingServicePage)}

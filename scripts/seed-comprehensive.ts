@@ -15,6 +15,8 @@
 
 import mysql from 'mysql2/promise';
 import { faker } from '@faker-js/faker';
+// DATA-004: Import feature flags seeder
+import { seedFeatureFlags } from '../server/services/seedFeatureFlags';
 
 // ============================================================================
 // Configuration
@@ -913,9 +915,11 @@ async function seedPayments(connection: mysql.Connection, invoiceData: any[], us
   console.log(`   ✓ Created ${created} payments`);
 }
 
-async function seedBills(connection: mysql.Connection, vendorIds: number[], userIds: number[], count: number) {
+async function seedBills(connection: mysql.Connection, vendorClientIds: number[], userIds: number[], count: number) {
   console.log('📄 Seeding bills (AP)...');
 
+  // DATA-001: vendorId in bills references clients.id (where is_seller=true), NOT vendors.id
+  // This ensures accounting dashboard can join bills to clients for vendor name display
   // Production schema: billNumber, vendorId, billDate, dueDate, subtotal, taxAmount,
   // discountAmount, totalAmount, amountPaid, amountDue, status, notes, createdBy, version
   for (let i = 0; i < count; i++) {
@@ -935,7 +939,7 @@ async function seedBills(connection: mysql.Connection, vendorIds: number[], user
        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
       [
         `BILL-${formatDate(billDate).replace(/-/g, '')}-${String(i + 1).padStart(5, '0')}`,
-        vendorIds[i % vendorIds.length],
+        vendorClientIds[i % vendorClientIds.length],
         formatDate(billDate),
         formatDate(dueDate),
         subtotal.toFixed(2),
@@ -1699,7 +1703,11 @@ async function main() {
     const invoiceList = await seedInvoices(connection, orderList, userIds, counts.invoices);
 
     await seedPayments(connection, invoiceList, userIds, counts.payments);
-    await seedBills(connection, vendorIds, userIds, counts.bills);
+    // DATA-001 FIX: Use sellerClientIds instead of vendorIds for bills
+    // Bills.vendorId should reference clients.id (where is_seller=1), not vendors.id
+    // This ensures vendor names display correctly in accounting dashboard
+    const billVendorIds = sellerClientIds.length > 0 ? sellerClientIds : vendorIds;
+    await seedBills(connection, billVendorIds, userIds, counts.bills);
     await seedClientTransactions(connection, orderList, invoiceList);
     await seedBatchStatusHistory(connection, batchIds, workflowStatusIds, userIds);
 
@@ -1735,6 +1743,18 @@ async function main() {
     await seedRecurringOrders(connection, clientIds, productIds, userIds, counts.recurringOrders);
     await seedReferralCredits(connection, clientIds, orderIds, counts.referralCredits);
     await seedLeaderboardData(connection, clientIds);
+
+    // ==================== TIER 7: System Configuration ====================
+    console.log('\n📌 TIER 7: System Configuration\n');
+
+    // DATA-004 FIX: Seed feature flags using the dedicated seeder
+    // This uses Drizzle ORM and is idempotent (won't duplicate flags)
+    console.log('🚩 Seeding feature flags...');
+    const featureFlagResult = await seedFeatureFlags('system');
+    console.log(`   ✓ Feature flags: ${featureFlagResult.created} created, ${featureFlagResult.skipped} skipped`);
+    if (featureFlagResult.errors.length > 0) {
+      console.log(`   ⚠️ ${featureFlagResult.errors.length} errors:`, featureFlagResult.errors);
+    }
 
     // ==================== COMPLETE ====================
     console.log('\n' + '='.repeat(70));

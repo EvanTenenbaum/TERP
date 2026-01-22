@@ -1,6 +1,6 @@
 import { getDb } from "./db";
-import { orders, clientNeeds, batches, products, matchRecords } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { orders, clientNeeds, batches, products, matchRecords, clients } from "../drizzle/schema";
+import { eq, inArray } from "drizzle-orm";
 import { updateMatchAction, markMatchAsConverted } from "./matchRecordsDb";
 import { logger } from "./_core/logger";
 import type { Match, EnhancedBatchSourceData, EnhancedVendorSourceData } from "./matchingEngineEnhanced";
@@ -311,22 +311,41 @@ export async function bulkCreateQuotesFromMatches(
  */
 export async function getSmartOpportunities(limit: number = 5): Promise<any[]> {
   const { getAllActiveNeedsWithMatches } = await import("./matchingEngineEnhanced");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
   try {
     const allMatches = await getAllActiveNeedsWithMatches();
 
     // Filter to only needs with matches
-    const opportunities = allMatches
+    const filteredMatches = allMatches
       .filter(m => m.matches.length > 0)
-      .map(m => ({
-        clientNeedId: m.clientNeedId,
-        clientId: m.clientId,
-        matchCount: m.matches.length,
-        topMatch: m.matches[0], // Best match
-        confidence: m.matches[0]?.confidence || 0,
-      }))
-      .sort((a, b) => b.confidence - a.confidence)
+      .sort((a, b) => (b.matches[0]?.confidence || 0) - (a.matches[0]?.confidence || 0))
       .slice(0, limit);
+
+    // DATA-003 FIX: Fetch client names for the opportunities
+    const clientIds = [...new Set(filteredMatches.map(m => m.clientId))];
+    const clientNameMap = new Map<number, string>();
+
+    if (clientIds.length > 0) {
+      const clientRecords = await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(inArray(clients.id, clientIds));
+
+      for (const client of clientRecords) {
+        clientNameMap.set(client.id, client.name || "");
+      }
+    }
+
+    const opportunities = filteredMatches.map(m => ({
+      clientNeedId: m.clientNeedId,
+      clientId: m.clientId,
+      clientName: clientNameMap.get(m.clientId) || null,
+      matchCount: m.matches.length,
+      topMatch: m.matches[0], // Best match
+      confidence: m.matches[0]?.confidence || 0,
+    }));
 
     return opportunities;
   } catch (error) {
