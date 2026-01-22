@@ -187,6 +187,23 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 
       // FIX-002: Grant default read permissions to authenticated users with no roles
       // This ensures basic app functionality works before full RBAC setup
+      // QA-001 FIX: Made configurable via environment variable for security
+      const enableDefaultPermissions = process.env.ENABLE_DEFAULT_READ_PERMISSIONS !== 'false';
+      
+      if (!enableDefaultPermissions) {
+        logger.warn({
+          msg: "FIX-002: User has no RBAC roles and default permissions are disabled",
+          userId,
+          hint: "Set ENABLE_DEFAULT_READ_PERMISSIONS=true to enable fallback permissions",
+        });
+        const emptySet = new Set<string>();
+        permissionCache.set(userId, {
+          permissions: emptySet,
+          timestamp: Date.now(),
+        });
+        return emptySet;
+      }
+      
       logger.info({
         msg: "FIX-002: Granting default read permissions to user with no RBAC roles",
         userId,

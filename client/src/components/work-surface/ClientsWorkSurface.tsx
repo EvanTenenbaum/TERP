@@ -369,7 +369,10 @@ function ClientInspectorContent({ client, onUpdate, onNavigate, onArchive }: Cli
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              onNavigate(client.id);
+              // QA-002 FIX: Added null check for client.id
+              if (client?.id !== null && client?.id !== undefined) {
+                onNavigate(client.id);
+              }
             }}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -382,7 +385,10 @@ function ClientInspectorContent({ client, onUpdate, onNavigate, onArchive }: Cli
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              onArchive(client.id);
+              // QA-002 FIX: Added null check for client.id
+              if (client?.id !== null && client?.id !== undefined) {
+                onArchive(client.id);
+              }
             }}
           >
             <Archive className="h-4 w-4 mr-2" />
@@ -416,7 +422,8 @@ export function ClientsWorkSurface() {
   const limit = 50;
 
   // Work Surface hooks
-  const { saveState: _saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  // QA-005 FIX: Removed unused saveState variable
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Data queries
