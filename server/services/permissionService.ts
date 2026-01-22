@@ -185,13 +185,43 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
         return allPermissions;
       }
 
-      // User has no roles and is not an admin, return empty set
-      const emptySet = new Set<string>();
+      // FIX-002: Grant default read permissions to authenticated users with no roles
+      // This ensures basic app functionality works before full RBAC setup
+      logger.info({
+        msg: "FIX-002: Granting default read permissions to user with no RBAC roles",
+        userId,
+      });
+
+      const defaultReadPermissions = new Set<string>([
+        // Basic read permissions for core modules
+        "clients:read",
+        "orders:read",
+        "inventory:read",
+        "accounting:read",
+        "dashboard:read",
+        "calendar:read",
+        "scheduling:read", // M-02 FIX: Allows time clock access
+        "users:read",
+        "settings:read",
+        "quotes:read",
+        "invoices:read",
+        "products:read",
+        "vendors:read",
+        "reports:read",
+      ]);
+
       permissionCache.set(userId, {
-        permissions: emptySet,
+        permissions: defaultReadPermissions,
         timestamp: Date.now(),
       });
-      return emptySet;
+
+      logger.info({
+        msg: "User granted default read permissions (fallback)",
+        userId,
+        permissionCount: defaultReadPermissions.size,
+      });
+
+      return defaultReadPermissions;
     }
 
     const roleIds = userRoleRecords.map(r => r.roleId);

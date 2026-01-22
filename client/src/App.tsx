@@ -96,7 +96,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 
@@ -496,6 +496,33 @@ function Router() {
                     component={withErrorBoundary(ComponentShowcase)}
                   />
                 )}
+
+                {/* E2E-FIX: Legacy route redirects for backward compatibility */}
+                <Route path="/invoices">
+                  {() => <Redirect to="/accounting/invoices" />}
+                </Route>
+                <Route path="/client-needs">
+                  {() => <Redirect to="/needs" />}
+                </Route>
+                <Route path="/ar-ap">
+                  {() => <Redirect to="/accounting" />}
+                </Route>
+                <Route path="/reports">
+                  {() => <Redirect to="/analytics" />}
+                </Route>
+                <Route path="/pricing-rules">
+                  {() => <Redirect to="/pricing/rules" />}
+                </Route>
+                <Route path="/system-settings">
+                  {() => <Redirect to="/settings" />}
+                </Route>
+                <Route path="/feature-flags">
+                  {() => <Redirect to="/settings/feature-flags" />}
+                </Route>
+                <Route path="/todo-lists">
+                  {() => <Redirect to="/todos" />}
+                </Route>
+
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
                 {/* Final fallback route */}
                 <Route component={withErrorBoundary(NotFound)} />
