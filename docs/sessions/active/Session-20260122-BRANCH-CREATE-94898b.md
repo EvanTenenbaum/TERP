@@ -15,6 +15,8 @@ Execute E2E test fixes based on comprehensive frontend E2E test report.
 
 ## Progress
 
+### Phase 1: Initial E2E Fixes
+
 - [x] Execute Kiro External Agent Prompt initialization
 - [x] Read UNIVERSAL_AGENT_RULES.md
 - [x] Pull latest from main
@@ -28,6 +30,17 @@ Execute E2E test fixes based on comprehensive frontend E2E test report.
 - [x] Execute Wave 3: Fix M-02 TimeClock auth (default permissions)
 - [x] Run validation (TypeScript check passed)
 - [x] Commit and push changes
+
+### Phase 2: Deep Dive Investigation
+
+- [x] Investigate C-02: Orders page shows no data
+- [x] Investigate C-05: Inventory page shows no data
+- [x] Investigate C-06: Vendors page shows no data
+- [x] Investigate M-01: Calendar database error
+- [x] Investigate M-03: Dashboard broken client links
+- [x] Investigate m-01: Double search required
+- [x] Update roadmap with findings
+- [x] Commit and push investigation documentation
 
 ## Changes Made
 
@@ -116,3 +129,4 @@ CommandPalette navigation search works correctly. Issue may be in specific searc
 ## Commits
 
 - `d957871` - fix: Address critical E2E test issues
+- `5b32fdf` - docs: Complete deep-dive investigation of remaining E2E issues
