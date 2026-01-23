@@ -241,6 +241,21 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-076 | Fix Search and Filter Functionality         | HIGH     | ✅ COMPLETE (Jan 12-14, 2026)                     |
 | BUG-077 | Fix Notification System Not Working         | HIGH     | ✅ COMPLETE (Jan 12-14, 2026)                     |
 
+#### Production Schema/Migration Issues (Jan 23, 2026)
+
+> Discovered during production 503 error investigation.
+
+| Task    | Description                                                      | Priority | Status                  | Root Cause                                                   |
+| ------- | ---------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------ |
+| BUG-101 | Production 503 - Missing calendar_id column in calendar_events   | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
+
+**BUG-101 Fix (Jan 23, 2026):**
+
+- **Location:** `server/autoMigrate.ts:1125-1171`
+- **Solution:** Added automatic migration to create `calendar_id INT NULL` column on `calendar_events` table during server startup. Migration is idempotent - handles "Duplicate column" errors gracefully.
+- **Branch:** `claude/fix-inventory-display-tu3S3`
+- **Commit:** `5201d5b`
+
 #### UI/Data Mismatch Issues (Jan 14, 2026)
 
 > Discovered during comprehensive UI investigation session.
@@ -504,6 +519,50 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | DOCS-001         | QA run sheet summary cleanup     | LOW      | ✅ COMPLETE |
 | DOCS-UX-STRATEGY | Atomic UX strategy package       | LOW      | ✅ COMPLETE |
 | DOCS-UX-REDHAT   | Redhat QA update to UX strategy  | LOW      | ✅ COMPLETE |
+
+---
+
+### Unit Test Infrastructure Issues (P0/P1) - Added Jan 23, 2026
+
+> Discovered during comprehensive test failure analysis.
+> **Root Cause Analysis:** Test suite shows 137 failed / 1928 passed (89% pass rate).
+> **Session:** `claude/fix-inventory-display-tu3S3` (Jan 23, 2026)
+
+| Task          | Description                                       | Priority | Status      | Root Cause     | Est. Impact |
+| ------------- | ------------------------------------------------- | -------- | ----------- | -------------- | ----------- |
+| TEST-INFRA-01 | Fix DOM/jsdom test container setup                | P0       | NOT STARTED | RC-TEST-001    | ~45 tests   |
+| TEST-INFRA-02 | Configure DATABASE_URL for test environment       | P0       | NOT STARTED | RC-TEST-002    | ~28 tests   |
+| TEST-INFRA-03 | Fix TRPC router initialization in tests           | P0       | NOT STARTED | RC-TEST-003    | ~16 tests   |
+| TEST-INFRA-04 | Create comprehensive test fixtures/factories      | P1       | NOT STARTED | RC-TEST-004    | ~30 tests   |
+| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)     | P1       | NOT STARTED | RC-TEST-005    | ~12 tests   |
+| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure)| P2       | NOT STARTED | SEC-AUDIT      | ~1 test     |
+
+#### Root Cause Analysis
+
+**RC-TEST-001: DOM Container Infrastructure**
+- Error: `Target container is not a DOM element`
+- Affected: `useExport.test.ts`, `usePrint.test.ts`, `ConflictDialog.test.tsx`, `ProductsPage.test.tsx`
+- Fix: Configure jsdom container creation in vitest setup
+
+**RC-TEST-002: Database Connection Missing**
+- Error: `Database connection failed - cannot start server without database`
+- Affected: `creditsDb.race-condition.test.ts`, `optimisticLocking.test.ts`, `inventoryDb.test.ts`
+- Fix: Set DATABASE_URL environment variable or mock database adapter
+
+**RC-TEST-003: TRPC Router Not Initialized**
+- Error: `No procedure found on path "settings,locations,getAll"`
+- Affected: `auth-bypass.test.ts`, `clients.test.ts`, `inventory.test.ts`
+- Fix: Setup TRPC test client with proper router initialization
+
+**RC-TEST-004: Incomplete Test Fixtures**
+- Error: `Cannot read properties of undefined (reading 'invoices')`
+- Affected: `calendarFinancials.test.ts`, `accounting.test.ts`, `analytics.test.ts`
+- Fix: Create factory functions for complete test data
+
+**RC-TEST-005: Async Timing Issues**
+- Error: `Unable to find an element with the text`
+- Affected: `ProductsPage.test.tsx`, `SampleManagement.test.tsx`
+- Fix: Use `findByText`/`waitFor` instead of `getByText`
 
 ---
 
