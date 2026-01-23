@@ -2,8 +2,7 @@
 -- Created: 2025-12-22
 -- Description: Creates tables for the unified leaderboard system
 
--- Leaderboard Weight Configurations (user-specific weights)
-CREATE TABLE IF NOT EXISTS `leaderboard_weight_configs` (
+CREATE TABLE `leaderboard_weight_configs` (
   `id` int AUTO_INCREMENT NOT NULL,
   `user_id` int NOT NULL,
   `config_name` varchar(100) NOT NULL DEFAULT 'default',
@@ -15,10 +14,9 @@ CREATE TABLE IF NOT EXISTS `leaderboard_weight_configs` (
   `deleted_at` timestamp,
   CONSTRAINT `leaderboard_weight_configs_id` PRIMARY KEY(`id`),
   CONSTRAINT `idx_user_config_type` UNIQUE(`user_id`,`config_name`,`client_type`)
-);
+);--> statement-breakpoint
 
--- Leaderboard Default Weights (system-wide defaults)
-CREATE TABLE IF NOT EXISTS `leaderboard_default_weights` (
+CREATE TABLE `leaderboard_default_weights` (
   `id` int AUTO_INCREMENT NOT NULL,
   `client_type` enum('CUSTOMER','SUPPLIER','ALL') NOT NULL,
   `weights` json NOT NULL,
@@ -27,10 +25,9 @@ CREATE TABLE IF NOT EXISTS `leaderboard_default_weights` (
   `updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `leaderboard_default_weights_id` PRIMARY KEY(`id`),
   CONSTRAINT `idx_default_weights_client_type` UNIQUE(`client_type`)
-);
+);--> statement-breakpoint
 
--- Leaderboard Metric Cache (cached calculations)
-CREATE TABLE IF NOT EXISTS `leaderboard_metric_cache` (
+CREATE TABLE `leaderboard_metric_cache` (
   `id` int AUTO_INCREMENT NOT NULL,
   `client_id` int NOT NULL,
   `metric_type` varchar(50) NOT NULL,
@@ -42,10 +39,9 @@ CREATE TABLE IF NOT EXISTS `leaderboard_metric_cache` (
   `expires_at` timestamp NOT NULL,
   CONSTRAINT `leaderboard_metric_cache_id` PRIMARY KEY(`id`),
   CONSTRAINT `idx_client_metric` UNIQUE(`client_id`,`metric_type`)
-);
+);--> statement-breakpoint
 
--- Leaderboard Rank History (historical snapshots)
-CREATE TABLE IF NOT EXISTS `leaderboard_rank_history` (
+CREATE TABLE `leaderboard_rank_history` (
   `id` int AUTO_INCREMENT NOT NULL,
   `client_id` int NOT NULL,
   `snapshot_date` date NOT NULL,
@@ -59,10 +55,9 @@ CREATE TABLE IF NOT EXISTS `leaderboard_rank_history` (
   `created_at` timestamp NOT NULL DEFAULT (now()),
   CONSTRAINT `leaderboard_rank_history_id` PRIMARY KEY(`id`),
   CONSTRAINT `idx_client_date` UNIQUE(`client_id`,`snapshot_date`)
-);
+);--> statement-breakpoint
 
--- Dashboard Widget Configurations (user widget preferences)
-CREATE TABLE IF NOT EXISTS `dashboard_widget_configs` (
+CREATE TABLE `dashboard_widget_configs` (
   `id` int AUTO_INCREMENT NOT NULL,
   `user_id` int NOT NULL,
   `widget_type` varchar(50) NOT NULL,
@@ -73,17 +68,15 @@ CREATE TABLE IF NOT EXISTS `dashboard_widget_configs` (
   `updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `dashboard_widget_configs_id` PRIMARY KEY(`id`),
   CONSTRAINT `idx_user_widget` UNIQUE(`user_id`,`widget_type`)
-);
+);--> statement-breakpoint
 
--- Add indexes for performance
-CREATE INDEX `idx_user_active` ON `leaderboard_weight_configs` (`user_id`,`is_active`);
-CREATE INDEX `idx_expires` ON `leaderboard_metric_cache` (`expires_at`);
-CREATE INDEX `idx_metric_type` ON `leaderboard_metric_cache` (`metric_type`);
-CREATE INDEX `idx_snapshot_date` ON `leaderboard_rank_history` (`snapshot_date`);
+CREATE INDEX `idx_user_active` ON `leaderboard_weight_configs` (`user_id`,`is_active`);--> statement-breakpoint
+CREATE INDEX `idx_expires` ON `leaderboard_metric_cache` (`expires_at`);--> statement-breakpoint
+CREATE INDEX `idx_metric_type` ON `leaderboard_metric_cache` (`metric_type`);--> statement-breakpoint
+CREATE INDEX `idx_snapshot_date` ON `leaderboard_rank_history` (`snapshot_date`);--> statement-breakpoint
 
--- Add foreign key constraints
-ALTER TABLE `leaderboard_weight_configs` ADD CONSTRAINT `leaderboard_weight_configs_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-ALTER TABLE `leaderboard_default_weights` ADD CONSTRAINT `leaderboard_default_weights_updated_by_users_id_fk` FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE NO ACTION;
-ALTER TABLE `leaderboard_metric_cache` ADD CONSTRAINT `leaderboard_metric_cache_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-ALTER TABLE `leaderboard_rank_history` ADD CONSTRAINT `leaderboard_rank_history_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE `leaderboard_weight_configs` ADD CONSTRAINT `leaderboard_weight_configs_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;--> statement-breakpoint
+ALTER TABLE `leaderboard_default_weights` ADD CONSTRAINT `leaderboard_default_weights_updated_by_users_id_fk` FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE NO ACTION;--> statement-breakpoint
+ALTER TABLE `leaderboard_metric_cache` ADD CONSTRAINT `leaderboard_metric_cache_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;--> statement-breakpoint
+ALTER TABLE `leaderboard_rank_history` ADD CONSTRAINT `leaderboard_rank_history_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;--> statement-breakpoint
 ALTER TABLE `dashboard_widget_configs` ADD CONSTRAINT `dashboard_widget_configs_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
