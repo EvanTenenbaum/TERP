@@ -1,10 +1,3 @@
-/**
- * Schema Validation Tests
- *
- * Ensures that generator interfaces match the actual database schema.
- * This prevents runtime errors during seeding operations.
- */
-
 import { describe, it, expect } from "vitest";
 import {
   generateWhaleClients,
@@ -42,8 +35,6 @@ describe("Schema Validation", () => {
       expect(
         (firstWhale as Record<string, unknown>).paymentTerms
       ).toBeUndefined();
-      // Note: creditLimit now exists in schema but generators may not include it
-      // as it's calculated/managed separately
       expect((firstWhale as Record<string, unknown>).notes).toBeUndefined();
     });
   });
@@ -69,7 +60,6 @@ describe("Schema Validation", () => {
       expect(
         (schemaColumns as Record<string, unknown>).paymentTerms
       ).toBeUndefined();
-      // creditLimit was added in FEATURE-012 / credit visibility feature
       expect(
         (schemaColumns as Record<string, unknown>).creditLimit
       ).toBeDefined();

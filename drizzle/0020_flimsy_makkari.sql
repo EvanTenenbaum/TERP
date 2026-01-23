@@ -352,7 +352,9 @@ CREATE TABLE `vip_portal_configurations` (
 	CONSTRAINT `vip_portal_configurations_client_id_unique` UNIQUE(`client_id`)
 );
 --> statement-breakpoint
+ALTER TABLE `userDashboardPreferences` DROP FOREIGN KEY `userDashboardPreferences_userId_users_id_fk`;--> statement-breakpoint
 DROP INDEX `idx_user_dashboard_prefs_user_widget` ON `userDashboardPreferences`;--> statement-breakpoint
+ALTER TABLE `userDashboardPreferences` ADD CONSTRAINT `userDashboardPreferences_userId_users_id_fk` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `client_needs` ADD `product_name` varchar(255);--> statement-breakpoint
 ALTER TABLE `client_needs` ADD `strainId` int;--> statement-breakpoint
 ALTER TABLE `client_needs` ADD `strain_type` enum('INDICA','SATIVA','HYBRID','CBD','ANY');--> statement-breakpoint
@@ -378,7 +380,7 @@ ALTER TABLE `calendar_event_permissions` ADD CONSTRAINT `calendar_event_permissi
 ALTER TABLE `calendar_event_permissions` ADD CONSTRAINT `calendar_event_permissions_granted_by_users_id_fk` FOREIGN KEY (`granted_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `calendar_events` ADD CONSTRAINT `calendar_events_created_by_users_id_fk` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `calendar_events` ADD CONSTRAINT `calendar_events_assigned_to_users_id_fk` FOREIGN KEY (`assigned_to`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `calendar_recurrence_instances` ADD CONSTRAINT `calendar_recurrence_instances_parent_event_id_calendar_events_id_fk` FOREIGN KEY (`parent_event_id`) REFERENCES `calendar_events`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `calendar_recurrence_instances` ADD CONSTRAINT `cal_recur_inst_parent_event_id_fk` FOREIGN KEY (`parent_event_id`) REFERENCES `calendar_events`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `calendar_recurrence_instances` ADD CONSTRAINT `calendar_recurrence_instances_modified_assigned_to_users_id_fk` FOREIGN KEY (`modified_assigned_to`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `calendar_recurrence_instances` ADD CONSTRAINT `calendar_recurrence_instances_modified_by_users_id_fk` FOREIGN KEY (`modified_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `calendar_recurrence_rules` ADD CONSTRAINT `calendar_recurrence_rules_event_id_calendar_events_id_fk` FOREIGN KEY (`event_id`) REFERENCES `calendar_events`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
