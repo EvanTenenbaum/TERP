@@ -245,9 +245,9 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 > Discovered during production 503 error investigation.
 
-| Task    | Description                                                      | Priority | Status                  | Root Cause                                                   |
-| ------- | ---------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------ |
-| BUG-101 | Production 503 - Missing calendar_id column in calendar_events   | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
+| Task    | Description                                                    | Priority | Status                  | Root Cause                                                    |
+| ------- | -------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------- |
+| BUG-101 | Production 503 - Missing calendar_id column in calendar_events | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
 
 **BUG-101 Fix (Jan 23, 2026):**
 
@@ -522,44 +522,191 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 ---
 
+### Inventory Consistency QA Findings (P1/P2) - Added Jan 23, 2026
+
+> Discovered during RedHat-grade QA audit of inventory consistency fixes.
+> **Session:** `claude/fix-inventory-consistency-zi8sv` (Jan 23, 2026)
+> **Commits:** INV-CONSISTENCY-001, INV-CONSISTENCY-002
+> **Status:** Code changes SHIPPED, follow-up tasks identified
+
+#### Completed Work (Jan 23, 2026)
+
+| Task                | Description                                     | Status      | Commit  |
+| ------------------- | ----------------------------------------------- | ----------- | ------- |
+| INV-CONSISTENCY-001 | Dashboard stats only count sellable inventory   | ✅ COMPLETE | aea9660 |
+| INV-CONSISTENCY-002 | Show all inventory with qty > 0, include status | ✅ COMPLETE | ad9b0c4 |
+
+**INV-CONSISTENCY-001 Fix:**
+
+- Added `SELLABLE_BATCH_STATUSES` constant (`["LIVE", "PHOTOGRAPHY_COMPLETE"]`)
+- Updated `getDashboardStats()` to only count sellable inventory for totals
+- Status counts still show ALL statuses for visibility
+- Updated `getAgingSummary` to use same filter
+
+**INV-CONSISTENCY-002 Fix:**
+
+- Sales sheet inventory now shows ALL items with qty > 0 (not just LIVE/PHOTOGRAPHY_COMPLETE)
+- Added `status` field to `PricedInventoryItem` interface for frontend filtering
+- Frontend can filter by status; all inventory visible to sales reps
+
+#### Follow-up Tasks (P1/P2)
+
+| Task    | Description                                                  | Priority | Status | Estimate | Prompt                    |
+| ------- | ------------------------------------------------------------ | -------- | ------ | -------- | ------------------------- |
+| INV-010 | Verify frontend displays status field for non-sellable items | HIGH     | ready  | 4h       | `docs/prompts/INV-010.md` |
+| INV-011 | Refactor hardcoded batch status strings (348 occurrences)    | MEDIUM   | ready  | 8h       | `docs/prompts/INV-011.md` |
+| INV-012 | Add integration tests for dashboard/sales consistency        | MEDIUM   | ready  | 4h       | `docs/prompts/INV-012.md` |
+| INV-013 | Improve getDashboardStats test mocks (fragile call-order)    | LOW      | ready  | 4h       | `docs/prompts/INV-013.md` |
+
+##### INV-010: Verify Frontend Status Display for Non-Sellable Items
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/components/sales-sheet/`, `client/src/pages/`
+**Dependencies:** INV-CONSISTENCY-002 (complete)
+**Prompt:** `docs/prompts/INV-010.md`
+
+**Problem:**
+Sales sheet inventory now shows QUARANTINED, ON_HOLD, and AWAITING_INTAKE batches with qty > 0. These items cannot actually be sold but may confuse sales reps if not visually distinguished.
+
+**Objectives:**
+
+1. Verify frontend sales sheet components render status field
+2. Add visual distinction (badge/color) for non-sellable statuses
+3. Ensure order creation validates batch status before submission
+
+**Deliverables:**
+
+- [ ] Audit sales sheet components for status display
+- [ ] Add status badge to inventory items in sales view
+- [ ] Add warning/disabled state for non-sellable items
+- [ ] Update order creation to validate batch status
+- [ ] Manual E2E verification with QA sales manager account
+
+##### INV-011: Refactor Hardcoded Batch Status Strings
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `server/**/*.ts` (30+ files)
+**Dependencies:** None
+**Prompt:** `docs/prompts/INV-011.md`
+
+**Problem:**
+348 hardcoded batch status strings across 59 files create inconsistency risk. The `SELLABLE_BATCH_STATUSES` constant was created but not adopted everywhere.
+
+**Objectives:**
+
+1. Identify all hardcoded batch status usage patterns
+2. Create appropriate constants for each pattern (sellable, active, all)
+3. Refactor files to use shared constants
+
+**Deliverables:**
+
+- [ ] Audit complete - categorize all 348 occurrences
+- [ ] Create `ACTIVE_BATCH_STATUSES` constant if needed
+- [ ] Refactor server files to use constants
+- [ ] Update tests to use constants
+- [ ] Add ESLint rule to prevent new hardcoded strings
+
+##### INV-012: Add Dashboard/Sales Consistency Integration Tests
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `tests/integration/`
+**Dependencies:** INV-CONSISTENCY-001, INV-CONSISTENCY-002
+**Prompt:** `docs/prompts/INV-012.md`
+
+**Problem:**
+No integration test verifies that dashboard inventory metrics match sales module inventory counts. This was the original bug that caused the inconsistency.
+
+**Objectives:**
+
+1. Create integration test for dashboard/sales data consistency
+2. Test that LIVE + PHOTOGRAPHY_COMPLETE counts match
+3. Test that non-sellable items are excluded from dashboard totals
+
+**Deliverables:**
+
+- [ ] Integration test: dashboard total = sum of sellable inventory
+- [ ] Integration test: sales sheet shows all qty > 0 items
+- [ ] Integration test: aging widget only shows sellable batches
+- [ ] Test fixtures with mixed batch statuses
+- [ ] Add to CI pipeline
+
+##### INV-013: Improve getDashboardStats Test Mocks
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `server/inventoryDb.test.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/INV-013.md`
+
+**Problem:**
+Current test mocks use fragile call-order tracking (`queryCount++`) that breaks if query order changes. Tests verify mock behavior rather than business logic.
+
+**Objectives:**
+
+1. Refactor test mocks to use proper mock factory pattern
+2. Remove call-order dependency
+3. Make tests more maintainable
+
+**Deliverables:**
+
+- [ ] Create mock factory for getDashboardStats queries
+- [ ] Remove `queryCount` tracking in favor of query-type detection
+- [ ] Verify tests still cover all business logic branches
+- [ ] Add comments explaining mock structure
+- [ ] Consider recommending integration tests for complex queries
+
+---
+
 ### Unit Test Infrastructure Issues (P0/P1) - Added Jan 23, 2026
 
 > Discovered during comprehensive test failure analysis.
 > **Root Cause Analysis:** Test suite shows 137 failed / 1928 passed (89% pass rate).
 > **Session:** `claude/fix-inventory-display-tu3S3` (Jan 23, 2026)
 
-| Task          | Description                                       | Priority | Status      | Root Cause     | Est. Impact |
-| ------------- | ------------------------------------------------- | -------- | ----------- | -------------- | ----------- |
-| TEST-INFRA-01 | Fix DOM/jsdom test container setup                | P0       | NOT STARTED | RC-TEST-001    | ~45 tests   |
-| TEST-INFRA-02 | Configure DATABASE_URL for test environment       | P0       | NOT STARTED | RC-TEST-002    | ~28 tests   |
-| TEST-INFRA-03 | Fix TRPC router initialization in tests           | P0       | NOT STARTED | RC-TEST-003    | ~16 tests   |
-| TEST-INFRA-04 | Create comprehensive test fixtures/factories      | P1       | NOT STARTED | RC-TEST-004    | ~30 tests   |
-| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)     | P1       | NOT STARTED | RC-TEST-005    | ~12 tests   |
-| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure)| P2       | NOT STARTED | SEC-AUDIT      | ~1 test     |
+| Task          | Description                                        | Priority | Status      | Root Cause  | Est. Impact |
+| ------------- | -------------------------------------------------- | -------- | ----------- | ----------- | ----------- |
+| TEST-INFRA-01 | Fix DOM/jsdom test container setup                 | P0       | NOT STARTED | RC-TEST-001 | ~45 tests   |
+| TEST-INFRA-02 | Configure DATABASE_URL for test environment        | P0       | NOT STARTED | RC-TEST-002 | ~28 tests   |
+| TEST-INFRA-03 | Fix TRPC router initialization in tests            | P0       | NOT STARTED | RC-TEST-003 | ~16 tests   |
+| TEST-INFRA-04 | Create comprehensive test fixtures/factories       | P1       | NOT STARTED | RC-TEST-004 | ~30 tests   |
+| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)      | P1       | NOT STARTED | RC-TEST-005 | ~12 tests   |
+| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure) | P2       | NOT STARTED | SEC-AUDIT   | ~1 test     |
 
 #### Root Cause Analysis
 
 **RC-TEST-001: DOM Container Infrastructure**
+
 - Error: `Target container is not a DOM element`
 - Affected: `useExport.test.ts`, `usePrint.test.ts`, `ConflictDialog.test.tsx`, `ProductsPage.test.tsx`
 - Fix: Configure jsdom container creation in vitest setup
 
 **RC-TEST-002: Database Connection Missing**
+
 - Error: `Database connection failed - cannot start server without database`
 - Affected: `creditsDb.race-condition.test.ts`, `optimisticLocking.test.ts`, `inventoryDb.test.ts`
 - Fix: Set DATABASE_URL environment variable or mock database adapter
 
 **RC-TEST-003: TRPC Router Not Initialized**
+
 - Error: `No procedure found on path "settings,locations,getAll"`
 - Affected: `auth-bypass.test.ts`, `clients.test.ts`, `inventory.test.ts`
 - Fix: Setup TRPC test client with proper router initialization
 
 **RC-TEST-004: Incomplete Test Fixtures**
+
 - Error: `Cannot read properties of undefined (reading 'invoices')`
 - Affected: `calendarFinancials.test.ts`, `accounting.test.ts`, `analytics.test.ts`
 - Fix: Create factory functions for complete test data
 
 **RC-TEST-005: Async Timing Issues**
+
 - Error: `Unable to find an element with the text`
 - Affected: `ProductsPage.test.tsx`, `SampleManagement.test.tsx`
 - Fix: Use `findByText`/`waitFor` instead of `getByText`
@@ -2125,12 +2272,12 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone       | Completed | Open   | Total   | Progress |
-| --------------- | --------- | ------ | ------- | -------- |
-| MVP             | 185       | 0      | 187     | 100%     |
-| Beta            | 0         | 30     | 30      | 0%       |
-| Post-Beta       | 0         | 1      | 1       | 0%       |
-| **TOTAL**       | **185**   | **31** | **218** | ~85%     |
+| Milestone | Completed | Open   | Total   | Progress |
+| --------- | --------- | ------ | ------- | -------- |
+| MVP       | 185       | 0      | 187     | 100%     |
+| Beta      | 0         | 30     | 30      | 0%       |
+| Post-Beta | 0         | 1      | 1       | 0%       |
+| **TOTAL** | **185**   | **31** | **218** | ~85%     |
 
 > **Note**: Beta now includes:
 >
@@ -2155,9 +2302,9 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📱 Communications & Client Messaging
 
-| Task ID         | Description                   | Priority | Status       | Effort   | Specification                                                       |
-| --------------- | ----------------------------- | -------- | ------------ | -------- | ------------------------------------------------------------------- |
-| FEAT-SIGNAL-001 | Signal Messaging Integration  | HIGH     | 📋 SPEC READY | 6 weeks  | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)       |
+| Task ID         | Description                  | Priority | Status        | Effort  | Specification                                                 |
+| --------------- | ---------------------------- | -------- | ------------- | ------- | ------------------------------------------------------------- |
+| FEAT-SIGNAL-001 | Signal Messaging Integration | HIGH     | 📋 SPEC READY | 6 weeks | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md) |
 
 > **FEAT-SIGNAL-001 Details:**
 >
@@ -2167,7 +2314,7 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 > - Real-time delivery via WebSocket integration
 > - Full audit trail for cannabis compliance
 > - Technical Stack: signal-cli-rest-api (Docker), BullMQ/Redis, tRPC, Drizzle schema
-> - RBAC: signal:view, signal:send, signal:template:*, signal:admin
+> - RBAC: signal:view, signal:send, signal:template:\*, signal:admin
 > - 6-phase implementation plan included in spec
 
 ---
