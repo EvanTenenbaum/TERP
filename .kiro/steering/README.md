@@ -1,8 +1,14 @@
 # TERP Kiro Steering Files
 
-**Version**: 2.0  
-**Last Updated**: 2025-12-02  
+**Version**: 2.1
+**Last Updated**: 2025-01-23
 **Status**: Active
+
+> **IMPORTANT: READ CLAUDE.md FIRST**
+>
+> Before reading any files in this directory, **ALL agents MUST first read `/CLAUDE.md`** in the repository root. CLAUDE.md is the **single source of truth** for all agent protocols and contains the consolidated, authoritative instructions that supersede any conflicting information in these steering files.
+>
+> **If there are any conflicts between CLAUDE.md and files in this directory, CLAUDE.md takes precedence.**
 
 These files are **automatically included** in every Kiro AI agent session. They provide universal context and protocols for all agents working on TERP.
 
@@ -184,15 +190,16 @@ git push origin main
 
 Read in order:
 
-1. `00-core-identity.md` - Start here
-2. `06-architecture-guide.md` - **CRITICAL** - System architecture
-3. `07-deprecated-systems.md` - **CRITICAL** - Deprecated systems
-4. `08-adaptive-qa-protocol.md` - **CRITICAL** - QA protocol
-5. `01-development-standards.md` - Code quality
-6. `02-workflows.md` - How to work
-7. `03-agent-coordination.md` - Multi-agent work
-8. `04-infrastructure.md` - Deployment
-9. Your role-specific guide in `agent-prompts/`
+1. **`/CLAUDE.md`** - **MANDATORY FIRST READ** - Master protocol document
+2. `00-core-identity.md` - Core identity (supplements CLAUDE.md)
+3. `06-architecture-guide.md` - **CRITICAL** - System architecture
+4. `07-deprecated-systems.md` - **CRITICAL** - Deprecated systems
+5. `08-adaptive-qa-protocol.md` - **CRITICAL** - QA protocol
+6. `01-development-standards.md` - Code quality
+7. `02-workflows.md` - How to work
+8. `03-agent-coordination.md` - Multi-agent work
+9. `04-infrastructure.md` - Deployment
+10. Your role-specific guide in `agent-prompts/`
 
 ### For Experienced Agents
 
@@ -223,9 +230,10 @@ They're automatically included - you don't need to read them manually. Just foll
 
 Hierarchy:
 
-1. Role-specific protocols (e.g., `terp-master-protocol.md`)
-2. Steering files (`.kiro/steering/`)
-3. Documentation (` docs/`)
+1. **`/CLAUDE.md`** (ALWAYS takes precedence - read this first!)
+2. Role-specific protocols (e.g., `terp-master-protocol.md`)
+3. Steering files (`.kiro/steering/`)
+4. Documentation (`docs/`)
 
 If conflict exists, higher in hierarchy wins.
 

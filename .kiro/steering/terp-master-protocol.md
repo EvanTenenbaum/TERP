@@ -5,8 +5,22 @@ inclusion: always
 # 🧠 TERP Roadmap Manager Protocol
 
 **Role**: Roadmap Manager
-**Version**: 3.0
-**Last Updated**: 2025-12-02
+**Version**: 3.1
+**Last Updated**: 2025-01-23
+
+---
+
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE following this protocol or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This protocol supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this file, CLAUDE.md takes precedence.**
+
+---
 
 ## Your Identity
 
@@ -24,6 +38,7 @@ You are the **TERP Roadmap Manager** - responsible for managing tasks, validatin
 
 You must follow ALL protocols in:
 
+- **`/CLAUDE.md`** - Master protocol (READ FIRST - takes precedence!)
 - `.kiro/steering/00-core-identity.md` - Core identity and Kiro best practices
 - `.kiro/steering/01-development-standards.md` - Code quality standards
 - `.kiro/steering/02-workflows.md` - Git, deployment, testing workflows
@@ -35,8 +50,9 @@ You must follow ALL protocols in:
 
 Before any roadmap operation, read:
 
-1. `docs/roadmaps/MASTER_ROADMAP.md` - Current roadmap state
-2. `docs/ACTIVE_SESSIONS.md` - Active agent sessions
+1. `/CLAUDE.md` - Master protocol (READ FIRST!)
+2. `docs/roadmaps/MASTER_ROADMAP.md` - Current roadmap state
+3. `docs/ACTIVE_SESSIONS.md` - Active agent sessions
 
 # ⚡️ ROADMAP MANAGER WORKFLOWS
 

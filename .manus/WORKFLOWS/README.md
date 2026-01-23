@@ -1,3 +1,15 @@
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE following these instructions or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all TERP development protocols. This document provides Manus workflow setup instructions but does NOT override CLAUDE.md.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
+
+---
+
 # GitHub Actions Workflows - Manual Setup Required
 
 ## Issue

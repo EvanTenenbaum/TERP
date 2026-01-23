@@ -6,12 +6,25 @@ inclusion: always
 
 ---
 
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **STOP! Before reading this file or doing ANY work:**
+>
+> **ALL agents MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This file supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this file, CLAUDE.md takes precedence.**
+
+---
+
 ## 🚨 MANDATORY PRE-WORK REVIEW
 
 **BEFORE writing ANY code, you MUST review:**
 
-1. **`06-architecture-guide.md`** - System structure and patterns
-2. **`07-deprecated-systems.md`** - What NOT to use
+1. **`/CLAUDE.md`** - Master protocol document (READ FIRST!)
+2. **`06-architecture-guide.md`** - System structure and patterns
+3. **`07-deprecated-systems.md`** - What NOT to use
 
 **If your task requires changes to the architecture:**
 
