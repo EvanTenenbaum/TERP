@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
@@ -21,7 +21,8 @@ import { subDays, differenceInDays } from "date-fns";
 
 const timePeriodSchema = z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]);
 
-const paginationInputSchema = z.object({
+// Note: paginationInputSchema kept for potential future use by other endpoints
+const _paginationInputSchema = z.object({
   limit: z.number().min(1).max(100).default(50),
   offset: z.number().min(0).default(0),
 });
@@ -33,7 +34,7 @@ const salesByClientInputSchema = z.object({
 });
 
 const cashCollectedInputSchema = z.object({
-  months: z.number().default(24),
+  timePeriod: timePeriodSchema.default("LIFETIME"),
   limit: z.number().min(1).max(100).default(50),
   offset: z.number().min(0).default(0),
 });
@@ -43,6 +44,12 @@ const cashFlowInputSchema = z.object({
 });
 
 const clientProfitMarginInputSchema = z.object({
+  timePeriod: timePeriodSchema.default("LIFETIME"),
+  limit: z.number().min(1).max(100).default(50),
+  offset: z.number().min(0).default(0),
+});
+
+const clientDebtInputSchema = z.object({
   timePeriod: timePeriodSchema.default("LIFETIME"),
   limit: z.number().min(1).max(100).default(50),
   offset: z.number().min(0).default(0),
@@ -281,7 +288,7 @@ export const dashboardRouter = router({
       if (db) {
         // Get batches updated in the last 30 days to estimate inventory change
         // This is an approximation - for accurate historical tracking, use inventory_snapshots table
-        const recentBatchesResult = await db
+        const _recentBatchesResult = await db
           .select({
             totalValue: sql<string>`COALESCE(SUM(
               CAST(${batches.onHandQty} AS DECIMAL(20,2)) *
@@ -292,7 +299,7 @@ export const dashboardRouter = router({
           .where(
             sql`${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
                 AND ${batches.deletedAt} IS NULL
-                AND ${batches.updatedAt} >= ${thirtyDaysAgo.toISOString().slice(0, 19).replace('T', ' ')}`
+                AND ${batches.updatedAt} >= ${thirtyDaysAgo.toISOString().slice(0, 19).replace("T", " ")}`
           );
 
         // For now, show 0 change if we can't determine historical data
@@ -489,13 +496,18 @@ export const dashboardRouter = router({
       };
     }),
 
-  // Cash Collected (24 months by client)
+  // Cash Collected (with time period filter)
   getCashCollected: protectedProcedure
     .use(requirePermission("dashboard:read"))
     .input(cashCollectedInputSchema)
     .query(async ({ input }): Promise<PaginatedResponse<CashByClient>> => {
+      // Calculate date range based on timePeriod
+      const { startDate, endDate } = calculateDateRange(input.timePeriod);
+
       const paymentsResult = await arApDb.getPayments({
         paymentType: "RECEIVED",
+        startDate,
+        endDate,
       });
       const allPayments = paymentsResult.payments || [];
 
@@ -548,13 +560,28 @@ export const dashboardRouter = router({
       };
     }),
 
-  // Client Debt (current debt + aging)
+  // Client Debt (current debt + aging with time period filter)
   getClientDebt: protectedProcedure
     .use(requirePermission("dashboard:read"))
-    .input(paginationInputSchema)
+    .input(clientDebtInputSchema)
     .query(async ({ input }): Promise<PaginatedResponse<ClientDebt>> => {
+      // Calculate date range based on timePeriod
+      const { startDate, endDate } = calculateDateRange(input.timePeriod);
+
+      // Get outstanding receivables - these are always current debt
+      // Time period filters which debts we include based on invoice date
       const receivablesResult = await arApDb.getOutstandingReceivables();
-      const receivables = receivablesResult.invoices || [];
+      let receivables = receivablesResult.invoices || [];
+
+      // Filter by time period if not LIFETIME
+      if (input.timePeriod !== "LIFETIME" && startDate && endDate) {
+        receivables = receivables.filter((r: { invoiceDate?: Date }) => {
+          if (!r.invoiceDate) return true; // Include debts without dates
+          const invoiceDate = new Date(r.invoiceDate);
+          return invoiceDate >= startDate && invoiceDate <= endDate;
+        });
+      }
+
       // Aging data fetched for potential future use in debt analysis
       await arApDb.calculateARAging();
 
@@ -678,9 +705,11 @@ export const dashboardRouter = router({
           invoiceCosts.set(invoiceId, { revenue: 0, cost: 0 });
         }
 
-        const current = invoiceCosts.get(invoiceId)!;
-        current.revenue += quantity * unitPrice;
-        current.cost += quantity * unitCogs;
+        const current = invoiceCosts.get(invoiceId);
+        if (current) {
+          current.revenue += quantity * unitPrice;
+          current.cost += quantity * unitCogs;
+        }
       }
 
       // Calculate profit margin by client using actual COGS
@@ -717,9 +746,8 @@ export const dashboardRouter = router({
       // Calculate final profit margins
       for (const client of Object.values(marginByClient)) {
         const profit = client.revenue - client.cost;
-        client.profitMargin = client.revenue > 0
-          ? (profit / client.revenue) * 100
-          : 0;
+        client.profitMargin =
+          client.revenue > 0 ? (profit / client.revenue) * 100 : 0;
       }
 
       // Fetch actual client names for all customer IDs
@@ -734,10 +762,9 @@ export const dashboardRouter = router({
         }
       });
 
-      const sortedData: ClientMargin[] = Object.values(marginByClient)
-        .sort(
-          (a: ClientMargin, b: ClientMargin) => b.profitMargin - a.profitMargin
-        );
+      const sortedData: ClientMargin[] = Object.values(marginByClient).sort(
+        (a: ClientMargin, b: ClientMargin) => b.profitMargin - a.profitMargin
+      );
 
       const total = sortedData.length;
       const paginatedData = sortedData.slice(
@@ -883,14 +910,14 @@ export const dashboardRouter = router({
       const receivables = receivablesResult.invoices || [];
       const payables = payablesResult.bills || [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalAR = receivables.reduce(
-        (sum: number, r: any) => sum + Number(r.amountDue || 0),
+        (sum: number, r: { amountDue?: string | number }) =>
+          sum + Number(r.amountDue || 0),
         0
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalAP = payables.reduce(
-        (sum: number, p: any) => sum + Number(p.amountDue || 0),
+        (sum: number, p: { amountDue?: string | number }) =>
+          sum + Number(p.amountDue || 0),
         0
       );
 

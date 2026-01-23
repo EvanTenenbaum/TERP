@@ -4,7 +4,13 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { strainService } from "../services/strainService";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { db } from "../db";
-import { orders, clients, batches, payments } from "../../drizzle/schema";
+import {
+  orders,
+  clients,
+  batches,
+  payments,
+  orderLineItems,
+} from "../../drizzle/schema";
 import {
   count,
   sum,
@@ -186,6 +192,24 @@ export const analyticsRouter = router({
         .select({ totalPayments: sum(payments.amount) })
         .from(payments);
 
+      // Calculate actual profit margin from order line items
+      const [cogsStats] = await db
+        .select({
+          totalRevenue: sum(orderLineItems.lineTotal),
+          totalCogs: sum(
+            sql<number>`${orderLineItems.quantity} * ${orderLineItems.cogsPerUnit}`
+          ),
+        })
+        .from(orderLineItems);
+
+      const actualRevenue = Number(cogsStats?.totalRevenue || 0);
+      const actualCogs = Number(cogsStats?.totalCogs || 0);
+      const calculatedProfitMargin =
+        actualRevenue > 0
+          ? Math.round(((actualRevenue - actualCogs) / actualRevenue) * 10000) /
+            100
+          : 0;
+
       const currentRevenue = Number(periodStats?.revenueThisPeriod || 0);
       const previousRevenue = Number(prevPeriodStats?.revenue || 0);
       const growthRate =
@@ -203,7 +227,7 @@ export const analyticsRouter = router({
         averageOrderValue: Number(allTimeStats?.avgOrderValue || 0),
         totalPaymentsReceived: totalPayments,
         outstandingBalance: Math.max(0, totalRevenue - totalPayments),
-        profitMargin: 25,
+        profitMargin: calculatedProfitMargin,
         growthRate: Math.round(growthRate * 100) / 100,
         ordersThisPeriod: Number(periodStats?.ordersThisPeriod || 0),
         revenueThisPeriod: currentRevenue,
