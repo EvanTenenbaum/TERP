@@ -1,13 +1,3 @@
-/**
- * Calendar Router Pagination Tests
- * Tests for API pagination implementation
- *
- * Following TERP Testing Protocol:
- * - TDD workflow (Red → Green → Refactor)
- * - Testing Trophy: 70% integration, 20% unit, 10% E2E
- * - Mock all external dependencies
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
@@ -20,6 +10,7 @@ vi.mock("../services/permissionService", () => setupPermissionMock());
 
 import { calendarRouter } from "./calendar";
 import { getDb } from "../db";
+import PermissionService from "../_core/permissionService";
 
 describe("Calendar Router - Pagination", () => {
   beforeEach(() => {

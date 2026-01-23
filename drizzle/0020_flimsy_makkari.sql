@@ -352,7 +352,9 @@ CREATE TABLE `vip_portal_configurations` (
 	CONSTRAINT `vip_portal_configurations_client_id_unique` UNIQUE(`client_id`)
 );
 --> statement-breakpoint
+ALTER TABLE `userDashboardPreferences` DROP FOREIGN KEY `userDashboardPreferences_userId_users_id_fk`;--> statement-breakpoint
 DROP INDEX `idx_user_dashboard_prefs_user_widget` ON `userDashboardPreferences`;--> statement-breakpoint
+ALTER TABLE `userDashboardPreferences` ADD CONSTRAINT `userDashboardPreferences_userId_users_id_fk` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `client_needs` ADD `product_name` varchar(255);--> statement-breakpoint
 ALTER TABLE `client_needs` ADD `strainId` int;--> statement-breakpoint
 ALTER TABLE `client_needs` ADD `strain_type` enum('INDICA','SATIVA','HYBRID','CBD','ANY');--> statement-breakpoint

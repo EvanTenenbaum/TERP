@@ -8,6 +8,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import Inventory from "./Inventory";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { setupDbMock, setupPermissionMock } from "@/test-utils";
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/inventory", vi.fn()],
@@ -105,6 +106,8 @@ vi.mock("@/hooks/useDebounce", () => ({
 describe("Inventory", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setupDbMock();
+    setupPermissionMock();
   });
 
   it("renders skeleton while loading inventory", () => {
