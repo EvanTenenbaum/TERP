@@ -19,8 +19,6 @@ import {
 import { liveShoppingSessions, sessionCartItems } from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
-// INV-CONSISTENCY-001: Import shared sellable status constant for consistency
-import { SELLABLE_BATCH_STATUSES } from "./inventoryDb";
 
 // ============================================================================
 // TYPES
@@ -40,6 +38,7 @@ export interface PricedInventoryItem {
   grade?: string;
   vendor?: string;
   vendorId?: number;
+  status?: string; // INV-CONSISTENCY-002: Include batch status for display/filtering
   priceMarkup: number;
   appliedRules: Array<{
     ruleId: number;
@@ -101,8 +100,8 @@ export async function getInventoryWithPricing(
       "Fetching inventory batches with details"
     );
 
-    // INV-CONSISTENCY-001: Use shared sellable status constant for consistency
-    // This ensures sales modules use the same status filter as dashboard stats
+    // INV-CONSISTENCY-002: Show all inventory with qty > 0, regardless of status
+    // Status is included in the response for display and filtering on frontend
     const inventoryWithDetails = await db
       .select({
         batch: batches,
@@ -118,7 +117,7 @@ export async function getInventoryWithPricing(
       .leftJoin(strains, eq(products.strainId, strains.id))
       .where(
         and(
-          inArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]),
+          sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) > 0`,
           isNull(batches.deletedAt)
         )
       )
@@ -159,6 +158,7 @@ export async function getInventoryWithPricing(
 
     // Convert batches to inventory items format with joined data
     // FIX: Filter out any null batches (shouldn't happen but defensive)
+    // INV-CONSISTENCY-002: Include status for display/filtering
     const inventoryItems = inventoryWithDetails
       .filter(({ batch }) => batch !== null && batch !== undefined)
       .map(({ batch, product, vendor, strain }) => ({
@@ -174,6 +174,7 @@ export async function getInventoryWithPricing(
         grade: batch.grade || undefined,
         vendor: vendor?.name || undefined,
         vendorId: vendor?.id || undefined,
+        status: batch.batchStatus || undefined,
       }));
 
     // Calculate retail prices using pricing engine with error handling
@@ -184,6 +185,7 @@ export async function getInventoryWithPricing(
       );
 
       // Ensure all items have quantity defined and preserve new fields
+      // INV-CONSISTENCY-002: Include status for display/filtering
       return pricedItems.map((item, index) => ({
         ...item,
         quantity: item.quantity || 0,
@@ -191,6 +193,7 @@ export async function getInventoryWithPricing(
         strainId: inventoryItems[index].strainId,
         strainFamily: inventoryItems[index].strainFamily,
         vendorId: inventoryItems[index].vendorId,
+        status: inventoryItems[index].status,
       }));
     } catch (pricingError) {
       logger.error(

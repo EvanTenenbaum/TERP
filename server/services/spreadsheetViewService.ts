@@ -171,9 +171,8 @@ export function transformClientOrderRows(
 /**
  * Get inventory data for spreadsheet grid view
  *
- * INV-CONSISTENCY-001: Updated to filter by sellable statuses when no explicit
- * status filter is provided. This ensures the spreadsheet view shows the same
- * inventory that's available for sales by default.
+ * INV-CONSISTENCY-002: Shows all inventory regardless of status.
+ * Status is included in the response for display and filtering on frontend.
  *
  * @param input Query parameters including optional status filter
  * @returns Paginated inventory grid rows
@@ -196,18 +195,8 @@ export async function getInventoryGridData(
       category: input.category,
     });
 
-  // INV-CONSISTENCY-001: Filter to sellable statuses if no explicit status filter provided
-  // This ensures spreadsheet view matches sales module inventory by default
-  const filteredItems = input.status
-    ? items  // User explicitly requested a status, show that
-    : items.filter(item =>
-        item.batch &&
-        SELLABLE_BATCH_STATUSES.includes(
-          item.batch.batchStatus as typeof SELLABLE_BATCH_STATUSES[number]
-        )
-      );
-
-  const rows = filteredItems.map(transformInventoryRecord);
+  // INV-CONSISTENCY-002: Show all inventory, status is filterable on frontend
+  const rows = items.map(transformInventoryRecord);
 
   return { rows, nextCursor, hasMore: Boolean(hasMore) };
 }
@@ -339,8 +328,6 @@ async function getBatchCodesByIds(
 }
 import * as inventoryDb from "../inventoryDb";
 import { getOrdersByClient } from "../ordersDb";
-// INV-CONSISTENCY-001: Import shared sellable status constant for consistent filtering
-import { SELLABLE_BATCH_STATUSES } from "../inventoryDb";
 
 const DEFAULT_LIMIT = 100;
 
