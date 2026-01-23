@@ -244,8 +244,8 @@ describe("getBatchesByVendor", () => {
 // ============================================================================
 
 import { getDashboardStats } from "./inventoryDb";
-import { batches, products } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { batches as _batches, products as _products } from "../drizzle/schema";
+import { eq as _eq } from "drizzle-orm";
 
 // Mock the cache module as getDashboardStats uses it
 vi.mock("./_core/cache", () => ({
@@ -262,50 +262,72 @@ vi.mock("./_core/cache", () => ({
 }));
 
 describe("getDashboardStats (Gold Standard for PERF-004)", () => {
+  // Pre-calculated expected values based on mock data:
+  // B1: 100 * 5.50 = 550.00 (Flower/Indica, LIVE)
+  // B2: 50 * 2.00 = 100.00 (Flower/Indica, LIVE)
+  // B3: 200 * 1.25 = 250.00 (Edible/Gummies, QUARANTINED)
+  // B4: 10 * 0.00 = 0.00 (Concentrate/Vape Cart, ON_HOLD)
+  // B5: 0 * 10.00 = 0.00 (Flower/Indica, SOLD_OUT)
+  // B6: 100 * 1.50 = 150.00 (Edible/Gummies, LIVE)
+  // Total Units: 460, Total Value: 1050
+
+  let mockDb: any;
+  let queryCallCount: number;
+
   beforeEach(() => {
     vi.clearAllMocks();
-  });
+    queryCallCount = 0;
 
-  const mockBatches = [
-    // Batch 1: Flower, LIVE, High Value
-    { id: 1, batchStatus: "LIVE", onHandQty: "100.00", unitCogs: "5.50", productId: 1 },
-    // Batch 2: Flower, LIVE, Low Value
-    { id: 2, batchStatus: "LIVE", onHandQty: "50.00", unitCogs: "2.00", productId: 1 },
-    // Batch 3: Edible, QUARANTINED, Medium Value
-    { id: 3, batchStatus: "QUARANTINED", onHandQty: "200.00", unitCogs: "1.25", productId: 2 },
-    // Batch 4: Concentrate, ON_HOLD, Zero Value (unitCogs is null/zero)
-    { id: 4, batchStatus: "ON_HOLD", onHandQty: "10.00", unitCogs: "0.00", productId: 3 },
-    // Batch 5: Flower, SOLD_OUT, High Value (should not count towards totalUnits/Value)
-    { id: 5, batchStatus: "SOLD_OUT", onHandQty: "0.00", unitCogs: "10.00", productId: 1 },
-    // Batch 6: Edible, LIVE, Medium Value
-    { id: 6, batchStatus: "LIVE", onHandQty: "100.00", unitCogs: "1.50", productId: 2 },
-  ];
+    // Create a mock db that tracks which query is being made
+    // based on call order (the function makes 4 separate queries)
+    mockDb = {
+      select: vi.fn().mockImplementation(() => {
+        queryCallCount++;
+        const currentQuery = queryCallCount;
 
-  const mockProducts = [
-    { id: 1, category: "Flower", subcategory: "Indica" },
-    { id: 2, category: "Edible", subcategory: "Gummies" },
-    { id: 3, category: "Concentrate", subcategory: "Vape Cart" },
-  ];
+        const builder: any = {
+          from: vi.fn().mockReturnThis(),
+          leftJoin: vi.fn().mockReturnThis(),
+          groupBy: vi.fn().mockReturnThis(),
+          orderBy: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          then: (resolve: any) => {
+            // Return different results based on query number
+            switch (currentQuery) {
+              case 1:
+                // Query 1: Totals (totalUnits, totalValue)
+                return resolve([{ totalUnits: "460.00", totalValue: "1050.00" }]);
+              case 2:
+                // Query 2: Status counts
+                return resolve([
+                  { status: "LIVE", count: 3 },
+                  { status: "QUARANTINED", count: 1 },
+                  { status: "ON_HOLD", count: 1 },
+                  { status: "SOLD_OUT", count: 1 },
+                ]);
+              case 3:
+                // Query 3: Category stats (sorted by value desc)
+                return resolve([
+                  { name: "Flower", units: "150.00", value: "650.00" },
+                  { name: "Edible", units: "300.00", value: "400.00" },
+                  { name: "Concentrate", units: "10.00", value: "0.00" },
+                ]);
+              case 4:
+                // Query 4: Subcategory stats (sorted by value desc)
+                return resolve([
+                  { name: "Indica", units: "150.00", value: "650.00" },
+                  { name: "Gummies", units: "300.00", value: "400.00" },
+                  { name: "Vape Cart", units: "10.00", value: "0.00" },
+                ]);
+              default:
+                return resolve([]);
+            }
+          },
+        };
+        return builder;
+      }),
+    };
 
-  const mockDb = {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    // Mock the final query result for allBatches
-    leftJoin: vi.fn().mockResolvedValue(
-      mockBatches.map(batch => ({
-        batchId: batch.id,
-        batchStatus: batch.batchStatus,
-        onHandQty: batch.onHandQty,
-        unitCogs: batch.unitCogs,
-        category: mockProducts.find(p => p.id === batch.productId)?.category,
-        subcategory: mockProducts.find(p => p.id === batch.productId)?.subcategory,
-      }))
-    ),
-  };
-
-  beforeEach(() => {
-    // Mock the database to return the combined data structure
     vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
   });
 

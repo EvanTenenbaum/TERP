@@ -67,8 +67,8 @@ describe("Clients Router", () => {
       // Act
       const result = await caller.clients.list({});
 
-      // Assert
-      expect(result).toHaveLength(2);
+      // Assert - Now returns paginated response
+      expect(result.items).toHaveLength(2);
       expect(clientsDb.getClients).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 50, offset: 0 })
       );
@@ -85,8 +85,8 @@ describe("Clients Router", () => {
       // Act
       const result = await caller.clients.list({ search: "Acme" });
 
-      // Assert
-      expect(result).toHaveLength(1);
+      // Assert - Now returns paginated response
+      expect(result.items).toHaveLength(1);
       expect(clientsDb.getClients).toHaveBeenCalledWith(
         expect.objectContaining({ search: "Acme" })
       );
@@ -103,8 +103,8 @@ describe("Clients Router", () => {
       // Act
       const result = await caller.clients.list({ clientTypes: ["buyer"] });
 
-      // Assert
-      expect(result[0].isBuyer).toBe(true);
+      // Assert - Now returns paginated response
+      expect(result.items[0].isBuyer).toBe(true);
     });
 
     it("should filter by tags", async () => {
@@ -118,8 +118,8 @@ describe("Clients Router", () => {
       // Act
       const result = await caller.clients.list({ tags: ["vip"] });
 
-      // Assert
-      expect(result[0].tags).toContain("vip");
+      // Assert - Now returns paginated response
+      expect(result.items[0].tags).toContain("vip");
     });
 
     it("should filter by debt status", async () => {
@@ -133,8 +133,8 @@ describe("Clients Router", () => {
       // Act
       const result = await caller.clients.list({ hasDebt: true });
 
-      // Assert
-      expect(result[0].hasDebt).toBe(true);
+      // Assert - Now returns paginated response
+      expect(result.items[0].hasDebt).toBe(true);
     });
 
     it("should support custom pagination", async () => {
@@ -256,6 +256,7 @@ describe("Clients Router", () => {
       const mockCreatedClient = {
         id: 3,
         ...input,
+        paymentTerms: 30, // Default value
         createdBy: 1,
         createdAt: new Date(),
       };
@@ -267,7 +268,15 @@ describe("Clients Router", () => {
 
       // Assert
       expect(result).toEqual(mockCreatedClient);
-      expect(clientsDb.createClient).toHaveBeenCalledWith(1, input);
+      // createClient now receives paymentTerms with default value of 30
+      expect(clientsDb.createClient).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          teriCode: "CLI003",
+          name: "New Client",
+          paymentTerms: 30,
+        })
+      );
     });
 
     it("should create client with multiple types", async () => {
@@ -386,7 +395,8 @@ describe("Clients Router", () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(clientsDb.deleteClient).toHaveBeenCalledWith(1);
+      // deleteClient now takes (clientId, userId)
+      expect(clientsDb.deleteClient).toHaveBeenCalledWith(1, 1);
     });
   });
 
@@ -402,8 +412,8 @@ describe("Clients Router", () => {
       // Act
       const result = await caller.clients.list({});
 
-      // Assert
-      expect(result).toEqual([]);
+      // Assert - Now returns paginated response
+      expect(result.items).toEqual([]);
     });
 
     it("should handle zero count", async () => {

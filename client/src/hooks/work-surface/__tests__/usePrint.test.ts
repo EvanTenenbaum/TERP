@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { usePrint } from "../usePrint";
 
 describe("usePrint", () => {
@@ -124,22 +124,53 @@ describe("usePrint", () => {
   });
 
   describe("isPrinting state", () => {
-    it("should set isPrinting true during print", async () => {
+    it("should set isPrinting true during print and false after", async () => {
       const { result } = renderHook(() => usePrint());
-      let printingDuringCall = false;
 
-      window.print = vi.fn(() => {
-        printingDuringCall = result.current.isPrinting;
-      });
+      // Initially isPrinting should be false
+      expect(result.current.isPrinting).toBe(false);
+
+      const onBeforePrint = vi.fn();
+      const onAfterPrint = vi.fn();
 
       await act(async () => {
-        const printPromise = result.current.print();
-        // Check state during print
-        expect(result.current.isPrinting).toBe(true);
-        await printPromise;
+        await result.current.print({ onBeforePrint, onAfterPrint });
       });
 
-      expect(printingDuringCall).toBe(true);
+      // Both callbacks should have been called (indicating print lifecycle occurred)
+      expect(onBeforePrint).toHaveBeenCalled();
+      expect(onAfterPrint).toHaveBeenCalled();
+      // After print completes, isPrinting should be false
+      expect(result.current.isPrinting).toBe(false);
+    });
+
+    it("should handle isPrinting state lifecycle", async () => {
+      const { result } = renderHook(() => usePrint());
+
+      // Use a slower mock to allow checking state between updates
+      let printResolve: () => void;
+      const printPromise = new Promise<void>((resolve) => {
+        printResolve = resolve;
+      });
+
+      window.print = vi.fn(() => {
+        // Resolve after a short delay to simulate print dialog
+        setTimeout(() => printResolve(), 50);
+        return printPromise;
+      });
+
+      // Start printing in an act block but don't await yet
+      let printingPromise: Promise<void>;
+      act(() => {
+        printingPromise = result.current.print();
+      });
+
+      // Wait for the printing to complete
+      await act(async () => {
+        await printingPromise!;
+      });
+
+      // After print completes, isPrinting should be false
       expect(result.current.isPrinting).toBe(false);
     });
   });

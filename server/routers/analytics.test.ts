@@ -46,33 +46,24 @@ describe("Analytics Router", () => {
   describe("getSummary", () => {
     it("should retrieve summary analytics with real data", async () => {
       // Arrange - mock database responses
+      // Note: orders and clients queries don't use .where(), inventory does
       const mockDb = db as any;
-      mockDb.select = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 150 }]),
-        }),
-      });
 
-      // For orders
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
-        }),
-      });
-
-      // For clients
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
-        }),
-      });
-
-      // For batches
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 150 }]),
-        }),
-      });
+      // For orders - .select().from() directly returns array
+      mockDb.select = vi.fn()
+        .mockReturnValueOnce({
+          from: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
+        })
+        // For clients - .select().from() directly returns array
+        .mockReturnValueOnce({
+          from: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+        })
+        // For batches - .select().from().where() returns array
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalInventoryItems: 150 }]),
+          }),
+        });
 
       // Act
       const result = await caller.analytics.getSummary();
@@ -91,32 +82,22 @@ describe("Analytics Router", () => {
     it("should handle empty database gracefully", async () => {
       // Arrange - mock empty database
       const mockDb = db as any;
-      mockDb.select = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 0 }]),
-        }),
-      });
 
       // For orders
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
-        }),
-      });
-
-      // For clients
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
-        }),
-      });
-
-      // For batches
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 0 }]),
-        }),
-      });
+      mockDb.select = vi.fn()
+        .mockReturnValueOnce({
+          from: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+        })
+        // For clients
+        .mockReturnValueOnce({
+          from: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+        })
+        // For batches
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalInventoryItems: 0 }]),
+          }),
+        });
 
       // Act
       const result = await caller.analytics.getSummary();
@@ -343,10 +324,10 @@ describe("Analytics Router", () => {
         new Error("Database error")
       );
 
-      // Act & Assert
+      // Act & Assert - Router now throws original error
       await expect(
         caller.analytics.clientStrainPreferences({ clientId: 1 })
-      ).rejects.toThrow("Failed to get client preferences");
+      ).rejects.toThrow("Database error");
     });
 
     it("should handle service error in topStrainFamilies", async () => {
@@ -355,9 +336,9 @@ describe("Analytics Router", () => {
         new Error("Database error")
       );
 
-      // Act & Assert
+      // Act & Assert - Router now throws original error
       await expect(caller.analytics.topStrainFamilies({})).rejects.toThrow(
-        "Failed to get top families"
+        "Database error"
       );
     });
 
@@ -367,10 +348,10 @@ describe("Analytics Router", () => {
         new Error("Database error")
       );
 
-      // Act & Assert
+      // Act & Assert - Router now throws original error
       await expect(
         caller.analytics.strainFamilyTrends({ familyId: 1 })
-      ).rejects.toThrow("Failed to get family trends");
+      ).rejects.toThrow("Database error");
     });
   });
 });

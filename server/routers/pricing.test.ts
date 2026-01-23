@@ -147,13 +147,13 @@ describe("Pricing Router", () => {
 
     describe("createRule", () => {
       it("should create a new pricing rule with percent markup", async () => {
-        // Arrange
+        // Arrange - QUAL-002: conditions must use proper schema format
         const input = {
           name: "Premium Markup",
           description: "15% markup for premium products",
           adjustmentType: "PERCENT_MARKUP" as const,
           adjustmentValue: 15,
-          conditions: { productCategory: "premium" },
+          conditions: { productCategory: { operator: "eq" as const, value: "premium" } },
           logicType: "AND" as const,
           priority: 1,
         };
@@ -177,13 +177,13 @@ describe("Pricing Router", () => {
       });
 
       it("should create a rule with dollar markdown", async () => {
-        // Arrange
+        // Arrange - QUAL-002: conditions must use proper schema format
         const input = {
           name: "Clearance Discount",
           description: "$5 off clearance items",
           adjustmentType: "DOLLAR_MARKDOWN" as const,
           adjustmentValue: 5,
-          conditions: { clearance: true },
+          conditions: { clearance: { operator: "eq" as const, value: true } },
         };
 
         const mockCreatedRule = {

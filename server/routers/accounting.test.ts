@@ -202,13 +202,19 @@ describe("Accounting Router", () => {
           },
         ];
 
-        vi.mocked(accountingDb.getLedgerEntries).mockResolvedValue(mockEntries);
+        // Mock returns { entries: [], total: number } structure
+        vi.mocked(accountingDb.getLedgerEntries).mockResolvedValue({
+          entries: mockEntries,
+          total: mockEntries.length,
+        });
 
         // Act
         const result = await caller.accounting.ledger.list({});
 
-        // Assert
-        expect(result).toEqual(mockEntries);
+        // Assert - BUG-034: Now returns unified paginated response
+        expect(result.items).toEqual(mockEntries);
+        expect(result.pagination).toBeDefined();
+        expect(result.pagination.total).toBe(2);
       });
 
       it("should filter ledger entries by account", async () => {

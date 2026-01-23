@@ -214,15 +214,14 @@ describe("Orders Router", () => {
       expect(ordersDb.getOrderById).toHaveBeenCalledWith(1);
     });
 
-    it("should return null for non-existent order", async () => {
+    it("should throw NOT_FOUND error for non-existent order", async () => {
       // Arrange
       vi.mocked(ordersDb.getOrderById).mockResolvedValue(null);
 
-      // Act
-      const result = await caller.orders.getById({ id: 999 });
-
-      // Assert
-      expect(result).toBeNull();
+      // Act & Assert - Router now throws TRPCError with NOT_FOUND code
+      await expect(caller.orders.getById({ id: 999 })).rejects.toThrow(
+        "Order with ID 999 not found"
+      );
     });
   });
 
@@ -275,8 +274,8 @@ describe("Orders Router", () => {
       // Act
       const result = await caller.orders.getAll();
 
-      // Assert
-      expect(result).toHaveLength(2);
+      // Assert - Now returns paginated response
+      expect(result.items).toHaveLength(2);
       expect(ordersDb.getAllOrders).toHaveBeenCalled();
     });
 
@@ -289,8 +288,8 @@ describe("Orders Router", () => {
       // Act
       const result = await caller.orders.getAll({ orderType: "QUOTE" });
 
-      // Assert
-      expect(result).toHaveLength(1);
+      // Assert - Now returns paginated response
+      expect(result.items).toHaveLength(1);
     });
 
     it("should filter by draft status", async () => {
@@ -302,8 +301,8 @@ describe("Orders Router", () => {
       // Act
       const result = await caller.orders.getAll({ isDraft: true });
 
-      // Assert
-      expect(result[0].isDraft).toBe(true);
+      // Assert - Now returns paginated response
+      expect(result.items[0].isDraft).toBe(true);
     });
 
     it("should support pagination", async () => {
@@ -342,9 +341,12 @@ describe("Orders Router", () => {
 
       // Assert
       expect(result.notes).toBe("Updated notes");
-      expect(ordersDb.updateOrder).toHaveBeenCalledWith(1, {
-        notes: "Updated notes",
-      });
+      // ST-026: updateOrder now takes (id, updates, version) for optimistic locking
+      expect(ordersDb.updateOrder).toHaveBeenCalledWith(
+        1,
+        { notes: "Updated notes" },
+        undefined
+      );
     });
 
     it("should update validUntil date", async () => {
