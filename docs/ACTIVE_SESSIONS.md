@@ -17,7 +17,6 @@
 | Session-20260109-QA-E2E-a63131         | QA-E2E full browser coverage                     | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
 | Session-20260109-QA-E2E-0c47cb         | QA-E2E credential provisioning + flow completion | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
 | Session-20260116-E2E-INFRA             | E2E-001, E2E-002, E2E-003 Infrastructure         | manus/e2e-infrastructure-implementation-2026-01-16 | tests-e2e/    | In Progress | 2026-01-16 | 2026-01-16 |
-| Session-20260122-BRANCH-CREATE-94898b  | Branch Creation / External Agent Session         | claude/create-github-branch-eCxpV                  | docs/         | In Progress | 2026-01-22 | -          |
 
 ## ⏸️ Paused / Waiting
 
@@ -44,7 +43,4 @@
 
 - Session-20260104-UX-015-00a24e: UX-015/UX-022/UX-011 - [Platform: External] [Branch: wave-2/ux-foundation-parallel] [Files: client/src/components/layout/Sidebar.tsx, client/src/components/layout/Layout.tsx, client/src/components/layout/MobileNav.tsx, client/src/components/ui/DataTable.tsx, client/src/components/ui/DataTablePagination.tsx, client/src/components/ui/DataTableFilters.tsx, client/src/components/ui/Skeleton.tsx, client/src/components/skeletons/DashboardSkeleton.tsx, client/src/components/skeletons/TableSkeleton.tsx, client/src/components/skeletons/CardSkeleton.tsx, client/src/pages/InventoryPage.tsx, client/src/pages/ProductsPage.tsx, client/src/pages/VendorsPage.tsx]
 - Session-20260108-DATA-SEED-EXEC-1b7f13: DATA-SEED-EXEC - [Platform: External] [Files: docs/sessions/active/Session-20260108-DATA-SEED-EXEC-1b7f13.md, docs/ACTIVE_SESSIONS.md]
-
-- Session-20260116-QA-RBAC-AUDIT-d6a424: QA-RBAC-AUDIT - [Platform: External] [Files: docs/sessions/active/Session-20260116-QA-RBAC-AUDIT-d6a424.md, docs/ACTIVE_SESSIONS.md]
-
-- Session-20260116-QA-DRIFT-2da4e7: QA-DRIFT - [Platform: External] [Files: docs/reference/USER_FLOW_MATRIX.csv, docs/reference/FLOW_GUIDE.md, docs/qa/QA_PLAYBOOK.md]
+- Session-20260116-TASK-PREMORTEM-11ec2f: TASK-PREMORTEM - [Platform: External] [Files: docs/sessions/active/Session-20260116-TASK-PREMORTEM-11ec2f.md, docs/ACTIVE_SESSIONS.md]
