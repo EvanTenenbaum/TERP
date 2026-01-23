@@ -1948,8 +1948,8 @@
         }
       },
       "foreignKeys": {
-        "calendar_recurrence_instances_parent_event_id_calendar_events_id_fk": {
-          "name": "calendar_recurrence_instances_parent_event_id_calendar_events_id_fk",
+        "cal_recur_inst_parent_event_fk": {
+          "name": "cal_recur_inst_parent_event_fk",
           "tableFrom": "calendar_recurrence_instances",
           "tableTo": "calendar_events",
           "columnsFrom": ["parent_event_id"],
@@ -12565,8 +12565,8 @@
         }
       },
       "foreignKeys": {
-        "client_interest_list_items_interest_list_id_client_interest_lists_id_fk": {
-          "name": "client_interest_list_items_interest_list_id_client_interest_lists_id_fk",
+        "cli_interest_items_list_id_fk": {
+          "name": "cli_interest_items_list_id_fk",
           "tableFrom": "client_interest_list_items",
           "tableTo": "client_interest_lists",
           "columnsFrom": ["interest_list_id"],

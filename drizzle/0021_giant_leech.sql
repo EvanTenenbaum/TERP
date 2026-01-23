@@ -76,7 +76,7 @@ ALTER TABLE `vendorNotes` ADD CONSTRAINT `vendorNotes_vendorId_vendors_id_fk` FO
 ALTER TABLE `vendorNotes` ADD CONSTRAINT `vendorNotes_userId_users_id_fk` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `client_catalog_views` ADD CONSTRAINT `client_catalog_views_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `client_draft_interests` ADD CONSTRAINT `client_draft_interests_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `client_interest_list_items` ADD CONSTRAINT `client_interest_list_items_interest_list_id_client_interest_lists_id_fk` FOREIGN KEY (`interest_list_id`) REFERENCES `client_interest_lists`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `client_interest_list_items` ADD CONSTRAINT `cli_interest_items_list_id_fk` FOREIGN KEY (`interest_list_id`) REFERENCES `client_interest_lists`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `client_interest_lists` ADD CONSTRAINT `client_interest_lists_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `client_price_alerts` ADD CONSTRAINT `client_price_alerts_client_id_clients_id_fk` FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX `idx_client_catalog_views_client_id` ON `client_catalog_views` (`client_id`);--> statement-breakpoint
