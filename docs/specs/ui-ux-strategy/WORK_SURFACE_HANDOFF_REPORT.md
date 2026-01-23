@@ -2,9 +2,11 @@
 
 > **Purpose**: Self-contained reference document enabling any AI agent or developer to immediately begin implementation work on the TERP UX redesign without drift from established decisions.
 >
-> **Last Updated**: 2026-01-19
+> **Last Updated**: 2026-01-20 (Red Hat QA Deep Review)
 >
 > **Status**: Ready for implementation
+>
+> **QA Status**: Reviewed 2026-01-20 - Critical gaps addressed
 
 ---
 
@@ -17,9 +19,10 @@
 5. [Technical Architecture](#5-technical-architecture)
 6. [Feature Inventory](#6-feature-inventory)
 7. [Implementation Priorities](#7-implementation-priorities)
-8. [Product Decisions (Locked)](#8-product-decisions-locked)
-9. [Open Questions](#9-open-questions)
-10. [Golden Rules](#10-golden-rules)
+8. [Feature Flag Rollout Strategy](#8-feature-flag-rollout-strategy)
+9. [Product Decisions (Locked)](#9-product-decisions-locked)
+10. [Open Questions](#10-open-questions)
+11. [Golden Rules](#11-golden-rules)
 
 ---
 
@@ -295,6 +298,23 @@ When `prefers-reduced-motion: reduce`: All animations become instant (0ms).
 - Each golden flow must be mapped to its Feature Preservation Matrix P0/P1 entries.
 - Each golden flow must be validated under at least one RBAC role that owns the flow.
 
+### RBAC Validation Matrix (Per Golden Flow)
+
+> **Critical**: Each golden flow must be tested with the appropriate RBAC role.
+
+| Flow | Required Permissions | Owning Roles | Test Using |
+|------|---------------------|--------------|------------|
+| GF-001 | `inventory:write`, `batches:create` | Inventory, Super Admin | QA Auth: Inventory role |
+| GF-002 | `purchase_orders:write` | Inventory, Purchasing | QA Auth: Inventory role |
+| GF-003 | `orders:write`, `inventory:read` | Sales Rep, Sales Manager | QA Auth: Sales Manager |
+| GF-004 | `invoices:write`, `payments:write` | Accounting | QA Auth: Accounting role |
+| GF-005 | `pick_pack:write`, `inventory:write` | Fulfillment | QA Auth: Fulfillment role |
+| GF-006 | `clients:read`, `ledger:read` | Sales Rep, Accounting | QA Auth: Sales Rep |
+| GF-007 | `inventory:write` | Inventory | QA Auth: Inventory role |
+| GF-008 | `samples:write` | Sales Rep, Sales Manager | QA Auth: Sales Manager |
+
+> **Note**: Use the QA Auth system (AUTH-QA-001) with `/api/qa-auth/login` for deterministic RBAC testing.
+
 ### API-Only Features (No UI Needed)
 
 These features intentionally have no UI:
@@ -356,7 +376,60 @@ These features intentionally have no UI:
 
 ---
 
-## 8. Product Decisions (Locked)
+## 8. Feature Flag Rollout Strategy
+
+### Required Feature Flags
+
+Each Work Surface module requires a dedicated feature flag for safe deployment:
+
+| Flag Name | Default | Controls | Rollout Order |
+|-----------|---------|----------|---------------|
+| `WORK_SURFACE_INTAKE` | false | UXS-201..203 (Intake/PO pilot) | 1st |
+| `WORK_SURFACE_ORDERS` | false | UXS-301..302 (Sales/Orders) | 2nd |
+| `WORK_SURFACE_INVENTORY` | false | UXS-401..402 (Inventory/Pick-Pack) | 3rd |
+| `WORK_SURFACE_ACCOUNTING` | false | UXS-501..502 (Accounting/Ledger) | 4th |
+
+### Rollout Phases
+
+1. **Internal Testing** (flag: false for all users)
+   - QA team tests with flag override
+   - Use QA Auth for role-specific validation
+
+2. **Pilot Users** (flag: enabled for specific users)
+   - Enable via user override in feature flag system
+   - Collect feedback for 1-2 weeks
+
+3. **General Availability** (flag: true by default)
+   - Monitor error rates and performance
+   - Keep flag available for instant rollback
+
+### Rollback Criteria
+
+Rollback flag to `false` immediately if:
+- Error rate increases >5% compared to baseline
+- P95 response time degrades >50%
+- User-reported critical workflow blocking
+- Data integrity issues detected
+
+### Implementation
+
+```typescript
+// Example usage in component
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+
+const IntakePage = () => {
+  const useWorkSurface = useFeatureFlag('WORK_SURFACE_INTAKE');
+
+  if (useWorkSurface) {
+    return <IntakeWorkSurface />;
+  }
+  return <IntakeLegacy />;
+};
+```
+
+---
+
+## 9. Product Decisions (Locked)
 
 These decisions have been made and should not be revisited without explicit product approval:
 
@@ -382,7 +455,7 @@ These decisions have been made and should not be revisited without explicit prod
 
 ---
 
-## 9. Open Questions
+## 10. Open Questions
 
 These require product input before implementation:
 
@@ -398,7 +471,7 @@ These require product input before implementation:
 
 ---
 
-## 10. Golden Rules
+## 11. Golden Rules
 
 ### For Any AI Agent Working on This Project
 

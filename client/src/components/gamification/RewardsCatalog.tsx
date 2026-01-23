@@ -119,8 +119,8 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
     pointsCost: number;
     rewardType: string;
     rewardValue: string | number;
-    icon: string;
-    color: string;
+    icon: string | null;
+    color: string | null;
     imageUrl: string | null;
     isActive: boolean;
     availableFrom: Date | string | null;
@@ -128,7 +128,7 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
     quantityAvailable: number | null;
     quantityRedeemed: number;
     minTierRequired: string | null;
-    minAchievementsRequired: number;
+    minAchievementsRequired: number | null;
     canAfford: boolean;
     inStock: boolean;
   }

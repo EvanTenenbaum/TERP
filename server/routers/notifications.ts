@@ -68,7 +68,7 @@ export const notificationsRouter = router({
         pagination: { limit, offset },
       };
     } catch (error) {
-      logger.error("Failed to list notifications", { error, userId: ctx.user.id });
+      logger.error({ error, userId: ctx.user.id }, "Failed to list notifications");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch notifications",
@@ -127,7 +127,7 @@ export const notificationsRouter = router({
         pagination: { limit, offset },
       };
     } catch (error) {
-      logger.error("Failed to list VIP notifications", { error, clientId: ctx.clientId });
+      logger.error({ error, clientId: ctx.clientId }, "Failed to list VIP notifications");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch notifications",

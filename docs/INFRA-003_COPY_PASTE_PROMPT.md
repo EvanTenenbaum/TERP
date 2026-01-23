@@ -37,13 +37,13 @@ RISK LEVEL: MEDIUM (production database changes)
 - Host: terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com
 - Port: 25060
 - Username: doadmin
-- Password: AVNS_Q_RGkS7-uB3Bk7xC2am
+- Password: <REDACTED>
 - Database: defaultdb
 - SSL: REQUIRED (rejectUnauthorized: false)
 
 **Connection String:**
 ```
-DATABASE_URL="mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={"rejectUnauthorized":false}"
+DATABASE_URL="mysql://doadmin:<REDACTED>@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={"rejectUnauthorized":false}"
 ```
 
 === SETUP ===
@@ -306,7 +306,7 @@ Update session file with:
 
 ```bash
 # Check if column exists
-mysql -u doadmin -p'AVNS_Q_RGkS7-uB3Bk7xC2am' \
+mysql -u doadmin -p'<REDACTED>' \
   -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
   -P 25060 \
   --ssl-mode=REQUIRED \
@@ -317,7 +317,7 @@ mysql -u doadmin -p'AVNS_Q_RGkS7-uB3Bk7xC2am' \
 If missing, add it:
 
 ```bash
-mysql -u doadmin -p'AVNS_Q_RGkS7-uB3Bk7xC2am' \
+mysql -u doadmin -p'<REDACTED>' \
   -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
   -P 25060 \
   --ssl-mode=REQUIRED \
@@ -480,7 +480,7 @@ pnpm exec tsx scripts/validate-schema-sync.ts
 
 ```bash
 # Test inventoryMovements.adjustmentReason exists
-mysql -u doadmin -p'AVNS_Q_RGkS7-uB3Bk7xC2am' \
+mysql -u doadmin -p'<REDACTED>' \
   -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
   -P 25060 \
   --ssl-mode=REQUIRED \
@@ -517,7 +517,7 @@ pnpm exec tsx scripts/seed-critical-tables.ts
 
 ```bash
 # Test database connection
-mysql -u doadmin -p'AVNS_Q_RGkS7-uB3Bk7xC2am' \
+mysql -u doadmin -p'<REDACTED>' \
   -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
   -P 25060 \
   --ssl-mode=REQUIRED \
@@ -849,7 +849,7 @@ Credentials are included in the prompt for immediate use. Also documented in DEV
 
 **Connection string:**
 ```
-mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={"rejectUnauthorized":false}
+mysql://doadmin:<REDACTED>@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl={"rejectUnauthorized":false}
 ```
 
 ### Success Verification

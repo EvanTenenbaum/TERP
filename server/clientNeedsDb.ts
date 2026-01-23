@@ -258,23 +258,38 @@ export async function deleteClientNeed(id: number): Promise<boolean> {
 /**
  * Get client needs with match indicators
  * @param filters - Optional filters
- * @returns Array of client needs with match counts
+ * @returns Array of client needs with match counts and client names
  */
 export async function getClientNeedsWithMatches(filters?: {
   status?: "ACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
   clientId?: number;
-}): Promise<Array<ClientNeed & { matchCount: number }>> {
+}): Promise<Array<ClientNeed & { matchCount: number; clientName?: string }>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
     const needs = await getClientNeeds(filters);
-    
-    // For now, return needs with matchCount = 0
-    // This will be enhanced when matching engine is implemented
+
+    // DATA-003 FIX: Fetch client names for the needs
+    const clientIds = [...new Set(needs.map(n => n.clientId))];
+    const clientNameMap = new Map<number, string>();
+
+    if (clientIds.length > 0) {
+      const clientRecords = await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(sql`${clients.id} IN (${sql.raw(clientIds.join(","))})`);
+
+      for (const client of clientRecords) {
+        clientNameMap.set(client.id, client.name || "");
+      }
+    }
+
+    // Return needs with matchCount = 0 and clientName
     return needs.map(need => ({
       ...need,
       matchCount: 0,
+      clientName: clientNameMap.get(need.clientId) || undefined,
     }));
   } catch (error) {
     logger.error({

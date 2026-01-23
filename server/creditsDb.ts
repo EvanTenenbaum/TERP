@@ -422,6 +422,7 @@ export async function getClientCreditHistory(clientId: number): Promise<{
           appliedDate: creditApplications.appliedDate,
           notes: creditApplications.notes,
           appliedBy: creditApplications.appliedBy,
+          idempotencyKey: creditApplications.idempotencyKey,
           createdAt: creditApplications.createdAt,
           creditNumber: credits.creditNumber
         })

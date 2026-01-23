@@ -81,7 +81,6 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     { query: debouncedVendorSearch },
     {
       enabled: debouncedVendorSearch.length > 0,
-      keepPreviousData: false, // Don't show stale data
     }
   );
 
@@ -89,7 +88,6 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     { query: debouncedBrandSearch },
     {
       enabled: debouncedBrandSearch.length > 0,
-      keepPreviousData: false, // Don't show stale data
     }
   );
 

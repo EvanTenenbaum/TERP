@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell, Calendar, Code2, Building } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell, Code2, Building } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { CalendarSettings } from "@/components/calendar/CalendarSettings";
 import { trpc } from "@/lib/trpc";
@@ -24,6 +24,17 @@ import {
   FinanceStatusManager,
 } from "@/components/settings/OrganizationSettings";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { TagManagementSettings } from "@/components/settings/TagManagementSettings";
 
 export default function Settings() {
@@ -177,7 +188,7 @@ function DatabaseManager() {
   const [isOpen, setIsOpen] = useState(false);
 
   const seedMutation = trpc.settings.seedDatabase.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       toast.success("Database seeded successfully");
       setIsOpen(false);
     },

@@ -4,7 +4,7 @@
 >
 > **Severity Key**: H = High (P0 blocker), M = Medium (P1 address before GA), L = Low (P2 backlog)
 >
-> **Last Updated**: 2026-01-19 (Red Hat QA Deep Review)
+> **Last Updated**: 2026-01-20 (PR #244 Red Hat QA Deep Review)
 
 ## Risk Scoring Methodology
 
@@ -69,6 +69,19 @@
 | R-030 | Empty state dead-end | No guidance when no data | User confused about next steps | Empty state components (UXS-901) | UI audit | UX | M | M | M |
 | R-031 | Toast notification overload | Multiple concurrent notifications | Important info lost in stack | Toast stacking limit (3) (UXS-902) | UI audit | UX | M | L | M |
 | R-032 | Form validation order mismatch | Client validates, server rejects | User confusion, wasted effort | Client+server validation alignment | Integration tests | Backend Eng | M | M | M |
+
+---
+
+## PR #244 Identified Risks (2026-01-20)
+
+| Risk ID | Risk | Trigger | Impact | Mitigation | Detection Method | Owner Role | Prob | Impact | Severity |
+|---------|------|---------|--------|------------|------------------|------------|------|--------|----------|
+| R-033 | RBAC permission mismatch in golden flows | Work Surface deployed without role testing | Users blocked from workflows | RBAC validation matrix per golden flow | E2E tests per role | QA | H | H | H |
+| R-034 | Missing modal replacement causes doctrine violation | Modal audit incomplete | Inconsistent UX, slow workflows | Complete modal inventory audit (UXS-601) | Code review checklist | Frontend Eng | M | M | M |
+| R-035 | Feature flag rollback incomplete | Work Surface flag disabled but component still renders | Mixed UI state | Feature flag wrapper pattern | Integration tests | Frontend Eng | M | H | H |
+| R-036 | Concurrent edit policy undefined | UXS-705 implemented without policy | Inconsistent conflict handling | Product decision before implementation | User testing | Product | H | M | H |
+| R-037 | REL-* dependency gap | Accounting Work Surface before REL-008 complete | Data integrity risk in ledger | Enforce task dependencies | Roadmap review | PM | M | H | H |
+| R-038 | VIP Portal UX drift | Main app uses Work Surface, VIP doesn't | User confusion between contexts | Product decision on VIP scope | UX audit | UX | L | M | L |
 
 ---
 

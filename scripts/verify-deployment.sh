@@ -17,7 +17,7 @@ echo ""
 DB_HOST="terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com"
 DB_PORT="25060"
 DB_USER="doadmin"
-DB_PASS="AVNS_Q_RGkS7-uB3Bk7xC2am"
+DB_PASS="<REDACTED>"
 DB_NAME="defaultdb"
 
 # Function to query deployment status

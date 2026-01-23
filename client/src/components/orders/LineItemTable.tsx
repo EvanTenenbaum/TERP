@@ -19,6 +19,8 @@ import { LineItemRow } from "./LineItemRow";
 export interface LineItem {
   id?: number;
   batchId: number;
+  batchSku?: string;
+  productId?: number;
   productDisplayName?: string;
   quantity: number;
   cogsPerUnit: number;

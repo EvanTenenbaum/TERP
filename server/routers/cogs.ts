@@ -108,7 +108,7 @@ export const cogsRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
-        logger.error("COGS calculation failed", { error, input });
+        logger.error({ error, input }, "COGS calculation failed");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to calculate COGS",
@@ -211,7 +211,7 @@ export const cogsRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
-        logger.error("COGS impact calculation failed", { error, input });
+        logger.error({ error, input }, "COGS impact calculation failed");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to calculate COGS impact",
@@ -362,7 +362,7 @@ export const cogsRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
-        logger.error("Batch COGS update failed", { error, input });
+        logger.error({ error, input }, "Batch COGS update failed");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to update batch COGS",
@@ -415,7 +415,7 @@ export const cogsRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
-        logger.error("Failed to fetch COGS history", { error, input });
+        logger.error({ error, input }, "Failed to fetch COGS history");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch COGS history",
@@ -508,7 +508,7 @@ export const cogsRouter = router({
       } catch (error) {
         if (error instanceof TRPCError) throw error;
 
-        logger.error("Failed to fetch COGS by batch", { error, input });
+        logger.error({ error, input }, "Failed to fetch COGS by batch");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch COGS breakdown by batch",

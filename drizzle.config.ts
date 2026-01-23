@@ -10,7 +10,8 @@ export default defineConfig({
     "./drizzle/schema.ts",
     "./drizzle/schema-vip-portal.ts",
     "./drizzle/schema-rbac.ts",
-    "./drizzle/schema-client360.ts"
+    "./drizzle/schema-client360.ts",
+    "./drizzle/schema-cron.ts",
   ],
   out: "./drizzle",
   dialect: "mysql",

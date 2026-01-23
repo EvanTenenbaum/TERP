@@ -139,7 +139,9 @@ export const vipPortalAdminRouter = router({
         tiers: vipTiersArraySchema,
       }))
       .mutation(async ({ input }) => {
-        return await vipPortalAdminService.updateVipTierConfiguration(input.tiers);
+        // Filter to only tiers with an id (existing tiers to update)
+        const tiersWithId = input.tiers.filter((t): t is typeof t & { id: number } => typeof t.id === 'number');
+        return await vipPortalAdminService.updateVipTierConfiguration(tiersWithId);
       }),
   }),
 

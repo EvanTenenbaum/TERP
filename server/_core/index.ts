@@ -33,7 +33,7 @@ import {
   readinessCheck,
   getHealthMetrics,
 } from "./healthCheck";
-import { setupGracefulShutdown } from "./gracefulShutdown";
+import { setupGracefulShutdown, registerShutdownHandler } from "./gracefulShutdown";
 import { seedAllDefaults } from "../services/seedDefaults";
 import { assignRoleToUser } from "../services/seedRBAC";
 import { performRBACStartupCheck } from "../services/rbacValidation";
@@ -41,6 +41,7 @@ import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
 import { startNotificationQueueCron } from "../cron/notificationQueueCron.js";
 import { startDebtAgingCron } from "../cron/debtAgingCron.js";
+import { startLeaderElection, stopLeaderElection } from "../utils/cronLeaderElection";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 import { runAutoMigrations } from "../autoMigrate";
@@ -474,9 +475,41 @@ async function startServer() {
 
     logger.info(`✅ All setup complete, starting server on port ${port}...`);
 
-    server.listen(port, "0.0.0.0", () => {
+    server.listen(port, "0.0.0.0", async () => {
       logger.info(`Server running on http://0.0.0.0:${port}/`);
       logger.info(`Health check available at http://localhost:${port}/health`);
+
+      // Start leader election for cron job coordination (High Memory Remediation)
+      // This ensures only one instance in a multi-instance deployment runs cron jobs
+      let leaderElectionStarted = false;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await startLeaderElection();
+          logger.info("✅ Cron leader election started");
+          leaderElectionStarted = true;
+          break;
+        } catch (error) {
+          logger.error({
+            msg: `Failed to start leader election (attempt ${attempt}/3)`,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          if (attempt < 3) {
+            await new Promise(r => setTimeout(r, 2000 * attempt));
+          }
+        }
+      }
+
+      if (!leaderElectionStarted) {
+        logger.warn(
+          "⚠️ Leader election failed - crons will run on all instances (may cause duplicates)"
+        );
+      } else {
+        // Register leader election cleanup with graceful shutdown
+        registerShutdownHandler(async () => {
+          logger.info("Stopping leader election...");
+          await stopLeaderElection();
+        });
+      }
 
       // Start price alerts cron job
       try {

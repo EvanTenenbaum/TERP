@@ -121,7 +121,7 @@ dist/index.js  1.2mb
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT COUNT(*) FROM clients;"

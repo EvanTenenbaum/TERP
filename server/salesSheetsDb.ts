@@ -627,7 +627,7 @@ export async function getSalesSheetByToken(
   const result = await db
     .select({
       sheet: salesSheetHistory,
-      clientName: clients.companyName,
+      clientName: clients.name,
     })
     .from(salesSheetHistory)
     .innerJoin(clients, eq(salesSheetHistory.clientId, clients.id))
@@ -700,8 +700,8 @@ export async function convertToOrder(
   // Create the order
   const result = await db.insert(orders).values({
     orderNumber,
-    orderType: dbOrderType,
-    isDraft,
+    orderType: dbOrderType as "QUOTE" | "SALE",
+    isDraft: isDraft === 1,
     clientId: sheet.clientId,
     items: sheet.items,
     subtotal: sheet.totalValue,
@@ -710,7 +710,7 @@ export async function convertToOrder(
     totalMargin: "0",
     avgMarginPercent: "0",
     createdBy: userId,
-    origin: "SALES_SHEET",
+    convertedFromSalesSheetId: sheetId,
   });
 
   const orderId = Number(result[0].insertId);
