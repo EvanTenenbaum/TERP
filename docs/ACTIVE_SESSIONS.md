@@ -12,6 +12,7 @@
 
 | Session ID                             | Task                                             | Branch                                             | Module        | Status      | Started    | ETA        |
 | -------------------------------------- | ------------------------------------------------ | -------------------------------------------------- | ------------- | ----------- | ---------- | ---------- |
+| Session-20260123-AUDIT-e345e7          | Roadmap extraction QA audit                      | -                                                  | Documentation | In Progress | 2026-01-23 | -          |
 | Session-20260115-DOCS-USERFLOWS-d5ea18 | DOCS-USERFLOWS                                   | -                                                  | Documentation | In Progress | 2026-01-15 | -          |
 | Session-20260114-QA-TERP-664c9b        | Deep QA Review                                   | main                                               | Repo-wide     | In Progress | 2026-01-14 | TBD        |
 | Session-20260109-QA-E2E-a63131         | QA-E2E full browser coverage                     | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
@@ -44,3 +45,4 @@
 - Session-20260104-UX-015-00a24e: UX-015/UX-022/UX-011 - [Platform: External] [Branch: wave-2/ux-foundation-parallel] [Files: client/src/components/layout/Sidebar.tsx, client/src/components/layout/Layout.tsx, client/src/components/layout/MobileNav.tsx, client/src/components/ui/DataTable.tsx, client/src/components/ui/DataTablePagination.tsx, client/src/components/ui/DataTableFilters.tsx, client/src/components/ui/Skeleton.tsx, client/src/components/skeletons/DashboardSkeleton.tsx, client/src/components/skeletons/TableSkeleton.tsx, client/src/components/skeletons/CardSkeleton.tsx, client/src/pages/InventoryPage.tsx, client/src/pages/ProductsPage.tsx, client/src/pages/VendorsPage.tsx]
 - Session-20260108-DATA-SEED-EXEC-1b7f13: DATA-SEED-EXEC - [Platform: External] [Files: docs/sessions/active/Session-20260108-DATA-SEED-EXEC-1b7f13.md, docs/ACTIVE_SESSIONS.md]
 - Session-20260116-TASK-PREMORTEM-11ec2f: TASK-PREMORTEM - [Platform: External] [Files: docs/sessions/active/Session-20260116-TASK-PREMORTEM-11ec2f.md, docs/ACTIVE_SESSIONS.md]
+- Session-20260123-ROADMAP-INGEST-dfb370: ROADMAP-INGEST - [Platform: External] [Files: docs/roadmaps/MASTER_ROADMAP.md, docs/roadmap/PR_TO_TASK_INDEX.md, docs/roadmap/TEST_REPORT_TO_TASK_INDEX.md, docs/roadmap/NOTHING_LOST_PROOF.md]

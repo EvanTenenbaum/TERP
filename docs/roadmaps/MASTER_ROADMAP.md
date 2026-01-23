@@ -245,9 +245,9 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 > Discovered during production 503 error investigation.
 
-| Task    | Description                                                      | Priority | Status                  | Root Cause                                                   |
-| ------- | ---------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------ |
-| BUG-101 | Production 503 - Missing calendar_id column in calendar_events   | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
+| Task    | Description                                                    | Priority | Status                  | Root Cause                                                    |
+| ------- | -------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------- |
+| BUG-101 | Production 503 - Missing calendar_id column in calendar_events | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
 
 **BUG-101 Fix (Jan 23, 2026):**
 
@@ -528,38 +528,43 @@ All 15 tasks from the Cooper Rd Working Session completed:
 > **Root Cause Analysis:** Test suite shows 137 failed / 1928 passed (89% pass rate).
 > **Session:** `claude/fix-inventory-display-tu3S3` (Jan 23, 2026)
 
-| Task          | Description                                       | Priority | Status      | Root Cause     | Est. Impact |
-| ------------- | ------------------------------------------------- | -------- | ----------- | -------------- | ----------- |
-| TEST-INFRA-01 | Fix DOM/jsdom test container setup                | P0       | NOT STARTED | RC-TEST-001    | ~45 tests   |
-| TEST-INFRA-02 | Configure DATABASE_URL for test environment       | P0       | NOT STARTED | RC-TEST-002    | ~28 tests   |
-| TEST-INFRA-03 | Fix TRPC router initialization in tests           | P0       | NOT STARTED | RC-TEST-003    | ~16 tests   |
-| TEST-INFRA-04 | Create comprehensive test fixtures/factories      | P1       | NOT STARTED | RC-TEST-004    | ~30 tests   |
-| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)     | P1       | NOT STARTED | RC-TEST-005    | ~12 tests   |
-| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure)| P2       | NOT STARTED | SEC-AUDIT      | ~1 test     |
+| Task          | Description                                        | Priority | Status      | Root Cause  | Est. Impact |
+| ------------- | -------------------------------------------------- | -------- | ----------- | ----------- | ----------- |
+| TEST-INFRA-01 | Fix DOM/jsdom test container setup                 | P0       | NOT STARTED | RC-TEST-001 | ~45 tests   |
+| TEST-INFRA-02 | Configure DATABASE_URL for test environment        | P0       | NOT STARTED | RC-TEST-002 | ~28 tests   |
+| TEST-INFRA-03 | Fix TRPC router initialization in tests            | P0       | NOT STARTED | RC-TEST-003 | ~16 tests   |
+| TEST-INFRA-04 | Create comprehensive test fixtures/factories       | P1       | NOT STARTED | RC-TEST-004 | ~30 tests   |
+| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)      | P1       | NOT STARTED | RC-TEST-005 | ~12 tests   |
+| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure) | P2       | NOT STARTED | SEC-AUDIT   | ~1 test     |
 
 #### Root Cause Analysis
 
 **RC-TEST-001: DOM Container Infrastructure**
+
 - Error: `Target container is not a DOM element`
 - Affected: `useExport.test.ts`, `usePrint.test.ts`, `ConflictDialog.test.tsx`, `ProductsPage.test.tsx`
 - Fix: Configure jsdom container creation in vitest setup
 
 **RC-TEST-002: Database Connection Missing**
+
 - Error: `Database connection failed - cannot start server without database`
 - Affected: `creditsDb.race-condition.test.ts`, `optimisticLocking.test.ts`, `inventoryDb.test.ts`
 - Fix: Set DATABASE_URL environment variable or mock database adapter
 
 **RC-TEST-003: TRPC Router Not Initialized**
+
 - Error: `No procedure found on path "settings,locations,getAll"`
 - Affected: `auth-bypass.test.ts`, `clients.test.ts`, `inventory.test.ts`
 - Fix: Setup TRPC test client with proper router initialization
 
 **RC-TEST-004: Incomplete Test Fixtures**
+
 - Error: `Cannot read properties of undefined (reading 'invoices')`
 - Affected: `calendarFinancials.test.ts`, `accounting.test.ts`, `analytics.test.ts`
 - Fix: Create factory functions for complete test data
 
 **RC-TEST-005: Async Timing Issues**
+
 - Error: `Unable to find an element with the text`
 - Affected: `ProductsPage.test.tsx`, `SampleManagement.test.tsx`
 - Fix: Use `findByText`/`waitFor` instead of `getByText`
@@ -1107,14 +1112,16 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 | FE-QA-009  | Enable VendorSupplyPage Creation              | MEDIUM   | NOT STARTED | 8h       | VendorSupplyPage.tsx:96        |
 | FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
 | API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
-| DATA-021   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
+| DATA-022   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
 | DEPR-001   | Migrate Deprecated Vendor Router Usages       | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
 | SCHEMA-001 | Fix products.name vs nameCanonical Mismatch   | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
 | SCHEMA-002 | Document batches.quantity vs onHandQty        | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
 | SCHEMA-003 | Add clients.tier and clients.isActive Columns | MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
-| BUG-101    | Fix Property Test Bugs (PROP-BUG-001/002/003) | MEDIUM   | NOT STARTED | 4h       | property tests                 |
+| BUG-102    | Fix Property Test Bugs (PROP-BUG-001/002/003) | MEDIUM   | NOT STARTED | 4h       | property tests                 |
 | MOB-001    | Address Mobile Responsiveness Issues (38)     | MEDIUM   | NOT STARTED | 24h      | Multiple components            |
 | FE-QA-011  | Integrate Unused Dashboard Widgets (5)        | MEDIUM   | NOT STARTED | 8h       | widgets-v2/                    |
+
+**Note:** DATA-022 was previously labeled DATA-021 in older references and was renumbered to avoid ID collisions. BUG-102 was previously labeled BUG-101 in the P2 table and was renumbered to avoid collision with the P0 BUG-101 production fix.
 
 ##### FE-QA-009: Enable VendorSupplyPage Creation
 
@@ -2125,12 +2132,12 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone       | Completed | Open   | Total   | Progress |
-| --------------- | --------- | ------ | ------- | -------- |
-| MVP             | 185       | 0      | 187     | 100%     |
-| Beta            | 0         | 30     | 30      | 0%       |
-| Post-Beta       | 0         | 1      | 1       | 0%       |
-| **TOTAL**       | **185**   | **31** | **218** | ~85%     |
+| Milestone | Completed | Open   | Total   | Progress |
+| --------- | --------- | ------ | ------- | -------- |
+| MVP       | 185       | 0      | 187     | 100%     |
+| Beta      | 0         | 30     | 30      | 0%       |
+| Post-Beta | 0         | 1      | 1       | 0%       |
+| **TOTAL** | **185**   | **31** | **218** | ~85%     |
 
 > **Note**: Beta now includes:
 >
@@ -2155,9 +2162,9 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📱 Communications & Client Messaging
 
-| Task ID         | Description                   | Priority | Status       | Effort   | Specification                                                       |
-| --------------- | ----------------------------- | -------- | ------------ | -------- | ------------------------------------------------------------------- |
-| FEAT-SIGNAL-001 | Signal Messaging Integration  | HIGH     | 📋 SPEC READY | 6 weeks  | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)       |
+| Task ID         | Description                  | Priority | Status        | Effort  | Specification                                                 |
+| --------------- | ---------------------------- | -------- | ------------- | ------- | ------------------------------------------------------------- |
+| FEAT-SIGNAL-001 | Signal Messaging Integration | HIGH     | 📋 SPEC READY | 6 weeks | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md) |
 
 > **FEAT-SIGNAL-001 Details:**
 >
@@ -2167,7 +2174,7 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 > - Real-time delivery via WebSocket integration
 > - Full audit trail for cannabis compliance
 > - Technical Stack: signal-cli-rest-api (Docker), BullMQ/Redis, tRPC, Drizzle schema
-> - RBAC: signal:view, signal:send, signal:template:*, signal:admin
+> - RBAC: signal:view, signal:send, signal:template:\*, signal:admin
 > - 6-phase implementation plan included in spec
 
 ---
@@ -2175,3 +2182,1164 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 ## 📞 Questions?
 
 Contact the project maintainer or open an issue in the repository.
+
+---
+
+## Extracted Work (2026-01-23)
+
+### TERP-0001: Dashboard backend data accuracy and performance fixes
+
+**Type:** Bug
+**Source:** PR #289 - Dashboard widgets comprehensive fixes
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8-16h
+**Module:** `server/routers/dashboard.ts`, `server/dashboardHelpers.ts`, `server/routers/analytics.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Dashboard KPI endpoints and analytics use hardcoded values, inconsistent time-period filters, and N+1 client name lookups. This leads to inaccurate profit margins, missing low-stock counts, and degraded performance.
+
+**Context / Evidence:**
+
+- `server/routers/analytics.ts` contains hardcoded profit margins (25%).
+- `dashboard.getCashCollected`, `getClientDebt`, and `getClientProfitMargin` do not share a unified time-period filter.
+- `dashboardHelpers.fetchClientNamesMap()` uses per-ID queries rather than a bulk query.
+
+**Scope:**
+
+- Dashboard data endpoints: cash collected, client debt, client profit margin, KPIs.
+- Analytics profit margin calculation using invoice line items and batch COGS.
+- Batch queries must exclude soft-deleted records.
+
+**Implementation Notes:**
+
+- Replace hardcoded profit margin with real COGS from invoice line items and batch `unitCogs`.
+- Apply `LIFETIME | YEAR | QUARTER | MONTH` time-period filters consistently.
+- Replace N+1 client lookups with a bulk `IN` query.
+- Calculate `lowStockCount` from batches with low on-hand quantity and ensure `inventoryChange` behavior is explicit.
+- Add `deleted_at IS NULL` filters to dashboard batch queries.
+
+**Acceptance Criteria:**
+
+- [ ] Analytics profit margin is calculated from actual invoice line items + batch COGS (no hardcoded percent).
+- [ ] Dashboard endpoints accept and apply a shared time-period filter.
+- [ ] Client name lookup uses a single bulk query (no per-ID N+1 queries).
+- [ ] `lowStockCount` and KPI totals use real inventory data (not hardcoded defaults).
+- [ ] Dashboard batch queries exclude soft-deleted records.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/dashboard.test.ts`.
+2. Run `pnpm test server/routers/analytics.test.ts`.
+3. Manually query dashboard endpoints for each time period and verify date ranges.
+
+**Risk / Edge Cases:**
+
+- Missing batch COGS for legacy invoices; ensure safe fallback logic.
+- Time-period filters with null dates must not crash queries.
+
+---
+
+### TERP-0002: Dashboard widget UX error states, navigation, and time-period controls
+
+**Type:** Feature
+**Source:** PR #289 - Dashboard widgets comprehensive fixes
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `client/src/components/dashboard/widgets-v2/*`
+**Dependencies:** TERP-0001
+
+**Problem / Goal:**
+Dashboard widgets lack consistent error/empty states, and leaderboard rows do not provide direct navigation to client profiles. Profit margin widgets also lack time-period controls.
+
+**Context / Evidence:**
+
+- Widgets currently render plain text placeholders with no error UI.
+- Leaderboard rows are not clickable for client drill-down.
+
+**Scope:**
+
+- CashCollectedLeaderboard, CashFlowWidget, ClientDebtLeaderboard, ClientProfitMarginLeaderboard,
+  ProfitabilityWidget, SalesByClientWidget, TotalDebtWidget, TransactionSnapshotWidget.
+
+**Implementation Notes:**
+
+- Add `EmptyState` error/empty UI for all widget error states.
+- Add client navigation on leaderboard row click using `setLocation('/clients/{id}')`.
+- Add time-period select to client profit margin widget.
+
+**Acceptance Criteria:**
+
+- [ ] All dashboard widgets display consistent error states using `EmptyState`.
+- [ ] Leaderboard rows are clickable and navigate to `/clients/:id`.
+- [ ] Client profit margin widget supports LIFETIME/YEAR/QUARTER/MONTH filters.
+- [ ] Empty states are descriptive and consistent with analytics copy.
+
+**Validation Steps:**
+
+1. Run `pnpm test client/src/components/dashboard/widgets-v2/*.test.tsx` (or targeted widget tests).
+2. Manually verify navigation from leaderboards to client profile.
+
+**Risk / Edge Cases:**
+
+- Ensure navigation works with empty clientId values.
+- Error UI should not block loading states.
+
+---
+
+### TERP-0003: Add Client Wizard dialog to ClientsWorkSurface
+
+**Type:** Bug
+**Source:** PR #279 - Add missing AddClientWizard
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 1-2h
+**Module:** `client/src/components/work-surface/ClientsWorkSurface.tsx`
+**Dependencies:** None
+
+**Problem / Goal:**
+The “Add Client” button toggles state, but no dialog renders, so users cannot create clients from the Work Surface.
+
+**Context / Evidence:**
+
+- `isAddClientOpen` state is set but `AddClientWizard` is not rendered.
+
+**Scope:**
+
+- Clients Work Surface add-client flow.
+
+**Implementation Notes:**
+
+- Render `AddClientWizard` and wire `onSuccess` to refresh list + navigate to new client.
+
+**Acceptance Criteria:**
+
+- [ ] Clicking “Add Client” opens the wizard dialog.
+- [ ] On success, the client list is refreshed and the UI navigates to `/clients/:id`.
+- [ ] No regression in existing client filters or list rendering.
+
+**Validation Steps:**
+
+1. Manual QA: open Clients Work Surface, create a client, verify navigation.
+2. Run relevant UI tests if available.
+
+**Risk / Edge Cases:**
+
+- Ensure wizard close state does not block background keyboard shortcuts.
+
+---
+
+### TERP-0004: Add notifications table creation to autoMigrate
+
+**Type:** Schema
+**Source:** PR #285 - notifications autoMigrate
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2-4h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Production environments can miss the `notifications` table, causing runtime errors in notification APIs.
+
+**Context / Evidence:**
+
+- Schema defines `notifications`, but autoMigrate does not create it.
+
+**Scope:**
+
+- Auto-migration for `notifications` table and required indexes/foreign keys.
+
+**Implementation Notes:**
+
+- Add idempotent `CREATE TABLE IF NOT EXISTS` with indexes and FK constraints.
+- Provide informative logs for success/failure.
+
+**Acceptance Criteria:**
+
+- [ ] Auto-migrate creates `notifications` table with indexes and FKs on startup.
+- [ ] Migration is idempotent and safe to re-run.
+- [ ] Notification APIs no longer throw “table does not exist”.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/notifications.test.ts`.
+2. Verify table exists on a clean database by running server startup.
+
+**Risk / Edge Cases:**
+
+- Ensure FKs use correct column names matching schema.
+
+---
+
+### TERP-0005: Reorganize navigation groups based on workflow analysis
+
+**Type:** UX
+**Source:** PR #286 - Navigation reorganization
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 2-4h
+**Module:** `client/src/config/navigation.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Navigation groups do not align with operational workflows, hiding critical routes (Direct Intake, Locations, Inbox) and misplacing Pick & Pack and Invoices.
+
+**Context / Evidence:**
+
+- Pick & Pack and Invoices appear in Sales group.
+- Direct Intake, Locations, and Inbox are not exposed in navigation.
+
+**Scope:**
+
+- Sales, Inventory, Finance, and Admin navigation groups.
+
+**Implementation Notes:**
+
+- Move Pick & Pack to Inventory; move Invoices to Finance.
+- Add Direct Intake (`/intake`), Locations (`/locations`), Inbox (`/inbox`).
+
+**Acceptance Criteria:**
+
+- [ ] Pick & Pack appears in Inventory group.
+- [ ] Invoices appears in Finance group.
+- [ ] Direct Intake, Locations, and Inbox appear in navigation with correct icons.
+- [ ] Routes are accessible and protected by RBAC.
+
+**Validation Steps:**
+
+1. Manual QA: verify navigation entries and route access.
+2. Run UI smoke tests for sidebar rendering.
+
+**Risk / Edge Cases:**
+
+- Ensure mobile sidebar overflow remains usable.
+
+---
+
+### TERP-0006: Add cleanup migrations for dashboard preferences index and long constraint names
+
+**Type:** Schema
+**Source:** PR #280 - migration fixes
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `drizzle/0053_fix_dashboard_preferences_index.sql`, `drizzle/0054_fix_long_constraint_names.sql`
+**Dependencies:** None
+
+**Problem / Goal:**
+Databases may contain legacy long constraint names and dashboard preference index conflicts that can break migrations.
+
+**Context / Evidence:**
+
+- PR adds 0053/0054 migrations to clean up old constraint/index patterns.
+- MySQL identifier length limits can cause migration failures.
+
+**Scope:**
+
+- Cleanup migration for dashboard preferences index removal/re-creation.
+- Idempotent migration for long constraint names.
+
+**Implementation Notes:**
+
+- Add 0053 migration with safe index/constraint cleanup.
+- Add 0054 migration to rename long FK constraints if present.
+- Update Drizzle meta snapshots if required.
+
+**Acceptance Criteria:**
+
+- [ ] 0053 and 0054 migrations exist and run idempotently.
+- [ ] Migration logs show no constraint-name length errors.
+- [ ] Dashboard preferences table retains expected indexes after migration.
+
+**Validation Steps:**
+
+1. Run `pnpm db:migrate` on a database containing older constraints.
+2. Verify constraints and indexes in `information_schema`.
+
+**Risk / Edge Cases:**
+
+- Must avoid dropping constraints if already in correct short form.
+
+---
+
+### TERP-0007: Surface non-sellable batch status in sales inventory UI
+
+**Type:** Bug
+**Source:** PR #287 - INV-010
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `client/src/components/sales-sheet/*`, `client/src/pages/orders/*`
+**Dependencies:** None
+
+**Problem / Goal:**
+Sales inventory shows non-sellable batches (QUARANTINED, ON_HOLD, AWAITING_INTAKE) without status indicators, risking accidental ordering.
+
+**Context / Evidence:**
+
+- Status was added to `PricedInventoryItem` but not surfaced in UI.
+
+**Scope:**
+
+- Sales sheet inventory lists and order creation flows.
+
+**Implementation Notes:**
+
+- Display status badges for non-sellable items.
+- Block “Add to Order” or warn when status is non-sellable.
+- Validate batch status before order submission.
+
+**Acceptance Criteria:**
+
+- [ ] Sales inventory displays status for all batches.
+- [ ] Non-sellable statuses are visually distinct.
+- [ ] Non-sellable batches cannot be added to orders without warning/block.
+- [ ] Order creation rejects non-sellable batches server-side.
+
+**Validation Steps:**
+
+1. Manual QA as Sales Manager: verify status badges and ordering behavior.
+2. Run relevant sales sheet UI tests.
+
+**Risk / Edge Cases:**
+
+- Ensure existing LIVE/PHOTOGRAPHY_COMPLETE items remain unaffected.
+
+---
+
+### TERP-0008: Standardize batch status constants across server code
+
+**Type:** Refactor
+**Source:** PR #287 - INV-011
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8-16h
+**Module:** `server/constants/batchStatuses.ts` and consumers
+**Dependencies:** None
+
+**Problem / Goal:**
+Hardcoded batch status strings are duplicated across dozens of files, causing inconsistency and drift.
+
+**Context / Evidence:**
+
+- Multiple status arrays exist across inventory, matching, alerts, and catalog services.
+
+**Scope:**
+
+- Server-side status usage in inventory, matching, pricing, and catalog flows.
+
+**Implementation Notes:**
+
+- Create a `BATCH_STATUSES` constant and `SELLABLE_BATCH_STATUSES`/`ACTIVE_BATCH_STATUSES` lists.
+- Refactor all hardcoded uses to constants.
+- Update tests to use constants.
+
+**Acceptance Criteria:**
+
+- [ ] All hardcoded batch status strings are replaced with constants.
+- [ ] TypeScript types enforce valid statuses.
+- [ ] No regression in sellable/active filters.
+- [ ] Tests updated to reference constants.
+
+**Validation Steps:**
+
+1. Run `rg "'LIVE'|'PHOTOGRAPHY_COMPLETE'" server/` and confirm only constants remain.
+2. Run `pnpm test` (or targeted tests).
+
+**Risk / Edge Cases:**
+
+- Ensure legacy APIs continue to accept existing status values.
+
+---
+
+### TERP-0009: Add dashboard vs sales inventory consistency integration tests
+
+**Type:** QA
+**Source:** PR #287 - INV-012
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `tests/integration/`
+**Dependencies:** None
+
+**Problem / Goal:**
+No integration test guards against dashboard inventory totals diverging from sales inventory lists.
+
+**Context / Evidence:**
+
+- Prior fixes (INV-CONSISTENCY-001/002) are not protected by tests.
+
+**Scope:**
+
+- Integration tests comparing dashboard stats vs sales sheet inventory.
+
+**Implementation Notes:**
+
+- Seed mixed-status batches and verify dashboard totals only include sellable batches.
+- Ensure sales sheet shows all qty > 0 batches.
+
+**Acceptance Criteria:**
+
+- [ ] Integration test verifies dashboard totals equal sellable inventory sums.
+- [ ] Integration test verifies sales sheet includes all qty > 0 batches.
+- [ ] Integration test verifies aging widget uses sellable batches.
+
+**Validation Steps:**
+
+1. Run `pnpm test tests/integration/inventory-consistency.test.ts`.
+
+**Risk / Edge Cases:**
+
+- Test fixtures must include non-sellable batches.
+
+---
+
+### TERP-0010: Refactor getDashboardStats test mocks
+
+**Type:** QA
+**Source:** PR #287 - INV-013
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2-4h
+**Module:** `server/inventoryDb.test.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+`getDashboardStats` tests use fragile call-order mocks, causing failures when query order changes.
+
+**Context / Evidence:**
+
+- Tests rely on `queryCount++` patterns and mock order assumptions.
+
+**Scope:**
+
+- `server/inventoryDb.test.ts` mocking strategy.
+
+**Implementation Notes:**
+
+- Replace call-order tracking with query-type detection or factory mocks.
+- Document mock structure in tests.
+
+**Acceptance Criteria:**
+
+- [ ] Test mocks no longer depend on call order.
+- [ ] Tests validate business logic instead of mock sequence.
+- [ ] Tests remain stable with query reordering.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/inventoryDb.test.ts`.
+
+**Risk / Edge Cases:**
+
+- Ensure mock factory covers all query branches.
+
+---
+
+### TERP-0011: Create QA test data seeding script and registry
+
+**Type:** QA
+**Source:** PR #288 - Reality Map release blockers
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4-8h
+**Module:** `scripts/seed-qa-data.ts`, `docs/qa/`, `package.json`
+**Dependencies:** None
+
+**Problem / Goal:**
+Automated QA is blocked because staging lacks deterministic QA-prefixed entities.
+
+**Context / Evidence:**
+
+- Reality Map reports no `QA_*` entities, blocking 146 P0 charter validations.
+
+**Scope:**
+
+- Seed QA locations, customers, SKUs, and vendor records.
+- Maintain registry of seeded IDs.
+
+**Implementation Notes:**
+
+- Add `seed:qa-data` script to package.json.
+- Ensure seeding is idempotent and updates a registry JSON.
+- Document QA data strategy for maintenance.
+
+**Acceptance Criteria:**
+
+- [ ] Script seeds QA-prefixed locations, customers, SKUs, and vendor entries.
+- [ ] Script is idempotent and logs created IDs.
+- [ ] Registry file updated with seeded IDs.
+- [ ] QA roles can access QA-prefixed data in UI.
+
+**Validation Steps:**
+
+1. Run `pnpm seed:qa-data` and verify QA entities in UI.
+2. Confirm registry file updated with seeded IDs.
+
+**Risk / Edge Cases:**
+
+- Avoid clobbering production data; ensure staging-only usage.
+
+---
+
+### TERP-0012: Implement UI for top accounting API-only flows
+
+**Type:** Feature
+**Source:** PR #288 - Reality Map accounting UI gap
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 24-40h
+**Module:** `client/src/pages/accounting/*`, `client/src/components/accounting/*`
+**Dependencies:** None
+
+**Problem / Goal:**
+Accounting users lack UI access to 43/52 accounting flows, forcing API-only usage.
+
+**Context / Evidence:**
+
+- Reality Map identifies 43 accounting flows as API-only.
+
+**Scope:**
+
+- Prioritize and implement UI for the top 10 P0 accounting flows:
+  Receive Client Payment, Pay Vendor, Record Payment, Preview Balance,
+  AR Summary, AR Aging, Outstanding Receivables, Overdue Invoices,
+  Client Statement, AP Summary.
+
+**Implementation Notes:**
+
+- Map UI components to existing accounting tRPC procedures.
+- Add RBAC checks for accounting roles.
+- Reuse existing patterns from invoices/bills screens.
+
+**Acceptance Criteria:**
+
+- [ ] UI entry points exist for the 10 priority accounting flows.
+- [ ] Each flow is wired to its tRPC endpoint with validation.
+- [ ] Accounting users can execute flows without API-only workarounds.
+- [ ] RBAC errors are surfaced gracefully.
+
+**Validation Steps:**
+
+1. Manual QA as `qa.accounting@terp.test` for each flow.
+2. Run relevant accounting UI tests.
+
+**Risk / Edge Cases:**
+
+- Ensure data visibility matches accounting permissions.
+
+---
+
+### TERP-0013: Security hardening for public endpoint exposure
+
+**Type:** Security
+**Source:** PR #284 - RedHat QA audit
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 6-10h
+**Module:** `server/routers/rbac-roles.ts`, `server/_core/simpleAuth.ts`, `server/routers/calendar.ts`, `server/routers/productIntake.ts`, `server/routers/debug.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Critical endpoints are effectively public due to incorrect procedure usage and missing auth middleware.
+
+**Context / Evidence:**
+
+- RBAC router aliases `publicProcedure` as `protectedProcedure`.
+- `/api/auth/push-schema` and `/api/auth/seed` lack auth protection.
+- Calendar and product intake routers expose public mutations.
+- Debug router remains accessible in production.
+
+**Scope:**
+
+- SEC-030, SEC-031, SEC-032, SEC-033, SEC-034, SEC-035.
+
+**Implementation Notes:**
+
+- Replace misleading alias in RBAC router imports.
+- Add admin auth and audit logging to schema/seed endpoints.
+- Convert calendar/product intake routers to protected procedures.
+- Remove or guard debug router in production.
+
+**Acceptance Criteria:**
+
+- [ ] RBAC router uses real `protectedProcedure`.
+- [ ] Schema/seed endpoints require admin auth and log audit entries.
+- [ ] Calendar/product intake mutations require auth + permissions.
+- [ ] Debug router inaccessible in production builds.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/rbac-roles.test.ts`.
+2. Verify unauthenticated access to protected endpoints is rejected.
+
+**Risk / Edge Cases:**
+
+- Ensure QA auth still works in non-production environments.
+
+---
+
+### TERP-0014: Token invalidation and auth rate limiting
+
+**Type:** Security
+**Source:** PR #284 - RedHat QA audit
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 6-12h
+**Module:** `server/_core/simpleAuth.ts`, `server/routers/auth.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Logout clears cookies but does not invalidate tokens; auth endpoints lack rate limiting.
+
+**Context / Evidence:**
+
+- Tokens remain valid for 30 days after logout (SEC-036).
+- No rate limiting on auth endpoints (SEC-037).
+
+**Scope:**
+
+- Token blacklist or revoke mechanism.
+- Rate limiting for tRPC auth endpoints.
+
+**Implementation Notes:**
+
+- Add token revocation storage (DB/Redis) and middleware checks.
+- Add rate limiting to login/logout/auth flows.
+
+**Acceptance Criteria:**
+
+- [ ] Tokens are invalidated server-side on logout.
+- [ ] Auth middleware checks token revocation list.
+- [ ] Auth endpoints enforce rate limiting.
+- [ ] Security tests cover token revocation and rate limiting.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/auth.test.ts`.
+2. Manual test: token should fail after logout.
+
+**Risk / Edge Cases:**
+
+- Ensure token blacklist cleanup prevents unbounded growth.
+
+---
+
+### TERP-0015: Financial integrity validation fixes
+
+**Type:** Hardening
+**Source:** PR #284 - RedHat QA audit
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 6-10h
+**Module:** `server/creditsDb.ts`, `server/_core/fiscalPeriod.ts`, `server/routers/refunds.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Financial operations allow race conditions and invalid postings to closed periods.
+
+**Context / Evidence:**
+
+- Credit numbers can collide under concurrent requests.
+- Fiscal period locks are not validated.
+- Duplicate refunds are possible.
+
+**Scope:**
+
+- DI-010, DI-011, DI-012.
+
+**Implementation Notes:**
+
+- Use database sequences or row locking for credit number generation.
+- Block ledger posting to locked/closed fiscal periods.
+- Enforce idempotent refund protection.
+
+**Acceptance Criteria:**
+
+- [ ] Credit number generation is atomic under concurrency.
+- [ ] Fiscal period status is checked before posting.
+- [ ] Duplicate refunds are prevented with clear errors.
+- [ ] Tests cover concurrency and lock validation.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/services/creditsDb.test.ts` (or targeted tests).
+2. Add integration tests covering locked period behavior.
+
+**Risk / Edge Cases:**
+
+- Migration may be required for sequence storage.
+
+---
+
+### TERP-0016: Business logic guardrails for orders and financial precision
+
+**Type:** Hardening
+**Source:** PR #284 - RedHat QA audit
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 12-20h
+**Module:** `server/ordersDb.ts`, `server/services/cogsChangeIntegrationService.ts`, `server/services/marginCalculationService.ts`, `server/routers/payments.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Order processing and financial calculations lack key guardrails and precision controls.
+
+**Context / Evidence:**
+
+- Credit limits not enforced at order creation.
+- Order state machine transitions can be skipped.
+- Financial calculations use non-decimal precision.
+- Payment ownership validation missing.
+- Inventory reservation lacks atomicity.
+
+**Scope:**
+
+- BL-001 through BL-006.
+
+**Implementation Notes:**
+
+- Integrate credit checks into create/confirm order.
+- Enforce state machine transitions via `canTransition`.
+- Use decimal precision for financial math.
+- Validate invoice ownership in payments.
+- Add atomic inventory reservations.
+
+**Acceptance Criteria:**
+
+- [ ] Credit limits block invalid orders.
+- [ ] State machine prevents invalid status transitions.
+- [ ] Financial calculations use decimal-safe precision.
+- [ ] Payments validate invoice ownership.
+- [ ] Inventory reservations are atomic and concurrency-safe.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/orders.test.ts` and `server/services/cogsChangeIntegrationService.test.ts`.
+2. Add regression tests for invalid transitions and credit limits.
+
+**Risk / Edge Cases:**
+
+- Ensure backwards compatibility for legacy orders.
+
+---
+
+### TERP-0017: Convert remaining public routers to protected procedures
+
+**Type:** Security
+**Source:** PR #284 - RedHat QA audit
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `server/routers/vendors.ts`, `server/routers/vendorSupply.ts`, `server/routers/dashboardEnhanced.ts`, `server/routers/tags.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Several routers are still exposed via `publicProcedure`, allowing unauthenticated access.
+
+**Context / Evidence:**
+
+- Vendors, vendor supply, dashboardEnhanced, and tags routers lack auth protection.
+
+**Scope:**
+
+- SEC-038 through SEC-041.
+
+**Implementation Notes:**
+
+- Convert all procedures to `protectedProcedure` with permission checks.
+- Add RBAC validation for affected roles.
+
+**Acceptance Criteria:**
+
+- [ ] All listed routers require authentication.
+- [ ] Permission checks enforce role access.
+- [ ] Unauthorized access returns 403.
+
+**Validation Steps:**
+
+1. Run targeted router tests.
+2. Manual QA for vendor/tags routes with/without auth.
+
+**Risk / Edge Cases:**
+
+- Ensure public tag usage is not required by VIP portal flows.
+
+---
+
+### TERP-0018: Consistency and cleanup tasks from RedHat QA audit
+
+**Type:** Hardening
+**Source:** PR #284 - RedHat QA audit
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8-16h
+**Module:** Multiple files
+**Dependencies:** None
+
+**Problem / Goal:**
+Multiple consistency and cleanup gaps remain in mutations, caches, and inventory validation.
+
+**Context / Evidence:**
+
+- Soft delete patterns are inconsistent.
+- Mutations lack onError handlers and cache invalidation.
+- Permission cache TTL is too long for rapid RBAC changes.
+- Inventory adjustments allow negative quantities.
+
+**Scope:**
+
+- CON-001, CON-002, CON-003, CON-004, AUTH-001.
+
+**Implementation Notes:**
+
+- Standardize soft delete across draft orders, calendar events, inbox items.
+- Add onError handlers and cache invalidation in client mutations.
+- Reduce permission cache TTL to 60 seconds.
+- Validate inventory adjustments against negative quantities.
+
+**Acceptance Criteria:**
+
+- [ ] All relevant deletions use soft delete with `deletedAt`.
+- [ ] Client mutations include onError handling and cache invalidation.
+- [ ] Permission cache TTL reduced to 60 seconds.
+- [ ] Inventory adjustment rejects negative on-hand quantities.
+
+**Validation Steps:**
+
+1. Run relevant router tests for inventory movements and inbox/calendar.
+2. Manual QA for mutation error handling.
+
+**Risk / Edge Cases:**
+
+- Ensure soft delete does not break reporting queries.
+
+---
+
+### TERP-0019: Verify and fix inventory snapshot widget SQL aliases
+
+**Type:** Bug
+**Source:** PR #283 - DATA-021 completion note
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2-4h
+**Module:** `server/routers/dashboard.ts`, `server/inventoryDb.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Inventory snapshot widget SQL may fail if Drizzle query aliases are missing.
+
+**Context / Evidence:**
+
+- PR #283 notes a fix for “Inventory Snapshot widget SQL error (missing .as() aliases)” but no code changes were included.
+
+**Scope:**
+
+- Inventory snapshot query used by `dashboard.getInventorySnapshot`.
+
+**Implementation Notes:**
+
+- Verify current query aliases and add `.as()` where required.
+- Add regression test to ensure query executes.
+
+**Acceptance Criteria:**
+
+- [ ] Inventory snapshot query executes without SQL alias errors.
+- [ ] Tests cover the snapshot query shape.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/dashboard.test.ts`.
+2. Manual QA: load Inventory Snapshot widget.
+
+**Risk / Edge Cases:**
+
+- Ensure alias changes don’t alter response shape.
+
+---
+
+### TERP-0020: Replace TemplateSelector TODOs and analytics sessionStorage placeholders
+
+**Type:** Feature
+**Source:** QA_COMBINED_FINAL_REPORT.md (FE-002, FE-006)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `client/src/components/templates/TemplateSelector.tsx`, `client/src/components/data-cards/analytics.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Template selection uses placeholder IDs and analytics data cards persist data only in sessionStorage, preventing reliable template management and analytics persistence.
+
+**Context / Evidence:**
+
+- TemplateSelector currently uses `id: "TODO"` placeholders.
+- Analytics data cards are stored in sessionStorage only.
+
+**Scope:**
+
+- TemplateSelector template list and selection wiring.
+- Analytics data-card persistence strategy.
+
+**Implementation Notes:**
+
+- Replace placeholder templates with real template IDs and sources.
+- Persist analytics settings via backend or a stable client store.
+
+**Acceptance Criteria:**
+
+- [ ] TemplateSelector renders real template IDs (no TODO placeholders).
+- [ ] Template selection persists across sessions (not sessionStorage-only).
+- [ ] UI updates reflect selected template and saved analytics settings.
+
+**Validation Steps:**
+
+1. Manual QA: select a template, refresh page, confirm selection persists.
+2. Run relevant template/data-card tests.
+
+**Risk / Edge Cases:**
+
+- Ensure template IDs align with backend expectations.
+
+---
+
+### TERP-0021: Restore BatchDetailDrawer product relations, pricing, and audit trail depth
+
+**Type:** Bug
+**Source:** QA_COMBINED_FINAL_REPORT.md (FE-004, FE-005, UI issue)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 6-12h
+**Module:** `client/src/components/inventory/BatchDetailDrawer.tsx`, related API queries
+**Dependencies:** None
+
+**Problem / Goal:**
+Batch detail UI omits product relations, hardcodes currentAvgPrice to 0, and truncates audit trail at 10 entries.
+
+**Context / Evidence:**
+
+- Product relationship UI is commented out.
+- `currentAvgPrice` is hardcoded to 0.
+- Audit trail is truncated in the drawer UI.
+
+**Scope:**
+
+- Batch detail drawer data display and supporting API data.
+
+**Implementation Notes:**
+
+- Re-enable product relation UI and ensure API data includes required relations.
+- Calculate currentAvgPrice from profitability data.
+- Add pagination or expand audit trail visibility beyond 10 entries.
+
+**Acceptance Criteria:**
+
+- [ ] Product relation UI renders correctly with actual data.
+- [ ] currentAvgPrice displays computed values (not hardcoded 0).
+- [ ] Audit trail supports pagination or shows full history as configured.
+
+**Validation Steps:**
+
+1. Manual QA: open BatchDetailDrawer and confirm values populate.
+2. Run relevant inventory UI tests.
+
+**Risk / Edge Cases:**
+
+- Ensure batch detail queries remain performant with added relations.
+
+---
+
+### TERP-0022: Add confirmation dialogs for destructive actions and remove window.alert
+
+**Type:** UX
+**Source:** QA_COMBINED_FINAL_REPORT.md (UI issues)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8-16h
+**Module:** Settings/organization/calendar UI components
+**Dependencies:** None
+
+**Problem / Goal:**
+Multiple destructive actions execute without confirmation, and EventFormDialog uses window.alert, which is inconsistent with app UX.
+
+**Context / Evidence:**
+
+- QA report lists 14 destructive actions without confirmations.
+- `EventFormDialog.tsx` uses `window.alert()`.
+
+**Scope:**
+
+- Settings, OrganizationSettings, Calendar, Returns, Pricing Rules, and related UI components.
+
+**Implementation Notes:**
+
+- Add confirmation dialogs for delete/remove actions.
+- Replace `window.alert()` with toast or dialog.
+
+**Acceptance Criteria:**
+
+- [ ] All listed destructive actions require user confirmation.
+- [ ] window.alert is removed from EventFormDialog.
+- [ ] Confirmation dialogs match design system patterns.
+
+**Validation Steps:**
+
+1. Manual QA: perform each destructive action and confirm dialog appears.
+2. Run UI tests for affected components.
+
+**Risk / Edge Cases:**
+
+- Ensure confirmations do not block keyboard accessibility.
+
+---
+
+### TERP-0023: Resolve backend placeholder items from QA combined report
+
+**Type:** Hardening
+**Source:** QA_COMBINED_FINAL_REPORT.md (BE-005..BE-017)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 16-24h
+**Module:** Backend services and routers
+**Dependencies:** None
+
+**Problem / Goal:**
+Multiple backend components still contain placeholder behavior or incomplete logic, causing inconsistent outputs and incomplete workflows.
+
+**Context / Evidence:**
+QA combined report flags multiple backend placeholders in scheduling, receipts, matching, alerts, COGS, audit, leaderboard, DB fallback, and seed data.
+
+**Scope:**
+
+- Referral stats date filters (scheduling)
+- Receipt creation/deprecated helper and email/SMS stubs
+- `strainType` hardcoded null in matching engine
+- `priceAlertsCron` stop placeholder
+- COGS stats placeholders in integration service
+- Audit balance breakdown placeholder
+- Leaderboard export placeholder
+- DB fallback proxy throw-on-access behavior
+- Seed live catalog placeholder batch IDs
+- Accounting test sub-router stubs
+
+**Implementation Notes:**
+
+- Replace placeholder returns with real data sources or remove unused code paths.
+- Align outputs with UI expectations and existing schemas.
+- Add tests for each resolved placeholder.
+
+**Acceptance Criteria:**
+
+- [ ] Referral stats respect date filters.
+- [ ] Receipt creation helper is implemented or fully removed with replacements.
+- [ ] Matching engine returns real `strainType` values.
+- [ ] priceAlertsCron stop logic is implemented.
+- [ ] COGS stats and audit balance breakdown return real values.
+- [ ] Leaderboard export produces a real file artifact.
+- [ ] DB fallback does not throw on all access (graceful handling or removal).
+- [ ] Seed live catalog uses real batch IDs.
+- [ ] Accounting sub-routers have real implementations or are removed with tests updated.
+
+**Validation Steps:**
+
+1. Run `pnpm test server/routers/*` for affected routers.
+2. Manual QA for receipts, leaderboard export, and matching results.
+
+**Risk / Edge Cases:**
+
+- Ensure changes don’t break existing test harnesses or demo data.
+
+---
+
+### TERP-0024: Verify DATA-021 mock product image seeding completion
+
+**Type:** QA
+**Source:** PR #283 - DATA-021 completion claim
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2-4h
+**Module:** `scripts/seed/seeders/seed-cannabis-images.ts`, `docs/prompts/DATA-021.md`
+**Dependencies:** DATA-021
+
+**Problem / Goal:**
+DATA-021 is marked as complete in PR #283, but evidence is limited to the presence of a seeding script. We need to confirm the script actually satisfies DATA-021 deliverables and performs correctly in a staging environment.
+
+**Context / Evidence:**
+
+- A cannabis image seeding script exists in `scripts/seed/seeders/seed-cannabis-images.ts`, but no verification run is recorded.
+
+**Scope:**
+
+- Validation of productMedia/product_images seeding coverage and batch status updates.
+
+**Implementation Notes:**
+
+- Run the seeding script against a staging database.
+- Validate seeded records and sampling of image URLs in UI.
+- Record results and update DATA-021 status accordingly.
+
+**Acceptance Criteria:**
+
+- [ ] Seeding script runs successfully against staging without errors.
+- [ ] productMedia records exist for all products and product_images exist for ~99% of batches.
+- [ ] Batch status updates reflect photography completion as expected.
+- [ ] DATA-021 status is updated based on verified results.
+
+**Validation Steps:**
+
+1. Run `npx tsx scripts/seed/seeders/seed-cannabis-images.ts` in staging.
+2. Query `productMedia` and `product_images` counts and compare to product/batch totals.
+3. Load Live Catalog UI and verify images render.
+
+**Risk / Edge Cases:**
+
+- Ensure script is run only in staging or test environments.
+
+---
+
+### TERP-0025: Verify migration constraint naming fixes for 0020/0021
+
+**Type:** QA
+**Source:** PR #280 - migration fixes
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2-4h
+**Module:** `drizzle/migrations/0015_add_receipts_table.sql`, `drizzle/migrations/0016_add_ws007_010_tables.sql`
+**Dependencies:** None
+
+**Problem / Goal:**
+PR #280 claims constraint name length fixes were already present in migrations 0020/0021. This needs verification against MySQL identifier length constraints to determine if cleanup migrations (0053/0054) are still required.
+
+**Context / Evidence:**
+
+- Migrations 0020/0021 exist, but no proof confirms constraint names are within safe limits.
+
+**Scope:**
+
+- Validate constraint and index naming lengths in the referenced migrations.
+- Determine whether additional cleanup migrations are required.
+
+**Implementation Notes:**
+
+- Inspect generated constraint/index names in MySQL.
+- If constraints exceed limits, document required cleanup migrations.
+
+**Acceptance Criteria:**
+
+- [ ] Constraint/index names for 0020/0021 are within MySQL identifier limits.
+- [ ] Decision documented on whether 0053/0054 cleanup migrations are required.
+
+**Validation Steps:**
+
+1. Apply migrations in a MySQL test database.
+2. Inspect `information_schema` for constraint/index name lengths.
+3. Record findings and update roadmap task TERP-0006 accordingly.
+
+**Risk / Edge Cases:**
+
+- Legacy databases with long constraint names may still require cleanup.
+
+---
