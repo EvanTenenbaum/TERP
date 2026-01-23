@@ -12,6 +12,7 @@ This repository’s **single source of truth** for execution work is:
 2. Ensure there is a roadmap task for the work you’re about to do
 3. Create a session file under `docs/sessions/active/`
 4. Confirm no conflicts in `docs/ACTIVE_SESSIONS.md`
+5. Select verification mode per `.kiro/steering/08-adaptive-qa-protocol.md`
 
 ### When adding tasks
 

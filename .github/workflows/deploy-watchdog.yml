@@ -63,17 +63,17 @@ jobs:
             sleep 30
           done
 
+      - name: Install pnpm
+        if: steps.watch.outputs.result == 'success'
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
       - name: Setup Node.js
         if: steps.watch.outputs.result == 'success'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install pnpm
-        if: steps.watch.outputs.result == 'success'
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
 
       - name: Checkout code
         if: steps.watch.outputs.result == 'success'

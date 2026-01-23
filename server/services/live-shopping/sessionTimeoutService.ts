@@ -1,195 +1,236 @@
 /**
  * Session Timeout Service (MEET-075-BE)
  *
- * Handles session timeout management, auto-release, and extension functionality.
- * This service manages:
- * - Session timeout calculation and tracking
- * - Auto-release of inventory when sessions timeout
- * - Session activity tracking
- * - Session extension handling
+ * Manages session timeout functionality for Live Shopping Sessions:
+ * - Automatic session expiration after configurable timeout
+ * - Timeout warnings before expiration
+ * - Activity tracking to extend session lifetime
+ * - Auto-release of reserved inventory on timeout
+ *
+ * Default timeout: 2 hours (7200 seconds)
+ * Warning threshold: 5 minutes before expiration
  */
+
+import { eq, and, lte, gt, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../db";
-import { eq, and, lte, inArray, sql } from "drizzle-orm";
-import { liveShoppingSessions, sessionCartItems } from "../../../drizzle/schema-live-shopping";
-import { batches } from "../../../drizzle/schema";
-import { sessionEventManager } from "../../lib/sse/sessionEventManager";
+import { liveShoppingSessions } from "../../../drizzle/schema-live-shopping";
 import { logger } from "../../_core/logger";
+import { sessionEventManager } from "../../lib/sse/sessionEventManager";
 
 // Default timeout in seconds (2 hours)
 const DEFAULT_TIMEOUT_SECONDS = 7200;
 
-// Warning threshold - warn when 5 minutes remaining
+// Warning threshold in seconds (5 minutes before expiration)
 const WARNING_THRESHOLD_SECONDS = 300;
 
-export interface TimeoutStatus {
-  sessionId: number;
-  expiresAt: Date | null;
-  remainingSeconds: number;
-  isExpired: boolean;
-  isWarning: boolean; // True when less than 5 minutes remaining
-  autoReleaseEnabled: boolean;
-  extensionCount: number;
-}
+// Maximum number of extensions allowed per session
+const MAX_EXTENSIONS = 3;
 
-export interface SessionTimeoutConfig {
-  timeoutSeconds?: number;
-  autoReleaseEnabled?: boolean;
+// Flag to track if the schema is compatible (columns exist)
+let schemaCompatible: boolean | null = null;
+
+/**
+ * Check if the required columns exist in the database
+ * This prevents errors when the schema hasn't been migrated yet
+ */
+async function checkSchemaCompatibility(): Promise<boolean> {
+  // If we've already checked and it was compatible, assume it still is
+  if (schemaCompatible === true) {
+    return true;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) return false;
+
+    // Try a simple query that uses the timeout columns
+    // If this fails, the columns don't exist
+    await db.execute(
+      sql`SELECT expiresAt, autoReleaseEnabled FROM liveShoppingSessions LIMIT 1`
+    );
+    
+    schemaCompatible = true;
+    logger.info("[SessionTimeoutService] Schema compatibility check passed");
+    return true;
+  } catch (error) {
+    // Schema is not compatible - columns don't exist yet
+    if (schemaCompatible !== false) {
+      logger.warn({
+        msg: "[SessionTimeoutService] Schema not compatible - timeout columns not found. Session timeout features disabled until migration runs.",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    schemaCompatible = false;
+    return false;
+  }
 }
 
 export const sessionTimeoutService = {
   /**
-   * Calculate and set expiration time for a session
-   * Called when session is started or resumed
+   * Reset schema compatibility flag (for testing or after migrations)
    */
-  async setSessionTimeout(
+  resetSchemaCheck(): void {
+    schemaCompatible = null;
+  },
+
+  /**
+   * Initialize a session's timeout settings
+   * Called when a session is created or started
+   */
+  async initializeTimeout(
     sessionId: number,
-    config?: SessionTimeoutConfig
-  ): Promise<Date | null> {
+    timeoutSeconds: number = DEFAULT_TIMEOUT_SECONDS
+  ): Promise<void> {
+    if (!(await checkSchemaCompatibility())) {
+      logger.debug("[SessionTimeoutService] Skipping initializeTimeout - schema not compatible");
+      return;
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-
-    const session = await db.query.liveShoppingSessions.findFirst({
-      where: eq(liveShoppingSessions.id, sessionId),
-    });
-
-    if (!session) throw new Error("Session not found");
-
-    const timeoutSeconds = config?.timeoutSeconds ?? session.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS;
-
-    // If timeout is 0, no expiration
-    if (timeoutSeconds === 0) {
-      await db.update(liveShoppingSessions)
-        .set({
-          expiresAt: null,
-          timeoutSeconds: 0,
-          autoReleaseEnabled: config?.autoReleaseEnabled ?? session.autoReleaseEnabled ?? true,
-        })
-        .where(eq(liveShoppingSessions.id, sessionId));
-      return null;
-    }
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + timeoutSeconds * 1000);
 
-    await db.update(liveShoppingSessions)
+    await db
+      .update(liveShoppingSessions)
       .set({
-        expiresAt,
         timeoutSeconds,
+        expiresAt,
         lastActivityAt: now,
-        autoReleaseEnabled: config?.autoReleaseEnabled ?? session.autoReleaseEnabled ?? true,
+        extensionCount: 0,
       })
       .where(eq(liveShoppingSessions.id, sessionId));
 
-    return expiresAt;
+    logger.info({
+      msg: "Session timeout initialized",
+      sessionId,
+      timeoutSeconds,
+      expiresAt: expiresAt.toISOString(),
+    });
   },
 
   /**
-   * Update last activity timestamp for a session
-   * Called on cart updates, price changes, etc.
+   * Update session activity timestamp
+   * Called on significant user interactions to extend the session
    */
   async updateActivity(sessionId: number): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
+    if (!(await checkSchemaCompatibility())) {
+      return;
+    }
 
-    await db.update(liveShoppingSessions)
-      .set({ lastActivityAt: new Date() })
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const now = new Date();
+
+    // Get current session to calculate new expiry
+    const [session] = await db
+      .select({
+        timeoutSeconds: liveShoppingSessions.timeoutSeconds,
+        status: liveShoppingSessions.status,
+      })
+      .from(liveShoppingSessions)
       .where(eq(liveShoppingSessions.id, sessionId));
+
+    if (!session || !["ACTIVE", "PAUSED"].includes(session.status)) {
+      return; // Session not found or not in active state
+    }
+
+    const timeoutSeconds = session.timeoutSeconds || DEFAULT_TIMEOUT_SECONDS;
+    const newExpiresAt = new Date(now.getTime() + timeoutSeconds * 1000);
+
+    await db
+      .update(liveShoppingSessions)
+      .set({
+        lastActivityAt: now,
+        expiresAt: newExpiresAt,
+      })
+      .where(eq(liveShoppingSessions.id, sessionId));
+
+    logger.debug({
+      msg: "Session activity updated",
+      sessionId,
+      newExpiresAt: newExpiresAt.toISOString(),
+    });
   },
 
   /**
-   * Extend session timeout
-   * Adds additional time to the current expiration
+   * Extend a session's timeout
+   * Called when user requests more time
+   * Returns false if max extensions reached
    */
   async extendTimeout(
     sessionId: number,
     additionalSeconds: number = DEFAULT_TIMEOUT_SECONDS
-  ): Promise<TimeoutStatus> {
+  ): Promise<boolean> {
+    if (!(await checkSchemaCompatibility())) {
+      return false;
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    const session = await db.query.liveShoppingSessions.findFirst({
-      where: eq(liveShoppingSessions.id, sessionId),
-    });
+    // Get current session
+    const [session] = await db
+      .select({
+        extensionCount: liveShoppingSessions.extensionCount,
+        expiresAt: liveShoppingSessions.expiresAt,
+        status: liveShoppingSessions.status,
+        roomCode: liveShoppingSessions.roomCode,
+      })
+      .from(liveShoppingSessions)
+      .where(eq(liveShoppingSessions.id, sessionId));
 
-    if (!session) throw new Error("Session not found");
-    if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
-      throw new Error("Cannot extend timeout on inactive session");
+    if (!session || !["ACTIVE", "PAUSED"].includes(session.status)) {
+      return false;
+    }
+
+    const currentExtensions = session.extensionCount || 0;
+    if (currentExtensions >= MAX_EXTENSIONS) {
+      logger.warn({
+        msg: "Session extension denied - max extensions reached",
+        sessionId,
+        currentExtensions,
+        maxExtensions: MAX_EXTENSIONS,
+      });
+      return false;
     }
 
     const now = new Date();
     const currentExpiry = session.expiresAt || now;
-    const baseTime = currentExpiry > now ? currentExpiry : now;
-    const newExpiresAt = new Date(baseTime.getTime() + additionalSeconds * 1000);
+    const newExpiresAt = new Date(
+      Math.max(currentExpiry.getTime(), now.getTime()) + additionalSeconds * 1000
+    );
 
-    await db.update(liveShoppingSessions)
+    await db
+      .update(liveShoppingSessions)
       .set({
         expiresAt: newExpiresAt,
-        extensionCount: sql`${liveShoppingSessions.extensionCount} + 1`,
+        extensionCount: currentExtensions + 1,
         lastActivityAt: now,
       })
       .where(eq(liveShoppingSessions.id, sessionId));
 
     // Emit extension event
     sessionEventManager.emit(sessionEventManager.getRoomId(sessionId), {
-      type: "TIMEOUT_EXTENDED",
+      type: "SESSION_EXTENDED",
       payload: {
         sessionId,
         newExpiresAt: newExpiresAt.toISOString(),
-        extensionCount: (session.extensionCount || 0) + 1,
+        extensionsRemaining: MAX_EXTENSIONS - (currentExtensions + 1),
       },
     });
 
-    return this.getTimeoutStatus(sessionId);
-  },
-
-  /**
-   * Get current timeout status for a session
-   */
-  async getTimeoutStatus(sessionId: number): Promise<TimeoutStatus> {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
-
-    const session = await db.query.liveShoppingSessions.findFirst({
-      where: eq(liveShoppingSessions.id, sessionId),
-      columns: {
-        id: true,
-        expiresAt: true,
-        autoReleaseEnabled: true,
-        extensionCount: true,
-        timeoutSeconds: true,
-      },
-    });
-
-    if (!session) throw new Error("Session not found");
-
-    const now = new Date();
-    const expiresAt = session.expiresAt;
-
-    // No timeout configured
-    if (!expiresAt || session.timeoutSeconds === 0) {
-      return {
-        sessionId,
-        expiresAt: null,
-        remainingSeconds: -1, // -1 indicates no timeout
-        isExpired: false,
-        isWarning: false,
-        autoReleaseEnabled: session.autoReleaseEnabled ?? true,
-        extensionCount: session.extensionCount ?? 0,
-      };
-    }
-
-    const remainingMs = expiresAt.getTime() - now.getTime();
-    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
-
-    return {
+    logger.info({
+      msg: "Session timeout extended",
       sessionId,
-      expiresAt,
-      remainingSeconds,
-      isExpired: remainingMs <= 0,
-      isWarning: remainingSeconds > 0 && remainingSeconds <= WARNING_THRESHOLD_SECONDS,
-      autoReleaseEnabled: session.autoReleaseEnabled ?? true,
-      extensionCount: session.extensionCount ?? 0,
-    };
+      roomCode: session.roomCode,
+      newExpiresAt: newExpiresAt.toISOString(),
+      extensionCount: currentExtensions + 1,
+    });
+
+    return true;
   },
 
   /**
@@ -198,6 +239,10 @@ export const sessionTimeoutService = {
    * Returns the number of sessions processed
    */
   async processExpiredSessions(): Promise<number> {
+    if (!(await checkSchemaCompatibility())) {
+      return 0;
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
@@ -268,14 +313,26 @@ export const sessionTimeoutService = {
 
   /**
    * Get sessions that will expire soon (for warning notifications)
-   * Returns sessions expiring within the warning threshold
+   * Returns sessions expiring within WARNING_THRESHOLD_SECONDS
    */
-  async getSessionsNearingTimeout(): Promise<Array<{ sessionId: number; remainingSeconds: number; roomCode: string }>> {
+  async getSessionsNearingExpiration(): Promise<
+    Array<{
+      id: number;
+      expiresAt: Date;
+      roomCode: string;
+    }>
+  > {
+    if (!(await checkSchemaCompatibility())) {
+      return [];
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
     const now = new Date();
-    const warningThreshold = new Date(now.getTime() + WARNING_THRESHOLD_SECONDS * 1000);
+    const warningThreshold = new Date(
+      now.getTime() + WARNING_THRESHOLD_SECONDS * 1000
+    );
 
     const sessions = await db
       .select({
@@ -288,60 +345,110 @@ export const sessionTimeoutService = {
         and(
           inArray(liveShoppingSessions.status, ["ACTIVE", "PAUSED"]),
           lte(liveShoppingSessions.expiresAt, warningThreshold),
-          sql`${liveShoppingSessions.expiresAt} > ${now}`
+          gt(liveShoppingSessions.expiresAt, now)
         )
       );
 
-    return sessions.map((session) => ({
-      sessionId: session.id,
-      remainingSeconds: session.expiresAt
-        ? Math.max(0, Math.floor((session.expiresAt.getTime() - now.getTime()) / 1000))
-        : 0,
-      roomCode: session.roomCode,
+    return sessions.map((s) => ({
+      id: s.id,
+      expiresAt: s.expiresAt!,
+      roomCode: s.roomCode,
     }));
   },
 
   /**
    * Send timeout warnings to sessions nearing expiration
-   * This should be called periodically
+   * Returns the number of warnings sent
    */
   async sendTimeoutWarnings(): Promise<number> {
-    const sessions = await this.getSessionsNearingTimeout();
-
-    for (const session of sessions) {
-      sessionEventManager.emit(sessionEventManager.getRoomId(session.sessionId), {
-        type: "TIMEOUT_WARNING",
-        payload: {
-          sessionId: session.sessionId,
-          remainingSeconds: session.remainingSeconds,
-          timestamp: new Date().toISOString(),
-        },
-      });
+    if (!(await checkSchemaCompatibility())) {
+      return 0;
     }
 
-    return sessions.length;
+    const sessions = await this.getSessionsNearingExpiration();
+    let warningsSent = 0;
+
+    for (const session of sessions) {
+      const secondsRemaining = Math.floor(
+        (session.expiresAt.getTime() - Date.now()) / 1000
+      );
+
+      sessionEventManager.emit(sessionEventManager.getRoomId(session.id), {
+        type: "SESSION_TIMEOUT_WARNING",
+        payload: {
+          sessionId: session.id,
+          expiresAt: session.expiresAt.toISOString(),
+          secondsRemaining,
+          canExtend: true, // TODO: Check extension count
+        },
+      });
+
+      logger.info({
+        msg: "Sent timeout warning",
+        sessionId: session.id,
+        roomCode: session.roomCode,
+        secondsRemaining,
+      });
+
+      warningsSent++;
+    }
+
+    return warningsSent;
   },
 
   /**
-   * Disable timeout for a session (make it indefinite)
+   * Get timeout status for a session
    */
-  async disableTimeout(sessionId: number): Promise<void> {
+  async getTimeoutStatus(sessionId: number): Promise<{
+    expiresAt: Date | null;
+    secondsRemaining: number | null;
+    extensionsRemaining: number;
+    canExtend: boolean;
+  } | null> {
+    if (!(await checkSchemaCompatibility())) {
+      return null;
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    await db.update(liveShoppingSessions)
-      .set({
-        timeoutSeconds: 0,
-        expiresAt: null,
+    const [session] = await db
+      .select({
+        expiresAt: liveShoppingSessions.expiresAt,
+        extensionCount: liveShoppingSessions.extensionCount,
+        status: liveShoppingSessions.status,
       })
+      .from(liveShoppingSessions)
       .where(eq(liveShoppingSessions.id, sessionId));
 
-    sessionEventManager.emit(sessionEventManager.getRoomId(sessionId), {
-      type: "TIMEOUT_DISABLED",
-      payload: {
-        sessionId,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    if (!session) {
+      return null;
+    }
+
+    const extensionCount = session.extensionCount || 0;
+    const extensionsRemaining = MAX_EXTENSIONS - extensionCount;
+    const canExtend =
+      extensionsRemaining > 0 &&
+      ["ACTIVE", "PAUSED"].includes(session.status);
+
+    if (!session.expiresAt) {
+      return {
+        expiresAt: null,
+        secondsRemaining: null,
+        extensionsRemaining,
+        canExtend,
+      };
+    }
+
+    const secondsRemaining = Math.floor(
+      (session.expiresAt.getTime() - Date.now()) / 1000
+    );
+
+    return {
+      expiresAt: session.expiresAt,
+      secondsRemaining: Math.max(0, secondsRemaining),
+      extensionsRemaining,
+      canExtend,
+    };
   },
 };

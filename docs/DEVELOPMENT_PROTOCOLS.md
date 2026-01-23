@@ -123,7 +123,7 @@ git checkout build-status 2>/dev/null && git show origin/build-status:.github/BU
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT id, commitSha, status, startedAt, completedAt, duration, errorMessage FROM deployments ORDER BY createdAt DESC LIMIT 1;"
@@ -132,7 +132,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT id, commitSha, status, startedAt FROM deployments WHERE status IN ('pending', 'building', 'deploying') ORDER BY createdAt DESC;"
@@ -199,7 +199,7 @@ If you push code and report "done" without checking the deployment status, you h
 ```bash
 # Check every 30 seconds until deployment completes
 while true; do
-  STATUS=$(mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com --port=25060 --user=doadmin --password=AVNS_Q_RGkS7-uB3Bk7xC2am --database=defaultdb --ssl-mode=REQUIRED -sN -e "SELECT status FROM deployments ORDER BY createdAt DESC LIMIT 1;")
+  STATUS=$(mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com --port=25060 --user=doadmin --password=<REDACTED> --database=defaultdb --ssl-mode=REQUIRED -sN -e "SELECT status FROM deployments ORDER BY createdAt DESC LIMIT 1;")
   echo "Status: $STATUS"
   if [ "$STATUS" = "success" ] || [ "$STATUS" = "failed" ]; then
     break
@@ -212,7 +212,7 @@ done
 
 ```bash
 # Get the deployment ID from database
-DEPLOYMENT_ID=$(mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com --port=25060 --user=doadmin --password=AVNS_Q_RGkS7-uB3Bk7xC2am --database=defaultdb --ssl-mode=REQUIRED -sN -e "SELECT doDeploymentId FROM deployments WHERE status='failed' ORDER BY createdAt DESC LIMIT 1;")
+DEPLOYMENT_ID=$(mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com --port=25060 --user=doadmin --password=<REDACTED> --database=defaultdb --ssl-mode=REQUIRED -sN -e "SELECT doDeploymentId FROM deployments WHERE status='failed' ORDER BY createdAt DESC LIMIT 1;")
 
 # Get build logs
 doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --deployment $DEPLOYMENT_ID --type build
@@ -223,7 +223,7 @@ doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --deployment $DEPLOYMENT_ID
 - **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
 - **Port**: `25060`
 - **User**: `doadmin`
-- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am`
+- **Password**: `<REDACTED>`
 - **Database**: `defaultdb`
 - **SSL Mode**: `REQUIRED`
 
@@ -233,7 +233,7 @@ doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --deployment $DEPLOYMENT_ID
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED
 ```
@@ -271,7 +271,7 @@ This section contains the most critical protocols that MUST be followed for ever
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT commitSha, status, startedAt, completedAt FROM deployments ORDER BY startedAt DESC LIMIT 1;"
@@ -719,7 +719,7 @@ pnpm run build
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT COUNT(*) FROM clients;"

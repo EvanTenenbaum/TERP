@@ -26,11 +26,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 // Batch status type for type-safe status updates
 type BatchStatus =
   | "AWAITING_INTAKE"
-  | "AWAITING_STAGING"
   | "LIVE"
   | "PHOTOGRAPHY_COMPLETE"
-  | "QUARANTINE"
-  | "SOLD_OUT";
+  | "ON_HOLD"
+  | "QUARANTINED"
+  | "SOLD_OUT"
+  | "CLOSED";
 
 interface EditBatchModalProps {
   open: boolean;
@@ -179,7 +180,7 @@ export function EditBatchModal({
                 <SelectItem value="PHOTOGRAPHY_COMPLETE">
                   Photography Complete
                 </SelectItem>
-                <SelectItem value="QUARANTINE">Quarantine</SelectItem>
+                <SelectItem value="QUARANTINED">Quarantine</SelectItem>
                 <SelectItem value="SOLD_OUT">Sold Out</SelectItem>
               </SelectContent>
             </Select>

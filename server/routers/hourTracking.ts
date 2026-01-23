@@ -17,6 +17,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { hasPermission, isSuperAdmin } from "../services/permissionService";
 import { getDb } from "../db";
 import { timeEntries, overtimeRules } from "../../drizzle/schema-scheduling";
 import { users } from "../../drizzle/schema";
@@ -75,7 +76,8 @@ export const hourTrackingRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
       const now = new Date();
-      const today = now.toISOString().split("T")[0];
+      // Get today's date at midnight for comparison
+      const today = new Date(now.toISOString().split("T")[0]);
 
       // Check if already clocked in today
       const [existing] = await db
@@ -392,13 +394,35 @@ export const hourTrackingRouter = router({
       const authUserId = getAuthenticatedUserId(ctx);
       const targetUserId = input.userId || authUserId;
 
+      // QA-W5-011 FIX: Only managers can view other users' entries
+      if (targetUserId !== authUserId) {
+        const userOpenId = ctx.user?.openId;
+        if (!userOpenId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot view other users' time entries",
+          });
+        }
+
+        const isAdmin = await isSuperAdmin(userOpenId);
+        const canManage = await hasPermission(userOpenId, "scheduling:manage");
+
+        if (!isAdmin && !canManage) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to view other users' time entries",
+          });
+        }
+      }
+
       const conditions = [eq(timeEntries.userId, targetUserId)];
 
       if (input.startDate) {
-        conditions.push(gte(timeEntries.entryDate, input.startDate));
+        conditions.push(gte(timeEntries.entryDate, new Date(input.startDate)));
       }
       if (input.endDate) {
-        conditions.push(lte(timeEntries.entryDate, input.endDate));
+        conditions.push(lte(timeEntries.entryDate, new Date(input.endDate)));
       }
       if (input.status) {
         conditions.push(eq(timeEntries.status, input.status));
@@ -481,7 +505,7 @@ export const hourTrackingRouter = router({
 
       const [result] = await db.insert(timeEntries).values({
         userId: input.userId,
-        entryDate: input.entryDate,
+        entryDate: new Date(input.entryDate),
         clockIn: clockInDate,
         clockOut: clockOutDate,
         entryType: input.entryType,
@@ -640,14 +664,36 @@ export const hourTrackingRouter = router({
       const authUserId = getAuthenticatedUserId(ctx);
       const targetUserId = input.userId || authUserId;
 
+      // QA-W5-011 FIX: Only managers can view other users' timesheets
+      if (targetUserId !== authUserId) {
+        const userOpenId = ctx.user?.openId;
+        if (!userOpenId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot view other users' timesheets",
+          });
+        }
+
+        const isAdmin = await isSuperAdmin(userOpenId);
+        const canManage = await hasPermission(userOpenId, "scheduling:manage");
+
+        if (!isAdmin && !canManage) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to view other users' timesheets",
+          });
+        }
+      }
+
       const entries = await db
         .select()
         .from(timeEntries)
         .where(
           and(
             eq(timeEntries.userId, targetUserId),
-            gte(timeEntries.entryDate, input.startDate),
-            lte(timeEntries.entryDate, input.endDate)
+            gte(timeEntries.entryDate, new Date(input.startDate)),
+            lte(timeEntries.entryDate, new Date(input.endDate))
           )
         )
         .orderBy(timeEntries.entryDate, timeEntries.clockIn);
@@ -751,8 +797,8 @@ export const hourTrackingRouter = router({
           .leftJoin(users, eq(timeEntries.userId, users.id))
           .where(
             and(
-              gte(timeEntries.entryDate, input.startDate),
-              lte(timeEntries.entryDate, input.endDate),
+              gte(timeEntries.entryDate, new Date(input.startDate)),
+              lte(timeEntries.entryDate, new Date(input.endDate)),
               input.userId ? eq(timeEntries.userId, input.userId) : undefined
             )
           )
@@ -785,8 +831,8 @@ export const hourTrackingRouter = router({
           .from(timeEntries)
           .where(
             and(
-              gte(timeEntries.entryDate, input.startDate),
-              lte(timeEntries.entryDate, input.endDate),
+              gte(timeEntries.entryDate, new Date(input.startDate)),
+              lte(timeEntries.entryDate, new Date(input.endDate)),
               input.userId ? eq(timeEntries.userId, input.userId) : undefined
             )
           )
@@ -836,8 +882,8 @@ export const hourTrackingRouter = router({
         .leftJoin(users, eq(timeEntries.userId, users.id))
         .where(
           and(
-            gte(timeEntries.entryDate, input.startDate),
-            lte(timeEntries.entryDate, input.endDate)
+            gte(timeEntries.entryDate, new Date(input.startDate)),
+            lte(timeEntries.entryDate, new Date(input.endDate))
           )
         )
         .groupBy(timeEntries.userId, users.name)

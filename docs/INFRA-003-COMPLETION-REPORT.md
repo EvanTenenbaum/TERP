@@ -178,7 +178,7 @@ dbCredentials: {
 
 **.env:**
 ```
-DATABASE_URL="mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb"
+DATABASE_URL="mysql://doadmin:<REDACTED>@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb"
 ```
 
 ## Tools Created

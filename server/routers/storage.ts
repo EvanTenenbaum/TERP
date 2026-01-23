@@ -75,6 +75,7 @@ const siteInputSchema = z.object({
   contactEmail: z.string().email().max(320).optional(),
   operatingHours: z
     .record(
+      z.string(),
       z.object({
         open: z.string(),
         close: z.string(),
@@ -1073,7 +1074,7 @@ export const storageRouter = router({
         .where(eq(siteInventoryCounts.siteId, input.siteId))
         .limit(input.limit)
         .offset(input.offset)
-        .orderBy(products.name);
+        .orderBy(products.nameCanonical);
 
       return result.map(r => ({
         ...r.inventory,

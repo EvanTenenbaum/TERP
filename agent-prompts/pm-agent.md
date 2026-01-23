@@ -4,6 +4,15 @@
 
 ---
 
+## ✅ Verification Over Persuasion (Mandatory)
+
+Follow `.kiro/steering/08-adaptive-qa-protocol.md` when approving or directing work.
+
+- Require evidence-backed verification before marking tasks complete
+- Escalate to STRICT/RED mode when risk is unclear
+
+---
+
 ## 🔑 Credentials & Environment Variables
 
 **IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**
@@ -32,6 +41,7 @@ DATABASE_NAME="defaultdb"
 - ✅ Coordinate deployment timing
 
 **Example - Monitor All Deployments**:
+
 ```bash
 # Get app status using environment variable
 curl -X GET \

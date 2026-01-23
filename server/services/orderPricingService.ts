@@ -206,7 +206,7 @@ export async function getClientPricingContext(
 
   const userRole = userResult[0]?.role || "user";
   const userMaxDiscount = DISCOUNT_LIMITS[userRole] || 15;
-  const canOverrideCredit = userRole === "admin" || userRole === "manager";
+  const canOverrideCredit = userRole === "admin";
 
   // Calculate available credit
   const creditLimit = parseFloat(client.creditLimit?.toString() || "0");
@@ -631,20 +631,21 @@ export async function applyPriceAdjustment(params: {
   if (params.adjustmentType === "ITEM" && params.targetId) {
     const item = items.find((i: { batchId: number; unitPrice?: number }) => i.batchId === params.targetId);
     if (item) {
-      originalPrice = item.unitPrice || 0;
+      const itemOriginalPrice = item.unitPrice || 0;
+      originalPrice = itemOriginalPrice;
       if (params.adjustmentMode === "PERCENT") {
-        adjustedPrice = originalPrice * (1 + params.adjustmentValue / 100);
+        adjustedPrice = itemOriginalPrice * (1 + params.adjustmentValue / 100);
       } else {
         // SECURITY FIX: Validate fixed-amount discounts against max percentage limit
-        if (originalPrice > 0 && params.adjustmentValue < 0) {
-          const effectivePercent = (Math.abs(params.adjustmentValue) / originalPrice) * 100;
+        if (itemOriginalPrice > 0 && params.adjustmentValue < 0) {
+          const effectivePercent = (Math.abs(params.adjustmentValue) / itemOriginalPrice) * 100;
           if (effectivePercent > maxDiscount) {
             throw new Error(
-              `Fixed discount exceeds your authority. Maximum: ${maxDiscount}% (${(originalPrice * maxDiscount / 100).toFixed(2)}), Requested: ${Math.abs(params.adjustmentValue).toFixed(2)} (${effectivePercent.toFixed(1)}%)`
+              `Fixed discount exceeds your authority. Maximum: ${maxDiscount}% (${(itemOriginalPrice * maxDiscount / 100).toFixed(2)}), Requested: ${Math.abs(params.adjustmentValue).toFixed(2)} (${effectivePercent.toFixed(1)}%)`
             );
           }
         }
-        adjustedPrice = originalPrice + params.adjustmentValue;
+        adjustedPrice = itemOriginalPrice + params.adjustmentValue;
       }
     }
   }

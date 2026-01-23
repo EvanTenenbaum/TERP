@@ -18,7 +18,7 @@
 
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import { seedRealisticData } from './seed-realistic-main';
+import { seedRealisticData } from './legacy/seed-realistic-main';
 import { execSync } from 'child_process';
 
 // DigitalOcean Database Credentials (from The Bible)
@@ -26,7 +26,7 @@ const LIVE_DB_CONFIG = {
   host: 'terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com',
   port: 25060,
   user: 'doadmin',
-  password: 'AVNS_Q_RGkS7-uB3Bk7xC2am',
+  password: '<REDACTED>',
   database: 'defaultdb',
   ssl: {
     rejectUnauthorized: true,

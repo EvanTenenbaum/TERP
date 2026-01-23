@@ -1,4 +1,4 @@
-# New Tasks Backlog - November 14, 2025
+# New Tasks Backlog - Updated January 21, 2026
 
 This backlog contains 23 new tasks identified from the video walkthrough bug report.
 
@@ -242,5 +242,57 @@ Implement a spreadsheet-like interface for users accustomed to spreadsheet-based
 **Specification:** [`docs/specs/FEATURE-SPREADSHEET-VIEW-SPEC.md`](../specs/FEATURE-SPREADSHEET-VIEW-SPEC.md)
 **QA Review:** [`docs/reviews/QA-REVIEW-SPREADSHEET-VIEW-SPEC-V2.md`](../reviews/QA-REVIEW-SPREADSHEET-VIEW-SPEC-V2.md)
 **Mockups:** [`docs/specs/mockups/spreadsheet-view/`](../specs/mockups/spreadsheet-view/)
+
+---
+
+## 📱 Communications & Client Messaging - Added 2026-01-21
+
+### FEAT-SIGNAL-001: Signal Messaging Integration
+
+**Priority:** HIGH | **Status:** 📋 Spec Complete | **Effort:** 6 weeks (phased)
+
+Integrate Signal messaging directly into TERP for unified client communications. This feature addresses fragmented customer records and missed follow-up opportunities by providing two-way messaging embedded in client records with full audit trail.
+
+**Problem Solved:**
+- No unified view of client communication history
+- Manual logging of conversations is tedious and incomplete
+- No ability to message clients directly from order/client context
+- Compliance and audit trail concerns in cannabis industry
+- Sales team uses personal numbers, creating business continuity risks
+
+**Solution:**
+- Per-role Signal numbers (Sales, Account Management, Operations, Support, Admin)
+- Two-way messaging embedded in client records
+- Message templates for common communications
+- Real-time delivery via WebSocket integration
+- Full audit trail linked to client profiles
+
+**Technical Stack:**
+- Signal Interface: signal-cli-rest-api (Docker)
+- Backend: TypeScript SignalService class
+- API: tRPC router (signalRouter.ts)
+- Database: Drizzle schema (schema-signal.ts)
+- Queue: BullMQ with Redis
+- Frontend: React + shadcn/ui components
+
+**Implementation Phases:**
+1. Phase 1: Infrastructure & Schema (Week 1)
+2. Phase 2: Backend Service (Week 2)
+3. Phase 3: API Layer (Week 3)
+4. Phase 4: Frontend - Core (Week 4)
+5. Phase 5: Frontend - Integration (Week 5)
+6. Phase 6: Polish & Documentation (Week 6)
+
+**Key Requirements:**
+- FR-001: Send Signal messages from client detail page
+- FR-002: Receive Signal messages in real-time
+- FR-003: View conversation history per client
+- FR-004: Use message templates with variable substitution
+- FR-005: Assign Signal numbers to roles (Admin only)
+
+**RBAC Permissions:**
+- signal:view, signal:send, signal:template:*, signal:admin
+
+**Specification:** [`docs/specs/FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)
 
 ---

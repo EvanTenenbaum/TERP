@@ -56,7 +56,12 @@ async function logAdminSetupAction(
       entity: "admin_setup",
       entityId: 0,
       action: `ADMIN_SETUP_${action}`,
-      after: JSON.stringify({ ...details, success, ip, timestamp: new Date().toISOString() }),
+      after: JSON.stringify({
+        ...details,
+        success,
+        ip,
+        timestamp: new Date().toISOString(),
+      }),
       reason: success ? "Success" : "Failed attempt",
     });
 
@@ -68,14 +73,26 @@ async function logAdminSetupAction(
 
 // Helper to extract IP from context
 function getClientIp(ctx: unknown): string {
-  const context = ctx as { req?: { ip?: string; headers?: { "x-forwarded-for"?: string } } };
-  return context?.req?.ip || context?.req?.headers?.["x-forwarded-for"] || "unknown";
+  const context = ctx as {
+    req?: { ip?: string; headers?: { "x-forwarded-for"?: string } };
+  };
+  return (
+    context?.req?.ip || context?.req?.headers?.["x-forwarded-for"] || "unknown"
+  );
 }
 
 // Secret key for admin setup - set this in your environment
-const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY;
-if (!ADMIN_SETUP_KEY) {
-  throw new Error("ADMIN_SETUP_KEY environment variable must be set for admin setup functionality");
+// Validated lazily when endpoints are called to avoid crashing the app on startup
+function getAdminSetupKey(): string {
+  const key = process.env.ADMIN_SETUP_KEY;
+  if (!key) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message:
+        "ADMIN_SETUP_KEY environment variable must be set for admin setup functionality",
+    });
+  }
+  return key;
 }
 
 export const adminSetupRouter = router({
@@ -85,23 +102,35 @@ export const adminSetupRouter = router({
    * SEC-012: Rate limited and audit logged
    */
   listUsers: publicProcedure
-    .input(z.object({
-      setupKey: z.string(),
-    }))
+    .input(
+      z.object({
+        setupKey: z.string(),
+      })
+    )
     .query(async ({ input, ctx }) => {
       const ip = getClientIp(ctx);
 
       // SEC-012: Check rate limit
       if (!checkRateLimit(ip)) {
-        await logAdminSetupAction("LIST_USERS", { reason: "rate_limited" }, false, ip);
+        await logAdminSetupAction(
+          "LIST_USERS",
+          { reason: "rate_limited" },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many requests. Please try again later.",
         });
       }
 
-      if (input.setupKey !== ADMIN_SETUP_KEY) {
-        await logAdminSetupAction("LIST_USERS", { reason: "invalid_key" }, false, ip);
+      if (input.setupKey !== getAdminSetupKey()) {
+        await logAdminSetupAction(
+          "LIST_USERS",
+          { reason: "invalid_key" },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Invalid setup key",
@@ -127,7 +156,12 @@ export const adminSetupRouter = router({
         .from(users)
         .limit(100);
 
-      await logAdminSetupAction("LIST_USERS", { userCount: allUsers.length }, true, ip);
+      await logAdminSetupAction(
+        "LIST_USERS",
+        { userCount: allUsers.length },
+        true,
+        ip
+      );
       return allUsers;
     }),
 
@@ -137,26 +171,41 @@ export const adminSetupRouter = router({
    * SEC-012: Rate limited and audit logged
    */
   promoteToAdmin: publicProcedure
-    .input(z.object({
-      setupKey: z.string(),
-      userId: z.number().optional(),
-      email: z.string().optional(),
-      openId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        setupKey: z.string(),
+        userId: z.number().optional(),
+        email: z.string().optional(),
+        openId: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const ip = getClientIp(ctx);
 
       // SEC-012: Check rate limit
       if (!checkRateLimit(ip)) {
-        await logAdminSetupAction("PROMOTE_USER", { reason: "rate_limited" }, false, ip);
+        await logAdminSetupAction(
+          "PROMOTE_USER",
+          { reason: "rate_limited" },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many requests. Please try again later.",
         });
       }
 
-      if (input.setupKey !== ADMIN_SETUP_KEY) {
-        await logAdminSetupAction("PROMOTE_USER", { reason: "invalid_key", target: input.userId || input.email || input.openId }, false, ip);
+      if (input.setupKey !== getAdminSetupKey()) {
+        await logAdminSetupAction(
+          "PROMOTE_USER",
+          {
+            reason: "invalid_key",
+            target: input.userId || input.email || input.openId,
+          },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Invalid setup key",
@@ -178,23 +227,30 @@ export const adminSetupRouter = router({
         });
       }
 
-      // Build the where clause
-      let whereClause;
+      // Update the user's role based on the identifier provided
       if (input.userId) {
-        whereClause = eq(users.id, input.userId);
+        await db
+          .update(users)
+          .set({ role: "admin" })
+          .where(eq(users.id, input.userId));
       } else if (input.email) {
-        whereClause = eq(users.email, input.email);
+        await db
+          .update(users)
+          .set({ role: "admin" })
+          .where(eq(users.email, input.email));
       } else if (input.openId) {
-        whereClause = eq(users.openId, input.openId);
+        await db
+          .update(users)
+          .set({ role: "admin" })
+          .where(eq(users.openId, input.openId));
       }
 
-      // Update the user's role
-      await db
-        .update(users)
-        .set({ role: "admin" })
-        .where(whereClause!);
-
-      await logAdminSetupAction("PROMOTE_USER", { userId: input.userId, email: input.email, openId: input.openId }, true, ip);
+      await logAdminSetupAction(
+        "PROMOTE_USER",
+        { userId: input.userId, email: input.email, openId: input.openId },
+        true,
+        ip
+      );
 
       return {
         success: true,
@@ -208,24 +264,36 @@ export const adminSetupRouter = router({
    * SEC-012: Rate limited and audit logged
    */
   promoteAllToAdmin: publicProcedure
-    .input(z.object({
-      setupKey: z.string(),
-      confirmPhrase: z.string(), // Must be "I understand this promotes all users"
-    }))
+    .input(
+      z.object({
+        setupKey: z.string(),
+        confirmPhrase: z.string(), // Must be "I understand this promotes all users"
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const ip = getClientIp(ctx);
 
       // SEC-012: Check rate limit
       if (!checkRateLimit(ip)) {
-        await logAdminSetupAction("PROMOTE_ALL", { reason: "rate_limited" }, false, ip);
+        await logAdminSetupAction(
+          "PROMOTE_ALL",
+          { reason: "rate_limited" },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many requests. Please try again later.",
         });
       }
 
-      if (input.setupKey !== ADMIN_SETUP_KEY) {
-        await logAdminSetupAction("PROMOTE_ALL", { reason: "invalid_key" }, false, ip);
+      if (input.setupKey !== getAdminSetupKey()) {
+        await logAdminSetupAction(
+          "PROMOTE_ALL",
+          { reason: "invalid_key" },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Invalid setup key",
@@ -233,7 +301,12 @@ export const adminSetupRouter = router({
       }
 
       if (input.confirmPhrase !== "I understand this promotes all users") {
-        await logAdminSetupAction("PROMOTE_ALL", { reason: "invalid_confirmation" }, false, ip);
+        await logAdminSetupAction(
+          "PROMOTE_ALL",
+          { reason: "invalid_confirmation" },
+          false,
+          ip
+        );
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Invalid confirmation phrase",
@@ -251,7 +324,12 @@ export const adminSetupRouter = router({
       // Update all users to admin
       await db.execute(sql`UPDATE users SET role = 'admin'`);
 
-      await logAdminSetupAction("PROMOTE_ALL", { action: "all_users_promoted" }, true, ip);
+      await logAdminSetupAction(
+        "PROMOTE_ALL",
+        { action: "all_users_promoted" },
+        true,
+        ip
+      );
 
       return {
         success: true,

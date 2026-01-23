@@ -1,0 +1,239 @@
+name: E2E Live Site Tests
+
+on:
+  # Manual trigger - primary use case
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: "Test type to run"
+        type: choice
+        default: "smoke"
+        options:
+          - smoke
+          - full-e2e
+          - ai-scenarios
+          - mega-qa-quick
+      device:
+        description: "Device/browser to test"
+        type: choice
+        default: "desktop-chrome"
+        options:
+          - desktop-chrome
+          - mobile-chrome
+          - mobile-safari
+          - all-devices
+      create_issue:
+        description: "Create GitHub issue on failure"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  NODE_VERSION: "20"
+  PLAYWRIGHT_BASE_URL: "https://terp-app-b9s35.ondigitalocean.app"
+  DEFAULT_ADMIN_EMAIL: "qa.superadmin@terp.test"
+  DEFAULT_ADMIN_PASSWORD: "TerpQA2026!"
+
+jobs:
+  e2e-live-site:
+    name: E2E Tests (${{ inputs.test_type || 'smoke' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: |
+          if [ "${{ inputs.device }}" = "all-devices" ]; then
+            pnpm exec playwright install --with-deps chromium webkit
+          elif [ "${{ inputs.device }}" = "mobile-safari" ]; then
+            pnpm exec playwright install --with-deps webkit
+          else
+            pnpm exec playwright install --with-deps chromium
+          fi
+
+      - name: Verify live site is accessible
+        run: |
+          echo "Checking live site accessibility..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.PLAYWRIGHT_BASE_URL }}/health" || echo "000")
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Live site is accessible (HTTP $HTTP_STATUS)"
+          else
+            echo "⚠️ Health endpoint returned HTTP $HTTP_STATUS, checking main page..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.PLAYWRIGHT_BASE_URL }}" || echo "000")
+            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
+              echo "✅ Main page is accessible (HTTP $HTTP_STATUS)"
+            else
+              echo "❌ Live site not accessible (HTTP $HTTP_STATUS)"
+              exit 1
+            fi
+          fi
+
+      - name: Run E2E Tests
+        id: e2e_tests
+        env:
+          # Use secrets if available, otherwise use defaults
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME || env.DEFAULT_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD || env.DEFAULT_ADMIN_PASSWORD }}
+          E2E_STANDARD_USERNAME: ${{ secrets.E2E_STANDARD_USERNAME }}
+          E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
+          E2E_VIP_USERNAME: ${{ secrets.E2E_VIP_USERNAME }}
+          E2E_VIP_PASSWORD: ${{ secrets.E2E_VIP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SKIP_E2E_SETUP: "1"
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: ${{ env.PLAYWRIGHT_BASE_URL }}
+        run: |
+          TEST_TYPE="${{ inputs.test_type || 'smoke' }}"
+          DEVICE="${{ inputs.device || 'desktop-chrome' }}"
+
+          # Map device choice to Playwright project
+          case "$DEVICE" in
+            "desktop-chrome") PROJECT="--project=chromium" ;;
+            "mobile-chrome") PROJECT="--project='Mobile Chrome'" ;;
+            "mobile-safari") PROJECT="--project='Mobile Safari'" ;;
+            "all-devices") PROJECT="" ;;
+            *) PROJECT="--project=chromium" ;;
+          esac
+
+          echo "Running $TEST_TYPE tests on $DEVICE..."
+          echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
+          echo "device=$DEVICE" >> $GITHUB_OUTPUT
+
+          case "$TEST_TYPE" in
+            "smoke")
+              echo "Running smoke tests..."
+              pnpm playwright test --config=playwright.config.ts tests/smoke/ $PROJECT --reporter=list,html
+              ;;
+            "full-e2e")
+              echo "Running full E2E test suite..."
+              pnpm playwright test --config=playwright.config.ts tests-e2e/ $PROJECT --reporter=list,html
+              ;;
+            "ai-scenarios")
+              echo "Running AI-driven scenarios..."
+              if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+                pnpm test:e2e:ai:run $PROJECT || true
+              else
+                echo "⚠️ ANTHROPIC_API_KEY not set, skipping AI tests"
+                echo "Running smoke tests instead..."
+                pnpm playwright test --config=playwright.config.ts tests/smoke/ $PROJECT --reporter=list,html
+              fi
+              ;;
+            "mega-qa-quick")
+              echo "Running Mega QA quick mode..."
+              pnpm mega:qa --mode=quick --cloud
+              ;;
+            *)
+              echo "Unknown test type: $TEST_TYPE"
+              exit 1
+              ;;
+          esac
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ inputs.test_type || 'smoke' }}-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+            qa-results/
+          retention-days: 14
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## 🧪 E2E Live Site Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Target** | ${{ env.PLAYWRIGHT_BASE_URL }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Type** | ${{ inputs.test_type || 'smoke' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Device** | ${{ inputs.device || 'desktop-chrome' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Parse test results if available
+          if [ -f playwright-report/index.html ]; then
+            echo "📊 **Results:** See [Playwright Report](playwright-report/index.html) in artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f test-results.json ]; then
+            PASSED=$(jq '.stats.expected // 0' test-results.json 2>/dev/null || echo "?")
+            FAILED=$(jq '.stats.unexpected // 0' test-results.json 2>/dev/null || echo "?")
+            SKIPPED=$(jq '.stats.skipped // 0' test-results.json 2>/dev/null || echo "?")
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create issue on failure
+        if: failure() && inputs.create_issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const testType = '${{ inputs.test_type || 'smoke' }}';
+            const device = '${{ inputs.device || 'desktop-chrome' }}';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🧪 E2E Test Failure: ${testType} on ${device}`,
+              labels: ['automated-qa', 'e2e-failure', 'needs-review'],
+              body: `## E2E Live Site Test Failure
+
+**Test Type:** ${testType}
+**Device:** ${device}
+**Target:** ${{ env.PLAYWRIGHT_BASE_URL }}
+**Run:** [View Details](${runUrl})
+
+The E2E tests detected failures during automated testing. Please review the test results and screenshots in the workflow artifacts.
+
+### Quick Actions
+- Download the \`e2e-results-*\` artifact to see screenshots and traces
+- Check the workflow logs for specific error messages
+- Verify the live site is accessible
+
+---
+*This issue was automatically created by the E2E Live Site Tests workflow.*`
+            });

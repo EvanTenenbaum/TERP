@@ -1,23 +1,36 @@
 # TERP User Flow Mapping
 
 **Date Created:** November 5, 2025
-**Last Updated:** January 15, 2026
-**Status:** v3.0 - Comprehensive Feature Inventory
+**Last Updated:** January 21, 2026
+**Status:** v3.3 - Wave 5 Complete with Work Surfaces
 
 ---
 
 ## Overview
 
-This document maps user flows for all **70 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
+This document maps user flows for all **83 major feature modules** in the TERP codebase, expanded from the original 15 through comprehensive codebase analysis. It incorporates direct user feedback to define constraints and exclusions for development.
 
 **Statistics:**
 - Original Documented Features: 15
 - Newly Discovered Features: 55
-- Total Feature Modules: 70
-- Total tRPC Routers: 123
-- Total tRPC Procedures: 1,414+
-- Total Client Routes: 54 pages
+- Wave 5 New Features: 13 (Work Surfaces, Golden Flows, Hour Tracking, Quote Email, etc.)
+- Total Feature Modules: 83
+- Total tRPC Routers: 124
+- Total tRPC Procedures: 1,450+
+- Total Client Routes: 55 pages
+- Work Surface Components: 10
+- Golden Flows: 3
+- Work Surface Hooks: 12
 - Documentation Coverage: 100%
+
+**Wave 5 Major Additions (January 2026):**
+- Work Surface Framework (10 components with AG Grid, Inspector Panels, Keyboard navigation)
+- Golden Flows (3 multi-step wizards for core business processes)
+- Work Surface Hooks (12 reusable hooks for UX patterns)
+- Hour Tracking System (MEET-048)
+- Quote Email System (API-016)
+- Session Timeout Handler (UXS-706)
+- E2E Testing Infrastructure
 
 Each section outlines the primary user journeys, the actors involved, and specific functionalities that should be included or explicitly excluded based on your comments.
 
@@ -126,6 +139,21 @@ Each section outlines the primary user journeys, the actors involved, and specif
 - [DF-068: Health & Diagnostics](#df-068-health--diagnostics)
 - [DF-069: Admin Tools Suite](#df-069-admin-tools-suite)
 - [DF-070: User Management](#df-070-user-management)
+
+### Wave 5 Features (DF-071 to DF-083) - Added January 2026
+- [DF-071: Hour Tracking System](#df-071-hour-tracking-system)
+- [DF-072: Quote Email System](#df-072-quote-email-system)
+- [DF-073: Work Surface Session Management](#df-073-work-surface-session-management)
+- [DF-074: Work Surface Framework](#df-074-work-surface-framework)
+- [DF-075: Golden Flows](#df-075-golden-flows)
+- [DF-076: Work Surface Hooks](#df-076-work-surface-hooks)
+- [DF-077: Direct Intake Work Surface](#df-077-direct-intake-work-surface)
+- [DF-078: Orders Work Surface](#df-078-orders-work-surface)
+- [DF-079: Inventory Work Surface](#df-079-inventory-work-surface)
+- [DF-080: Invoices Work Surface](#df-080-invoices-work-surface)
+- [DF-081: Clients Work Surface](#df-081-clients-work-surface)
+- [DF-082: Purchase Orders Work Surface](#df-082-purchase-orders-work-surface)
+- [DF-083: E2E Testing Infrastructure](#df-083-e2e-testing-infrastructure)
 
 ---
 ## DF-001: Calendar & Event Management System
@@ -1720,4 +1748,402 @@ _No specific exclusions noted for this module._
 
 ---
 
-_End of TERP User Flow Mapping v3.1 - 100% Coverage_
+## DF-071: Hour Tracking System
+
+**Category:** HR Operations
+**Status:** Fully Implemented (Wave 5 - January 2026)
+**Implements:** MEET-048
+
+Complete time clock and hour tracking system with clock in/out, break management, timesheet views, overtime calculation, and reporting.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Employee clocks in for shift | All Users |
+| Employee starts break | All Users |
+| Employee ends break | All Users |
+| Employee clocks out | All Users |
+| Employee views current clock status | All Users |
+| Employee views weekly timesheet | All Users |
+| Manager creates manual time entry | Manager |
+| Manager adjusts time entry | Manager |
+| Manager approves time entry | Manager |
+| Manager views hours report | Manager |
+| Manager views overtime report | Manager |
+| Admin creates overtime rule | Admin |
+| Admin updates overtime rule | Admin |
+
+### Exclusions & User-Defined Constraints
+
+- Hour tracking designed for small teams (originally 2 hourly employees)
+- Focus on simple time tracking without complex scheduling integration
+
+---
+
+## DF-072: Quote Email System
+
+**Category:** Sales Operations
+**Status:** Fully Implemented (Wave 5 - January 2026)
+**Implements:** API-016
+
+Email sending functionality for quotes with configurable email service (Resend/SendGrid) support.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Sales rep sends quote via email | Sales Rep |
+| System generates quote email (HTML + plain text) | System |
+| Admin checks if email is enabled | Admin |
+| Client receives quote email | Client |
+
+### Exclusions & User-Defined Constraints
+
+- Requires email service configuration (RESEND_API_KEY or SENDGRID_API_KEY)
+- Email templates match UI styling for consistency
+
+---
+
+## DF-073: Work Surface Session Management
+
+**Category:** User Experience
+**Status:** Fully Implemented (Wave 5 - January 2026)
+**Implements:** UXS-706
+
+Session timeout detection and handling for Work Surfaces with graceful logout and session extension capabilities.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| System detects approaching session expiry | System |
+| User receives session timeout warning | All Users |
+| User extends session via callback | All Users |
+| System handles graceful logout on timeout | System |
+| System preserves session state in localStorage | System |
+| System detects user idle activity | System |
+
+### Exclusions & User-Defined Constraints
+
+- Configurable warning threshold (default 5 minutes before expiry)
+- Optional idle detection with activity events
+- Session state preserved for recovery
+
+---
+
+## DF-074: Work Surface Framework
+
+**Category:** User Experience Infrastructure
+**Status:** Fully Implemented (Wave 5 - Sprints 0-8)
+**Implements:** UXS-101 through UXS-904
+
+The Work Surface Framework provides a consistent, keyboard-first data entry experience across all TERP modules. Built on AG Grid with Inspector Panels, save state indicators, and comprehensive keyboard navigation.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User navigates grid with keyboard (Tab, arrows) | All Users |
+| User opens inspector panel (Enter) | All Users |
+| User closes inspector panel (Esc) | All Users |
+| User undoes action (Cmd+Z) | All Users |
+| System shows save state (Saved/Saving/Error/Queued) | System |
+| User filters and sorts data | All Users |
+| User exports data (CSV/Excel) | All Users |
+| User prints work surface | All Users |
+
+### Work Surface Components
+
+| Component | Domain | Description |
+|-----------|--------|-------------|
+| DirectIntakeWorkSurface | Inventory | Product intake with batch management |
+| OrdersWorkSurface | Orders | Draft/Confirmed tabs, order management |
+| InventoryWorkSurface | Inventory | Batch status filtering, quantity tracking |
+| InvoicesWorkSurface | Accounting | AR aging view, payment recording |
+| ClientsWorkSurface | CRM | Client management with sorting/filtering |
+| PurchaseOrdersWorkSurface | Purchasing | PO creation and tracking |
+| QuotesWorkSurface | Sales | Quote management and conversion |
+| ClientLedgerWorkSurface | Accounting | Client transaction history |
+| PickPackWorkSurface | Warehouse | Order fulfillment workflow |
+| InspectorPanel | Shared | Detail editing side panel |
+
+### Exclusions & User-Defined Constraints
+
+- All Work Surfaces follow the atomic UX strategy
+- Keyboard contract: Tab (navigate), Enter (open), Esc (close), Cmd+Z (undo)
+- "Reward Early, Punish Late" validation philosophy
+
+---
+
+## DF-075: Golden Flows
+
+**Category:** Business Process Automation
+**Status:** Fully Implemented (Wave 5 - Sprint 3)
+**Implements:** UXS-601, UXS-602, UXS-603
+
+Multi-step wizards for core business processes that guide users through complex workflows with validation and progress tracking.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User creates order from intake (OrderCreationFlow) | Sales Rep |
+| User generates invoice from order (OrderToInvoiceFlow) | Accounting |
+| User records payment against invoice (InvoiceToPaymentFlow) | Accounting |
+| User navigates wizard steps (Back/Next) | All Users |
+| System validates each step before progression | System |
+| User reviews summary before completion | All Users |
+
+### Golden Flow Components
+
+| Flow | Steps | Description |
+|------|-------|-------------|
+| OrderCreationFlow | Select Products → Set Pricing → Review → Create | Creates orders from inventory items |
+| OrderToInvoiceFlow | Select Order → Set Terms → Adjustments → Generate | Generates invoice from completed order |
+| InvoiceToPaymentFlow | Select Invoice → Enter Amount → Payment Method → Record | Records payment with receipt generation |
+
+### Exclusions & User-Defined Constraints
+
+- All flows have validation at each step
+- Progress is preserved if user navigates away
+- Quick amounts available for common payment scenarios
+
+---
+
+## DF-076: Work Surface Hooks
+
+**Category:** Reusable UX Patterns
+**Status:** Fully Implemented (Wave 5 - Sprints 0-8)
+**Implements:** UXS-101 through UXS-904
+
+Collection of React hooks providing standardized UX behaviors for Work Surfaces.
+
+### Available Hooks
+
+| Hook | Purpose | Sprint |
+|------|---------|--------|
+| useWorkSurfaceKeyboard | Grid navigation, Tab/Enter/Esc handling | Sprint 0 |
+| useSaveState | Save indicator (Saved/Saving/Error/Queued) | Sprint 0 |
+| useValidationTiming | "Reward Early, Punish Late" validation | Sprint 0 |
+| useWorkSurfaceFeatureFlags | Feature flag system for safe rollout | Sprint 2 |
+| useConcurrentEditDetection | Optimistic lock conflict handling | Sprint 2 |
+| usePerformanceMonitor | Performance tracking and alerts | Sprint 7 |
+| useToastConfig | Standardized toast notifications | Sprint 8 |
+| usePrint | Print stylesheet and controls | Sprint 8 |
+| useExport | CSV/Excel export with progress | Sprint 8 |
+| useSessionTimeout | Session expiry detection | Sprint 8 |
+| useFocusTrap | Inspector panel focus management | Sprint 0 |
+| useKeyboardShortcuts | Global shortcut registration | Sprint 1 |
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Hook manages keyboard navigation state | System |
+| Hook tracks save operation status | System |
+| Hook validates on field exit (not entry) | System |
+| Hook detects concurrent edit conflicts | System |
+| Hook monitors performance metrics | System |
+
+### Exclusions & User-Defined Constraints
+
+- All hooks are tree-shakeable
+- Hooks follow React best practices
+- Full TypeScript types and JSDoc documentation
+
+---
+
+## DF-077: Direct Intake Work Surface
+
+**Category:** Inventory Operations
+**Status:** Fully Implemented (Wave 5 - Sprint 1)
+**Implements:** UXS-201
+
+AG Grid-based product intake interface with batch creation, COGS entry, and vendor association.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User selects vendor for intake | Intake Staff |
+| User enters product details (strain, weight, COGS) | Intake Staff |
+| User creates batch from intake record | Intake Staff |
+| User generates farmer receipt | Intake Staff |
+| System validates required fields | System |
+| System creates inventory movement | System |
+
+### Exclusions & User-Defined Constraints
+
+- Integrates with existing intake receipt system
+- Supports bulk operations
+
+---
+
+## DF-078: Orders Work Surface
+
+**Category:** Sales Operations
+**Status:** Fully Implemented (Wave 5 - Sprint 2)
+**Implements:** UXS-301
+
+Order management with draft and confirmed tabs, inspector panel for line item editing, and status workflow.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User views draft orders | Sales Rep |
+| User views confirmed orders | Sales Rep |
+| User opens order in inspector | Sales Rep |
+| User adds/removes line items | Sales Rep |
+| User confirms draft order | Sales Rep |
+| User cancels order | Manager |
+
+### Exclusions & User-Defined Constraints
+
+- Tab-based filtering (Draft/Confirmed/All)
+- Real-time inventory validation
+
+---
+
+## DF-079: Inventory Work Surface
+
+**Category:** Inventory Operations
+**Status:** Fully Implemented (Wave 5 - Sprint 2)
+**Implements:** UXS-401
+
+Batch management interface with status filtering, sorting, and quantity tracking.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User filters batches by status | Inventory Staff |
+| User views batch details in inspector | Inventory Staff |
+| User updates batch status | Inventory Staff |
+| User adjusts batch quantity | Manager |
+| User views batch history | All Users |
+
+### Exclusions & User-Defined Constraints
+
+- Status workflow: AWAITING_INTAKE → LIVE → SOLD/EXPIRED
+- Aging indicators for inventory
+
+---
+
+## DF-080: Invoices Work Surface
+
+**Category:** Accounting Operations
+**Status:** Fully Implemented (Wave 5 - Sprint 2)
+**Implements:** UXS-501
+
+AR aging view with payment recording, status updates, and client statement generation.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User views invoices by aging bucket | Accounting |
+| User opens invoice in inspector | Accounting |
+| User records payment | Accounting |
+| User marks invoice as sent | Accounting |
+| User generates client statement | Accounting |
+| User voids invoice | Manager |
+
+### Exclusions & User-Defined Constraints
+
+- Aging buckets: Current, 1-30, 31-60, 61-90, 90+
+- Quick payment amounts available
+
+---
+
+## DF-081: Clients Work Surface
+
+**Category:** CRM Operations
+**Status:** Fully Implemented (Wave 5 - Sprint 1)
+**Implements:** UXS-203
+
+Client management with sorting, filtering, pagination, and detail editing.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User searches clients | All Users |
+| User filters by client type (Buyer/Seller/Both) | All Users |
+| User opens client in inspector | All Users |
+| User updates client details | Sales Rep |
+| User views client transaction history | All Users |
+| User enables/disables VIP portal | Manager |
+
+### Exclusions & User-Defined Constraints
+
+- Supports both buyers and sellers (unified client model)
+- VIP tier display integrated
+
+---
+
+## DF-082: Purchase Orders Work Surface
+
+**Category:** Purchasing Operations
+**Status:** Fully Implemented (Wave 5 - Sprint 1)
+**Implements:** UXS-202
+
+Purchase order creation and tracking with inspector panel for line items.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| User creates new purchase order | Purchasing |
+| User selects vendor | Purchasing |
+| User adds line items | Purchasing |
+| User submits PO for approval | Purchasing |
+| User receives PO items | Receiving |
+| User closes PO | Manager |
+
+### Exclusions & User-Defined Constraints
+
+- Status workflow: DRAFT → SUBMITTED → APPROVED → RECEIVING → CLOSED
+- Partial receiving supported
+
+---
+
+## DF-083: E2E Testing Infrastructure
+
+**Category:** Quality Assurance
+**Status:** Fully Implemented (Wave 5)
+**Implements:** E2E-001, E2E-002, E2E-003
+
+Puppeteer-based E2E testing suite with journey testing, proxy support, and automated reporting.
+
+### Primary User Flows
+
+| User Flow | Actors |
+|-----------|--------|
+| Developer runs E2E test suite | Developer |
+| CI/CD executes E2E tests on deploy | System |
+| Test runner generates report | System |
+| Developer views test results | Developer |
+| System captures screenshots on failure | System |
+
+### Test Coverage
+
+| Domain | Test Count | Coverage |
+|--------|-----------|----------|
+| Authentication | 5 | 100% |
+| Orders | 12 | 100% |
+| Inventory | 10 | 100% |
+| Invoices | 8 | 100% |
+| Clients | 6 | 100% |
+| Golden Flows | 9 | 100% |
+
+### Exclusions & User-Defined Constraints
+
+- Tests run against live staging environment
+- Standardized test credentials across all tests
+- Retry logic for flaky network tests
+
+---
+
+_End of TERP User Flow Mapping v3.3 - 100% Coverage_

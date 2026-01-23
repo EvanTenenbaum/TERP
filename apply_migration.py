@@ -9,7 +9,7 @@ DB_CONFIG = {
     'host': 'terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com',
     'port': 25060,
     'user': 'doadmin',
-    'password': 'AVNS_Q_RGkS7-uB3Bk7xC2am',
+    'password': '<REDACTED>',
     'database': 'defaultdb',
 }
 

@@ -34,15 +34,15 @@ jobs:
         with:
           fetch-depth: 50  # Need some history for git log
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

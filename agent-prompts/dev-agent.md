@@ -4,6 +4,15 @@
 
 ---
 
+## ✅ Verification Over Persuasion (Mandatory)
+
+Follow `.kiro/steering/08-adaptive-qa-protocol.md`.
+
+- Select SAFE/STRICT/RED mode and apply its verification rules
+- Do not claim success without logs from required checks
+
+---
+
 ## 🔑 Credentials & Environment Variables
 
 **IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**

@@ -21,8 +21,9 @@ import { orders } from "./schema"; // Assuming orders exists, see schema extensi
 
 /**
  * Session Status Enum
+ * Column name is 'status' to match the database migration (0001_live_shopping.sql)
  */
-export const liveSessionStatusEnum = mysqlEnum("liveSessionStatus", [
+export const liveSessionStatusEnum = mysqlEnum("status", [
   "SCHEDULED", // Future session
   "ACTIVE",    // Currently live
   "PAUSED",    // Temporarily halted
