@@ -19,6 +19,8 @@ import {
 import { liveShoppingSessions, sessionCartItems } from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
+// INV-CONSISTENCY-001: Import shared sellable status constant for consistency
+import { SELLABLE_BATCH_STATUSES } from "./inventoryDb";
 
 // ============================================================================
 // TYPES
@@ -99,6 +101,8 @@ export async function getInventoryWithPricing(
       "Fetching inventory batches with details"
     );
 
+    // INV-CONSISTENCY-001: Use shared sellable status constant for consistency
+    // This ensures sales modules use the same status filter as dashboard stats
     const inventoryWithDetails = await db
       .select({
         batch: batches,
@@ -114,7 +118,7 @@ export async function getInventoryWithPricing(
       .leftJoin(strains, eq(products.strainId, strains.id))
       .where(
         and(
-          inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]),
+          inArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]),
           isNull(batches.deletedAt)
         )
       )
