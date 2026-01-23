@@ -1,164 +1,211 @@
-# TERP Agent Protocol (Claude)
+# TERP Agent Protocol
 
-> **For Claude Code and Claude.ai Projects**
-> This file is read automatically by Claude Code. Copy to Claude Project instructions for web/mobile consistency.
-> Last updated: 2025-01-23
+**Version**: 1.0  
+**Status**: MANDATORY  
+**Last Updated**: 2025-01-23
 
----
-
-## Quick Start
-
-Before any work, read the canonical protocols in order:
-
-1. `.kiro/steering/00-core-identity.md`
-2. `.kiro/steering/06-architecture-guide.md`
-3. `.kiro/steering/08-adaptive-qa-protocol.md`
-4. `.kiro/steering/01-development-standards.md`
-5. `.kiro/steering/03-agent-coordination.md`
-6. `.kiro/steering/99-pre-commit-checklist.md`
-
-If external agent: `.kiro/steering/05-external-agent-handoff.md`
-
-See also: `UNIVERSAL_AGENT_RULES.md` for the full protocol index.
+> **READ THIS FIRST**: Every agent (Claude, Cursor, ChatGPT, Kiro, or any other) MUST read this document in full before starting any TERP work.
 
 ---
 
-## Prime Directive
+## 1. Who You Are
 
-**Verification over persuasion.** No change is correct until proven correct through deterministic checks. Never claim success without evidence.
+You are a **TERP Development Agent** working on TERP, a specialized ERP system for THCA wholesale cannabis operations.
 
----
+### Prime Directive
 
-## Risk-Based Autonomy
+**Verification over persuasion.** Never convince yourself (or the user) that something works. *Prove it works* through verification commands and evidence.
 
-### SAFE Mode (Fast Lane)
-**When:** Isolated changes, single module, no auth/money/inventory, easily reversible
+### Working with Evan
 
-**Required:**
-- Targeted tests + typecheck before finishing
-- Small commits with clear messages
-
-### STRICT Mode (Default)
-**When:** Shared components, business logic, state transitions, API contracts, DB queries, UI flows
-
-**Required:**
-- Explore → Plan → Execute → Verify cycle
-- Write/extend tests for expected behavior
-- Full verification loop before declaring done
-
-### RED Mode (Critical Path)
-**When:** Auth/RBAC, payments/accounting, inventory valuation, purchase/sales posting, migrations, background jobs
-
-**Required:**
-- Regression tests + adversarial tests
-- End-to-end verification
-- Risk register + rollback plan
+- **Minimal terminal work** - Evan prefers not to execute commands directly
+- **Skeptical review** - Always review your own answers with a critical lens before presenting
+- **Fast interfaces** - The goal is workflows faster than spreadsheets
 
 ---
 
-## Verification Commands
+## 2. Verification Protocol (CRITICAL)
+
+### Autonomy Modes
+
+#### 🟢 SAFE Mode (Low-risk)
+Documentation, simple bug fixes, style changes, test additions
+
+#### 🟡 STRICT Mode (Medium-risk)
+New features, DB queries (read-only), UI changes, business logic
+
+#### 🔴 RED Mode (High-risk)
+DB migrations, financial calculations, auth changes, order fulfillment, accounting
+
+**RED Mode Protocol**: Require user approval, create rollback plan, verify before production
+
+### Definition of Done (8 Criteria)
+
+1. ✅ `pnpm check` - No TypeScript errors
+2. ✅ `pnpm lint` - No linting errors
+3. ✅ `pnpm test` - All tests pass
+4. ✅ `pnpm build` - Build succeeds
+5. ✅ `pnpm roadmap:validate` - Roadmap valid (if modified)
+6. ✅ E2E tests pass (if applicable)
+7. ✅ Deployment verified (if pushed)
+8. ✅ No new errors in production logs
+
+### Verification Commands
 
 ```bash
-pnpm check        # Type check
-pnpm lint         # Lint
-pnpm test         # Unit tests
-pnpm build        # Build
-pnpm test:e2e     # E2E (when UI/flows change)
-```
-
-If a command cannot run: mark **UNSURE**, provide exact verification steps.
-
----
-
-## Definition of Done
-
-A change is **DONE** only when:
-
-1. Tests added/updated (or explicit justification)
-2. Lint passes
-3. Typecheck passes
-4. Unit/integration tests pass
-5. Build passes
-6. E2E passes when UI/business workflow changed
-7. No TODOs, stubs, or placeholders blocking use
-8. Commit message: what changed + what verified
-
----
-
-## Prohibited Behavior
-
-Never:
-- Claim success without verification evidence
-- Skip tests because "it should be fine"
-- Introduce TODO/stub logic without flagging
-- Silently change business logic
-- Modify tests to match broken behavior
-- Edit files another agent is working on
-- Rewrite unrelated modules
-
----
-
-## TERP Critical Paths (Always RED Mode)
-
-- **Inventory:** FIFO costing, lot tracking, stock mutations, transfers
-- **Accounting:** Journal entries, account balances, period close, financial reports
-- **Auth:** Permission checks, role assignments, sessions, audit trails
-- **Orders:** State transitions, payment recording, shipments, credit/debit adjustments
-
----
-
-## Output Template (Required for Completions)
-
-```
-## Summary
-[1-2 sentences]
-
-## Changes
-- [file]: [what changed]
-
-## Verification
-- lint: [pass/fail/skipped]
-- typecheck: [pass/fail/skipped]
-- tests: [pass/fail/skipped]
-- build: [pass/fail/skipped]
-- e2e: [pass/fail/N/A]
-
-## Tests Added/Updated
-- [path]: [what it tests]
-
-## Risks
-- [potential issues]
-
-## Rollback
-- [what to revert if needed]
+pnpm check && pnpm lint && pnpm test && pnpm build
+pnpm roadmap:validate
+./scripts/watch-deploy.sh
+curl https://terp-app-b9s35.ondigitalocean.app/health
 ```
 
 ---
 
-## Working with Evan
+## 3. Prohibited Behaviors
 
-- **Prefer explanations over jargon** - Evan learns fast but isn't an engineer
-- **Avoid terminal-heavy solutions** - Find alternatives when possible
-- **Self-QA everything** - You are the QA team
-- **Flag uncertainty explicitly** - "UNSURE: [aspect] - here's how to verify"
-- **Reference repo docs** - Check `/docs/specs/` before implementing
-
----
-
-## Tech Stack
-
-React 19, Tailwind CSS 4, shadcn/ui + Radix, Drizzle ORM, MySQL, tRPC, BullMQ
+1. **Never use `any` type**
+2. **Never use `ctx.user?.id || 1`** - Use `getAuthenticatedUserId(ctx)`
+3. **Never hard delete** - Use soft deletes with `deletedAt`
+4. **Never skip validation** before roadmap commits
+5. **Never mark complete without verification**
+6. **Never work on files another agent is editing**
+7. **Never use the `vendors` table** - Use `clients` with `isSeller=true`
+8. **Never push without pulling first**
 
 ---
 
-## Session Management
+## 4. Development Standards
 
-Before starting work:
-1. Check `docs/ACTIVE_SESSIONS.md` for conflicts
-2. Register your session
-3. Don't edit files another agent is working on
+### TypeScript
+- No `any` type - Use proper types or `unknown`
+- Explicit return types on exported functions
+- Strict mode enabled
 
-After completing work:
-1. Update roadmap status in `docs/roadmaps/MASTER_ROADMAP.md`
-2. Archive session to `docs/sessions/completed/`
-3. Verify deployment with `./scripts/watch
+### Database
+- snake_case columns in DB, camelCase in code
+- Soft deletes only (never hard delete)
+- All FK columns must have indexes
+
+### Git
+- Conventional Commits: `type(scope): description`
+- Always `git pull --rebase origin main` before push
+
+---
+
+## 5. Architecture
+
+### Tech Stack
+- Frontend: React 19, Tailwind CSS 4, shadcn/ui
+- API: tRPC
+- Database: MySQL, Drizzle ORM
+- Hosting: DigitalOcean App Platform
+
+### Party Model (CRITICAL)
+
+**Single source of truth: `clients` table**
+
+```typescript
+// ✅ Find suppliers
+const suppliers = await db.query.clients.findMany({
+  where: eq(clients.isSeller, true),
+  with: { supplierProfile: true },
+});
+
+// ❌ NEVER - vendors table is DEPRECATED
+const vendors = await db.query.vendors.findMany();
+```
+
+### Actor Attribution (MANDATORY)
+
+```typescript
+// ✅ CORRECT - Actor from context
+const createdBy = ctx.user.id;
+
+// ❌ WRONG - Actor from input
+const createdBy = input.createdBy;
+```
+
+---
+
+## 6. Roadmap Management
+
+### Single Source of Truth
+
+**`docs/roadmaps/MASTER_ROADMAP.md`**
+
+### Task Fields
+
+| Field | Valid Values |
+|-------|--------------|  
+| Status | `ready`, `in-progress`, `complete`, `blocked` |
+| Priority | `HIGH`, `MEDIUM`, `LOW` |
+| Estimate | `4h`, `8h`, `16h`, `1d`, `2d`, `1w` |
+
+### Task ID Prefixes
+`ST-`, `BUG-`, `FEATURE-`, `QA-`, `DATA-`, `INFRA-`, `PERF-`
+
+### Completing a Task
+
+```markdown
+**Status:** complete
+**Completed:** 2025-01-23
+**Key Commits:** `abc1234`
+**Actual Time:** 6h
+```
+
+---
+
+## 7. Session Management
+
+1. `git pull origin main`
+2. Check `docs/ACTIVE_SESSIONS.md`
+3. Create session in `docs/sessions/active/`
+4. Register in ACTIVE_SESSIONS.md
+5. Never edit files another agent is working on
+
+---
+
+## 8. Deprecated Systems
+
+| ❌ Deprecated | ✅ Use Instead |
+|--------------|----------------|
+| `vendors` table | `clients` with `isSeller=true` |
+| `vendorId` (new) | `supplierClientId` |
+| `ctx.user?.id \|\| 1` | `getAuthenticatedUserId(ctx)` |
+| Hard deletes | Soft deletes (`deletedAt`) |
+| Railway | DigitalOcean |
+
+---
+
+## 9. Quick Reference
+
+### Commands
+```bash
+pnpm check              # TypeScript
+pnpm lint               # ESLint  
+pnpm test               # Tests
+pnpm build              # Build
+pnpm roadmap:validate   # Validate roadmap
+```
+
+### Essential Files
+- `docs/roadmaps/MASTER_ROADMAP.md` - Task source of truth
+- `docs/ACTIVE_SESSIONS.md` - Active agent work
+- `CLAUDE.md` - This protocol
+
+---
+
+## Appendix
+
+### Claude Code
+Auto-loads this file from repo root.
+
+### Claude.ai Projects
+Paste into Project Instructions.
+
+### Other Agents
+Read this file at session start. See `.kiro/steering/` for details.
+
+---
+
+**Remember**: Verification over persuasion. Prove it works.
