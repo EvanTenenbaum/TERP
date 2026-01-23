@@ -4,9 +4,18 @@ import { afterEach, beforeEach, vi } from "vitest";
 beforeEach(() => {
   // Ensure document.body has a root element for React to render into
   if (typeof document !== "undefined") {
+    // Clear any existing content first
+    document.body.innerHTML = "";
+
+    // Create the root container
     const root = document.createElement("div");
     root.id = "root";
     document.body.appendChild(root);
+
+    // Also create a portal container for modals/dialogs
+    const portal = document.createElement("div");
+    portal.id = "portal-root";
+    document.body.appendChild(portal);
   }
 });
 
@@ -14,13 +23,17 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
 
-  // Clean up DOM container
+  // Clean up DOM container - but don't clear innerHTML here
+  // The cleanup from @testing-library/react handles React unmounting
+  // Clearing innerHTML here can cause race conditions with React's cleanup
   if (typeof document !== "undefined") {
     const root = document.getElementById("root");
     if (root) {
-      document.body.removeChild(root);
+      root.innerHTML = ""; // Only clear the root contents, not remove it
     }
-    // Clean up any other elements that tests might have created
-    document.body.innerHTML = "";
+    const portal = document.getElementById("portal-root");
+    if (portal) {
+      portal.innerHTML = "";
+    }
   }
 });
