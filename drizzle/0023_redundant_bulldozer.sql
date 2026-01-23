@@ -158,12 +158,20 @@ CREATE TABLE `workflow_statuses` (
 DROP INDEX `idx_roles_name` ON `roles`;--> statement-breakpoint
 DROP INDEX `idx_permissions_name` ON `permissions`;--> statement-breakpoint
 DROP INDEX `idx_permissions_module` ON `permissions`;--> statement-breakpoint
+ALTER TABLE `role_permissions` DROP FOREIGN KEY `role_permissions_role_id_roles_id_fk`;--> statement-breakpoint
+ALTER TABLE `role_permissions` DROP FOREIGN KEY `role_permissions_permission_id_permissions_id_fk`;--> statement-breakpoint
+ALTER TABLE `user_roles` DROP FOREIGN KEY `user_roles_role_id_roles_id_fk`;--> statement-breakpoint
+ALTER TABLE `user_permission_overrides` DROP FOREIGN KEY `user_permission_overrides_permission_id_permissions_id_fk`;--> statement-breakpoint
 DROP INDEX `idx_role_permissions_role` ON `role_permissions`;--> statement-breakpoint
 DROP INDEX `idx_role_permissions_permission` ON `role_permissions`;--> statement-breakpoint
 DROP INDEX `idx_user_roles_user` ON `user_roles`;--> statement-breakpoint
 DROP INDEX `idx_user_roles_role` ON `user_roles`;--> statement-breakpoint
 DROP INDEX `idx_user_permission_overrides_user` ON `user_permission_overrides`;--> statement-breakpoint
 DROP INDEX `idx_user_permission_overrides_permission` ON `user_permission_overrides`;--> statement-breakpoint
+ALTER TABLE `role_permissions` ADD CONSTRAINT `role_permissions_role_id_roles_id_fk` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `role_permissions` ADD CONSTRAINT `role_permissions_permission_id_permissions_id_fk` FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `user_roles` ADD CONSTRAINT `user_roles_role_id_roles_id_fk` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `user_permission_overrides` ADD CONSTRAINT `user_permission_overrides_permission_id_permissions_id_fk` FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `calendar_events` MODIFY COLUMN `event_type` enum('MEETING','DEADLINE','TASK','DELIVERY','PAYMENT_DUE','FOLLOW_UP','AUDIT','INTAKE','PHOTOGRAPHY','BATCH_EXPIRATION','RECURRING_ORDER','SAMPLE_REQUEST','OTHER','AR_COLLECTION','AP_PAYMENT') NOT NULL;--> statement-breakpoint
 ALTER TABLE `accounts` ADD `deleted_at` timestamp;--> statement-breakpoint
 ALTER TABLE `auditLogs` ADD `deleted_at` timestamp;--> statement-breakpoint
