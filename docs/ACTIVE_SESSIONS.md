@@ -46,3 +46,4 @@
 - Session-20260108-DATA-SEED-EXEC-1b7f13: DATA-SEED-EXEC - [Platform: External] [Files: docs/sessions/active/Session-20260108-DATA-SEED-EXEC-1b7f13.md, docs/ACTIVE_SESSIONS.md]
 - Session-20260116-TASK-PREMORTEM-11ec2f: TASK-PREMORTEM - [Platform: External] [Files: docs/sessions/active/Session-20260116-TASK-PREMORTEM-11ec2f.md, docs/ACTIVE_SESSIONS.md]
 - Session-20260123-ROADMAP-INGEST-dfb370: ROADMAP-INGEST - [Platform: External] [Files: docs/roadmaps/MASTER_ROADMAP.md, docs/roadmap/PR_TO_TASK_INDEX.md, docs/roadmap/TEST_REPORT_TO_TASK_INDEX.md, docs/roadmap/NOTHING_LOST_PROOF.md]
+- Session-20260123-TASK-PR290-292-830061: PR-290/PR-292 Consolidation Review - [Platform: External] [Files: docs/sessions/active/Session-20260123-TASK-PR290-292-830061.md, docs/ACTIVE_SESSIONS.md]

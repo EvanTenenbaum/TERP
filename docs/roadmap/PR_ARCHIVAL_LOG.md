@@ -6,18 +6,20 @@ This log tracks the status of archival actions (comment + close without merge) f
 
 ## PRs in Scope
 
-| PR   | Archival Comment Added | Closed Without Merge | Notes              |
-| ---- | ---------------------- | -------------------- | ------------------ |
-| #289 | ☐                      | ☐                    | Awaiting GH access |
-| #288 | ☐                      | ☐                    | Awaiting GH access |
-| #287 | ☐                      | ☐                    | Awaiting GH access |
-| #286 | ☐                      | ☐                    | Awaiting GH access |
-| #285 | ☐                      | ☐                    | Awaiting GH access |
-| #284 | ☐                      | ☐                    | Awaiting GH access |
-| #283 | ☐                      | ☐                    | Awaiting GH access |
-| #282 | ☐                      | ☐                    | Awaiting GH access |
-| #280 | ☐                      | ☐                    | Awaiting GH access |
-| #279 | ☐                      | ☐                    | Awaiting GH access |
+| PR   | Archival Comment Added | Closed Without Merge | Notes                                                        |
+| ---- | ---------------------- | -------------------- | ------------------------------------------------------------ |
+| #289 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #288 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #287 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #286 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #285 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #284 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #283 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #282 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #280 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #279 | ☐                      | ☐                    | Awaiting GH access                                           |
+| #290 | ☐                      | ☐                    | Superseded by PR #292 (consolidated content)                 |
+| #292 | ☐                      | ☐                    | Consolidated PR; includes PR #290 scope + verification tasks |
 
 ## Required Archival Comment Template
 
