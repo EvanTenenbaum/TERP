@@ -841,7 +841,8 @@ export async function getBatchesWithDetails(
   filters?: { status?: string; category?: string }
 ) {
   const db = await getDb();
-  if (!db) return { items: [], nextCursor: null };
+  // BUG-098 FIX: Include hasMore in early return to prevent frontend issues
+  if (!db) return { items: [], nextCursor: null, hasMore: false };
 
   // Build where conditions
   const conditions = [];
@@ -856,6 +857,8 @@ export async function getBatchesWithDetails(
   }
 
   // Join batches with products, brands, lots, and vendors
+  // BUG-098 FIX: Also join clients table via supplierClientId for canonical supplier data
+  // This handles cases where vendorId may be empty but supplierClientId is set
   const query = db
     .select({
       batch: batches,
@@ -863,12 +866,16 @@ export async function getBatchesWithDetails(
       brand: brands,
       lot: lots,
       vendor: vendors,
+      // Also select supplier client data as fallback for deprecated vendor table
+      supplierClient: clients,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(lots, eq(batches.lotId, lots.id))
     .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+    // BUG-098 FIX: Add canonical supplier join as fallback
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
     .orderBy(desc(batches.id))
     .limit(limit + 1); // Fetch one extra to determine if there are more results
 
@@ -898,10 +905,12 @@ export async function searchBatches(
   if (!db) return { items: [], nextCursor: null, hasMore: false };
 
   // Build where conditions
-  const searchCondition = sql`${batches.sku} LIKE ${`%${query}%`} 
-      OR ${batches.code} LIKE ${`%${query}%`} 
+  // BUG-098 FIX: Also search in clients.name for canonical supplier data
+  const searchCondition = sql`${batches.sku} LIKE ${`%${query}%`}
+      OR ${batches.code} LIKE ${`%${query}%`}
       OR ${products.nameCanonical} LIKE ${`%${query}%`}
       OR ${vendors.name} LIKE ${`%${query}%`}
+      OR ${clients.name} LIKE ${`%${query}%`}
       OR ${brands.name} LIKE ${`%${query}%`}
       OR ${products.category} LIKE ${`%${query}%`}
       OR ${products.subcategory} LIKE ${`%${query}%`}
@@ -913,6 +922,7 @@ export async function searchBatches(
   }
 
   // Multi-field search with cursor-based pagination
+  // BUG-098 FIX: Also join clients table for canonical supplier data
   const result = await db
     .select({
       batch: batches,
@@ -920,12 +930,14 @@ export async function searchBatches(
       brand: brands,
       lot: lots,
       vendor: vendors,
+      supplierClient: clients,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(lots, eq(batches.lotId, lots.id))
     .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
     .where(and(...conditions))
     .orderBy(desc(batches.id))
     .limit(limit + 1);

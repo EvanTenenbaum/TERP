@@ -229,7 +229,9 @@ export const inventoryRouter = router({
               subcategory: item.product?.subcategory || null,
 
               // Relationships
-              vendorName: item.vendor?.name || null,
+              // BUG-098 FIX: Use supplierClient as fallback for deprecated vendor table
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              vendorName: item.vendor?.name || (item as { supplierClient?: { name?: string | null } | null }).supplierClient?.name || null,
               brandName: item.brand?.name || null,
 
               // Quantities
