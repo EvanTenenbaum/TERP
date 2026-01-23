@@ -60,6 +60,9 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 
+// Client Components
+import { AddClientWizard } from "@/components/clients/AddClientWizard";
+
 // Icons
 import {
   Search,
@@ -857,6 +860,18 @@ export function ClientsWorkSurface() {
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
+
+      {/* Add Client Wizard - FIX: Missing dialog for add client button */}
+      <AddClientWizard
+        open={isAddClientOpen}
+        onOpenChange={setIsAddClientOpen}
+        onSuccess={(clientId) => {
+          // Refresh the list and navigate to the new client
+          utils.clients.list.invalidate();
+          utils.clients.count.invalidate();
+          setLocation(`/clients/${clientId}`);
+        }}
+      />
     </div>
   );
 }
