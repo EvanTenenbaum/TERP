@@ -28,6 +28,7 @@ import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
+import CreditsPage from "@/pages/CreditsPage"; // NAV-017: Credits management page
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -36,6 +37,17 @@ import { NotificationPreferencesPage } from "@/pages/settings/NotificationPrefer
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import Orders from "@/pages/Orders";
 import Quotes from "@/pages/Quotes";
+// Work Surface components for progressive rollout
+import { WorkSurfaceGate } from "@/hooks/work-surface/useWorkSurfaceFeatureFlags";
+import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
+import InvoicesWorkSurface from "@/components/work-surface/InvoicesWorkSurface";
+import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
+import ClientsWorkSurface from "@/components/work-surface/ClientsWorkSurface";
+import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
+import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
+import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
+import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
+import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
@@ -68,6 +80,8 @@ import { NotificationsPage } from "@/pages/NotificationsPage";
 const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 // Sprint 4 Track D: Scheduling System
 const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
+// MEET-048: Hour Tracking / Time Clock
+const TimeClockPage = lazy(() => import("@/pages/TimeClockPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -82,7 +96,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect, useSearch } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 
@@ -93,6 +107,15 @@ const withErrorBoundary = (Component: FC<any>) => () => (
     <Component />
   </PageErrorBoundary>
 );
+
+// QA-003 FIX: Helper component for legacy route redirects that preserves query params
+const RedirectWithSearch = (to: string) => {
+  const RedirectComponent: FC = () => {
+    const search = useSearch();
+    return <Redirect to={`${to}${search || ''}`} />;
+  };
+  return RedirectComponent;
+};
 
 // MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,11 +179,25 @@ function Router() {
                 />
                 <Route
                   path="/inventory"
-                  component={withErrorBoundary(Inventory)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INVENTORY"
+                      fallback={<Inventory />}
+                    >
+                      <InventoryWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/inventory/:id"
-                  component={withErrorBoundary(Inventory)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INVENTORY"
+                      fallback={<Inventory />}
+                    >
+                      <InventoryWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/products"
@@ -189,7 +226,14 @@ function Router() {
                 />
                 <Route
                   path="/accounting/invoices"
-                  component={withErrorBoundary(Invoices)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_ACCOUNTING"
+                      fallback={<Invoices />}
+                    >
+                      <InvoicesWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/accounting/bills"
@@ -218,7 +262,14 @@ function Router() {
                 />
                 <Route
                   path="/clients"
-                  component={withErrorBoundary(ClientsListPage)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_ORDERS"
+                      fallback={<ClientsListPage />}
+                    >
+                      <ClientsWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/clients/:id"
@@ -226,7 +277,14 @@ function Router() {
                 />
                 <Route
                   path="/clients/:clientId/ledger"
-                  component={withErrorBoundary(ClientLedger)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_ACCOUNTING"
+                      fallback={<ClientLedger />}
+                    >
+                      <ClientLedgerWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/client-ledger"
@@ -249,10 +307,27 @@ function Router() {
                   path="/sales-portal"
                   component={withErrorBoundary(UnifiedSalesPortalPage)}
                 />
-                <Route path="/orders" component={withErrorBoundary(Orders)} />
+                <Route
+                  path="/orders"
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_ORDERS"
+                      fallback={<Orders />}
+                    >
+                      <OrdersWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
+                />
                 <Route
                   path="/pick-pack"
-                  component={withErrorBoundary(PickPackPage)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INVENTORY"
+                      fallback={<PickPackPage />}
+                    >
+                      <PickPackWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/photography"
@@ -262,7 +337,17 @@ function Router() {
                   path="/orders/create"
                   component={withErrorBoundary(OrderCreatorPage)}
                 />
-                <Route path="/quotes" component={withErrorBoundary(Quotes)} />
+                <Route
+                  path="/quotes"
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_ORDERS"
+                      fallback={<Quotes />}
+                    >
+                      <QuotesWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
+                />
                 <Route
                   path="/settings/cogs"
                   component={withErrorBoundary(CogsSettingsPage)}
@@ -287,6 +372,11 @@ function Router() {
                   path="/credit-settings"
                   component={withErrorBoundary(CreditSettingsPage)}
                 />
+                {/* NAV-017: Credits management page */}
+                <Route
+                  path="/credits"
+                  component={withErrorBoundary(CreditsPage)}
+                />
                 <Route
                   path="/needs"
                   component={withErrorBoundary(NeedsManagementPage)}
@@ -309,7 +399,14 @@ function Router() {
                 />
                 <Route
                   path="/purchase-orders"
-                  component={withErrorBoundary(PurchaseOrdersPage)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INTAKE"
+                      fallback={<PurchaseOrdersPage />}
+                    >
+                      <PurchaseOrdersWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route
                   path="/returns"
@@ -328,6 +425,18 @@ function Router() {
                   path="/intake-receipts"
                   component={withErrorBoundary(IntakeReceipts)}
                 />
+                {/* ROUTE-001: Direct Intake WorkSurface */}
+                <Route
+                  path="/intake"
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INTAKE"
+                      fallback={<SpreadsheetViewPage />}
+                    >
+                      <DirectIntakeWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
+                />
                 <Route
                   path="/matchmaking"
                   component={withErrorBoundary(MatchmakingServicePage)}
@@ -338,7 +447,14 @@ function Router() {
                 />
                 <Route
                   path="/spreadsheet-view"
-                  component={withErrorBoundary(SpreadsheetViewPage)}
+                  component={withErrorBoundary(() => (
+                    <WorkSurfaceGate
+                      flag="WORK_SURFACE_INTAKE"
+                      fallback={<SpreadsheetViewPage />}
+                    >
+                      <DirectIntakeWorkSurface />
+                    </WorkSurfaceGate>
+                  ))}
                 />
                 <Route path="/help" component={withErrorBoundary(Help)} />
                 <Route
@@ -373,6 +489,11 @@ function Router() {
                   path="/scheduling"
                   component={withLazyErrorBoundary(SchedulingPage)}
                 />
+                {/* MEET-048: Hour Tracking / Time Clock */}
+                <Route
+                  path="/time-clock"
+                  component={withLazyErrorBoundary(TimeClockPage)}
+                />
                 <Route
                   path="/workflow-queue"
                   component={withErrorBoundary(WorkflowQueuePage)}
@@ -396,6 +517,18 @@ function Router() {
                     component={withErrorBoundary(ComponentShowcase)}
                   />
                 )}
+
+                {/* E2E-FIX: Legacy route redirects for backward compatibility */}
+                {/* QA-003 FIX: Preserve query parameters during redirect */}
+                <Route path="/invoices" component={RedirectWithSearch("/accounting/invoices")} />
+                <Route path="/client-needs" component={RedirectWithSearch("/needs")} />
+                <Route path="/ar-ap" component={RedirectWithSearch("/accounting")} />
+                <Route path="/reports" component={RedirectWithSearch("/analytics")} />
+                <Route path="/pricing-rules" component={RedirectWithSearch("/pricing/rules")} />
+                <Route path="/system-settings" component={RedirectWithSearch("/settings")} />
+                <Route path="/feature-flags" component={RedirectWithSearch("/settings/feature-flags")} />
+                <Route path="/todo-lists" component={RedirectWithSearch("/todos")} />
+
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
                 {/* Final fallback route */}
                 <Route component={withErrorBoundary(NotFound)} />

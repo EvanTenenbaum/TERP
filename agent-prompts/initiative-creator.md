@@ -4,6 +4,15 @@
 
 ---
 
+## ✅ Verification Over Persuasion (Mandatory)
+
+Follow `.kiro/steering/08-adaptive-qa-protocol.md` when defining verification requirements for initiatives.
+
+- Define SAFE/STRICT/RED expectations per scope
+- Require explicit verification commands in deliverables
+
+---
+
 ## 🔑 Credentials & Environment Variables
 
 **IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**

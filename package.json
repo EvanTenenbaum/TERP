@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
+    "migrate:calendar-id": "tsx scripts/migrate-calendar-id.ts",
     "build": "node scripts/generate-version.cjs && vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && cp -r scripts dist/",
     "build:production": "node scripts/generate-version.cjs && vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && cp -r scripts dist/",
     "start": "NODE_ENV=production node dist/index.js",
@@ -55,6 +56,9 @@
     "seed:test-accounts": "tsx server/db/seed/testAccounts.ts",
     "seed:qa-accounts": "tsx server/db/seed/qaAccounts.ts",
     "seed:pricing": "tsx scripts/seed-pricing.ts",
+    "seed:comprehensive": "tsx scripts/seed-comprehensive.ts",
+    "seed:comprehensive:light": "tsx scripts/seed-comprehensive.ts --light",
+    "seed:comprehensive:dry-run": "tsx scripts/seed-comprehensive.ts --dry-run",
     "setup:admin": "tsx scripts/setup-admin.ts",
     "get:auth-token": "tsx scripts/get-auth-token.ts",
     "prepare": "husky install || true",
@@ -124,7 +128,13 @@
     "backup:db:dry": "tsx scripts/backup-database.ts --dry-run",
     "deploy:enforce": "tsx scripts/deployment-enforcement.ts monitor",
     "deploy:check": "tsx scripts/deployment-enforcement.ts check",
-    "deploy:health": "tsx scripts/deployment-enforcement.ts health"
+    "deploy:health": "tsx scripts/deployment-enforcement.ts health",
+    "gate:placeholder": "bash scripts/qa/placeholder-scan.sh",
+    "gate:rbac": "bash scripts/qa/rbac-verify.sh",
+    "gate:parity": "bash scripts/qa/feature-parity.sh",
+    "gate:invariants": "npx tsx scripts/qa/invariant-checks.ts",
+    "gate:all": "npm run gate:placeholder && npm run gate:rbac && npm run gate:parity",
+    "validate:accelerated": "bash scripts/validation/run-accelerated-validation.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

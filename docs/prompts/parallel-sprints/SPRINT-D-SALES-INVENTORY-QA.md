@@ -12,7 +12,7 @@ You are assigned to execute **Sprint D** of the TERP ERP parallel sprint plan. T
 
 ## Before ANY Work
 
-1. Read `UNIVERSAL_AGENT_RULES.md` for complete protocols
+1. Read `.kiro/steering/00-core-identity.md` and `.kiro/steering/08-adaptive-qa-protocol.md`
 2. Pull latest: `git pull origin main`
 3. Check active sessions: `cat docs/ACTIVE_SESSIONS.md`
 4. Check roadmap: `cat docs/roadmaps/MASTER_ROADMAP.md`
@@ -28,13 +28,15 @@ You are assigned to execute **Sprint D** of the TERP ERP parallel sprint plan. T
 - ❌ **NO editing files another agent is working on** - Check ACTIVE_SESSIONS.md
 - ❌ **NO editing files outside your Sprint D domain** - See File Ownership below
 - ❌ **NO marking tasks complete without deployment verification**
-- ❌ **NO committing without validation** - Run `pnpm typecheck && pnpm lint && pnpm test`
+- ❌ **NO committing without validation** - Run `pnpm check && pnpm lint && pnpm test`
+- ❌ **NO unverified claims** - Follow SAFE/STRICT/RED verification modes
 
 ---
 
 ## Session Registration (MANDATORY)
 
 Before starting work:
+
 ```bash
 SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-D-$(openssl rand -hex 3)"
 # Create docs/sessions/active/$SESSION_ID.md
@@ -47,21 +49,25 @@ SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-D-$(openssl rand -hex 3)"
 ## Development Standards
 
 ### TypeScript
+
 - Explicit return types on all functions
 - Use type guards, not assertions
 - Handle null/undefined explicitly
 
 ### React
+
 - Use `React.memo` for reusable components
 - Use `useCallback` for event handlers
 - Use `useMemo` for expensive computations
 
 ### Testing
+
 - Write tests BEFORE implementation (TDD)
 - 80%+ coverage for business logic
 - Test behavior, not implementation
 
 ### Database
+
 - snake_case for tables/columns
 - Index ALL foreign keys
 - Use soft deletes (`is_deleted`)
@@ -94,7 +100,7 @@ curl https://terp-app-b9s35.ondigitalocean.app/health  # Verify
 
 ## Pre-Commit Checklist
 
-- [ ] `pnpm typecheck` - No errors
+- [ ] `pnpm check` - No errors
 - [ ] `pnpm lint` - No errors
 - [ ] `pnpm test` - All pass
 - [ ] `pnpm roadmap:validate` - If roadmap changed
@@ -113,7 +119,7 @@ pnpm roadmap:capacity          # Check capacity
 pnpm test                      # Run tests
 pnpm test:e2e                  # Run E2E tests
 pnpm test:coverage             # Run tests with coverage
-pnpm typecheck                 # Check types
+pnpm check                     # Check types
 pnpm lint                      # Check linting
 pnpm generate                  # Regenerate types after schema changes
 bash scripts/watch-deploy.sh   # Monitor deployment
@@ -126,7 +132,7 @@ bash scripts/watch-deploy.sh   # Monitor deployment
 - `docs/roadmaps/MASTER_ROADMAP.md` - Task tracking
 - `docs/roadmaps/PARALLEL_SPRINT_PLAN.md` - Sprint coordination
 - `docs/ACTIVE_SESSIONS.md` - Who's working on what
-- `UNIVERSAL_AGENT_RULES.md` - Complete protocols
+- `.kiro/steering/` - Complete protocols
 - `tests/` - Test files (your domain)
 - `docs/` - Documentation (your domain)
 
@@ -134,9 +140,9 @@ bash scripts/watch-deploy.sh   # Monitor deployment
 
 ## When Stuck
 
-1. Read `UNIVERSAL_AGENT_RULES.md`
+1. Read `.kiro/steering/00-core-identity.md`
 2. Check existing code for patterns
-3. Search: `grep -r "pattern" src/`
+3. Search: `rg "pattern" src/`
 4. Check existing tests for examples
 5. Ask user for clarification
 
@@ -147,18 +153,22 @@ bash scripts/watch-deploy.sh   # Monitor deployment
 **#Terp-Dev #Sprint-D**
 
 ---
+
 ---
 
 ## 🚨 SPRINT D SPECIFIC INSTRUCTIONS
 
 ### Prerequisites
+
 1. **Sprint A must be complete** - Verify schema is stable before starting
 2. **Pull latest code** - `git pull origin main` to get Sprint A changes
 3. **Regenerate types** - `pnpm generate` to update TypeScript types
 4. **Create your branch** - `git checkout -b sprint-d/sales-inventory-qa`
 
 ### File Ownership Rules (STRICTLY ENFORCED)
+
 You have **EXCLUSIVE WRITE ACCESS** to these files only:
+
 ```
 # Backend Routers
 server/routers/salesSheets.ts
@@ -189,6 +199,7 @@ scripts/test-*.ts
 ```
 
 **DO NOT MODIFY** any files outside this list. Other agents are working on:
+
 - Sprint B owns: `client/src/components/ui/`, `client/src/pages/Orders.tsx`, `client/src/pages/ClientsListPage.tsx`
 - Sprint C owns: `server/routers/accounting.ts`, `server/routers/vipPortal*.ts`, `client/src/pages/accounting/`, `client/src/pages/ClientProfilePage.tsx`
 
@@ -201,11 +212,13 @@ scripts/test-*.ts
 ### Phase 1: Sales Workflow Improvements (20h)
 
 #### QA-062: Implement Sales Sheet Save Functionality (6h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** Sales sheet creator has no save/draft functionality
 
 **Deliverables:**
+
 - [ ] Add "Save Draft" button to sales sheet creator
 - [ ] Implement draft persistence to database
 - [ ] Add "Load Draft" functionality
@@ -213,6 +226,7 @@ scripts/test-*.ts
 - [ ] Add draft list view
 
 **🔴 REDHAT QA GATE 1.1:**
+
 ```
 Before marking QA-062 complete:
 □ Create a new sales sheet
@@ -225,11 +239,13 @@ Before marking QA-062 complete:
 ```
 
 #### QA-066: Implement Quote Discount and Notes Features (8h)
+
 **Spec:** `docs/prompts/BUG-066.md` (if exists) or MASTER_ROADMAP.md
 
 **Problem:** Quote creation missing discount application and notes/terms fields
 
 **Deliverables:**
+
 - [ ] Add discount input field to quote form (percentage and fixed amount)
 - [ ] Implement discount calculation logic
 - [ ] Add notes/terms textarea field
@@ -238,6 +254,7 @@ Before marking QA-062 complete:
 - [ ] Show discount in line item totals
 
 **🔴 REDHAT QA GATE 1.2:**
+
 ```
 Before marking QA-066 complete:
 □ Add percentage discount - verify calculation
@@ -250,17 +267,20 @@ Before marking QA-066 complete:
 ```
 
 #### SALES-001: Sales Sheet Version Control (6h)
+
 **Source:** Sprint D Plan
 
 **Problem:** No way to track sales sheet versions or clone existing sheets
 
 **Deliverables:**
+
 - [ ] Add version tracking to sales sheets
 - [ ] Implement "Clone & Modify" functionality
 - [ ] Add version history view
 - [ ] Show version number on sheet
 
 **🔴 REDHAT QA GATE 1.3 (PHASE 1 COMPLETE):**
+
 ```
 Before proceeding to Phase 2:
 □ Sales sheet save/draft works
@@ -268,7 +288,7 @@ Before proceeding to Phase 2:
 □ Quote notes are saved and displayed
 □ Version control tracks changes
 □ Clone functionality works
-□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
+□ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Commit with message: "feat(sprint-d): Phase 1 - Sales Workflow Improvements [REDHAT QA PASSED]"
 □ Push to sprint-d/sales-inventory-qa branch
@@ -279,11 +299,13 @@ Before proceeding to Phase 2:
 ### Phase 2: Inventory & Location Management (22h)
 
 #### QA-063: Implement Location & Warehouse Management (16h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** No clear way to manage locations and warehouses for inventory
 
 **Deliverables:**
+
 - [ ] Create warehouse management UI
 - [ ] Implement location hierarchy (warehouse → zone → bin)
 - [ ] Add location assignment to batches
@@ -292,6 +314,7 @@ Before proceeding to Phase 2:
 - [ ] Show location in inventory views
 
 **🔴 REDHAT QA GATE 2.1:**
+
 ```
 Before marking QA-063 complete:
 □ Create a new warehouse
@@ -305,11 +328,13 @@ Before marking QA-063 complete:
 ```
 
 #### QA-069: Implement Batch Media Upload (6h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** No way to upload photos/media for batches
 
 **Deliverables:**
+
 - [ ] Add media upload component to batch form
 - [ ] Implement file upload endpoint with S3 integration
 - [ ] Store media references in database
@@ -318,6 +343,7 @@ Before marking QA-063 complete:
 - [ ] Add image preview/lightbox
 
 **🔴 REDHAT QA GATE 2.2 (PHASE 2 COMPLETE):**
+
 ```
 Before proceeding to Phase 3:
 □ Upload single image to batch
@@ -326,7 +352,7 @@ Before proceeding to Phase 3:
 □ Image preview/lightbox works
 □ Delete image works
 □ Location management fully functional
-□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
+□ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Commit with message: "feat(sprint-d): Phase 2 - Inventory & Location Management [REDHAT QA PASSED]"
 □ Push to sprint-d/sales-inventory-qa branch
@@ -337,11 +363,13 @@ Before proceeding to Phase 3:
 ### Phase 3: Testing Infrastructure & Documentation (16h)
 
 #### TEST-001: Comprehensive Integration Testing (8h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** No comprehensive E2E test suite for critical paths
 
 **Deliverables:**
+
 - [ ] Create E2E test suite structure
 - [ ] Add integration tests for order workflow
 - [ ] Add integration tests for inventory workflow
@@ -350,6 +378,7 @@ Before proceeding to Phase 3:
 - [ ] Add test running instructions to README
 
 **Test Coverage Requirements:**
+
 ```
 Critical Paths to Test:
 1. Order Creation → Fulfillment → Payment → Complete
@@ -360,6 +389,7 @@ Critical Paths to Test:
 ```
 
 **🔴 REDHAT QA GATE 3.1:**
+
 ```
 Before marking TEST-001 complete:
 □ All 5 critical path tests written
@@ -371,11 +401,13 @@ Before marking TEST-001 complete:
 ```
 
 #### DOCS-001: User Documentation Update (4h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** User documentation outdated for new features
 
 **Deliverables:**
+
 - [ ] Update user guide for new features
 - [ ] Create quick-start guide
 - [ ] Document keyboard shortcuts
@@ -383,6 +415,7 @@ Before marking TEST-001 complete:
 - [ ] Review and update API documentation
 
 **Documentation Structure:**
+
 ```
 docs/
 ├── user-guide/
@@ -399,6 +432,7 @@ docs/
 ```
 
 **🔴 REDHAT QA GATE 3.2:**
+
 ```
 Before marking DOCS-001 complete:
 □ Quick-start guide complete
@@ -410,20 +444,23 @@ Before marking DOCS-001 complete:
 ```
 
 #### QUAL-007: Final TODO Audit & Documentation (4h)
+
 **Source:** MASTER_ROADMAP.md
 
 **Problem:** 25+ non-critical TODOs remain in codebase
 
 **Deliverables:**
+
 - [ ] Audit all remaining TODOs in codebase
 - [ ] Document acceptable technical debt in TECHNICAL_DEBT.md
 - [ ] Create tasks for any critical items found
 - [ ] Update documentation index
 
 **TODO Audit Process:**
+
 ```bash
 # Find all TODOs
-grep -r "TODO" --include="*.ts" --include="*.tsx" . | wc -l
+rg "TODO" --glob "*.ts" --glob "*.tsx" . | wc -l
 
 # Categorize by priority
 # P0: Security/Data integrity issues
@@ -434,6 +471,7 @@ grep -r "TODO" --include="*.ts" --include="*.tsx" . | wc -l
 ```
 
 **🔴 REDHAT QA GATE 3.3 (PHASE 3 COMPLETE):**
+
 ```
 Before marking sprint complete:
 □ E2E test suite complete and passing
@@ -441,7 +479,7 @@ Before marking sprint complete:
 □ TODO audit complete
 □ TECHNICAL_DEBT.md updated
 □ No P0 or P1 TODOs remaining
-□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
+□ Run: pnpm check && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Commit with message: "feat(sprint-d): Phase 3 - Testing & Documentation [REDHAT QA PASSED]"
 □ Push to sprint-d/sales-inventory-qa branch
@@ -454,7 +492,8 @@ Before marking sprint complete:
 Before submitting your branch for merge:
 
 ### Code Quality
-- [ ] `pnpm typecheck` - No errors
+
+- [ ] `pnpm check` - No errors
 - [ ] `pnpm lint` - No errors
 - [ ] `pnpm test` - All tests pass
 - [ ] `pnpm test:e2e` - All E2E tests pass
@@ -465,6 +504,7 @@ Before submitting your branch for merge:
 - [ ] No `any` types introduced
 
 ### Functional Verification
+
 - [ ] Sales sheet save/draft works
 - [ ] Quote discounts work correctly
 - [ ] Sales sheet version control works
@@ -474,23 +514,27 @@ Before submitting your branch for merge:
 - [ ] No regressions in existing functionality
 
 ### Documentation Verification
+
 - [ ] User guide is complete and accurate
 - [ ] API documentation is updated
 - [ ] TECHNICAL_DEBT.md is current
 - [ ] README has test instructions
 
 ### Test Quality
+
 - [ ] Tests are deterministic (run 3x, same result)
 - [ ] Tests have proper setup/teardown
 - [ ] Test coverage meets requirements
 - [ ] No skipped tests without justification
 
 ### Git Hygiene
+
 - [ ] All commits have descriptive messages (conventional commits)
 - [ ] No merge conflicts with main
 - [ ] Branch is rebased on latest main
 
 ### Final Commit
+
 ```bash
 git add .
 git commit -m "feat(sprint-d): Complete - Sales, Inventory & Quality Assurance [REDHAT QA PASSED]
@@ -526,17 +570,20 @@ git push origin sprint-d/sales-inventory-qa
 If you introduce a regression or break existing functionality:
 
 ### Level 1: Revert Last Commit
+
 ```bash
 git revert HEAD
 ```
 
 ### Level 2: Revert to Phase Checkpoint
+
 ```bash
 git log --oneline  # Find checkpoint commit
 git revert <commit_hash>..HEAD
 ```
 
 ### Level 3: Abandon Branch
+
 ```bash
 git checkout main
 git branch -D sprint-d/sales-inventory-qa
@@ -544,6 +591,7 @@ git checkout -b sprint-d/sales-inventory-qa  # Start fresh
 ```
 
 ### Test Rollback
+
 ```bash
 # If tests are failing and blocking others
 git stash  # Save your changes
@@ -559,6 +607,7 @@ git stash pop  # Restore changes
 ## 📞 ESCALATION
 
 If you encounter:
+
 - **File conflicts with other sprints** → STOP and report immediately
 - **Schema/type errors after Sprint A** → Run `pnpm generate` and retry
 - **Blocking bugs in Sprint A code** → Document and escalate
@@ -570,18 +619,19 @@ If you encounter:
 
 ## ⏱️ TIME ESTIMATES
 
-| Phase | Tasks | Estimate | Checkpoint |
-|-------|-------|----------|------------|
-| Phase 1 | QA-062, QA-066, SALES-001 | 20h | QA Gate 1.3 |
-| Phase 2 | QA-063, QA-069 | 22h | QA Gate 2.2 |
-| Phase 3 | TEST-001, DOCS-001, QUAL-007 | 16h | QA Gate 3.3 |
-| **Total** | | **58h** | Final QA Gate |
+| Phase     | Tasks                        | Estimate | Checkpoint    |
+| --------- | ---------------------------- | -------- | ------------- |
+| Phase 1   | QA-062, QA-066, SALES-001    | 20h      | QA Gate 1.3   |
+| Phase 2   | QA-063, QA-069               | 22h      | QA Gate 2.2   |
+| Phase 3   | TEST-001, DOCS-001, QUAL-007 | 16h      | QA Gate 3.3   |
+| **Total** |                              | **58h**  | Final QA Gate |
 
 ---
 
 ## 🎯 SUCCESS CRITERIA
 
 Sprint D is successful when:
+
 1. All 8 tasks completed and verified
 2. All Redhat QA gates passed
 3. E2E test suite passing
@@ -598,6 +648,7 @@ Sprint D is successful when:
 ## 📊 TESTING CHECKLIST
 
 ### Sales Sheet Flow
+
 - [ ] Create new sales sheet
 - [ ] Save as draft
 - [ ] Load draft
@@ -606,6 +657,7 @@ Sprint D is successful when:
 - [ ] Version history shows
 
 ### Quote Flow
+
 - [ ] Add percentage discount
 - [ ] Add fixed discount
 - [ ] Add notes/terms
@@ -614,6 +666,7 @@ Sprint D is successful when:
 - [ ] Calculations correct
 
 ### Inventory/Location Flow
+
 - [ ] Create warehouse
 - [ ] Create zones
 - [ ] Create bins
@@ -622,6 +675,7 @@ Sprint D is successful when:
 - [ ] Capacity tracking
 
 ### Media Upload Flow
+
 - [ ] Upload single image
 - [ ] Upload multiple images
 - [ ] View images
@@ -629,6 +683,7 @@ Sprint D is successful when:
 - [ ] Preview/lightbox
 
 ### E2E Test Flows
+
 - [ ] Order workflow
 - [ ] Inventory workflow
 - [ ] Sales sheet workflow
@@ -640,7 +695,9 @@ Sprint D is successful when:
 ## 🔧 ENVIRONMENT SETUP
 
 ### S3 Configuration (for media upload)
+
 Ensure these environment variables are set:
+
 ```
 AWS_ACCESS_KEY_ID=xxx
 AWS_SECRET_ACCESS_KEY=xxx
@@ -649,12 +706,15 @@ AWS_REGION=xxx
 ```
 
 ### Test Database
+
 For E2E tests, use a separate test database:
+
 ```
 DATABASE_URL_TEST=xxx
 ```
 
 ### Running Tests
+
 ```bash
 # Unit tests
 pnpm test

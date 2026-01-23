@@ -225,6 +225,135 @@ const DEFAULT_FLAGS = [
   },
 
   // ========================================================================
+  // WORK SURFACE DEPLOYMENT FLAGS (100% ROLLOUT)
+  // ========================================================================
+  {
+    key: "work-surface-enabled",
+    name: "Work Surface: Master Switch",
+    description: "Master switch to enable all Work Surface features",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_INTAKE",
+    name: "Work Surface: Intake",
+    description:
+      "Enable Work Surface UI for Direct Intake and Purchase Orders pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_ORDERS",
+    name: "Work Surface: Orders",
+    description: "Enable Work Surface UI for Orders, Quotes, and Clients pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_INVENTORY",
+    name: "Work Surface: Inventory",
+    description: "Enable Work Surface UI for Inventory and Pick & Pack pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+  {
+    key: "WORK_SURFACE_ACCOUNTING",
+    name: "Work Surface: Accounting",
+    description: "Enable Work Surface UI for Invoices and Client Ledger pages",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true, // 100% rollout
+  },
+
+  // DATA-012: Work Surface Feature Flags
+  {
+    key: "work-surface-keyboard-contract",
+    name: "Work Surface: Keyboard Navigation",
+    description: "Enable keyboard navigation contract for Work Surface components",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-save-state",
+    name: "Work Surface: Save State",
+    description: "Enable save state persistence for Work Surface forms",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-inspector-panel",
+    name: "Work Surface: Inspector Panel",
+    description: "Enable inspector side panel for Work Surface detail views",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-validation-timing",
+    name: "Work Surface: Validation Timing",
+    description: "Enable async validation timing for Work Surface forms",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-concurrent-edit",
+    name: "Work Surface: Concurrent Edit Protection",
+    description: "Enable concurrent edit detection and conflict resolution",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-golden-flow-intake",
+    name: "Work Surface: Golden Flow Intake",
+    description: "Enable optimized intake workflow with Work Surface",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-golden-flow-order",
+    name: "Work Surface: Golden Flow Order",
+    description: "Enable optimized order creation workflow with Work Surface",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "work-surface-golden-flow-invoice",
+    name: "Work Surface: Golden Flow Invoice",
+    description: "Enable optimized invoice workflow with Work Surface",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+
+  // DATA-012: Communication Channel Flags
+  {
+    key: "email-enabled",
+    name: "Email Notifications",
+    description: "Enable email notification channel for alerts and reminders",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "sms-enabled",
+    name: "SMS Notifications",
+    description: "Enable SMS notification channel for alerts and reminders",
+    module: null,
+    systemEnabled: false, // Disabled by default - requires SMS provider setup
+    defaultEnabled: false,
+  },
+
+  // ========================================================================
   // CALENDAR MODULE FLAGS (CAL-003/CAL-004)
   // ========================================================================
   {

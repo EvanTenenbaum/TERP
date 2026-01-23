@@ -2,8 +2,8 @@
 
 > **MANDATORY: Inject this document into every new agent prompt working on TERP**
 
-**Version:** 1.0  
-**Last Updated:** 2026-01-16  
+**Version:** 1.1  
+**Last Updated:** 2026-02-01  
 **Status:** ACTIVE
 
 ---
@@ -11,6 +11,20 @@
 ## Executive Summary
 
 TERP is a cannabis ERP system built with TypeScript, React, tRPC, and MySQL. This document provides the complete protocol for AI agents working on the TERP codebase. Following these instructions is **mandatory** for all agents.
+
+---
+
+## ✅ Verification Over Persuasion (Mandatory)
+
+**No change is correct unless verified.** Follow the adaptive verification protocol:
+
+- **SAFE MODE**: isolated, low-risk changes → targeted tests + typecheck
+- **STRICT MODE** (default): shared/core logic, DB interactions, UI flows → full verification loop
+- **RED MODE**: auth/RBAC, payments, migrations, integrations → adversarial tests + E2E + rollback plan
+
+**Definition of Done requires** lint, typecheck, tests, build, and E2E (when UI flows change).  
+**Read:** `.kiro/steering/08-adaptive-qa-protocol.md`
+**STRICT/RED** require a Redhat QA-style self-review before completion.
 
 ---
 
@@ -33,23 +47,26 @@ Before starting ANY work, complete these steps:
 3. **Check for conflicts:** `docs/ACTIVE_SESSIONS.md`
 4. **Create session file:** `docs/sessions/active/Session-YYYYMMDD-TASKID-UUID.md`
 5. **Register session:** Add entry to `docs/ACTIVE_SESSIONS.md`
+6. **Select verification mode:** SAFE/STRICT/RED per `.kiro/steering/08-adaptive-qa-protocol.md`
+7. **Read protocols:** `UNIVERSAL_AGENT_RULES.md` (entrypoint to steering)
 
 ---
 
 ## 📁 Essential Documentation Index
 
-| Document             | Location                               | Purpose                              |
-| -------------------- | -------------------------------------- | ------------------------------------ |
-| **Master Roadmap**   | `docs/roadmaps/MASTER_ROADMAP.md`      | Single source of truth for all tasks |
-| **Agent Guide**      | `docs/ROADMAP_AGENT_GUIDE.md`          | Operational protocol for agents      |
-| **How to Add Task**  | `docs/HOW_TO_ADD_TASK.md`              | Task creation format and validation  |
-| **Session Template** | `docs/templates/SESSION_TEMPLATE.md`   | Session file format                  |
-| **Prompt Template**  | `docs/templates/PROMPT_TEMPLATE_V2.md` | Task prompt format                   |
-| **Active Sessions**  | `docs/ACTIVE_SESSIONS.md`              | Conflict avoidance registry          |
-| **Specs Index**      | `docs/specs/README.md`                 | All feature specifications           |
-| **QA Auth**          | `docs/auth/QA_AUTH.md`                 | Test authentication system           |
-| **QA Playbook**      | `docs/qa/QA_PLAYBOOK.md`               | Testing procedures                   |
-| **Contributing**     | `.github/CONTRIBUTING.md`              | Commit conventions and workflow      |
+| Document             | Location                                    | Purpose                                 |
+| -------------------- | ------------------------------------------- | --------------------------------------- |
+| **Master Roadmap**   | `docs/roadmaps/MASTER_ROADMAP.md`           | Single source of truth for all tasks    |
+| **Agent Guide**      | `docs/ROADMAP_AGENT_GUIDE.md`               | Operational protocol for agents         |
+| **How to Add Task**  | `docs/HOW_TO_ADD_TASK.md`                   | Task creation format and validation     |
+| **Session Template** | `docs/templates/SESSION_TEMPLATE.md`        | Session file format                     |
+| **Prompt Template**  | `docs/templates/PROMPT_TEMPLATE_V2.md`      | Task prompt format                      |
+| **Active Sessions**  | `docs/ACTIVE_SESSIONS.md`                   | Conflict avoidance registry             |
+| **Verification**     | `.kiro/steering/08-adaptive-qa-protocol.md` | Verification modes + Definition of Done |
+| **Specs Index**      | `docs/specs/README.md`                      | All feature specifications              |
+| **QA Auth**          | `docs/auth/QA_AUTH.md`                      | Test authentication system              |
+| **QA Playbook**      | `docs/qa/QA_PLAYBOOK.md`                    | Testing procedures                      |
+| **Contributing**     | `.github/CONTRIBUTING.md`                   | Commit conventions and workflow         |
 
 ---
 
@@ -108,25 +125,22 @@ cat docs/roadmaps/MASTER_ROADMAP.md
 # 4. Check for active sessions (avoid conflicts)
 cat docs/ACTIVE_SESSIONS.md
 
-# 5. Create session file
-cp docs/templates/SESSION_TEMPLATE.md docs/sessions/active/Session-$(date +%Y%m%d)-TASKID.md
-
-# 6. Register session in ACTIVE_SESSIONS.md
+# 5. Start the task (creates branch + session; adds roadmap entry for ad-hoc)
+pnpm start-task "TASK-ID"
+# or
+pnpm start-task --adhoc "Describe the work" --category bug
 ```
 
 ### Phase 2: Development
 
 ```bash
-# 1. Create feature branch
-git checkout -b taskid-description
-
-# 2. Read the task specification (if exists)
+# 1. Read the task specification (if exists)
 cat docs/specs/TASKID-SPEC.md
 
-# 3. Read the task prompt (if exists)
+# 2. Read the task prompt (if exists)
 cat docs/prompts/TASKID.md
 
-# 4. Implement the solution
+# 3. Implement the solution
 # - Write tests FIRST (TDD)
 # - Write implementation code
 # - Run tests: pnpm test
@@ -141,13 +155,17 @@ cat docs/prompts/TASKID.md
 pnpm test
 
 # 2. Run E2E tests (if applicable)
-pnpm playwright test
+pnpm test:e2e
 
-# 3. Run roadmap validation
+# 3. Run check + lint
+pnpm check
+pnpm lint
+
+# 4. Run build (if code ships)
+pnpm build
+
+# 5. Run roadmap validation
 pnpm roadmap:validate
-
-# 4. Format code
-pnpm format
 ```
 
 ### Phase 4: Completion
@@ -165,8 +183,8 @@ mv docs/sessions/active/Session-*.md docs/sessions/completed/
 git add .
 git commit -m "feat(module): Description of changes"
 
-# 5. Push to main (or create PR)
-git push origin taskid-description:main
+# 5. Push branch and open PR
+git push
 ```
 
 ---
@@ -175,13 +193,14 @@ git push origin taskid-description:main
 
 ### Before Every Commit
 
-| Check          | Command                 | Required                |
-| -------------- | ----------------------- | ----------------------- |
-| Tests pass     | `pnpm test`             | ✅                      |
-| Linting passes | `pnpm lint`             | ✅                      |
-| Types check    | `pnpm check`            | ✅                      |
-| Code formatted | `pnpm format`           | ✅                      |
-| Roadmap valid  | `pnpm roadmap:validate` | ✅ (if roadmap changed) |
+| Check          | Command                 | Required                         |
+| -------------- | ----------------------- | -------------------------------- |
+| Tests pass     | `pnpm test`             | ✅                               |
+| Linting passes | `pnpm lint`             | ✅                               |
+| Types check    | `pnpm check`            | ✅                               |
+| Build passes   | `pnpm build`            | ✅ (if code ships)               |
+| E2E passes     | `pnpm test:e2e`         | ✅ (if UI/business flow changes) |
+| Roadmap valid  | `pnpm roadmap:validate` | ✅ (if roadmap changed)          |
 
 ### Commit Message Format
 
@@ -275,7 +294,7 @@ All new code MUST follow TDD:
 pnpm test              # Run all tests
 pnpm test:watch        # Watch mode for TDD
 pnpm test:coverage     # Coverage report
-pnpm playwright test   # E2E tests
+pnpm test:e2e          # E2E tests
 ```
 
 ---
@@ -305,7 +324,7 @@ pnpm seed:rbac         # Seed RBAC roles
 pnpm test              # Run tests
 pnpm lint              # Run linter
 pnpm check             # TypeScript check
-pnpm format            # Format code
+pnpm build             # Production build
 ```
 
 ### Roadmap

@@ -963,7 +963,7 @@ export default function IntakeReceipts() {
   });
 
   const receipts = receiptsData?.items || [];
-  const totalCount = receiptsData?.total || 0;
+  const totalCount = receiptsData?.pagination?.total ?? receipts.length;
 
   // Calculate statistics
   const stats = useMemo(() => {

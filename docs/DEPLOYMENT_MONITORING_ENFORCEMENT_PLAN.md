@@ -198,7 +198,7 @@ echo "🔍 Method 2: Using database monitoring..."
 DB_HOST="${DB_HOST:-terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com}"
 DB_PORT="${DB_PORT:-25060}"
 DB_USER="${DB_USER:-doadmin}"
-DB_PASS="${DB_PASS:-AVNS_Q_RGkS7-uB3Bk7xC2am}"
+DB_PASS="${DB_PASS:-<REDACTED>}"
 DB_NAME="${DB_NAME:-defaultdb}"
 
 if command -v mysql &> /dev/null; then
@@ -471,7 +471,7 @@ doctl apps logs $APP_ID --type run --tail 100
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SELECT errorMessage FROM deployments ORDER BY createdAt DESC LIMIT 1;"

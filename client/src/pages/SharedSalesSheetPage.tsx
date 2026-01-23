@@ -68,7 +68,8 @@ export default function SharedSalesSheetPage() {
     }).format(value);
   };
 
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return "";
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

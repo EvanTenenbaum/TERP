@@ -451,10 +451,6 @@ export default function SalesSheetCreatorPage() {
                   isLoading={inventoryLoading}
                   onAddItems={handleAddItems}
                   selectedItems={selectedItems}
-                  filters={filters}
-                  sort={sort}
-                  onFiltersChange={setFilters}
-                  onSortChange={setSort}
                 />
               </div>
 
@@ -464,7 +460,7 @@ export default function SalesSheetCreatorPage() {
                   items={selectedItems}
                   onRemoveItem={handleRemoveItem}
                   onClearAll={handleClearAll}
-                  onReorderItems={handleReorderItems}
+                  onReorderItems={handleReorderItems as unknown as (items: { id: number; name: string; category?: string; quantity: number; basePrice: number; retailPrice: number; priceOverride?: number }[]) => void}
                   clientId={selectedClientId}
                 />
               </div>

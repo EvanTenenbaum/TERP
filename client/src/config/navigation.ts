@@ -23,6 +23,15 @@ import {
   CheckSquare,
   Building2,
   Camera,
+  Trophy, // NAV-006: Leaderboard
+  Target, // NAV-007: Client Needs
+  GitMerge, // NAV-008: Matchmaking
+  ClipboardList, // NAV-009: Quotes
+  RotateCcw, // NAV-010: Returns
+  Store, // NAV-011: Vendor Supply
+  Tag, // NAV-012: Pricing Rules
+  Workflow, // NAV-013: Workflow Queue
+  Clock, // MEET-048: Time Clock
   type LucideIcon,
 } from "lucide-react";
 
@@ -89,6 +98,47 @@ export const navigationItems: NavigationItem[] = [
     icon: FileText,
     group: "sales",
   },
+  // NAV-006: Leaderboard for sales performance tracking
+  {
+    name: "Leaderboard",
+    path: "/leaderboard",
+    icon: Trophy,
+    group: "sales",
+    ariaLabel: "Sales performance leaderboard",
+  },
+  // NAV-007: Client Needs for tracking customer requirements
+  // QA-002 FIX: Changed path from /client-needs to /needs to match App.tsx route
+  {
+    name: "Client Needs",
+    path: "/needs",
+    icon: Target,
+    group: "sales",
+    ariaLabel: "Track client product needs and requirements",
+  },
+  // NAV-008: Matchmaking for product-client matching
+  {
+    name: "Matchmaking",
+    path: "/matchmaking",
+    icon: GitMerge,
+    group: "sales",
+    ariaLabel: "Match products with client needs",
+  },
+  // NAV-009: Quotes for quote management
+  {
+    name: "Quotes",
+    path: "/quotes",
+    icon: ClipboardList,
+    group: "sales",
+    ariaLabel: "Manage sales quotes",
+  },
+  // NAV-010: Returns for order returns processing
+  {
+    name: "Returns",
+    path: "/returns",
+    icon: RotateCcw,
+    group: "sales",
+    ariaLabel: "Process order returns",
+  },
 
   { name: "Products", path: "/products", icon: Package, group: "inventory" },
   {
@@ -123,6 +173,14 @@ export const navigationItems: NavigationItem[] = [
     group: "inventory",
     ariaLabel: "Vendor management with products and inventory",
   },
+  // NAV-011: Vendor Supply for tracking vendor inventory
+  {
+    name: "Vendor Supply",
+    path: "/vendor-supply",
+    icon: Store,
+    group: "inventory",
+    ariaLabel: "Track vendor supply and availability",
+  },
   {
     name: "Spreadsheet View",
     path: "/spreadsheet-view",
@@ -141,7 +199,24 @@ export const navigationItems: NavigationItem[] = [
     icon: Coins,
     group: "finance",
   },
+  // NAV-017: Credits management page - issue, apply, void credits
+  {
+    name: "Credits",
+    path: "/credits",
+    icon: CreditCard,
+    group: "finance",
+    ariaLabel: "Issue and manage customer credits",
+  },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
+  // NAV-012: Pricing Rules for managing pricing strategies
+  // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules to match App.tsx route
+  {
+    name: "Pricing Rules",
+    path: "/pricing/rules",
+    icon: Tag,
+    group: "finance",
+    ariaLabel: "Configure pricing rules and strategies",
+  },
 
   // QA-W2-008: Use UserCog icon to avoid duplicate with Clients
   { name: "Users", path: "/users", icon: UserCog, group: "admin" },
@@ -168,6 +243,14 @@ export const navigationItems: NavigationItem[] = [
     icon: CalendarClock,
     group: "admin",
   },
+  // MEET-048: Time Clock for hour tracking
+  {
+    name: "Time Clock",
+    path: "/time-clock",
+    icon: Clock,
+    group: "admin",
+    ariaLabel: "Clock in/out and manage timesheets",
+  },
   // FEAT-017: Direct access to Feature Flags for improved discoverability
   {
     name: "Feature Flags",
@@ -175,6 +258,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Flag,
     group: "admin",
     ariaLabel: "Manage feature flags and rollouts",
+  },
+  // NAV-013: Workflow Queue for managing workflow states
+  {
+    name: "Workflow Queue",
+    path: "/workflow-queue",
+    icon: Workflow,
+    group: "admin",
+    ariaLabel: "Manage workflow statuses and queues",
   },
 ];
 

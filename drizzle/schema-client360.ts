@@ -18,6 +18,7 @@ import {
   json,
   index,
   mysqlEnum,
+  foreignKey,
 } from "drizzle-orm/mysql-core";
 import { clients, products, categories, users, orders, batches } from "./schema";
 
@@ -237,9 +238,7 @@ export const officeSupplyNeeds = mysqlTable(
   "office_supply_needs",
   {
     id: int("id").primaryKey().autoincrement(),
-    officeSupplyItemId: int("office_supply_item_id")
-      .notNull()
-      .references(() => officeSupplyItems.id, { onDelete: "cascade" }),
+    officeSupplyItemId: int("office_supply_item_id").notNull(),
 
     // Quantities
     currentStock: decimal("current_stock", {
@@ -258,7 +257,7 @@ export const officeSupplyNeeds = mysqlTable(
     purchaseOrderId: int("purchase_order_id"),
 
     // Processing
-    approvedBy: int("approved_by").references(() => users.id),
+    approvedBy: int("approved_by"),
     approvedAt: timestamp("approved_at"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -269,6 +268,17 @@ export const officeSupplyNeeds = mysqlTable(
       table.officeSupplyItemId
     ),
     statusIdx: index("idx_osn_status").on(table.status),
+    // FKs with explicit short names to avoid MySQL 64-char identifier limit
+    itemFk: foreignKey({
+      name: "fk_osn_item",
+      columns: [table.officeSupplyItemId],
+      foreignColumns: [officeSupplyItems.id],
+    }).onDelete("cascade"),
+    approvedByFk: foreignKey({
+      name: "fk_osn_approved_by",
+      columns: [table.approvedBy],
+      foreignColumns: [users.id],
+    }),
   })
 );
 

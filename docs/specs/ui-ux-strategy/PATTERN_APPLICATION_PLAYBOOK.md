@@ -121,3 +121,358 @@ Before merging any UX change, confirm:
 - [ ] Validation timing contract respected.
 - [ ] Cmd+K used only for navigation/actions.
 - [ ] Feature Preservation Matrix updated or referenced.
+
+---
+
+## 8. Layout Specifications (Red Hat QA Addition)
+
+### 8.1 Work Surface Shell Dimensions
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Context Header (sticky)                            h: 64-80px   │
+├─────────────────────────────────────────────────────────┬───────┤
+│                                                         │       │
+│                                                         │       │
+│                                                         │  I    │
+│                   Primary Grid                          │  n    │
+│                   (fill remaining)                      │  s    │
+│                                                         │  p    │
+│                                                         │  e    │
+│                                                         │  c    │
+│                                                         │  t    │
+│                                                         │  o    │
+│                                                         │  r    │
+│                                                         │       │
+│                                                         │  w:   │
+│                                                         │ 360-  │
+│                                                         │ 400px │
+├─────────────────────────────────────────────────────────┴───────┤
+│ Status Bar (sticky bottom)                         h: 48px      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 Spacing System
+
+All spacing follows an 8px base unit:
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `space-xs` | 4px | Icon gaps, tight inline |
+| `space-sm` | 8px | Cell padding, field gaps |
+| `space-md` | 16px | Section padding, card gaps |
+| `space-lg` | 24px | Header padding |
+| `space-xl` | 32px | Major section gaps |
+
+### 8.3 Grid Cell Specifications
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| Row height | 40px | Touch-friendly minimum |
+| Cell padding | 8px horizontal | Consistent with space-sm |
+| Min column width | 80px | Prevents truncation issues |
+| Max column width | 400px | User-resizable |
+| Header row height | 44px | Slightly taller than data rows |
+
+### 8.4 Inspector Panel Specifications
+
+| Breakpoint | Inspector Behavior | Width |
+|------------|-------------------|-------|
+| ≥1440px | Fixed right panel | 400px |
+| 1280-1439px | Fixed right panel | 360px |
+| 1024-1279px | Slide-over sheet | 400px |
+| <1024px | Full-screen sheet | 100% |
+
+**Inspector Anatomy**:
+```
+┌─────────────────────────────────────┐
+│ [←] Record Title              [×]  │  Header: 56px
+├─────────────────────────────────────┤
+│                                     │
+│  Primary Details Section            │
+│                                     │
+├─────────────────────────────────────┤
+│  Audit / History Section            │
+│                                     │
+├─────────────────────────────────────┤
+│  [Secondary Action]  [Primary CTA]  │  Footer: 64px
+└─────────────────────────────────────┘
+```
+
+---
+
+## 9. Component Composition Patterns
+
+### 9.1 Work Surface Shell Structure
+
+```tsx
+// Recommended component hierarchy
+<WorkSurfaceShell>
+  <ContextHeader>
+    <ContextHeaderField label="Vendor" value={vendor} />
+    <ContextHeaderField label="Location" value={location} />
+    <ContextHeaderActions>
+      <Button>Save Draft</Button>
+      <Button variant="primary">Finalize</Button>
+    </ContextHeaderActions>
+  </ContextHeader>
+
+  <WorkSurfaceBody>
+    <PrimaryGrid
+      data={rows}
+      onRowSelect={setSelectedRow}
+      onRowCommit={handleCommit}
+    />
+
+    {selectedRow && (
+      <InspectorPanel
+        record={selectedRow}
+        onClose={() => setSelectedRow(null)}
+      >
+        <InspectorSection title="Details">
+          {/* Complex fields */}
+        </InspectorSection>
+        <InspectorSection title="History">
+          <AuditLog recordId={selectedRow.id} />
+        </InspectorSection>
+      </InspectorPanel>
+    )}
+  </WorkSurfaceBody>
+
+  <StatusBar>
+    <StatusBarMetrics>
+      <Metric label="Rows" value={rows.length} />
+      <Metric label="Total" value={formatCurrency(total)} />
+    </StatusBarMetrics>
+    <SaveStateIndicator state={saveState} />
+  </StatusBar>
+</WorkSurfaceShell>
+```
+
+### 9.2 Inline Edit Cell Pattern
+
+```tsx
+// Inline edit for primitive values only
+<InlineEditCell
+  value={row.quantity}
+  type="number"
+  min={0}
+  onChange={(newValue) => updateRow(row.id, { quantity: newValue })}
+  onBlur={handleValidation}  // Errors show on blur
+  onCommit={handleRowCommit} // Save on Enter
+/>
+```
+
+### 9.3 Validation Timing Pattern
+
+```tsx
+// Reward early, punish late
+const useValidation = (value: string, rules: ValidationRule[]) => {
+  const [touched, setTouched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Only validate after blur (touched = true)
+  useEffect(() => {
+    if (!touched) return;
+    const validationError = validate(value, rules);
+    setError(validationError);
+  }, [value, touched, rules]);
+
+  const handleBlur = () => setTouched(true);
+
+  return { error, handleBlur, touched };
+};
+```
+
+---
+
+## 10. Module-Specific Application Examples
+
+### 10.1 Intake Module (DF-010, DF-053)
+
+**Surface Type**: Work Surface (Execution)
+
+**Context Header Fields**:
+- Vendor (required, typeahead)
+- Location (required, select)
+- Payment Terms (auto-filled from vendor)
+- Receipt Date (default: today)
+
+**Grid Columns** (Priority Order):
+1. Product/Strain (typeahead with quick-create)
+2. Quantity (inline number)
+3. Unit (select)
+4. Unit Cost (inline currency)
+5. Total (calculated, read-only)
+6. Notes (inline text, optional)
+
+**Inspector Panel**:
+- Batch attributes (THC%, terpenes, test results)
+- Cost breakdown
+- Audit history
+- Verification link (DF-053)
+
+**Special Rules**:
+- Public verification link generated automatically
+- Discrepancy resolution workflow in inspector
+- Receipt cannot be finalized without vendor acknowledgment
+
+### 10.2 Orders Module (DF-022)
+
+**Surface Type**: Work Surface (Execution)
+
+**Context Header Fields**:
+- Customer (required, typeahead)
+- Payment Terms (auto-filled from customer)
+- Order Date (default: today)
+- Salesperson (default: current user)
+
+**Grid Columns** (Priority Order):
+1. Product (typeahead)
+2. Batch (select, filtered by product)
+3. Quantity (inline number)
+4. Unit Price (inline currency, with COGS warning)
+5. Discount (inline percentage)
+6. Total (calculated)
+
+**Inspector Panel**:
+- Line item notes
+- COGS override with audit trail
+- Margin calculation display
+- Batch details (age, location)
+
+**Special Rules**:
+- COGS margin warning if selling below cost
+- Draft auto-save every 30 seconds
+- Finalize creates invoice (DF-003)
+
+### 10.3 Pick & Pack Module (DF-023)
+
+**Surface Type**: Work Surface (Execution, Bulk-heavy)
+
+**Context Header Fields**:
+- Location filter
+- Status filter (Pending, In Progress, Ready)
+- Date range
+
+**Grid Columns**:
+1. Order # (link to order)
+2. Customer
+3. Items (count)
+4. Status (select, inline change)
+5. Assigned To (select)
+6. Due Date
+
+**Bulk Action Bar**:
+- Assign to me
+- Mark as picked
+- Mark as packed
+- Print pick list (batch)
+
+**Inspector Panel**:
+- Order line items (read-only)
+- Pick locations for each item
+- Packing notes
+- Shipping label generation
+
+---
+
+## 11. Error State Patterns
+
+### 11.1 Field-Level Errors
+
+```
+┌─────────────────────────────────┐
+│ Quantity: [      abc      ]    │  ← Red border
+│ ⚠️ Must be a number            │  ← Error text below
+└─────────────────────────────────┘
+```
+
+### 11.2 Row-Level Errors
+
+```
+┌───┬────────────┬─────────┬─────────┬────┐
+│ ⚠️│ Product A  │   10    │  $5.00  │ ✗  │  ← Row highlighted
+├───┴────────────┴─────────┴─────────┴────┤
+│ ⚠️ Product A is out of stock            │  ← Expandable error
+└─────────────────────────────────────────┘
+```
+
+### 11.3 Status Bar Error Summary
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 15 items │ $1,234.56 total │ ⚠️ 2 issues │ 🔴 Needs attention   │
+└─────────────────────────────────────────────────────────────────┘
+                                    ↓ Clickable
+                        ┌───────────────────────┐
+                        │ • Row 3: Invalid qty  │
+                        │ • Row 7: Out of stock │
+                        └───────────────────────┘
+```
+
+---
+
+## 12. Transition & Animation Specifications
+
+### 12.1 Animation Tokens
+
+| Animation | Duration | Easing | Trigger |
+|-----------|----------|--------|---------|
+| Inspector open | 200ms | ease-out | Row selection |
+| Inspector close | 150ms | ease-in | Esc or ×  |
+| Row creation | 150ms | ease-out | Enter commit |
+| Row deletion | 150ms + 100ms | ease-in, collapse | Delete action |
+| Save state change | 300ms | ease-in-out | State update |
+| Toast appear | 200ms | ease-out | Notification |
+| Toast dismiss | 150ms | ease-in | Auto or manual |
+
+### 12.2 Reduced Motion
+
+When `prefers-reduced-motion: reduce`:
+- All transitions become instant (0ms)
+- No transforms or opacity animations
+- Focus indicators remain visible
+- Loading spinners remain (necessary feedback)
+
+---
+
+## 13. Extended Anti-Drift Checklist
+
+Before merging any UX change, confirm all items:
+
+### Layout & Structure
+- [ ] Work Surface shell used for high-frequency workflows
+- [ ] Context header contains only batch-level fields
+- [ ] Inspector opens on row selection (not modal)
+- [ ] Status bar is sticky at bottom
+
+### Interactions
+- [ ] Keyboard contract: Tab, Shift+Tab, Enter, Esc work as specified
+- [ ] Inline edits restricted to primitives (qty, cost, status)
+- [ ] Complex fields open in inspector
+- [ ] Bulk actions require selection >1
+
+### Visual Feedback
+- [ ] Save-state indicator visible at all times
+- [ ] Loading states use skeletons matching layout
+- [ ] Errors appear on blur/commit, not during typing
+- [ ] Empty states have clear message + CTA
+
+### Data Integrity
+- [ ] Validation occurs both client and server side
+- [ ] Concurrent edit protection via version field
+- [ ] Unsaved changes warning on navigation
+- [ ] Undo available for destructive actions (10s window)
+
+### Accessibility
+- [ ] Focus indicators visible (2px, ≥3:1 contrast)
+- [ ] All interactive elements have accessible names
+- [ ] Changes announced via aria-live
+- [ ] Animations respect prefers-reduced-motion
+
+### Documentation
+- [ ] Feature Preservation Matrix updated or referenced
+- [ ] New patterns documented in this playbook
+- [ ] Exceptions logged in ASSUMPTION_LOG.md
+- [ ] Risks added to RISK_REGISTER.md if applicable

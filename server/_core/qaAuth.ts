@@ -31,6 +31,16 @@ export function isQaAuthEnabled(): boolean {
   const enabled = process.env.QA_AUTH_ENABLED === "true";
   const isProduction = process.env.NODE_ENV === "production";
 
+  // TEMPORARY: Allow FORCE_QA_AUTH to bypass production check for QA testing
+  // SECURITY WARNING: Remove this flag immediately after QA testing is complete!
+  const forceQaAuth = process.env.FORCE_QA_AUTH === "true";
+  if (forceQaAuth && enabled) {
+    logger.warn(
+      "FORCE_QA_AUTH is enabled - QA auth bypassing production check. REMOVE AFTER TESTING!"
+    );
+    return true;
+  }
+
   // Safety check: Never enable in production even if flag is set
   if (isProduction && enabled) {
     logger.warn(
@@ -91,14 +101,16 @@ export const QA_ROLES: QaRoleConfig[] = [
     name: "QA Inventory Manager",
     rbacRoleName: "Inventory Manager",
     userRole: "user",
-    description: "Full access to inventory, locations, transfers, product intake",
+    description:
+      "Full access to inventory, locations, transfers, product intake",
   },
   {
     email: "qa.fulfillment@terp.test",
     name: "QA Fulfillment",
     rbacRoleName: "Warehouse Staff",
     userRole: "user",
-    description: "Can receive POs, adjust inventory, transfer inventory, process returns",
+    description:
+      "Can receive POs, adjust inventory, transfer inventory, process returns",
   },
   {
     email: "qa.accounting@terp.test",
@@ -157,7 +169,10 @@ class QaAuthService {
   ): Promise<{ user: User; token: string }> {
     // Validate QA auth is enabled
     if (!isQaAuthEnabled()) {
-      logger.warn({ email }, "QA auth login attempted but QA_AUTH_ENABLED is false");
+      logger.warn(
+        { email },
+        "QA auth login attempted but QA_AUTH_ENABLED is false"
+      );
       throw new Error("QA authentication is not enabled");
     }
 

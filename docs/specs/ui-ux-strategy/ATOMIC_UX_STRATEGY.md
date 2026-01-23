@@ -331,3 +331,428 @@ Any unverified or ambiguous feature is marked **UNKNOWN** and has a validation t
 5. **Atomic Roadmap**: PR‑sized tasks created in `ATOMIC_ROADMAP.md`.
 6. **Completeness Proof**: Matrix + playbook + roadmap cross‑linked.
 7. **Red Hat QA**: Adversarial gaps identified + mapped to new validation tasks.
+
+---
+
+## 12. Extended Red Hat QA Findings (Deep Adversarial Review)
+
+This section captures additional findings from a comprehensive adversarial review conducted on 2026-01-19.
+
+### 12.1 Technical Architecture Gaps
+
+#### T-001: Responsive/Mobile Considerations Missing
+
+**Finding**: No specification for how Work Surfaces adapt to different screen sizes.
+
+**Risk**: Warehouse staff often use tablets; sales reps use phones for quick lookups.
+
+**Required Specifications**:
+- **Desktop (≥1280px)**: Full Work Surface with grid + inspector side-by-side
+- **Tablet (768-1279px)**: Grid full-width; inspector as slide-over sheet
+- **Mobile (<768px)**: Single-column view; inspector replaces grid temporarily
+
+**Breakpoint Behavior**:
+| Breakpoint | Grid Columns | Inspector | Context Header |
+|------------|--------------|-----------|----------------|
+| ≥1440px    | Full         | 400px fixed right | Full sticky |
+| 1280-1439px| Full         | 360px fixed right | Full sticky |
+| 1024-1279px| Full         | Slide-over sheet | Collapsible |
+| 768-1023px | Reduced cols | Full-screen sheet | Collapsed by default |
+| <768px     | Card layout  | Full-screen | Summary only |
+
+#### T-002: Offline/Degraded Network Handling
+
+**Finding**: No specification for handling network failures during data entry.
+
+**Risk**: Users lose work; silent data loss; duplicate submissions.
+
+**Required Patterns**:
+- **Optimistic UI**: Show success immediately, queue for sync
+- **Offline Queue**: Store mutations in IndexedDB when offline
+- **Conflict Resolution**: Last-write-wins with user notification for conflicts
+- **Retry Strategy**: Exponential backoff (1s, 2s, 4s, 8s, max 30s)
+
+**Save State Extensions**:
+```
+✅ Saved              - Persisted to server
+🟡 Saving…            - Request in flight
+🟠 Queued (offline)   - Stored locally, pending sync
+🔴 Needs attention    - Validation error or conflict
+⚠️ Sync required     - Local changes not yet synced
+```
+
+#### T-003: Loading States and Skeleton Patterns
+
+**Finding**: No specification for loading states during data fetch.
+
+**Required Patterns**:
+- **Initial Load**: Full skeleton matching grid layout
+- **Pagination Load**: Inline spinner at grid bottom
+- **Inspector Load**: Skeleton for inspector content only
+- **Action Processing**: Disable button + spinner; never hide button
+- **Refresh**: Subtle overlay; keep stale data visible
+
+**Skeleton Rules**:
+- Skeleton shape must match actual content layout
+- Animation: subtle pulse (opacity 0.6 → 1.0, 1.5s cycle)
+- Never show spinner + skeleton simultaneously
+- Minimum display time: 200ms (prevent flash)
+
+#### T-004: Error Boundary Patterns
+
+**Finding**: No specification for handling unexpected errors.
+
+**Required Patterns**:
+- **Component-level**: Catch errors in grids; show inline "Something went wrong" + retry
+- **Page-level**: Full error boundary with "Go back" option
+- **Network errors**: Toast notification + automatic retry for GET; manual retry for mutations
+- **Validation errors**: Inline field errors + summary in status bar
+
+**Error Display Hierarchy**:
+1. Field-level errors (inline, below field)
+2. Row-level errors (row highlight + icon)
+3. Form-level errors (status bar summary)
+4. Page-level errors (error boundary component)
+5. Global errors (toast notification)
+
+#### T-005: Animation/Transition Guidelines
+
+**Finding**: No specification for motion design.
+
+**Required Specifications**:
+- **Inspector open/close**: slide-in 200ms ease-out
+- **Row creation**: fade-in 150ms
+- **Row deletion**: fade-out 150ms + collapse 100ms
+- **Save state change**: color transition 300ms
+- **Focus ring**: instant (no transition)
+- **Bulk selection**: checkbox scale 100ms
+
+**Motion Principles**:
+- Never animate during typing
+- Reduce motion when `prefers-reduced-motion: reduce`
+- No animations longer than 300ms
+- Use `will-change` sparingly for performance
+
+### 12.2 UX/UI Design Gaps
+
+#### U-001: Work Surface vs Review Surface Visual Distinction
+
+**Finding**: No visual specification differentiating execution surfaces from analysis surfaces.
+
+**Required Specifications**:
+
+| Aspect | Work Surface | Review Surface |
+|--------|--------------|----------------|
+| Primary action | Create/Edit | Filter/Export |
+| Status bar | Save state + errors | Totals + filters |
+| Inspector | Edit form | Read-only details |
+| Grid behavior | Inline edit | Click to navigate |
+| Context header | Editable defaults | Filter controls |
+| Background | `bg-background` | `bg-muted/30` |
+| Border | None | `border-l-4 border-primary/20` |
+
+#### U-002: Data Density Guidelines
+
+**Finding**: No specification for grid column limits and density.
+
+**Required Specifications**:
+- **Maximum visible columns (no scroll)**: 8-10 on desktop
+- **Minimum column width**: 80px (prevents text truncation issues)
+- **Optimal row height**: 40px (touch-friendly)
+- **Grid spacing**: 8px cell padding
+- **Column resize**: Minimum 60px, maximum 400px
+
+**Column Priority Tiers**:
+1. **Always visible**: ID, primary name, status, primary amount
+2. **Default visible**: Date, secondary fields
+3. **Hidden by default**: Notes, metadata, timestamps
+4. **Inspector only**: Audit history, complex objects
+
+#### U-003: Empty State Patterns
+
+**Finding**: No specification for empty states.
+
+**Required Patterns**:
+- **No data yet**: Illustration + "No [items] yet" + primary action button
+- **No search results**: "No results for [query]" + clear filters link
+- **Filtered to empty**: "No [items] match filters" + reset button
+- **Error state**: "Couldn't load [items]" + retry button
+
+**Empty State Content Template**:
+```
+[Illustration - optional]
+[Headline - what's empty]
+[Description - why or what to do]
+[Primary CTA - create/add action]
+[Secondary link - optional help]
+```
+
+#### U-004: Notification/Toast Behavior in Work Surfaces
+
+**Finding**: No specification for toast positioning and behavior.
+
+**Required Specifications**:
+- **Position**: Bottom-right, above status bar
+- **Stack**: Maximum 3 visible, FIFO
+- **Duration**: Success 3s, Info 5s, Warning 7s, Error persistent
+- **Dismissal**: Click X, swipe, or auto-dismiss
+- **Action toasts**: Include undo button, persist until action taken or dismissed
+
+**Toast vs Inline Error Rules**:
+- Use toast for: Success confirmations, background operations, undo prompts
+- Use inline for: Validation errors, field-specific issues
+- Never use toast for: Errors that require user action on specific fields
+
+#### U-005: Scroll Behavior Specifications
+
+**Finding**: No specification for grid scrolling strategy.
+
+**Required Specifications**:
+- **Virtualization**: Enable for >100 rows
+- **Infinite scroll**: Trigger at 80% scroll depth
+- **Page size**: 50 rows per fetch
+- **Scroll restoration**: Maintain position on back navigation
+- **Fixed elements**: Header + status bar always visible
+
+**Keyboard Scrolling**:
+- Page Up/Down: Scroll by viewport height
+- Home/End: Jump to first/last row
+- Ctrl+Home/End: Jump and select first/last row
+
+### 12.3 Business Logic Gaps
+
+#### B-001: Concurrent Editing Handling
+
+**Finding**: No specification for handling multiple users editing same records.
+
+**Required Specifications**:
+- **Locking Strategy**: Optimistic locking via `version` field (exists in schema)
+- **Conflict Detection**: Compare version on save; reject if stale
+- **User Notification**: "This record was modified by [user]. Reload to see changes."
+- **Resolution Options**: Reload (lose changes) or Force save (overwrite)
+
+**Implementation**:
+```typescript
+// On save attempt
+if (serverVersion > localVersion) {
+  showConflictDialog({
+    message: `Modified by ${lastModifiedBy} at ${lastModifiedAt}`,
+    options: ['Reload', 'Force Save', 'Cancel']
+  });
+}
+```
+
+#### B-002: Undo Window Specification
+
+**Finding**: No specification for how long undo is available.
+
+**Required Specifications**:
+- **Destructive actions**: 10 seconds to undo
+- **Soft delete**: 30 days recovery period (from `deletedAt`)
+- **Bulk operations**: 10 seconds, all-or-nothing undo
+- **Cross-session**: No undo across page navigation
+
+**Undo Implementation**:
+- Queue deleted records client-side for undo window
+- Show "Deleted. Undo" toast with countdown
+- On undo: restore from client queue
+- On timeout: commit deletion to server
+
+#### B-003: Validation Order Specification
+
+**Finding**: No specification for client vs server validation order.
+
+**Required Specifications**:
+1. **Client-side first**: Type validation, required fields, format
+2. **Debounced async**: Uniqueness checks, availability (300ms debounce)
+3. **Server-side always**: Business rules, permissions, invariants
+4. **Never trust client**: Server validates everything regardless of client validation
+
+**Validation Timing by Type**:
+| Validation Type | Trigger | Location |
+|----------------|---------|----------|
+| Required field | blur | Client |
+| Format (email, phone) | blur | Client |
+| Type (number, date) | change (debounced) | Client |
+| Uniqueness | blur (300ms) | Server (async) |
+| Business rules | submit | Server |
+| Cross-field | blur of dependent field | Client + Server |
+
+#### B-004: Session Timeout Handling
+
+**Finding**: No specification for handling session timeout during long data entry.
+
+**Required Specifications**:
+- **Warning**: Show at 5 minutes before timeout
+- **Auto-save**: Draft saved to localStorage before session expires
+- **Recovery**: On re-login, prompt to restore unsaved work
+- **Heartbeat**: Silent ping every 5 minutes to extend session
+
+**Session Timeout Flow**:
+1. User inactive for 25 minutes → Show "Session expiring" warning
+2. User continues inactivity → Auto-save draft at 29 minutes
+3. Session expires → Redirect to login with return URL
+4. User re-authenticates → Prompt "Restore unsaved changes?"
+
+#### B-005: Batch Size Limits for Bulk Operations
+
+**Finding**: No specification for bulk operation limits.
+
+**Required Specifications**:
+- **Bulk select maximum**: 500 rows
+- **Bulk update maximum**: 100 rows per request
+- **Bulk delete maximum**: 50 rows per request
+- **Export maximum**: 10,000 rows (paginated download for more)
+
+**User Feedback for Large Operations**:
+```
+Selecting 100+ items → "100 selected. Select all 1,234?"
+Bulk action on 50+ → "Processing 50 items..." with progress
+Export 1000+ → "Preparing export... This may take a moment"
+```
+
+### 12.4 Cross-Cutting Concerns
+
+#### X-001: Accessibility (WCAG 2.1 AA) Compliance
+
+**Finding**: Only keyboard navigation specified; broader accessibility missing.
+
+**Required Specifications**:
+- **Focus indicators**: 2px solid ring, contrast ratio ≥3:1
+- **Color independence**: Never use color alone to convey meaning
+- **Screen reader labels**: All interactive elements have accessible names
+- **Announce changes**: Use aria-live for save state, errors, toast
+- **Reduced motion**: Respect `prefers-reduced-motion`
+- **Minimum target size**: 44x44px for touch targets
+
+**ARIA Patterns**:
+- Grid: `role="grid"`, `role="row"`, `role="gridcell"`
+- Inspector: `role="complementary"`, `aria-label="Details panel"`
+- Status bar: `role="status"`, `aria-live="polite"`
+- Save indicator: `aria-live="assertive"` for errors only
+
+#### X-002: Internationalization (i18n) Considerations
+
+**Finding**: No i18n specifications.
+
+**Required Specifications**:
+- **Text direction**: Support LTR and RTL layouts
+- **Date formats**: Use Intl.DateTimeFormat (respects locale)
+- **Number formats**: Use Intl.NumberFormat (respects locale)
+- **Currency**: Always show currency symbol with amounts
+- **Pluralization**: Use proper plural rules (not just +s)
+
+**Layout Adjustments for RTL**:
+- Inspector panel: Appears on left instead of right
+- Grid: Columns reverse order
+- Icons: Mirror directional icons (arrows, chevrons)
+
+#### X-003: Print/Export Considerations
+
+**Finding**: No print stylesheet or export specifications.
+
+**Required Specifications**:
+- **Print view**: Hide navigation, inspector; grid fills page
+- **Page breaks**: Avoid breaking rows across pages
+- **Headers**: Repeat context header on each page
+- **Export formats**: CSV (default), Excel, PDF
+
+**Print Media Styles**:
+```css
+@media print {
+  .inspector-panel, .navigation, .status-bar { display: none; }
+  .work-surface-grid { width: 100%; }
+  .context-header { position: static; }
+}
+```
+
+#### X-004: Browser Compatibility
+
+**Finding**: No browser compatibility specification.
+
+**Required Support Matrix**:
+| Browser | Minimum Version | Notes |
+|---------|-----------------|-------|
+| Chrome | 90+ | Primary target |
+| Firefox | 88+ | Full support |
+| Safari | 14+ | iOS Safari included |
+| Edge | 90+ | Chromium-based |
+
+**Polyfills Required**:
+- ResizeObserver (for grid virtualization)
+- IntersectionObserver (for infinite scroll)
+- IndexedDB (for offline support)
+
+### 12.5 Additional Anti-Patterns (Extended)
+
+Building on Section 5, add these anti-patterns:
+
+- **Infinite spinners**: Always show progress or timeout after 30s
+- **Disabled without explanation**: Always tooltip why disabled
+- **Silent failures**: Every failure must have user-visible feedback
+- **Data loss on navigation**: Warn if unsaved changes exist
+- **Stale data display**: Show "last updated" for cached data >5 min old
+- **Pagination amnesia**: Losing scroll position on back navigation
+- **Modal for confirmation only**: Use toast with undo instead
+- **Form reset on error**: Never clear valid fields on partial failure
+
+### 12.6 Performance Budgets
+
+**Finding**: No performance specifications.
+
+**Required Budgets**:
+| Metric | Budget | Measurement |
+|--------|--------|-------------|
+| First Contentful Paint | <1.5s | Lighthouse |
+| Time to Interactive | <3s | Lighthouse |
+| Grid render (100 rows) | <100ms | Performance.now() |
+| Inspector open | <50ms | Performance.now() |
+| Keystroke response | <50ms | Input delay |
+| Save roundtrip | <500ms | Network + server |
+
+**Monitoring**:
+- Log performance marks for critical operations
+- Alert on P95 exceeding 2x budget
+- Dashboard for performance trends
+
+---
+
+## 13. Implementation Priority Matrix
+
+Based on red hat findings, prioritize implementation:
+
+### P0 - Must have before any Work Surface deployment
+- [ ] Save state indicator component (P9)
+- [ ] Keyboard contract hook (P11)
+- [ ] Validation timing helper (P6)
+- [ ] Error boundary wrapper
+- [ ] Loading skeleton components
+
+### P1 - Required for production readiness
+- [ ] Responsive breakpoint handling
+- [ ] Offline queue + sync
+- [ ] Concurrent edit detection
+- [ ] Session timeout handling
+- [ ] Accessibility audit + fixes
+
+### P2 - Required for scale
+- [ ] Performance monitoring
+- [ ] Bulk operation limits
+- [ ] Export functionality
+- [ ] Print styles
+- [ ] i18n infrastructure
+
+---
+
+## 14. Validation Checklist
+
+Before marking this strategy complete, verify:
+
+- [ ] All P0 components have implementation tasks in ATOMIC_ROADMAP.md
+- [ ] All 14 "unknown" features in preservation matrix have resolution plan
+- [ ] Accounting SME has reviewed ledger UI requirements
+- [ ] Responsive designs reviewed for tablet/mobile
+- [ ] Accessibility audit scheduled
+- [ ] Performance budgets integrated into CI/CD
+- [ ] Error handling patterns documented with code examples
+- [ ] Offline capability scope decision made

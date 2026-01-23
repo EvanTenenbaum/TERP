@@ -34,13 +34,16 @@ This migration adds a composite index on `(parent_event_id, instance_date)` to t
 
 1. **Connect to Production Database**
    ```bash
-   mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
-         --port=25060 \
-         --user=doadmin \
-         --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
-         --database=defaultdb \
+   mysql --host=$DB_HOST \
+         --port=$DB_PORT \
+         --user=$DB_USER \
+         --password=$DB_PASSWORD \
+         --database=$DB_NAME \
          --ssl-mode=REQUIRED
    ```
+
+   > **Note:** Use environment variables or retrieve credentials from your secrets manager.
+   > Never commit credentials to version control.
 
 2. **Verify Connection**
    ```sql
@@ -90,11 +93,11 @@ This migration adds a composite index on `(parent_event_id, instance_date)` to t
 
 2. **Run Migration from File**
    ```bash
-   mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
-         --port=25060 \
-         --user=doadmin \
-         --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
-         --database=defaultdb \
+   mysql --host=$DB_HOST \
+         --port=$DB_PORT \
+         --user=$DB_USER \
+         --password=$DB_PASSWORD \
+         --database=$DB_NAME \
          --ssl-mode=REQUIRED \
          < /path/to/migrations/0007_add_calendar_recurrence_index.sql
    ```

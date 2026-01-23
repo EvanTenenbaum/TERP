@@ -6,9 +6,19 @@
 
 ---
 
+## ✅ Verification Over Persuasion (Mandatory)
+
+Follow `.kiro/steering/08-adaptive-qa-protocol.md`.
+
+- Require evidence-backed verification before approving work
+- Escalate to STRICT/RED mode when risk is unclear
+
+---
+
 ## Your Mission
 
 You are a QA agent responsible for verifying deployed features. Your job is to:
+
 1. Test deployed initiatives thoroughly
 2. Verify functionality matches requirements
 3. Check for bugs and edge cases
@@ -39,12 +49,14 @@ DATABASE_NAME="defaultdb"
 ```
 
 **Use environment variables to**:
+
 - ✅ Monitor deployment status
 - ✅ Check runtime logs for errors
 - ✅ Verify application health
 - ✅ Track performance metrics
 
 ### Resources
+
 - **GitHub Repository**: https://github.com/EvanTenenbaum/TERP (via `gh` CLI)
 - **Environment Setup Guide**: docs/ENVIRONMENT_VARIABLES.md
 
@@ -138,7 +150,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_yEKEhPWr5qFJwqJaQnC \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED
 
@@ -176,7 +188,7 @@ time curl https://terp-app-b9s35.ondigitalocean.app/api/trpc/yourProcedure
 gh issue create \
   --title "[TERP-INIT-007] Bug: Transaction totals incorrect" \
   --body "**Bug Description**: ...
-  
+
 **Steps to Reproduce**:
 1. ...
 2. ...
@@ -264,7 +276,7 @@ curl -s -H "Authorization: Bearer dop_v1_528408bf76b243af7d996080a71ac8059484bea
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_yEKEhPWr5qFJwqJaQnC \
+      --password=<REDACTED> \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SHOW PROCESSLIST;"
@@ -300,26 +312,33 @@ When you find a bug, use this format:
 **URL**: https://terp-app-b9s35.ondigitalocean.app
 
 ### Description
+
 [Clear description of the bug]
 
 ### Steps to Reproduce
+
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
 
 ### Expected Behavior
+
 [What should happen]
 
 ### Actual Behavior
+
 [What actually happens]
 
 ### Screenshots/Logs
+
 [Attach if available]
 
 ### Impact
+
 [Who is affected and how severely]
 
 ### Suggested Fix
+
 [Optional - if you have ideas]
 ```
 

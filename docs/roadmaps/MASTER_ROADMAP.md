@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.2
-**Last Updated:** 2026-01-16 (Added E2E Testing Infrastructure tasks)
+**Version:** 6.8
+**Last Updated:** 2026-01-21 (Merged security audit + DATA-021 + FEAT-SIGNAL-001)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -78,6 +78,16 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | INFRA-010 | Update Documentation                         | ✅ COMPLETE | Dec 2025        |
 | INFRA-011 | Update Deployment Configuration              | ✅ COMPLETE | Dec 2025        |
 | INFRA-013 | Create RBAC Database Tables Migration        | ✅ COMPLETE | Dec 2025        |
+| INFRA-014 | Cron Leader Election for Multi-Instance      | ✅ COMPLETE | Jan 20, 2026    |
+
+> **INFRA-014 Details:**
+>
+> - Database-backed leader election for cron job coordination
+> - Prevents duplicate cron execution in multi-instance deployments
+> - Lease-based locking with 30s lease, 10s heartbeat
+> - All 4 cron jobs updated: sessionTimeout, notificationQueue, debtAging, priceAlerts
+> - Unit tests: 17 passing
+> - Documentation: `docs/implementation/INFRA-014_HIGH_MEMORY_REMEDIATION_COMPLETION_REPORT.md`
 
 ### ✅ Security (COMPLETE)
 
@@ -230,6 +240,21 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-075 | Fix Settings Users Tab Authentication Error | HIGH     | ✅ COMPLETE (Jan 13, 2026) - duplicate of BUG-046 |
 | BUG-076 | Fix Search and Filter Functionality         | HIGH     | ✅ COMPLETE (Jan 12-14, 2026)                     |
 | BUG-077 | Fix Notification System Not Working         | HIGH     | ✅ COMPLETE (Jan 12-14, 2026)                     |
+
+#### Production Schema/Migration Issues (Jan 23, 2026)
+
+> Discovered during production 503 error investigation.
+
+| Task    | Description                                                      | Priority | Status                  | Root Cause                                                   |
+| ------- | ---------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------ |
+| BUG-101 | Production 503 - Missing calendar_id column in calendar_events   | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
+
+**BUG-101 Fix (Jan 23, 2026):**
+
+- **Location:** `server/autoMigrate.ts:1125-1171`
+- **Solution:** Added automatic migration to create `calendar_id INT NULL` column on `calendar_events` table during server startup. Migration is idempotent - handles "Duplicate column" errors gracefully.
+- **Branch:** `claude/fix-inventory-display-tu3S3`
+- **Commit:** `5201d5b`
 
 #### UI/Data Mismatch Issues (Jan 14, 2026)
 
@@ -497,6 +522,50 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 ---
 
+### Unit Test Infrastructure Issues (P0/P1) - Added Jan 23, 2026
+
+> Discovered during comprehensive test failure analysis.
+> **Root Cause Analysis:** Test suite shows 137 failed / 1928 passed (89% pass rate).
+> **Session:** `claude/fix-inventory-display-tu3S3` (Jan 23, 2026)
+
+| Task          | Description                                       | Priority | Status      | Root Cause     | Est. Impact |
+| ------------- | ------------------------------------------------- | -------- | ----------- | -------------- | ----------- |
+| TEST-INFRA-01 | Fix DOM/jsdom test container setup                | P0       | NOT STARTED | RC-TEST-001    | ~45 tests   |
+| TEST-INFRA-02 | Configure DATABASE_URL for test environment       | P0       | NOT STARTED | RC-TEST-002    | ~28 tests   |
+| TEST-INFRA-03 | Fix TRPC router initialization in tests           | P0       | NOT STARTED | RC-TEST-003    | ~16 tests   |
+| TEST-INFRA-04 | Create comprehensive test fixtures/factories      | P1       | NOT STARTED | RC-TEST-004    | ~30 tests   |
+| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)     | P1       | NOT STARTED | RC-TEST-005    | ~12 tests   |
+| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure)| P2       | NOT STARTED | SEC-AUDIT      | ~1 test     |
+
+#### Root Cause Analysis
+
+**RC-TEST-001: DOM Container Infrastructure**
+- Error: `Target container is not a DOM element`
+- Affected: `useExport.test.ts`, `usePrint.test.ts`, `ConflictDialog.test.tsx`, `ProductsPage.test.tsx`
+- Fix: Configure jsdom container creation in vitest setup
+
+**RC-TEST-002: Database Connection Missing**
+- Error: `Database connection failed - cannot start server without database`
+- Affected: `creditsDb.race-condition.test.ts`, `optimisticLocking.test.ts`, `inventoryDb.test.ts`
+- Fix: Set DATABASE_URL environment variable or mock database adapter
+
+**RC-TEST-003: TRPC Router Not Initialized**
+- Error: `No procedure found on path "settings,locations,getAll"`
+- Affected: `auth-bypass.test.ts`, `clients.test.ts`, `inventory.test.ts`
+- Fix: Setup TRPC test client with proper router initialization
+
+**RC-TEST-004: Incomplete Test Fixtures**
+- Error: `Cannot read properties of undefined (reading 'invoices')`
+- Affected: `calendarFinancials.test.ts`, `accounting.test.ts`, `analytics.test.ts`
+- Fix: Create factory functions for complete test data
+
+**RC-TEST-005: Async Timing Issues**
+- Error: `Unable to find an element with the text`
+- Affected: `ProductsPage.test.tsx`, `SampleManagement.test.tsx`
+- Fix: Use `findByText`/`waitFor` instead of `getByText`
+
+---
+
 ### E2E Testing Infrastructure (P1) - Added Jan 16, 2026
 
 > Discovered during comprehensive E2E test execution against production.
@@ -611,27 +680,923 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+### Navigation Accessibility Enhancement (P1) - Added Jan 20, 2026
+
+> Discovered during comprehensive accessibility audit of TERP navigation.
+> **Goal:** Surface 8 hidden high-value routes in sidebar navigation and Command Palette.
+> **Spec:** `docs/specs/NAV_ACCESSIBILITY_ENHANCEMENT_SPEC.md`
+> **Effort:** ~1.5 hours (2 file changes, configuration only)
+
+| Task    | Description                                    | Priority | Status | Estimate | Module             |
+| ------- | ---------------------------------------------- | -------- | ------ | -------- | ------------------ |
+| NAV-006 | Add Leaderboard to Sales nav (after Dashboard) | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-007 | Add Client Needs to Sales nav                  | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-008 | Add Matchmaking to Sales nav                   | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-009 | Add Quotes to Sales nav                        | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-010 | Add Returns to Sales nav                       | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-011 | Add Vendor Supply to Inventory nav             | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-012 | Add Pricing Rules to Finance nav               | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-013 | Add Workflow Queue to Admin nav                | MEDIUM   | ready  | 5 min    | navigation.ts      |
+| NAV-014 | Add all 8 routes to Command Palette            | MEDIUM   | ready  | 15 min   | CommandPalette.tsx |
+| NAV-015 | Verify TypeScript compilation                  | LOW      | ready  | 5 min    | -                  |
+| NAV-016 | Manual QA verification of all new nav items    | LOW      | ready  | 15 min   | -                  |
+
+#### NAV-006: Add Leaderboard to Sales Navigation
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 5 min
+**Module:** `client/src/config/navigation.ts`
+**Dependencies:** None
+
+**Implementation:**
+
+```typescript
+// After Dashboard entry, before Clients:
+{
+  name: "Leaderboard",
+  path: "/leaderboard",
+  icon: Trophy,
+  group: "sales",
+  ariaLabel: "View team performance and rankings",
+},
+```
+
+---
+
+#### NAV-007 through NAV-013: Additional Navigation Items
+
+Each task adds one navigation item to `navigation.ts`:
+
+| Task    | Route             | Group     | Icon         | Position              |
+| ------- | ----------------- | --------- | ------------ | --------------------- |
+| NAV-007 | `/needs`          | sales     | Target       | After Invoices        |
+| NAV-008 | `/matchmaking`    | sales     | Sparkles     | After Client Needs    |
+| NAV-009 | `/quotes`         | sales     | FileQuestion | After Matchmaking     |
+| NAV-010 | `/returns`        | sales     | PackageX     | After Quotes          |
+| NAV-011 | `/vendor-supply`  | inventory | PackagePlus  | After Vendors         |
+| NAV-012 | `/pricing/rules`  | finance   | DollarSign   | After Credit Settings |
+| NAV-013 | `/workflow-queue` | admin     | ListOrdered  | After Feature Flags   |
+
+---
+
+#### NAV-014: Add Routes to Command Palette
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 15 min
+**Module:** `client/src/components/CommandPalette.tsx`
+**Dependencies:** NAV-006 through NAV-013
+
+**Implementation:**
+Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, using same icons as sidebar.
+
+---
+
+#### Post-Implementation Metrics
+
+| Metric                | Before | After | Change |
+| --------------------- | ------ | ----- | ------ |
+| Navigation items      | 24     | 32    | +8     |
+| Command Palette items | 11     | 19    | +8     |
+| Hidden routes         | 14     | 6     | -8     |
+| Sales group items     | 8      | 13    | +5     |
+| Inventory group items | 7      | 8     | +1     |
+| Finance group items   | 3      | 4     | +1     |
+| Admin group items     | 6      | 7     | +1     |
+
+---
+
+### Incomplete Features Audit Tasks (P0-P2) - Added Jan 20, 2026
+
+> Discovered during comprehensive RedHat QA audit of codebase.
+> **Source:** `docs/INCOMPLETE_FEATURES_AUDIT_V2.md`
+> **Full Task List:** `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md`
+
+#### P0 - Critical (Ship Blockers)
+
+| Task    | Description                           | Priority | Status      | Estimate |
+| ------- | ------------------------------------- | -------- | ----------- | -------- |
+| SEC-023 | Rotate exposed database credentials   | CRITICAL | NOT STARTED | 2-4h     |
+| TS-001  | Fix 117 TypeScript errors             | CRITICAL | NOT STARTED | 16-24h   |
+| BUG-100 | Fix 122 failing tests (44 test files) | CRITICAL | NOT STARTED | 24-40h   |
+
+#### P1 - High Priority (Data Seeding)
+
+| Task     | Description                               | Priority | Status      | Estimate | Prompt                     |
+| -------- | ----------------------------------------- | -------- | ----------- | -------- | -------------------------- |
+| DATA-012 | Seed work surface feature flags (17+)     | HIGH     | NOT STARTED | 4h       | -                          |
+| DATA-013 | Seed gamification module defaults         | HIGH     | NOT STARTED | 4-8h     | -                          |
+| DATA-014 | Seed scheduling module defaults           | HIGH     | NOT STARTED | 4h       | -                          |
+| DATA-015 | Seed storage sites and zones              | HIGH     | NOT STARTED | 2-4h     | -                          |
+| DATA-021 | Seed mock product images for live catalog | HIGH     | NOT STARTED | 6h       | `docs/prompts/DATA-021.md` |
+
+##### DATA-021: Seed Mock Product Images for Live Catalog Testing
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 6h
+**Module:** `scripts/seed/seeders/`, `productMedia`, `productImages` tables
+**Prompt:** `docs/prompts/DATA-021.md`
+
+**Problem:**
+Live catalog and VIP portal shipping features cannot be tested because products lack images. Currently shows placeholder emojis (🌿) instead of actual product images, blocking:
+
+- Live catalog visual experience testing
+- VIP portal shopping experience
+- Stakeholder demos
+- Image loading/error handling verification
+
+**Image Sources (Free, Reliable):**
+
+| Source          | Use Case          | URL Pattern                                                |
+| --------------- | ----------------- | ---------------------------------------------------------- |
+| Picsum Photos   | Default/fallback  | `https://picsum.photos/seed/{seed}/400/400`                |
+| Unsplash Source | Category-specific | `https://source.unsplash.com/400x400/?{keywords}`          |
+| PlaceHolder.com | Offline fallback  | `https://via.placeholder.com/400x400/{color}?text={label}` |
+
+**Category Mapping (visually similar alternatives):**
+
+| Category     | Keywords                            | Seed Prefix    |
+| ------------ | ----------------------------------- | -------------- |
+| Flower       | `nature,botanical,green,plant,herb` | `flower-`      |
+| Concentrates | `amber,honey,gold,crystal`          | `concentrate-` |
+| Edibles      | `candy,gummy,chocolate,treat`       | `edible-`      |
+| PreRolls     | `paper,texture,natural,craft`       | `preroll-`     |
+| Vapes        | `technology,device,modern,sleek`    | `vape-`        |
+
+**Deliverables:**
+
+- [ ] Enhanced `seed-product-media-v2.ts` with multi-source fallback
+- [ ] New `seed-batch-images.ts` for batch-level images
+- [ ] Combined `seed-all-images.ts` runner with --dry-run and --force options
+- [ ] URL verification before insert
+- [ ] ≥95% products with images, ≥90% batches with primary image
+- [ ] Documentation updated
+
+**Commands:**
+
+```bash
+npx tsx scripts/seed/seeders/seed-all-images.ts           # Full seeding
+npx tsx scripts/seed/seeders/seed-all-images.ts --dry-run # Preview only
+npx tsx scripts/seed/seeders/seed-all-images.ts --force   # Re-seed all
+```
+
+---
+
+#### P1 - High Priority (Backend Completeness)
+
+| Task      | Description                       | Priority | Status      | Estimate |
+| --------- | --------------------------------- | -------- | ----------- | -------- |
+| BE-QA-006 | Implement AR/AP summary endpoints | HIGH     | NOT STARTED | 8h       |
+| BE-QA-007 | Implement cash expenses endpoints | HIGH     | NOT STARTED | 8h       |
+| BE-QA-008 | Implement financial reports       | HIGH     | NOT STARTED | 16h      |
+| QUAL-008  | Add feature flag checks to routes | HIGH     | NOT STARTED | 4h       |
+
+#### P2 - Medium Priority (24 additional tasks)
+
+See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list including:
+
+- 5 missing API endpoints (API-011 through API-015)
+- 5 data seeding tasks (DATA-016 through DATA-020)
+- 7 backend quality tasks (BE-QA-009 through BE-QA-015)
+- 5 frontend quality tasks (FE-QA-004 through FE-QA-008)
+- 1 feature task (FEAT-025: Recurring Orders)
+- 2 infrastructure cleanup tasks (INFRA-015, INFRA-016)
+
+**Total New Tasks:** 37 (3 P0, 8 P1, 24 P2, 2 P3)
+
+---
+
+### Deep Audit Additional Findings (P0-P3) - Added Jan 20, 2026
+
+> Discovered during comprehensive git commit analysis (484 commits, Dec 20 - Jan 20).
+> **Source:** `docs/reports/INCOMPLETE_FEATURES_AUDIT_JAN_2026.md`
+> **Method:** Code analysis, not roadmap-derived (roadmap used only for validation)
+> **Total Additional Tasks:** 22 (4 P0, 5 P1, 10 P2, 3 P3)
+
+#### P0 - Critical (Work Surface Ship Blockers)
+
+| Task     | Description                                     | Priority | Status      | Estimate | Module                             |
+| -------- | ----------------------------------------------- | -------- | ----------- | -------- | ---------------------------------- |
+| WSQA-001 | Fix InvoicesWorkSurface Payment Recording Stub  | CRITICAL | NOT STARTED | 4h       | InvoicesWorkSurface.tsx:717-724    |
+| WSQA-002 | Implement Flexible Lot Selection                | CRITICAL | NOT STARTED | 8h       | InventoryWorkSurface.tsx           |
+| WSQA-003 | Add RETURNED Order Status with Processing Paths | CRITICAL | NOT STARTED | 8h       | schema.ts, ordersDb.ts:1564        |
+| ACC-001  | Fix Silent GL Posting Failures                  | CRITICAL | NOT STARTED | 8h       | accountingHooks.ts:173,224,274,323 |
+
+##### WSQA-001: Fix InvoicesWorkSurface Payment Recording Stub
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
+**Line:** 717-724
+
+**Problem:**
+Payment recording mutation is a stub - shows success toast without actually persisting the payment. Users think payments are recorded but they are not saved to database.
+
+**Objectives:**
+
+1. Wire payment recording to actual mutation
+2. Ensure payment persists to database
+3. Update invoice balance after payment
+
+**Deliverables:**
+
+- [ ] Payment recording mutation connected to backend
+- [ ] Payment reflected in invoice balance
+- [ ] Audit trail entry created for payment
+- [ ] Success/error handling with proper feedback
+
+---
+
+##### WSQA-002: Implement Flexible Lot Selection
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 8h
+**Module:** `client/src/components/work-surface/InventoryWorkSurface.tsx`, `server/inventoryUtils.ts`
+
+**Problem:**
+Users cannot select specific batches when creating orders. System auto-allocates but doesn't allow manual lot selection, which is critical for regulated inventory management.
+
+**Objectives:**
+
+1. Add batch selection UI to order creation flow
+2. Allow override of FIFO/LIFO allocation
+3. Preserve selected batches through order lifecycle
+
+**Deliverables:**
+
+- [ ] Batch picker component added to order flow
+- [ ] Backend supports explicit batch allocation
+- [ ] Selection persists on order save
+- [ ] Validation prevents over-allocation
+
+---
+
+##### WSQA-003: Add RETURNED Order Status with Processing Paths
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 8h
+**Module:** `server/schema.ts`, `server/ordersDb.ts:1564-1570`
+
+**Problem:**
+Order status machine is incomplete - missing RETURNED status with required processing paths (restock to inventory vs return to vendor).
+
+**Objectives:**
+
+1. Add RETURNED status to order status enum
+2. Implement restock-to-inventory path
+3. Implement return-to-vendor path
+4. Create inventory movements for returns
+
+**Deliverables:**
+
+- [ ] RETURNED status added to schema
+- [ ] Status transition validation updated
+- [ ] Restock flow creates inventory movements
+- [ ] Return-to-vendor flow updates vendor records
+- [ ] UI for selecting return disposition
+
+---
+
+##### ACC-001: Fix Silent GL Posting Failures
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 8h
+**Module:** `server/accountingHooks.ts`
+**Lines:** 173, 224, 274, 323
+
+**Problem:**
+GL posting failures are silently ignored. When standard accounts are not found, the system logs a warning but allows sales/payments/refunds to complete WITHOUT creating ledger entries. This causes financial records to be incomplete.
+
+**Impact:** Sales may be recorded but accounting ledger remains empty.
+
+**Objectives:**
+
+1. Make GL posting failures throw errors
+2. Implement transaction rollback on GL failure
+3. Add alerting for missing standard accounts
+4. Ensure all financial transactions have GL entries
+
+**Deliverables:**
+
+- [ ] `postSaleGLEntries` throws on missing accounts
+- [ ] `postPaymentGLEntries` throws on missing accounts
+- [ ] `postRefundGLEntries` throws on missing accounts
+- [ ] `postCOGSGLEntries` throws on missing accounts
+- [ ] Admin alert for missing standard accounts
+- [ ] GL reconciliation report added
+
+---
+
+#### P1 - High Priority (Feature Completeness)
+
+| Task     | Description                            | Priority | Status      | Estimate | Module                                         |
+| -------- | -------------------------------------- | -------- | ----------- | -------- | ---------------------------------------------- |
+| SSE-001  | Fix Live Shopping SSE Event Naming     | HIGH     | NOT STARTED | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
+| MEET-048 | Create Hour Tracking Frontend          | HIGH     | NOT STARTED | 16h      | client/src/pages/                              |
+| WS-010A  | Integrate Photography Module into Page | HIGH     | NOT STARTED | 4h       | PhotographyPage.tsx                            |
+| NAV-017  | Route CreditsPage in App.tsx           | HIGH     | NOT STARTED | 1h       | App.tsx                                        |
+| API-016  | Implement Quote Email Sending          | HIGH     | NOT STARTED | 4h       | server/routers/quotes.ts:294                   |
+
+##### SSE-001: Fix Live Shopping SSE Event Naming Mismatch
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 2h
+**Module:** `server/services/live-shopping/sessionTimeoutService.ts`, `client/src/hooks/useLiveSessionSSE.ts:135-147`
+**Related:** BE-QA-013 (same file, different issue - extension count validation at line 382)
+
+**Problem:**
+Backend emits `SESSION_TIMEOUT_WARNING` events but frontend listens for `TIMEOUT_WARNING`. Events are never received by the client.
+
+**Deliverables:**
+
+- [ ] Standardize event naming (prefer backend naming)
+- [ ] Update frontend to match backend event names
+- [ ] Verify timeout warnings display in VIP portal
+
+---
+
+##### MEET-048: Create Hour Tracking Frontend
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 16h
+**Module:** `client/src/pages/`, `server/routers/hourTracking.ts`
+
+**Problem:**
+Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBreak, listTimeEntries, createManualEntry, adjustTimeEntry, approveTimeEntry, getTimesheet, getHoursReport, getOvertimeReport) but there is no frontend UI.
+
+**Deliverables:**
+
+- [ ] HourTrackingPage.tsx created
+- [ ] Clock in/out component
+- [ ] Timesheet view component
+- [ ] Time entry management UI
+- [ ] Route added to App.tsx
+- [ ] Navigation item added
+
+---
+
+##### WS-010A: Integrate Photography Module into PhotographyPage
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `client/src/pages/PhotographyPage.tsx`, `client/src/components/inventory/PhotographyModule.tsx`
+**Note:** WS-010 is marked ✅ COMPLETE in roadmap but this finding indicates it was prematurely closed.
+
+**Problem:**
+PhotographyModule component (689 lines) is fully built but never used. PhotographyPage only shows queue without upload capability. The module imports are declared (cropping, background removal) but not implemented.
+
+**Deliverables:**
+
+- [ ] PhotographyModule integrated into PhotographyPage
+- [ ] Upload functionality working
+- [ ] Presigned URLs implemented (`photos.getUploadUrl`)
+- [ ] Photo approval workflow connected
+
+---
+
+##### NAV-017: Route CreditsPage in App.tsx
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 1h
+**Module:** `client/src/App.tsx`, `client/src/pages/CreditsPage.tsx`
+
+**Problem:**
+CreditsPage is a complete page with issue/apply/void functionality. It's imported in App.tsx but NO ROUTE is defined - users cannot access this feature.
+
+**Deliverables:**
+
+- [ ] Route `/credits` added to App.tsx
+- [ ] Navigation item added to sidebar
+- [ ] Feature flag check added if needed
+
+---
+
+##### API-016: Implement Quote Email Sending
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `server/routers/quotes.ts:294`
+
+**Problem:**
+`sendQuote` mutation has a TODO comment "Send email notification to client" but doesn't actually send emails. Quotes are marked as sent but no email is delivered.
+
+**Deliverables:**
+
+- [ ] Email sending implemented in sendQuote
+- [ ] Quote PDF attachment generated
+- [ ] Delivery status tracked
+- [ ] Error handling for failed sends
+
+---
+
+#### P2 - Medium Priority (Feature Gaps & Quality)
+
+| Task       | Description                                   | Priority | Status      | Estimate | Module                         |
+| ---------- | --------------------------------------------- | -------- | ----------- | -------- | ------------------------------ |
+| FE-QA-009  | Enable VendorSupplyPage Creation              | MEDIUM   | NOT STARTED | 8h       | VendorSupplyPage.tsx:96        |
+| FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
+| API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
+| DATA-021   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
+| DEPR-001   | Migrate Deprecated Vendor Router Usages       | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
+| SCHEMA-001 | Fix products.name vs nameCanonical Mismatch   | MEDIUM   | NOT STARTED | 4h       | storage.ts:1076                |
+| SCHEMA-002 | Document batches.quantity vs onHandQty        | MEDIUM   | NOT STARTED | 2h       | photography.ts, analytics.ts   |
+| SCHEMA-003 | Add clients.tier and clients.isActive Columns | MEDIUM   | NOT STARTED | 4h       | referrals.ts, alerts.ts        |
+| BUG-101    | Fix Property Test Bugs (PROP-BUG-001/002/003) | MEDIUM   | NOT STARTED | 4h       | property tests                 |
+| MOB-001    | Address Mobile Responsiveness Issues (38)     | MEDIUM   | NOT STARTED | 24h      | Multiple components            |
+| FE-QA-011  | Integrate Unused Dashboard Widgets (5)        | MEDIUM   | NOT STARTED | 8h       | widgets-v2/                    |
+
+##### FE-QA-009: Enable VendorSupplyPage Creation
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 8h
+**Module:** `client/src/pages/VendorSupplyPage.tsx:96`
+
+**Problem:**
+"Add Supply" button shows "Feature In Development" alert. Supply creation form, edit functionality, and "Find Matching Clients" button are all missing.
+
+**Deliverables:**
+
+- [ ] Supply creation form implemented
+- [ ] Edit functionality added
+- [ ] "Find Matching Clients" button connected to matchmaking
+- [ ] Development alert removed
+
+---
+
+##### FE-QA-010: Wire MatchmakingServicePage Action Buttons
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `client/src/pages/MatchmakingServicePage.tsx`
+
+**Problem:**
+Four action buttons have no implementation:
+
+- "View Buyers" button (line 385) - no handler
+- "Reserve" button (line 388) - no handler
+- "Create Quote" button (line 456) - may not connect to workflow
+- "Dismiss" button (line 459) - no dismissal logic
+
+**Deliverables:**
+
+- [ ] View Buyers opens buyer list modal
+- [ ] Reserve creates reservation record
+- [ ] Create Quote navigates to quote creator with pre-filled data
+- [ ] Dismiss marks match as dismissed with reason
+
+---
+
+##### FE-QA-011: Integrate Unused Dashboard Widgets
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 8h
+**Module:** `client/src/components/dashboard/widgets-v2/`
+**Note:** FE-QA-004 (V3 Migration) is about migrating widgets, not integrating these V2 widgets.
+
+**Problem:**
+5 fully-built dashboard widgets are exported but never used in any dashboard:
+
+- CashCollectedLeaderboard
+- ClientDebtLeaderboard
+- ClientProfitMarginLeaderboard
+- TopStrainFamiliesWidget
+- SmartOpportunitiesWidget
+
+**Deliverables:**
+
+- [ ] Determine if widgets should be integrated into DashboardV3 or deprecated
+- [ ] If integrating: Add to dashboard widget registry
+- [ ] If deprecating: Remove unused code and exports
+- [ ] Update dashboard documentation
+
+---
+
+##### API-017: Implement Stock Threshold Configuration
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `server/routers/alerts.ts:379-398`
+
+**Problem:**
+`setThresholds` mutation throws "not yet available - requires schema migration". The `minStockLevel` and `targetStockLevel` columns are missing from schema.
+
+**Deliverables:**
+
+- [ ] Schema migration adding threshold columns
+- [ ] setThresholds mutation working
+- [ ] Low stock alerts using configurable thresholds
+- [ ] UI for threshold configuration
+
+---
+
+##### SCHEMA-001: Fix products.name vs nameCanonical Mismatch
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `server/storage.ts:1076`
+
+**Problem:**
+Code references `products.name` but actual column is `products.nameCanonical`. This is an active bug from December 31, 2025 migration - Drizzle schema was NOT updated.
+
+**Deliverables:**
+
+- [ ] Schema updated to match actual database
+- [ ] All code references fixed
+- [ ] Migration script if needed
+
+---
+
+#### P3 - Low Priority (Cleanup & Technical Debt)
+
+| Task          | Description                                   | Priority | Status      | Estimate | Module            |
+| ------------- | --------------------------------------------- | -------- | ----------- | -------- | ----------------- |
+| ABANDONED-001 | Remove Unused RTL/i18n Utilities              | LOW      | NOT STARTED | 1h       | rtlUtils.ts       |
+| DEPR-002      | Remove Deprecated PO Procedures (3)           | LOW      | NOT STARTED | 2h       | purchaseOrders.ts |
+| QUAL-009      | Replace console.error with Logger (23+ files) | LOW      | NOT STARTED | 8h       | Multiple files    |
+
+##### ABANDONED-001: Remove Unused RTL/i18n Utilities
+
+**Status:** NOT STARTED
+**Priority:** LOW (P3)
+**Estimate:** 1h
+**Module:** `client/src/lib/rtlUtils.ts`
+
+**Problem:**
+11 utility functions exported (`isRTL`, `getDirection`, `getDirectionalIconClasses`, etc.) but 0 usages anywhere in codebase. Right-to-left language support was planned but never implemented.
+
+**Deliverables:**
+
+- [ ] rtlUtils.ts removed
+- [ ] No breaking changes verified
+- [ ] Documentation updated if RTL was mentioned
+
+---
+
+**Summary: Deep Audit Additional Tasks**
+
+| Priority  | Count  | Description                                 |
+| --------- | ------ | ------------------------------------------- |
+| P0        | 4      | Work surface blockers + GL posting          |
+| P1        | 5      | Feature completeness gaps                   |
+| P2        | 11     | Feature gaps, schema fixes, mobile, widgets |
+| P3        | 3      | Cleanup and technical debt                  |
+| **TOTAL** | **23** |                                             |
+
+> **QA Note (Jan 20, 2026):** All tasks verified as non-duplicates after skeptical review.
+> Cross-references added where tasks touch same files (SSE-001/BE-QA-013).
+
+---
+
+### Second-Pass Security Audit Findings (P0-P2) - Added Jan 21, 2026
+
+> Discovered during comprehensive second-pass security audit of last 36 hours of work.
+> **Source:** `docs/qa/SECOND_PASS_SECURITY_AUDIT_2026-01-21.md`
+> **Method:** Build verification, test execution, code analysis, contract drift detection
+> **Verification:** TypeScript ✅ Build ✅ Tests 1949/2065 pass
+> **Total Tasks:** 11 (1 P0, 4 P1, 6 P2)
+
+#### P0 - Critical (Silent Failure)
+
+| Task     | Description                                        | Priority | Status      | Estimate | Module                               |
+| -------- | -------------------------------------------------- | -------- | ----------- | -------- | ------------------------------------ |
+| PERF-001 | Fix Empty Catch Blocks in usePerformanceMonitor.ts | CRITICAL | NOT STARTED | 15 min   | usePerformanceMonitor.ts:375,387,403 |
+
+##### PERF-001: Fix Empty Catch Blocks in usePerformanceMonitor.ts
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 15 min
+**Module:** `client/src/hooks/work-surface/usePerformanceMonitor.ts`
+**Lines:** 375, 387, 403
+
+**Problem:**
+Three empty catch blocks silently swallow Performance Observer errors. Production monitoring may silently fail without any indication, hiding browser compatibility issues and preventing debugging.
+
+```typescript
+// Lines 373-375
+} catch (e) {}  // LCP observer - SILENT FAILURE
+// Lines 385-387
+} catch (e) {}  // FID observer - SILENT FAILURE
+// Lines 401-403
+} catch (e) {}  // CLS observer - SILENT FAILURE
+```
+
+**Objectives:**
+
+1. Add debug logging to catch blocks
+2. Ensure monitoring failures are visible in dev tools
+3. Prevent silent failures in production
+
+**Deliverables:**
+
+- [ ] Add `console.debug('[WebVitals] Observer not supported:', e)` to all 3 catch blocks
+- [ ] Verify in browser that errors are logged when observers fail
+- [ ] No functional changes to monitoring behavior
+
+---
+
+#### P1 - High Priority (Test Infrastructure + Feature Gaps)
+
+| Task        | Description                                       | Priority | Status      | Estimate | Module                                  |
+| ----------- | ------------------------------------------------- | -------- | ----------- | -------- | --------------------------------------- |
+| TEST-QA-001 | Fix React Hook Test Infrastructure (JSDOM Setup)  | HIGH     | NOT STARTED | 2h       | hooks/work-surface/**tests**/\*.test.ts |
+| LIVE-001    | Implement or Remove Live Shopping Session Console | HIGH     | NOT STARTED | 4h       | LiveShoppingPage.tsx:410                |
+| DI-009      | Add Vendor ID Validation in Return Processing     | HIGH     | NOT STARTED | 30 min   | returnProcessing.ts:135-140             |
+| SEC-024     | Validate Quote Email XSS Prevention               | HIGH     | NOT STARTED | 1h       | emailService.ts (viewUrl escaping)      |
+
+##### TEST-QA-001: Fix React Hook Test Infrastructure
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 2h
+**Module:** `client/src/hooks/work-surface/__tests__/*.test.ts`
+
+**Problem:**
+14+ tests fail with "Target container is not a DOM element" error. useExport and usePrint tests cannot run, blocking CI/CD verification of Work Surface hooks.
+
+**Objectives:**
+
+1. Add proper DOM setup in test files
+2. Configure JSDOM environment correctly
+3. Ensure all hook tests pass
+
+**Deliverables:**
+
+- [ ] Fix JSDOM configuration in vitest setup
+- [ ] All useExport tests pass (currently 10 failing)
+- [ ] All usePrint tests pass (currently 4 failing)
+- [ ] CI pipeline green for hook tests
+
+---
+
+##### LIVE-001: Implement or Remove Live Shopping Session Console
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `client/src/pages/LiveShoppingPage.tsx:410`
+
+**Problem:**
+TODO comment indicates session console/detail view is unimplemented. Feature appears complete in UI but clicking session row triggers no action - creates user dead-end.
+
+**Objectives:**
+
+1. Either implement session detail view OR
+2. Remove/disable the UI control that suggests this feature exists
+
+**Deliverables:**
+
+- [ ] Session row click navigates to detail view, OR
+- [ ] Session row click disabled with appropriate styling
+- [ ] No user-facing dead-ends
+
+---
+
+##### DI-009: Add Vendor ID Validation in Return Processing
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 30 min
+**Module:** `server/services/returnProcessing.ts:135-140`
+
+**Problem:**
+`processVendorReturn` accepts vendorId without validating it exists in the database. Can create orphan vendor return records with invalid vendorId, causing referential integrity issues.
+
+**Objectives:**
+
+1. Validate vendorId exists before creating vendor return
+2. Throw appropriate error if vendor not found
+
+**Deliverables:**
+
+- [ ] Add vendor existence check at start of `processVendorReturn`
+- [ ] Throw TRPCError NOT_FOUND if vendor doesn't exist
+- [ ] Add unit test for invalid vendorId case
+
+---
+
+##### SEC-024: Validate Quote Email XSS Prevention
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 1h
+**Module:** `server/services/emailService.ts`
+
+**Problem:**
+Hypothesis: `viewUrl` in email template may not be fully escaped. If viewUrl contains `javascript:` protocol, it could execute on click.
+
+**Objectives:**
+
+1. Audit email template for XSS vectors
+2. Ensure all user input is properly escaped
+3. Add test for XSS prevention
+
+**Deliverables:**
+
+- [ ] Audit `sendQuoteEmail` template for XSS vectors
+- [ ] Add URL protocol validation (only allow http/https)
+- [ ] Add unit test with `javascript:alert(1)` as viewUrl
+- [ ] Verify email renders safely
+
+---
+
+#### P2 - Medium Priority (Type Safety + Stubs)
+
+| Task     | Description                                     | Priority | Status      | Estimate | Module                                        |
+| -------- | ----------------------------------------------- | -------- | ----------- | -------- | --------------------------------------------- |
+| TYPE-001 | Fix `as any` Casts in Work Surface Golden Flows | MEDIUM   | NOT STARTED | 4h       | OrderCreationFlow, InvoiceToPaymentFlow, etc. |
+| STUB-001 | Implement Live Catalog Brand Extraction         | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:357                     |
+| STUB-002 | Implement Live Catalog Price Range              | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:367                     |
+| SEC-025  | Implement Session Extension Limit               | MEDIUM   | NOT STARTED | 1h       | sessionTimeoutService.ts:382                  |
+| RBAC-002 | Verify Time Clock Route Permission Gate         | MEDIUM   | NOT STARTED | 30 min   | TimeClockPage.tsx, hourTracking.ts            |
+| SEC-026  | Validate Cron Leader Election Race Condition    | MEDIUM   | NOT STARTED | 2h       | cronLeaderElection.ts                         |
+
+##### TYPE-001: Fix `as any` Casts in Work Surface Golden Flows
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/golden-flows/`
+
+**Problem:**
+50+ `as any` casts bypass TypeScript type safety in Golden Flow components:
+
+- `OrderCreationFlow.tsx`: lines 582, 587, 593, 596, 613, 650
+- `InvoiceToPaymentFlow.tsx`: lines 655, 665, 679, 689
+- `OrderToInvoiceFlow.tsx`: lines 658, 661, 668, 678
+
+**Objectives:**
+
+1. Define proper types for tRPC response shapes
+2. Remove `as any` casts
+3. Ensure type errors surface at compile time
+
+**Deliverables:**
+
+- [ ] Define response types in shared types file
+- [ ] Replace `as any` with proper type assertions
+- [ ] TypeScript compilation still passes
+- [ ] No runtime behavior changes
+
+---
+
+##### STUB-001: Implement Live Catalog Brand Extraction
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `server/services/liveCatalogService.ts:357`
+
+**Problem:**
+TODO comment indicates brand extraction is not implemented. Returns empty array instead of actual brand data.
+
+**Deliverables:**
+
+- [ ] Extract unique brands from inventory data
+- [ ] Return brands in catalog filter options
+- [ ] Add test for brand extraction
+
+---
+
+##### STUB-002: Implement Live Catalog Price Range
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `server/services/liveCatalogService.ts:367`
+
+**Problem:**
+TODO comment indicates price range calculation is not implemented. Users cannot filter by price in live catalog.
+
+**Deliverables:**
+
+- [ ] Calculate min/max price from inventory
+- [ ] Return price range in catalog response
+- [ ] Add test for price range calculation
+
+---
+
+##### SEC-025: Implement Session Extension Limit
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 1h
+**Module:** `server/services/sessionTimeoutService.ts:382`
+
+**Problem:**
+`canExtend: true` is hardcoded with TODO comment "Check count". Sessions can be extended infinitely, potentially allowing unlimited session duration.
+
+**Deliverables:**
+
+- [ ] Add extension count tracking
+- [ ] Implement max extension limit (e.g., 3 extensions)
+- [ ] Return `canExtend: false` when limit reached
+- [ ] Add unit test for extension limit
+
+---
+
+##### RBAC-002: Verify Time Clock Route Permission Gate
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 30 min
+**Module:** `client/src/pages/TimeClockPage.tsx`, `server/routers/hourTracking.ts`
+
+**Problem:**
+Hypothesis: Route uses `requirePermission("scheduling:read")` on backend but may lack UI-level permission gate. Users without permission may see the page before API calls fail.
+
+**Deliverables:**
+
+- [ ] Verify TimeClockPage has permission check
+- [ ] Add ProtectedRoute wrapper if missing
+- [ ] Test with user lacking scheduling:read permission
+
+---
+
+##### SEC-026: Validate Cron Leader Election Race Condition
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `server/utils/cronLeaderElection.ts`
+
+**Problem:**
+Hypothesis: Two instances could acquire leader lock simultaneously due to race condition in `tryAcquireLock`.
+
+**Deliverables:**
+
+- [ ] Add logging before/after lock acquisition
+- [ ] Deploy 2 instances and verify only one runs cron
+- [ ] Add mutex/transaction around lock acquisition if needed
+- [ ] Add integration test for concurrent acquisition
+
+---
+
+**Summary: Second-Pass Security Audit Tasks**
+
+| Priority  | Count  | Description                                   |
+| --------- | ------ | --------------------------------------------- |
+| P0        | 1      | Silent monitoring failure                     |
+| P1        | 4      | Test infrastructure + feature gaps + security |
+| P2        | 6      | Type safety + stubs + validation              |
+| **TOTAL** | **11** |                                               |
+
+> **Audit Note (Jan 21, 2026):** All tasks from second-pass security audit.
+> Build verification: TypeScript ✅ Build ✅ Tests 1949/2065 pass (116 test infra failures)
+> Full report: `docs/qa/SECOND_PASS_SECURITY_AUDIT_2026-01-21.md`
+
+---
+
 ## 📊 MVP Summary
 
-| Category              | Completed | Open  | Removed | Total   |
-| --------------------- | --------- | ----- | ------- | ------- |
-| Infrastructure        | 21        | 0     | 1       | 22      |
-| Security              | 17        | 0     | 0       | 17      |
-| Bug Fixes             | 46        | 0     | 0       | 46      |
-| API Registration      | 10        | 0     | 0       | 10      |
-| Stability             | 4         | 0     | 0       | 4       |
-| Quality               | 12        | 0     | 0       | 12      |
-| Features              | 29        | 0     | 1       | 30      |
-| UX                    | 12        | 0     | 0       | 12      |
-| Data & Schema         | 8         | 0     | 0       | 8       |
-| Data Integrity (QA)   | 8         | 0     | 0       | 8       |
-| Frontend Quality (QA) | 3         | 0     | 0       | 3       |
-| Backend Quality (QA)  | 5         | 0     | 0       | 5       |
-| Improvements          | 7         | 0     | 0       | 7       |
-| E2E Testing           | 3         | 0     | 0       | 3       |
-| **TOTAL**             | **185**   | **0** | **2**   | **187** |
+| Category                    | Completed | Open   | Removed | Total   |
+| --------------------------- | --------- | ------ | ------- | ------- |
+| Infrastructure              | 21        | 2      | 1       | 24      |
+| Security                    | 17        | 1      | 0       | 18      |
+| Bug Fixes                   | 46        | 2      | 0       | 48      |
+| API Registration            | 10        | 7      | 0       | 17      |
+| Stability                   | 4         | 0      | 0       | 4       |
+| Quality                     | 12        | 3      | 0       | 15      |
+| Features                    | 29        | 2      | 1       | 32      |
+| UX                          | 12        | 0      | 0       | 12      |
+| Data & Schema               | 8         | 4      | 0       | 12      |
+| Data Seeding (NEW)          | 0         | 11     | 0       | 11      |
+| Data Integrity (QA)         | 8         | 0      | 0       | 8       |
+| Frontend Quality (QA)       | 3         | 8      | 0       | 11      |
+| Backend Quality (QA)        | 5         | 10     | 0       | 15      |
+| Navigation                  | 0         | 12     | 0       | 12      |
+| Improvements                | 7         | 0      | 0       | 7       |
+| E2E Testing                 | 3         | 0      | 0       | 3       |
+| TypeScript (NEW)            | 0         | 1      | 0       | 1       |
+| Work Surface QA (NEW)       | 0         | 4      | 0       | 4       |
+| Mobile Responsiveness (NEW) | 0         | 1      | 0       | 1       |
+| Deprecation Cleanup (NEW)   | 0         | 2      | 0       | 2       |
+| Schema Fixes (NEW)          | 0         | 3      | 0       | 3       |
+| Security Audit (Jan 21)     | 0         | 11     | 0       | 11      |
+| **TOTAL**                   | **185**   | **83** | **2**   | **270** |
 
-> **MVP STATUS: 100% RESOLVED** (185 completed + 2 removed, 0 tasks open)
+> **MVP STATUS: 69% RESOLVED** (185 completed + 2 removed, 83 tasks open)
+> **Data Seeding (Jan 21, 2026):** DATA-021 added for mock product image seeding (live catalog testing).
+> **Security Audit (Jan 21, 2026):** 11 new tasks added from second-pass security audit.
+> **Deep Audit (Jan 20, 2026):** 23 additional tasks added from comprehensive git commit analysis (verified non-duplicates).
+> **Incomplete Features Audit (Jan 20, 2026):** 37 new tasks added from RedHat QA audit.
+> **Navigation Enhancement (Jan 20, 2026):** 11 new tasks added to surface hidden routes.
 
 > **E2E Testing Infrastructure (Jan 16, 2026):** All 3 E2E tasks COMPLETED.
 > Final pass rate: 88.5% (54/61 core tests). Full suite has 338 tests across 44 spec files.
@@ -703,22 +1668,507 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ---
 
+## 🎨 UX Work Surface Redesign (Atomic UX Strategy)
+
+> **Strategy Package**: `docs/specs/ui-ux-strategy/`
+> **Status**: Ready for implementation (P0 infrastructure tasks first)
+> **Last QA Review**: 2026-01-20 (Red Hat Deep Review)
+
+### Scope & Guardrails
+
+- **Feature Preservation**: All DF-001 through DF-070 features must be preserved (see `FEATURE_PRESERVATION_MATRIX.md`)
+- **Golden Flow Coverage**: GF-001 through GF-008 must pass regression tests with RBAC validation
+- **Modal Replacement**: All modals in core flows replaced with inspector/inline patterns
+- **Rollback Strategy**: Feature flags enable safe gradual rollout and instant rollback
+
+### Feature Flags for Rollout
+
+Each Work Surface module requires a feature flag for safe deployment:
+
+| Flag Name                 | Default | Controls                           |
+| ------------------------- | ------- | ---------------------------------- |
+| `WORK_SURFACE_INTAKE`     | false   | UXS-201..203 (Intake/PO pilot)     |
+| `WORK_SURFACE_ORDERS`     | false   | UXS-301..302 (Sales/Orders)        |
+| `WORK_SURFACE_INVENTORY`  | false   | UXS-401..402 (Inventory/Pick-Pack) |
+| `WORK_SURFACE_ACCOUNTING` | false   | UXS-501..502 (Accounting/Ledger)   |
+
+### RBAC Validation Matrix (Per Golden Flow)
+
+| Golden Flow              | Entry Point          | Required Permissions                 | Owning Roles             |
+| ------------------------ | -------------------- | ------------------------------------ | ------------------------ |
+| GF-001 Direct Intake     | /spreadsheet         | `inventory:write`, `batches:create`  | Inventory, Super Admin   |
+| GF-002 Standard PO       | /purchase-orders     | `purchase_orders:write`              | Inventory, Purchasing    |
+| GF-003 Sales Order       | /orders              | `orders:write`, `inventory:read`     | Sales Rep, Sales Manager |
+| GF-004 Invoice & Payment | /accounting/invoices | `invoices:write`, `payments:write`   | Accounting               |
+| GF-005 Pick & Pack       | /pick-pack           | `pick_pack:write`, `inventory:write` | Fulfillment              |
+| GF-006 Client Ledger     | /clients/:id/ledger  | `clients:read`, `ledger:read`        | Sales Rep, Accounting    |
+| GF-007 Inventory Adjust  | /inventory           | `inventory:write`                    | Inventory                |
+| GF-008 Sample Request    | /samples             | `samples:write`                      | Sales Rep, Sales Manager |
+
+### Modal Replacement Inventory
+
+| Module     | Current Modal      | Replacement         | Task    |
+| ---------- | ------------------ | ------------------- | ------- |
+| Intake     | BatchCreateDialog  | Inspector panel     | UXS-201 |
+| Intake     | VendorCreateDialog | Quick-create inline | UXS-201 |
+| Orders     | LineItemEditDialog | Inspector panel     | UXS-301 |
+| Orders     | DiscountDialog     | Inline + inspector  | UXS-301 |
+| Inventory  | AdjustmentDialog   | Inspector panel     | UXS-401 |
+| Pick/Pack  | AssignDialog       | Bulk action bar     | UXS-402 |
+| Accounting | PaymentDialog      | Inspector panel     | UXS-501 |
+
+### Atomic UX Task Summary (From ATOMIC_ROADMAP.md)
+
+| Layer                   | Tasks        | Priority   | Dependencies          |
+| ----------------------- | ------------ | ---------- | --------------------- |
+| Layer 0: Foundation     | UXS-001..006 | P0         | None                  |
+| Layer 1: Primitives     | UXS-101..104 | P0         | UXS-002               |
+| Layer 2: Intake Pilot   | UXS-201..203 | P1         | UXS-101..104          |
+| Layer 3: Orders         | UXS-301..302 | P1         | UXS-101..104          |
+| Layer 4: Inventory      | UXS-401..402 | P1         | UXS-101..104          |
+| Layer 5: Accounting     | UXS-501..502 | P1         | UXS-101..104, REL-008 |
+| Layer 6: Hardening      | UXS-601..603 | P1         | UXS-201..502          |
+| Layer 7: Infrastructure | UXS-701..707 | P1/P2/BETA | Various               |
+| Layer 8: A11y/Perf      | UXS-801..803 | P1/P2      | UXS-101..104          |
+| Layer 9: Cross-cutting  | UXS-901..904 | P2         | None                  |
+
+### P0 Blockers (Must Complete First)
+
+| Task    | Description              | Effort | Status |
+| ------- | ------------------------ | ------ | ------ |
+| UXS-101 | Keyboard contract hook   | 2 days | ready  |
+| UXS-102 | Save-state indicator     | 1 day  | ready  |
+| UXS-104 | Validation timing helper | 1 day  | ready  |
+| UXS-703 | Loading skeletons        | 1 day  | ready  |
+| UXS-704 | Error boundary           | 1 day  | ready  |
+
+### BETA Phase Tasks (UX)
+
+| Task    | Description             | Effort | Status | Notes                                 |
+| ------- | ----------------------- | ------ | ------ | ------------------------------------- |
+| UXS-702 | Offline queue + sync    | 5 days | ready  | Per product: offline deferred to beta |
+| UXS-706 | Session timeout handler | 2 days | ready  | Depends on UXS-702                    |
+
+### Open Questions Requiring Product Decision
+
+| #   | Question                                        | Impact                 | Blocking |
+| --- | ----------------------------------------------- | ---------------------- | -------- |
+| 1   | Concurrent edit policy: prompt vs auto-resolve? | UXS-705 implementation | Yes      |
+| 2   | Export limit (10K rows): acceptable?            | UXS-904 implementation | No       |
+| 3   | Bulk selection limit (500 rows): acceptable?    | UXS-803 implementation | No       |
+| 4   | VIP Portal: full Work Surface or light touch?   | Scope planning         | No       |
+
+### Work Surfaces Deployment Tasks (Added 2026-01-20)
+
+> **Deployment Strategy**: `docs/deployment/WORKSURFACES_DEPLOYMENT_STRATEGY_v2.md`
+> **Execution Roadmap**: `docs/deployment/WORKSURFACES_EXECUTION_ROADMAP.md`
+> **Accelerated Validation**: `docs/deployment/ACCELERATED_VALIDATION_PROTOCOL.md`
+> **QA Gate Scripts**: `scripts/qa/` (placeholder-scan.sh, rbac-verify.sh, feature-parity.sh, invariant-checks.ts)
+> **Session**: `docs/sessions/completed/Session-20260120-WORKSURFACES-DEPLOYMENT-XpszM.md`
+
+These tasks enable progressive rollout of Work Surfaces to production. All 9 Work Surfaces are implemented (95% complete) but currently not routed in App.tsx.
+
+#### Deployment Path Options
+
+| Path                           | Duration  | When to Use                                   |
+| ------------------------------ | --------- | --------------------------------------------- |
+| **Traditional Staged Rollout** | 4+ days   | Active user base, need real-world observation |
+| **Accelerated AI Validation**  | 4-6 hours | Minimal users, AI agents can execute tests    |
+
+**Accelerated Validation** replaces staged rollout observation with comprehensive automated testing:
+
+- Phase A: Infrastructure validation (builds, types, gates)
+- Phase B: Unit tests + Golden Flow matrix (all flows × all roles)
+- Phase C: E2E tests + invariant monitoring
+- Phase D: Rollback verification
+
+Run: `bash scripts/validation/run-accelerated-validation.sh`
+
+| Task       | Description                                     | Priority | Status       | Estimate | Dependencies    |
+| ---------- | ----------------------------------------------- | -------- | ------------ | -------- | --------------- |
+| DEPLOY-001 | Wire WorkSurfaceGate into App.tsx routes        | HIGH     | **COMPLETE** | 4h       | None            |
+| DEPLOY-002 | Add gate scripts to package.json                | HIGH     | **COMPLETE** | 1h       | None            |
+| DEPLOY-003 | Seed missing RBAC permissions (40+ accounting)  | HIGH     | **COMPLETE** | 4h       | None            |
+| DEPLOY-004 | Capture baseline metrics (latency, error rates) | MEDIUM   | **COMPLETE** | 2h       | None            |
+| DEPLOY-005 | Execute Stage 0 (Internal QA)                   | HIGH     | **COMPLETE** | 8h       | DEPLOY-001..004 |
+| DEPLOY-006 | Execute Stage 1 (10% Rollout)                   | HIGH     | **SKIPPED**  | 4h       | DEPLOY-005      |
+| DEPLOY-007 | Execute Stage 2 (50% Rollout)                   | HIGH     | **SKIPPED**  | 4h       | DEPLOY-006      |
+| DEPLOY-008 | Execute Stage 3 (100% Rollout)                  | HIGH     | **COMPLETE** | 4h       | DEPLOY-007      |
+
+> **Deployment Note (2026-01-20)**: Stages 1-2 skipped per Accelerated AI Validation Protocol recommendation. Direct deployment to 100% with feature flag safety net.
+
+#### DEPLOY-001: Wire WorkSurfaceGate into App.tsx Routes
+
+**Status:** COMPLETE (2026-01-20)
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/App.tsx`, `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts`
+**Dependencies:** None
+
+**Problem:**
+App.tsx routes to legacy pages. WorkSurfaceGate component exists (line 301-318 in useWorkSurfaceFeatureFlags.ts) but is not imported or used in routing.
+
+**Objectives:**
+
+1. Import WorkSurfaceGate into App.tsx
+2. Wrap each legacy route with WorkSurfaceGate
+3. Map each legacy page to its WorkSurface equivalent
+4. Verify feature flag controls work correctly
+
+**Deliverables:**
+
+- [ ] WorkSurfaceGate imported in App.tsx
+- [ ] All 9 WorkSurface routes wrapped
+- [ ] Feature flags default to false (safe deployment)
+- [ ] Manual toggle test passes
+
+---
+
+#### DEPLOY-002: Add Gate Scripts to package.json
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 1h
+**Module:** `package.json`, `scripts/qa/`
+**Dependencies:** None
+
+**Problem:**
+Gate scripts exist in `scripts/qa/` but are not registered as npm commands.
+
+**Objectives:**
+
+1. Add npm scripts for each gate
+2. Verify scripts are executable
+3. Document gate usage
+
+**Deliverables:**
+
+- [ ] `npm run gate:placeholder` → placeholder-scan.sh
+- [ ] `npm run gate:rbac` → rbac-verify.sh
+- [ ] `npm run gate:parity` → feature-parity.sh
+- [ ] `npm run gate:invariants` → invariant-checks.ts
+- [ ] All gates pass on current codebase
+
+---
+
+#### DEPLOY-003: Seed Missing RBAC Permissions
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/services/rbacDefinitions.ts`, seed scripts
+**Dependencies:** None
+
+**Problem:**
+USER_FLOW_MATRIX.csv identifies 40+ accounting permissions not present in RBAC seed. Work Surfaces may fail RBAC checks without these permissions.
+
+**Objectives:**
+
+1. Audit USER_FLOW_MATRIX.csv for all required permissions
+2. Add missing permissions to rbacDefinitions.ts
+3. Create migration to seed permissions
+4. Verify with rbac-verify.sh
+
+**Deliverables:**
+
+- [ ] All permissions from USER_FLOW_MATRIX.csv present
+- [ ] Migration file created
+- [ ] `npm run gate:rbac` passes
+- [ ] No RBAC errors in Stage 0 testing
+
+---
+
+#### DEPLOY-004: Capture Baseline Metrics
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 2h
+**Module:** Observability stack
+**Dependencies:** None
+
+**Problem:**
+Need baseline metrics before rollout to detect regressions.
+
+**Objectives:**
+
+1. Capture P50/P95 latency for all 9 Work Surface endpoints
+2. Document current error rates
+3. Establish alert thresholds
+
+**Deliverables:**
+
+- [ ] Baseline document created
+- [ ] Latency metrics captured
+- [ ] Error rate baseline established
+- [ ] Alert thresholds configured
+
+---
+
+#### DEPLOY-005: Execute Stage 0 (Internal QA)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** All Work Surfaces
+**Dependencies:** DEPLOY-001, DEPLOY-002, DEPLOY-003, DEPLOY-004
+
+**Problem:**
+Work Surfaces need internal validation before any user exposure.
+
+**Objectives:**
+
+1. Enable feature flags for internal users only
+2. Run all gate scripts
+3. Execute Golden Flows GF-001 through GF-008
+4. Fix any blocking issues
+
+**Deliverables:**
+
+- [ ] All 8 gates pass
+- [ ] All 8 Golden Flows pass
+- [ ] No P0 bugs discovered
+- [ ] Sign-off for Stage 1
+
+---
+
+#### DEPLOY-006: Execute Stage 1 (10% Rollout)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** Feature flag configuration
+**Dependencies:** DEPLOY-005
+
+**Problem:**
+First external user exposure requires careful monitoring.
+
+**Objectives:**
+
+1. Enable Work Surfaces for 10% of users
+2. Monitor error rates and latency
+3. 24-hour bake period
+4. Rollback if metrics exceed thresholds
+
+**Deliverables:**
+
+- [ ] 10% rollout configured
+- [ ] Monitoring dashboard active
+- [ ] 24-hour bake complete
+- [ ] Metrics within thresholds
+
+---
+
+#### DEPLOY-007: Execute Stage 2 (50% Rollout)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** Feature flag configuration
+**Dependencies:** DEPLOY-006
+
+**Objectives:**
+
+1. Enable Work Surfaces for 50% of users
+2. Monitor for regressions
+3. 24-hour bake period
+4. Validate feature parity at scale
+
+**Deliverables:**
+
+- [ ] 50% rollout configured
+- [ ] No regression alerts
+- [ ] 24-hour bake complete
+- [ ] Support ticket volume normal
+
+---
+
+#### DEPLOY-008: Execute Stage 3 (100% Rollout)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** Feature flag configuration
+**Dependencies:** DEPLOY-007
+
+**Objectives:**
+
+1. Enable Work Surfaces for 100% of users
+2. Remove legacy page code (optional, can defer)
+3. Document rollout completion
+4. Update ATOMIC_ROADMAP.md status
+
+**Deliverables:**
+
+- [ ] 100% rollout configured
+- [ ] All metrics stable
+- [ ] Rollout documented in CHANGELOG.md
+- [ ] ATOMIC_ROADMAP.md updated to 100% deployed
+
+---
+
+## 🔧 Work Surfaces QA Blockers (Added 2026-01-20)
+
+> **Source:** Work Surfaces Exhaustive Testing Suite (`docs/qa/QA_ISSUE_LEDGER.md`)
+> **QA Report:** `docs/qa/RECOMMENDATIONS.md`, `docs/qa/FIX_PATCH_SET.md`
+> **Product Decisions:** Captured in `docs/qa/QA_ISSUE_LEDGER.md` Product Decisions Log
+
+These P0 blockers were identified during comprehensive QA testing of the 9 Work Surface components. They must be resolved before Work Surfaces deployment.
+
+### WSQA-001: Wire Payment Recording Mutation
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/WSQA-001.md`
+
+**Problem:**
+The InvoicesWorkSurface payment handler (lines 717-724) is a stub that shows success without recording payments. Comment says "In a real implementation..." but mutation is never called. Breaks Invoice → Payment → Reconciliation flow.
+
+**Objectives:**
+
+1. Wire handlePaymentSubmit to trpc.payments.recordPayment mutation
+2. Add loading state and error handling to payment dialog
+3. Verify backend endpoint exists and accepts expected input
+
+**Deliverables:**
+
+- [ ] Payment mutation hook added to InvoicesWorkSurface
+- [ ] Handler calls mutation instead of showing fake success
+- [ ] Dialog shows loading state during mutation
+- [ ] Submit button disabled while pending
+- [ ] Error handling displays server errors
+- [ ] Golden Flow GF-004 passes end-to-end
+
+---
+
+### WSQA-002: Implement Flexible Lot Selection
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2d
+**Module:** `server/db/schema.ts`, `client/src/components/order/BatchSelectionDialog.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/WSQA-002.md`
+
+**Problem:**
+Users need to select specific batches/lots when fulfilling orders based on customer requirements (harvest dates, grades, expiry). Currently only single unitCogs stored per batch with auto-allocation.
+
+**Product Decision:** Flexible lot selection per customer need (not strict FIFO/LIFO).
+
+**Objectives:**
+
+1. Create order_line_item_allocations table to track batch→order mappings
+2. Add backend API for available batches query and allocation mutation
+3. Build BatchSelectionDialog UI component for lot selection
+
+**Deliverables:**
+
+- [ ] order_line_item_allocations table created and migrated
+- [ ] getAvailableForProduct query returns batches with details
+- [ ] allocateBatchesToLineItem mutation validates and saves allocations
+- [ ] BatchSelectionDialog shows available lots with details
+- [ ] UI validates total selected = quantity needed
+- [ ] Weighted average COGS calculated from selected batches
+- [ ] Concurrent requests handled with row-level locking
+
+---
+
+### WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2d
+**Module:** `server/db/schema.ts`, `server/services/orderStateMachine.ts`, `server/services/returnProcessing.ts`
+**Dependencies:** WSQA-002 (allocations table for restock)
+**Prompt:** `docs/prompts/WSQA-003.md`
+
+**Problem:**
+Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for processing returns.
+
+**Product Decision:** Add RETURNED status with two terminal paths:
+
+- RESTOCKED: Items returned to inventory (increases batch quantities)
+- RETURNED_TO_VENDOR: Items sent to vendor (creates vendor return record)
+
+**Objectives:**
+
+1. Add new enum values: RETURNED, RESTOCKED, RETURNED_TO_VENDOR
+2. Create vendor_returns and vendor_return_items tables
+3. Implement state machine with valid transitions
+4. Build restock and vendor-return processing logic
+
+**Deliverables:**
+
+- [ ] New enum values added to fulfillment_status
+- [ ] vendor_returns table tracks vendor return requests
+- [ ] State machine validates all status transitions
+- [ ] processRestock increases batch quantities and logs movements
+- [ ] processVendorReturn creates return records
+- [ ] UI shows return actions when order status allows
+- [ ] Terminal states show no further actions
+
+---
+
 ## 📊 Beta Summary
 
-| Category            | Completed | Open   | Total  |
-| ------------------- | --------- | ------ | ------ |
-| Reliability Program | 0         | 17     | 17     |
-| **TOTAL**           | **0**     | **17** | **17** |
+| Category                  | Completed | Open   | Total  |
+| ------------------------- | --------- | ------ | ------ |
+| Reliability Program       | 0         | 17     | 17     |
+| UX Work Surface (BETA)    | 0         | 2      | 2      |
+| Work Surfaces Deployment  | 0         | 8      | 8      |
+| Work Surfaces QA Blockers | 0         | 3      | 3      |
+| **TOTAL**                 | **0**     | **30** | **30** |
 
 ---
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone | Completed | Open   | Total   | Progress |
-| --------- | --------- | ------ | ------- | -------- |
-| MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 17     | 17      | 0%       |
-| **TOTAL** | **185**   | **17** | **204** | ~91%     |
+| Milestone       | Completed | Open   | Total   | Progress |
+| --------------- | --------- | ------ | ------- | -------- |
+| MVP             | 185       | 0      | 187     | 100%     |
+| Beta            | 0         | 30     | 30      | 0%       |
+| Post-Beta       | 0         | 1      | 1       | 0%       |
+| **TOTAL**       | **185**   | **31** | **218** | ~85%     |
+
+> **Note**: Beta now includes:
+>
+> - 17 Reliability Program tasks
+> - 2 UX Work Surface BETA tasks (UXS-702, UXS-706)
+> - 8 Work Surfaces Deployment tasks (DEPLOY-001..008)
+> - 3 Work Surfaces QA Blockers (WSQA-001..003) - Added 2026-01-20
+>
+> Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
+>
+> **Post-Beta Backlog** (Added 2026-01-21):
+>
+> - FEAT-SIGNAL-001: Signal Messaging Integration (HIGH priority, 6 weeks)
+
+---
+
+# 📋 POST-BETA BACKLOG
+
+> Features that are fully specified and ready for implementation after Beta milestone.
+
+---
+
+## 📱 Communications & Client Messaging
+
+| Task ID         | Description                   | Priority | Status       | Effort   | Specification                                                       |
+| --------------- | ----------------------------- | -------- | ------------ | -------- | ------------------------------------------------------------------- |
+| FEAT-SIGNAL-001 | Signal Messaging Integration  | HIGH     | 📋 SPEC READY | 6 weeks  | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)       |
+
+> **FEAT-SIGNAL-001 Details:**
+>
+> - Two-way Signal messaging embedded in client records
+> - Per-role Signal numbers (Sales, Account Management, Operations, Support, Admin)
+> - Message templates with variable substitution
+> - Real-time delivery via WebSocket integration
+> - Full audit trail for cannabis compliance
+> - Technical Stack: signal-cli-rest-api (Docker), BullMQ/Redis, tRPC, Drizzle schema
+> - RBAC: signal:view, signal:send, signal:template:*, signal:admin
+> - 6-phase implementation plan included in spec
 
 ---
 

@@ -14,6 +14,7 @@ import {
   json,
   date,
   index,
+  foreignKey,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 import { users, clients, calendarEvents } from "./schema";
@@ -251,9 +252,7 @@ export const appointmentStatusHistory = mysqlTable(
   "appointment_status_history",
   {
     id: int("id").autoincrement().primaryKey(),
-    calendarEventId: int("calendar_event_id")
-      .notNull()
-      .references(() => calendarEvents.id, { onDelete: "cascade" }),
+    calendarEventId: int("calendar_event_id").notNull(),
 
     // Status transition
     previousStatus: varchar("previous_status", { length: 50 }),
@@ -261,7 +260,7 @@ export const appointmentStatusHistory = mysqlTable(
 
     // Timing
     changedAt: timestamp("changed_at").defaultNow().notNull(),
-    changedById: int("changed_by_id").references(() => users.id),
+    changedById: int("changed_by_id"),
 
     // Additional info
     notes: text("notes"),
@@ -274,6 +273,17 @@ export const appointmentStatusHistory = mysqlTable(
     changedAtIdx: index("idx_appointment_status_history_changed").on(
       table.changedAt
     ),
+    // FKs with explicit short names to avoid MySQL 64-char identifier limit
+    eventFk: foreignKey({
+      name: "fk_appt_status_hist_event",
+      columns: [table.calendarEventId],
+      foreignColumns: [calendarEvents.id],
+    }).onDelete("cascade"),
+    changedByFk: foreignKey({
+      name: "fk_appt_status_hist_user",
+      columns: [table.changedById],
+      foreignColumns: [users.id],
+    }),
   })
 );
 

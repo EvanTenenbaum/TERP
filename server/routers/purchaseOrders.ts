@@ -147,11 +147,13 @@ export const purchaseOrdersRouter = router({
         purchaseOrderStatus: "DRAFT",
       });
 
+      const poId = Number(po.insertId);
+
       // Create PO items
       if (items.length > 0) {
         await db.insert(purchaseOrderItems).values(
           items.map((item) => ({
-            purchaseOrderId: po.insertId,
+            purchaseOrderId: poId,
             productId: item.productId,
             quantityOrdered: item.quantityOrdered.toString(),
             unitCost: item.unitCost.toString(),
@@ -160,7 +162,7 @@ export const purchaseOrdersRouter = router({
         );
       }
 
-      return { id: po.insertId, poNumber, supplierClientId: resolvedSupplierClientId };
+      return { id: poId, poNumber, supplierClientId: resolvedSupplierClientId };
     }),
 
   // Get all purchase orders

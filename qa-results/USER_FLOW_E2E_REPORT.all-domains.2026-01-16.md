@@ -410,7 +410,7 @@ ORACLE_RUN_MODE=tier1 pnpm test:e2e tests-e2e/oracles/oracle-runner.spec.ts
 export DB_HOST=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com
 export DB_PORT=25060
 export DB_USER=doadmin
-export DB_PASSWORD=AVNS_Q_RGkS7-uB3Bk7xC2am
+export DB_PASSWORD=<REDACTED>
 export DB_NAME=defaultdb
 
 # Run database validation queries
