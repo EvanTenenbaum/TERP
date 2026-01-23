@@ -13,6 +13,7 @@ vi.mock("@/hooks/useVIPPortalAuth", () => ({
     logout: mockLogout,
     isImpersonation: false,
     sessionGuid: "session-guid",
+    isInitialized: true,
   })),
 }));
 
@@ -158,7 +159,6 @@ describe("VIPDashboard", () => {
 
     render(<VIPDashboard />);
 
-    // VIPDashboard shows a loading spinner when config or kpis are not loaded
     expect(screen.getByText("Loading your portal...")).toBeInTheDocument();
   });
 
@@ -182,12 +182,8 @@ describe("VIPDashboard", () => {
 
     render(<VIPDashboard />);
 
-    // The dashboard displays these KPI values based on the current implementation
-    // Balance card shows currentBalance formatted with toLocaleString
     expect(screen.getByText("$12,500")).toBeInTheDocument();
-    // YTD Spend card shows ytdSpend formatted with toLocaleString
     expect(screen.getByText("$82,500")).toBeInTheDocument();
-    // Credit card shows creditUtilization percentage
     expect(screen.getByText("32%")).toBeInTheDocument();
   });
 
@@ -209,7 +205,6 @@ describe("VIPDashboard", () => {
 
     render(<VIPDashboard />);
 
-    // Dashboard shows welcome message when showGreeting is enabled in config
     expect(screen.getByText("Welcome back!")).toBeInTheDocument();
   });
 });

@@ -1,0 +1,14 @@
+[
+  {
+    "test": "client/src/hooks/work-surface/__tests__/useExport.test.ts",
+    "error": "Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CXPhAybYYA2A3STXsyfAn'}"
+  },
+  {
+    "test": "client/src/hooks/work-surface/__tests__/usePrint.test.ts",
+    "error": "Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CXPhB28LydEYLCPNHpDWU'}"
+  },
+  {
+    "test": "server/routers/rbac-permissions.test.ts",
+    "error": "Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CXPhB4eQSSwfT7Jz18cyS'}"
+  }
+]

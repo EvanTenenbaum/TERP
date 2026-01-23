@@ -1,16 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * @vitest-environment jsdom
- *
- * BUG-041: Tests for BatchDetailDrawer component
- * Tests the key error handling and edge cases.
- *
- * Note: Full rendering tests with mock data are complex due to many nested
- * child components. The core BUG-041 fix (handling undefined arrays) is
- * verified through the server-side tests and the client-side defensive
- * coding that uses Array.isArray checks.
- */
-
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BatchDetailDrawer } from "./BatchDetailDrawer";

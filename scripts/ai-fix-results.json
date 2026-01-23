@@ -1,0 +1,20 @@
+[
+  {
+    "test": "client/src/hooks/work-surface/__tests__/useExport.test.ts",
+    "analysis": "The test is failing because the `useExport` hook is not returning the expected state structure. The `renderHook` is not correctly mocking or initializing the hook's state, which leads to mismatches in expected and actual state properties. The issue is in the test setup, where the initial state is not correctly verified or the hook's return structure is not properly mocked.",
+    "fix_type": "test",
+    "fixed": true
+  },
+  {
+    "test": "client/src/hooks/work-surface/__tests__/usePrint.test.ts",
+    "analysis": "The test for 'isPrinting' state is failing because the 'window.print' function is mocked to be synchronous, which doesn't allow the state to be checked during the asynchronous operation. The 'isPrinting' state is set to true before the print operation and should be checked before the print promise resolves.",
+    "fix_type": "test",
+    "fixed": true
+  },
+  {
+    "test": "tests/security/permission-escalation.test.ts",
+    "analysis": "The test is failing because the mock for the 'hasPermission' function is not being called correctly. The issue is in the test setup where the mock implementation is not properly set up to simulate the permission checks. The mock should be correctly configured to return expected values based on the permission being checked.",
+    "fix_type": "test",
+    "fixed": true
+  }
+]

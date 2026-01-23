@@ -44,7 +44,8 @@ describe("clientsRouter", () => {
 
   it("creates a client with the authenticated user id", async () => {
     const user = createMockUser({ id: 7, openId: "user-7" });
-    const caller = clientsRouter.createCaller(createMockContext({ user }));
+    const context = createMockContext({ user });
+    const caller = clientsRouter.createCaller(context);
     vi.mocked(clientsDb.createClient).mockResolvedValueOnce({
       id: 88,
       teriCode: "ACME-002",
