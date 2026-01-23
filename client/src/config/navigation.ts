@@ -32,6 +32,9 @@ import {
   Tag, // NAV-012: Pricing Rules
   Workflow, // NAV-013: Workflow Queue
   Clock, // MEET-048: Time Clock
+  ClipboardCheck, // NAV-014: Direct Intake
+  MapPin, // NAV-015: Locations
+  Inbox, // NAV-016: Inbox
   type LucideIcon,
 } from "lucide-react";
 
@@ -68,14 +71,7 @@ export const navigationItems: NavigationItem[] = [
     group: "sales",
     ariaLabel: "Track client product interests and convert to orders",
   },
-  // NAV-002: Added Pick & Pack for order fulfillment workflow
-  {
-    name: "Pick & Pack",
-    path: "/pick-pack",
-    icon: PackageOpen,
-    group: "sales",
-    ariaLabel: "Order fulfillment and packing workflow",
-  },
+  // NAV-002: Pick & Pack moved to Inventory - it's a warehouse fulfillment function
   {
     name: "Sales Sheets",
     path: "/sales-sheets",
@@ -92,12 +88,7 @@ export const navigationItems: NavigationItem[] = [
     // NOTE: Feature flag intentionally omitted to ensure BUG-073 fix remains active
     // Add featureFlag: "live-shopping" when ready for controlled rollout
   },
-  {
-    name: "Invoices",
-    path: "/accounting/invoices",
-    icon: FileText,
-    group: "sales",
-  },
+  // Invoices moved to Finance group - it's an accounting function
   // NAV-006: Leaderboard for sales performance tracking
   {
     name: "Leaderboard",
@@ -149,6 +140,30 @@ export const navigationItems: NavigationItem[] = [
     group: "inventory",
     ariaLabel: "View and manage inventory items",
   },
+  // NAV-014: Direct Intake - critical daily workflow for warehouse intake staff
+  {
+    name: "Direct Intake",
+    path: "/intake",
+    icon: ClipboardCheck,
+    group: "inventory",
+    ariaLabel: "Receive and create inventory batches from vendors",
+  },
+  // NAV-002: Pick & Pack - warehouse fulfillment workflow (moved from Sales)
+  {
+    name: "Pick & Pack",
+    path: "/pick-pack",
+    icon: PackageOpen,
+    group: "inventory",
+    ariaLabel: "Order fulfillment and packing workflow",
+  },
+  // NAV-015: Locations - warehouse location management for batch assignment
+  {
+    name: "Locations",
+    path: "/locations",
+    icon: MapPin,
+    group: "inventory",
+    ariaLabel: "Manage warehouse locations and assign batches",
+  },
   // NAV-003: Added Photography Queue for product photography workflow
   {
     name: "Photography",
@@ -191,6 +206,14 @@ export const navigationItems: NavigationItem[] = [
   },
 
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
+  // Invoices moved from Sales - it's an accounting function at /accounting/invoices
+  {
+    name: "Invoices",
+    path: "/accounting/invoices",
+    icon: FileText,
+    group: "finance",
+    ariaLabel: "Manage customer invoices and AR aging",
+  },
   {
     // QA-W2-008: Use Coins icon to avoid duplicate with AR/AP
     // FEAT-016: Renamed from "Credits" to "Credit Settings" for clarity
@@ -226,6 +249,14 @@ export const navigationItems: NavigationItem[] = [
     path: "/settings",
     icon: Settings,
     group: "admin",
+  },
+  // NAV-016: Inbox for system-wide messaging and communication
+  {
+    name: "Inbox",
+    path: "/inbox",
+    icon: Inbox,
+    group: "admin",
+    ariaLabel: "View messages and system communications",
   },
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "admin" },
   // NAV-005: Added Todo Lists for task management
