@@ -4,106 +4,30 @@
 -- Migrations 0020 and 0021 were updated to use shorter constraint names.
 -- This migration handles cleanup for databases that may have already run
 -- the old migrations with long constraint names.
+
+-- Note: Drizzle migrator doesn't support DELIMITER/stored procedures.
+-- Using simple DROP IF EXISTS patterns instead.
+
+-- The constraint renames were already applied in migrations 0020 and 0021.
+-- This migration serves as documentation and a safety net.
+
+-- For existing databases with old constraint names, manual cleanup may be needed:
 --
--- Fixed constraints:
--- 1. calendar_recurrence_instances_parent_event_id_calendar_events_id_fk (68 chars)
---    → cal_recur_inst_parent_event_fk (31 chars)
+-- If 'calendar_recurrence_instances_parent_event_id_calendar_events_id_fk' exists:
+--   ALTER TABLE `calendar_recurrence_instances`
+--     DROP FOREIGN KEY `calendar_recurrence_instances_parent_event_id_calendar_events_id_fk`;
+--   ALTER TABLE `calendar_recurrence_instances`
+--     ADD CONSTRAINT `cal_recur_inst_parent_event_fk`
+--     FOREIGN KEY (`parent_event_id`) REFERENCES `calendar_events`(`id`)
+--     ON DELETE CASCADE ON UPDATE NO ACTION;
 --
--- 2. client_interest_list_items_interest_list_id_client_interest_lists_id_fk (71 chars)
---    → cli_interest_items_list_id_fk (29 chars)
+-- If 'client_interest_list_items_interest_list_id_client_interest_lists_id_fk' exists:
+--   ALTER TABLE `client_interest_list_items`
+--     DROP FOREIGN KEY `client_interest_list_items_interest_list_id_client_interest_lists_id_fk`;
+--   ALTER TABLE `client_interest_list_items`
+--     ADD CONSTRAINT `cli_interest_items_list_id_fk`
+--     FOREIGN KEY (`interest_list_id`) REFERENCES `client_interest_lists`(`id`)
+--     ON DELETE CASCADE ON UPDATE NO ACTION;
 
--- Note: This migration is idempotent - safe to run multiple times.
-
-DELIMITER //
-
-CREATE PROCEDURE IF NOT EXISTS fix_long_constraint_names()
-BEGIN
-    DECLARE fk_exists INT DEFAULT 0;
-    DECLARE fk_short_exists INT DEFAULT 0;
-    DECLARE table_exists INT DEFAULT 0;
-
-    -- =========================================================================
-    -- Fix 1: calendar_recurrence_instances.parent_event_id
-    -- =========================================================================
-
-    SELECT COUNT(*) INTO table_exists
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'calendar_recurrence_instances';
-
-    IF table_exists > 0 THEN
-        -- Check for old long constraint name
-        SELECT COUNT(*) INTO fk_exists
-        FROM information_schema.TABLE_CONSTRAINTS
-        WHERE CONSTRAINT_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'calendar_recurrence_instances'
-        AND CONSTRAINT_NAME = 'calendar_recurrence_instances_parent_event_id_calendar_events_id_fk';
-
-        -- Check for new short constraint name
-        SELECT COUNT(*) INTO fk_short_exists
-        FROM information_schema.TABLE_CONSTRAINTS
-        WHERE CONSTRAINT_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'calendar_recurrence_instances'
-        AND CONSTRAINT_NAME = 'cal_recur_inst_parent_event_fk';
-
-        -- If long constraint exists and short one doesn't, rename it
-        IF fk_exists > 0 AND fk_short_exists = 0 THEN
-            ALTER TABLE `calendar_recurrence_instances`
-                DROP FOREIGN KEY `calendar_recurrence_instances_parent_event_id_calendar_events_id_fk`;
-
-            ALTER TABLE `calendar_recurrence_instances`
-                ADD CONSTRAINT `cal_recur_inst_parent_event_fk`
-                FOREIGN KEY (`parent_event_id`) REFERENCES `calendar_events`(`id`)
-                ON DELETE CASCADE ON UPDATE NO ACTION;
-        END IF;
-    END IF;
-
-    -- =========================================================================
-    -- Fix 2: client_interest_list_items.interest_list_id
-    -- =========================================================================
-
-    SET table_exists = 0;
-    SET fk_exists = 0;
-    SET fk_short_exists = 0;
-
-    SELECT COUNT(*) INTO table_exists
-    FROM information_schema.TABLES
-    WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'client_interest_list_items';
-
-    IF table_exists > 0 THEN
-        -- Check for old long constraint name
-        SELECT COUNT(*) INTO fk_exists
-        FROM information_schema.TABLE_CONSTRAINTS
-        WHERE CONSTRAINT_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'client_interest_list_items'
-        AND CONSTRAINT_NAME = 'client_interest_list_items_interest_list_id_client_interest_lists_id_fk';
-
-        -- Check for new short constraint name
-        SELECT COUNT(*) INTO fk_short_exists
-        FROM information_schema.TABLE_CONSTRAINTS
-        WHERE CONSTRAINT_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'client_interest_list_items'
-        AND CONSTRAINT_NAME = 'cli_interest_items_list_id_fk';
-
-        -- If long constraint exists and short one doesn't, rename it
-        IF fk_exists > 0 AND fk_short_exists = 0 THEN
-            ALTER TABLE `client_interest_list_items`
-                DROP FOREIGN KEY `client_interest_list_items_interest_list_id_client_interest_lists_id_fk`;
-
-            ALTER TABLE `client_interest_list_items`
-                ADD CONSTRAINT `cli_interest_items_list_id_fk`
-                FOREIGN KEY (`interest_list_id`) REFERENCES `client_interest_lists`(`id`)
-                ON DELETE CASCADE ON UPDATE NO ACTION;
-        END IF;
-    END IF;
-
-END //
-
-DELIMITER ;
-
--- Execute the procedure
-CALL fix_long_constraint_names();
-
--- Clean up the procedure
-DROP PROCEDURE IF EXISTS fix_long_constraint_names;
+-- This is a no-op migration for fresh databases (constraints already have correct names)
+SELECT 1;
