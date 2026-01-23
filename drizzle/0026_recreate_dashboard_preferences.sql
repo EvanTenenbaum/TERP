@@ -5,20 +5,20 @@
 
 -- Drop old table (WARNING: This deletes all existing preferences)
 -- Users will need to recustomize their dashboards, but localStorage will preserve local preferences
-DROP TABLE IF EXISTS `userDashboardPreferences`;
+DROP TABLE IF EXISTS `userDashboardPreferences`;--> statement-breakpoint
 
 -- Create new table with correct schema for Dashboard V3
 CREATE TABLE `userDashboardPreferences` (
-  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `userId` INT NOT NULL UNIQUE,
-  `activeLayout` VARCHAR(50) NOT NULL DEFAULT 'operations',
-  `widgetConfig` JSON NOT NULL,
-  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
-  CONSTRAINT `fk_userDashboardPreferences_userId`
-    FOREIGN KEY (`userId`) REFERENCES `users`(`id`)
-    ON DELETE CASCADE,
-    
-  INDEX `idx_userDashboardPreferences_userId` (`userId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `id` int AUTO_INCREMENT NOT NULL,
+  `userId` int NOT NULL,
+  `activeLayout` varchar(50) NOT NULL DEFAULT 'operations',
+  `widgetConfig` json NOT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `userDashboardPreferences_id` PRIMARY KEY(`id`),
+  CONSTRAINT `userDashboardPreferences_userId_unique` UNIQUE(`userId`)
+);--> statement-breakpoint
+
+CREATE INDEX `idx_userDashboardPreferences_userId` ON `userDashboardPreferences` (`userId`);--> statement-breakpoint
+
+ALTER TABLE `userDashboardPreferences` ADD CONSTRAINT `fk_userDashboardPreferences_userId` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE NO ACTION;
