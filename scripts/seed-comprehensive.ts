@@ -1431,14 +1431,14 @@ async function seedVipPortalConfigurations(connection: mysql.Connection, clientI
 
   // Production schema: client_id, module_dashboard_enabled, module_ar_enabled, module_ap_enabled,
   // module_transaction_history_enabled, module_vip_tier_enabled, module_credit_center_enabled,
-  // module_marketplace_needs_enabled, module_marketplace_supply_enabled, module_leaderboard_enabled,
-  // module_live_catalog_enabled
+  // module_marketplace_needs_enabled, module_marketplace_supply_enabled, module_live_catalog_enabled
+  // NOTE: module_leaderboard_enabled removed - column does not exist in schema
   const vipClientIds = clientIds.slice(0, count);
 
   for (const clientId of vipClientIds) {
     await connection.query(
-      `INSERT INTO vip_portal_configurations (client_id, module_dashboard_enabled, module_ar_enabled, module_ap_enabled, module_transaction_history_enabled, module_vip_tier_enabled, module_credit_center_enabled, module_marketplace_needs_enabled, module_marketplace_supply_enabled, module_leaderboard_enabled, module_live_catalog_enabled, created_at, updated_at)
-       VALUES (?, 1, 1, 1, 1, 1, 1, 1, ?, 1, ?, NOW(), NOW())
+      `INSERT INTO vip_portal_configurations (client_id, module_dashboard_enabled, module_ar_enabled, module_ap_enabled, module_transaction_history_enabled, module_vip_tier_enabled, module_credit_center_enabled, module_marketplace_needs_enabled, module_marketplace_supply_enabled, module_live_catalog_enabled, created_at, updated_at)
+       VALUES (?, 1, 1, 1, 1, 1, 1, 1, ?, ?, NOW(), NOW())
        ON DUPLICATE KEY UPDATE module_dashboard_enabled = 1`,
       [
         clientId,
@@ -1595,7 +1595,7 @@ async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds:
   // IMPORTANT: vendor_id in intake_sessions references clients.id (NOT vendors.id!)
   // The supplier must be a client with is_seller=1
   // Production schema: session_number, vendor_id, status, receive_date, received_by,
-  // payment_terms, total_amount, amount_paid, internal_notes, receipt_generated
+  // paymentTerms (camelCase in DB), total_amount, amount_paid, internal_notes, receipt_generated
 
   if (sellerClientIds.length === 0) {
     console.log('   - Skipped: no seller clients available');
@@ -1603,7 +1603,7 @@ async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds:
   }
 
   const statuses = ['IN_PROGRESS', 'COMPLETED', 'COMPLETED', 'COMPLETED'];
-  const paymentTerms = ['COD', 'NET_7', 'NET_15', 'NET_30'];
+  const paymentTermsValues = ['COD', 'NET_7', 'NET_15', 'NET_30'];
 
   for (let i = 0; i < count; i++) {
     const status = statuses[i % statuses.length];
@@ -1611,7 +1611,7 @@ async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds:
     const totalAmount = faker.number.float({ min: 5000, max: 100000, fractionDigits: 2 });
 
     await connection.query(
-      `INSERT INTO intake_sessions (session_number, vendor_id, status, receive_date, received_by, payment_terms, total_amount, amount_paid, internal_notes, receipt_generated, created_at, updated_at)
+      `INSERT INTO intake_sessions (session_number, vendor_id, status, receive_date, received_by, paymentTerms, total_amount, amount_paid, internal_notes, receipt_generated, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         `INTAKE-${formatDate(receiveDate).replace(/-/g, '')}-${String(i + 1).padStart(4, '0')}`,
@@ -1619,7 +1619,7 @@ async function seedIntakeSessions(connection: mysql.Connection, sellerClientIds:
         status,
         formatDate(receiveDate),
         userIds[i % userIds.length],
-        paymentTerms[i % paymentTerms.length],
+        paymentTermsValues[i % paymentTermsValues.length],
         totalAmount.toFixed(2),
         status === 'COMPLETED' ? totalAmount.toFixed(2) : '0.00',
         faker.lorem.sentence(),
@@ -1676,7 +1676,7 @@ async function seedReferralCredits(connection: mysql.Connection, clientIds: numb
   console.log('🎁 Seeding referral credits...');
 
   // Production schema: referrer_client_id, referred_client_id, referred_order_id,
-  // credit_percentage, order_total, credit_amount, status
+  // credit_percentage, order_total, credit_amount, referralCreditStatus (camelCase in DB)
   const statuses = ['PENDING', 'AVAILABLE', 'APPLIED', 'EXPIRED'];
 
   for (let i = 0; i < count; i++) {
@@ -1686,7 +1686,7 @@ async function seedReferralCredits(connection: mysql.Connection, clientIds: numb
     const creditAmount = orderTotal * (creditPercent / 100);
 
     await connection.query(
-      `INSERT INTO referral_credits (referrer_client_id, referred_client_id, referred_order_id, credit_percentage, order_total, credit_amount, status, notes, created_at, updated_at)
+      `INSERT INTO referral_credits (referrer_client_id, referred_client_id, referred_order_id, credit_percentage, order_total, credit_amount, referralCreditStatus, notes, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         clientIds[i % clientIds.length],

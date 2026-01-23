@@ -259,12 +259,8 @@ export const clientInterestListItems = mysqlTable(
   "client_interest_list_items",
   {
     id: int("id").primaryKey().autoincrement(),
-    interestListId: int("interest_list_id")
-      .notNull()
-      .references(() => clientInterestLists.id, { onDelete: "cascade" }),
-    batchId: int("batch_id")
-      .notNull()
-      .references(() => batches.id, { onDelete: "cascade" }),
+    interestListId: int("interest_list_id").notNull(),
+    batchId: int("batch_id").notNull(),
     // Snapshot data at time of interest
     itemName: varchar("item_name", { length: 255 }).notNull(),
     category: varchar("category", { length: 100 }),
@@ -284,6 +280,17 @@ export const clientInterestListItems = mysqlTable(
       table.interestListId
     ),
     batchIdIdx: index("idx_interest_list_items_batch_id").on(table.batchId),
+    // FKs with explicit short names to avoid MySQL 64-char identifier limit
+    interestListFk: foreignKey({
+      name: "fk_int_list_items_list",
+      columns: [table.interestListId],
+      foreignColumns: [clientInterestLists.id],
+    }).onDelete("cascade"),
+    batchFk: foreignKey({
+      name: "fk_int_list_items_batch",
+      columns: [table.batchId],
+      foreignColumns: [batches.id],
+    }).onDelete("cascade"),
   })
 );
 
