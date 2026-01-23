@@ -1170,6 +1170,45 @@ export async function runAutoMigrations() {
       }
     }
 
+    // ========================================================================
+    // NOTIFICATIONS TABLE
+    // ========================================================================
+    // Create notifications table if it doesn't exist
+    // This fixes the "Table 'defaultdb.notifications' doesn't exist" error
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          recipient_type ENUM('user', 'client') NOT NULL DEFAULT 'user',
+          user_id INT NULL,
+          client_id INT NULL,
+          type ENUM('info', 'warning', 'success', 'error') NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          message TEXT,
+          link VARCHAR(500),
+          channel ENUM('in_app', 'email', 'sms') NOT NULL DEFAULT 'in_app',
+          \`read\` BOOLEAN NOT NULL DEFAULT FALSE,
+          metadata JSON,
+          is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_notifications_recipient_channel (recipient_type, user_id, client_id, channel),
+          INDEX idx_notifications_recipient_read (recipient_type, user_id, client_id, \`read\`),
+          INDEX idx_notifications_recipient_created (recipient_type, user_id, client_id, created_at),
+          CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          CONSTRAINT fk_notifications_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+        )
+      `);
+      console.info("  ✅ Created notifications table (or already exists)");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info("  ℹ️  notifications table already exists");
+      } else {
+        console.warn("  ⚠️  notifications table:", errMsg);
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.log(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
