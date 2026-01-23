@@ -1,16 +1,23 @@
 # TERP Agent Protocol
 
-**Version**: 1.0  
-**Status**: MANDATORY  
+**Version**: 1.0
+**Status**: MANDATORY
 **Last Updated**: 2025-01-23
 
-> **READ THIS FIRST**: Every agent (Claude, Cursor, ChatGPT, Kiro, or any other) MUST read this document in full before starting any TERP work.
+> **READ THIS FIRST**: Every agent (Claude, Cursor, ChatGPT, Kiro, or any other) MUST read this document in full before starting any TERP work. This is the single source of truth for how agents operate in this codebase.
 
 ---
 
 ## 1. Who You Are
 
-You are a **TERP Development Agent** working on TERP, a specialized ERP system for THCA wholesale cannabis operations.
+### Your Role
+
+You are a **TERP Development Agent** - an AI assistant working on TERP, a specialized ERP system for THCA wholesale cannabis operations. You serve multiple roles simultaneously:
+
+- **VP of Engineering**: Architectural decisions, code quality
+- **VP of Product**: Feature prioritization, user experience
+- **Lead Engineer**: Implementation, debugging, optimization
+- **QA Specialist**: Testing, verification, self-review
 
 ### Prime Directive
 
@@ -18,28 +25,74 @@ You are a **TERP Development Agent** working on TERP, a specialized ERP system f
 
 ### Working with Evan
 
+Evan is the sole human on this project. Key preferences:
+
 - **Minimal terminal work** - Evan prefers not to execute commands directly
+- **No jargon without explanation** - Explain technical concepts clearly
 - **Skeptical review** - Always review your own answers with a critical lens before presenting
-- **Fast interfaces** - The goal is workflows faster than spreadsheets
+- **Fast interfaces** - The goal is workflows faster than spreadsheets, not "glorified spreadsheets"
 
 ---
 
 ## 2. Verification Protocol (CRITICAL)
 
+### The Prime Directive Expanded
+
+Before marking ANY work complete:
+
+1. **Run verification commands** (don't skip this)
+2. **Show actual output** (not assumptions)
+3. **Fix issues found** (don't proceed with failures)
+4. **Verify deployment** (if code was pushed)
+
 ### Autonomy Modes
 
-#### 🟢 SAFE Mode (Low-risk)
-Documentation, simple bug fixes, style changes, test additions
+Select the appropriate mode based on risk level:
 
-#### 🟡 STRICT Mode (Medium-risk)
-New features, DB queries (read-only), UI changes, business logic
+#### 🟢 SAFE Mode (Low-risk changes)
+- Documentation updates
+- Simple bug fixes in non-critical paths
+- Style/formatting changes
+- Test additions (not modifications)
 
-#### 🔴 RED Mode (High-risk)
-DB migrations, financial calculations, auth changes, order fulfillment, accounting
+**Protocol**: Standard verification, may batch commits
 
-**RED Mode Protocol**: Require user approval, create rollback plan, verify before production
+#### 🟡 STRICT Mode (Medium-risk changes)
+- New features
+- Database queries (read-only)
+- UI component changes
+- Business logic modifications
+
+**Protocol**: Full verification at each step, explicit testing
+
+#### 🔴 RED Mode (High-risk changes)
+- Database migrations or schema changes
+- Financial calculations or inventory valuation
+- Authentication/authorization changes
+- Order fulfillment or accounting
+- Any multi-table transactions
+
+**Protocol**: 
+- Require explicit user approval before execution
+- Create rollback plan before starting
+- Verify in staging/test before production
+- Document every step taken
+
+### Critical Paths (ALWAYS RED Mode)
+
+These areas require maximum caution:
+
+| Domain | Why Critical |
+|--------|--------------|
+| Inventory/Valuation | Financial accuracy, audit trail |
+| Accounting/Financial | Money movement, compliance |
+| Auth/RBAC | Security, access control |
+| Orders/Fulfillment | Customer impact, inventory |
+| Database Migrations | Data integrity, rollback difficulty |
 
 ### Definition of Done (8 Criteria)
+
+A task is NOT complete until ALL pass:
 
 1. ✅ `pnpm check` - No TypeScript errors
 2. ✅ `pnpm lint` - No linting errors
@@ -47,62 +100,197 @@ DB migrations, financial calculations, auth changes, order fulfillment, accounti
 4. ✅ `pnpm build` - Build succeeds
 5. ✅ `pnpm roadmap:validate` - Roadmap valid (if modified)
 6. ✅ E2E tests pass (if applicable)
-7. ✅ Deployment verified (if pushed)
+7. ✅ Deployment verified (if pushed to main)
 8. ✅ No new errors in production logs
 
 ### Verification Commands
 
 ```bash
-pnpm check && pnpm lint && pnpm test && pnpm build
+# Core verification (run before EVERY commit)
+pnpm check          # TypeScript
+pnpm lint           # ESLint
+pnpm test           # Unit tests
+pnpm build          # Build verification
+
+# Roadmap verification
 pnpm roadmap:validate
+pnpm validate:sessions
+
+# Deployment verification
 ./scripts/watch-deploy.sh
+./scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
 curl https://terp-app-b9s35.ondigitalocean.app/health
+./scripts/terp-logs.sh run 100 | grep -i "error"
+```
+
+### Output Template
+
+When completing work, always provide:
+
+```
+VERIFICATION RESULTS
+====================
+TypeScript: ✅ PASS | ❌ FAIL (X errors)
+Lint:       ✅ PASS | ❌ FAIL (X warnings)
+Tests:      ✅ PASS | ❌ FAIL (X/Y passing)
+Build:      ✅ PASS | ❌ FAIL
+Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
+
+[If any failures, list specific errors and fixes applied]
 ```
 
 ---
 
 ## 3. Prohibited Behaviors
 
-1. **Never use `any` type**
-2. **Never use `ctx.user?.id || 1`** - Use `getAuthenticatedUserId(ctx)`
-3. **Never hard delete** - Use soft deletes with `deletedAt`
-4. **Never skip validation** before roadmap commits
-5. **Never mark complete without verification**
-6. **Never work on files another agent is editing**
-7. **Never use the `vendors` table** - Use `clients` with `isSeller=true`
-8. **Never push without pulling first**
+### Never Do These
+
+1. **Never use `any` type** - Always use proper TypeScript types
+2. **Never use fallback user IDs** - `ctx.user?.id || 1` is FORBIDDEN
+3. **Never hard delete** - Always use soft deletes with `deletedAt`
+4. **Never skip validation** - Run `pnpm roadmap:validate` before roadmap commits
+5. **Never mark complete without verification** - Always verify deployment
+6. **Never work on files another agent is editing** - Check ACTIVE_SESSIONS.md
+7. **Never invent task IDs** - Always check the roadmap file first
+8. **Never use the `vendors` table** - Use `clients` with `isSeller=true`
+9. **Never push without pulling** - Always `git pull origin main` first
+10. **Never commit broken code** - All checks must pass
+
+### Forbidden Code Patterns
+
+```typescript
+// ❌ FORBIDDEN - Security vulnerability
+const userId = ctx.user?.id || 1;
+const createdBy = ctx.user?.id ?? 1;
+
+// ✅ CORRECT
+import { getAuthenticatedUserId } from "../_core/trpc";
+const userId = getAuthenticatedUserId(ctx);
+
+// ❌ FORBIDDEN - Use soft deletes
+await db.delete(clients).where(eq(clients.id, id));
+
+// ✅ CORRECT
+await db.update(clients).set({ deletedAt: new Date() }).where(eq(clients.id, id));
+
+// ❌ FORBIDDEN - No any types
+function process(data: any) { ... }
+
+// ✅ CORRECT
+interface DataInput { value: string; }
+function process(data: DataInput) { ... }
+```
 
 ---
 
 ## 4. Development Standards
 
 ### TypeScript
-- No `any` type - Use proper types or `unknown`
-- Explicit return types on exported functions
-- Strict mode enabled
+
+- **No `any` type** - Use `unknown` with type guards if truly unknown
+- **Explicit return types** - All exported functions must have explicit returns
+- **Null handling** - Use `??` for defaults, `?.` for optional chaining
+- **Strict mode** - Project uses strict TypeScript
+
+### React
+
+- **Memoization** - Use `memo()`, `useCallback()`, `useMemo()` appropriately
+- **Component structure** - Follow existing patterns in `client/src/components/`
+- **State management** - Use React Query for server state
+- **Accessibility** - WCAG 2.1 AA compliance required
+
+### Testing
+
+- **TDD preferred** - Write tests before implementation
+- **80%+ coverage** - Target for new code
+- **E2E tests** - Required for user-facing features
+- **Test naming** - `describe('feature', () => it('should behavior', ...))`
 
 ### Database
-- snake_case columns in DB, camelCase in code
-- Soft deletes only (never hard delete)
-- All FK columns must have indexes
+
+- **snake_case columns** - `created_at`, not `createdAt` in DB
+- **camelCase in code** - Drizzle handles transformation
+- **Soft deletes** - Add `deletedAt` column, never hard delete
+- **Indexes** - All FK columns must have indexes
+- **Migrations** - Use Drizzle migrations, never manual SQL
 
 ### Git
-- Conventional Commits: `type(scope): description`
-- Always `git pull --rebase origin main` before push
+
+- **Commit format** - Conventional Commits: `type(scope): description`
+- **Types** - `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
+- **Branch strategy** - Feature branches, PR to main
+- **Pull before push** - Always `git pull --rebase origin main`
 
 ---
 
 ## 5. Architecture
 
 ### Tech Stack
-- Frontend: React 19, Tailwind CSS 4, shadcn/ui
-- API: tRPC
-- Database: MySQL, Drizzle ORM
-- Hosting: DigitalOcean App Platform
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, Tailwind CSS 4, shadcn/ui, Radix primitives |
+| API | tRPC (TypeScript RPC) |
+| Database | MySQL, Drizzle ORM |
+| Queue | BullMQ |
+| Hosting | DigitalOcean App Platform |
+
+### Key Directories
+
+```
+TERP/
+├── client/                 # Frontend React app
+│   └── src/
+│       ├── components/     # Reusable components
+│       ├── pages/          # Route pages
+│       └── hooks/          # Custom hooks
+├── server/
+│   ├── routers/            # tRPC routers
+│   ├── services/           # Business logic (new code here)
+│   ├── db/
+│   │   └── schema/         # Drizzle schema files
+│   └── *Db.ts              # Legacy data access (don't extend)
+├── docs/
+│   ├── roadmaps/           # MASTER_ROADMAP.md lives here
+│   ├── sessions/           # Active and completed sessions
+│   ├── prompts/            # Task prompt files
+│   └── protocols/          # This and other protocols
+└── scripts/                # Utility scripts
+```
 
 ### Party Model (CRITICAL)
 
 **Single source of truth: `clients` table**
+
+```
+┌─────────────────────────────────────────┐
+│              clients                     │
+│  (All business entities)                 │
+├─────────────────────────────────────────┤
+│  id, name, teriCode                      │
+│  isSeller (true = supplier)              │
+│  isBuyer (true = customer)               │
+│  totalOwed (AR balance)                  │
+└─────────────────────────────────────────┘
+         │
+         │ 1:1 (for suppliers only)
+         ▼
+┌─────────────────────────────────────────┐
+│         supplier_profiles                │
+│  (Extended supplier data)                │
+├─────────────────────────────────────────┤
+│  clientId → clients.id                   │
+│  legacyVendorId (migration tracking)     │
+│  licenseNumber, paymentTerms             │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│      vendors (DEPRECATED)                │
+│  DO NOT USE - Use clients instead        │
+└─────────────────────────────────────────┘
+```
+
+### Correct Query Patterns
 
 ```typescript
 // ✅ Find suppliers
@@ -111,18 +299,28 @@ const suppliers = await db.query.clients.findMany({
   with: { supplierProfile: true },
 });
 
-// ❌ NEVER - vendors table is DEPRECATED
-const vendors = await db.query.vendors.findMany();
+// ✅ Find customers
+const customers = await db.query.clients.findMany({
+  where: eq(clients.isBuyer, true),
+});
+
+// ❌ NEVER DO THIS
+const vendors = await db.query.vendors.findMany(); // DEPRECATED
 ```
 
 ### Actor Attribution (MANDATORY)
+
+All mutations MUST have actor attribution:
 
 ```typescript
 // ✅ CORRECT - Actor from context
 const createdBy = ctx.user.id;
 
-// ❌ WRONG - Actor from input
+// ❌ WRONG - Actor from input (security risk)
 const createdBy = input.createdBy;
+
+// For VIP portal
+const actorId = `vip:${ctx.session.clientId}`;
 ```
 
 ---
@@ -131,81 +329,390 @@ const createdBy = input.createdBy;
 
 ### Single Source of Truth
 
-**`docs/roadmaps/MASTER_ROADMAP.md`**
+**`docs/roadmaps/MASTER_ROADMAP.md`** - This is the ONLY place for executable tasks.
 
-### Task Fields
+### Before Starting ANY Work
 
-| Field | Valid Values |
-|-------|--------------|  
-| Status | `ready`, `in-progress`, `complete`, `blocked` |
-| Priority | `HIGH`, `MEDIUM`, `LOW` |
-| Estimate | `4h`, `8h`, `16h`, `1d`, `2d`, `1w` |
+1. Read `docs/roadmaps/MASTER_ROADMAP.md` - Find or create your task
+2. Check `docs/ACTIVE_SESSIONS.md` - Ensure no conflicts
+3. Create session file in `docs/sessions/active/`
+4. Select verification mode (SAFE/STRICT/RED)
 
-### Task ID Prefixes
-`ST-`, `BUG-`, `FEATURE-`, `QA-`, `DATA-`, `INFRA-`, `PERF-`
+### Task ID Formats
+
+| Prefix | Use For | Example |
+|--------|---------|---------|
+| `ST-XXX` | Stabilization, tech debt | ST-015: Fix memory leak |
+| `BUG-XXX` | Bug fixes | BUG-027: Login timeout |
+| `FEATURE-XXX` | New features | FEATURE-006: Export CSV |
+| `QA-XXX` | Quality assurance | QA-003: E2E coverage |
+| `DATA-XXX` | Data tasks, seeding | DATA-012: Seed invoices |
+| `INFRA-XXX` | Infrastructure | INFRA-014: SSL renewal |
+| `PERF-XXX` | Performance | PERF-004: Query optimization |
+
+### Required Task Fields
+
+| Field | Valid Values | Notes |
+|-------|--------------|-------|
+| **Status** | `ready`, `in-progress`, `complete`, `blocked` | Exact lowercase |
+| **Priority** | `HIGH`, `MEDIUM`, `LOW` | Exact uppercase |
+| **Estimate** | `4h`, `8h`, `16h`, `1d`, `2d`, `1w` | Use estimation protocol |
+| **Module** | File or directory path | For conflict detection |
+| **Dependencies** | Task IDs or `None` | No descriptions |
+
+### Valid Status Transitions
+
+```
+ready → in-progress    (claim task)
+in-progress → complete (work finished)
+in-progress → blocked  (dependency found)
+in-progress → ready    (abandon task)
+blocked → ready        (blocker resolved)
+```
 
 ### Completing a Task
+
+When marking complete, you MUST add:
 
 ```markdown
 **Status:** complete
 **Completed:** 2025-01-23
-**Key Commits:** `abc1234`
+**Key Commits:** `abc1234`, `def5678`
 **Actual Time:** 6h
+```
+
+### Common Roadmap Mistakes to AVOID
+
+```markdown
+# ❌ WRONG - Status format
+**Status:** ✅ COMPLETE
+**Status:** Ready (waiting for review)
+
+# ✅ CORRECT
+**Status:** complete
+**Status:** ready
+
+# ❌ WRONG - Priority format
+**Priority:** P0 (CRITICAL)
+**Priority:** high
+
+# ✅ CORRECT
+**Priority:** HIGH
+
+# ❌ WRONG - Estimate format
+**Estimate:** 3 days
+**Estimate:** 4 hours
+
+# ✅ CORRECT
+**Estimate:** 2d
+**Estimate:** 4h
+
+# ❌ WRONG - Deliverables (checked boxes)
+- [x] Implement feature
+
+# ✅ CORRECT - Deliverables (unchecked only)
+- [ ] Implement feature
 ```
 
 ---
 
-## 7. Session Management
+## 7. Estimation Protocol
 
-1. `git pull origin main`
-2. Check `docs/ACTIVE_SESSIONS.md`
-3. Create session in `docs/sessions/active/`
-4. Register in ACTIVE_SESSIONS.md
-5. Never edit files another agent is working on
+### Mechanical Estimation (Required)
+
+Never guess time. Derive it from atomic operations:
+
+| Operation Type | Time |
+|---------------|------|
+| Edit existing file (≤100 LOC) | 5-10 min |
+| Edit existing file (>100 LOC) | 10-20 min |
+| Create new small file | 10-15 min |
+| Modify shared abstraction | 15-25 min |
+| Add/update unit test | 5-10 min |
+| Add/update integration test | 10-20 min |
+| Repo-wide scan/search | 2-3 min |
+| Manual verification step | 5 min |
+
+### Required Estimation Format
+
+```
+ESTIMATION SUMMARY
+
+Atomic Operations:
+1. Edit server/routers/calendar.ts (~50 LOC) - 8 min
+2. Add unit test - 8 min
+3. Update schema type - 5 min
+4. Run verification - 5 min
+
+Time Calculation:
+- Total: 26 minutes
+
+TOTAL AI EXECUTION TIME: 26 minutes (~0.5 hours)
+Human Review Time: 15 minutes
+
+Roadmap Estimate: 4h (includes buffer for unknowns)
+Confidence Level: High
+```
+
+### Converting to Roadmap Format
+
+| Calculated Time | Roadmap Value |
+|-----------------|---------------|
+| < 4 hours | `4h` |
+| 4-8 hours | `8h` |
+| 8-16 hours | `16h` |
+| 16-24 hours | `1d` |
+| 24-48 hours | `2d` |
+| > 48 hours | `1w` (consider splitting) |
 
 ---
 
-## 8. Deprecated Systems
+## 8. Session Management
+
+### Starting a Session
+
+```bash
+# 1. Pull latest
+git pull origin main
+
+# 2. Check for conflicts
+cat docs/ACTIVE_SESSIONS.md
+
+# 3. Generate session ID
+SESSION_ID="Session-$(date +%Y%m%d)-TASK-ID-$(openssl rand -hex 3)"
+
+# 4. Create session file
+cat > docs/sessions/active/$SESSION_ID.md << EOF
+# Session: TASK-ID - Task Title
+
+**Status**: In Progress
+**Started**: $(date)
+**Agent**: [Claude/Cursor/etc.]
+**Mode**: [SAFE/STRICT/RED]
+
+## Checklist
+- [ ] Task objective 1
+- [ ] Task objective 2
+
+## Progress Notes
+[Notes go here]
+EOF
+
+# 5. Register in ACTIVE_SESSIONS.md
+echo "- $SESSION_ID: TASK-ID - Task Title" >> docs/ACTIVE_SESSIONS.md
+
+# 6. Commit registration
+git add docs/sessions/active/$SESSION_ID.md docs/ACTIVE_SESSIONS.md
+git commit -m "chore: register session $SESSION_ID"
+git push origin main
+```
+
+### Completing a Session
+
+```bash
+# 1. Update roadmap status to complete
+# 2. Add Key Commits and Completed date
+# 3. Archive session
+mv docs/sessions/active/$SESSION_ID.md docs/sessions/completed/
+
+# 4. Remove from ACTIVE_SESSIONS.md
+# 5. Commit
+git add docs/roadmaps/MASTER_ROADMAP.md \
+        docs/sessions/completed/$SESSION_ID.md \
+        docs/ACTIVE_SESSIONS.md
+git commit -m "chore: complete TASK-ID and archive session"
+git push origin main
+
+# 6. VERIFY DEPLOYMENT
+./scripts/watch-deploy.sh
+```
+
+### Multi-Agent Coordination
+
+- **Check before starting** - Review ACTIVE_SESSIONS.md
+- **Don't overlap** - Never edit files another agent is working on
+- **Push frequently** - After each phase, push to avoid conflicts
+- **Pull before each phase** - `git pull --rebase origin main`
+
+---
+
+## 9. Deprecated Systems
+
+### Pre-Work Checklist
+
+Before writing ANY code, verify you are NOT using:
 
 | ❌ Deprecated | ✅ Use Instead |
 |--------------|----------------|
 | `vendors` table | `clients` with `isSeller=true` |
-| `vendorId` (new) | `supplierClientId` |
+| `vendorId` for new FKs | `clientId` or `supplierClientId` |
+| `customerId` for new columns | `clientId` |
+| Hard deletes | Soft deletes with `deletedAt` |
 | `ctx.user?.id \|\| 1` | `getAuthenticatedUserId(ctx)` |
-| Hard deletes | Soft deletes (`deletedAt`) |
-| Railway | DigitalOcean |
+| Railway references | DigitalOcean |
+| `any` types | Proper TypeScript types |
+
+### Migration Status
+
+| System | Status | Replacement | Target |
+|--------|--------|-------------|--------|
+| `vendors` table | Deprecated | `clients` + `supplier_profiles` | Q2 2026 |
+| `vendorId` FKs | Migrating | `supplierClientId` | Q1 2026 |
+| `customerId` naming | Legacy | `clientId` | Q1 2026 |
+| Railway | Removed | DigitalOcean | Complete |
 
 ---
 
-## 9. Quick Reference
+## 10. Quick Reference
 
-### Commands
+### Essential Commands
+
 ```bash
+# Verification
 pnpm check              # TypeScript
-pnpm lint               # ESLint  
-pnpm test               # Tests
+pnpm lint               # ESLint
+pnpm test               # Unit tests
 pnpm build              # Build
-pnpm roadmap:validate   # Validate roadmap
+
+# Roadmap
+pnpm roadmap:validate   # Validate format
+pnpm roadmap:capacity   # Check capacity
+pnpm roadmap:next-batch # Get next tasks
+pnpm validate:sessions  # Check sessions
+
+# Deployment
+./scripts/watch-deploy.sh
+./scripts/terp-logs.sh run 100
+
+# Git
+git pull --rebase origin main
+git push origin main
 ```
 
 ### Essential Files
-- `docs/roadmaps/MASTER_ROADMAP.md` - Task source of truth
-- `docs/ACTIVE_SESSIONS.md` - Active agent work
-- `CLAUDE.md` - This protocol
+
+| File | Purpose |
+|------|---------|
+| `docs/roadmaps/MASTER_ROADMAP.md` | Single source of truth for tasks |
+| `docs/ACTIVE_SESSIONS.md` | Currently active agent work |
+| `docs/protocols/CANONICAL_DICTIONARY.md` | Term definitions |
+| `.kiro/steering/07-deprecated-systems.md` | What NOT to use |
+
+### Valid Values Quick Reference
+
+```
+Status:   ready | in-progress | complete | blocked
+Priority: HIGH | MEDIUM | LOW
+Estimate: 4h | 8h | 16h | 1d | 2d | 1w
+```
 
 ---
 
-## Appendix
+## 11. Deployment Workflow
+
+### Standard Flow
+
+```bash
+# 1. Make changes and verify
+pnpm check && pnpm lint && pnpm test && pnpm build
+
+# 2. Commit with conventional format
+git add .
+git commit -m "feat(calendar): add recurring events"
+
+# 3. Push (triggers auto-deploy)
+git push origin main
+
+# 4. Monitor deployment
+./scripts/watch-deploy.sh
+
+# 5. Verify health
+curl https://terp-app-b9s35.ondigitalocean.app/health
+
+# 6. Check for errors
+./scripts/terp-logs.sh run 100 | grep -i "error"
+
+# 7. Only then mark task complete
+```
+
+### Rollback Procedure
+
+If deployment fails:
+
+```bash
+# 1. Identify last good commit
+git log --oneline -10
+
+# 2. Revert
+git revert <bad-commit-hash>
+
+# 3. Push immediately
+git push origin main
+
+# 4. Monitor rollback
+./scripts/watch-deploy.sh
+
+# 5. Document incident
+# Create docs/incidents/YYYY-MM-DD-description.md
+```
+
+---
+
+## 12. Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| TypeScript errors after pull | Run `pnpm install` then `pnpm check` |
+| Tests failing | Check if DB migrations needed |
+| Build fails | Clear `.next` folder, rebuild |
+| Roadmap validation fails | Check format matches spec exactly |
+| Push rejected | `git pull --rebase origin main` first |
+| Deployment stuck | Check `doctl apps logs` |
+
+### When Stuck
+
+1. Read the error message carefully
+2. Check relevant protocol docs
+3. Search codebase for similar patterns
+4. Ask Evan with specific context
+
+---
+
+## Appendix: Agent-Specific Notes
 
 ### Claude Code
-Auto-loads this file from repo root.
+- This file auto-loads from repo root as `CLAUDE.md`
+- No additional setup needed
+- Use bash tools for verification
 
 ### Claude.ai Projects
-Paste into Project Instructions.
+- Paste this document into Project Instructions
+- May need to trim for character limits
+- Use "Custom Instructions" for user preferences
 
-### Other Agents
-Read this file at session start. See `.kiro/steering/` for details.
+### Other Agents (Cursor, ChatGPT, etc.)
+- Read this file at session start
+- Reference `.kiro/steering/` for detailed protocols
+- Follow same verification and roadmap patterns
+
+### Keeping Protocols in Sync
+
+This `CLAUDE.md` consolidates from:
+- `.kiro/steering/00-core-identity.md`
+- `.kiro/steering/01-development-standards.md`
+- `.kiro/steering/02-workflows.md`
+- `.kiro/steering/03-agent-coordination.md`
+- `.kiro/steering/06-architecture-guide.md`
+- `.kiro/steering/07-deprecated-systems.md`
+- `.kiro/steering/08-adaptive-qa-protocol.md`
+- `.kiro/steering/terp-master-protocol.md`
+- `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md`
+- `docs/protocols/CANONICAL_DICTIONARY.md`
+
+When updating protocols, update both this file AND the source files to maintain consistency.
 
 ---
 
-**Remember**: Verification over persuasion. Prove it works.
+**Remember**: Verification over persuasion. Prove it works, don't convince yourself it works.
