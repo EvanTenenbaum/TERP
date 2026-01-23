@@ -29,7 +29,9 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     req: { headers: {} } as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res: {} as any,
   });
 
@@ -75,9 +77,14 @@ describe("Dashboard Router", () => {
       vi.mocked(arApDb.getOutstandingReceivables).mockResolvedValue({
         total: 5000,
       });
+      // Mock 3 getInvoices calls:
+      // 1. PAID invoices (for totalRevenue)
+      // 2. SENT invoices (for activeOrders)
+      // 3. All invoices (for period calculations)
       vi.mocked(arApDb.getInvoices)
         .mockResolvedValueOnce(mockPaidInvoices)
-        .mockResolvedValueOnce(mockActiveInvoices);
+        .mockResolvedValueOnce(mockActiveInvoices)
+        .mockResolvedValueOnce({ invoices: [] }); // For period calculations
 
       // Act
       const result = await caller.dashboard.getKpis();
