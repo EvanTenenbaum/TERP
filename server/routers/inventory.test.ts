@@ -153,12 +153,16 @@ describe("Inventory Router", () => {
       expect(inventoryDb.getDashboardStats).toHaveBeenCalled();
     });
 
-    it("should throw error if stats fetch fails", async () => {
+    it("should return default values if stats fetch returns null", async () => {
       // Arrange
       vi.mocked(inventoryDb.getDashboardStats).mockResolvedValue(null);
 
-      // Act & Assert
-      await expect(caller.inventory.dashboardStats()).rejects.toThrow();
+      // Act
+      const result = await caller.inventory.dashboardStats();
+
+      // Assert - Router now returns empty defaults instead of throwing
+      expect(result.totalUnits).toBe(0);
+      expect(result.totalInventoryValue).toBe(0);
     });
   });
 
@@ -378,8 +382,8 @@ describe("Inventory Router", () => {
       // Act
       const result = await caller.inventory.vendors({});
 
-      // Assert
-      expect(result).toEqual(mockVendors);
+      // Assert - Now returns paginated response
+      expect(result.items).toEqual(mockVendors);
       expect(inventoryDb.getAllVendors).toHaveBeenCalled();
     });
 
@@ -392,8 +396,8 @@ describe("Inventory Router", () => {
       // Act
       const result = await caller.inventory.vendors({ query: "ABC" });
 
-      // Assert
-      expect(result).toEqual(mockSearchResults);
+      // Assert - Now returns paginated response
+      expect(result.items).toEqual(mockSearchResults);
       expect(inventoryDb.searchVendors).toHaveBeenCalledWith("ABC");
     });
   });
@@ -411,8 +415,8 @@ describe("Inventory Router", () => {
       // Act
       const result = await caller.inventory.brands({});
 
-      // Assert
-      expect(result).toEqual(mockBrands);
+      // Assert - Now returns paginated response
+      expect(result.items).toEqual(mockBrands);
       expect(inventoryDb.getAllBrands).toHaveBeenCalled();
     });
 
@@ -425,8 +429,8 @@ describe("Inventory Router", () => {
       // Act
       const result = await caller.inventory.brands({ query: "XYZ" });
 
-      // Assert
-      expect(result).toEqual(mockSearchResults);
+      // Assert - Now returns paginated response
+      expect(result.items).toEqual(mockSearchResults);
       expect(inventoryDb.searchBrands).toHaveBeenCalledWith("XYZ");
     });
   });

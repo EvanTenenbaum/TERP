@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { UserSelector } from "./UserSelector";
 
 const mockUsers = [
@@ -77,7 +77,7 @@ describe("UserSelector", () => {
     expect(screen.getByText("Bob Jones")).toBeInTheDocument();
   });
 
-  it("should call onSelectionChange when removing a user badge", () => {
+  it("should call onSelectionChange when removing a user badge", async () => {
     render(
       <UserSelector
         users={mockUsers}
@@ -91,8 +91,16 @@ describe("UserSelector", () => {
     const removeButton = aliceBadge?.querySelector("button");
 
     if (removeButton) {
+      // Click the remove button - this opens a confirmation dialog
       fireEvent.click(removeButton);
-      expect(onSelectionChange).toHaveBeenCalledWith([2]);
+
+      // Find and click the confirm button in the dialog
+      // The dialog has a "Remove" button with variant="destructive"
+      const confirmButton = await screen.findByRole("button", { name: /remove/i });
+      if (confirmButton) {
+        fireEvent.click(confirmButton);
+        expect(onSelectionChange).toHaveBeenCalledWith([2]);
+      }
     }
   });
 

@@ -1,45 +1,83 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import EventFormDialog from './EventFormDialog';
-import { trpc } from '../../lib/trpc';
-import { mockTrpc } from '../../../tests/setup'; // Assuming mockTrpc is exported from setup
 
-// Remove the local vi.mock statement entirely.
+// Create mock functions for tRPC hooks
+const mockMutateAsync = vi.fn();
+const mockCreateMutation = vi.fn(() => ({
+  mutateAsync: mockMutateAsync,
+  isLoading: false,
+  isPending: false,
+}));
+const mockUpdateMutation = vi.fn(() => ({
+  mutateAsync: mockMutateAsync,
+  isLoading: false,
+  isPending: false,
+}));
+const mockGetEventById = vi.fn(() => ({
+  data: null,
+  isLoading: false,
+  isError: false,
+}));
+const mockListUsers = vi.fn(() => ({
+  data: [],
+  isLoading: false,
+  isError: false,
+}));
+const mockClientsList = vi.fn(() => ({
+  data: [],
+  isLoading: false,
+  isError: false,
+}));
+
+// Mock tRPC before importing components that use it
+vi.mock('../../lib/trpc', () => ({
+  trpc: {
+    calendar: {
+      createEvent: { useMutation: mockCreateMutation },
+      updateEvent: { useMutation: mockUpdateMutation },
+      getEventById: { useQuery: mockGetEventById },
+    },
+    userManagement: {
+      listUsers: { useQuery: mockListUsers },
+    },
+    clients: {
+      list: { useQuery: mockClientsList },
+    },
+  },
+}));
+
+import EventFormDialog from './EventFormDialog';
 
 describe('EventFormDialog', () => {
   const mockOnClose = vi.fn();
   const mockOnSaved = vi.fn();
-  const mockMutateAsync = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockMutateAsync.mockClear();
+    mockMutateAsync.mockReset();
 
-    // Setup global mock responses for the component's dependencies
-    mockTrpc.calendar.createEvent.useMutation.mockReturnValue({
+    // Reset mock implementations
+    mockCreateMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: false,
+      isPending: false,
     });
-
-    mockTrpc.calendar.updateEvent.useMutation.mockReturnValue({
+    mockUpdateMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: false,
+      isPending: false,
     });
-
-    mockTrpc.calendar.getEventById.useQuery.mockReturnValue({
+    mockGetEventById.mockReturnValue({
       data: null,
       isLoading: false,
       isError: false,
     });
-
-    // Mock other dependencies used by the component (userManagement.listUsers and clients.list)
-    mockTrpc.userManagement.listUsers.useQuery.mockReturnValue({
+    mockListUsers.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
     });
-
-    mockTrpc.clients.list.useQuery.mockReturnValue({
+    mockClientsList.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
@@ -121,9 +159,10 @@ describe('EventFormDialog', () => {
   });
 
   it('shows loading state during submission', () => {
-    mockTrpc.calendar.createEvent.useMutation.mockReturnValue({
+    mockCreateMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: true,
+      isPending: true,
     });
 
     render(

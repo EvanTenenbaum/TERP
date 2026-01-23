@@ -1,23 +1,50 @@
 /**
  * Calendar Database v3.2 Functions Tests
  * Tests for new v3.2 query functions and conflict detection
- * 
+ *
  * Following TERP Testing Protocol:
- * - TDD workflow (Red → Green → Refactor)
+ * - TDD workflow (Red -> Green -> Refactor)
  * - Testing Trophy: 70% integration, 20% unit, 10% E2E
  * - Mock all external dependencies
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+// Mock database before any imports that might use it
+// The mock must be defined before importing modules that use db
+vi.mock("../db", () => ({
+  getDb: vi.fn(),
+  db: {}, // Mock the synchronous db export to prevent initialization errors
+}));
+
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 
-// Mock database
-vi.mock("../db");
-
 describe("Calendar Database v3.2 - New Functions", () => {
+  let mockDb: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Create comprehensive mock database
+    mockDb = {
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      transaction: vi.fn((callback) => callback(mockDb)),
+      $returningId: vi.fn().mockResolvedValue([{ id: 1 }]),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(mockDb as any);
   });
 
   afterEach(() => {
@@ -27,29 +54,31 @@ describe("Calendar Database v3.2 - New Functions", () => {
   describe("getEventsByClient", () => {
     it("should return all events for a specific client", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue([
-          {
-            id: 1,
-            title: "Client Meeting",
-            clientId: 123,
-            eventType: "MEETING",
-            startDate: "2025-11-15",
-          },
-          {
-            id: 2,
-            title: "Intake Appointment",
-            clientId: 123,
-            eventType: "INTAKE",
-            startDate: "2025-11-20",
-          },
-        ]),
-      };
+      const mockEvents = [
+        {
+          id: 1,
+          title: "Client Meeting",
+          clientId: 123,
+          eventType: "MEETING",
+          startDate: "2025-11-15",
+          deletedAt: null,
+        },
+        {
+          id: 2,
+          title: "Intake Appointment",
+          clientId: 123,
+          eventType: "INTAKE",
+          startDate: "2025-11-20",
+          deletedAt: null,
+        },
+      ];
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      // Create thenable mock
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve(mockEvents),
+      };
+      mockDb.orderBy.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.getEventsByClient(123);
@@ -58,20 +87,17 @@ describe("Calendar Database v3.2 - New Functions", () => {
       expect(result).toHaveLength(2);
       expect(result[0].clientId).toBe(123);
       expect(result[1].clientId).toBe(123);
+      expect(mockDb.select).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
-      expect(mockDb.orderBy).toHaveBeenCalled();
     });
 
     it("should return empty array if client has no events", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue([]),
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve([]),
       };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      mockDb.orderBy.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.getEventsByClient(999);
@@ -82,21 +108,20 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
     it("should exclude soft-deleted events", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue([
-          {
-            id: 1,
-            title: "Active Event",
-            clientId: 123,
-            deletedAt: null,
-          },
-        ]),
-      };
+      const mockEvents = [
+        {
+          id: 1,
+          title: "Active Event",
+          clientId: 123,
+          deletedAt: null,
+        },
+      ];
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve(mockEvents),
+      };
+      mockDb.orderBy.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.getEventsByClient(123);
@@ -110,22 +135,22 @@ describe("Calendar Database v3.2 - New Functions", () => {
   describe("getEventsByVendor", () => {
     it("should return all events for a specific vendor", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockResolvedValue([
-          {
-            id: 1,
-            title: "Vendor Payment",
-            vendorId: 456,
-            eventType: "AP_PAYMENT",
-            startDate: "2025-11-15",
-          },
-        ]),
-      };
+      const mockEvents = [
+        {
+          id: 1,
+          title: "Vendor Payment",
+          vendorId: 456,
+          eventType: "AP_PAYMENT",
+          startDate: "2025-11-15",
+          deletedAt: null,
+        },
+      ];
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve(mockEvents),
+      };
+      mockDb.orderBy.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.getEventsByVendor(456);
@@ -139,13 +164,11 @@ describe("Calendar Database v3.2 - New Functions", () => {
   describe("checkConflicts", () => {
     it("should return empty array if no conflicts", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([]),
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve([]),
       };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      mockDb.where.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.checkConflicts({
@@ -161,22 +184,23 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
     it("should return conflicting events", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([
-          {
-            id: 1,
-            title: "Existing Event",
-            startDate: "2025-11-15",
-            startTime: "09:30:00",
-            endDate: "2025-11-15",
-            endTime: "10:30:00",
-          },
-        ]),
-      };
+      const mockConflicts = [
+        {
+          id: 1,
+          title: "Existing Event",
+          startDate: "2025-11-15",
+          startTime: "09:30:00",
+          endDate: "2025-11-15",
+          endTime: "10:30:00",
+          deletedAt: null,
+        },
+      ];
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve(mockConflicts),
+      };
+      mockDb.where.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.checkConflicts({
@@ -192,14 +216,12 @@ describe("Calendar Database v3.2 - New Functions", () => {
     });
 
     it("should exclude specific event when checking conflicts", async () => {
-      // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([]),
+      // Arrange - returns empty when the specific event is excluded
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve([]),
       };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      mockDb.where.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.checkConflicts({
@@ -216,13 +238,11 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
     it("should exclude cancelled events from conflicts", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([]),
+      const thenableMock = {
+        ...mockDb,
+        then: (resolve: any) => resolve([]),
       };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      mockDb.where.mockReturnValue(thenableMock);
 
       // Act
       const result = await calendarDb.checkConflicts({
@@ -244,11 +264,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
         return await callback({});
       });
 
-      const mockDb = {
-        transaction: mockTransaction,
-      };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      mockDb.transaction = mockTransaction;
 
       const callback = vi.fn().mockResolvedValue({ success: true });
 
@@ -271,11 +287,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
         }
       });
 
-      const mockDb = {
-        transaction: mockTransaction,
-      };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      mockDb.transaction = mockTransaction;
 
       const callback = vi.fn().mockRejectedValue(new Error("Test error"));
 

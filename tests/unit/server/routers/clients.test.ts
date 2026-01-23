@@ -60,14 +60,7 @@ describe("clientsRouter", () => {
     expect(clientsDb.createClient).toHaveBeenCalledWith(7, {
       teriCode: "ACME-002",
       name: "Acme",
-      email: undefined,
-      phone: undefined,
-      address: undefined,
-      isBuyer: undefined,
-      isSeller: undefined,
-      isBrand: undefined,
-      isReferee: undefined,
-      isContractor: undefined,
+      paymentTerms: 30,
       tags: [],
     });
     expect(client).toEqual({ id: 88, teriCode: "ACME-002" });

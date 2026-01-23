@@ -71,12 +71,13 @@ describe("Credits Router", () => {
       // Assert
       expect(result).toEqual(mockCredit);
       expect(creditsDb.generateCreditNumber).toHaveBeenCalled();
+      // Router passes creditStatus, not status
       expect(creditsDb.createCredit).toHaveBeenCalledWith(
         expect.objectContaining({
           creditNumber: "CR-001",
           clientId: 1,
           creditAmount: "100.00",
-          status: "ACTIVE",
+          creditStatus: "ACTIVE",
         })
       );
     });

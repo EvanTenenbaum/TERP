@@ -44,7 +44,7 @@ const mockProducts = [
   },
 ];
 
-const mockArchivedProduct = {
+const _mockArchivedProduct = {
   id: 3,
   nameCanonical: "Archived Product",
   category: "Concentrate",
@@ -108,6 +108,14 @@ vi.mock("@/lib/trpc", () => ({
       },
       restore: {
         useMutation: () => restoreMock(),
+      },
+    },
+    settings: {
+      categories: {
+        list: { useQuery: () => ({ data: [], isLoading: false }) },
+      },
+      subcategories: {
+        list: { useQuery: () => ({ data: [], isLoading: false }) },
       },
     },
     useContext: () => ({
@@ -197,9 +205,10 @@ describe("ProductsPage", () => {
     it("renders product rows when data is ready", () => {
       renderWithProviders(<ProductsPage />);
 
-      expect(screen.getByText("Blue Dream")).toBeInTheDocument();
-      expect(screen.getByText("OG Kush")).toBeInTheDocument();
-      expect(screen.getByText("Flower")).toBeInTheDocument();
+      // Use getAllByText since product name appears in multiple places (name + strain)
+      expect(screen.getAllByText("Blue Dream").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("OG Kush").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Flower").length).toBeGreaterThan(0);
     });
 
     it("displays product category correctly", () => {

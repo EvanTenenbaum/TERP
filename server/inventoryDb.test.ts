@@ -19,8 +19,8 @@ vi.mock("./db", () => ({
 import { getDb } from "./db";
 import { getBatchesByVendor } from "./inventoryDb";
 
-// Type definitions for test data (prefixed with _ as they're used for documentation/type safety)
-interface _MockBatch {
+// Type definitions for test data
+interface MockBatch {
   id: number;
   code: string;
   sku: string;
@@ -31,27 +31,24 @@ interface _MockBatch {
   createdAt: Date;
 }
 
-interface _MockLot {
+interface MockLot {
   id: number;
   code: string;
   vendorId: number;
   date: Date;
 }
 
-interface _MockProduct {
+interface MockProduct {
   id: number;
   nameCanonical: string;
   brandId: number;
   category: string;
 }
 
-interface _MockBrand {
+interface MockBrand {
   id: number;
   name: string;
 }
-
-// Export to satisfy ESLint (interfaces are for documentation)
-export type { _MockBatch, _MockLot, _MockProduct, _MockBrand };
 
 describe("getBatchesByVendor", () => {
   /**
@@ -83,10 +80,7 @@ describe("getBatchesByVendor", () => {
           // Generate a target vendor ID
           fc.integer({ min: 1, max: 100 }),
           // Generate multiple vendor IDs (including target)
-          fc.array(fc.integer({ min: 1, max: 100 }), {
-            minLength: 1,
-            maxLength: 5,
-          }),
+          fc.array(fc.integer({ min: 1, max: 100 }), { minLength: 1, maxLength: 5 }),
           // Generate lots with various vendor IDs
           fc.array(
             fc.record({
@@ -105,11 +99,7 @@ describe("getBatchesByVendor", () => {
               sku: fc.string({ minLength: 5, maxLength: 20 }),
               productId: fc.integer({ min: 1, max: 100 }),
               lotId: fc.integer({ min: 1, max: 1000 }),
-              batchStatus: fc.constantFrom(
-                "LIVE",
-                "AWAITING_INTAKE",
-                "SOLD_OUT"
-              ),
+              batchStatus: fc.constantFrom("LIVE", "AWAITING_INTAKE", "SOLD_OUT"),
               onHandQty: fc.string({ minLength: 1, maxLength: 10 }),
               createdAt: fc.date(),
             }),
@@ -117,22 +107,18 @@ describe("getBatchesByVendor", () => {
           ),
           async (targetVendorId, _vendorIds, lots, batches) => {
             // Ensure lots have unique IDs
-            const uniqueLots = lots.reduce(
-              (acc, lot, idx) => {
-                acc.push({ ...lot, id: idx + 1 });
-                return acc;
-              },
-              [] as typeof lots
-            );
+            const uniqueLots = lots.reduce((acc, lot, idx) => {
+              acc.push({ ...lot, id: idx + 1 });
+              return acc;
+            }, [] as typeof lots);
 
             // Ensure batches reference valid lot IDs
             const validBatches = batches.map((batch, idx) => ({
               ...batch,
               id: idx + 1,
-              lotId:
-                uniqueLots.length > 0
-                  ? uniqueLots[idx % uniqueLots.length].id
-                  : 1,
+              lotId: uniqueLots.length > 0 
+                ? uniqueLots[idx % uniqueLots.length].id 
+                : 1,
             }));
 
             // Calculate expected results: batches whose lot belongs to target vendor
@@ -155,12 +141,7 @@ describe("getBatchesByVendor", () => {
                 return {
                   batch,
                   lot: lot || null,
-                  product: {
-                    id: batch.productId,
-                    nameCanonical: "Test Product",
-                    brandId: 1,
-                    category: "Test",
-                  },
+                  product: { id: batch.productId, nameCanonical: "Test Product", brandId: 1, category: "Test" },
                   brand: { id: 1, name: "Test Brand" },
                 };
               });
@@ -175,16 +156,14 @@ describe("getBatchesByVendor", () => {
               orderBy: vi.fn().mockResolvedValue(mockQueryResult),
             };
 
-            vi.mocked(getDb).mockResolvedValue(
-              mockDb as unknown as Awaited<ReturnType<typeof getDb>>
-            );
+            vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
             // Act
             const result = await getBatchesByVendor(targetVendorId);
 
             // Assert: Property - all returned batches should belong to the target vendor
             const returnedBatchIds = new Set(result.map(r => r.batch.id));
-
+            
             // Every returned batch should be in expected set
             for (const batchId of returnedBatchIds) {
               expect(expectedBatchIds.has(batchId)).toBe(true);
@@ -214,9 +193,7 @@ describe("getBatchesByVendor", () => {
         orderBy: vi.fn().mockResolvedValue([]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(
-        mockDb as unknown as Awaited<ReturnType<typeof getDb>>
-      );
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       // Act
       const result = await getBatchesByVendor(999);
@@ -229,22 +206,9 @@ describe("getBatchesByVendor", () => {
       // Arrange
       const mockResult = [
         {
-          batch: {
-            id: 1,
-            code: "BATCH-001",
-            sku: "SKU-001",
-            lotId: 1,
-            productId: 1,
-            batchStatus: "LIVE",
-            onHandQty: "100",
-          },
+          batch: { id: 1, code: "BATCH-001", sku: "SKU-001", lotId: 1, productId: 1, batchStatus: "LIVE", onHandQty: "100" },
           lot: { id: 1, code: "LOT-001", vendorId: 1, date: new Date() },
-          product: {
-            id: 1,
-            nameCanonical: "Test Product",
-            brandId: 1,
-            category: "Flower",
-          },
+          product: { id: 1, nameCanonical: "Test Product", brandId: 1, category: "Flower" },
           brand: { id: 1, name: "Test Brand" },
         },
       ];
@@ -258,9 +222,7 @@ describe("getBatchesByVendor", () => {
         orderBy: vi.fn().mockResolvedValue(mockResult),
       };
 
-      vi.mocked(getDb).mockResolvedValue(
-        mockDb as unknown as Awaited<ReturnType<typeof getDb>>
-      );
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       // Act
       const result = await getBatchesByVendor(1);
@@ -282,8 +244,8 @@ describe("getBatchesByVendor", () => {
 // ============================================================================
 
 import { getDashboardStats } from "./inventoryDb";
-// Note: batches, products, eq are available in the actual getDashboardStats function
-// but tests use mocked db that doesn't need these imports
+import { batches as _batches, products as _products } from "../drizzle/schema";
+import { eq as _eq } from "drizzle-orm";
 
 // Mock the cache module as getDashboardStats uses it
 vi.mock("./_core/cache", () => ({
@@ -300,18 +262,74 @@ vi.mock("./_core/cache", () => ({
 }));
 
 describe("getDashboardStats (Gold Standard for PERF-004)", () => {
+  // Pre-calculated expected values based on mock data:
+  // B1: 100 * 5.50 = 550.00 (Flower/Indica, LIVE)
+  // B2: 50 * 2.00 = 100.00 (Flower/Indica, LIVE)
+  // B3: 200 * 1.25 = 250.00 (Edible/Gummies, QUARANTINED)
+  // B4: 10 * 0.00 = 0.00 (Concentrate/Vape Cart, ON_HOLD)
+  // B5: 0 * 10.00 = 0.00 (Flower/Indica, SOLD_OUT)
+  // B6: 100 * 1.50 = 150.00 (Edible/Gummies, LIVE)
+  // Total Units: 460, Total Value: 1050
+
+  let mockDb: any;
+  let queryCallCount: number;
+
   beforeEach(() => {
     vi.clearAllMocks();
-  });
+    queryCallCount = 0;
 
-  // INV-CONSISTENCY-001: getDashboardStats now uses multiple SQL queries with complex chaining.
-  // These unit tests verify the function returns null when db is unavailable and test
-  // the result transformation logic. Full integration tests should be used for
-  // verifying actual SQL query behavior.
-  //
-  // Key change in INV-CONSISTENCY-001: Only LIVE and PHOTOGRAPHY_COMPLETE batches
-  // are counted for totals, category stats, and subcategory stats. Status counts
-  // still include all statuses for visibility.
+    // Create a mock db that tracks which query is being made
+    // based on call order (the function makes 4 separate queries)
+    mockDb = {
+      select: vi.fn().mockImplementation(() => {
+        queryCallCount++;
+        const currentQuery = queryCallCount;
+
+        const builder: any = {
+          from: vi.fn().mockReturnThis(),
+          leftJoin: vi.fn().mockReturnThis(),
+          groupBy: vi.fn().mockReturnThis(),
+          orderBy: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          then: (resolve: any) => {
+            // Return different results based on query number
+            switch (currentQuery) {
+              case 1:
+                // Query 1: Totals (totalUnits, totalValue)
+                return resolve([{ totalUnits: "460.00", totalValue: "1050.00" }]);
+              case 2:
+                // Query 2: Status counts
+                return resolve([
+                  { status: "LIVE", count: 3 },
+                  { status: "QUARANTINED", count: 1 },
+                  { status: "ON_HOLD", count: 1 },
+                  { status: "SOLD_OUT", count: 1 },
+                ]);
+              case 3:
+                // Query 3: Category stats (sorted by value desc)
+                return resolve([
+                  { name: "Flower", units: "150.00", value: "650.00" },
+                  { name: "Edible", units: "300.00", value: "400.00" },
+                  { name: "Concentrate", units: "10.00", value: "0.00" },
+                ]);
+              case 4:
+                // Query 4: Subcategory stats (sorted by value desc)
+                return resolve([
+                  { name: "Indica", units: "150.00", value: "650.00" },
+                  { name: "Gummies", units: "300.00", value: "400.00" },
+                  { name: "Vape Cart", units: "10.00", value: "0.00" },
+                ]);
+              default:
+                return resolve([]);
+            }
+          },
+        };
+        return builder;
+      }),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+  });
 
   it("should return null when database is not available", async () => {
     vi.mocked(getDb).mockResolvedValue(null);
@@ -319,181 +337,86 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
     expect(result).toBeNull();
   });
 
-  // Note: The following tests verify result transformation logic with mocked query results.
-  // The getDashboardStats function makes 4 separate queries with complex method chaining.
-  // To properly test this, we use a mock that tracks query sequence.
-
-  it("should correctly transform totals from SQL aggregation results", async () => {
-    // INV-CONSISTENCY-001: Only SELLABLE batches (LIVE, PHOTOGRAPHY_COMPLETE) are counted
-    // This test verifies the transformation of SQL SUM results to the expected output format
-    let queryCount = 0;
-
-    const mockDb = {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation(function (this: typeof mockDb) {
-        queryCount++;
-        if (queryCount === 1) {
-          // Query 1: Totals
-          return Promise.resolve([
-            { totalUnits: "275.00", totalValue: "900.00" },
-          ]);
-        }
-        return this;
-      }),
-      groupBy: vi.fn().mockImplementation(function (this: typeof mockDb) {
-        queryCount++;
-        if (queryCount === 2) {
-          // Query 2: Status counts
-          return Promise.resolve([
-            { status: "LIVE", count: 3 },
-            { status: "PHOTOGRAPHY_COMPLETE", count: 1 },
-          ]);
-        }
-        return this;
-      }),
-      leftJoin: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockImplementation(function () {
-        queryCount++;
-        if (queryCount === 4) {
-          // Query 3: Category stats
-          return Promise.resolve([
-            { name: "Flower", units: "175.00", value: "750.00" },
-          ]);
-        }
-        // Query 4: Subcategory stats
-        return Promise.resolve([
-          { name: "Indica", units: "175.00", value: "750.00" },
-        ]);
-      }),
-    };
-
-    vi.mocked(getDb).mockResolvedValue(
-      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
-    );
+  it("should correctly calculate total inventory value and total units", async () => {
+    // Calculation:
+    // B1: 100 * 5.50 = 550.00
+    // B2: 50 * 2.00 = 100.00
+    // B3: 200 * 1.25 = 250.00
+    // B4: 10 * 0.00 = 0.00
+    // B5: 0 * 10.00 = 0.00
+    // B6: 100 * 1.50 = 150.00
+    // Total Value: 550 + 100 + 250 + 0 + 150 = 1050.00
+    // Total Units: 100 + 50 + 200 + 10 + 0 + 100 = 460.00
 
     const result = await getDashboardStats();
 
-    // Verify totals are correctly parsed from SQL string results
-    expect(result?.totalInventoryValue).toBe(900.0);
-    expect(result?.totalUnits).toBe(275.0);
-    expect(result?.avgValuePerUnit).toBeCloseTo(900 / 275, 2);
+    expect(result?.totalInventoryValue).toBe(1050.00);
+    expect(result?.totalUnits).toBe(460.00);
+    expect(result?.avgValuePerUnit).toBeCloseTo(1050 / 460, 2); // 2.28
   });
 
-  it("should correctly merge status counts with defaults", async () => {
-    // Status counts include ALL batches (for visibility), not just sellable
-    // Function should fill in missing statuses with 0
-    let queryCount = 0;
-
-    const mockDb = {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation(function (this: typeof mockDb) {
-        queryCount++;
-        if (queryCount === 1) {
-          return Promise.resolve([
-            { totalUnits: "100.00", totalValue: "500.00" },
-          ]);
-        }
-        return this;
-      }),
-      groupBy: vi.fn().mockImplementation(function (this: typeof mockDb) {
-        queryCount++;
-        if (queryCount === 2) {
-          // Only return some statuses - function should fill in defaults
-          return Promise.resolve([
-            { status: "LIVE", count: 2 },
-            { status: "ON_HOLD", count: 1 },
-          ]);
-        }
-        return this;
-      }),
-      leftJoin: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockResolvedValue([]),
-    };
-
-    vi.mocked(getDb).mockResolvedValue(
-      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
-    );
+  it("should correctly calculate status counts", async () => {
+    // Expected Counts:
+    // LIVE: 3 (B1, B2, B6)
+    // QUARANTINED: 1 (B3)
+    // ON_HOLD: 1 (B4)
+    // SOLD_OUT: 1 (B5)
+    // AWAITING_INTAKE: 0
+    // CLOSED: 0
 
     const result = await getDashboardStats();
 
-    // Verify missing statuses are filled with 0
     expect(result?.statusCounts).toEqual({
       AWAITING_INTAKE: 0,
-      LIVE: 2,
-      PHOTOGRAPHY_COMPLETE: 0,
+      LIVE: 3,
       ON_HOLD: 1,
-      QUARANTINED: 0,
-      SOLD_OUT: 0,
+      QUARANTINED: 1,
+      SOLD_OUT: 1,
       CLOSED: 0,
     });
   });
 
-  it("should correctly transform category and subcategory stats from SQL results", async () => {
-    // INV-CONSISTENCY-001: Category/subcategory stats only include SELLABLE batches
-    // This test uses a separate orderBy call counter to track which query is executing
-    let orderByCallCount = 0;
-
-    const mockDb = {
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockImplementation(function (this: typeof mockDb) {
-        // Check if this is the totals query (first call) by examining if leftJoin was called
-        // @ts-expect-error - accessing mock calls
-        const leftJoinCalled =
-          this.leftJoin.mock.calls.length > orderByCallCount;
-        if (!leftJoinCalled && orderByCallCount === 0) {
-          // First where() call without leftJoin = totals query
-          return Promise.resolve([
-            { totalUnits: "275.00", totalValue: "900.00" },
-          ]);
-        }
-        return this;
-      }),
-      groupBy: vi.fn().mockImplementation(function (this: typeof mockDb) {
-        // @ts-expect-error - accessing mock calls
-        const leftJoinCalled =
-          this.leftJoin.mock.calls.length > orderByCallCount;
-        if (!leftJoinCalled) {
-          // groupBy without prior leftJoin = status counts query
-          return Promise.resolve([{ status: "LIVE", count: 3 }]);
-        }
-        return this;
-      }),
-      leftJoin: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockImplementation(function () {
-        orderByCallCount++;
-        if (orderByCallCount === 1) {
-          // First orderBy = category stats
-          return Promise.resolve([
-            { name: "Flower", units: "175.00", value: "750.00" },
-            { name: "Edible", units: "100.00", value: "150.00" },
-          ]);
-        }
-        // Second orderBy = subcategory stats
-        return Promise.resolve([
-          { name: "Indica", units: "175.00", value: "750.00" },
-          { name: "Gummies", units: "100.00", value: "150.00" },
-        ]);
-      }),
-    };
-
-    vi.mocked(getDb).mockResolvedValue(
-      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
-    );
+  it("should correctly calculate and sort category stats", async () => {
+    // Flower (B1, B2, B5): Units: 100+50+0 = 150. Value: 550+100+0 = 650.00
+    // Edible (B3, B6): Units: 200+100 = 300. Value: 250+150 = 400.00
+    // Concentrate (B4): Units: 10. Value: 0.00
+    // Sort by Value (desc): Flower (650), Edible (400), Concentrate (0)
 
     const result = await getDashboardStats();
 
-    // Verify category stats are parsed correctly
-    expect(result?.categoryStats).toHaveLength(2);
+    expect(result?.categoryStats).toHaveLength(3);
     expect(result?.categoryStats[0].name).toBe("Flower");
-    expect(result?.categoryStats[0].value).toBe(750.0);
-    expect(result?.categoryStats[0].units).toBe(175.0);
+    expect(result?.categoryStats[0].value).toBe(650.00);
+    expect(result?.categoryStats[0].units).toBe(150.00);
 
-    // Verify subcategory stats are parsed correctly
-    expect(result?.subcategoryStats).toHaveLength(2);
+    expect(result?.categoryStats[1].name).toBe("Edible");
+    expect(result?.categoryStats[1].value).toBe(400.00);
+    expect(result?.categoryStats[1].units).toBe(300.00);
+
+    expect(result?.categoryStats[2].name).toBe("Concentrate");
+    expect(result?.categoryStats[2].value).toBe(0.00);
+    expect(result?.categoryStats[2].units).toBe(10.00);
+  });
+
+  it("should correctly calculate and sort subcategory stats", async () => {
+    // Indica (B1, B2, B5): Units: 150. Value: 650.00
+    // Gummies (B3, B6): Units: 300. Value: 400.00
+    // Vape Cart (B4): Units: 10. Value: 0.00
+    // Sort by Value (desc): Indica (650), Gummies (400), Vape Cart (0)
+
+    const result = await getDashboardStats();
+
+    expect(result?.subcategoryStats).toHaveLength(3);
     expect(result?.subcategoryStats[0].name).toBe("Indica");
-    expect(result?.subcategoryStats[0].value).toBe(750.0);
+    expect(result?.subcategoryStats[0].value).toBe(650.00);
+    expect(result?.subcategoryStats[0].units).toBe(150.00);
+
+    expect(result?.subcategoryStats[1].name).toBe("Gummies");
+    expect(result?.subcategoryStats[1].value).toBe(400.00);
+    expect(result?.subcategoryStats[1].units).toBe(300.00);
+
+    expect(result?.subcategoryStats[2].name).toBe("Vape Cart");
+    expect(result?.subcategoryStats[2].value).toBe(0.00);
+    expect(result?.subcategoryStats[2].units).toBe(10.00);
   });
 });

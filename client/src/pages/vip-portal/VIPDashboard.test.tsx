@@ -110,6 +110,15 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
     },
+    vipTiers: {
+      getClientStatusDetailed: {
+        useQuery: vi.fn(() => ({
+          data: null,
+          isLoading: false,
+          isError: false,
+        })),
+      },
+    },
   },
 }));
 
