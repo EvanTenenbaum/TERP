@@ -1,12 +1,3 @@
-/**
- * Integration Tests for Analytics Router
- *
- * Tests all tRPC procedures in the analytics router.
- * Uses AAA (Arrange, Act, Assert) pattern for clarity.
- *
- * @module server/routers/analytics.test.ts
- */
-
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
@@ -35,9 +26,7 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res: {} as any,
   });
 
@@ -66,12 +55,16 @@ describe("Analytics Router", () => {
 
       // For orders
       mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
+        }),
       });
 
       // For clients
       mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+        }),
       });
 
       // For batches
@@ -106,12 +99,16 @@ describe("Analytics Router", () => {
 
       // For orders
       mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+        }),
       });
 
       // For clients
       mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+        }),
       });
 
       // For batches

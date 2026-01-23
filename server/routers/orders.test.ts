@@ -1,12 +1,3 @@
-/**
- * Integration Tests for Orders Router
- *
- * Tests all tRPC procedures in the orders router.
- * Uses AAA (Arrange, Act, Assert) pattern for clarity.
- *
- * @module server/routers/orders.test.ts
- */
-
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";

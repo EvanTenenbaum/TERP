@@ -1,12 +1,3 @@
-/**
- * Integration Tests for Credits Router
- *
- * Tests all tRPC procedures in the credits router.
- * Uses AAA (Arrange, Act, Assert) pattern for clarity.
- *
- * @module server/routers/credits.test.ts
- */
-
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
@@ -22,7 +13,6 @@ vi.mock("../creditsDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db as _db } from "../db";
 import * as creditsDb from "../creditsDb";
 
 // Mock user for authenticated requests
@@ -35,9 +25,7 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res: {} as any,
   });
 
@@ -204,8 +192,6 @@ describe("Credits Router", () => {
   });
 
   describe("applyCredit", () => {
-    // QA-TEST-003: Skipped - applyCredit involves complex invoice updates and
-    // transaction creation that requires integration testing; verified via E2E tests
     it.skip("should apply credit to an invoice", async () => {
       // Arrange
       const input = {

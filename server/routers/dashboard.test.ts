@@ -1,12 +1,3 @@
-/**
- * Integration Tests for Dashboard Router
- *
- * Tests all tRPC procedures in the dashboard router.
- * Uses AAA (Arrange, Act, Assert) pattern for clarity.
- *
- * @module server/routers/dashboard.test.ts
- */
-
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
@@ -24,7 +15,6 @@ vi.mock("../inventoryDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
 import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
@@ -39,9 +29,7 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res: {} as any,
   });
 
@@ -95,10 +83,10 @@ describe("Dashboard Router", () => {
       const result = await caller.dashboard.getKpis();
 
       // Assert
-      expect(result).toHaveProperty("totalRevenue");
+      expect(result).toHaveProperty("totalRevenue", 3000);
       expect(result).toHaveProperty("activeOrders", 3);
       expect(result).toHaveProperty("inventoryValue", 50000);
-      expect(result).toHaveProperty("lowStockCount");
+      expect(result).toHaveProperty("lowStockCount", 0);
     });
 
     it("should handle empty invoices", async () => {

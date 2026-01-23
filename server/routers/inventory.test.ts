@@ -1,12 +1,3 @@
-/**
- * Integration Tests for Inventory Router
- *
- * Tests all tRPC procedures in the inventory router.
- * Uses AAA (Arrange, Act, Assert) pattern for clarity.
- *
- * @module server/routers/inventory.test.ts
- */
-
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
@@ -24,7 +15,6 @@ vi.mock("../inventoryIntakeService");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db as _db } from "../db";
 import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
 
@@ -38,9 +28,7 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res: {} as any,
   });
 
@@ -228,8 +216,6 @@ describe("Inventory Router", () => {
   });
 
   describe("updateStatus", () => {
-    // QA-TEST-003: Skipped - updateBatchStatus mock doesn't properly simulate
-    // the transaction behavior; status updates are tested via E2E tests
     it.skip("should update batch status with audit log", async () => {
       // Arrange
       vi.clearAllMocks();
