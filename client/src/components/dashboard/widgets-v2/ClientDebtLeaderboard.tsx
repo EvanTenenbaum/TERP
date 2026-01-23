@@ -1,11 +1,14 @@
 import { memo } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 
 export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
-  const { data: response, isLoading } = trpc.dashboard.getClientDebt.useQuery(
+  const [, setLocation] = useLocation();
+  const { data: response, isLoading, error } = trpc.dashboard.getClientDebt.useQuery(
     {},
     { refetchInterval: 60000 }
   );
@@ -33,6 +36,13 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <EmptyState
+            variant="generic"
+            size="sm"
+            title="Unable to load debt data"
+            description="Please try refreshing the page"
+          />
         ) : data.length > 0 ? (
           <Table>
             <TableHeader>
@@ -45,7 +55,11 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
             </TableHeader>
             <TableBody>
               {data.map((client: any, index: number) => (
-                <TableRow key={client.customerId}>
+                <TableRow
+                  key={client.customerId}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => setLocation(`/clients/${client.customerId}`)}
+                >
                   <TableCell className="text-muted-foreground font-medium">{index + 1}</TableCell>
                   <TableCell className="font-medium">{client.customerName}</TableCell>
                   <TableCell className="text-right font-mono text-red-600">
@@ -59,9 +73,12 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No client debt data available
-          </div>
+          <EmptyState
+            variant="analytics"
+            size="sm"
+            title="No client debt data"
+            description="Client debt data will appear once invoices are sent"
+          />
         )}
       </CardContent>
     </Card>

@@ -24,7 +24,7 @@ import { useLocation } from "wouter";
 export const TransactionSnapshotWidget = memo(
   function TransactionSnapshotWidget() {
     const [, setLocation] = useLocation();
-    const { data, isLoading } = trpc.dashboard.getTransactionSnapshot.useQuery(
+    const { data, isLoading, error } = trpc.dashboard.getTransactionSnapshot.useQuery(
       undefined,
       { refetchInterval: 60000 }
     );
@@ -55,6 +55,13 @@ export const TransactionSnapshotWidget = memo(
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : error ? (
+            <EmptyState
+              variant="generic"
+              size="sm"
+              title="Unable to load transaction data"
+              description="Please try refreshing the page"
+            />
           ) : data ? (
             <Table>
               <TableHeader>

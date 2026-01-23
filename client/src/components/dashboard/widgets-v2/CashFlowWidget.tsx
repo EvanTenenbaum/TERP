@@ -27,7 +27,7 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
   const [, setLocation] = useLocation();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
-  const { data, isLoading } = trpc.dashboard.getCashFlow.useQuery(
+  const { data, isLoading, error } = trpc.dashboard.getCashFlow.useQuery(
     { timePeriod },
     { refetchInterval: 60000 }
   );
@@ -73,6 +73,13 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <EmptyState
+            variant="generic"
+            size="sm"
+            title="Unable to load cash flow data"
+            description="Please try refreshing the page"
+          />
         ) : data ? (
           <Table>
             <TableBody>

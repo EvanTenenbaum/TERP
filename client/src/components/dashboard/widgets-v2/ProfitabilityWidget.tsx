@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { TrendingUp, DollarSign, Percent, Package } from "lucide-react";
 
 export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
-  const { data: summary, isLoading } =
+  const { data: summary, isLoading, error } =
     trpc.inventory.profitability.summary.useQuery();
   const { data: topBatches } = trpc.inventory.profitability.top.useQuery(5);
 
@@ -25,6 +25,23 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
             <Skeleton className="h-16 w-full" />
           </div>
         </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-green-600" />
+          Profitability Analysis
+        </h3>
+        <EmptyState
+          variant="generic"
+          size="sm"
+          title="Unable to load profitability data"
+          description="Please try refreshing the page"
+        />
       </Card>
     );
   }

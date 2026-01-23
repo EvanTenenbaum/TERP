@@ -3,30 +3,59 @@
  * Utility functions for dashboard data processing
  */
 
-import * as clientsDb from "./clientsDb";
+import { eq, sql } from "drizzle-orm";
+import { getDb } from "./db";
+import { clients } from "../drizzle/schema";
 import type { Invoice, Payment } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 
 /**
  * Fetch actual client names for customer IDs and return as a Map
  * Used to replace placeholder "Customer {id}" with actual names
+ *
+ * PERF-FIX: Changed from N+1 individual queries to single bulk query with IN clause
+ * This significantly improves performance when fetching names for multiple customers.
  */
 export async function fetchClientNamesMap(
   customerIds: number[]
 ): Promise<Map<number, string>> {
   const clientMap = new Map<number, string>();
-  await Promise.all(
-    customerIds.map(async (customerId) => {
-      try {
-        const client = await clientsDb.getClientById(customerId);
-        if (client?.name) {
-          clientMap.set(customerId, client.name);
-        }
-      } catch (error) {
-        logger.error({ customerId, error }, "Failed to fetch client");
+
+  if (customerIds.length === 0) {
+    return clientMap;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) {
+      logger.warn("Database not available for fetchClientNamesMap");
+      return clientMap;
+    }
+
+    // Use bulk query with IN clause instead of individual queries (N+1 fix)
+    const clientsResult = await db
+      .select({
+        id: clients.id,
+        name: clients.name,
+      })
+      .from(clients)
+      .where(
+        sql`${clients.id} IN (${sql.join(
+          customerIds.map(id => sql`${id}`),
+          sql`, `
+        )}) AND ${clients.deletedAt} IS NULL`
+      );
+
+    // Build the map from results
+    for (const client of clientsResult) {
+      if (client.name) {
+        clientMap.set(client.id, client.name);
       }
-    })
-  );
+    }
+  } catch (error) {
+    logger.error({ customerIds, error }, "Failed to fetch client names in bulk");
+  }
+
   return clientMap;
 }
 

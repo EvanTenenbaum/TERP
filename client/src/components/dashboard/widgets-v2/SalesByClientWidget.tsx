@@ -34,7 +34,7 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
   const [, setLocation] = useLocation();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
-  const { data: response, isLoading } =
+  const { data: response, isLoading, error } =
     trpc.dashboard.getSalesByClient.useQuery(
       { timePeriod },
       { refetchInterval: 60000 }
@@ -80,6 +80,13 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <EmptyState
+            variant="generic"
+            size="sm"
+            title="Unable to load sales data"
+            description="Please try refreshing the page"
+          />
         ) : data.length > 0 ? (
           <Table>
             <TableHeader>

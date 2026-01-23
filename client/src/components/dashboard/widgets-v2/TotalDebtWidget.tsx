@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
  */
 export const TotalDebtWidget = memo(function TotalDebtWidget() {
   const [, setLocation] = useLocation();
-  const { data, isLoading } = trpc.dashboard.getTotalDebt.useQuery(undefined, {
+  const { data, isLoading, error } = trpc.dashboard.getTotalDebt.useQuery(undefined, {
     refetchInterval: 60000,
   });
 
@@ -41,6 +41,13 @@ export const TotalDebtWidget = memo(function TotalDebtWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <EmptyState
+            variant="generic"
+            size="sm"
+            title="Unable to load debt data"
+            description="Please try refreshing the page"
+          />
         ) : data ? (
           <Table>
             <TableBody>
