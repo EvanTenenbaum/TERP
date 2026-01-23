@@ -57,13 +57,13 @@ export const productCategoriesRouter = router({
           )`,
           productCount: sql<number>`(
             SELECT COUNT(*) FROM products p
-            WHERE p.categoryId = ${categories.id}
+            WHERE p.category = ${categories.name}
             AND p.deleted_at IS NULL
           )`,
           activeBatchCount: sql<number>`(
             SELECT COUNT(*) FROM batches b
             INNER JOIN products p ON b.productId = p.id
-            WHERE p.categoryId = ${categories.id}
+            WHERE p.category = ${categories.name}
             AND b.batchStatus IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
             AND b.deleted_at IS NULL
           )`,
@@ -115,20 +115,18 @@ export const productCategoriesRouter = router({
         )
         .orderBy(subcategories.name);
 
-      // Get products in this category
+      // Get products in this category (products store category name, not ID)
       const prods = await db
         .select({
           id: products.id,
-          sku: products.sku,
-          name: products.name,
-          subcategoryId: products.subcategoryId,
-          isActive: products.isActive,
+          name: products.nameCanonical,
+          subcategory: products.subcategory,
         })
         .from(products)
         .where(
-          and(eq(products.categoryId, input.id), isNull(products.deletedAt))
+          and(eq(products.category, category.name), isNull(products.deletedAt))
         )
-        .orderBy(products.name)
+        .orderBy(products.nameCanonical)
         .limit(100);
 
       return {
@@ -160,18 +158,19 @@ export const productCategoriesRouter = router({
           message: "Database not available",
         });
 
-      const { id, cascadeToProducts, ...updates } = input;
+      const { id, cascadeToProducts: _cascadeToProducts, isActive, ...otherUpdates } = input;
+
+      // Prepare update object - convert isActive boolean to number for DB
+      const updates = {
+        ...otherUpdates,
+        ...(isActive !== undefined ? { isActive: isActive ? 1 : 0 } : {}),
+      };
 
       // Update category
       await db.update(categories).set(updates).where(eq(categories.id, id));
 
-      // Cascade isActive status to products if requested
-      if (cascadeToProducts && input.isActive !== undefined) {
-        await db
-          .update(products)
-          .set({ isActive: input.isActive ? 1 : 0 })
-          .where(eq(products.categoryId, id));
-      }
+      // Note: Products don't have an isActive column - cascade not available
+      // If cascading is needed, products would need schema update
 
       return { success: true };
     }),
@@ -196,21 +195,49 @@ export const productCategoriesRouter = router({
           message: "Database not available",
         });
 
+      // Get category name for product lookup (products use category name, not ID)
+      const [category] = await db
+        .select({ name: categories.name })
+        .from(categories)
+        .where(eq(categories.id, input.id))
+        .limit(1);
+
+      if (!category) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
+      }
+
       // Check if there are products in this category
       const [productCount] = await db
         .select({ count: sql<number>`COUNT(*)` })
         .from(products)
         .where(
-          and(eq(products.categoryId, input.id), isNull(products.deletedAt))
+          and(eq(products.category, category.name), isNull(products.deletedAt))
         );
 
       if (productCount && productCount.count > 0) {
         if (input.reassignProductsTo) {
+          // Get target category name
+          const [targetCategory] = await db
+            .select({ name: categories.name })
+            .from(categories)
+            .where(eq(categories.id, input.reassignProductsTo))
+            .limit(1);
+
+          if (!targetCategory) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Target category not found",
+            });
+          }
+
           // Move products to another category
           await db
             .update(products)
-            .set({ categoryId: input.reassignProductsTo, subcategoryId: null })
-            .where(eq(products.categoryId, input.id));
+            .set({ category: targetCategory.name, subcategory: null })
+            .where(eq(products.category, category.name));
         } else {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -305,9 +332,12 @@ export const productCategoriesRouter = router({
           message: "Database not available",
         });
 
-      // Get target subcategory to ensure it exists and get its categoryId
+      // Get target subcategory to ensure it exists and get its category
       const [targetSubcat] = await db
-        .select()
+        .select({
+          name: subcategories.name,
+          categoryId: subcategories.categoryId,
+        })
         .from(subcategories)
         .where(
           and(
@@ -324,12 +354,26 @@ export const productCategoriesRouter = router({
         });
       }
 
-      // Update products with both subcategory and category
+      // Get category name for the target category
+      const [targetCategory] = await db
+        .select({ name: categories.name })
+        .from(categories)
+        .where(eq(categories.id, targetSubcat.categoryId))
+        .limit(1);
+
+      if (!targetCategory) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Target category not found",
+        });
+      }
+
+      // Update products with both subcategory and category names
       await db
         .update(products)
         .set({
-          subcategoryId: input.targetSubcategoryId,
-          categoryId: targetSubcat.categoryId,
+          subcategory: targetSubcat.name,
+          category: targetCategory.name,
         })
         .where(inArray(products.id, input.productIds));
 
@@ -379,11 +423,26 @@ export const productCategoriesRouter = router({
         isNull(products.deletedAt),
       ];
 
+      // Products store category/subcategory as strings, need to look up the name
       if (input.categoryId) {
-        conditions.push(eq(products.categoryId, input.categoryId));
+        const [cat] = await db
+          .select({ name: categories.name })
+          .from(categories)
+          .where(eq(categories.id, input.categoryId))
+          .limit(1);
+        if (cat) {
+          conditions.push(eq(products.category, cat.name));
+        }
       }
       if (input.subcategoryId) {
-        conditions.push(eq(products.subcategoryId, input.subcategoryId));
+        const [subcat] = await db
+          .select({ name: subcategories.name })
+          .from(subcategories)
+          .where(eq(subcategories.id, input.subcategoryId))
+          .limit(1);
+        if (subcat) {
+          conditions.push(eq(products.subcategory, subcat.name));
+        }
       }
       if (input.status) {
         conditions.push(eq(batches.batchStatus, input.status));
@@ -398,19 +457,14 @@ export const productCategoriesRouter = router({
           onHandQty: batches.onHandQty,
           reservedQty: batches.reservedQty,
           productId: products.id,
-          productName: products.name,
-          productSku: products.sku,
-          categoryId: products.categoryId,
-          categoryName: categories.name,
-          subcategoryId: products.subcategoryId,
-          subcategoryName: subcategories.name,
+          productName: products.nameCanonical,
+          categoryName: products.category,
+          subcategoryName: products.subcategory,
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(categories, eq(products.categoryId, categories.id))
-        .leftJoin(subcategories, eq(products.subcategoryId, subcategories.id))
         .where(and(...conditions))
-        .orderBy(categories.name, subcategories.name, products.name)
+        .orderBy(products.category, products.subcategory, products.nameCanonical)
         .limit(500);
 
       return result;
@@ -431,8 +485,7 @@ export const productCategoriesRouter = router({
 
       const result = await db
         .select({
-          categoryId: products.categoryId,
-          categoryName: categories.name,
+          categoryName: products.category,
           batchCount: sql<number>`COUNT(DISTINCT ${batches.id})`,
           productCount: sql<number>`COUNT(DISTINCT ${products.id})`,
           totalOnHand: sql<string>`SUM(CAST(${batches.onHandQty} AS DECIMAL(15,4)))`,
@@ -444,14 +497,13 @@ export const productCategoriesRouter = router({
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(categories, eq(products.categoryId, categories.id))
         .where(
           and(
             isNull(batches.deletedAt),
             inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"])
           )
         )
-        .groupBy(products.categoryId, categories.name)
+        .groupBy(products.category)
         .orderBy(desc(sql`SUM(CAST(${batches.onHandQty} AS DECIMAL(15,4)))`));
 
       return result;
@@ -483,8 +535,7 @@ export const productCategoriesRouter = router({
       // Get category summary with batch status distribution
       const summary = await db
         .select({
-          categoryId: products.categoryId,
-          categoryName: categories.name,
+          categoryName: products.category,
           totalBatches: sql<number>`COUNT(*)`,
           liveBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE') THEN 1 ELSE 0 END)`,
           pendingBatches: sql<number>`SUM(CASE WHEN ${batches.batchStatus} = 'AWAITING_INTAKE' THEN 1 ELSE 0 END)`,
@@ -495,16 +546,15 @@ export const productCategoriesRouter = router({
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(categories, eq(products.categoryId, categories.id))
         .where(isNull(batches.deletedAt))
-        .groupBy(products.categoryId, categories.name)
-        .orderBy(categories.name);
+        .groupBy(products.category)
+        .orderBy(products.category);
 
       // Get overall totals
       const [totals] = await db
         .select({
-          totalCategories: sql<number>`COUNT(DISTINCT ${products.categoryId})`,
-          totalSubcategories: sql<number>`COUNT(DISTINCT ${products.subcategoryId})`,
+          totalCategories: sql<number>`COUNT(DISTINCT ${products.category})`,
+          totalSubcategories: sql<number>`COUNT(DISTINCT ${products.subcategory})`,
           totalProducts: sql<number>`COUNT(DISTINCT ${products.id})`,
           totalBatches: sql<number>`COUNT(DISTINCT ${batches.id})`,
           totalQuantity: sql<string>`SUM(CAST(${batches.onHandQty} AS DECIMAL(15,4)))`,
@@ -533,10 +583,20 @@ export const productCategoriesRouter = router({
           message: "Database not available",
         });
 
+      // Get category name for filtering products (products use category name, not ID)
+      const [category] = await db
+        .select({ name: categories.name })
+        .from(categories)
+        .where(eq(categories.id, input.categoryId))
+        .limit(1);
+
+      if (!category) {
+        return [];
+      }
+
       const result = await db
         .select({
-          subcategoryId: products.subcategoryId,
-          subcategoryName: subcategories.name,
+          subcategoryName: products.subcategory,
           productCount: sql<number>`COUNT(DISTINCT ${products.id})`,
           batchCount: sql<number>`COUNT(DISTINCT ${batches.id})`,
           liveBatchCount: sql<number>`SUM(CASE WHEN ${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE') THEN 1 ELSE 0 END)`,
@@ -548,15 +608,14 @@ export const productCategoriesRouter = router({
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(subcategories, eq(products.subcategoryId, subcategories.id))
         .where(
           and(
-            eq(products.categoryId, input.categoryId),
+            eq(products.category, category.name),
             isNull(batches.deletedAt)
           )
         )
-        .groupBy(products.subcategoryId, subcategories.name)
-        .orderBy(subcategories.name);
+        .groupBy(products.subcategory)
+        .orderBy(products.subcategory);
 
       // Include "Uncategorized" for products without subcategory
       return result;

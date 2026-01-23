@@ -678,7 +678,7 @@ export default function ClientLedger() {
           <Card>
             <CardContent className="py-16">
               <EmptyState
-                icon={BookOpen}
+                icon={<BookOpen className="h-12 w-12" />}
                 title="Select a Client"
                 description="Choose a client from the dropdown above to view their ledger history."
               />

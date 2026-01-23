@@ -63,11 +63,11 @@ export const officeSupplyRouter = router({
       }
 
       // Check if already registered
-      const [existing] = await db.execute(sql`
+      const [existingRows] = (await db.execute(sql`
         SELECT id FROM office_supply_items WHERE product_id = ${input.productId}
-      `);
+      `)) as unknown as [Array<{ id: number }>, unknown];
 
-      if (existing) {
+      if (existingRows.length > 0) {
         // Update existing
         await db.execute(sql`
           UPDATE office_supply_items
@@ -83,13 +83,13 @@ export const officeSupplyRouter = router({
 
         return {
           success: true,
-          id: (existing as { id: number }).id,
+          id: existingRows[0].id,
           updated: true,
         };
       }
 
       // Insert new
-      const [result] = await db.execute(sql`
+      const [result] = (await db.execute(sql`
         INSERT INTO office_supply_items (
           product_id, reorder_point, reorder_quantity,
           preferred_supplier_id, auto_reorder_enabled, notes, created_by
@@ -102,11 +102,11 @@ export const officeSupplyRouter = router({
           ${input.notes || null},
           ${ctx.user.id}
         )
-      `);
+      `)) as unknown as [{ insertId: number }, unknown];
 
       return {
         success: true,
-        id: (result as { insertId: number }).insertId,
+        id: result.insertId,
         updated: false,
       };
     }),
@@ -300,7 +300,7 @@ export const officeSupplyRouter = router({
         });
 
       // Get all active items that are at or below reorder point
-      const lowStockItems = await db.execute(sql`
+      const [lowStockItems] = (await db.execute(sql`
         SELECT
           osi.*,
           p.name as product_name,
@@ -321,7 +321,17 @@ export const officeSupplyRouter = router({
         ORDER BY
           CASE WHEN current_stock = 0 THEN 0 ELSE 1 END,
           (osi.reorder_point - current_stock) DESC
-      `);
+      `)) as unknown as [Array<{
+        id: number;
+        product_id: number;
+        product_name: string;
+        product_sku: string | null;
+        current_stock: number;
+        reorder_point: number;
+        reorder_quantity: number;
+        supplier_name: string | null;
+        supplier_id: number | null;
+      }>, unknown];
 
       // Create/update office supply needs for each low stock item
       const suggestions: Array<{
@@ -337,17 +347,7 @@ export const officeSupplyRouter = router({
         urgency: "critical" | "low" | "normal";
       }> = [];
 
-      for (const item of lowStockItems as Array<{
-        id: number;
-        product_id: number;
-        product_name: string;
-        product_sku: string | null;
-        current_stock: number;
-        reorder_point: number;
-        reorder_quantity: number;
-        supplier_name: string | null;
-        supplier_id: number | null;
-      }>) {
+      for (const item of lowStockItems) {
         const currentStock = Number(item.current_stock) || 0;
         const reorderPoint = Number(item.reorder_point);
         const reorderQuantity = Number(item.reorder_quantity);
@@ -359,14 +359,14 @@ export const officeSupplyRouter = router({
         }
 
         // Check if there's already a pending need for this item
-        const [existingNeed] = await db.execute(sql`
+        const [existingNeedRows] = (await db.execute(sql`
           SELECT id FROM office_supply_needs
           WHERE office_supply_item_id = ${item.id}
             AND status IN ('PENDING', 'APPROVED')
           LIMIT 1
-        `);
+        `)) as unknown as [Array<{ id: number }>, unknown];
 
-        if (!existingNeed) {
+        if (existingNeedRows.length === 0) {
           // Create new need
           await db.execute(sql`
             INSERT INTO office_supply_needs (
@@ -386,7 +386,7 @@ export const officeSupplyRouter = router({
           suggestedQuantity: Math.ceil(suggestedQuantity),
           supplierName: item.supplier_name,
           supplierId: item.supplier_id,
-          status: existingNeed ? "existing" : "new",
+          status: existingNeedRows.length > 0 ? "existing" : "new",
           urgency:
             currentStock === 0
               ? "critical"

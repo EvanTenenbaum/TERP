@@ -300,26 +300,16 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
                     </TableHeader>
                     <TableBody>
                       {dashboardData.referrals.map(
-                        (referral: {
-                          id: number;
-                          referredName: string;
-                          status: string;
-                          convertedAt: Date | string | null;
-                          couchTaxPercent: number;
-                          ordersCompleted: number;
-                          orderLimit: number;
-                          createdAt: Date | string;
-                        }) => {
+                        (referral) => {
                           const statusStyle =
                             STATUS_STYLES[
                               referral.status as keyof typeof STATUS_STYLES
                             ] ?? STATUS_STYLES.PENDING;
                           const StatusIcon = statusStyle.icon;
+                          const orderLimit = referral.orderLimit ?? 0;
                           const progress =
-                            referral.orderLimit > 0
-                              ? (referral.ordersCompleted /
-                                  referral.orderLimit) *
-                                100
+                            orderLimit > 0
+                              ? (referral.ordersCompleted / orderLimit) * 100
                               : 0;
 
                           return (
@@ -349,7 +339,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
                                   />
                                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                                     {referral.ordersCompleted}/
-                                    {referral.orderLimit}
+                                    {orderLimit}
                                   </span>
                                 </div>
                               </TableCell>

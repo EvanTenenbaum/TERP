@@ -56,7 +56,7 @@ The validation script will show which columns or tables are out of sync. For exa
 Use MySQL to inspect the actual database structure:
 
 ```bash
-mysql -u doadmin -p'AVNS_Q_RGkS7-uB3Bk7xC2am' \
+mysql -u doadmin -p'<REDACTED>' \
   -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
   -P 25060 \
   --ssl-mode=REQUIRED \

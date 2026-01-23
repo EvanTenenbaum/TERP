@@ -1461,9 +1461,9 @@ export async function getDashboardStats() {
       // Query 3: Get category breakdown using SQL SUM with GROUP BY
       const categoryStatsResult = await db
         .select({
-          name: sql<string>`COALESCE(${products.category}, 'Uncategorized')`,
-          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`,
-          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`,
+          name: sql<string>`COALESCE(${products.category}, 'Uncategorized')`.as('name'),
+          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`.as('units'),
+          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`.as('value'),
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
@@ -1473,9 +1473,9 @@ export async function getDashboardStats() {
       // Query 4: Get subcategory breakdown using SQL SUM with GROUP BY
       const subcategoryStatsResult = await db
         .select({
-          name: sql<string>`COALESCE(${products.subcategory}, 'None')`,
-          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`,
-          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`,
+          name: sql<string>`COALESCE(${products.subcategory}, 'None')`.as('name'),
+          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`.as('units'),
+          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`.as('value'),
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))

@@ -461,7 +461,7 @@ export const Client360Pod = React.memo(function Client360Pod({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {purchaseHistory.slice(0, 6).map((item, idx) => (
                     <div
-                      key={`purchase-${item.sku || item.name}-${idx}`}
+                      key={`purchase-${item.productId || item.productName || idx}`}
                       className="flex items-center justify-between text-sm border rounded-lg p-2"
                     >
                       <span className="truncate flex-1">

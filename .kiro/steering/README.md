@@ -20,7 +20,7 @@ These files are **automatically included** in every Kiro AI agent session. They 
 | `05-external-agent-handoff.md` | Protocol for agents from other platforms (Claude, ChatGPT, etc.)  | Manual    |
 | `06-architecture-guide.md`     | **CRITICAL** - System architecture, structure, canonical patterns | Always    |
 | `07-deprecated-systems.md`     | **CRITICAL** - Deprecated systems registry, what NOT to use       | Always    |
-| `08-adaptive-qa-protocol.md`   | **CRITICAL** - Adaptive QA gate, run BEFORE every commit          | Always    |
+| `08-adaptive-qa-protocol.md`   | **CRITICAL** - Adaptive verification protocol (risk + QA gates)   | Always    |
 | `10-mvp-initiative.md`         | MVP initiative focus and priorities                               | Always    |
 | `11-mvp-iteration-protocol.md` | **POST-MVP** - Fast iteration with safety rails                   | Always    |
 | `99-pre-commit-checklist.md`   | Final pre-commit verification checklist                           | Always    |
@@ -47,7 +47,7 @@ Agents should understand protocols in this order:
 1. **00-core-identity.md** - Who you are, what Kiro is
 2. **06-architecture-guide.md** - **CRITICAL** - System structure (READ BEFORE CODING)
 3. **07-deprecated-systems.md** - **CRITICAL** - What NOT to use (READ BEFORE CODING)
-4. **08-adaptive-qa-protocol.md** - **CRITICAL** - QA gate (RUN BEFORE EVERY COMMIT)
+4. **08-adaptive-qa-protocol.md** - **CRITICAL** - Verification protocol (risk + QA gates)
 5. **01-development-standards.md** - How to write code
 6. **02-workflows.md** - How to work (git, deploy, test)
 7. **03-agent-coordination.md** - How to coordinate with other agents
@@ -84,9 +84,9 @@ For agents working from **other platforms** (Claude, ChatGPT, Cursor, etc.):
 | Kiro Tool | External Equivalent |
 |-----------|---------------------|
 | `readFile` | `cat file.ts` |
-| `grepSearch` | `grep -r "pattern" src/` |
+| `grepSearch` | `rg "pattern" src/` |
 | `fileSearch` | `find . -name "*.ts"` |
-| `getDiagnostics` | `pnpm typecheck` |
+| `getDiagnostics` | `pnpm check` |
 
 ---
 

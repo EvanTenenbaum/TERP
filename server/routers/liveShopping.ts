@@ -1057,10 +1057,7 @@ export const liveShoppingRouter = router({
     )
     .mutation(async ({ input }) => {
       const timeoutSeconds = input.timeoutMinutes * 60;
-      await sessionTimeoutService.setSessionTimeout(input.sessionId, {
-        timeoutSeconds,
-        autoReleaseEnabled: input.autoReleaseEnabled,
-      });
+      await sessionTimeoutService.initializeTimeout(input.sessionId, timeoutSeconds);
       return await sessionTimeoutService.getTimeoutStatus(input.sessionId);
     }),
 
@@ -1068,7 +1065,12 @@ export const liveShoppingRouter = router({
     .use(requirePermission("orders:update"))
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input }) => {
-      await sessionTimeoutService.disableTimeout(input.sessionId);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+      // Disable timeout by setting expiresAt to null
+      await db.update(liveShoppingSessions)
+        .set({ expiresAt: null, timeoutSeconds: 0 })
+        .where(eq(liveShoppingSessions.id, input.sessionId));
       return { success: true };
     }),
 

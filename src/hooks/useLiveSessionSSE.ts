@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+/// <reference lib="dom" />
+import { useEffect, useState, useRef } from "react";
 
 // Types matching the server side services
 interface CartItem {
@@ -32,32 +33,37 @@ interface TimeoutState {
 export const useLiveSessionSSE = (sessionId: number) => {
   const [cart, setCart] = useState<CartState | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
-  const [highlightedBatchId, setHighlightedBatchId] = useState<number | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("DISCONNECTED");
+  const [highlightedBatchId, setHighlightedBatchId] = useState<number | null>(
+    null
+  );
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("DISCONNECTED");
   // MEET-075-FE: Timeout state
   const [timeoutState, setTimeoutState] = useState<TimeoutState | null>(null);
 
+  // eslint-disable-next-line no-undef
   const eventSourceRef = useRef<EventSource | null>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
 
     const connect = () => {
       setConnectionStatus("CONNECTING");
-      
+
       // Use the standard API route for SSE
       const url = `/api/sse/live-shopping/${sessionId}`;
+      // eslint-disable-next-line no-undef
       const evtSource = new EventSource(url);
       eventSourceRef.current = evtSource;
 
       evtSource.onopen = () => {
         setConnectionStatus("CONNECTED");
-        console.log(`[SSE] Connected to session ${sessionId}`);
+        console.info(`[SSE] Connected to session ${sessionId}`);
       };
 
       // Handle Generic Message
-      evtSource.onmessage = (event) => {
+      evtSource.onmessage = event => {
         try {
           const data = JSON.parse(event.data);
           // Handle initial state sync if provided
@@ -71,28 +77,28 @@ export const useLiveSessionSSE = (sessionId: number) => {
       };
 
       // Event: Cart Updated
-      evtSource.addEventListener("CART_UPDATED", (event) => {
+      evtSource.addEventListener("CART_UPDATED", event => {
         try {
           const data = JSON.parse(event.data);
           // Structure expected: { items: [], totalValue: "..." }
           // We might need to map it if the payload structure differs from CartState
           // Assuming the router emits the exact shape returned by getCart
           // Re-calculating totals if not provided, but usually service provides it.
-          
+
           // Reconstruct CartState from items list if raw items array sent
           if (Array.isArray(data)) {
-             let total = 0;
-             data.forEach((item: any) => {
-                 total += (parseFloat(item.quantity) * parseFloat(item.unitPrice));
-             });
-             setCart({
-                 items: data,
-                 totalValue: total.toFixed(2),
-                 itemCount: data.length
-             });
+            let total = 0;
+            data.forEach((item: CartItem) => {
+              total += parseFloat(item.quantity) * parseFloat(item.unitPrice);
+            });
+            setCart({
+              items: data,
+              totalValue: total.toFixed(2),
+              itemCount: data.length,
+            });
           } else {
-             // Assume full object
-             setCart(data);
+            // Assume full object
+            setCart(data);
           }
         } catch (e) {
           console.error("[SSE] Cart update error", e);
@@ -100,7 +106,7 @@ export const useLiveSessionSSE = (sessionId: number) => {
       });
 
       // Event: Session Status Changed
-      evtSource.addEventListener("SESSION_STATUS", (event) => {
+      evtSource.addEventListener("SESSION_STATUS", event => {
         try {
           const data = JSON.parse(event.data);
           setSessionStatus(data.status);
@@ -110,20 +116,20 @@ export const useLiveSessionSSE = (sessionId: number) => {
       });
 
       // Event: Product Highlighted
-      evtSource.addEventListener("HIGHLIGHTED", (event) => {
+      evtSource.addEventListener("HIGHLIGHTED", event => {
         try {
           const data = JSON.parse(event.data);
           setHighlightedBatchId(data.batchId);
 
           // Also update local cart state highlighting if applicable
           setCart(prev => {
-            if(!prev) return null;
+            if (!prev) return null;
             return {
-                ...prev,
-                items: prev.items.map(item => ({
-                    ...item,
-                    isHighlighted: item.batchId === data.batchId
-                }))
+              ...prev,
+              items: prev.items.map(item => ({
+                ...item,
+                isHighlighted: item.batchId === data.batchId,
+              })),
             };
           });
         } catch (e) {
@@ -132,7 +138,8 @@ export const useLiveSessionSSE = (sessionId: number) => {
       });
 
       // MEET-075-FE: Event: Timeout Warning
-      evtSource.addEventListener("TIMEOUT_WARNING", (event) => {
+      // SSE-001 FIX: Changed from TIMEOUT_WARNING to SESSION_TIMEOUT_WARNING to match backend
+      evtSource.addEventListener("SESSION_TIMEOUT_WARNING", event => {
         try {
           const data = JSON.parse(event.data);
           setTimeoutState({
@@ -147,7 +154,7 @@ export const useLiveSessionSSE = (sessionId: number) => {
       });
 
       // MEET-075-FE: Event: Session Timeout
-      evtSource.addEventListener("SESSION_TIMEOUT", (event) => {
+      evtSource.addEventListener("SESSION_TIMEOUT", event => {
         try {
           const data = JSON.parse(event.data);
           setSessionStatus(data.status || "ENDED");
@@ -163,12 +170,17 @@ export const useLiveSessionSSE = (sessionId: number) => {
       });
 
       // MEET-075-FE: Event: Timeout Extended
-      evtSource.addEventListener("TIMEOUT_EXTENDED", (event) => {
+      evtSource.addEventListener("TIMEOUT_EXTENDED", event => {
         try {
           const data = JSON.parse(event.data);
-          const newExpiresAt = data.newExpiresAt ? new Date(data.newExpiresAt) : null;
+          const newExpiresAt = data.newExpiresAt
+            ? new Date(data.newExpiresAt)
+            : null;
           const remainingSeconds = newExpiresAt
-            ? Math.max(0, Math.floor((newExpiresAt.getTime() - Date.now()) / 1000))
+            ? Math.max(
+                0,
+                Math.floor((newExpiresAt.getTime() - Date.now()) / 1000)
+              )
             : -1;
           setTimeoutState({
             remainingSeconds,
@@ -182,24 +194,24 @@ export const useLiveSessionSSE = (sessionId: number) => {
       });
 
       // MEET-075-FE: Event: Session Cancelled
-      evtSource.addEventListener("SESSION_CANCELLED", (event) => {
+      evtSource.addEventListener("SESSION_CANCELLED", event => {
         try {
           const data = JSON.parse(event.data);
           setSessionStatus("CANCELLED");
-          console.log("[SSE] Session cancelled:", data.reason);
+          console.info("[SSE] Session cancelled:", data.reason);
         } catch (e) {
           console.error("[SSE] Session cancelled error", e);
         }
       });
 
-      evtSource.onerror = (err) => {
+      evtSource.onerror = err => {
         console.error("[SSE] Error", err);
         setConnectionStatus("ERROR");
         evtSource.close();
-        
+
         // Auto-reconnect after 3 seconds
         retryTimeoutRef.current = setTimeout(() => {
-            connect();
+          connect();
         }, 3000);
       };
     };

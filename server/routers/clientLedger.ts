@@ -192,7 +192,7 @@ export const clientLedgerRouter = router({
           referenceType: "ORDER",
           referenceId: order.id,
           debitAmount: Number(order.total),
-          creditAmount: undefined,
+          creditAmount: 0,
           runningBalance: 0, // Will be calculated later
           createdBy: order.createdByName || "System",
         });
@@ -231,7 +231,7 @@ export const clientLedgerRouter = router({
           description: `Payment #${payment.paymentNumber} (${payment.paymentMethod})`,
           referenceType: "PAYMENT",
           referenceId: payment.id,
-          debitAmount: undefined,
+          debitAmount: 0,
           creditAmount: Number(payment.amount),
           runningBalance: 0,
           createdBy: payment.createdByName || "System",
@@ -272,7 +272,7 @@ export const clientLedgerRouter = router({
           referenceType: "PAYMENT",
           referenceId: payment.id,
           debitAmount: Number(payment.amount),
-          creditAmount: undefined,
+          creditAmount: 0,
           runningBalance: 0,
           createdBy: payment.createdByName || "System",
         });
@@ -316,7 +316,7 @@ export const clientLedgerRouter = router({
           description: `Purchase Order #${po.poNumber}`,
           referenceType: "PURCHASE_ORDER",
           referenceId: po.id,
-          debitAmount: undefined,
+          debitAmount: 0,
           creditAmount: Number(po.total || 0),
           runningBalance: 0,
           createdBy: po.createdByName || "System",
@@ -351,8 +351,8 @@ export const clientLedgerRouter = router({
           description: adj.description,
           referenceType: "ADJUSTMENT",
           referenceId: adj.id,
-          debitAmount: isDebit ? Number(adj.amount) : undefined,
-          creditAmount: !isDebit ? Number(adj.amount) : undefined,
+          debitAmount: isDebit ? Number(adj.amount) : 0,
+          creditAmount: !isDebit ? Number(adj.amount) : 0,
           runningBalance: 0,
           createdBy: adj.createdByName || "System",
         });

@@ -6,7 +6,7 @@
 
 ## Template Structure
 
-```markdown
+````markdown
 # Agent [NUMBER]: [TASK_CATEGORY]
 
 You are Agent-[NUMBER] working on the TERP project. You MUST follow all protocols exactly as specified.
@@ -16,6 +16,7 @@ You are Agent-[NUMBER] working on the TERP project. You MUST follow all protocol
 [List 2-3 tasks with full details]
 
 Example:
+
 - **ST-005:** Add Missing Database Indexes (P1, 4-6h)
   - Add indexes to foreign keys in drizzle/schema.ts
   - Test query performance improvements
@@ -25,6 +26,12 @@ Example:
 
 You MUST complete ALL of these steps in order. Skipping ANY step is a protocol violation.
 
+### ✅ Verification Over Persuasion (Mandatory)
+
+- Follow `.kiro/steering/08-adaptive-qa-protocol.md`
+- Select SAFE/STRICT/RED mode and apply its verification rules
+- Do not claim success without logs from required checks
+
 ### PHASE 1: Pre-Flight (MANDATORY - 15 minutes)
 
 1. **Clone and Setup**
@@ -32,18 +39,22 @@ You MUST complete ALL of these steps in order. Skipping ANY step is a protocol v
    gh repo clone EvanTenenbaum/TERP
    cd TERP
    ```
+````
 
 2. **Read ALL Protocol Documents** (DO NOT SKIP)
+
    ```bash
    cat docs/DEVELOPMENT_PROTOCOLS.md
    cat docs/CLAUDE_WORKFLOW.md
    cat docs/roadmaps/MASTER_ROADMAP.md
    ```
+
    - You MUST read these files completely
    - You MUST understand the protocols before proceeding
    - You MUST follow every protocol exactly
 
 3. **Generate Session ID**
+
    ```bash
    SESSION_ID="Session-$(date +%Y%m%d)-[task-name]-$(openssl rand -hex 4)"
    echo $SESSION_ID > /tmp/session_id.txt
@@ -60,6 +71,7 @@ You MUST complete ALL of these steps in order. Skipping ANY step is a protocol v
 **CRITICAL:** You MUST register your session BEFORE starting any work.
 
 1. **Create Session File**
+
    ```bash
    SESSION_ID=$(cat /tmp/session_id.txt)
    cat > "docs/sessions/active/${SESSION_ID}.md" << 'EOF'
@@ -80,28 +92,33 @@ You MUST complete ALL of these steps in order. Skipping ANY step is a protocol v
    ```
 
 2. **Register in ACTIVE_SESSIONS.md**
+
    ```bash
    echo "- Agent-[NUMBER]: ${SESSION_ID} - [Task Category] ([TASK-IDs])" >> docs/ACTIVE_SESSIONS.md
    ```
 
 3. **Mark Tasks In Progress in Roadmap**
-   
+
    For EACH task, update docs/roadmaps/MASTER_ROADMAP.md:
    - Change `- [ ]` to `- [~]` (in progress marker)
    - OR update the Status field to "🟡 In Progress"
-   
+
    Example:
+
    ```markdown
    ### ST-005: Add Missing Database Indexes
+
    **Priority:** P1 | **Status:** 🟡 In Progress (Agent-[NUMBER], [SESSION_ID]) | **Effort:** 4-6h
    ```
 
 4. **Create Feature Branch**
+
    ```bash
    git checkout -b "agent-[NUMBER]/[task-category]-${SESSION_ID}"
    ```
 
 5. **Commit and Push Registration** (MANDATORY)
+
    ```bash
    git add docs/sessions/active/ docs/ACTIVE_SESSIONS.md docs/roadmaps/MASTER_ROADMAP.md
    git commit -m "Register Agent-[NUMBER]: [Task Category]
@@ -132,11 +149,12 @@ For EACH task:
    - Include TypeScript types (NO `any` types)
 
 3. **Write Tests** (MANDATORY for code changes)
+
    ```bash
    # Create test file alongside implementation
    # Example: server/routers/myRouter.ts → server/routers/myRouter.test.ts
    ```
-   
+
    Test requirements:
    - Unit tests for all new functions
    - Integration tests for API endpoints
@@ -144,6 +162,7 @@ For EACH task:
    - Error handling tests
 
 4. **Commit Frequently**
+
    ```bash
    git add [files]
    git commit -m "[TASK-ID]: [Clear description of change]"
@@ -161,23 +180,45 @@ For EACH task:
 **You MUST complete ALL these tests before marking tasks complete.**
 
 1. **TypeScript Compilation** (MANDATORY)
+
    ```bash
-   pnpm run check
+   pnpm check
    ```
+
    - MUST show ZERO errors
    - Fix ALL type errors before proceeding
    - NO `any` types allowed
 
 2. **Run All Tests** (MANDATORY)
+
    ```bash
    pnpm test
    ```
+
    - ALL tests MUST pass
    - If any test fails, fix it before proceeding
    - Add new tests for your changes
 
-3. **Manual Testing** (MANDATORY)
-   
+3. **Run Lint** (MANDATORY)
+
+   ```bash
+   pnpm lint
+   ```
+
+4. **Build** (MANDATORY for shipped code)
+
+   ```bash
+   pnpm build
+   ```
+
+5. **E2E Tests** (MANDATORY when UI/business flows change)
+
+   ```bash
+   pnpm test:e2e
+   ```
+
+6. **Manual Testing** (MANDATORY)
+
    For EACH feature you modified:
    - [ ] Start development server: `pnpm dev`
    - [ ] Test the feature works in browser
@@ -187,47 +228,49 @@ For EACH task:
    - [ ] Verify no console errors
    - [ ] Verify no network errors
 
-4. **Code Quality Checks**
+7. **Code Quality Checks**
+
    ```bash
    # Check for console.log statements (remove them)
-   grep -r "console.log" src/ server/ --exclude="*.test.ts"
-   
+   rg "console.log" src/ server/ --glob "!*.test.ts"
+
    # Check for TODO comments (convert to tickets)
-   grep -r "TODO" src/ server/ --exclude="*.test.ts"
+   rg "TODO" src/ server/ --glob "!*.test.ts"
    ```
 
-5. **Create Test Report**
+8. **Create Test Report**
+
    ```bash
    cat > "docs/testing/Agent-[NUMBER]-Test-Report.md" << 'EOF'
    # Test Report - Agent [NUMBER]
-   
+
    **Session:** [SESSION_ID]
    **Date:** $(date +%Y-%m-%d)
-   
+
    ## Tests Run
-   
+
    ### TypeScript Compilation
    - [ ] ✅ PASSED - Zero errors
-   
+
    ### Unit Tests
    - [ ] ✅ PASSED - All tests passing
    - [ ] New tests added: [count]
-   
+
    ### Integration Tests
    - [ ] ✅ PASSED - All endpoints working
-   
+
    ### Manual Testing
    - [ ] ✅ Feature works in browser
    - [ ] ✅ Error handling works
    - [ ] ✅ No console errors
-   
+
    ## Test Coverage
    - Files tested: [list]
    - Test cases added: [count]
-   
+
    ## Issues Found
    - [List any issues and how you fixed them]
-   
+
    ## Sign-off
    All tests passed. Ready for deployment.
    EOF
@@ -236,17 +279,18 @@ For EACH task:
 ### PHASE 5: Documentation (MANDATORY)
 
 1. **Update CHANGELOG.md**
+
    ```bash
    # Add entry at the top of CHANGELOG.md
    cat >> CHANGELOG.md << 'EOF'
    ## [DATE] - Agent [NUMBER]
-   
+
    ### Added
    - [TASK-ID]: [Description of what was added]
-   
+
    ### Fixed
    - [TASK-ID]: [Description of what was fixed]
-   
+
    ### Changed
    - [TASK-ID]: [Description of what changed]
    EOF
@@ -266,25 +310,27 @@ For EACH task:
 ### PHASE 6: Merge to Main (MANDATORY)
 
 1. **Final Pre-Merge Checks**
+
    ```bash
    # Pull latest main
    git checkout main
    git pull origin main
-   
+
    # Merge your branch
    git merge "agent-[NUMBER]/[task-category]-${SESSION_ID}"
-   
+
    # Resolve any conflicts
    # Re-run tests after merge
-   pnpm run check
+   pnpm check
    pnpm test
    ```
 
 2. **Push to Main**
+
    ```bash
    git push origin main
    ```
-   
+
    **VERIFICATION:** Confirm push succeeded.
 
 ### PHASE 7: Deployment Verification (MANDATORY)
@@ -296,10 +342,11 @@ For EACH task:
    - Wait for deployment to complete
 
 2. **Verify Deployment**
+
    ```bash
    # Check deployment status
    curl -I https://terp-app.ondigitalocean.app/
-   
+
    # Should return 200 OK
    ```
 
@@ -320,27 +367,33 @@ For EACH task:
 **Only complete this phase after deployment is verified.**
 
 1. **Update Roadmap to Complete**
-   
+
    For EACH task in docs/roadmaps/MASTER_ROADMAP.md:
-   
+
    Change from:
+
    ```markdown
    ### [TASK-ID]: [Task Name]
+
    **Priority:** P1 | **Status:** 🟡 In Progress | **Effort:** 4-6h
    ```
-   
+
    To:
+
    ```markdown
    ### [TASK-ID]: [Task Name]
+
    **Priority:** P1 | **Status:** ✅ Complete ($(date +%Y-%m-%d)) | **Effort:** 4-6h
    ```
-   
+
    OR change checkbox:
+
    ```markdown
    - [x] **[TASK-ID]: [Task Name]** (Completed: $(date +%Y-%m-%d))
    ```
 
 2. **Update Session File to Complete**
+
    ```bash
    SESSION_ID=$(cat /tmp/session_id.txt)
    # Update docs/sessions/active/${SESSION_ID}.md
@@ -350,17 +403,20 @@ For EACH task:
    ```
 
 3. **Archive Session File**
+
    ```bash
    mv "docs/sessions/active/${SESSION_ID}.md" "docs/sessions/completed/"
    ```
 
 4. **Remove from ACTIVE_SESSIONS.md**
+
    ```bash
    # Remove your session line from docs/ACTIVE_SESSIONS.md
    # Or mark it as complete in the "Completed Today" section
    ```
 
 5. **Final Commit**
+
    ```bash
    git add docs/roadmaps/MASTER_ROADMAP.md docs/sessions/ docs/ACTIVE_SESSIONS.md
    git commit -m "Complete Agent-[NUMBER]: [Task Category]
@@ -368,7 +424,7 @@ For EACH task:
    Tasks completed:
    - [TASK-ID-1]: [Description]
    - [TASK-ID-2]: [Description]
-   
+
    All tests passing, deployment verified."
    git push origin main
    ```
@@ -386,11 +442,13 @@ For EACH task:
 You are ONLY complete when ALL of these are checked:
 
 ### Pre-Flight
+
 - [ ] Cloned repository
 - [ ] Read ALL protocol documents
 - [ ] Generated session ID
 
 ### Registration
+
 - [ ] Created session file in docs/sessions/active/
 - [ ] Registered in ACTIVE_SESSIONS.md
 - [ ] Marked tasks [~] in progress in roadmap
@@ -398,6 +456,7 @@ You are ONLY complete when ALL of these are checked:
 - [ ] Pushed registration to GitHub
 
 ### Implementation
+
 - [ ] Completed all assigned tasks
 - [ ] Wrote clean, production-ready code
 - [ ] NO `any` types used
@@ -405,6 +464,7 @@ You are ONLY complete when ALL of these are checked:
 - [ ] Committed changes frequently
 
 ### Testing
+
 - [ ] TypeScript compilation: ZERO errors
 - [ ] All unit tests: PASSING
 - [ ] All integration tests: PASSING
@@ -412,11 +472,13 @@ You are ONLY complete when ALL of these are checked:
 - [ ] Test report: CREATED
 
 ### Documentation
+
 - [ ] CHANGELOG.md updated
 - [ ] Test report created
 - [ ] Session file updated with progress
 
 ### Deployment
+
 - [ ] Merged to main branch
 - [ ] Pushed to GitHub
 - [ ] Waited for deployment (5-10 min)
@@ -424,6 +486,7 @@ You are ONLY complete when ALL of these are checked:
 - [ ] Tested in production
 
 ### Completion
+
 - [ ] All tasks marked ✅ in roadmap
 - [ ] Session file marked complete
 - [ ] Session archived to completed/
@@ -444,7 +507,7 @@ You are ONLY complete when ALL of these are checked:
 ❌ Marking complete without deployment verification  
 ❌ Not archiving session file  
 ❌ Leaving session in ACTIVE_SESSIONS.md after completion  
-❌ Not updating roadmap to complete  
+❌ Not updating roadmap to complete
 
 ## 📊 TIME ESTIMATES
 
@@ -474,6 +537,7 @@ You have successfully completed your work when:
 ---
 
 **Remember:** Following these protocols ensures high-quality work, prevents conflicts, and maintains project integrity. DO NOT take shortcuts.
+
 ```
 
 ---
@@ -495,3 +559,4 @@ You have successfully completed your work when:
 ## Example: Filled Template
 
 See next file: `AGENT-EXAMPLE-DB-PERFORMANCE.md`
+```

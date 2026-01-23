@@ -1,12 +1,16 @@
 Before we finalize, please confirm you completed ALL of these:
 
 ## Code Quality Checks
-□ Ran: pnpm typecheck (no errors)
+□ Ran: pnpm check (no errors)
 □ Ran: pnpm lint (no errors)
 □ Ran: pnpm test (all passing)
+□ Ran: pnpm build (if code ships)
+□ Ran: pnpm test:e2e or pnpm test:smoke (if UI/workflow changed)
 □ No 'any' types in TypeScript
 □ All functions have explicit return types
 □ Tests written BEFORE implementation (TDD)
+□ Followed SAFE/STRICT/RED verification mode and documented it
+□ Redhat QA self-review completed for STRICT/RED work
 
 ## Session Management
 □ Created session file in docs/sessions/active/

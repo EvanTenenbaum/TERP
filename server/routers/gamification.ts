@@ -480,7 +480,7 @@ export const gamificationRouter = router({
           const result = await db
             .select({
               clientId: clientReferralCodes.clientId,
-              score: sql<number>`${clientReferralCodes.timesUsed}`,
+              score: clientReferralCodes.timesUsed,
               tierName: vipTiers.name,
             })
             .from(clientReferralCodes)
@@ -501,7 +501,7 @@ export const gamificationRouter = router({
           const result = await db
             .select({
               clientId: clientPointsSummary.clientId,
-              score: sql<number>`${clientPointsSummary.totalAchievements}`,
+              score: clientPointsSummary.totalAchievements,
               tierName: vipTiers.name,
             })
             .from(clientPointsSummary)
@@ -784,9 +784,10 @@ export const gamificationRouter = router({
                   summary.lifetimeEarned + achievement.pointsAwarded,
                 totalAchievements: summary.totalAchievements + 1,
                 [medalField]: (summary[medalField] as number) + 1,
-                achievementMarkupDiscount:
+                achievementMarkupDiscount: (
                   Number(summary.achievementMarkupDiscount) +
-                  Number(achievement.markupDiscountPercent || 0),
+                  Number(achievement.markupDiscountPercent || 0)
+                ).toString(),
               })
               .where(eq(clientPointsSummary.clientId, input.clientId));
           } else {

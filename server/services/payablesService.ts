@@ -387,7 +387,7 @@ export async function markPayableDue(batchId: number): Promise<void> {
     .set({
       status: "DUE",
       inventoryZeroAt: now,
-      dueDate: dueDate.toISOString().split("T")[0],
+      dueDate: dueDate,
     })
     .where(eq(vendorPayables.id, payable.id));
 
@@ -470,7 +470,7 @@ export async function recordPayablePayment(
   };
 
   if (newStatus === "PAID") {
-    updateData.paidDate = new Date().toISOString().split("T")[0] as unknown as string;
+    updateData.paidDate = new Date();
   }
 
   if (notes) {
