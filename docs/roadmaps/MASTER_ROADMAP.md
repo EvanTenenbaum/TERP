@@ -245,9 +245,9 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 > Discovered during production 503 error investigation.
 
-| Task    | Description                                                      | Priority | Status                  | Root Cause                                                   |
-| ------- | ---------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------ |
-| BUG-101 | Production 503 - Missing calendar_id column in calendar_events   | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
+| Task    | Description                                                    | Priority | Status                  | Root Cause                                                    |
+| ------- | -------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------- |
+| BUG-101 | Production 503 - Missing calendar_id column in calendar_events | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
 
 **BUG-101 Fix (Jan 23, 2026):**
 
@@ -528,38 +528,43 @@ All 15 tasks from the Cooper Rd Working Session completed:
 > **Root Cause Analysis:** Test suite shows 137 failed / 1928 passed (89% pass rate).
 > **Session:** `claude/fix-inventory-display-tu3S3` (Jan 23, 2026)
 
-| Task          | Description                                       | Priority | Status      | Root Cause     | Est. Impact |
-| ------------- | ------------------------------------------------- | -------- | ----------- | -------------- | ----------- |
-| TEST-INFRA-01 | Fix DOM/jsdom test container setup                | P0       | NOT STARTED | RC-TEST-001    | ~45 tests   |
-| TEST-INFRA-02 | Configure DATABASE_URL for test environment       | P0       | NOT STARTED | RC-TEST-002    | ~28 tests   |
-| TEST-INFRA-03 | Fix TRPC router initialization in tests           | P0       | NOT STARTED | RC-TEST-003    | ~16 tests   |
-| TEST-INFRA-04 | Create comprehensive test fixtures/factories      | P1       | NOT STARTED | RC-TEST-004    | ~30 tests   |
-| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)     | P1       | NOT STARTED | RC-TEST-005    | ~12 tests   |
-| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure)| P2       | NOT STARTED | SEC-AUDIT      | ~1 test     |
+| Task          | Description                                        | Priority | Status      | Root Cause  | Est. Impact |
+| ------------- | -------------------------------------------------- | -------- | ----------- | ----------- | ----------- |
+| TEST-INFRA-01 | Fix DOM/jsdom test container setup                 | P0       | NOT STARTED | RC-TEST-001 | ~45 tests   |
+| TEST-INFRA-02 | Configure DATABASE_URL for test environment        | P0       | NOT STARTED | RC-TEST-002 | ~28 tests   |
+| TEST-INFRA-03 | Fix TRPC router initialization in tests            | P0       | NOT STARTED | RC-TEST-003 | ~16 tests   |
+| TEST-INFRA-04 | Create comprehensive test fixtures/factories       | P1       | NOT STARTED | RC-TEST-004 | ~30 tests   |
+| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)      | P1       | NOT STARTED | RC-TEST-005 | ~12 tests   |
+| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure) | P2       | NOT STARTED | SEC-AUDIT   | ~1 test     |
 
 #### Root Cause Analysis
 
 **RC-TEST-001: DOM Container Infrastructure**
+
 - Error: `Target container is not a DOM element`
 - Affected: `useExport.test.ts`, `usePrint.test.ts`, `ConflictDialog.test.tsx`, `ProductsPage.test.tsx`
 - Fix: Configure jsdom container creation in vitest setup
 
 **RC-TEST-002: Database Connection Missing**
+
 - Error: `Database connection failed - cannot start server without database`
 - Affected: `creditsDb.race-condition.test.ts`, `optimisticLocking.test.ts`, `inventoryDb.test.ts`
 - Fix: Set DATABASE_URL environment variable or mock database adapter
 
 **RC-TEST-003: TRPC Router Not Initialized**
+
 - Error: `No procedure found on path "settings,locations,getAll"`
 - Affected: `auth-bypass.test.ts`, `clients.test.ts`, `inventory.test.ts`
 - Fix: Setup TRPC test client with proper router initialization
 
 **RC-TEST-004: Incomplete Test Fixtures**
+
 - Error: `Cannot read properties of undefined (reading 'invoices')`
 - Affected: `calendarFinancials.test.ts`, `accounting.test.ts`, `analytics.test.ts`
 - Fix: Create factory functions for complete test data
 
 **RC-TEST-005: Async Timing Issues**
+
 - Error: `Unable to find an element with the text`
 - Affected: `ProductsPage.test.tsx`, `SampleManagement.test.tsx`
 - Fix: Use `findByText`/`waitFor` instead of `getByText`
@@ -1563,35 +1568,369 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ---
 
+### RedHat Comprehensive QA Audit Findings (P0-P2) - Added Jan 23, 2026
+
+> Discovered during comprehensive RedHat-grade QA audit with live browser testing.
+> **Source:** Parallel QA agents analyzing 1000+ source files
+> **Method:** Build verification, RBAC audit, business logic analysis, adversarial testing
+> **Verification:** TypeScript ✅ Build ✅ Tests timeout (>3min)
+> **Verdict:** NO-SHIP - 11 P0 blockers found
+> **Total Tasks:** 26 (11 P0, 10 P1, 5 P2)
+
+#### P0 - Critical Security (Authentication/Authorization Bypass)
+
+| Task    | Description                                            | Priority | Status      | Estimate | Module                          |
+| ------- | ------------------------------------------------------ | -------- | ----------- | -------- | ------------------------------- |
+| SEC-030 | Fix RBAC Router Deceptive publicProcedure Alias        | CRITICAL | NOT STARTED | 1h       | server/routers/rbac-roles.ts:2  |
+| SEC-031 | Protect /api/auth/push-schema Endpoint                 | CRITICAL | NOT STARTED | 30m      | server/\_core/simpleAuth.ts:229 |
+| SEC-032 | Protect /api/auth/seed Endpoint                        | CRITICAL | NOT STARTED | 30m      | server/\_core/simpleAuth.ts:246 |
+| SEC-033 | Convert Calendar Router to protectedProcedure (10 eps) | CRITICAL | NOT STARTED | 2h       | server/routers/calendar.ts      |
+| SEC-034 | Convert ProductIntake Router to protectedProcedure     | CRITICAL | NOT STARTED | 1h       | server/routers/productIntake.ts |
+| SEC-035 | Remove/Protect Debug Router in Production              | CRITICAL | NOT STARTED | 1h       | server/routers/debug.ts         |
+
+##### SEC-030: Fix RBAC Router Deceptive publicProcedure Alias
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 1h
+**Module:** `server/routers/rbac-roles.ts`
+**Line:** 2
+**Prompt:** `docs/prompts/SEC-030.md`
+
+**Problem:**
+The RBAC roles router imports `publicProcedure as protectedProcedure`, making all procedures appear protected while actually being completely public. This compromises the entire permission system.
+
+```typescript
+// DANGEROUS: Line 2
+import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+```
+
+**Objectives:**
+
+1. Remove deceptive alias pattern
+2. Use real protectedProcedure from trpc
+3. Verify all RBAC operations require authentication
+
+**Deliverables:**
+
+- [ ] Change import to use actual protectedProcedure
+- [ ] Verify all rbac-roles endpoints require authentication
+- [ ] Add integration test for unauthenticated access rejection
+- [ ] Security audit verification
+- [ ] No regression in RBAC functionality
+
+---
+
+##### SEC-031: Protect /api/auth/push-schema Endpoint
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 30m
+**Module:** `server/_core/simpleAuth.ts:229-243`
+**Prompt:** `docs/prompts/SEC-031.md`
+
+**Problem:**
+Endpoint allows unauthenticated users to push database schema changes. Anyone can modify the database structure remotely.
+
+**Objectives:**
+
+1. Add authentication middleware to endpoint
+2. Restrict to admin users only
+3. Add audit logging for schema changes
+
+**Deliverables:**
+
+- [ ] Add authentication check before schema push
+- [ ] Require admin role for schema modifications
+- [ ] Add audit log entry for schema pushes
+- [ ] Add rate limiting
+- [ ] Add test for unauthenticated rejection
+
+---
+
+##### SEC-033: Convert Calendar Router to protectedProcedure
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 2h
+**Module:** `server/routers/calendar.ts`
+**Prompt:** `docs/prompts/SEC-033.md`
+
+**Problem:**
+Calendar router exposes 10 publicProcedure endpoints including createEvent, updateEvent, deleteEvent. Anyone can manipulate calendar data without authentication.
+
+**Objectives:**
+
+1. Convert all calendar endpoints to protectedProcedure
+2. Add appropriate permission checks
+3. Maintain backward compatibility for authenticated users
+
+**Deliverables:**
+
+- [ ] Convert getEvents to protectedProcedure
+- [ ] Convert getEventById to protectedProcedure
+- [ ] Convert createEvent to protectedProcedure with calendar:create
+- [ ] Convert updateEvent to protectedProcedure with calendar:update
+- [ ] Convert deleteEvent to protectedProcedure with calendar:delete
+
+---
+
+#### P0 - Critical Financial/Data Integrity
+
+| Task   | Description                                 | Priority | Status      | Estimate | Module                              |
+| ------ | ------------------------------------------- | -------- | ----------- | -------- | ----------------------------------- |
+| DI-010 | Fix Credit Number Generation Race Condition | CRITICAL | NOT STARTED | 2h       | server/creditsDb.ts:546-574         |
+| DI-011 | Add Fiscal Period Lock Validation           | CRITICAL | NOT STARTED | 2h       | server/\_core/fiscalPeriod.ts:14-38 |
+| DI-012 | Add Duplicate Refund Prevention             | CRITICAL | NOT STARTED | 1h       | server/routers/refunds.ts:92-158    |
+
+##### DI-010: Fix Credit Number Generation Race Condition
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 2h
+**Module:** `server/creditsDb.ts:546-574`
+**Prompt:** `docs/prompts/DI-010.md`
+
+**Problem:**
+Classic TOCTOU race condition in `generateCreditNumber`. Two concurrent requests can both read the same latest credit number and increment to the same value, causing duplicate credit numbers.
+
+**Objectives:**
+
+1. Use database sequences for atomic number generation
+2. Prevent duplicate credit numbers under concurrent load
+3. Maintain existing credit number format
+
+**Deliverables:**
+
+- [ ] Implement atomic credit number generation using sequences table
+- [ ] Add database transaction around number generation
+- [ ] Add integration test for concurrent generation
+- [ ] Verify no duplicate credit numbers possible
+- [ ] Update documentation
+
+---
+
+##### DI-011: Add Fiscal Period Lock Validation
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 2h
+**Module:** `server/_core/fiscalPeriod.ts:14-38`
+**Prompt:** `docs/prompts/DI-011.md`
+
+**Problem:**
+`getFiscalPeriodId` returns period ID without checking if period is locked/closed. Ledger entries can be posted to closed fiscal periods, corrupting financial statements.
+
+**Objectives:**
+
+1. Add lock status check in fiscal period lookup
+2. Prevent posting to locked periods
+3. Return appropriate error for closed periods
+
+**Deliverables:**
+
+- [ ] Add isLocked/status check to getFiscalPeriodId
+- [ ] Throw error when attempting to post to closed period
+- [ ] Add helper function isPostingAllowed(periodId)
+- [ ] Update all ledger posting code to check period status
+- [ ] Add integration tests
+
+---
+
+#### P0 - Critical Auth Token Issues
+
+| Task    | Description                                | Priority | Status      | Estimate | Module                          |
+| ------- | ------------------------------------------ | -------- | ----------- | -------- | ------------------------------- |
+| SEC-036 | Implement Token Invalidation on Logout     | CRITICAL | NOT STARTED | 4h       | server/\_core/simpleAuth.ts:213 |
+| SEC-037 | Apply Rate Limiting to tRPC Auth Endpoints | CRITICAL | NOT STARTED | 2h       | server/routers/auth.ts:173      |
+
+##### SEC-036: Implement Token Invalidation on Logout
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `server/_core/simpleAuth.ts:213-216`
+**Prompt:** `docs/prompts/SEC-036.md`
+
+**Problem:**
+Logout only clears the cookie but doesn't invalidate the JWT token server-side. Stolen tokens remain valid for 30 days after logout.
+
+**Objectives:**
+
+1. Implement token blacklist for invalidated tokens
+2. Check blacklist during token validation
+3. Clean up expired tokens from blacklist
+
+**Deliverables:**
+
+- [ ] Create token blacklist storage (Redis or DB table)
+- [ ] Add token to blacklist on logout
+- [ ] Check blacklist in auth middleware
+- [ ] Add cleanup job for expired blacklist entries
+- [ ] Add integration tests for token invalidation
+
+---
+
+#### P1 - High Priority (Business Logic & Workflow)
+
+| Task   | Description                                      | Priority | Status      | Estimate | Module                                          |
+| ------ | ------------------------------------------------ | -------- | ----------- | -------- | ----------------------------------------------- |
+| BL-001 | Enforce Credit Limit at Order Creation           | HIGH     | NOT STARTED | 4h       | server/ordersDb.ts:110-401                      |
+| BL-002 | Persist COGS Change Tracking                     | HIGH     | NOT STARTED | 8h       | server/services/cogsChangeIntegrationService.ts |
+| BL-003 | Enforce Order State Machine Transitions          | HIGH     | NOT STARTED | 4h       | server/ordersDb.ts:1504-1509                    |
+| BL-004 | Use Decimal Precision for Financial Calculations | HIGH     | NOT STARTED | 8h       | server/services/marginCalculationService.ts     |
+| BL-005 | Add Invoice Ownership Validation in Payments     | HIGH     | NOT STARTED | 2h       | server/routers/payments.ts:248-260              |
+| BL-006 | Add Inventory Reservation Atomicity              | HIGH     | NOT STARTED | 4h       | server/ordersDb.ts:146-159                      |
+
+##### BL-001: Enforce Credit Limit at Order Creation
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `server/ordersDb.ts:110-401`
+**Prompt:** `docs/prompts/BL-001.md`
+
+**Problem:**
+Orders can be created that exceed client credit limits. Credit check exists in credit.ts but is NOT integrated into order creation flow.
+
+**Objectives:**
+
+1. Integrate credit check into createOrder flow
+2. Validate credit before order confirmation
+3. Return meaningful error when credit limit exceeded
+
+**Deliverables:**
+
+- [ ] Add credit limit check in createOrder function
+- [ ] Add credit limit check in confirmDraftOrder
+- [ ] Return error message with current balance vs limit
+- [ ] Add unit tests for credit limit enforcement
+- [ ] Update documentation
+
+---
+
+##### BL-003: Enforce Order State Machine Transitions
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 4h
+**Module:** `server/ordersDb.ts:1504-1509`
+**Prompt:** `docs/prompts/BL-003.md`
+
+**Problem:**
+Order status transitions are validated ad-hoc, not using the orderStateMachine.ts canTransition() function. Orders can skip states (e.g., PENDING → SHIPPED bypassing PACKED).
+
+**Objectives:**
+
+1. Use orderStateMachine.canTransition() for all status changes
+2. Prevent invalid status transitions
+3. Maintain audit trail of all transitions
+
+**Deliverables:**
+
+- [ ] Import and use canTransition() in updateOrderStatus
+- [ ] Import and use canTransition() in shipOrder
+- [ ] Import and use canTransition() in deliverOrder
+- [ ] Add integration tests for state machine enforcement
+- [ ] Remove redundant ad-hoc validation code
+
+---
+
+#### P1 - High Priority (Public Endpoint Conversion)
+
+| Task    | Description                                       | Priority | Status      | Estimate | Module                              |
+| ------- | ------------------------------------------------- | -------- | ----------- | -------- | ----------------------------------- |
+| SEC-038 | Convert Vendors Router to protectedProcedure      | HIGH     | NOT STARTED | 2h       | server/routers/vendors.ts           |
+| SEC-039 | Convert VendorSupply Router to protectedProcedure | HIGH     | NOT STARTED | 2h       | server/routers/vendorSupply.ts      |
+| SEC-040 | Convert Dashboard Router to protectedProcedure    | HIGH     | NOT STARTED | 2h       | server/routers/dashboardEnhanced.ts |
+| SEC-041 | Convert Tags Router to protectedProcedure         | HIGH     | NOT STARTED | 1h       | server/routers/tags.ts              |
+
+---
+
+#### P2 - Medium Priority (Consistency & Cleanup)
+
+| Task     | Description                                 | Priority | Status      | Estimate | Module                               |
+| -------- | ------------------------------------------- | -------- | ----------- | -------- | ------------------------------------ |
+| CON-001  | Standardize Soft Delete Across All Entities | MEDIUM   | NOT STARTED | 8h       | Multiple files                       |
+| CON-002  | Add Missing onError Handlers to Mutations   | MEDIUM   | NOT STARTED | 4h       | client/src/components/\*_/_.tsx      |
+| CON-003  | Fix Cache Invalidation After Mutations      | MEDIUM   | NOT STARTED | 4h       | client/src/components/\*_/_.tsx      |
+| AUTH-001 | Reduce Permission Cache TTL to 60 Seconds   | MEDIUM   | NOT STARTED | 30m      | server/services/permissionService.ts |
+| CON-004  | Validate Negative Inventory Adjustments     | MEDIUM   | NOT STARTED | 2h       | server/routers/inventoryMovements.ts |
+
+##### CON-001: Standardize Soft Delete Across All Entities
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 8h
+**Module:** Multiple files
+**Prompt:** `docs/prompts/CON-001.md`
+
+**Problem:**
+Inconsistent deletion patterns: orders use soft delete, draft orders use hard delete, calendar events use hard delete, inbox items use hard delete. This breaks audit trails.
+
+**Objectives:**
+
+1. Audit all deletion patterns in codebase
+2. Convert hard deletes to soft deletes where audit trail needed
+3. Maintain consistent deletedAt pattern
+
+**Deliverables:**
+
+- [ ] Audit deletion patterns in all Db files
+- [ ] Convert draft order deletion to soft delete
+- [ ] Convert calendar event deletion to soft delete
+- [ ] Convert inbox item deletion to soft delete
+- [ ] Add migration for missing deletedAt columns
+
+---
+
+**Summary: RedHat Comprehensive QA Audit Tasks**
+
+| Priority  | Count  | Description                                 |
+| --------- | ------ | ------------------------------------------- |
+| P0        | 11     | Security bypass + financial integrity       |
+| P1        | 10     | Business logic + public endpoint conversion |
+| P2        | 5      | Consistency + cleanup                       |
+| **TOTAL** | **26** |                                             |
+
+> **QA Note (Jan 23, 2026):** RedHat-grade audit with live browser testing.
+> 16 parallel QA agents analyzed 1000+ source files.
+> 247 publicProcedure endpoints found across 35 router files.
+> Build verification: TypeScript ✅ Build ✅
+> Full report available in session transcript.
+
+---
+
 ## 📊 MVP Summary
 
-| Category                    | Completed | Open   | Removed | Total   |
-| --------------------------- | --------- | ------ | ------- | ------- |
-| Infrastructure              | 21        | 2      | 1       | 24      |
-| Security                    | 17        | 1      | 0       | 18      |
-| Bug Fixes                   | 46        | 2      | 0       | 48      |
-| API Registration            | 10        | 7      | 0       | 17      |
-| Stability                   | 4         | 0      | 0       | 4       |
-| Quality                     | 12        | 3      | 0       | 15      |
-| Features                    | 29        | 2      | 1       | 32      |
-| UX                          | 12        | 0      | 0       | 12      |
-| Data & Schema               | 8         | 4      | 0       | 12      |
-| Data Seeding (NEW)          | 0         | 11     | 0       | 11      |
-| Data Integrity (QA)         | 8         | 0      | 0       | 8       |
-| Frontend Quality (QA)       | 3         | 8      | 0       | 11      |
-| Backend Quality (QA)        | 5         | 10     | 0       | 15      |
-| Navigation                  | 0         | 12     | 0       | 12      |
-| Improvements                | 7         | 0      | 0       | 7       |
-| E2E Testing                 | 3         | 0      | 0       | 3       |
-| TypeScript (NEW)            | 0         | 1      | 0       | 1       |
-| Work Surface QA (NEW)       | 0         | 4      | 0       | 4       |
-| Mobile Responsiveness (NEW) | 0         | 1      | 0       | 1       |
-| Deprecation Cleanup (NEW)   | 0         | 2      | 0       | 2       |
-| Schema Fixes (NEW)          | 0         | 3      | 0       | 3       |
-| Security Audit (Jan 21)     | 0         | 11     | 0       | 11      |
-| **TOTAL**                   | **185**   | **83** | **2**   | **270** |
+| Category                     | Completed | Open    | Removed | Total   |
+| ---------------------------- | --------- | ------- | ------- | ------- |
+| Infrastructure               | 21        | 2       | 1       | 24      |
+| Security                     | 17        | 1       | 0       | 18      |
+| Bug Fixes                    | 46        | 2       | 0       | 48      |
+| API Registration             | 10        | 7       | 0       | 17      |
+| Stability                    | 4         | 0       | 0       | 4       |
+| Quality                      | 12        | 3       | 0       | 15      |
+| Features                     | 29        | 2       | 1       | 32      |
+| UX                           | 12        | 0       | 0       | 12      |
+| Data & Schema                | 8         | 4       | 0       | 12      |
+| Data Seeding (NEW)           | 0         | 11      | 0       | 11      |
+| Data Integrity (QA)          | 8         | 3       | 0       | 11      |
+| Frontend Quality (QA)        | 3         | 8       | 0       | 11      |
+| Backend Quality (QA)         | 5         | 10      | 0       | 15      |
+| Navigation                   | 0         | 12      | 0       | 12      |
+| Improvements                 | 7         | 0       | 0       | 7       |
+| E2E Testing                  | 3         | 0       | 0       | 3       |
+| TypeScript (NEW)             | 0         | 1       | 0       | 1       |
+| Work Surface QA (NEW)        | 0         | 4       | 0       | 4       |
+| Mobile Responsiveness (NEW)  | 0         | 1       | 0       | 1       |
+| Deprecation Cleanup (NEW)    | 0         | 2       | 0       | 2       |
+| Schema Fixes (NEW)           | 0         | 3       | 0       | 3       |
+| Security Audit (Jan 21)      | 0         | 11      | 0       | 11      |
+| **RedHat QA Audit (Jan 23)** | **0**     | **26**  | **0**   | **26**  |
+| **TOTAL**                    | **185**   | **109** | **2**   | **296** |
 
-> **MVP STATUS: 69% RESOLVED** (185 completed + 2 removed, 83 tasks open)
+> **MVP STATUS: 63% RESOLVED** (185 completed + 2 removed, 109 tasks open)
 > **Data Seeding (Jan 21, 2026):** DATA-021 added for mock product image seeding (live catalog testing).
 > **Security Audit (Jan 21, 2026):** 11 new tasks added from second-pass security audit.
 > **Deep Audit (Jan 20, 2026):** 23 additional tasks added from comprehensive git commit analysis (verified non-duplicates).
@@ -2125,12 +2464,12 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone       | Completed | Open   | Total   | Progress |
-| --------------- | --------- | ------ | ------- | -------- |
-| MVP             | 185       | 0      | 187     | 100%     |
-| Beta            | 0         | 30     | 30      | 0%       |
-| Post-Beta       | 0         | 1      | 1       | 0%       |
-| **TOTAL**       | **185**   | **31** | **218** | ~85%     |
+| Milestone | Completed | Open   | Total   | Progress |
+| --------- | --------- | ------ | ------- | -------- |
+| MVP       | 185       | 0      | 187     | 100%     |
+| Beta      | 0         | 30     | 30      | 0%       |
+| Post-Beta | 0         | 1      | 1       | 0%       |
+| **TOTAL** | **185**   | **31** | **218** | ~85%     |
 
 > **Note**: Beta now includes:
 >
@@ -2155,9 +2494,9 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📱 Communications & Client Messaging
 
-| Task ID         | Description                   | Priority | Status       | Effort   | Specification                                                       |
-| --------------- | ----------------------------- | -------- | ------------ | -------- | ------------------------------------------------------------------- |
-| FEAT-SIGNAL-001 | Signal Messaging Integration  | HIGH     | 📋 SPEC READY | 6 weeks  | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)       |
+| Task ID         | Description                  | Priority | Status        | Effort  | Specification                                                 |
+| --------------- | ---------------------------- | -------- | ------------- | ------- | ------------------------------------------------------------- |
+| FEAT-SIGNAL-001 | Signal Messaging Integration | HIGH     | 📋 SPEC READY | 6 weeks | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md) |
 
 > **FEAT-SIGNAL-001 Details:**
 >
@@ -2167,7 +2506,7 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 > - Real-time delivery via WebSocket integration
 > - Full audit trail for cannabis compliance
 > - Technical Stack: signal-cli-rest-api (Docker), BullMQ/Redis, tRPC, Drizzle schema
-> - RBAC: signal:view, signal:send, signal:template:*, signal:admin
+> - RBAC: signal:view, signal:send, signal:template:\*, signal:admin
 > - 6-phase implementation plan included in spec
 
 ---
