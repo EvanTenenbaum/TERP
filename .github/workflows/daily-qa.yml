@@ -100,9 +100,8 @@ jobs:
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
         run: |
-          # Use db:push for fresh database (creates schema without migrations)
-          # This avoids migration ordering issues
-          pnpm db:push --force || pnpm drizzle-kit push --force || true
+          pnpm db:push
+          # Skip seeding - tests should work with empty database or use existing production data
 
       - name: Build application
         env:

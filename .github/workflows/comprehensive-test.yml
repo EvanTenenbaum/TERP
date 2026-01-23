@@ -65,9 +65,9 @@ jobs:
       - name: Run unit tests
         run: |
           if [ "${{ inputs.verbose }}" = "true" ]; then
-            pnpm test --reporter=verbose || true
+            pnpm test --reporter=verbose
           else
-            pnpm test || true
+            pnpm test
           fi
         env:
           CI: true
@@ -142,16 +142,14 @@ jobs:
       - name: Setup test database
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
-        run: |
-          # Use db:push for fresh database (creates schema without migrations)
-          pnpm db:push --force || pnpm drizzle-kit push --force || true
+        run: pnpm db:push
 
       - name: Run integration tests
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
           CI: true
         run: |
-          pnpm vitest run --config vitest.config.ts "**/*.integration.test.ts" || true
+          pnpm vitest run --config vitest.config.ts "**/*.integration.test.ts"
 
       - name: Upload test results
         if: always()
@@ -225,9 +223,7 @@ jobs:
       - name: Setup test database
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
-        run: |
-          # Use db:push for fresh database (creates schema without migrations)
-          pnpm db:push --force || pnpm drizzle-kit push --force || true
+        run: pnpm db:push
 
       - name: Build application
         env:
@@ -250,7 +246,7 @@ jobs:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
           CI: true
           PLAYWRIGHT_BASE_URL: http://localhost:5173
-        run: pnpm test:e2e || true
+        run: pnpm test:e2e
 
       - name: Upload test results
         if: always()
@@ -302,7 +298,7 @@ jobs:
         env:
           CI: true
           NUM_RUNS: 1000
-        run: pnpm test:property || true
+        run: pnpm test:property
 
       - name: Upload test results
         if: always()
