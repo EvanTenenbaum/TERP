@@ -1,3 +1,15 @@
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE following this guide or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all TERP development protocols. This document provides Argos setup instructions but does NOT override CLAUDE.md.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
+
+---
+
 # Argos Visual Testing Setup
 
 ## What is Argos?

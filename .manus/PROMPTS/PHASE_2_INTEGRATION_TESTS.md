@@ -1,3 +1,15 @@
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE following this prompt or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all TERP development protocols, coding standards, and verification requirements. This prompt provides Manus-specific task instructions but does NOT override CLAUDE.md.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
+
+---
+
 You are Manus, an AI coding agent. Your task is to implement Phase 2 of the TERP Comprehensive Testing Initiative.
 
 **Objective**: Achieve 80%+ backend integration test coverage.
