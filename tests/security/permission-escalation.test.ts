@@ -23,9 +23,7 @@ vi.mock("../../server/routers/debug", () => ({
 
 // Import test utilities
 import { setupDbMock } from "../../server/test-utils/testDb";
-import {
-  setupPermissionMock,
-} from "../../server/test-utils/testPermissions";
+import { setupPermissionMock } from "../../server/test-utils/testPermissions";
 
 // Mock the database
 vi.mock("../../server/db", () => setupDbMock());
@@ -116,12 +114,14 @@ describe("Permission Escalation Prevention", () => {
   describe("SEC-005: Location Router", () => {
     it("rejects user without inventory:locations:manage permission", async () => {
       // Mock permission service to deny
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "inventory:locations:manage";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "inventory:locations:manage";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       await expect(
         caller.settings.locations.create({
@@ -138,7 +138,7 @@ describe("Permission Escalation Prevention", () => {
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(true);
       vi.mocked(permissionService.hasPermission).mockResolvedValue(true);
 
-      const _caller = await createCallerWithUser(mockAdminUser);
+      const caller = await createCallerWithUser(mockAdminUser);
 
       // Should not throw permission error (may throw DB error due to mock)
       try {
@@ -158,7 +158,7 @@ describe("Permission Escalation Prevention", () => {
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(true);
       vi.mocked(permissionService.hasPermission).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockAdminUser);
+      const caller = await createCallerWithUser(mockAdminUser);
 
       // Super admin should bypass permission check
       try {
@@ -179,7 +179,7 @@ describe("Permission Escalation Prevention", () => {
       // The top-level locations router has permission checks, but settings.locations does not
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       // settings.locations.list is a publicProcedure so it always succeeds
       const result = await caller.settings.locations.list();
@@ -189,12 +189,14 @@ describe("Permission Escalation Prevention", () => {
 
   describe("SEC-006: Warehouse Transfers", () => {
     it("rejects user without inventory:transfer permission", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "inventory:transfer";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "inventory:transfer";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       await expect(
         caller.warehouseTransfers.transfer({
@@ -206,12 +208,14 @@ describe("Permission Escalation Prevention", () => {
     });
 
     it("accepts user with inventory:transfer permission", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission === "inventory:transfer";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission === "inventory:transfer";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       try {
         await caller.warehouseTransfers.transfer({
@@ -229,12 +233,14 @@ describe("Permission Escalation Prevention", () => {
 
   describe("SEC-007: Order Enhancements", () => {
     it("rejects user without orders:create permission for recurring orders", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "orders:create";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "orders:create";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       await expect(
         caller.orderEnhancements.createRecurringOrder({
@@ -248,12 +254,14 @@ describe("Permission Escalation Prevention", () => {
     it("returns error response when client not found for payment terms update", async () => {
       // Note: The updateClientPaymentTerms endpoint checks clients:update permission
       // and returns { success: false, error } when client is not found (mocked DB)
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission === "clients:update"; // Allow the permission
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission === "clients:update"; // Allow the permission
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       // This endpoint returns { success: false, error } instead of throwing
       const result = await caller.orderEnhancements.updateClientPaymentTerms({
@@ -266,12 +274,14 @@ describe("Permission Escalation Prevention", () => {
     });
 
     it("rejects user without orders:manage_alerts permission", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "orders:manage_alerts";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "orders:manage_alerts";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       await expect(
         caller.orderEnhancements.createAlertConfiguration({
@@ -283,12 +293,14 @@ describe("Permission Escalation Prevention", () => {
     });
 
     it("accepts user with proper orders:create permission", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission === "orders:create";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission === "orders:create";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       try {
         await caller.orderEnhancements.createRecurringOrder({
@@ -306,12 +318,14 @@ describe("Permission Escalation Prevention", () => {
 
   describe("SEC-008: Settings", () => {
     it("rejects non-admin user for grade creation", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "settings:manage";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "settings:manage";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       // Settings mutations should require admin privileges
       await expect(
@@ -323,12 +337,14 @@ describe("Permission Escalation Prevention", () => {
     });
 
     it("rejects non-admin user for category creation", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "settings:manage";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "settings:manage";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       await expect(
         caller.settings.categories.create({
@@ -339,12 +355,14 @@ describe("Permission Escalation Prevention", () => {
     });
 
     it("rejects non-admin user for subcategory creation", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "settings:manage";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "settings:manage";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
       await expect(
         caller.settings.subcategories.create({
@@ -357,7 +375,7 @@ describe("Permission Escalation Prevention", () => {
     it("accepts admin user for master data management", async () => {
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(true);
 
-      const _caller = await createCallerWithUser(mockAdminUser);
+      const caller = await createCallerWithUser(mockAdminUser);
 
       try {
         await caller.settings.grades.create({
@@ -374,29 +392,34 @@ describe("Permission Escalation Prevention", () => {
 
   describe("SEC-009: VIP Portal Needs", () => {
     it("rejects user without VIP portal access", async () => {
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission !== "vip:access";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission !== "vip:access";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
-      const _caller = await createCallerWithUser(mockLimitedUser);
+      const caller = await createCallerWithUser(mockLimitedUser);
 
-      await expect(
-        caller.alerts.getNeedsForVipPortal()
-      ).rejects.toThrow(TRPCError);
+      await expect(caller.alerts.getNeedsForVipPortal()).rejects.toThrow(
+        TRPCError
+      );
     });
 
     it("prevents cross-client data access in VIP portal", async () => {
       // Even authenticated VIP users should only see their own data
-      vi.mocked(permissionService.hasPermission).mockImplementation(async (userId, permission) => {
-        return permission === "vip:access";
-      });
+      vi.mocked(permissionService.hasPermission).mockImplementation(
+        async (userId, permission) => {
+          return permission === "vip:access";
+        }
+      );
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 
+      // TODO: Complete this test - currently incomplete
       const _caller = await createCallerWithUser(mockLimitedUser);
 
       // The implementation should filter results by ctx.vipPortalClientId
-      // This test verifies the endpoint doesn't expose
+      // This test verifies the endpoint doesn't expose cross-client data
     });
   });
 });
