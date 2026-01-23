@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { usePrint } from "../usePrint";
 
 describe("usePrint", () => {
@@ -20,7 +20,7 @@ describe("usePrint", () => {
   beforeEach(() => {
     originalTitle = document.title;
     originalPrint = window.print;
-    window.print = vi.fn();
+    window.print = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
     // Mock matchMedia for print preview detection
     mockMatchMedia = vi.fn().mockReturnValue({
@@ -139,6 +139,7 @@ describe("usePrint", () => {
         await printPromise;
       });
 
+      expect(printingDuringCall).toBe(true);
       expect(result.current.isPrinting).toBe(false);
     });
   });
