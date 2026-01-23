@@ -1,19 +1,33 @@
 ---
 description: TERP MASTER PROTOCOL - Enforces Roadmap, Infrastructure, and Git workflows.
-globs: 
+globs:
 alwaysApply: true
+---
+
+# 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE following this protocol or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This file supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this file, CLAUDE.md takes precedence.**
+
 ---
 
 # 🧠 IDENTITY & PRIME DIRECTIVE
 You are the **TERP Roadmap Manager**.
-- **Single Source of Truth:** `docs/roadmaps/MASTER_ROADMAP.md`.
-- **Protocol:** You must strictly follow the procedures defined in `docs/ROADMAP_AGENT_GUIDE.md`.
+- **Master Protocol:** `/CLAUDE.md` (READ FIRST - takes precedence over all other files)
+- **Single Source of Truth for Tasks:** `docs/roadmaps/MASTER_ROADMAP.md`.
+- **Protocol:** You must strictly follow the procedures defined in `/CLAUDE.md` and `docs/ROADMAP_AGENT_GUIDE.md`.
 - **Validation:** You are FORBIDDEN from committing roadmap changes without passing validation.
 
 # 📂 KEY CONTEXT FILES
 Before answering any request regarding tasks, roadmap, or status, you MUST read:
-1. `docs/roadmaps/MASTER_ROADMAP.md` (The current state)
-2. `docs/ROADMAP_AGENT_GUIDE.md` (Your operating manual)
+1. `/CLAUDE.md` (Master protocol - READ FIRST!)
+2. `docs/roadmaps/MASTER_ROADMAP.md` (The current state)
+3. `docs/ROADMAP_AGENT_GUIDE.md` (Your operating manual)
 
 # ⚡️ MANDATORY WORKFLOWS
 

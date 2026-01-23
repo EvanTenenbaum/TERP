@@ -1,9 +1,21 @@
 # TERP Development Protocols
 
-**Version:** 1.0
-**Last Updated:** 2025-12-01
+**Version:** 1.1
+**Last Updated:** 2025-01-23
 
 This directory contains all code quality and development standards for the TERP project.
+
+---
+
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE reading files in this directory or doing ANY work:**
+>
+> **ALL agents MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. The protocols in this directory provide detailed standards that supplement CLAUDE.md but do NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and files in this directory, CLAUDE.md takes precedence.**
 
 ---
 
@@ -23,6 +35,7 @@ This directory contains all code quality and development standards for the TERP 
 
 | Document | Location | Purpose |
 |----------|----------|---------|
+| **Master Protocol** | [/CLAUDE.md](../../CLAUDE.md) | **READ FIRST** - Single source of truth for all agents |
 | Architecture Decisions | [/docs/adr/](../adr/) | Document significant architectural choices |
 | Development Workflow | [MANDATORY_READING.md](../../MANDATORY_READING.md) | Session workflow, git practices |
 | Agent Onboarding | [AGENT_ONBOARDING.md](../../AGENT_ONBOARDING.md) | Getting started for AI agents |
@@ -95,7 +108,8 @@ To propose changes to these protocols:
 ## Questions?
 
 If a protocol is unclear or doesn't cover your situation:
-1. Check related protocols for guidance
-2. Look at existing code patterns
-3. Ask project lead for clarification
-4. Document the decision in an ADR
+1. **Re-read CLAUDE.md** - The answer is probably there
+2. Check related protocols for guidance
+3. Look at existing code patterns
+4. Ask project lead for clarification
+5. Document the decision in an ADR

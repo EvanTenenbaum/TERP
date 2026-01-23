@@ -6,6 +6,18 @@ Each prompt contains everything an AI agent needs to understand their role - cre
 
 ---
 
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE using any agent prompt in this directory:**
+>
+> **ALL agents MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. The prompts in this directory supplement CLAUDE.md but do NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and files in this directory, CLAUDE.md takes precedence.**
+
+---
+
 ## 🚀 Quick Start
 
 Simply give an AI agent one of these URLs:
@@ -76,6 +88,7 @@ GOOGLE_GEMINI_API_KEY="your-gemini-api-key"
 
 ## 📚 Resources
 
+- **Master Protocol**: `/CLAUDE.md` (READ FIRST!)
 - **TERP Repository**: https://github.com/EvanTenenbaum/TERP
 - **Environment Setup**: docs/ENVIRONMENT_VARIABLES.md
 - **PM System Overview**: product-management/SYSTEM_DESIGN.md

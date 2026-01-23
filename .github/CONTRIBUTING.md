@@ -4,6 +4,18 @@ Thank you for your interest in contributing to TERP! This document provides guid
 
 ---
 
+## 🚨 For AI Agents: READ CLAUDE.md FIRST
+
+> **BEFORE following this guide or doing ANY work:**
+>
+> **ALL AI agents MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This contributing guide supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
+
+---
+
 ## 🚀 Getting Started
 
 1. **Fork the repository** and clone it locally
@@ -42,14 +54,19 @@ All contributions must follow our testing best practices. Before committing any 
 
 ## 🤖 For AI Agents
 
-If you are an AI agent working on this codebase, you **must** read and follow the [AI Agent Integration Guide](docs/testing/TERP_AI_AGENT_INTEGRATION_GUIDE.md).
+If you are an AI agent working on this codebase, you **must**:
+
+1. **Read `/CLAUDE.md` FIRST** - This is the master protocol document
+2. Follow the [AI Agent Integration Guide](docs/testing/TERP_AI_AGENT_INTEGRATION_GUIDE.md)
 
 **Key requirements**:
 
+- **Read CLAUDE.md before doing ANY work**
 - All new code must include tests
 - Follow the TDD workflow (Red → Green → Refactor)
 - Run the pre-commit checklist before every commit
 - Never bypass quality checks
+- Follow verification protocols in CLAUDE.md Section 2
 
 ---
 

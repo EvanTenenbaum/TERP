@@ -4,9 +4,21 @@
 
 ---
 
+## 🚨 MANDATORY: READ CLAUDE.md FIRST
+
+> **BEFORE following this prompt or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This prompt supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
+
+---
+
 ## ✅ Verification Over Persuasion (Mandatory)
 
-Follow `.kiro/steering/08-adaptive-qa-protocol.md` when approving or directing work.
+Follow `/CLAUDE.md` Section 2 (Verification Protocol) and `.kiro/steering/08-adaptive-qa-protocol.md` when approving or directing work.
 
 - Require evidence-backed verification before marking tasks complete
 - Escalate to STRICT/RED mode when risk is unclear

@@ -4,11 +4,27 @@ inclusion: manual
 
 # 🔄 External Agent Handoff Protocol
 
-**Version**: 1.0  
-**Last Updated**: 2025-12-02  
+**Version**: 1.1
+**Last Updated**: 2025-01-23
 **Status**: MANDATORY for non-Kiro agents
 
 This document is for AI agents working on TERP from **other platforms** (Claude, ChatGPT, etc.) that don't have automatic access to Kiro steering files.
+
+---
+
+## 🚨 MANDATORY FIRST STEP: READ CLAUDE.md
+
+> **BEFORE reading the rest of this document or doing ANY work:**
+>
+> **ALL agents MUST first read `/CLAUDE.md`** in the repository root.
+>
+> ```bash
+> cat CLAUDE.md
+> ```
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This handoff document supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
 
 ---
 
@@ -18,6 +34,7 @@ You're working in a different environment (Claude, ChatGPT, Cursor, etc.). This 
 
 - ❌ You don't have Kiro's specialized tools (`readFile`, `strReplace`, `grepSearch`, `getDiagnostics`)
 - ❌ Steering files are NOT automatically included in your context
+- ✅ You MUST read `/CLAUDE.md` FIRST - this is mandatory!
 - ✅ You MUST read all protocol files manually using `cat`
 - ✅ You MUST use standard bash/git commands (see tool reference below)
 - ✅ You MUST follow the same code standards as Kiro agents
@@ -28,13 +45,21 @@ You're working in a different environment (Claude, ChatGPT, Cursor, etc.). This 
 
 Before starting ANY work, read these files in order:
 
+### 0. CLAUDE.md (MUST READ FIRST!)
+
+```bash
+cat CLAUDE.md
+```
+
+**Purpose**: Master protocol document - the single source of truth for all agent instructions. This is MANDATORY and supersedes all other documents in case of conflicts.
+
 ### 1. Core Identity
 
 ```bash
 cat .kiro/steering/00-core-identity.md
 ```
 
-**Purpose**: Understand who you are, what TERP is, universal rules
+**Purpose**: Understand who you are, what TERP is, universal rules (supplements CLAUDE.md)
 
 ### 2. Development Standards
 
@@ -91,6 +116,7 @@ cat agent-prompts/qa-agent.md
 
 Before writing ANY code:
 
+- [ ] **Read CLAUDE.md FIRST**: `cat CLAUDE.md` (MANDATORY!)
 - [ ] Read all steering files above
 - [ ] Read the adaptive verification protocol
 - [ ] Read your role-specific guide
@@ -415,11 +441,12 @@ Before EVERY commit:
 
 ## 🆘 When You're Stuck
 
-1. **Re-read steering files** - The answer is probably there
-2. **Check existing code** - Look for similar patterns
-3. **Search codebase**: `rg "pattern" src/`
-4. **Check documentation**: `docs/protocols/`
-5. **Ask user** - When truly uncertain
+1. **Re-read CLAUDE.md** - The answer is probably there
+2. **Re-read steering files** - Additional details
+3. **Check existing code** - Look for similar patterns
+4. **Search codebase**: `rg "pattern" src/`
+5. **Check documentation**: `docs/protocols/`
+6. **Ask user** - When truly uncertain
 
 ---
 
@@ -509,6 +536,7 @@ bash scripts/watch-deploy.sh
 
 ### Essential Files
 
+- **Master Protocol**: `/CLAUDE.md` (READ FIRST!)
 - **Steering**: `.kiro/steering/*.md`
 - **Roadmap**: `docs/roadmaps/MASTER_ROADMAP.md`
 - **Sessions**: `docs/ACTIVE_SESSIONS.md`

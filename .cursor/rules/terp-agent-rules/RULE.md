@@ -1,14 +1,26 @@
-**Version**: 1.0  
-**Last Updated**: 2025-12-16  
+**Version**: 1.1
+**Last Updated**: 2025-01-23
 **Purpose**: Provide identical context to ALL AI agents regardless of platform
 
 ---
 
-> ⚠️ **MANDATORY READING**
+> 🚨 **MANDATORY: READ CLAUDE.md FIRST**
 >
-> This document contains ALL protocols that Kiro IDE agents receive automatically.
+> **BEFORE reading this document or doing ANY work:**
+>
+> **You MUST first read `/CLAUDE.md`** in the repository root.
+>
+> CLAUDE.md is the **single source of truth** for all agent protocols. It contains the consolidated, authoritative instructions for working on TERP. This document supplements CLAUDE.md but does NOT override it.
+>
+> **If there are ANY conflicts between CLAUDE.md and this document, CLAUDE.md takes precedence.**
+
+---
+
+> ⚠️ **Additional Reading (After CLAUDE.md)**
+>
+> This document contains detailed protocols that supplement CLAUDE.md.
 > If you are NOT in Kiro (Claude, ChatGPT, Cursor, Copilot, etc.), you MUST read
-> and follow this entire document before doing ANY work.
+> and follow this entire document after reading CLAUDE.md.
 >
 > **Estimated reading time**: 15 minutes
 > **Skipping this will cause problems.**
@@ -813,11 +825,12 @@ You've succeeded when:
 
 # When You're Stuck
 
-1. **Re-read this document** - The answer is probably here
-2. **Check existing code** - Look for similar patterns
-3. **Search codebase**: `grep -r "pattern" src/`
-4. **Check documentation**: `docs/protocols/`
-5. **Ask user** - When truly uncertain
+1. **Re-read CLAUDE.md** - The answer is probably there
+2. **Re-read this document** - Additional details
+3. **Check existing code** - Look for similar patterns
+4. **Search codebase**: `grep -r "pattern" src/`
+5. **Check documentation**: `docs/protocols/`
+6. **Ask user** - When truly uncertain
 
 ---
 
