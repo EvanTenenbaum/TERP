@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.8
-**Last Updated:** 2026-01-21 (Merged security audit + DATA-021 + FEAT-SIGNAL-001)
+**Version:** 6.9
+**Last Updated:** 2026-01-23 (NAV-018: Navigation reorganization based on user workflow analysis)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -245,9 +245,9 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 > Discovered during production 503 error investigation.
 
-| Task    | Description                                                      | Priority | Status                  | Root Cause                                                   |
-| ------- | ---------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------ |
-| BUG-101 | Production 503 - Missing calendar_id column in calendar_events   | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
+| Task    | Description                                                    | Priority | Status                  | Root Cause                                                    |
+| ------- | -------------------------------------------------------------- | -------- | ----------------------- | ------------------------------------------------------------- |
+| BUG-101 | Production 503 - Missing calendar_id column in calendar_events | P0       | ✅ FIXED (Jan 23, 2026) | Schema expected calendar_id column not created by autoMigrate |
 
 **BUG-101 Fix (Jan 23, 2026):**
 
@@ -483,6 +483,39 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | UX-013 | Fix Mirrored Elements Issue                    | LOW      | ✅ COMPLETE |
 | UX-014 | Make Optional Fields Clear                     | LOW      | ✅ COMPLETE |
 
+### Navigation Reorganization (Jan 23, 2026)
+
+| Task    | Description                                           | Priority | Status      |
+| ------- | ----------------------------------------------------- | -------- | ----------- |
+| NAV-018 | Reorganize Navigation Based on User Workflow Analysis | MEDIUM   | ✅ COMPLETE |
+
+> **NAV-018 Details:**
+>
+> Navigation reorganized based on deep analysis of user flows and personas from `docs/features/USER_FLOWS.md`:
+>
+> **Sales Group (13 → 11 items):**
+>
+> - Removed Pick & Pack (moved to Inventory - warehouse function)
+> - Removed Invoices (moved to Finance - accounting function)
+>
+> **Inventory Group (8 → 11 items):**
+>
+> - Added Direct Intake (`/intake`) - critical daily workflow for intake staff
+> - Added Pick & Pack (`/pick-pack`) - warehouse fulfillment (moved from Sales)
+> - Added Locations (`/locations`) - batch assignment to warehouse positions
+>
+> **Finance Group (5 → 6 items):**
+>
+> - Added Invoices (`/accounting/invoices`) - moved from Sales
+>
+> **Admin Group (8 → 9 items):**
+>
+> - Added Inbox (`/inbox`) - system messaging feature was inaccessible
+>
+> **Key Commits:** `27fc9c6` feat(nav): Reorganize navigation based on user workflow analysis
+>
+> **QA Status:** ✅ PASSED - Build passes, no test regressions, all routes verified
+
 ---
 
 ### Infrastructure Tasks (P2)
@@ -528,38 +561,43 @@ All 15 tasks from the Cooper Rd Working Session completed:
 > **Root Cause Analysis:** Test suite shows 137 failed / 1928 passed (89% pass rate).
 > **Session:** `claude/fix-inventory-display-tu3S3` (Jan 23, 2026)
 
-| Task          | Description                                       | Priority | Status      | Root Cause     | Est. Impact |
-| ------------- | ------------------------------------------------- | -------- | ----------- | -------------- | ----------- |
-| TEST-INFRA-01 | Fix DOM/jsdom test container setup                | P0       | NOT STARTED | RC-TEST-001    | ~45 tests   |
-| TEST-INFRA-02 | Configure DATABASE_URL for test environment       | P0       | NOT STARTED | RC-TEST-002    | ~28 tests   |
-| TEST-INFRA-03 | Fix TRPC router initialization in tests           | P0       | NOT STARTED | RC-TEST-003    | ~16 tests   |
-| TEST-INFRA-04 | Create comprehensive test fixtures/factories      | P1       | NOT STARTED | RC-TEST-004    | ~30 tests   |
-| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)     | P1       | NOT STARTED | RC-TEST-005    | ~12 tests   |
-| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure)| P2       | NOT STARTED | SEC-AUDIT      | ~1 test     |
+| Task          | Description                                        | Priority | Status      | Root Cause  | Est. Impact |
+| ------------- | -------------------------------------------------- | -------- | ----------- | ----------- | ----------- |
+| TEST-INFRA-01 | Fix DOM/jsdom test container setup                 | P0       | NOT STARTED | RC-TEST-001 | ~45 tests   |
+| TEST-INFRA-02 | Configure DATABASE_URL for test environment        | P0       | NOT STARTED | RC-TEST-002 | ~28 tests   |
+| TEST-INFRA-03 | Fix TRPC router initialization in tests            | P0       | NOT STARTED | RC-TEST-003 | ~16 tests   |
+| TEST-INFRA-04 | Create comprehensive test fixtures/factories       | P1       | NOT STARTED | RC-TEST-004 | ~30 tests   |
+| TEST-INFRA-05 | Fix async element detection (findBy vs getBy)      | P1       | NOT STARTED | RC-TEST-005 | ~12 tests   |
+| TEST-INFRA-06 | Fix admin endpoint security test (publicProcedure) | P2       | NOT STARTED | SEC-AUDIT   | ~1 test     |
 
 #### Root Cause Analysis
 
 **RC-TEST-001: DOM Container Infrastructure**
+
 - Error: `Target container is not a DOM element`
 - Affected: `useExport.test.ts`, `usePrint.test.ts`, `ConflictDialog.test.tsx`, `ProductsPage.test.tsx`
 - Fix: Configure jsdom container creation in vitest setup
 
 **RC-TEST-002: Database Connection Missing**
+
 - Error: `Database connection failed - cannot start server without database`
 - Affected: `creditsDb.race-condition.test.ts`, `optimisticLocking.test.ts`, `inventoryDb.test.ts`
 - Fix: Set DATABASE_URL environment variable or mock database adapter
 
 **RC-TEST-003: TRPC Router Not Initialized**
+
 - Error: `No procedure found on path "settings,locations,getAll"`
 - Affected: `auth-bypass.test.ts`, `clients.test.ts`, `inventory.test.ts`
 - Fix: Setup TRPC test client with proper router initialization
 
 **RC-TEST-004: Incomplete Test Fixtures**
+
 - Error: `Cannot read properties of undefined (reading 'invoices')`
 - Affected: `calendarFinancials.test.ts`, `accounting.test.ts`, `analytics.test.ts`
 - Fix: Create factory functions for complete test data
 
 **RC-TEST-005: Async Timing Issues**
+
 - Error: `Unable to find an element with the text`
 - Affected: `ProductsPage.test.tsx`, `SampleManagement.test.tsx`
 - Fix: Use `findByText`/`waitFor` instead of `getByText`
@@ -2125,12 +2163,12 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone       | Completed | Open   | Total   | Progress |
-| --------------- | --------- | ------ | ------- | -------- |
-| MVP             | 185       | 0      | 187     | 100%     |
-| Beta            | 0         | 30     | 30      | 0%       |
-| Post-Beta       | 0         | 1      | 1       | 0%       |
-| **TOTAL**       | **185**   | **31** | **218** | ~85%     |
+| Milestone | Completed | Open   | Total   | Progress |
+| --------- | --------- | ------ | ------- | -------- |
+| MVP       | 185       | 0      | 187     | 100%     |
+| Beta      | 0         | 30     | 30      | 0%       |
+| Post-Beta | 0         | 1      | 1       | 0%       |
+| **TOTAL** | **185**   | **31** | **218** | ~85%     |
 
 > **Note**: Beta now includes:
 >
@@ -2155,9 +2193,9 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📱 Communications & Client Messaging
 
-| Task ID         | Description                   | Priority | Status       | Effort   | Specification                                                       |
-| --------------- | ----------------------------- | -------- | ------------ | -------- | ------------------------------------------------------------------- |
-| FEAT-SIGNAL-001 | Signal Messaging Integration  | HIGH     | 📋 SPEC READY | 6 weeks  | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)       |
+| Task ID         | Description                  | Priority | Status        | Effort  | Specification                                                 |
+| --------------- | ---------------------------- | -------- | ------------- | ------- | ------------------------------------------------------------- |
+| FEAT-SIGNAL-001 | Signal Messaging Integration | HIGH     | 📋 SPEC READY | 6 weeks | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md) |
 
 > **FEAT-SIGNAL-001 Details:**
 >
@@ -2167,7 +2205,7 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 > - Real-time delivery via WebSocket integration
 > - Full audit trail for cannabis compliance
 > - Technical Stack: signal-cli-rest-api (Docker), BullMQ/Redis, tRPC, Drizzle schema
-> - RBAC: signal:view, signal:send, signal:template:*, signal:admin
+> - RBAC: signal:view, signal:send, signal:template:\*, signal:admin
 > - 6-phase implementation plan included in spec
 
 ---
