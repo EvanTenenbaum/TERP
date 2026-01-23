@@ -1122,6 +1122,54 @@ export async function runAutoMigrations() {
       }
     }
 
+    // ========================================================================
+    // CALENDAR_ID COLUMN ON CALENDAR_EVENTS TABLE
+    // ========================================================================
+    // Add calendar_id column to calendar_events table if it doesn't exist
+    // This fixes the Calendar page database error in production
+    // Check if calendar_events table exists first
+    let calendarEventsTableExists = false;
+    try {
+      await db.execute(sql`SELECT 1 FROM calendar_events LIMIT 1`);
+      calendarEventsTableExists = true;
+    } catch {
+      console.info("  ℹ️  calendar_events table not found - skipping calendar_id column");
+    }
+
+    if (calendarEventsTableExists) {
+      // Add calendar_id column
+      try {
+        await db.execute(sql`
+          ALTER TABLE calendar_events
+          ADD COLUMN calendar_id INT NULL
+        `);
+        console.info("  ✅ Added calendar_id column to calendar_events");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.info("  ℹ️  calendar_events.calendar_id already exists");
+        } else {
+          console.warn("  ⚠️  calendar_events.calendar_id:", errMsg);
+        }
+      }
+
+      // Add index for the column
+      try {
+        await db.execute(sql`
+          CREATE INDEX idx_calendar_events_calendar_id
+          ON calendar_events (calendar_id)
+        `);
+        console.info("  ✅ Added idx_calendar_events_calendar_id index");
+      } catch (indexError) {
+        const indexErrMsg = indexError instanceof Error ? indexError.message : String(indexError);
+        if (indexErrMsg.includes("Duplicate key name")) {
+          console.info("  ℹ️  idx_calendar_events_calendar_id index already exists");
+        } else {
+          console.warn("  ⚠️  idx_calendar_events_calendar_id index:", indexErrMsg);
+        }
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.log(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
