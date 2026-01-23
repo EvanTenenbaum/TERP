@@ -48,13 +48,22 @@ let getAllMock = vi.fn();
 let refetchMock = vi.fn();
 
 vi.mock("@/components/samples/SampleList", () => ({
-  SampleList: (props: { statusFilter: string; searchQuery: string; samples: unknown[]; isLoading: boolean }) => {
+  SampleList: (props: {
+    statusFilter: string;
+    searchQuery: string;
+    samples: unknown[];
+    isLoading: boolean;
+  }) => {
     capturedStatus = props.statusFilter;
     capturedSearch = props.searchQuery;
     return (
       <div data-testid="sample-list-mock">
-        <span data-testid="sample-count">{props.samples?.length ?? 0} samples</span>
-        <span data-testid="loading-state">{props.isLoading ? 'loading' : 'loaded'}</span>
+        <span data-testid="sample-count">
+          {props.samples?.length ?? 0} samples
+        </span>
+        <span data-testid="loading-state">
+          {props.isLoading ? "loading" : "loaded"}
+        </span>
       </div>
     );
   },
@@ -78,7 +87,9 @@ vi.mock("@/components/samples/LocationUpdateDialog", () => ({
 }));
 
 vi.mock("@/components/samples/ExpiringSamplesWidget", () => ({
-  ExpiringSamplesWidget: () => <div data-testid="expiring-widget">Expiring Widget</div>,
+  ExpiringSamplesWidget: () => (
+    <div data-testid="expiring-widget">Expiring Widget</div>
+  ),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -108,7 +119,10 @@ vi.mock("@/lib/trpc", () => ({
       },
       getPending: {
         useQuery: () => ({
-          data: { items: sampleItems.filter(s => s.sampleRequestStatus === 'PENDING'), pagination: { total: 1 } },
+          data: {
+            items: sampleItems.filter(s => s.sampleRequestStatus === "PENDING"),
+            pagination: { total: 1 },
+          },
           isLoading: false,
         }),
       },
@@ -158,7 +172,14 @@ vi.mock("@/lib/trpc", () => ({
     },
     clients: {
       list: {
-        useQuery: () => ({ data: { items: [{ id: 1, name: "Client A" }, { id: 2, name: "Client B" }] } }),
+        useQuery: () => ({
+          data: {
+            items: [
+              { id: 1, name: "Client A" },
+              { id: 2, name: "Client B" },
+            ],
+          },
+        }),
       },
     },
     search: {
@@ -199,7 +220,9 @@ describe("SampleManagement", () => {
     it("defaults to All tab and renders search", () => {
       render(<SampleManagement />);
 
-      expect(screen.getByPlaceholderText(/search samples/i)).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(/search samples/i)
+      ).toBeInTheDocument();
       expect(capturedStatus).toBe("ALL");
     });
 
@@ -284,7 +307,9 @@ describe("SampleManagement", () => {
 
       render(<SampleManagement />);
 
-      expect(screen.getByRole("button", { name: /Create New Sample Request/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Create New Sample Request/i })
+      ).toBeInTheDocument();
     });
 
     it("provides refresh button in empty state", () => {
@@ -298,7 +323,9 @@ describe("SampleManagement", () => {
 
       render(<SampleManagement />);
 
-      expect(screen.getByRole("button", { name: /Refresh/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Refresh/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -315,7 +342,7 @@ describe("SampleManagement", () => {
       render(<SampleManagement />);
 
       expect(screen.getByTestId("samples-error")).toBeInTheDocument();
-      expect(screen.getByText(/Error Loading Samples/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load samples/i)).toBeInTheDocument();
     });
 
     it("provides retry button on error", () => {
@@ -329,7 +356,7 @@ describe("SampleManagement", () => {
 
       render(<SampleManagement />);
 
-      const retryButton = screen.getByRole("button", { name: /Retry/i });
+      const retryButton = screen.getByRole("button", { name: /Try again/i });
       expect(retryButton).toBeInTheDocument();
 
       fireEvent.click(retryButton);

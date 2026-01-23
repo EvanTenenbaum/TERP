@@ -90,10 +90,13 @@ describe("AppSidebar navigation", () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByRole("link", { name: /Orders/i })).toHaveAttribute(
-      "aria-current",
-      "page"
+    // Multiple "Orders" links may exist, find the one with aria-current="page"
+    const ordersLinks = screen.getAllByRole("link", { name: /Orders/i });
+    const activeLink = ordersLinks.find(
+      link => link.getAttribute("aria-current") === "page"
     );
+    expect(activeLink).toBeDefined();
+    expect(activeLink).toHaveAttribute("aria-current", "page");
   });
 
   it("shows user actions", () => {
