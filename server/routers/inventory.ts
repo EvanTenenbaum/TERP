@@ -284,8 +284,9 @@ export const inventoryRouter = router({
 
         // Apply status filter
         if (input.status && input.status.length > 0) {
+          const statusFilter = input.status;
           filteredItems = filteredItems.filter(item =>
-            input.status!.includes(item.status)
+            statusFilter.includes(item.status)
           );
         }
 
@@ -312,16 +313,19 @@ export const inventoryRouter = router({
 
         // Apply age range filter
         if (input.minAge !== undefined) {
-          filteredItems = filteredItems.filter(item => item.ageDays >= input.minAge!);
+          const minAge = input.minAge;
+          filteredItems = filteredItems.filter(item => item.ageDays >= minAge);
         }
         if (input.maxAge !== undefined) {
-          filteredItems = filteredItems.filter(item => item.ageDays <= input.maxAge!);
+          const maxAge = input.maxAge;
+          filteredItems = filteredItems.filter(item => item.ageDays <= maxAge);
         }
 
         // Apply batch ID filter
         if (input.batchId) {
+          const batchIdFilter = input.batchId.toLowerCase();
           filteredItems = filteredItems.filter(item =>
-            item.code.toLowerCase().includes(input.batchId!.toLowerCase())
+            item.code.toLowerCase().includes(batchIdFilter)
           );
         }
 
@@ -425,17 +429,38 @@ export const inventoryRouter = router({
   /**
    * Get aging inventory summary for dashboard widget
    * 4.A.4: MEET-025 - Dashboard Aging Quick View
+   *
+   * INV-CONSISTENCY-001: Updated to only show aging for sellable inventory
+   * (LIVE and PHOTOGRAPHY_COMPLETE statuses). Previously showed all batches
+   * which caused confusion with dashboard totals.
    */
   getAgingSummary: protectedProcedure
     .use(requirePermission("inventory:read"))
     .query(async () => {
       try {
-        const result = await inventoryDb.getBatchesWithDetails(1000);
+        // INV-CONSISTENCY-001: Only fetch sellable inventory for aging analysis
+        // This ensures aging widget matches the inventory values in dashboard
+        const result = await inventoryDb.getBatchesWithDetails(1000, undefined, {
+          // Note: getBatchesWithDetails doesn't support array status filter,
+          // so we filter client-side for sellable statuses
+        });
+
+        // INV-CONSISTENCY-001: Filter to only sellable statuses (LIVE, PHOTOGRAPHY_COMPLETE)
+        const sellableStatuses = inventoryDb.SELLABLE_BATCH_STATUSES;
 
         const items = result.items
-          .filter(item => item.batch && parseFloat(item.batch.onHandQty || "0") > 0)
+          .filter(item => {
+            if (!item.batch) return false;
+            const onHand = parseFloat(item.batch.onHandQty || "0");
+            // Only include sellable inventory with quantity > 0
+            const isSellable = sellableStatuses.includes(
+              item.batch.batchStatus as typeof sellableStatuses[number]
+            );
+            return isSellable && onHand > 0;
+          })
           .map(item => {
-            const batch = item.batch!;
+            // batch is guaranteed to exist due to the filter above
+            const batch = item.batch as NonNullable<typeof item.batch>;
             const ageDays = calculateAgeDays(batch.createdAt);
             const onHand = parseFloat(batch.onHandQty || "0");
             const unitCogs = batch.unitCogs ? parseFloat(batch.unitCogs) : 0;

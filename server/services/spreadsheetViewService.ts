@@ -168,6 +168,15 @@ export function transformClientOrderRows(
   });
 }
 
+/**
+ * Get inventory data for spreadsheet grid view
+ *
+ * INV-CONSISTENCY-002: Shows all inventory regardless of status.
+ * Status is included in the response for display and filtering on frontend.
+ *
+ * @param input Query parameters including optional status filter
+ * @returns Paginated inventory grid rows
+ */
 export async function getInventoryGridData(
   input: InventoryGridQuery = {}
 ): Promise<{
@@ -179,12 +188,14 @@ export async function getInventoryGridData(
     input.limit && input.limit > 0
       ? Math.min(input.limit, DEFAULT_LIMIT)
       : DEFAULT_LIMIT;
+
   const { items, nextCursor, hasMore } =
     await inventoryDb.getBatchesWithDetails(limit, input.cursor, {
       status: input.status,
       category: input.category,
     });
 
+  // INV-CONSISTENCY-002: Show all inventory, status is filterable on frontend
   const rows = items.map(transformInventoryRecord);
 
   return { rows, nextCursor, hasMore: Boolean(hasMore) };

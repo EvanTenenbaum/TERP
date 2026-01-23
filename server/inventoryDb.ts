@@ -3,7 +3,7 @@
  * Provides reusable database queries for inventory operations
  */
 
-import { eq, and, or, like, desc, sql } from "drizzle-orm";
+import { eq, and, or, like, desc, sql, inArray } from "drizzle-orm";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { generateStrainULID } from "./ulid";
@@ -1400,17 +1400,32 @@ export async function createStrain(data: {
 // ============================================================================
 
 /**
+ * Sellable batch statuses - inventory that can be sold to customers
+ * These are the only statuses that should appear in sales modules and
+ * be counted in "available inventory" metrics.
+ *
+ * INV-CONSISTENCY-001: Unified constant to ensure all inventory queries
+ * use the same status filter for sellable inventory.
+ */
+export const SELLABLE_BATCH_STATUSES = ["LIVE", "PHOTOGRAPHY_COMPLETE"] as const;
+
+/**
  * Get comprehensive dashboard statistics for inventory
  * Includes inventory value, stock levels by category/subcategory, and status counts
  *
  * PERF-004: Refactored to use SQL aggregation instead of in-memory calculation
  * This significantly improves performance as inventory grows, moving computation
  * from JavaScript to the database engine.
+ *
+ * INV-CONSISTENCY-001: Fixed to only count sellable inventory (LIVE, PHOTOGRAPHY_COMPLETE)
+ * for value/units metrics. Previously included all statuses which caused dashboard
+ * to show inflated inventory values that didn't match sales module availability.
  */
 /**
  * Get dashboard statistics with caching
  * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Caching for dashboard stats
  * ✅ PERF-004: SQL aggregation for improved performance
+ * ✅ INV-CONSISTENCY-001: Only counts sellable inventory for value/units
  */
 export async function getDashboardStats() {
   const startTime = Date.now();
@@ -1421,19 +1436,26 @@ export async function getDashboardStats() {
       const db = await getDb();
       if (!db) return null;
 
+      // INV-CONSISTENCY-001: Define sellable status filter for consistent inventory counting
+      // Only LIVE and PHOTOGRAPHY_COMPLETE batches are considered "available" inventory
+      const sellableStatusFilter = inArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]);
+
       // PERF-004: Use SQL aggregation instead of fetching all batches
       // Query 1: Get totals using SQL SUM aggregation
+      // INV-CONSISTENCY-001: Only count sellable inventory for dashboard totals
       const [totalsResult] = await db
         .select({
           totalUnits: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`,
           totalValue: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`,
         })
-        .from(batches);
+        .from(batches)
+        .where(sellableStatusFilter);
 
       const totalUnits = parseFloat(totalsResult?.totalUnits || "0");
       const totalInventoryValue = parseFloat(totalsResult?.totalValue || "0");
 
       // Query 2: Get status counts using SQL COUNT with GROUP BY
+      // NOTE: This query intentionally counts ALL statuses for visibility
       const statusCountsResult = await db
         .select({
           status: batches.batchStatus,
@@ -1446,6 +1468,7 @@ export async function getDashboardStats() {
       const statusCounts: Record<string, number> = {
         AWAITING_INTAKE: 0,
         LIVE: 0,
+        PHOTOGRAPHY_COMPLETE: 0,
         ON_HOLD: 0,
         QUARANTINED: 0,
         SOLD_OUT: 0,
@@ -1459,6 +1482,7 @@ export async function getDashboardStats() {
       }
 
       // Query 3: Get category breakdown using SQL SUM with GROUP BY
+      // INV-CONSISTENCY-001: Only count sellable inventory for category stats
       const categoryStatsResult = await db
         .select({
           name: sql<string>`COALESCE(${products.category}, 'Uncategorized')`.as('name'),
@@ -1467,10 +1491,12 @@ export async function getDashboardStats() {
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
+        .where(sellableStatusFilter)
         .groupBy(products.category)
         .orderBy(sql`value DESC`);
 
       // Query 4: Get subcategory breakdown using SQL SUM with GROUP BY
+      // INV-CONSISTENCY-001: Only count sellable inventory for subcategory stats
       const subcategoryStatsResult = await db
         .select({
           name: sql<string>`COALESCE(${products.subcategory}, 'None')`.as('name'),
@@ -1479,6 +1505,7 @@ export async function getDashboardStats() {
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
+        .where(sellableStatusFilter)
         .groupBy(products.subcategory)
         .orderBy(sql`value DESC`);
 
