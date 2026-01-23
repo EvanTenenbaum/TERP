@@ -12,6 +12,7 @@ import {
   index,
   unique,
   uniqueIndex,
+  foreignKey,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
@@ -5063,9 +5064,7 @@ export const calendarRecurrenceInstances = mysqlTable(
   "calendar_recurrence_instances",
   {
     id: int("id").autoincrement().primaryKey(),
-    parentEventId: int("parent_event_id")
-      .notNull()
-      .references(() => calendarEvents.id, { onDelete: "cascade" }),
+    parentEventId: int("parent_event_id").notNull(),
 
     // Instance-specific date/time (inherits from parent but can be modified)
     instanceDate: date("instance_date").notNull(),
@@ -5100,6 +5099,12 @@ export const calendarRecurrenceInstances = mysqlTable(
       table.startTime
     ),
     statusIdx: index("idx_instance_status").on(table.status),
+    // FK with explicit short name to avoid MySQL 64-char identifier limit
+    parentEventFk: foreignKey({
+      name: "fk_cal_recur_inst_parent",
+      columns: [table.parentEventId],
+      foreignColumns: [calendarEvents.id],
+    }).onDelete("cascade"),
   })
 );
 
@@ -6817,16 +6822,16 @@ export const cashLocationTransactions = mysqlTable(
   "cash_location_transactions",
   {
     id: int("id").autoincrement().primaryKey(),
-    locationId: int("location_id").references(() => cashLocations.id),
+    locationId: int("location_id"),
     transactionType: varchar("transaction_type", { length: 20 }).notNull(), // 'IN', 'OUT', 'TRANSFER'
     amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
     description: text("description"),
     referenceType: varchar("reference_type", { length: 50 }), // 'ORDER', 'VENDOR_PAYMENT', 'TRANSFER', 'MANUAL'
     referenceId: int("reference_id"),
     // For transfers: the other location involved
-    transferToLocationId: int("transfer_to_location_id").references(() => cashLocations.id),
-    transferFromLocationId: int("transfer_from_location_id").references(() => cashLocations.id),
-    createdBy: int("created_by").references(() => users.id),
+    transferToLocationId: int("transfer_to_location_id"),
+    transferFromLocationId: int("transfer_from_location_id"),
+    createdBy: int("created_by"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   table => ({
@@ -6834,6 +6839,27 @@ export const cashLocationTransactions = mysqlTable(
     typeIdx: index("idx_cash_loc_tx_type").on(table.transactionType),
     createdAtIdx: index("idx_cash_loc_tx_created").on(table.createdAt),
     referenceIdx: index("idx_cash_loc_tx_reference").on(table.referenceType, table.referenceId),
+    // FKs with explicit short names to avoid MySQL 64-char identifier limit
+    locationFk: foreignKey({
+      name: "fk_cash_loc_tx_loc",
+      columns: [table.locationId],
+      foreignColumns: [cashLocations.id],
+    }),
+    transferToFk: foreignKey({
+      name: "fk_cash_loc_tx_to",
+      columns: [table.transferToLocationId],
+      foreignColumns: [cashLocations.id],
+    }),
+    transferFromFk: foreignKey({
+      name: "fk_cash_loc_tx_from",
+      columns: [table.transferFromLocationId],
+      foreignColumns: [cashLocations.id],
+    }),
+    createdByFk: foreignKey({
+      name: "fk_cash_loc_tx_user",
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+    }),
   })
 );
 
