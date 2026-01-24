@@ -4,13 +4,14 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   orders,
   orderLineItems,
   orderLineItemAllocations,
   batches,
+  lots,
   orderStatusHistory,
   vendorReturns,
   vendorReturnItems,
@@ -198,6 +199,67 @@ export async function processVendorReturn(
           unitCost: cost,
         });
       }
+    }
+
+    // DI-009: Validate vendorId belongs to the order's items
+    // Get all unique batchIds from the items to return
+    const batchIds = [...new Set(itemsToReturn.map(item => item.batchId))];
+
+    if (batchIds.length === 0) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "No items found to return for this order",
+      });
+    }
+
+    // Get the batches to find their lotIds
+    const orderBatches = await tx
+      .select({ id: batches.id, lotId: batches.lotId })
+      .from(batches)
+      .where(inArray(batches.id, batchIds));
+
+    const lotIds: number[] = [];
+    const seenLotIds = new Set<number>();
+    for (const batch of orderBatches) {
+      if (!seenLotIds.has(batch.lotId)) {
+        seenLotIds.add(batch.lotId);
+        lotIds.push(batch.lotId);
+      }
+    }
+
+    // Get the lots to find their vendorId/supplierClientId
+    const orderLots = await tx
+      .select({
+        id: lots.id,
+        vendorId: lots.vendorId,
+        supplierClientId: lots.supplierClientId,
+      })
+      .from(lots)
+      .where(inArray(lots.id, lotIds));
+
+    // Collect all valid vendor IDs (both legacy vendorId and canonical supplierClientId)
+    const validVendorIds = new Set<number>();
+    for (const lot of orderLots) {
+      if (lot.vendorId) {
+        validVendorIds.add(lot.vendorId);
+      }
+      if (lot.supplierClientId) {
+        validVendorIds.add(lot.supplierClientId);
+      }
+    }
+
+    // Validate that the provided vendorId matches one of the order's lots
+    if (!validVendorIds.has(vendorId)) {
+      logger.warn({
+        msg: "DI-009: Vendor ID validation failed",
+        providedVendorId: vendorId,
+        validVendorIds: Array.from(validVendorIds),
+        orderId,
+      });
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Vendor ID ${vendorId} does not match any supplier associated with this order's items. Valid vendor IDs: ${Array.from(validVendorIds).join(", ")}`,
+      });
     }
 
     // Create vendor return record
