@@ -10,7 +10,7 @@
  */
 
 import { getDb } from "./db";
-import { ledgerEntries, accounts, type InsertLedgerEntry } from "../drizzle/schema";
+import { ledgerEntries, accounts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "./_core/logger";
 import { getFiscalPeriodIdOrDefault } from "./_core/fiscalPeriod";
@@ -143,37 +143,41 @@ export async function createJournalEntry(entryData: {
         { amount: entryData.amount, entryNumber: entryData.entryNumber }
       );
     }
-    
-    // Create debit entry
-    await db.insert(ledgerEntries).values({
-      entryNumber: `${entryData.entryNumber}-DR`,
-      entryDate: entryData.entryDate,
-      accountId: entryData.debitAccountId,
-      debit: amountNum.toFixed(2),
-      credit: "0.00",
-      description: entryData.description,
-      referenceType: entryData.referenceType,
-      referenceId: entryData.referenceId,
-      fiscalPeriodId,
-      isManual: false,
-      createdBy: entryData.createdBy
+
+    // Use transaction to ensure both debit and credit entries are created atomically
+    // This prevents unbalanced ledger if one insert fails
+    await db.transaction(async (tx) => {
+      // Create debit entry
+      await tx.insert(ledgerEntries).values({
+        entryNumber: `${entryData.entryNumber}-DR`,
+        entryDate: entryData.entryDate,
+        accountId: entryData.debitAccountId,
+        debit: amountNum.toFixed(2),
+        credit: "0.00",
+        description: entryData.description,
+        referenceType: entryData.referenceType,
+        referenceId: entryData.referenceId,
+        fiscalPeriodId,
+        isManual: false,
+        createdBy: entryData.createdBy
+      });
+
+      // Create credit entry
+      await tx.insert(ledgerEntries).values({
+        entryNumber: `${entryData.entryNumber}-CR`,
+        entryDate: entryData.entryDate,
+        accountId: entryData.creditAccountId,
+        debit: "0.00",
+        credit: amountNum.toFixed(2),
+        description: entryData.description,
+        referenceType: entryData.referenceType,
+        referenceId: entryData.referenceId,
+        fiscalPeriodId,
+        isManual: false,
+        createdBy: entryData.createdBy
+      });
     });
-    
-    // Create credit entry
-    await db.insert(ledgerEntries).values({
-      entryNumber: `${entryData.entryNumber}-CR`,
-      entryDate: entryData.entryDate,
-      accountId: entryData.creditAccountId,
-      debit: "0.00",
-      credit: amountNum.toFixed(2),
-      description: entryData.description,
-      referenceType: entryData.referenceType,
-      referenceId: entryData.referenceId,
-      fiscalPeriodId,
-      isManual: false,
-      createdBy: entryData.createdBy
-    });
-    
+
     return [
       { account: entryData.debitAccountId, debit: amountNum, credit: 0 },
       { account: entryData.creditAccountId, debit: 0, credit: amountNum },
