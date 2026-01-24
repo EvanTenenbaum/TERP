@@ -2,17 +2,34 @@ import { EventEmitter } from "events";
 // Note: Logger and features can be imported when needed
 // import { features } from "../../_core/features";
 
-// Event Types
+// Event Types - SSE-001: Fixed event naming consistency
 export const SSE_EVENTS = {
+  // Cart events
   CART_UPDATED: "CART_UPDATED",           // Cart contents changed
   PRICE_CHANGED: "PRICE_CHANGED",         // Override price applied
-  PRODUCT_HIGHLIGHTED: "HIGHLIGHTED",     // Host highlighted a product
+
+  // Product events
+  HIGHLIGHTED: "HIGHLIGHTED",             // Host highlighted a product (SSE-001: renamed from PRODUCT_HIGHLIGHTED)
+  ITEM_STATUS_CHANGED: "ITEM_STATUS_CHANGED", // Item status changed (SSE-001: fixed value)
+
+  // Session events
   SESSION_STATUS: "SESSION_STATUS",       // Session ended/paused
+  SESSION_EXTENDED: "SESSION_EXTENDED",   // SSE-001: Session timeout extended
+  SESSION_TIMEOUT: "SESSION_TIMEOUT",     // SSE-001: Session timed out
+  SESSION_TIMEOUT_WARNING: "SESSION_TIMEOUT_WARNING", // SSE-001: Warning before timeout
+  SESSION_CANCELLED: "SESSION_CANCELLED", // SSE-001: Session cancelled by host
+
+  // Connection events
   CONNECTION_PING: "PING",                // Heartbeat
-  ITEM_STATUS_CHANGED: "ITEM_STATUS",     // Item status changed (Sample/Interested/Purchase)
+
+  // Negotiation events
   NEGOTIATION_REQUESTED: "NEGOTIATION_REQUESTED",     // Client requested price negotiation
   NEGOTIATION_RESPONSE: "NEGOTIATION_RESPONSE",       // Host responded to negotiation
   COUNTER_OFFER_ACCEPTED: "COUNTER_OFFER_ACCEPTED",   // Client accepted counter-offer
+
+  // Client events
+  CLIENT_CHECKOUT_REQUEST: "CLIENT_CHECKOUT_REQUEST", // SSE-001: Client requested checkout
+  NOTES_UPDATED: "NOTES_UPDATED",         // SSE-001: Session notes updated
 } as const;
 
 export type SseEventType = keyof typeof SSE_EVENTS;
@@ -92,7 +109,7 @@ class SessionEventManager extends EventEmitter {
   }
 
   public emitHighlight(sessionId: number, batchId: number) {
-    this.emitToSession(sessionId, "PRODUCT_HIGHLIGHTED", { batchId });
+    this.emitToSession(sessionId, "HIGHLIGHTED", { batchId }); // SSE-001: Fixed event name
   }
 
   public emitStatusChange(sessionId: number, status: string) {
@@ -113,6 +130,47 @@ class SessionEventManager extends EventEmitter {
       cartItemId,
       status,
       changedBy,
+    });
+  }
+
+  // SSE-001: New session lifecycle event emitters
+  public emitSessionExtended(sessionId: number, newEndTime: Date, extendedBy: number) {
+    this.emitToSession(sessionId, "SESSION_EXTENDED", {
+      newEndTime: newEndTime.toISOString(),
+      extendedBy,
+    });
+  }
+
+  public emitSessionTimeoutWarning(sessionId: number, minutesRemaining: number) {
+    this.emitToSession(sessionId, "SESSION_TIMEOUT_WARNING", {
+      minutesRemaining,
+    });
+  }
+
+  public emitSessionTimeout(sessionId: number) {
+    this.emitToSession(sessionId, "SESSION_TIMEOUT", {
+      endedAt: new Date().toISOString(),
+    });
+  }
+
+  public emitSessionCancelled(sessionId: number, cancelledBy: number, reason?: string) {
+    this.emitToSession(sessionId, "SESSION_CANCELLED", {
+      cancelledBy,
+      reason,
+    });
+  }
+
+  public emitClientCheckoutRequest(sessionId: number, clientId: number) {
+    this.emitToSession(sessionId, "CLIENT_CHECKOUT_REQUEST", {
+      clientId,
+      requestedAt: new Date().toISOString(),
+    });
+  }
+
+  public emitNotesUpdated(sessionId: number, notes: string, updatedBy: number) {
+    this.emitToSession(sessionId, "NOTES_UPDATED", {
+      notes,
+      updatedBy,
     });
   }
 

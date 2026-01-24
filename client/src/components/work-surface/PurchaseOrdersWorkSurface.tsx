@@ -362,6 +362,7 @@ export function PurchaseOrdersWorkSurface() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPOId, setSelectedPOId] = useState<number | null>(null);
   const [formData, setFormData] = useState<POFormData>(createEmptyForm());
+  const searchInputRef = useRef<HTMLInputElement>(null); // WS-KB-001: Ref for Cmd+K focus
 
   // Work Surface hooks
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator, isDirty } = useSaveState();
@@ -484,6 +485,11 @@ export function PurchaseOrdersWorkSurface() {
     gridMode: false,
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
+    // WS-KB-001: Add Cmd+K to focus search
+    customHandlers: {
+      "cmd+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
+      "ctrl+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
+    },
     onCancel: () => {
       if (isCreateDialogOpen) {
         setIsCreateDialogOpen(false);
@@ -626,7 +632,8 @@ export function PurchaseOrdersWorkSurface() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search by PO number or supplier..."
+              ref={searchInputRef}
+              placeholder="Search by PO number or supplier... (Cmd+K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
