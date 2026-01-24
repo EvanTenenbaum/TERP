@@ -108,6 +108,7 @@ interface Order {
 // CONSTANTS
 // ============================================================================
 
+// WSQA-003: Added RETURNED, RESTOCKED, RETURNED_TO_VENDOR statuses
 const FULFILLMENT_STATUSES = [
   { value: "ALL", label: "All" },
   { value: "PENDING", label: "Pending" },
@@ -115,24 +116,35 @@ const FULFILLMENT_STATUSES = [
   { value: "PACKED", label: "Packed" },
   { value: "SHIPPED", label: "Shipped" },
   { value: "DELIVERED", label: "Delivered" },
+  { value: "RETURNED", label: "Returned" },
+  { value: "RESTOCKED", label: "Restocked" },
+  { value: "RETURNED_TO_VENDOR", label: "Returned to Vendor" },
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
+// WSQA-003: Added return status icons
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   PENDING: <Clock className="h-4 w-4" />,
   PROCESSING: <Package className="h-4 w-4" />,
   PACKED: <CheckCircle2 className="h-4 w-4" />,
   SHIPPED: <Truck className="h-4 w-4" />,
   DELIVERED: <CheckCircle2 className="h-4 w-4" />,
+  RETURNED: <RefreshCw className="h-4 w-4" />,
+  RESTOCKED: <Package className="h-4 w-4" />,
+  RETURNED_TO_VENDOR: <Truck className="h-4 w-4" />,
   CANCELLED: <XCircle className="h-4 w-4" />,
 };
 
+// WSQA-003: Added return status colors
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   PROCESSING: "bg-blue-100 text-blue-800",
   PACKED: "bg-purple-100 text-purple-800",
   SHIPPED: "bg-indigo-100 text-indigo-800",
   DELIVERED: "bg-green-100 text-green-800",
+  RETURNED: "bg-orange-100 text-orange-800",
+  RESTOCKED: "bg-emerald-100 text-emerald-800",
+  RETURNED_TO_VENDOR: "bg-amber-100 text-amber-800",
   CANCELLED: "bg-red-100 text-red-800",
   DRAFT: "bg-gray-100 text-gray-800",
 };
@@ -173,6 +185,7 @@ function OrderStatusBadge({ status, isDraft }: { status?: string; isDraft?: bool
 // ORDER INSPECTOR
 // ============================================================================
 
+// WSQA-003: Added return processing handlers
 interface OrderInspectorProps {
   order: Order | null;
   clientName: string;
@@ -180,6 +193,9 @@ interface OrderInspectorProps {
   onConfirm: (orderId: number) => void;
   onDelete: (orderId: number) => void;
   onShip: (orderId: number) => void;
+  onMarkReturned?: (orderId: number) => void;
+  onProcessRestock?: (orderId: number) => void;
+  onReturnToVendor?: (orderId: number) => void;
 }
 
 function OrderInspectorContent({
@@ -189,6 +205,9 @@ function OrderInspectorContent({
   onConfirm,
   onDelete,
   onShip,
+  onMarkReturned,
+  onProcessRestock,
+  onReturnToVendor,
 }: OrderInspectorProps) {
   if (!order) {
     return (
@@ -288,11 +307,40 @@ function OrderInspectorContent({
             </>
           ) : (
             <>
+              {/* WSQA-003: Status-based actions */}
               {order.fulfillmentStatus === "PENDING" && (
                 <Button variant="default" className="w-full justify-start" onClick={() => onShip(order.id)}>
                   <Truck className="h-4 w-4 mr-2" />
                   Ship Order
                 </Button>
+              )}
+              {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
+              {(order.fulfillmentStatus === "SHIPPED" || order.fulfillmentStatus === "DELIVERED") && onMarkReturned && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-orange-600 hover:text-orange-700"
+                  onClick={() => onMarkReturned(order.id)}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Mark as Returned
+                </Button>
+              )}
+              {/* WSQA-003: Processing paths for RETURNED orders */}
+              {order.fulfillmentStatus === "RETURNED" && (
+                <>
+                  {onProcessRestock && (
+                    <Button variant="default" className="w-full justify-start" onClick={() => onProcessRestock(order.id)}>
+                      <Package className="h-4 w-4 mr-2" />
+                      Restock Inventory
+                    </Button>
+                  )}
+                  {onReturnToVendor && (
+                    <Button variant="outline" className="w-full justify-start" onClick={() => onReturnToVendor(order.id)}>
+                      <Truck className="h-4 w-4 mr-2" />
+                      Return to Vendor
+                    </Button>
+                  )}
+                </>
               )}
               <Button variant="outline" className="w-full justify-start">
                 <Download className="h-4 w-4 mr-2" />
@@ -322,6 +370,11 @@ export function OrdersWorkSurface() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  // WSQA-003: Return processing dialogs
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [showRestockDialog, setShowRestockDialog] = useState(false);
+  const [showVendorReturnDialog, setShowVendorReturnDialog] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
 
   // Work Surface hooks
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -440,6 +493,57 @@ export function OrdersWorkSurface() {
     },
   });
 
+  // WSQA-003: Return processing mutations
+  const markAsReturnedMutation = trpc.orders.markAsReturned.useMutation({
+    onMutate: () => setSaving("Marking as returned..."),
+    onSuccess: () => {
+      toast.success("Order marked as returned");
+      setSaved();
+      refetchConfirmed();
+      setShowReturnDialog(false);
+      setReturnReason("");
+    },
+    onError: (err) => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to mark order as returned");
+        setError(err.message);
+      }
+    },
+  });
+
+  const processRestockMutation = trpc.orders.processRestock.useMutation({
+    onMutate: () => setSaving("Restocking inventory..."),
+    onSuccess: () => {
+      toast.success("Inventory restocked successfully");
+      setSaved();
+      refetchConfirmed();
+      setShowRestockDialog(false);
+    },
+    onError: (err) => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to restock inventory");
+        setError(err.message);
+      }
+    },
+  });
+
+  const processVendorReturnMutation = trpc.orders.processVendorReturn.useMutation({
+    onMutate: () => setSaving("Processing vendor return..."),
+    onSuccess: () => {
+      toast.success("Vendor return processed successfully");
+      setSaved();
+      refetchConfirmed();
+      setShowVendorReturnDialog(false);
+      setReturnReason("");
+    },
+    onError: (err) => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to process vendor return");
+        setError(err.message);
+      }
+    },
+  });
+
   // Track version for optimistic locking when order is selected (UXS-705)
   useEffect(() => {
     if (selectedOrder && selectedOrder.version !== undefined) {
@@ -478,6 +582,9 @@ export function OrdersWorkSurface() {
     onCancel: () => {
       if (showConfirmDialog) setShowConfirmDialog(false);
       else if (showDeleteDialog) setShowDeleteDialog(false);
+      else if (showReturnDialog) { setShowReturnDialog(false); setReturnReason(""); }
+      else if (showRestockDialog) setShowRestockDialog(false);
+      else if (showVendorReturnDialog) { setShowVendorReturnDialog(false); setReturnReason(""); }
       else if (inspector.isOpen) inspector.close();
     },
   });
@@ -487,6 +594,10 @@ export function OrdersWorkSurface() {
   const handleConfirm = (orderId: number) => { setSelectedOrderId(orderId); setShowConfirmDialog(true); };
   const handleDelete = (orderId: number) => { setSelectedOrderId(orderId); setShowDeleteDialog(true); };
   const handleShip = (orderId: number) => toast.info(`Ship order ${orderId} - modal to be implemented`);
+  // WSQA-003: Return processing handlers
+  const handleMarkReturned = (orderId: number) => { setSelectedOrderId(orderId); setShowReturnDialog(true); };
+  const handleProcessRestock = (orderId: number) => { setSelectedOrderId(orderId); setShowRestockDialog(true); };
+  const handleReturnToVendor = (orderId: number) => { setSelectedOrderId(orderId); setShowVendorReturnDialog(true); };
 
   const isLoading = activeTab === "draft" ? loadingDrafts : loadingConfirmed;
 
@@ -624,6 +735,9 @@ export function OrdersWorkSurface() {
             onConfirm={handleConfirm}
             onDelete={handleDelete}
             onShip={handleShip}
+            onMarkReturned={handleMarkReturned}
+            onProcessRestock={handleProcessRestock}
+            onReturnToVendor={handleReturnToVendor}
           />
         </InspectorPanel>
       </div>
@@ -665,6 +779,99 @@ export function OrdersWorkSurface() {
               disabled={deleteOrderMutation.isPending}
             >
               {deleteOrderMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WSQA-003: Mark as Returned Dialog */}
+      <Dialog open={showReturnDialog} onOpenChange={(open) => {
+        setShowReturnDialog(open);
+        if (!open) setReturnReason("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Order as Returned</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Please provide a reason for the return:</p>
+            <Input
+              placeholder="Return reason..."
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowReturnDialog(false); setReturnReason(""); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => selectedOrderId && markAsReturnedMutation.mutate({
+                orderId: selectedOrderId,
+                returnReason,
+              })}
+              disabled={markAsReturnedMutation.isPending || !returnReason.trim()}
+            >
+              {markAsReturnedMutation.isPending ? "Processing..." : "Mark as Returned"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WSQA-003: Restock Confirmation Dialog */}
+      <Dialog open={showRestockDialog} onOpenChange={setShowRestockDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restock Inventory</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to restock the returned items? This will add the items back to inventory.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRestockDialog(false)}>Cancel</Button>
+            <Button
+              onClick={() => selectedOrderId && processRestockMutation.mutate({ orderId: selectedOrderId })}
+              disabled={processRestockMutation.isPending}
+            >
+              {processRestockMutation.isPending ? "Restocking..." : "Restock Inventory"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WSQA-003: Vendor Return Dialog */}
+      <Dialog open={showVendorReturnDialog} onOpenChange={(open) => {
+        setShowVendorReturnDialog(open);
+        if (!open) setReturnReason("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Return to Vendor</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Please provide a reason for returning to the vendor:</p>
+            <Input
+              placeholder="Vendor return reason..."
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowVendorReturnDialog(false); setReturnReason(""); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedOrderId && selectedOrder) {
+                  // Note: We need vendorId - for now using a placeholder that should be determined from the order
+                  processVendorReturnMutation.mutate({
+                    orderId: selectedOrderId,
+                    vendorId: 1, // TODO: Get from order line items or prompt user
+                    returnReason,
+                  });
+                }
+              }}
+              disabled={processVendorReturnMutation.isPending || !returnReason.trim()}
+            >
+              {processVendorReturnMutation.isPending ? "Processing..." : "Return to Vendor"}
             </Button>
           </DialogFooter>
         </DialogContent>
