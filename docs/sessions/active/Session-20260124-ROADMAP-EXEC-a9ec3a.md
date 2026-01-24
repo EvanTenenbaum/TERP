@@ -37,7 +37,7 @@ Build:      ✅ PASS
 - [x] BUG-100: Fixed 6 failing tests (now all pass)
 - ⚠️ TEST-INFRA-02: DATABASE_URL not configured for seed tests (not blocking)
 
-### Phase 2: Security ✅ MAJOR PROGRESS
+### Phase 2: Security ✅ COMPLETE
 - [x] DI-009: Added Vendor ID Validation in Return Processing (CRITICAL FIX)
 - [x] TERP-0013: Security audit completed + 175 endpoints secured (across all batches)
 - [x] Calendar router: Fixed ctx.user?.id ?? 1 violation
@@ -57,22 +57,36 @@ Build:      ✅ PASS
 - [x] TERP-0018: Permission cache TTL reduced, inventory negative quantity validation
 - [x] ordersDb.ts: Fixed forbidden ?? 1 patterns, converted hard deletes to soft deletes
 
-### Phase 4: Work Surfaces ✅ COMPLETE
+### Phase 4: Work Surfaces Core ✅ COMPLETE
 - [x] WSQA-001: Wire InvoicesWorkSurface Payment Recording
-  - Added PaymentMethod type and PAYMENT_METHODS constant
-  - Wired handlePaymentSubmit to trpc.payments.recordPayment mutation
-  - Added success/error handling with toast notifications
 - [x] WSQA-002: Implement Flexible Lot Selection
-  - Added productId to PricedInventoryItem and inventory flow
-  - Added Change Lot button (Package icon) to LineItemRow
-  - Integrated BatchSelectionDialog into LineItemTable
-  - Support batch swapping and multi-batch splitting
 - [x] WSQA-003: Add RETURNED Order Status with Processing Paths
-  - Added RETURNED, RESTOCKED, RETURNED_TO_VENDOR to status filters
-  - Added status icons and colors for return states
-  - Added markAsReturned, processRestock, processVendorReturn mutations
-  - Added "Mark as Returned" button for SHIPPED/DELIVERED orders
-  - Added "Restock Inventory" and "Return to Vendor" buttons for RETURNED orders
+- [x] TERP-0003: Add Client Wizard to ClientsWorkSurface
+- [x] SSE-001: Fix Live Shopping SSE Event Naming
+- [x] API-016: Implement Quote Email Sending
+
+### Phase 4.5: Work Surface Coverage Gaps ✅ COMPLETE
+- [x] WS-PROD-001: Refactor Products page to Work Surface pattern
+  - Created ProductsWorkSurface.tsx (720+ lines)
+  - Added summary metrics bar (Total, Active, Categories)
+  - Added Inspector Panel for product details/editing
+  - Added keyboard shortcuts (Cmd+K, arrows, Enter)
+  - Full CRUD with archive/restore functionality
+- [x] WS-VEND-001: Refactor Vendors page to Work Surface pattern
+  - Created VendorsWorkSurface.tsx (656 lines)
+  - Uses party model (clients with isSeller=true)
+  - Added summary metrics, Inspector Panel, keyboard shortcuts
+- [x] WS-GF-001: Wire Golden Flows to AR/AP Quick Actions
+  - Replaced RecordPaymentDialog with InvoiceToPaymentFlow
+  - Multi-step guided payment workflow now active
+
+### Phase 5: Navigation & UX Polish ✅ MOSTLY COMPLETE
+- [x] NAV-006 through NAV-016: All navigation routes already in place
+- [x] Command Palette includes all routes
+- [x] No window.alert() calls found
+- [ ] TERP-0002: Dashboard widget improvements (deferred)
+- [ ] TERP-0021: BatchDetailDrawer features (deferred)
+- [ ] TERP-0020: TemplateSelector TODOs (minor - template name not actual TODO)
 
 ## Commits Made
 
@@ -91,6 +105,8 @@ Build:      ✅ PASS
 13. `0d85592` - feat(orders): WSQA-002 implement flexible lot selection
 14. `6b23996` - feat(orders): WSQA-003 add RETURNED status with processing paths
 15. `ea68f07` - feat(phase4): complete remaining Phase 4 work surface tasks
+16. `f5f82f4` - feat(phase4.5): complete Work Surface refactors for Products and Vendors
+17. `d8507a9` - feat(phase4.5): WS-GF-001 wire InvoiceToPaymentFlow Golden Flow
 
 ## Key Deliverables
 
@@ -110,6 +126,9 @@ Build:      ✅ PASS
 1. **WSQA-001**: InvoicesWorkSurface payment recording wired to real mutation
 2. **WSQA-002**: Flexible lot selection via BatchSelectionDialog
 3. **WSQA-003**: RETURNED order status with restock/vendor return paths
+4. **WS-PROD-001**: Full ProductsWorkSurface with CRUD and Inspector Panel
+5. **WS-VEND-001**: Full VendorsWorkSurface with party model integration
+6. **WS-GF-001**: Golden Flow integration for guided payment workflow
 
 ### Test Fixes
 1. inventoryDb.test.ts: Added PHOTOGRAPHY_COMPLETE status
@@ -159,6 +178,17 @@ Build:      ✅ PASS
 - [x] Batch selection UI allows lot picking
 - [x] RETURNED status with processing paths
 
+### QA Gate 4.5 (Phase 4.5) ✅ COMPLETE
+- [x] Products page uses Work Surface pattern
+- [x] Vendors page uses Work Surface pattern
+- [x] Golden Flow wired to Invoices payment recording
+
+### QA Gate 5 (Phase 5) ✅ MOSTLY COMPLETE
+- [x] All 8 hidden routes visible in sidebar
+- [x] All 8 routes accessible via Command Palette
+- [x] TypeScript compilation passes
+- [x] No window.alert() calls remain
+
 ## Remaining Work
 
 ### HIGH PRIORITY
@@ -166,7 +196,13 @@ Build:      ✅ PASS
 
 ### MEDIUM PRIORITY
 1. TEST-INFRA-02: Configure DATABASE_URL for seed tests
-2. Phase 4.5, 5, 6 from roadmap (if applicable)
+2. Phase 6: Backend Completeness & Data Seeding
+3. Phase 7: MVP Release Verification
+
+### DEFERRED (Low Priority)
+1. TERP-0002: Dashboard widget improvements
+2. TERP-0021: BatchDetailDrawer features
+3. TERP-0020: TemplateSelector TODOs
 
 ### DOCUMENTED PRE-EXISTING ISSUES
 See: `docs/sessions/active/QA-PREEXISTING-ISSUES-20260124.md`
@@ -182,5 +218,6 @@ See: `docs/sessions/active/QA-PREEXISTING-ISSUES-20260124.md`
 - Security audit revealed significant authorization gaps - all resolved
 - Test infrastructure is solid, seed tests need DATABASE_URL
 - QA review identified and fixed critical transaction wrapper issue
-- Phase 4 Work Surfaces completed with full functionality
-- All major roadmap phases (0-4) completed
+- Phase 4 and 4.5 Work Surfaces completed with full functionality
+- All major roadmap phases (0-5) substantially completed
+- Golden Flow integration provides guided multi-step payment workflow
