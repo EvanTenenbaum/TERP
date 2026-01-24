@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import TimezoneService from "../_core/timezoneService";
 import PermissionService from "../_core/permissionService";
@@ -19,7 +19,7 @@ import { calendarLogger } from "../_core/logger";
 
 export const calendarRouter = router({
   // Get events with intelligent filtering
-  getEvents: publicProcedure
+  getEvents: protectedProcedure
     .input(
       z.object({
         startDate: z.string(), // ISO date
@@ -227,7 +227,7 @@ export const calendarRouter = router({
     }),
 
   // Get single event with full details
-  getEventById: publicProcedure
+  getEventById: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -296,7 +296,7 @@ export const calendarRouter = router({
     }),
 
   // Create event with comprehensive validation
-  createEvent: publicProcedure
+  createEvent: protectedProcedure
     .input(
       z.object({
         title: z.string().min(1).max(255),
@@ -556,7 +556,7 @@ export const calendarRouter = router({
     }),
 
   // Update event with conflict detection and optimistic locking (CHAOS-006)
-  updateEvent: publicProcedure
+  updateEvent: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -677,7 +677,7 @@ export const calendarRouter = router({
     }),
 
   // Delete event with cascade handling
-  deleteEvent: publicProcedure
+  deleteEvent: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -714,7 +714,7 @@ export const calendarRouter = router({
     }),
 
   // Get events by entity (for linking)
-  getEventsByEntity: publicProcedure
+  getEventsByEntity: protectedProcedure
     .input(
       z.object({
         entityType: z.string(),
@@ -735,21 +735,21 @@ export const calendarRouter = router({
   }),
 
   // Get event history
-  getEventHistory: publicProcedure
+  getEventHistory: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return await calendarDb.getEventHistory(input.eventId);
     }),
 
   // Get event attachments
-  getEventAttachments: publicProcedure
+  getEventAttachments: protectedProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input }) => {
       return await calendarDb.getEventAttachments(input.eventId);
     }),
 
   // Get events by client ID
-  getEventsByClient: publicProcedure
+  getEventsByClient: protectedProcedure
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await calendarDb.getEventsByClient(input.clientId);

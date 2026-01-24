@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   appointmentRequests,
@@ -26,7 +26,7 @@ export const appointmentRequestsRouter = router({
   // CAL-03-02: Create Appointment Request (for VIP Portal to call)
   // ============================================================================
 
-  request: publicProcedure
+  request: protectedProcedure
     .input(
       z.object({
         calendarId: z.number(),

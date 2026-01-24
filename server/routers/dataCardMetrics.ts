@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import * as metricsDb from "../dataCardMetricsDb";
 import { handleError } from "../_core/errors";
@@ -26,7 +26,7 @@ export const dataCardMetricsRouter = router({
    * Get metrics for a specific module
    * Returns calculated metric values for the requested metric IDs
    */
-  getForModule: publicProcedure
+  getForModule: protectedProcedure
     .input(z.object({
       moduleId: moduleIdSchema,
       metricIds: z.array(metricIdSchema).min(1).max(10),
@@ -58,7 +58,7 @@ export const dataCardMetricsRouter = router({
    * Get all available metric definitions for a module
    * Used for configuration UI to show available options
    */
-  getAvailableMetrics: publicProcedure
+  getAvailableMetrics: protectedProcedure
     .input(z.object({
       moduleId: moduleIdSchema,
     }))

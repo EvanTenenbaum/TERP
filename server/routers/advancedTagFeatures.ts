@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as advancedTagFeatures from "../advancedTagFeatures";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const advancedTagFeaturesRouter = router({
   // Boolean tag search
-  booleanSearch: publicProcedure
+  booleanSearch: protectedProcedure
     .input(z.object({
       searchExpression: z.string()
     }))
@@ -15,7 +15,7 @@ export const advancedTagFeaturesRouter = router({
     }),
 
   // Tag hierarchy
-  createHierarchy: publicProcedure
+  createHierarchy: protectedProcedure
     .input(z.object({
       parentTagId: z.number(),
       childTagId: z.number()
@@ -27,7 +27,7 @@ export const advancedTagFeaturesRouter = router({
       );
     }),
 
-  getChildren: publicProcedure
+  getChildren: protectedProcedure
     .input(z.object({
       tagId: z.number()
     }))
@@ -35,7 +35,7 @@ export const advancedTagFeaturesRouter = router({
       return await advancedTagFeatures.getTagChildren(input.tagId);
     }),
 
-  getAncestors: publicProcedure
+  getAncestors: protectedProcedure
     .input(z.object({
       tagId: z.number()
     }))
@@ -44,7 +44,7 @@ export const advancedTagFeaturesRouter = router({
     }),
 
   // Tag maintenance
-  mergeTags: publicProcedure
+  mergeTags: protectedProcedure
     .input(z.object({
       sourceTagId: z.number(),
       targetTagId: z.number()
@@ -55,7 +55,7 @@ export const advancedTagFeaturesRouter = router({
     }),
 
   // Tag groups
-  createGroup: publicProcedure
+  createGroup: protectedProcedure
     .input(z.object({
       name: z.string(),
       description: z.string(),
@@ -71,7 +71,7 @@ export const advancedTagFeaturesRouter = router({
       );
     }),
 
-  addToGroup: publicProcedure
+  addToGroup: protectedProcedure
     .input(z.object({
       groupId: z.number(),
       tagId: z.number()
@@ -81,7 +81,7 @@ export const advancedTagFeaturesRouter = router({
       return { success: true };
     }),
 
-  getGroupTags: publicProcedure
+  getGroupTags: protectedProcedure
     .input(z.object({
       groupId: z.number()
     }))
@@ -90,13 +90,13 @@ export const advancedTagFeaturesRouter = router({
     }),
 
   // Tag statistics
-  getUsageStats: publicProcedure
+  getUsageStats: protectedProcedure
     .query(async () => {
       return await advancedTagFeatures.getTagUsageStats();
     }),
 
   // Bulk operations
-  bulkAddTags: publicProcedure
+  bulkAddTags: protectedProcedure
     .input(z.object({
       productIds: z.array(z.number()),
       tagIds: z.array(z.number())
@@ -106,7 +106,7 @@ export const advancedTagFeaturesRouter = router({
       return { success: true };
     }),
 
-  bulkRemoveTags: publicProcedure
+  bulkRemoveTags: protectedProcedure
     .input(z.object({
       productIds: z.array(z.number()),
       tagIds: z.array(z.number())

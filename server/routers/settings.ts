@@ -1,4 +1,4 @@
-import { router, publicProcedure, adminProcedure } from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { grades, categories, subcategories, locations, products } from "../../drizzle/schema";
@@ -10,7 +10,7 @@ import { TRPCError } from "@trpc/server";
 
 // Nested router for grades
 const gradesRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     return db.select().from(grades).where(isNull(grades.deletedAt));
@@ -44,7 +44,7 @@ const gradesRouter = router({
 
 // Nested router for categories
 const categoriesRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     return db.select().from(categories).where(isNull(categories.deletedAt));
@@ -78,7 +78,7 @@ const categoriesRouter = router({
 
 // Nested router for subcategories
 const subcategoriesRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ categoryId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
@@ -147,7 +147,7 @@ const subcategoriesRouter = router({
 
 // Nested router for locations
 const locationsSettingsRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     return db.select().from(locations).where(isNull(locations.deletedAt));
@@ -186,7 +186,7 @@ export const settingsRouter = router({
   subcategories: subcategoriesRouter,
   locations: locationsSettingsRouter,
 
-  hello: publicProcedure
+  hello: protectedProcedure
     .input(z.object({ text: z.string().nullish() }).nullish())
     .query(({ input }) => {
       return {
@@ -194,7 +194,7 @@ export const settingsRouter = router({
       };
     }),
 
-  seedDatabase: publicProcedure
+  seedDatabase: protectedProcedure
     .input(
       z.object({
         scenario: z

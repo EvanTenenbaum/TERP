@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
+import { protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import * as calendarDb from "../calendarDb";
 import { calendarEvents, orders, invoices, bills } from "../../drizzle/schema";

@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import {
   publishBatchToCatalog,
   unpublishBatchFromCatalog,
@@ -72,7 +72,7 @@ export const catalogRouter = router({
   /**
    * Get the public catalog (published items)
    */
-  getPublicCatalog: publicProcedure
+  getPublicCatalog: protectedProcedure
     .input(
       z.object({
         category: z.string().optional(),
@@ -145,7 +145,7 @@ export const catalogRouter = router({
   /**
    * Get catalog item by batch ID
    */
-  getByBatchId: publicProcedure.input(z.object({ batchId: z.number() })).query(async ({ input }) => {
+  getByBatchId: protectedProcedure.input(z.object({ batchId: z.number() })).query(async ({ input }) => {
     const result = await getPublishedCatalog({
       limit: 1,
     });
