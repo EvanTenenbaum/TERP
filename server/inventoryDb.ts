@@ -736,6 +736,15 @@ export async function updateBatchQty(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // TERP-0018: Validate that quantity is not negative
+  const numericValue = parseFloat(value);
+  if (isNaN(numericValue)) {
+    throw new Error(`Invalid quantity value: ${value}`);
+  }
+  if (numericValue < 0) {
+    throw new Error(`Cannot set negative inventory quantity for ${field}`);
+  }
+
   // DATA-005: Optimistic locking check if version provided
   if (expectedVersion !== undefined) {
     const [current] = await db

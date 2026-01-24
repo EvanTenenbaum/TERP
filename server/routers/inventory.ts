@@ -1044,8 +1044,11 @@ export const inventoryRouter = router({
       const currentQty = inventoryUtils.parseQty(batch[input.field]);
       const newQty = currentQty + input.adjustment;
 
+      // TERP-0018: Prevent negative inventory quantities
       if (newQty < 0) {
-        throw new Error("Quantity cannot be negative");
+        throw new Error(
+          `Adjustment would result in negative inventory. Current ${input.field}: ${currentQty}, adjustment: ${input.adjustment}`
+        );
       }
 
       const before = inventoryUtils.createAuditSnapshot(batch);

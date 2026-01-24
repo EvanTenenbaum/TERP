@@ -327,6 +327,7 @@ describe("Inventory Router", () => {
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(10);
 
       // Act & Assert
+      // TERP-0018: Updated error message to be more descriptive
       await expect(
         caller.inventory.adjustQty({
           id: 1,
@@ -334,7 +335,7 @@ describe("Inventory Router", () => {
           adjustment: -20, // Would result in negative
           reason: "Test",
         })
-      ).rejects.toThrow("Quantity cannot be negative");
+      ).rejects.toThrow("Adjustment would result in negative inventory");
     });
 
     it("should handle different quantity fields", async () => {

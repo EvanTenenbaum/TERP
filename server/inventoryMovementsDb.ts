@@ -316,8 +316,14 @@ export async function adjustInventory(
       const onHandQty = parseFloat(batch.onHandQty || "0");
       const newQty = parseFloat(newQuantity);
 
-      if (isNaN(newQty) || newQty < 0) {
-        throw new Error("Invalid quantity");
+      // TERP-0018: Validate quantity is valid and non-negative
+      if (isNaN(newQty)) {
+        throw new Error(`Invalid quantity value: ${newQuantity}`);
+      }
+      if (newQty < 0) {
+        throw new Error(
+          `Adjustment would result in negative inventory. Cannot set quantity to ${newQty}`
+        );
       }
 
       const change = newQty - onHandQty;
@@ -562,9 +568,10 @@ export async function reverseInventoryMovement(
       const reversalChange = -originalChange;
       const newQty = onHandQty + reversalChange;
 
+      // TERP-0018: Prevent negative inventory quantities
       if (newQty < 0) {
         throw new Error(
-          `Cannot reverse movement: would result in negative inventory (${newQty})`
+          `Adjustment would result in negative inventory. Current: ${onHandQty}, reversal change: ${reversalChange}`
         );
       }
 

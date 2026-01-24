@@ -26,7 +26,7 @@ const permissionCache = new Map<
   string,
   { permissions: Set<string>; timestamp: number }
 >();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds - reduced for rapid RBAC changes (TERP-0018)
 const MAX_PERMISSION_CACHE_SIZE = 50; // Prevent unbounded growth
 
 // Cleanup expired permission cache entries
