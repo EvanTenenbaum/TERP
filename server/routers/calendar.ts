@@ -39,7 +39,7 @@ export const calendarRouter = router({
     )
     .query(async ({ input, ctx }) => {
       // Wave 4C: Enhanced logging for database error investigation
-      const userId = ctx.user?.id ?? 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       calendarLogger.operationStart('getEvents', {
         userId,

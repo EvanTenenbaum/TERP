@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import * as vendorContextDb from "../vendorContextDb";
 import { eq, desc, and } from "drizzle-orm";
@@ -25,7 +25,7 @@ export const vendorsRouter = router({
    * Get all vendors (facade over getAllSuppliers)
    * @deprecated Use clients.list with clientTypes=['seller'] instead
    */
-  getAll: publicProcedure.query(async () => {
+  getAll: protectedProcedure.query(async () => {
     console.warn('[DEPRECATED] vendors.getAll - use clients.list with clientTypes=[\'seller\'] instead');
     try {
       const suppliers = await inventoryDb.getAllSuppliers();
@@ -65,7 +65,7 @@ export const vendorsRouter = router({
    * Get vendor by ID (facade - tries legacy vendor ID first, then client ID)
    * @deprecated Use clients.getById instead
    */
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       console.warn('[DEPRECATED] vendors.getById - use clients.getById instead');
@@ -127,7 +127,7 @@ export const vendorsRouter = router({
    * Search vendors by name (facade over searchSuppliers)
    * @deprecated Use clients.list with search and clientTypes=['seller'] instead
    */
-  search: publicProcedure
+  search: protectedProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
       console.warn('[DEPRECATED] vendors.search - use clients.list with search and clientTypes=[\'seller\'] instead');
@@ -166,7 +166,7 @@ export const vendorsRouter = router({
    * Create a new vendor (facade - creates client + supplier_profile)
    * @deprecated Use clients.create with isSeller=true instead
    */
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1, "Vendor name is required"),
@@ -227,7 +227,7 @@ export const vendorsRouter = router({
    * Update an existing vendor (facade - updates client + supplier_profile)
    * @deprecated Use clients.update instead
    */
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -319,7 +319,7 @@ export const vendorsRouter = router({
    * Delete a vendor (facade - soft deletes client)
    * @deprecated Use clients.delete instead
    */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       console.warn('[DEPRECATED] vendors.delete - use clients.delete instead');
@@ -370,7 +370,7 @@ export const vendorsRouter = router({
    * Get all notes for a vendor
    * Feature: MF-016 Vendor Notes & History
    */
-  getNotes: publicProcedure
+  getNotes: protectedProcedure
     .input(z.object({ vendorId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -414,7 +414,7 @@ export const vendorsRouter = router({
    * Create a new note for a vendor
    * Feature: MF-016 Vendor Notes & History
    */
-  createNote: publicProcedure
+  createNote: protectedProcedure
     .input(
       z.object({
         vendorId: z.number(),
@@ -467,7 +467,7 @@ export const vendorsRouter = router({
    * Update a vendor note
    * Feature: MF-016 Vendor Notes & History
    */
-  updateNote: publicProcedure
+  updateNote: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -521,7 +521,7 @@ export const vendorsRouter = router({
    * Delete a vendor note
    * Feature: MF-016 Vendor Notes & History
    */
-  deleteNote: publicProcedure
+  deleteNote: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -549,7 +549,7 @@ export const vendorsRouter = router({
    * Get vendor history from audit logs
    * Feature: MF-016 Vendor Notes & History
    */
-  getHistory: publicProcedure
+  getHistory: protectedProcedure
     .input(z.object({ vendorId: z.number() }))
     .query(async ({ input }) => {
       try {
