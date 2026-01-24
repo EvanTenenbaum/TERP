@@ -62,6 +62,9 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 
+// WS-GF-001: Golden Flow for payment recording
+import { InvoiceToPaymentFlow } from "./golden-flows/InvoiceToPaymentFlow";
+
 // Icons
 import {
   Search,
@@ -425,119 +428,7 @@ function InvoiceInspectorContent({
 // RECORD PAYMENT DIALOG
 // ============================================================================
 
-type PaymentMethod = "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER";
-
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "CHECK", label: "Check" },
-  { value: "CASH", label: "Cash" },
-  { value: "WIRE", label: "Wire Transfer" },
-  { value: "ACH", label: "ACH" },
-  { value: "CREDIT_CARD", label: "Credit Card" },
-  { value: "DEBIT_CARD", label: "Debit Card" },
-  { value: "OTHER", label: "Other" },
-];
-
-interface RecordPaymentDialogProps {
-  invoice: Invoice | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (invoiceId: number, amount: number, paymentMethod: PaymentMethod, note: string) => void;
-  isPending: boolean;
-}
-
-function RecordPaymentDialog({
-  invoice,
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-}: RecordPaymentDialogProps) {
-  const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CHECK");
-  const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (invoice && open) {
-      setAmount(invoice.amountDue);
-      setPaymentMethod("CHECK");
-      setNote("");
-    }
-  }, [invoice, open]);
-
-  if (!invoice) return null;
-
-  const handleSubmit = () => {
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-    if (numAmount > parseFloat(invoice.amountDue)) {
-      toast.error("Amount cannot exceed amount due");
-      return;
-    }
-    onSubmit(invoice.id, numAmount, paymentMethod, note);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Record Payment - {invoice.invoiceNumber}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="flex justify-between p-3 bg-muted rounded-lg">
-            <span className="text-sm text-muted-foreground">Amount Due</span>
-            <span className="font-mono font-semibold">{formatCurrency(invoice.amountDue)}</span>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Amount</label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              max={invoice.amountDue}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Method</label>
-            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHODS.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Reference / Note (optional)</label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Check number, reference ID, etc."
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isPending}>
-            {isPending ? "Recording..." : "Record Payment"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// WS-GF-001: RecordPaymentDialog removed - now using InvoiceToPaymentFlow Golden Flow
 
 // ============================================================================
 // MAIN COMPONENT
@@ -676,20 +567,7 @@ export function InvoicesWorkSurface() {
     },
   });
 
-  const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
-    onMutate: () => setSaving("Recording payment..."),
-    onSuccess: (data) => {
-      toasts.success(`Payment of ${formatCurrency(data.amount)} recorded successfully`);
-      setSaved();
-      setShowPaymentDialog(false);
-      utils.accounting.invoices.list.invalidate();
-      utils.payments.list.invalidate();
-    },
-    onError: (err) => {
-      toasts.error(err.message || "Failed to record payment");
-      setError(err.message);
-    },
-  });
+  // WS-GF-001: recordPaymentMutation removed - now handled by InvoiceToPaymentFlow Golden Flow
 
   // Track version for optimistic locking when invoice is selected (UXS-705)
   useEffect(() => {
@@ -785,20 +663,7 @@ export function InvoicesWorkSurface() {
     setShowVoidDialog(true);
   };
 
-  const handlePaymentSubmit = (
-    invoiceId: number,
-    amount: number,
-    paymentMethod: PaymentMethod,
-    note: string
-  ) => {
-    recordPaymentMutation.mutate({
-      invoiceId,
-      amount,
-      paymentMethod,
-      referenceNumber: note || undefined,
-      notes: note || undefined,
-    });
-  };
+  // WS-GF-001: handlePaymentSubmit removed - now handled by InvoiceToPaymentFlow Golden Flow
 
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
@@ -1016,14 +881,19 @@ export function InvoicesWorkSurface() {
         </InspectorPanel>
       </div>
 
-      {/* Record Payment Dialog */}
-      <RecordPaymentDialog
-        invoice={selectedInvoice}
-        open={showPaymentDialog}
-        onOpenChange={setShowPaymentDialog}
-        onSubmit={handlePaymentSubmit}
-        isPending={recordPaymentMutation.isPending}
-      />
+      {/* WS-GF-001: Golden Flow for Payment Recording */}
+      {selectedInvoiceId && (
+        <InvoiceToPaymentFlow
+          invoiceId={selectedInvoiceId}
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          onPaymentRecorded={() => {
+            utils.accounting.invoices.list.invalidate();
+            utils.payments.list.invalidate();
+            setShowPaymentDialog(false);
+          }}
+        />
+      )}
 
       {/* Void Dialog */}
       <Dialog open={showVoidDialog} onOpenChange={setShowVoidDialog}>
