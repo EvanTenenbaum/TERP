@@ -90,6 +90,7 @@ Build:      ✅ PASS
 12. `66af2db` - docs: document pre-existing issues found during QA review
 13. `0d85592` - feat(orders): WSQA-002 implement flexible lot selection
 14. `6b23996` - feat(orders): WSQA-003 add RETURNED status with processing paths
+15. `ea68f07` - feat(phase4): complete remaining Phase 4 work surface tasks
 
 ## Key Deliverables
 
