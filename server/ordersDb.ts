@@ -1452,6 +1452,96 @@ export async function deleteDraftOrder(input: {
 }
 
 // ============================================================================
+// ORDER STATE MACHINE - TERP-0016
+// ============================================================================
+
+/**
+ * Valid status transitions for fulfillment status
+ * TERP-0016: Business logic guardrails for orders
+ */
+const FULFILLMENT_STATUS_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["PACKED", "SHIPPED"], // Can pack or ship directly
+  PACKED: ["SHIPPED"], // Can only ship from packed
+  SHIPPED: [], // Terminal state - no further transitions allowed
+};
+
+/**
+ * Valid status transitions for sale status
+ * TERP-0016: Business logic guardrails for orders
+ */
+const SALE_STATUS_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["PARTIAL", "PAID", "OVERDUE", "CANCELLED"],
+  PARTIAL: ["PAID", "OVERDUE", "CANCELLED"],
+  OVERDUE: ["PARTIAL", "PAID", "CANCELLED"],
+  PAID: [], // Terminal state - cannot change a paid order status
+  CANCELLED: [], // Terminal state - cannot change a cancelled order status
+};
+
+/**
+ * Valid status transitions for quote status
+ * TERP-0016: Business logic guardrails for orders
+ */
+const QUOTE_STATUS_TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ["SENT", "ACCEPTED", "REJECTED", "EXPIRED"],
+  SENT: ["ACCEPTED", "REJECTED", "EXPIRED"],
+  ACCEPTED: ["CONVERTED"], // Only accepted quotes can be converted
+  REJECTED: [], // Terminal state
+  EXPIRED: [], // Terminal state
+  CONVERTED: [], // Terminal state
+};
+
+/**
+ * Validate a status transition is allowed
+ * @param statusType - The type of status being checked
+ * @param currentStatus - The current status value
+ * @param newStatus - The proposed new status value
+ * @returns true if transition is valid, false otherwise
+ */
+export function isValidStatusTransition(
+  statusType: "fulfillment" | "sale" | "quote",
+  currentStatus: string,
+  newStatus: string
+): boolean {
+  const transitions =
+    statusType === "fulfillment"
+      ? FULFILLMENT_STATUS_TRANSITIONS
+      : statusType === "sale"
+        ? SALE_STATUS_TRANSITIONS
+        : QUOTE_STATUS_TRANSITIONS;
+
+  const allowedTransitions = transitions[currentStatus];
+  if (!allowedTransitions) {
+    return false; // Unknown current status
+  }
+
+  return allowedTransitions.includes(newStatus);
+}
+
+/**
+ * Get validation error message for invalid status transition
+ */
+function getTransitionError(
+  statusType: "fulfillment" | "sale" | "quote",
+  currentStatus: string,
+  newStatus: string
+): string {
+  const transitions =
+    statusType === "fulfillment"
+      ? FULFILLMENT_STATUS_TRANSITIONS
+      : statusType === "sale"
+        ? SALE_STATUS_TRANSITIONS
+        : QUOTE_STATUS_TRANSITIONS;
+
+  const allowedTransitions = transitions[currentStatus] || [];
+
+  if (allowedTransitions.length === 0) {
+    return `Cannot change ${statusType} status from ${currentStatus} - this is a terminal state`;
+  }
+
+  return `Invalid ${statusType} status transition: ${currentStatus} -> ${newStatus}. Valid transitions from ${currentStatus}: ${allowedTransitions.join(", ")}`;
+}
+
+// ============================================================================
 // FULFILLMENT STATUS MANAGEMENT
 // ============================================================================
 
@@ -1501,12 +1591,9 @@ export async function updateOrderStatus(input: {
 
     const oldStatus = order.fulfillmentStatus || "PENDING";
 
-    // Validate status transition
-    if (oldStatus === "SHIPPED") {
-      throw new Error("Cannot change status of shipped order");
-    }
-    if (oldStatus === "PACKED" && newStatus === "PENDING") {
-      throw new Error("Cannot move packed order back to pending");
+    // TERP-0016: Validate status transition using state machine
+    if (!isValidStatusTransition("fulfillment", oldStatus, newStatus)) {
+      throw new Error(getTransitionError("fulfillment", oldStatus, newStatus));
     }
 
     // Prepare update data

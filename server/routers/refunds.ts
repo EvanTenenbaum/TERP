@@ -128,6 +128,45 @@ export const refundsRouter = router({
           throw new Error("Original transaction not found");
         }
 
+        // Check for duplicate refund for this return
+        // Look for existing refund transactions that mention this return ID
+        const existingRefundsForReturn = await tx
+          .select({ id: transactions.id })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.transactionType, "REFUND"),
+              sql`${transactions.notes} LIKE ${`%return #${input.returnId}%`}`
+            )
+          )
+          .limit(1);
+
+        if (existingRefundsForReturn.length > 0) {
+          throw new Error(
+            `A refund already exists for return #${input.returnId}. ` +
+            `Duplicate refunds are not allowed. Existing refund ID: ${existingRefundsForReturn[0].id}`
+          );
+        }
+
+        // Check for duplicate refund for the same original transaction
+        const existingRefundsForTransaction = await tx
+          .select({ id: transactionLinks.childTransactionId })
+          .from(transactionLinks)
+          .where(
+            and(
+              eq(transactionLinks.parentTransactionId, input.originalTransactionId),
+              eq(transactionLinks.transactionLinkType, "REFUND_OF")
+            )
+          )
+          .limit(1);
+
+        if (existingRefundsForTransaction.length > 0) {
+          throw new Error(
+            `A refund already exists for transaction #${input.originalTransactionId}. ` +
+            `Duplicate refunds are not allowed. Existing refund ID: ${existingRefundsForTransaction[0].id}`
+          );
+        }
+
         // Create refund transaction
         const txNumber = `REF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const [refundTx] = await tx.insert(transactions).values({
