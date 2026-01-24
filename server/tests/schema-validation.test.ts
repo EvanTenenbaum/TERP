@@ -53,16 +53,17 @@ describe("Schema Validation", () => {
       expect(clients.tags).toBeDefined();
     });
 
-    it("should not have paymentTerms or notes fields (creditLimit now exists)", () => {
+    it("should have paymentTerms and creditLimit fields but not notes", () => {
       const schemaColumns = clients;
 
-      // These fields do not exist in the clients table
+      // paymentTerms and creditLimit exist in the clients table
       expect(
         (schemaColumns as Record<string, unknown>).paymentTerms
-      ).toBeUndefined();
+      ).toBeDefined();
       expect(
         (schemaColumns as Record<string, unknown>).creditLimit
       ).toBeDefined();
+      // notes does not exist in the clients table
       expect((schemaColumns as Record<string, unknown>).notes).toBeUndefined();
     });
   });

@@ -56,9 +56,10 @@ describe("Dashboard Router", () => {
 
       const mockPaidInvoices = {
         invoices: [
-          { id: 1, totalAmount: "1000.00" },
-          { id: 2, totalAmount: "2000.00" },
+          { id: 1, totalAmount: "1000.00", status: "PAID" },
+          { id: 2, totalAmount: "2000.00", status: "PAID" },
         ],
+        totalCount: 2,
       };
 
       const mockActiveInvoices = {
@@ -67,6 +68,19 @@ describe("Dashboard Router", () => {
           { id: 4, status: "SENT" },
           { id: 5, status: "SENT" },
         ],
+        totalCount: 3,
+      };
+
+      // All invoices (combined paid and active) - used for period-over-period calculations
+      const mockAllInvoices = {
+        invoices: [
+          { id: 1, totalAmount: "1000.00", status: "PAID", invoiceDate: new Date().toISOString() },
+          { id: 2, totalAmount: "2000.00", status: "PAID", invoiceDate: new Date().toISOString() },
+          { id: 3, status: "SENT", invoiceDate: new Date().toISOString() },
+          { id: 4, status: "SENT", invoiceDate: new Date().toISOString() },
+          { id: 5, status: "SENT", invoiceDate: new Date().toISOString() },
+        ],
+        totalCount: 5,
       };
 
       vi.mocked(inventoryDb.getDashboardStats).mockResolvedValue(
@@ -76,8 +90,9 @@ describe("Dashboard Router", () => {
         total: 5000,
       });
       vi.mocked(arApDb.getInvoices)
-        .mockResolvedValueOnce(mockPaidInvoices)
-        .mockResolvedValueOnce(mockActiveInvoices);
+        .mockResolvedValueOnce(mockPaidInvoices)    // First call: PAID invoices
+        .mockResolvedValueOnce(mockActiveInvoices)  // Second call: SENT invoices
+        .mockResolvedValueOnce(mockAllInvoices);    // Third call: All invoices
 
       // Act
       const result = await caller.dashboard.getKpis();

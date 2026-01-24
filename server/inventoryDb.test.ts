@@ -285,6 +285,7 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
       AWAITING_INTAKE: 0,
       LIVE: 3,
       ON_HOLD: 1,
+      PHOTOGRAPHY_COMPLETE: 0,
       QUARANTINED: 1,
       SOLD_OUT: 1,
       CLOSED: 0,

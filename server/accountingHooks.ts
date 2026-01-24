@@ -16,6 +16,36 @@ import { logger } from "./_core/logger";
 import { getFiscalPeriodIdOrDefault } from "./_core/fiscalPeriod";
 
 /**
+ * Custom error class for GL posting failures
+ * These errors should bubble up to ensure data integrity
+ */
+export class GLPostingError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly context?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = "GLPostingError";
+  }
+}
+
+/**
+ * Custom error class for missing standard accounts
+ * This is a critical configuration error that must be addressed
+ */
+export class MissingStandardAccountError extends GLPostingError {
+  constructor(accountCode: string, accountName: string) {
+    super(
+      `Standard account not found: ${accountName} (${accountCode}). Run seedStandardAccounts() to create required accounts.`,
+      "MISSING_STANDARD_ACCOUNT",
+      { accountCode, accountName }
+    );
+    this.name = "MissingStandardAccountError";
+  }
+}
+
+/**
  * Standard account codes (should be configurable in production)
  * These would typically be loaded from a configuration table
  */
@@ -32,27 +62,33 @@ export const STANDARD_ACCOUNTS = {
 /**
  * Get account ID by account number
  * @param accountNumber Account number
- * @returns Account ID or null if not found
+ * @returns Account ID or null if not found (null means account doesn't exist, not an error)
+ * @throws GLPostingError if database query fails
  */
 async function getAccountIdByNumber(accountNumber: string): Promise<number | null> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
+  if (!db) throw new GLPostingError("Database not available", "DB_UNAVAILABLE");
+
   try {
     const [account] = await db
       .select()
       .from(accounts)
       .where(eq(accounts.accountNumber, accountNumber));
-    
-    return account?.id || null;
+
+    return account?.id ?? null;
   } catch (error) {
     logger.error({
-      msg: "Error fetching account",
+      msg: "Error fetching account - this is a critical failure",
       accountNumber,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return null;
+    // Throw instead of silently returning null - database errors must not be hidden
+    throw new GLPostingError(
+      `Failed to fetch account ${accountNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      "ACCOUNT_FETCH_FAILED",
+      { accountNumber, originalError: error instanceof Error ? error.message : String(error) }
+    );
   }
 }
 
@@ -94,14 +130,18 @@ export async function createJournalEntry(entryData: {
   createdBy: number;
 }): Promise<any[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
+  if (!db) throw new GLPostingError("Database not available", "DB_UNAVAILABLE");
+
   try {
     const fiscalPeriodId = await getCurrentFiscalPeriodId();
     const amountNum = parseFloat(entryData.amount);
-    
+
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error("Invalid amount for journal entry");
+      throw new GLPostingError(
+        `Invalid amount for journal entry: ${entryData.amount}`,
+        "INVALID_AMOUNT",
+        { amount: entryData.amount, entryNumber: entryData.entryNumber }
+      );
     }
     
     // Create debit entry
@@ -136,7 +176,7 @@ export async function createJournalEntry(entryData: {
     
     return [
       { account: entryData.debitAccountId, debit: amountNum, credit: 0 },
-      { account: entryData.creditAccountId, debit: 0, credit: amountNum }
+      { account: entryData.creditAccountId, debit: 0, credit: amountNum },
     ];
   } catch (error) {
     logger.error({
@@ -145,7 +185,15 @@ export async function createJournalEntry(entryData: {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to create journal entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Re-throw GLPostingErrors as-is, wrap others
+    if (error instanceof GLPostingError) {
+      throw error;
+    }
+    throw new GLPostingError(
+      `Failed to create journal entry ${entryData.entryNumber}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "JOURNAL_ENTRY_FAILED",
+      { entryNumber: entryData.entryNumber, referenceType: entryData.referenceType }
+    );
   }
 }
 
@@ -153,9 +201,11 @@ export async function createJournalEntry(entryData: {
  * Post GL entries for a sale
  * Debit: Accounts Receivable
  * Credit: Revenue
- * 
+ *
  * @param saleData Sale transaction data
  * @returns Array of created ledger entries
+ * @throws MissingStandardAccountError if required accounts are not configured
+ * @throws GLPostingError if GL posting fails for any other reason
  */
 export async function postSaleGLEntries(saleData: {
   transactionId: number;
@@ -165,17 +215,23 @@ export async function postSaleGLEntries(saleData: {
   transactionDate: Date;
   userId: number;
 }): Promise<any[]> {
+  const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
+  const revenueAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.REVENUE);
+
+  // Throw specific errors for missing standard accounts - these are configuration issues
+  if (!arAccountId) {
+    throw new MissingStandardAccountError(
+      STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE,
+      "Accounts Receivable"
+    );
+  }
+  if (!revenueAccountId) {
+    throw new MissingStandardAccountError(STANDARD_ACCOUNTS.REVENUE, "Revenue");
+  }
+
   try {
-    const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
-    const revenueAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.REVENUE);
-    
-    if (!arAccountId || !revenueAccountId) {
-      console.warn("Standard accounts not found - skipping GL posting");
-      return [];
-    }
-    
     const entryNumber = await generateEntryNumber("SALE");
-    
+
     return await createJournalEntry({
       entryNumber,
       entryDate: saleData.transactionDate,
@@ -185,18 +241,25 @@ export async function postSaleGLEntries(saleData: {
       description: `Sale - ${saleData.transactionNumber}`,
       referenceType: "SALE",
       referenceId: saleData.transactionId,
-      createdBy: saleData.userId
+      createdBy: saleData.userId,
     });
   } catch (error) {
     logger.error({
       msg: "Error posting sale GL entries",
       transactionId: saleData.transactionId,
+      transactionNumber: saleData.transactionNumber,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    // Don't throw - allow sale to complete even if GL posting fails
-    logger.warn({ msg: "Sale completed but GL entries failed" });
-    return [];
+    // Re-throw to ensure GL posting failures are not silent
+    if (error instanceof GLPostingError) {
+      throw error;
+    }
+    throw new GLPostingError(
+      `Failed to post GL entries for sale ${saleData.transactionNumber}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "SALE_GL_POSTING_FAILED",
+      { transactionId: saleData.transactionId, transactionNumber: saleData.transactionNumber }
+    );
   }
 }
 
@@ -204,9 +267,11 @@ export async function postSaleGLEntries(saleData: {
  * Post GL entries for a payment
  * Debit: Cash
  * Credit: Accounts Receivable
- * 
+ *
  * @param paymentData Payment transaction data
  * @returns Array of created ledger entries
+ * @throws MissingStandardAccountError if required accounts are not configured
+ * @throws GLPostingError if GL posting fails for any other reason
  */
 export async function postPaymentGLEntries(paymentData: {
   transactionId: number;
@@ -216,17 +281,23 @@ export async function postPaymentGLEntries(paymentData: {
   transactionDate: Date;
   userId: number;
 }): Promise<any[]> {
+  const cashAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.CASH);
+  const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
+
+  // Throw specific errors for missing standard accounts
+  if (!cashAccountId) {
+    throw new MissingStandardAccountError(STANDARD_ACCOUNTS.CASH, "Cash");
+  }
+  if (!arAccountId) {
+    throw new MissingStandardAccountError(
+      STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE,
+      "Accounts Receivable"
+    );
+  }
+
   try {
-    const cashAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.CASH);
-    const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
-    
-    if (!cashAccountId || !arAccountId) {
-      console.warn("Standard accounts not found - skipping GL posting");
-      return [];
-    }
-    
     const entryNumber = await generateEntryNumber("PMT");
-    
+
     return await createJournalEntry({
       entryNumber,
       entryDate: paymentData.transactionDate,
@@ -236,17 +307,25 @@ export async function postPaymentGLEntries(paymentData: {
       description: `Payment - ${paymentData.transactionNumber}`,
       referenceType: "PAYMENT",
       referenceId: paymentData.transactionId,
-      createdBy: paymentData.userId
+      createdBy: paymentData.userId,
     });
   } catch (error) {
     logger.error({
       msg: "Error posting payment GL entries",
       transactionId: paymentData.transactionId,
+      transactionNumber: paymentData.transactionNumber,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    logger.warn({ msg: "Payment completed but GL entries failed" });
-    return [];
+    // Re-throw to ensure GL posting failures are not silent
+    if (error instanceof GLPostingError) {
+      throw error;
+    }
+    throw new GLPostingError(
+      `Failed to post GL entries for payment ${paymentData.transactionNumber}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "PAYMENT_GL_POSTING_FAILED",
+      { transactionId: paymentData.transactionId, transactionNumber: paymentData.transactionNumber }
+    );
   }
 }
 
@@ -254,9 +333,11 @@ export async function postPaymentGLEntries(paymentData: {
  * Post GL entries for a refund
  * Debit: Sales Returns (contra-revenue)
  * Credit: Accounts Receivable
- * 
+ *
  * @param refundData Refund transaction data
  * @returns Array of created ledger entries
+ * @throws MissingStandardAccountError if required accounts are not configured
+ * @throws GLPostingError if GL posting fails for any other reason
  */
 export async function postRefundGLEntries(refundData: {
   transactionId: number;
@@ -266,17 +347,23 @@ export async function postRefundGLEntries(refundData: {
   transactionDate: Date;
   userId: number;
 }): Promise<any[]> {
+  const salesReturnsAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.SALES_RETURNS);
+  const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
+
+  // Throw specific errors for missing standard accounts
+  if (!salesReturnsAccountId) {
+    throw new MissingStandardAccountError(STANDARD_ACCOUNTS.SALES_RETURNS, "Sales Returns");
+  }
+  if (!arAccountId) {
+    throw new MissingStandardAccountError(
+      STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE,
+      "Accounts Receivable"
+    );
+  }
+
   try {
-    const salesReturnsAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.SALES_RETURNS);
-    const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
-    
-    if (!salesReturnsAccountId || !arAccountId) {
-      console.warn("Standard accounts not found - skipping GL posting");
-      return [];
-    }
-    
     const entryNumber = await generateEntryNumber("REF");
-    
+
     return await createJournalEntry({
       entryNumber,
       entryDate: refundData.transactionDate,
@@ -286,17 +373,25 @@ export async function postRefundGLEntries(refundData: {
       description: `Refund - ${refundData.transactionNumber}`,
       referenceType: "REFUND",
       referenceId: refundData.transactionId,
-      createdBy: refundData.userId
+      createdBy: refundData.userId,
     });
   } catch (error) {
     logger.error({
       msg: "Error posting refund GL entries",
       transactionId: refundData.transactionId,
+      transactionNumber: refundData.transactionNumber,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    logger.warn({ msg: "Refund completed but GL entries failed" });
-    return [];
+    // Re-throw to ensure GL posting failures are not silent
+    if (error instanceof GLPostingError) {
+      throw error;
+    }
+    throw new GLPostingError(
+      `Failed to post GL entries for refund ${refundData.transactionNumber}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "REFUND_GL_POSTING_FAILED",
+      { transactionId: refundData.transactionId, transactionNumber: refundData.transactionNumber }
+    );
   }
 }
 
@@ -304,9 +399,11 @@ export async function postRefundGLEntries(refundData: {
  * Post GL entries for COGS
  * Debit: Cost of Goods Sold
  * Credit: Inventory
- * 
+ *
  * @param cogsData COGS data
  * @returns Array of created ledger entries
+ * @throws MissingStandardAccountError if required accounts are not configured
+ * @throws GLPostingError if GL posting fails for any other reason
  */
 export async function postCOGSGLEntries(cogsData: {
   transactionId: number;
@@ -315,17 +412,23 @@ export async function postCOGSGLEntries(cogsData: {
   transactionDate: Date;
   userId: number;
 }): Promise<any[]> {
+  const cogsAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.COST_OF_GOODS_SOLD);
+  const inventoryAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.INVENTORY);
+
+  // Throw specific errors for missing standard accounts
+  if (!cogsAccountId) {
+    throw new MissingStandardAccountError(
+      STANDARD_ACCOUNTS.COST_OF_GOODS_SOLD,
+      "Cost of Goods Sold"
+    );
+  }
+  if (!inventoryAccountId) {
+    throw new MissingStandardAccountError(STANDARD_ACCOUNTS.INVENTORY, "Inventory");
+  }
+
   try {
-    const cogsAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.COST_OF_GOODS_SOLD);
-    const inventoryAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.INVENTORY);
-    
-    if (!cogsAccountId || !inventoryAccountId) {
-      console.warn("Standard accounts not found - skipping COGS GL posting");
-      return [];
-    }
-    
     const entryNumber = await generateEntryNumber("COGS");
-    
+
     return await createJournalEntry({
       entryNumber,
       entryDate: cogsData.transactionDate,
@@ -335,29 +438,38 @@ export async function postCOGSGLEntries(cogsData: {
       description: `COGS - ${cogsData.transactionNumber}`,
       referenceType: "COGS",
       referenceId: cogsData.transactionId,
-      createdBy: cogsData.userId
+      createdBy: cogsData.userId,
     });
   } catch (error) {
     logger.error({
       msg: "Error posting COGS GL entries",
       transactionId: cogsData.transactionId,
+      transactionNumber: cogsData.transactionNumber,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    logger.warn({ msg: "COGS calculation completed but GL entries failed" });
-    return [];
+    // Re-throw to ensure GL posting failures are not silent
+    if (error instanceof GLPostingError) {
+      throw error;
+    }
+    throw new GLPostingError(
+      `Failed to post GL entries for COGS ${cogsData.transactionNumber}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "COGS_GL_POSTING_FAILED",
+      { transactionId: cogsData.transactionId, transactionNumber: cogsData.transactionNumber }
+    );
   }
 }
 
 /**
  * Reverse GL entries for a transaction
  * Creates reversing entries with opposite debit/credit
- * 
+ *
  * @param originalReferenceType Original reference type
  * @param originalReferenceId Original reference ID
  * @param reason Reason for reversal
  * @param userId User ID performing reversal
  * @returns Array of created reversing entries
+ * @throws GLPostingError if no original entries found or reversal fails
  */
 export async function reverseGLEntries(
   originalReferenceType: string,
@@ -366,8 +478,8 @@ export async function reverseGLEntries(
   userId: number
 ): Promise<any[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
+  if (!db) throw new GLPostingError("Database not available", "DB_UNAVAILABLE");
+
   try {
     // Find original entries
     const originalEntries = await db
@@ -379,10 +491,14 @@ export async function reverseGLEntries(
           eq(ledgerEntries.referenceId, originalReferenceId)
         )
       );
-    
+
     if (originalEntries.length === 0) {
-      console.warn(`No GL entries found for ${originalReferenceType} #${originalReferenceId}`);
-      return [];
+      // This is an error condition - attempting to reverse non-existent entries indicates a problem
+      throw new GLPostingError(
+        `No GL entries found for ${originalReferenceType} #${originalReferenceId}. Cannot reverse non-existent entries.`,
+        "NO_ENTRIES_TO_REVERSE",
+        { referenceType: originalReferenceType, referenceId: originalReferenceId }
+      );
     }
     
     const fiscalPeriodId = await getCurrentFiscalPeriodId();
@@ -414,7 +530,15 @@ export async function reverseGLEntries(
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error(`Failed to reverse GL entries: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Re-throw GLPostingErrors as-is, wrap others
+    if (error instanceof GLPostingError) {
+      throw error;
+    }
+    throw new GLPostingError(
+      `Failed to reverse GL entries for ${originalReferenceType} #${originalReferenceId}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "REVERSAL_FAILED",
+      { referenceType: originalReferenceType, referenceId: originalReferenceId }
+    );
   }
 }
 

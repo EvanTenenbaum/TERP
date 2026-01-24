@@ -183,7 +183,10 @@ export function usePerformanceMonitor(
         try {
           performance.mark(`${surfaceName}-${name}-start`);
         } catch (e) {
-          // Ignore errors
+          // Performance API may not support marking in some environments
+          if (isDev) {
+            console.debug(`[${surfaceName}] Performance.mark failed:`, e);
+          }
         }
       }
     },
@@ -227,7 +230,10 @@ export function usePerformanceMonitor(
             `${surfaceName}-${name}-end`
           );
         } catch (e) {
-          // Ignore errors
+          // Performance API may fail if start mark doesn't exist or isn't supported
+          if (isDev) {
+            console.debug(`[${surfaceName}] Performance.measure failed for "${name}":`, e);
+          }
         }
       }
 
@@ -328,7 +334,10 @@ export function usePerformanceObserver(options: UsePerformanceObserverOptions = 
 
       return () => observer.disconnect();
     } catch (e) {
-      // Browser doesn't support this entry type
+      // Browser doesn't support this entry type - log in dev for debugging
+      if (isDev) {
+        console.debug('[PerformanceObserver] Failed to observe entry types:', entryTypes, e);
+      }
       return;
     }
   }, [entryTypes, onEntry, filter]);
@@ -372,7 +381,12 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as any);
       observers.push(lcpObserver);
-    } catch (e) {}
+    } catch (e) {
+      // LCP observer not supported in this browser
+      if (isDev) {
+        console.debug('[WebVitals] LCP observer not supported:', e);
+      }
+    }
 
     // FID
     try {
@@ -384,7 +398,12 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       fidObserver.observe({ type: 'first-input', buffered: true } as any);
       observers.push(fidObserver);
-    } catch (e) {}
+    } catch (e) {
+      // FID observer not supported in this browser
+      if (isDev) {
+        console.debug('[WebVitals] FID observer not supported:', e);
+      }
+    }
 
     // CLS
     try {
@@ -400,7 +419,12 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       clsObserver.observe({ type: 'layout-shift', buffered: true } as any);
       observers.push(clsObserver);
-    } catch (e) {}
+    } catch (e) {
+      // CLS observer not supported in this browser
+      if (isDev) {
+        console.debug('[WebVitals] CLS observer not supported:', e);
+      }
+    }
 
     return () => {
       observers.forEach((o) => o.disconnect());

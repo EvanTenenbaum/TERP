@@ -308,7 +308,7 @@ describe("SampleManagement", () => {
       render(<SampleManagement />);
 
       expect(
-        screen.getByRole("button", { name: /Create New Sample Request/i })
+        screen.getByRole("button", { name: /Create Sample Request/i })
       ).toBeInTheDocument();
     });
 
