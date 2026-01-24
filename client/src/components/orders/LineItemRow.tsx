@@ -1,17 +1,24 @@
 import React, { useState, memo } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { COGSInput } from "./COGSInput";
 import { MarginInput } from "./MarginInput";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 // import { useMarginLookup } from "@/hooks/orders/useMarginLookup";
 import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 
 interface LineItem {
   id?: number;
   batchId: number;
+  productId?: number; // WSQA-002: Product ID for flexible lot selection
   productDisplayName?: string;
   quantity: number;
   cogsPerUnit: number;
@@ -33,6 +40,7 @@ interface LineItemRowProps {
   clientId: number | null;
   onUpdate: (updates: Partial<LineItem>) => void;
   onRemove: () => void;
+  onChangeLot?: () => void; // WSQA-002: Callback for lot selection
 }
 
 export const LineItemRow = memo(function LineItemRow({
@@ -41,6 +49,7 @@ export const LineItemRow = memo(function LineItemRow({
   clientId: _clientId,
   onUpdate,
   onRemove,
+  onChangeLot, // WSQA-002: Flexible lot selection
 }: LineItemRowProps) {
   const [isEditingQty, setIsEditingQty] = useState(false);
   const [qtyInput, setQtyInput] = useState(item.quantity.toString());
@@ -215,16 +224,38 @@ export const LineItemRow = memo(function LineItemRow({
         {fmt(item.lineTotal)}
       </TableCell>
 
-      {/* Actions */}
+      {/* Actions - WSQA-002: Added lot selection button */}
       <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-8 w-8 p-0"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {/* WSQA-002: Change Lot button - only show if productId available */}
+          {item.productId && onChangeLot && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onChangeLot}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Package className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Change lot/batch</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-8 w-8 p-0"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   );

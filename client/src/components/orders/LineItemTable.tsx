@@ -2,9 +2,10 @@
  * LineItemTable Component
  * Editable table for order line items with COGS and margin management
  * v2.0 Sales Order Enhancements
+ * WSQA-002: Added flexible lot selection via BatchSelectionDialog
  */
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LineItemRow } from "./LineItemRow";
+import { BatchSelectionDialog, type BatchAllocation } from "./BatchSelectionDialog";
+import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 
 export interface LineItem {
   id?: number;
@@ -43,12 +46,24 @@ interface LineItemTableProps {
   onAddItem?: () => void;
 }
 
+// WSQA-002: State for batch selection dialog
+interface LotSelectionState {
+  isOpen: boolean;
+  itemIndex: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+}
+
 export function LineItemTable({
   items,
   clientId,
   onChange,
   onAddItem,
 }: LineItemTableProps) {
+  // WSQA-002: Batch selection dialog state
+  const [lotSelection, setLotSelection] = useState<LotSelectionState | null>(null);
+
   const handleUpdateItem = (index: number, updates: Partial<LineItem>) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], ...updates };
@@ -63,6 +78,80 @@ export function LineItemTable({
   const handleClearAll = () => {
     onChange([]);
   };
+
+  // WSQA-002: Open batch selection dialog for a line item
+  const handleOpenLotSelection = useCallback((index: number) => {
+    const item = items[index];
+    if (item.productId) {
+      setLotSelection({
+        isOpen: true,
+        itemIndex: index,
+        productId: item.productId,
+        productName: item.productDisplayName || "Product",
+        quantity: item.quantity,
+      });
+    }
+  }, [items]);
+
+  // WSQA-002: Handle batch selection from dialog
+  const handleBatchSelect = useCallback((allocations: BatchAllocation[]) => {
+    if (!lotSelection || allocations.length === 0) return;
+
+    const { itemIndex } = lotSelection;
+    const currentItem = items[itemIndex];
+
+    // If single batch selected, update the existing line item
+    if (allocations.length === 1) {
+      const allocation = allocations[0];
+      const updated = calculateLineItem(
+        allocation.batchId,
+        allocation.quantity,
+        allocation.unitCost,
+        currentItem.marginPercent
+      );
+
+      const newItems = [...items];
+      newItems[itemIndex] = {
+        ...currentItem,
+        ...updated,
+        batchId: allocation.batchId,
+        cogsPerUnit: allocation.unitCost,
+        originalCogsPerUnit: allocation.unitCost,
+        isCogsOverridden: false,
+      };
+      onChange(newItems);
+    } else {
+      // Multiple batches: replace current item with multiple line items
+      const newLineItems = allocations.map(allocation => {
+        const updated = calculateLineItem(
+          allocation.batchId,
+          allocation.quantity,
+          allocation.unitCost,
+          currentItem.marginPercent
+        );
+
+        return {
+          ...currentItem,
+          ...updated,
+          id: undefined, // New line items don't have IDs yet
+          batchId: allocation.batchId,
+          cogsPerUnit: allocation.unitCost,
+          originalCogsPerUnit: allocation.unitCost,
+          isCogsOverridden: false,
+        };
+      });
+
+      // Replace the item at itemIndex with the new line items
+      const newItems = [
+        ...items.slice(0, itemIndex),
+        ...newLineItems,
+        ...items.slice(itemIndex + 1),
+      ];
+      onChange(newItems);
+    }
+
+    setLotSelection(null);
+  }, [items, lotSelection, onChange]);
 
   return (
     <div className="space-y-4">
@@ -123,6 +212,7 @@ export function LineItemTable({
                   clientId={clientId}
                   onUpdate={(updates) => handleUpdateItem(index, updates)}
                   onRemove={() => handleRemoveItem(index)}
+                  onChangeLot={item.productId ? () => handleOpenLotSelection(index) : undefined}
                 />
               ))}
             </TableBody>
@@ -134,6 +224,18 @@ export function LineItemTable({
         <div className="text-sm text-muted-foreground">
           {items.length} item{items.length !== 1 ? "s" : ""} in order
         </div>
+      )}
+
+      {/* WSQA-002: Batch Selection Dialog for flexible lot selection */}
+      {lotSelection && (
+        <BatchSelectionDialog
+          open={lotSelection.isOpen}
+          onClose={() => setLotSelection(null)}
+          productId={lotSelection.productId}
+          productName={lotSelection.productName}
+          quantityNeeded={lotSelection.quantity}
+          onSelect={handleBatchSelect}
+        />
       )}
     </div>
   );
