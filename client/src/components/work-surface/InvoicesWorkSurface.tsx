@@ -425,11 +425,23 @@ function InvoiceInspectorContent({
 // RECORD PAYMENT DIALOG
 // ============================================================================
 
+type PaymentMethod = "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER";
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "CHECK", label: "Check" },
+  { value: "CASH", label: "Cash" },
+  { value: "WIRE", label: "Wire Transfer" },
+  { value: "ACH", label: "ACH" },
+  { value: "CREDIT_CARD", label: "Credit Card" },
+  { value: "DEBIT_CARD", label: "Debit Card" },
+  { value: "OTHER", label: "Other" },
+];
+
 interface RecordPaymentDialogProps {
   invoice: Invoice | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (invoiceId: number, amount: number, note: string) => void;
+  onSubmit: (invoiceId: number, amount: number, paymentMethod: PaymentMethod, note: string) => void;
   isPending: boolean;
 }
 
@@ -441,11 +453,13 @@ function RecordPaymentDialog({
   isPending,
 }: RecordPaymentDialogProps) {
   const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CHECK");
   const [note, setNote] = useState("");
 
   useEffect(() => {
     if (invoice && open) {
       setAmount(invoice.amountDue);
+      setPaymentMethod("CHECK");
       setNote("");
     }
   }, [invoice, open]);
@@ -462,7 +476,7 @@ function RecordPaymentDialog({
       toast.error("Amount cannot exceed amount due");
       return;
     }
-    onSubmit(invoice.id, numAmount, note);
+    onSubmit(invoice.id, numAmount, paymentMethod, note);
   };
 
   return (
@@ -489,11 +503,26 @@ function RecordPaymentDialog({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Note (optional)</label>
+            <label className="text-sm font-medium">Payment Method</label>
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((method) => (
+                  <SelectItem key={method.value} value={method.value}>
+                    {method.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Reference / Note (optional)</label>
             <Input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Payment reference, check number, etc."
+              placeholder="Check number, reference ID, etc."
             />
           </div>
         </div>
@@ -647,6 +676,21 @@ export function InvoicesWorkSurface() {
     },
   });
 
+  const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
+    onMutate: () => setSaving("Recording payment..."),
+    onSuccess: (data) => {
+      toasts.success(`Payment of ${formatCurrency(data.amount)} recorded successfully`);
+      setSaved();
+      setShowPaymentDialog(false);
+      utils.accounting.invoices.list.invalidate();
+      utils.payments.list.invalidate();
+    },
+    onError: (err) => {
+      toasts.error(err.message || "Failed to record payment");
+      setError(err.message);
+    },
+  });
+
   // Track version for optimistic locking when invoice is selected (UXS-705)
   useEffect(() => {
     if (selectedInvoice && selectedInvoice.version !== undefined) {
@@ -741,13 +785,19 @@ export function InvoicesWorkSurface() {
     setShowVoidDialog(true);
   };
 
-  const handlePaymentSubmit = (invoiceId: number, amount: number, note: string) => {
-    setSaving("Recording payment...");
-    // In a real implementation, this would call a recordPayment mutation
-    toasts.success(`Payment of ${formatCurrency(amount)} recorded`);
-    setSaved();
-    setShowPaymentDialog(false);
-    utils.accounting.invoices.list.invalidate();
+  const handlePaymentSubmit = (
+    invoiceId: number,
+    amount: number,
+    paymentMethod: PaymentMethod,
+    note: string
+  ) => {
+    recordPaymentMutation.mutate({
+      invoiceId,
+      amount,
+      paymentMethod,
+      referenceNumber: note || undefined,
+      notes: note || undefined,
+    });
   };
 
   return (
@@ -972,7 +1022,7 @@ export function InvoicesWorkSurface() {
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
         onSubmit={handlePaymentSubmit}
-        isPending={false}
+        isPending={recordPaymentMutation.isPending}
       />
 
       {/* Void Dialog */}
