@@ -718,10 +718,12 @@ export async function updateOrder(
 
 /**
  * Delete/cancel an order
+ * @param id - Order ID to delete/cancel
+ * @param cancelledBy - Required: User ID performing the cancellation (for audit trail)
  */
 export async function deleteOrder(
   id: number,
-  cancelledBy?: number
+  cancelledBy: number
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -763,7 +765,7 @@ export async function deleteOrder(
           invoiceId: order.invoiceId,
           orderId: id,
           reason: "Order cancelled",
-          reversedBy: cancelledBy ?? 1,
+          reversedBy: cancelledBy,
         });
       } catch (accountingError) {
         console.error(
@@ -773,8 +775,14 @@ export async function deleteOrder(
       }
     }
   } else {
-    // For quotes, can delete
-    await db.delete(orders).where(eq(orders.id, id));
+    // For quotes, use soft delete (per CLAUDE.md - never hard delete)
+    await db
+      .update(orders)
+      .set({
+        deletedAt: new Date(),
+        quoteStatus: "REJECTED",
+      })
+      .where(eq(orders.id, id));
   }
 }
 
@@ -940,6 +948,14 @@ export async function convertQuoteToSale(
 
     // 8. Create invoice, record payment, update credit
     if (sale) {
+      // Validate quote has createdBy (data integrity check)
+      if (!quote.createdBy) {
+        throw new Error(
+          `Data integrity error: Quote ${input.quoteId} is missing createdBy. ` +
+            `Cannot create invoice without a valid user attribution.`
+        );
+      }
+
       try {
         const subtotal = parseFloat(quote.subtotal ?? "0");
         const invoiceId = await createInvoiceFromOrder({
@@ -951,7 +967,7 @@ export async function convertQuoteToSale(
           tax: parseFloat(quote.tax ?? "0"),
           total: parseFloat(quote.total ?? "0"),
           dueDate,
-          createdBy: quote.createdBy ?? 1,
+          createdBy: quote.createdBy,
         });
 
         // Record cash payment if applicable
@@ -959,7 +975,7 @@ export async function convertQuoteToSale(
           await recordOrderCashPayment({
             invoiceId,
             amount: input.cashPayment,
-            createdBy: quote.createdBy ?? 1,
+            createdBy: quote.createdBy,
           });
         }
 
@@ -1418,11 +1434,14 @@ export async function updateDraftOrder(input: {
 }
 
 /**
- * Delete a draft order
+ * Delete a draft order (soft delete)
  * Only draft orders can be deleted
+ * @param input.orderId - The order ID to delete
+ * @param input.deletedBy - Required: User ID performing the deletion (for audit trail)
  */
 export async function deleteDraftOrder(input: {
   orderId: number;
+  deletedBy: number;
 }): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1446,8 +1465,14 @@ export async function deleteDraftOrder(input: {
       );
     }
 
-    // 2. Delete the draft order
-    await tx.delete(orders).where(eq(orders.id, input.orderId));
+    // 2. Soft delete the draft order (per CLAUDE.md - never hard delete)
+    await tx
+      .update(orders)
+      .set({
+        deletedAt: new Date(),
+        quoteStatus: "REJECTED",
+      })
+      .where(eq(orders.id, input.orderId));
   });
 }
 
@@ -1639,7 +1664,7 @@ export async function updateOrderStatus(input: {
       const orderItemsForDecrement = (
         typeof order.items === "string" ? JSON.parse(order.items) : order.items
       ) as OrderItem[];
-      await decrementInventoryForOrder(tx, orderId, orderItemsForDecrement);
+      await decrementInventoryForOrder(tx, orderId, orderItemsForDecrement, userId);
     }
 
     // Update order status with version increment (DATA-005)
@@ -1698,12 +1723,17 @@ export async function getOrderStatusHistory(orderId: number) {
 /**
  * Decrement inventory for order items when shipped
  * Uses row-level locking to prevent race conditions
+ * @param tx - Database transaction
+ * @param orderId - Order ID for reference
+ * @param items - Order items to decrement inventory for
+ * @param performedBy - User ID who performed the action (for audit trail)
  */
 async function decrementInventoryForOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tx: any, // Drizzle transaction type is complex, using any for flexibility
   orderId: number,
-  items: OrderItem[]
+  items: OrderItem[],
+  performedBy: number
 ) {
   const { inventoryMovements } = await import("../drizzle/schema");
 
@@ -1712,7 +1742,7 @@ async function decrementInventoryForOrder(
 
     // Decrement batch quantity with row-level locking
     await tx.execute(sql`
-      UPDATE batches 
+      UPDATE batches
       SET onHandQty = CAST(onHandQty AS DECIMAL(15,4)) - ${item.quantity}
       WHERE id = ${item.batchId}
       FOR UPDATE
@@ -1726,7 +1756,7 @@ async function decrementInventoryForOrder(
       referenceType: "ORDER",
       referenceId: orderId,
       notes: `Shipped order #${orderId}`,
-      createdBy: 1, // System
+      createdBy: performedBy,
     });
   }
 }

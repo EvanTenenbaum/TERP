@@ -336,8 +336,12 @@ export const ordersRouter = router({
         orderId: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await ordersDb.deleteDraftOrder(input);
+    .mutation(async ({ input, ctx }) => {
+      const deletedBy = getAuthenticatedUserId(ctx);
+      return await ordersDb.deleteDraftOrder({
+        orderId: input.orderId,
+        deletedBy,
+      });
     }),
 
   // ==========================================================================
