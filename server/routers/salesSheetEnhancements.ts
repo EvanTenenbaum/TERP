@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import * as salesSheetEnhancements from "../salesSheetEnhancements";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const salesSheetEnhancementsRouter = router({
   // Version control
-  createVersion: publicProcedure
+  createVersion: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -21,7 +21,7 @@ export const salesSheetEnhancementsRouter = router({
       );
     }),
 
-  getVersionHistory: publicProcedure
+  getVersionHistory: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -33,7 +33,7 @@ export const salesSheetEnhancementsRouter = router({
       );
     }),
 
-  restoreVersion: publicProcedure
+  restoreVersion: protectedProcedure
     .input(
       z.object({
         versionId: z.number(),
@@ -48,7 +48,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Clone template
-  cloneTemplate: publicProcedure
+  cloneTemplate: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -67,7 +67,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Expiration management
-  setExpiration: publicProcedure
+  setExpiration: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -90,7 +90,7 @@ export const salesSheetEnhancementsRouter = router({
   }),
 
   // Bulk order creation
-  createBulkOrders: publicProcedure
+  createBulkOrders: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -119,7 +119,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Client-specific pricing
-  getClientPricing: publicProcedure
+  getClientPricing: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -134,7 +134,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Active sheets
-  getActiveSheets: publicProcedure
+  getActiveSheets: protectedProcedure
     .input(
       z.object({
         clientId: z.number().optional(),
@@ -145,7 +145,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Usage statistics
-  getUsageStats: publicProcedure
+  getUsageStats: protectedProcedure
     .input(
       z.object({
         templateId: z.number(),

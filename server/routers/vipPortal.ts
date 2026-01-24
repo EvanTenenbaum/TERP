@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, vipPortalProcedure } from "../_core/trpc";
+import { protectedProcedure, router, vipPortalProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   appointmentRequests,
@@ -348,7 +348,7 @@ export const vipPortalRouter = router({
   
   auth: router({
     // Login with email and password
-    login: publicProcedure
+    login: protectedProcedure
       .input(z.object({
         email: z.string().email(),
         password: z.string(),
@@ -406,7 +406,7 @@ export const vipPortalRouter = router({
       }),
 
     // Verify session token
-    verifySession: publicProcedure
+    verifySession: protectedProcedure
       .input(z.object({
         sessionToken: z.string(),
       }))
@@ -483,7 +483,7 @@ export const vipPortalRouter = router({
       }),
 
     // Logout
-    logout: publicProcedure
+    logout: protectedProcedure
       .input(z.object({
         sessionToken: z.string(),
       }))
@@ -501,7 +501,7 @@ export const vipPortalRouter = router({
       }),
 
     // Request password reset
-    requestPasswordReset: publicProcedure
+    requestPasswordReset: protectedProcedure
       .input(z.object({
         email: z.string().email(),
       }))
@@ -556,7 +556,7 @@ export const vipPortalRouter = router({
       }),
 
     // Reset password with token
-    resetPassword: publicProcedure
+    resetPassword: protectedProcedure
       .input(z.object({
         resetToken: z.string(),
         newPassword: z.string().min(8),
@@ -598,7 +598,7 @@ export const vipPortalRouter = router({
   
   config: router({
     // Get portal configuration
-    get: publicProcedure
+    get: protectedProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -640,7 +640,7 @@ export const vipPortalRouter = router({
   
   dashboard: router({
     // Get dashboard KPIs
-    getKPIs: publicProcedure
+    getKPIs: protectedProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -713,7 +713,7 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   ar: router({
-    getInvoices: publicProcedure
+    getInvoices: protectedProcedure
       .input(z.object({
         clientId: z.number(),
         search: z.string().optional(),
@@ -771,7 +771,7 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   ap: router({
-    getBills: publicProcedure
+    getBills: protectedProcedure
       .input(z.object({
         clientId: z.number(),
         search: z.string().optional(),
@@ -829,7 +829,7 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   transactions: router({
-    getHistory: publicProcedure
+    getHistory: protectedProcedure
       .input(z.object({
         clientId: z.number(),
         search: z.string().optional(),
@@ -891,7 +891,7 @@ export const vipPortalRouter = router({
   
   marketplace: router({
     // Get client needs
-    getNeeds: publicProcedure
+    getNeeds: protectedProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -1007,7 +1007,7 @@ export const vipPortalRouter = router({
       }),
 
     // Get client supply listings
-    getSupply: publicProcedure
+    getSupply: protectedProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -1152,7 +1152,7 @@ export const vipPortalRouter = router({
   
   leaderboard: router({
     // Get leaderboard data for client (enhanced with unified leaderboard services)
-    getLeaderboard: publicProcedure
+    getLeaderboard: protectedProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -1249,7 +1249,7 @@ export const vipPortalRouter = router({
       }),
 
     // Get available metrics for VIP Portal configuration
-    getAvailableMetrics: publicProcedure
+    getAvailableMetrics: protectedProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -1788,7 +1788,7 @@ export const vipPortalRouter = router({
   
   liveCatalog: router({
     // Get catalog with filters
-    get: publicProcedure
+    get: protectedProcedure
       .input(z.object({
         category: z.string().optional(),
         brand: z.array(z.string()).optional(),
@@ -1856,7 +1856,7 @@ export const vipPortalRouter = router({
       }),
     
     // Get filter options
-    getFilterOptions: publicProcedure
+    getFilterOptions: protectedProcedure
       .query(async ({ ctx }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
@@ -1874,7 +1874,7 @@ export const vipPortalRouter = router({
       }),
     
     // Get draft interests
-    getDraftInterests: publicProcedure
+    getDraftInterests: protectedProcedure
       .query(async ({ ctx }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
@@ -2229,7 +2229,7 @@ export const vipPortalRouter = router({
     // Saved views
     views: router({
       // List saved views
-      list: publicProcedure
+      list: protectedProcedure
         .query(async ({ ctx }) => {
           const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });

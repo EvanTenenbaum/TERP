@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as productIntakeDb from "../productIntakeDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const productIntakeRouter = router({
   // Create new intake session
-  createSession: publicProcedure
+  createSession: protectedProcedure
     .input(
       z.object({
         vendorId: z.number(),
@@ -22,7 +22,7 @@ export const productIntakeRouter = router({
     }),
 
   // Add batch to intake session
-  addBatch: publicProcedure
+  addBatch: protectedProcedure
     .input(
       z.object({
         intakeSessionId: z.number(),
@@ -39,7 +39,7 @@ export const productIntakeRouter = router({
     }),
 
   // Update batch in intake session
-  updateBatch: publicProcedure
+  updateBatch: protectedProcedure
     .input(
       z.object({
         intakeSessionBatchId: z.number(),
@@ -56,35 +56,35 @@ export const productIntakeRouter = router({
     }),
 
   // Remove batch from intake session
-  removeBatch: publicProcedure
+  removeBatch: protectedProcedure
     .input(z.object({ intakeSessionBatchId: z.number() }))
     .mutation(async ({ input }) => {
       return await productIntakeDb.removeBatchFromIntakeSession(input.intakeSessionBatchId);
     }),
 
   // Complete intake session
-  completeSession: publicProcedure
+  completeSession: protectedProcedure
     .input(z.object({ intakeSessionId: z.number() }))
     .mutation(async ({ input }) => {
       return await productIntakeDb.completeIntakeSession(input.intakeSessionId);
     }),
 
   // Generate vendor receipt
-  generateReceipt: publicProcedure
+  generateReceipt: protectedProcedure
     .input(z.object({ intakeSessionId: z.number() }))
     .query(async ({ input }) => {
       return await productIntakeDb.generateVendorReceipt(input.intakeSessionId);
     }),
 
   // Get intake session details
-  getSession: publicProcedure
+  getSession: protectedProcedure
     .input(z.object({ intakeSessionId: z.number() }))
     .query(async ({ input }) => {
       return await productIntakeDb.getIntakeSession(input.intakeSessionId);
     }),
 
   // List intake sessions
-  listSessions: publicProcedure
+  listSessions: protectedProcedure
     .input(
       z
         .object({
@@ -100,7 +100,7 @@ export const productIntakeRouter = router({
     }),
 
   // Cancel intake session
-  cancelSession: publicProcedure
+  cancelSession: protectedProcedure
     .input(z.object({ intakeSessionId: z.number() }))
     .mutation(async ({ input }) => {
       return await productIntakeDb.cancelIntakeSession(input.intakeSessionId);
