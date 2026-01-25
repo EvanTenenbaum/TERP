@@ -2,22 +2,66 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Search, Plus, Loader2, Package, TrendingUp, Construction } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, Plus, Loader2, Package } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { DataCardSection } from "@/components/data-cards";
+import { toast } from "sonner";
+import { useLocation } from "wouter";
 // UX-012: Import centralized date formatting utility
 import { formatDate } from "@/lib/utils";
+
+// FE-QA-009: Form state type
+interface SupplyFormState {
+  vendorId: string;
+  strain: string;
+  productName: string;
+  category: string;
+  subcategory: string;
+  grade: string;
+  quantityAvailable: string;
+  unitPrice: string;
+  availableUntil: string;
+  notes: string;
+}
+
+const initialFormState: SupplyFormState = {
+  vendorId: "",
+  strain: "",
+  productName: "",
+  category: "",
+  subcategory: "",
+  grade: "",
+  quantityAvailable: "",
+  unitPrice: "",
+  availableUntil: "",
+  notes: "",
+};
 
 /**
  * Vendor Supply Page
@@ -25,39 +69,104 @@ import { formatDate } from "@/lib/utils";
  */
 
 export default function VendorSupplyPage() {
+  const [, setLocation] = useLocation();
+
   // Initialize filters from URL parameters
   const getInitialStatusFilter = () => {
     const params = new URLSearchParams(window.location.search);
-    const status = params.get('status');
-    if (status && ['AVAILABLE', 'RESERVED', 'PURCHASED', 'EXPIRED'].includes(status)) {
+    const status = params.get("status");
+    if (
+      status &&
+      ["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"].includes(status)
+    ) {
       return status;
     }
     return null;
   };
-  
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(getInitialStatusFilter);
+  // Status filter is initialized but UI for changing it is not yet implemented
+  const [statusFilter, _setStatusFilter] = useState<string | null>(
+    getInitialStatusFilter
+  );
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [formState, setFormState] = useState<SupplyFormState>(initialFormState);
 
   // Fetch all vendor supply items
-  const { data: supplyData, isLoading } = trpc.vendorSupply.getAll.useQuery({});
+  const {
+    data: supplyData,
+    isLoading,
+    refetch,
+  } = trpc.vendorSupply.getAll.useQuery({});
+
+  // Fetch vendors (clients with isSeller=true) for dropdown
+  const { data: vendorsData } = trpc.clients.list.useQuery({
+    clientTypes: ["seller"],
+    limit: 200,
+  });
+
+  // FE-QA-009: Create mutation
+  const createMutation = trpc.vendorSupply.create.useMutation({
+    onSuccess: () => {
+      toast.success("Vendor supply item created successfully");
+      setCreateDialogOpen(false);
+      setFormState(initialFormState);
+      refetch();
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to create vendor supply item");
+    },
+  });
+
+  // FE-QA-009: Handle form submission
+  const handleSubmit = () => {
+    if (!formState.vendorId) {
+      toast.error("Please select a vendor");
+      return;
+    }
+    if (!formState.quantityAvailable) {
+      toast.error("Please enter quantity available");
+      return;
+    }
+
+    createMutation.mutate({
+      vendorId: parseInt(formState.vendorId),
+      strain: formState.strain || undefined,
+      productName: formState.productName || undefined,
+      category: formState.category || undefined,
+      subcategory: formState.subcategory || undefined,
+      grade: formState.grade || undefined,
+      quantityAvailable: formState.quantityAvailable,
+      unitPrice: formState.unitPrice || undefined,
+      availableUntil: formState.availableUntil || undefined,
+      notes: formState.notes || undefined,
+      createdBy: 1, // Will be set by backend from context
+    });
+  };
+
+  // FE-QA-009: Handle finding matching clients
+  const handleFindMatchingClients = (supplyId: number) => {
+    setLocation(`/matchmaking?supplyId=${supplyId}`);
+  };
 
   const supplyItems = supplyData?.data || [];
 
   // Filter supply items based on search and status
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const filteredItems = supplyItems.filter((item: any) => {
     const matchesSearch =
       !searchQuery ||
       item.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.vendorName?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = !statusFilter || item.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const variants: Record<string, any> = {
       AVAILABLE: "default",
       RESERVED: "secondary",
@@ -69,7 +178,11 @@ export default function VendorSupplyPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <BackButton label="Back to Suppliers" to="/clients?clientTypes=seller" className="mb-4" />
+      <BackButton
+        label="Back to Suppliers"
+        to="/clients?clientTypes=seller"
+        className="mb-4"
+      />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -85,21 +198,180 @@ export default function VendorSupplyPage() {
               Add Supply Item
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Add Vendor Supply Item</DialogTitle>
               <DialogDescription>
                 Record a new item available from a vendor
               </DialogDescription>
             </DialogHeader>
-            <Alert className="bg-muted/50 my-4">
-              <Construction className="h-4 w-4" />
-              <AlertTitle>Feature In Development</AlertTitle>
-              <AlertDescription>
-                The vendor supply creation form is currently being developed.
-                For now, you can view and manage existing supply items in the list below.
-              </AlertDescription>
-            </Alert>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="vendorId">Vendor *</Label>
+                <Select
+                  value={formState.vendorId}
+                  onValueChange={v =>
+                    setFormState({ ...formState, vendorId: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendorsData?.items?.map(vendor => (
+                      <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="strain">Strain</Label>
+                  <Input
+                    id="strain"
+                    value={formState.strain}
+                    onChange={e =>
+                      setFormState({ ...formState, strain: e.target.value })
+                    }
+                    placeholder="e.g., Blue Dream"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="productName">Product Name</Label>
+                  <Input
+                    id="productName"
+                    value={formState.productName}
+                    onChange={e =>
+                      setFormState({
+                        ...formState,
+                        productName: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Premium Flower"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={formState.category}
+                    onValueChange={v =>
+                      setFormState({ ...formState, category: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FLOWER">Flower</SelectItem>
+                      <SelectItem value="TRIM">Trim</SelectItem>
+                      <SelectItem value="SHAKE">Shake</SelectItem>
+                      <SelectItem value="EXTRACT">Extract</SelectItem>
+                      <SelectItem value="EDIBLE">Edible</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="grade">Grade</Label>
+                  <Select
+                    value={formState.grade}
+                    onValueChange={v =>
+                      setFormState({ ...formState, grade: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="PREMIUM">Premium</SelectItem>
+                      <SelectItem value="STANDARD">Standard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="quantityAvailable">
+                    Quantity Available (lbs) *
+                  </Label>
+                  <Input
+                    id="quantityAvailable"
+                    type="number"
+                    value={formState.quantityAvailable}
+                    onChange={e =>
+                      setFormState({
+                        ...formState,
+                        quantityAvailable: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., 100"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="unitPrice">Price per lb ($)</Label>
+                  <Input
+                    id="unitPrice"
+                    type="number"
+                    step="0.01"
+                    value={formState.unitPrice}
+                    onChange={e =>
+                      setFormState({ ...formState, unitPrice: e.target.value })
+                    }
+                    placeholder="e.g., 250.00"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="availableUntil">Available Until</Label>
+                <Input
+                  id="availableUntil"
+                  type="date"
+                  value={formState.availableUntil}
+                  onChange={e =>
+                    setFormState({
+                      ...formState,
+                      availableUntil: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formState.notes}
+                  onChange={e =>
+                    setFormState({ ...formState, notes: e.target.value })
+                  }
+                  placeholder="Additional notes about this supply..."
+                  rows={2}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                Create Supply Item
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -115,7 +387,7 @@ export default function VendorSupplyPage() {
             <Input
               placeholder="Search by strain, category, or vendor..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -141,6 +413,7 @@ export default function VendorSupplyPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {filteredItems.map((item: any) => (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
@@ -165,8 +438,12 @@ export default function VendorSupplyPage() {
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   {item.quantityAvailable && (
                     <div>
-                      <p className="text-muted-foreground">Available Quantity</p>
-                      <p className="font-medium">{item.quantityAvailable} units</p>
+                      <p className="text-muted-foreground">
+                        Available Quantity
+                      </p>
+                      <p className="font-medium">
+                        {item.quantityAvailable} units
+                      </p>
                     </div>
                   )}
                   {item.pricePerUnit && (
@@ -194,11 +471,12 @@ export default function VendorSupplyPage() {
                   )}
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleFindMatchingClients(item.id)}
+                  >
                     Find Matching Clients
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    Edit
                   </Button>
                 </div>
               </CardContent>
@@ -209,4 +487,3 @@ export default function VendorSupplyPage() {
     </div>
   );
 }
-
