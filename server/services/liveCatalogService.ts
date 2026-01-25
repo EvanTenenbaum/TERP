@@ -8,9 +8,9 @@
  */
 
 import { getDb } from "../db";
-import { batches, products, productMedia } from "../../drizzle/schema";
+import { batches, products, productMedia, brands } from "../../drizzle/schema";
 import { vipPortalConfigurations, clientDraftInterests } from "../../drizzle/schema-vip-portal";
-import { eq, and, or, inArray, notInArray, gte, lte, like, sql, desc, asc, isNull } from "drizzle-orm";
+import { eq, and, inArray, notInArray, sql, isNull } from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
 import { vipPortalLogger } from "../_core/logger";
 
@@ -74,7 +74,7 @@ function getBrandName(item: { vendor?: string; category?: string }): string | un
 /**
  * Get date from inventory item (creation or intake date)
  */
-function getItemDate(item: { id: number }): Date | undefined {
+function getItemDate(_item: { id: number }): Date | undefined {
   // Date would come from batch creation - for now return undefined
   // In a full implementation, this would be batch.createdAt or batch.intakeDate
   return undefined;
@@ -332,14 +332,17 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
     };
   }
 
-  // Query distinct values from visible inventory
+  // Query distinct values from visible inventory with brand info
+  // Note: brands are associated with products, not batches directly
   const batchesWithProducts = await db
     .select({
       batch: batches,
       product: products,
+      brand: brands,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
+    .leftJoin(brands, eq(products.brandId, brands.id))
     .where(inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]));
 
   // Extract unique categories
@@ -354,8 +357,14 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
 
   const categories = Array.from(categoryMap.entries()).map(([name, id]) => ({ id, name }));
 
-  // Extract unique brands (TODO: implement when brand data is available)
-  const brands: string[] = [];
+  // STUB-001: Extract unique brands from joined brand table
+  const brandSet = new Set<string>();
+  batchesWithProducts.forEach(({ brand }) => {
+    if (brand?.name) {
+      brandSet.add(brand.name);
+    }
+  });
+  const extractedBrands = Array.from(brandSet).sort();
 
   // Extract unique grades
   const gradeSet = new Set<string>();
@@ -364,12 +373,58 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
   });
   const grades = Array.from(gradeSet);
 
-  // Calculate price range (TODO: implement with pricing engine)
-  const priceRange = { min: 0, max: 1000 };
+  // STUB-002: Calculate actual price range from batch COGS with default margin
+  // Uses a simplified calculation based on COGS with 30% default margin for filter UI
+  let minPrice = Infinity;
+  let maxPrice = 0;
+
+  // Get client pricing rules for more accurate estimates
+  const pricingRules = await pricingEngine.getClientPricingRules(clientId);
+  const defaultMargin = 0.30; // 30% default margin
+
+  for (const { batch } of batchesWithProducts) {
+    const unitCogs = parseFloat(batch.unitCogs || "0");
+    if (unitCogs > 0) {
+      // Calculate estimated retail price
+      // If client has pricing rules, use average markup from rules, otherwise use default
+      let estimatedRetailPrice: number;
+
+      if (pricingRules.length > 0) {
+        // Get average markup from rules for estimate
+        const markupRules = pricingRules.filter(r =>
+          r.adjustmentType === "PERCENT_MARKUP" || r.adjustmentType === "DOLLAR_MARKUP"
+        );
+        if (markupRules.length > 0) {
+          const avgMarkup = markupRules.reduce((sum, r) => {
+            const val = parseFloat(r.adjustmentValue?.toString() || "0");
+            return sum + (r.adjustmentType === "PERCENT_MARKUP" ? val / 100 : val / unitCogs);
+          }, 0) / markupRules.length;
+          estimatedRetailPrice = unitCogs * (1 + Math.max(avgMarkup, defaultMargin));
+        } else {
+          estimatedRetailPrice = unitCogs * (1 + defaultMargin);
+        }
+      } else {
+        estimatedRetailPrice = unitCogs * (1 + defaultMargin);
+      }
+
+      if (estimatedRetailPrice < minPrice) minPrice = estimatedRetailPrice;
+      if (estimatedRetailPrice > maxPrice) maxPrice = estimatedRetailPrice;
+    }
+  }
+
+  // Handle case where no prices were found
+  if (minPrice === Infinity) minPrice = 0;
+  if (maxPrice === 0) maxPrice = 1000;
+
+  // Round prices for cleaner UI
+  const priceRange = {
+    min: Math.floor(minPrice),
+    max: Math.ceil(maxPrice)
+  };
 
   return {
     categories,
-    brands,
+    brands: extractedBrands,
     grades,
     priceRange,
   };

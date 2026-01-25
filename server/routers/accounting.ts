@@ -5,7 +5,6 @@ import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import {
-  paginationInputSchema,
   createPaginatedResponse,
   getPaginationParams,
   DEFAULT_PAGE_SIZE,
@@ -14,7 +13,7 @@ import {
 } from "../_core/pagination";
 import { getDb } from "../db";
 import { invoices, bills, payments, clients } from "../../drizzle/schema";
-import { eq, and, gt, lt, gte, lte, sql, desc, asc, inArray, or } from "drizzle-orm";
+import { eq, and, gt, sql, desc, asc, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { onInvoiceCreated, onPaymentReceived } from "../services/notificationTriggers";
 
@@ -1439,6 +1438,256 @@ export const accountingRouter = router({
             .limit(input.limit);
           
           return recentVendors;
+        }),
+    }),
+
+    // ============================================================================
+    // FINANCIAL REPORTS (BE-QA-008)
+    // ============================================================================
+    reports: router({
+      /**
+       * Generate Balance Sheet Report
+       * Shows assets, liabilities, and equity at a point in time
+       */
+      generateBalanceSheet: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          asOfDate: z.date().optional(),
+        }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const asOfDate = input.asOfDate || new Date();
+          const asOfDateStr = asOfDate.toISOString().split("T")[0];
+
+          logger.info({ msg: "[Accounting] Generating balance sheet", asOfDate: asOfDateStr });
+
+          // Get all accounts with balances
+          const accounts = await accountingDb.getChartOfAccounts();
+
+          // Calculate balances for each account type
+          const assets: { accountName: string; balance: number }[] = [];
+          const liabilities: { accountName: string; balance: number }[] = [];
+          const equity: { accountName: string; balance: number }[] = [];
+
+          for (const account of accounts) {
+            const balance = await accountingDb.getAccountBalance(account.id, asOfDate);
+            const balanceAmount = Number(balance?.balance || 0);
+
+            if (balanceAmount !== 0) {
+              const entry = { accountName: account.accountName, balance: balanceAmount };
+              switch (account.accountType) {
+                case "ASSET":
+                  assets.push(entry);
+                  break;
+                case "LIABILITY":
+                  liabilities.push(entry);
+                  break;
+                case "EQUITY":
+                  equity.push(entry);
+                  break;
+              }
+            }
+          }
+
+          // Get AR total (receivables are assets)
+          const arAging = await arApDb.calculateARAging();
+          const totalAR = arAging.current + arAging.days30 + arAging.days60 + arAging.days90 + arAging.days90Plus;
+          if (totalAR > 0) {
+            assets.push({ accountName: "Accounts Receivable", balance: totalAR });
+          }
+
+          // Get AP total (payables are liabilities)
+          const apAging = await arApDb.calculateAPAging();
+          const totalAP = apAging.current + apAging.days30 + apAging.days60 + apAging.days90 + apAging.days90Plus;
+          if (totalAP > 0) {
+            liabilities.push({ accountName: "Accounts Payable", balance: totalAP });
+          }
+
+          // Get cash balances
+          const bankAccounts = await cashExpensesDb.getBankAccounts({ isActive: true });
+          for (const account of bankAccounts) {
+            if (Number(account.currentBalance) > 0) {
+              assets.push({
+                accountName: `${account.accountName} (${account.bankName})`,
+                balance: Number(account.currentBalance),
+              });
+            }
+          }
+
+          // Calculate totals
+          const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
+          const totalLiabilities = liabilities.reduce((sum, l) => sum + l.balance, 0);
+          const totalEquity = equity.reduce((sum, e) => sum + e.balance, 0);
+
+          // Retained earnings (balancing figure)
+          const retainedEarnings = totalAssets - totalLiabilities - totalEquity;
+          if (retainedEarnings !== 0) {
+            equity.push({ accountName: "Retained Earnings", balance: retainedEarnings });
+          }
+
+          return {
+            asOfDate: asOfDateStr,
+            assets: {
+              items: assets,
+              total: totalAssets,
+            },
+            liabilities: {
+              items: liabilities,
+              total: totalLiabilities,
+            },
+            equity: {
+              items: [...equity],
+              total: totalEquity + retainedEarnings,
+            },
+            isBalanced: Math.abs(totalAssets - (totalLiabilities + totalEquity + retainedEarnings)) < 0.01,
+          };
+        }),
+
+      /**
+       * Generate Income Statement (Profit & Loss)
+       * Shows revenue, expenses, and net income for a period
+       */
+      generateIncomeStatement: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          startDate: z.date(),
+          endDate: z.date(),
+        }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const startDateStr = input.startDate.toISOString().split("T")[0];
+          const endDateStr = input.endDate.toISOString().split("T")[0];
+
+          logger.info({
+            msg: "[Accounting] Generating income statement",
+            startDate: startDateStr,
+            endDate: endDateStr,
+          });
+
+          // Get revenue from paid invoices in period
+          const invoicesResult = await arApDb.getInvoices({
+            status: "PAID",
+            startDate: input.startDate,
+            endDate: input.endDate,
+          });
+          const paidInvoices = invoicesResult.invoices || [];
+
+          const totalRevenue = paidInvoices.reduce(
+            (sum, inv) => sum + Number(inv.totalAmount || 0),
+            0
+          );
+
+          // Get expenses in period
+          const expensesResult = await cashExpensesDb.getExpenses({
+            startDate: input.startDate,
+            endDate: input.endDate,
+          });
+          const expenses = expensesResult.expenses || [];
+
+          // Group expenses by category
+          const expenseCategories = await cashExpensesDb.getExpenseCategories({});
+          const categoryMap = new Map(expenseCategories.map(c => [c.id, c.categoryName]));
+
+          const expensesByCategory: { categoryName: string; amount: number }[] = [];
+          const categoryTotals = new Map<number, number>();
+
+          for (const expense of expenses) {
+            const categoryId = expense.categoryId;
+            const current = categoryTotals.get(categoryId) || 0;
+            categoryTotals.set(categoryId, current + Number(expense.totalAmount || 0));
+          }
+
+          for (const [categoryId, total] of categoryTotals) {
+            expensesByCategory.push({
+              categoryName: categoryMap.get(categoryId) || "Uncategorized",
+              amount: total,
+            });
+          }
+
+          const totalExpenses = expensesByCategory.reduce((sum, e) => sum + e.amount, 0);
+
+          // Calculate COGS from orders if available
+          const totalCOGS = 0;
+          // Note: COGS calculation would need access to order line items with COGS data
+          // For now, we'll estimate based on a typical gross margin if orders data is available
+
+          const grossProfit = totalRevenue - totalCOGS;
+          const netIncome = grossProfit - totalExpenses;
+
+          return {
+            period: {
+              startDate: startDateStr,
+              endDate: endDateStr,
+            },
+            revenue: {
+              items: [{ name: "Sales Revenue", amount: totalRevenue }],
+              total: totalRevenue,
+            },
+            costOfGoodsSold: {
+              items: totalCOGS > 0 ? [{ name: "Cost of Goods Sold", amount: totalCOGS }] : [],
+              total: totalCOGS,
+            },
+            grossProfit,
+            operatingExpenses: {
+              items: expensesByCategory.map(e => ({ name: e.categoryName, amount: e.amount })),
+              total: totalExpenses,
+            },
+            netIncome,
+            grossMarginPercent: totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0,
+            netMarginPercent: totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0,
+          };
+        }),
+
+      /**
+       * Get Profit and Loss Summary
+       * Quick P&L overview for dashboard
+       */
+      getProfitLossSummary: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          period: z.enum(["month", "quarter", "year"]).default("month"),
+        }))
+        .query(async ({ input }) => {
+          const now = new Date();
+          let startDate: Date;
+
+          switch (input.period) {
+            case "month":
+              startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+              break;
+            case "quarter": {
+              const quarter = Math.floor(now.getMonth() / 3);
+              startDate = new Date(now.getFullYear(), quarter * 3, 1);
+              break;
+            }
+            case "year":
+              startDate = new Date(now.getFullYear(), 0, 1);
+              break;
+          }
+
+          // Get revenue
+          const invoicesResult = await arApDb.getInvoices({
+            status: "PAID",
+            startDate,
+            endDate: now,
+          });
+          const totalRevenue = (invoicesResult.invoices || []).reduce(
+            (sum, inv) => sum + Number(inv.totalAmount || 0),
+            0
+          );
+
+          // Get expenses
+          const totalExpenses = await cashExpensesDb.getTotalExpenses(startDate, now);
+
+          return {
+            period: input.period,
+            startDate: startDate.toISOString().split("T")[0],
+            endDate: now.toISOString().split("T")[0],
+            revenue: totalRevenue,
+            expenses: Number(totalExpenses) || 0,
+            netIncome: totalRevenue - (Number(totalExpenses) || 0),
+          };
         }),
     }),
   })

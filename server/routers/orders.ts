@@ -270,7 +270,73 @@ export const ordersRouter = router({
   // ==========================================================================
 
   /**
-   * Confirm draft order
+   * API-013: Simple confirm endpoint
+   * Confirms a draft order with minimal input - just validates and sets isDraft=false
+   */
+  confirm: protectedProcedure
+    .use(requirePermission("orders:create"))
+    .input(z.object({ orderId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get the order
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Order with ID ${input.orderId} not found`,
+        });
+      }
+
+      if (!order.isDraft) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Order is already confirmed",
+        });
+      }
+
+      // Validate the order has line items
+      const lineItems = await db.query.orderLineItems.findMany({
+        where: eq(orderLineItems.orderId, input.orderId),
+      });
+
+      if (lineItems.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot confirm order with no line items",
+        });
+      }
+
+      // Confirm the order
+      await db
+        .update(orders)
+        .set({
+          isDraft: false,
+          confirmedAt: new Date(),
+        })
+        .where(eq(orders.id, input.orderId));
+
+      logger.info({
+        orderId: input.orderId,
+        confirmedBy: userId,
+        msg: "Order confirmed via simple confirm endpoint",
+      });
+
+      return {
+        success: true,
+        orderId: input.orderId,
+        orderNumber: order.orderNumber,
+      };
+    }),
+
+  /**
+   * Confirm draft order (with payment terms)
    */
   confirmDraftOrder: protectedProcedure
     .use(requirePermission("orders:create"))

@@ -1123,6 +1123,84 @@ export async function runAutoMigrations() {
     }
 
     // ========================================================================
+    // NOTIFICATIONS TABLES (TERP-0004)
+    // ========================================================================
+    // Create notifications and notification_preferences tables if they don't exist
+    let notificationsTablesExist = false;
+    try {
+      await db.execute(sql`SELECT 1 FROM notifications LIMIT 1`);
+      notificationsTablesExist = true;
+      console.log("  ℹ️  Notifications tables already exist - skipping creation");
+    } catch {
+      console.log("  ℹ️  Notifications tables not found - will create");
+    }
+
+    if (!notificationsTablesExist) {
+      // Create notifications table
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            recipient_type ENUM('user', 'client') NOT NULL DEFAULT 'user',
+            user_id INT NULL,
+            client_id INT NULL,
+            type ENUM('info', 'warning', 'success', 'error') NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            message TEXT,
+            link VARCHAR(500),
+            channel ENUM('in_app', 'email', 'sms') NOT NULL DEFAULT 'in_app',
+            \`read\` BOOLEAN NOT NULL DEFAULT FALSE,
+            metadata JSON,
+            is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_notifications_recipient_channel (recipient_type, user_id, client_id, channel),
+            INDEX idx_notifications_recipient_read (recipient_type, user_id, client_id, \`read\`),
+            INDEX idx_notifications_recipient_created (recipient_type, user_id, client_id, created_at)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created notifications table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  notifications table already exists");
+        } else {
+          console.log("  ⚠️  notifications table:", errMsg);
+        }
+      }
+
+      // Create notification_preferences table
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS notification_preferences (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            recipient_type ENUM('user', 'client') NOT NULL DEFAULT 'user',
+            user_id INT NULL,
+            client_id INT NULL,
+            in_app_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            email_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            sms_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+            appointment_reminders BOOLEAN NOT NULL DEFAULT TRUE,
+            order_updates BOOLEAN NOT NULL DEFAULT TRUE,
+            system_alerts BOOLEAN NOT NULL DEFAULT TRUE,
+            is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_notif_prefs_recipient (recipient_type, user_id, client_id)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created notification_preferences table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  notification_preferences table already exists");
+        } else {
+          console.log("  ⚠️  notification_preferences table:", errMsg);
+        }
+      }
+    }
+
+    // ========================================================================
     // CALENDAR_ID COLUMN ON CALENDAR_EVENTS TABLE
     // ========================================================================
     // Add calendar_id column to calendar_events table if it doesn't exist

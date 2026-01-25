@@ -1419,4 +1419,73 @@ export const inventoryRouter = router({
         }
       }),
   }),
+
+  // ==========================================================================
+  // API-011 & API-012: Explicit batch endpoints
+  // ==========================================================================
+
+  /**
+   * API-011: Get single batch by ID
+   * Alias for getById with clearer naming for API consumers
+   */
+  batch: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(z.object({ batchId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const batch = await inventoryDb.getBatchById(input.batchId);
+        if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.batchId);
+        return batch;
+      } catch (error) {
+        handleError(error, "inventory.batch");
+        throw error;
+      }
+    }),
+
+  /**
+   * API-012: Get multiple batches with filtering
+   * Simplified endpoint for fetching batches list
+   */
+  batches: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.number().optional(),
+        status: z.string().optional(),
+        category: z.string().optional(),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        inventoryLogger.operationStart("batches", { input });
+
+        let result;
+        if (input.search) {
+          result = await inventoryDb.searchBatches(
+            input.search,
+            input.limit,
+            input.cursor
+          );
+        } else {
+          result = await inventoryDb.getBatchesWithDetails(
+            input.limit,
+            input.cursor,
+            { status: input.status, category: input.category }
+          );
+        }
+
+        inventoryLogger.operationSuccess("batches", {
+          itemCount: result.items.length,
+          hasMore: result.hasMore,
+        });
+
+        return result;
+      } catch (error) {
+        inventoryLogger.operationFailure("batches", error as Error, { input });
+        handleError(error, "inventory.batches");
+        throw error;
+      }
+    }),
 });
