@@ -28,9 +28,8 @@ import {
   ClientProfitMarginLeaderboard,
   TopStrainFamiliesWidget,
   AgingInventoryWidget,
+  SmartOpportunitiesWidget,
 } from "@/components/dashboard/widgets-v2";
-// FE-QA-011: SmartOpportunitiesWidget is not exported from index
-import { SmartOpportunitiesWidget } from "@/components/dashboard/widgets-v2/SmartOpportunitiesWidget";
 
 function DashboardContent() {
   const { widgets, setIsCustomizing } = useDashboardPreferences();

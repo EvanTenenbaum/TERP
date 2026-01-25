@@ -82,7 +82,8 @@ export default function MatchmakingServicePage() {
     );
 
   // FE-QA-010: Mutation to reserve a supply item
-  const reserveMutation = trpc.vendorSupply.update.useMutation({
+  // FE-QA-FIX: Use dedicated reserve endpoint instead of generic update
+  const reserveMutation = trpc.vendorSupply.reserve.useMutation({
     onSuccess: () => {
       toast.success("Supply item reserved successfully");
     },
@@ -167,8 +168,9 @@ export default function MatchmakingServicePage() {
   };
 
   // FE-QA-010: Handler for Reserve button
+  // FE-QA-FIX: Reserve endpoint only needs id, not status
   const handleReserve = (supplyId: number) => {
-    reserveMutation.mutate({ id: supplyId, status: "RESERVED" });
+    reserveMutation.mutate({ id: supplyId });
   };
 
   // FE-QA-010: Handler for Create Quote button

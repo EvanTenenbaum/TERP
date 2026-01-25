@@ -1,8 +1,13 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as vendorSupplyDb from "../vendorSupplyDb";
 import * as matchingEngine from "../matchingEngine";
-import { requirePermission } from "../_core/permissionMiddleware";
+// TODO: Add permission checks to mutations
+// import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Vendor Supply Router
@@ -26,14 +31,20 @@ export const vendorSupplyRouter = router({
         availableUntil: z.string().optional(), // ISO date string
         notes: z.string().optional(),
         internalNotes: z.string().optional(),
-        createdBy: z.number(),
+        // FE-QA-FIX: Removed createdBy from input - must come from context
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
+        // FE-QA-FIX: Get createdBy from authenticated user context (security)
+        const createdBy = getAuthenticatedUserId(ctx);
         const supply = await vendorSupplyDb.createVendorSupply({
           ...input,
-          availableUntil: input.availableUntil ? new Date(input.availableUntil) : undefined,
+          createdBy,
+          availableUntil: input.availableUntil
+            ? new Date(input.availableUntil)
+            : undefined,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
 
         return {
@@ -44,7 +55,10 @@ export const vendorSupplyRouter = router({
         console.error("Error creating vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to create vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to create vendor supply",
         };
       }
     }),
@@ -57,7 +71,7 @@ export const vendorSupplyRouter = router({
     .query(async ({ input }) => {
       try {
         const supply = await vendorSupplyDb.getVendorSupplyById(input.id);
-        
+
         if (!supply) {
           return {
             success: false,
@@ -73,7 +87,10 @@ export const vendorSupplyRouter = router({
         console.error("Error fetching vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor supply",
         };
       }
     }),
@@ -84,7 +101,9 @@ export const vendorSupplyRouter = router({
   getAll: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).optional(),
+        status: z
+          .enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"])
+          .optional(),
         vendorId: z.number().optional(),
         strain: z.string().optional(),
         category: z.string().optional(),
@@ -102,7 +121,10 @@ export const vendorSupplyRouter = router({
         console.error("Error fetching vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor supply",
         };
       }
     }),
@@ -114,7 +136,9 @@ export const vendorSupplyRouter = router({
     .input(z.object({ vendorId: z.number().optional() }))
     .query(async ({ input }) => {
       try {
-        const supplies = await vendorSupplyDb.getAvailableVendorSupply(input.vendorId);
+        const supplies = await vendorSupplyDb.getAvailableVendorSupply(
+          input.vendorId
+        );
 
         return {
           success: true,
@@ -124,7 +148,10 @@ export const vendorSupplyRouter = router({
         console.error("Error fetching available vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch available vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch available vendor supply",
         };
       }
     }),
@@ -143,7 +170,9 @@ export const vendorSupplyRouter = router({
         grade: z.string().optional(),
         quantityAvailable: z.string().optional(),
         unitPrice: z.string().optional(),
-        status: z.enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).optional(),
+        status: z
+          .enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"])
+          .optional(),
         availableUntil: z.string().optional(),
         notes: z.string().optional(),
         internalNotes: z.string().optional(),
@@ -152,13 +181,17 @@ export const vendorSupplyRouter = router({
     .mutation(async ({ input }) => {
       try {
         const { id, ...updates } = input;
-        
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const processedUpdates: any = { ...updates };
         if (updates.availableUntil) {
           processedUpdates.availableUntil = new Date(updates.availableUntil);
         }
 
-        const supply = await vendorSupplyDb.updateVendorSupply(id, processedUpdates);
+        const supply = await vendorSupplyDb.updateVendorSupply(
+          id,
+          processedUpdates
+        );
 
         return {
           success: true,
@@ -168,7 +201,10 @@ export const vendorSupplyRouter = router({
         console.error("Error updating vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to update vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to update vendor supply",
         };
       }
     }),
@@ -190,7 +226,10 @@ export const vendorSupplyRouter = router({
         console.error("Error reserving vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to reserve vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to reserve vendor supply",
         };
       }
     }),
@@ -212,7 +251,10 @@ export const vendorSupplyRouter = router({
         console.error("Error purchasing vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to purchase vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to purchase vendor supply",
         };
       }
     }),
@@ -233,7 +275,10 @@ export const vendorSupplyRouter = router({
         console.error("Error deleting vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to delete vendor supply",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete vendor supply",
         };
       }
     }),
@@ -244,7 +289,9 @@ export const vendorSupplyRouter = router({
   getAllWithMatches: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).optional(),
+        status: z
+          .enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"])
+          .optional(),
         vendorId: z.number().optional(),
       })
     )
@@ -260,7 +307,10 @@ export const vendorSupplyRouter = router({
         console.error("Error fetching vendor supply with matches:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch vendor supply with matches",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor supply with matches",
         };
       }
     }),
@@ -272,7 +322,9 @@ export const vendorSupplyRouter = router({
     .input(z.object({ supplyId: z.number() }))
     .query(async ({ input }) => {
       try {
-        const buyers = await matchingEngine.findBuyersForVendorSupply(input.supplyId);
+        const buyers = await matchingEngine.findBuyersForVendorSupply(
+          input.supplyId
+        );
 
         return {
           success: true,
@@ -282,7 +334,8 @@ export const vendorSupplyRouter = router({
         console.error("Error finding buyers:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to find buyers",
+          error:
+            error instanceof Error ? error.message : "Failed to find buyers",
         };
       }
     }),
@@ -290,22 +343,23 @@ export const vendorSupplyRouter = router({
   /**
    * Expire old vendor supply items
    */
-  expireOld: protectedProcedure
-    .mutation(async () => {
-      try {
-        const count = await vendorSupplyDb.expireOldVendorSupply();
+  expireOld: protectedProcedure.mutation(async () => {
+    try {
+      const count = await vendorSupplyDb.expireOldVendorSupply();
 
-        return {
-          success: true,
-          data: { expiredCount: count },
-        };
-      } catch (error) {
-        console.error("Error expiring old vendor supply:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to expire old vendor supply",
-        };
-      }
-    }),
+      return {
+        success: true,
+        data: { expiredCount: count },
+      };
+    } catch (error) {
+      console.error("Error expiring old vendor supply:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to expire old vendor supply",
+      };
+    }
+  }),
 });
-

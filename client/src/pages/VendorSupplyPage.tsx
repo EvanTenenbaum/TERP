@@ -129,6 +129,7 @@ export default function VendorSupplyPage() {
       return;
     }
 
+    // FE-QA-FIX: Remove createdBy - backend will set from ctx.user.id
     createMutation.mutate({
       vendorId: parseInt(formState.vendorId),
       strain: formState.strain || undefined,
@@ -140,7 +141,6 @@ export default function VendorSupplyPage() {
       unitPrice: formState.unitPrice || undefined,
       availableUntil: formState.availableUntil || undefined,
       notes: formState.notes || undefined,
-      createdBy: 1, // Will be set by backend from context
     });
   };
 
