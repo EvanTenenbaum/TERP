@@ -12,7 +12,7 @@
  * @see ATOMIC_UX_STRATEGY.md for performance requirements
  */
 
-/* global performance, PerformanceObserver, PerformanceEntry */
+/* global performance, PerformanceObserver, PerformanceEntry, PerformanceObserverInit */
 
 import { useCallback, useRef, useEffect, useMemo } from 'react';
 

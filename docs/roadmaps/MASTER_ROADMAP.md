@@ -4102,8 +4102,62 @@ const handleChange = (value: PaymentMethod) => { ... }
 | TEST-020 | Fix permissionMiddleware.test.ts mock hoisting | HIGH | ready | 2h | `server/_core/permissionMiddleware.test.ts` |
 | TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH | ready | 1h | `vitest.setup.ts` |
 | TEST-022 | Fix EventFormDialog test environment | MEDIUM | ready | 2h | `client/src/components/calendar/EventFormDialog.test.tsx` |
+| TEST-023 | Fix ResizeObserver mock missing constructor callback | HIGH | ready | 0.5h | `tests/setup.ts` |
+| TEST-024 | Add tRPC mock `isPending` property (React Query v5) | HIGH | ready | 1h | `tests/setup.ts` |
+| TEST-025 | Fix tRPC proxy memory leak - memoize proxy creation | MEDIUM | ready | 1h | `tests/setup.ts` |
+| TEST-026 | Add vi.clearAllMocks() to main test setup | MEDIUM | ready | 0.5h | `tests/setup.ts` |
+| TEST-027 | Use deterministic seed for data-anomalies tests | HIGH | ready | 2h | `server/tests/data-anomalies.test.ts`, `scripts/generators/*` |
 
 > **Note:** DATABASE_URL configuration for seed tests already tracked as TEST-INFRA-02.
+
+---
+
+### Performance Hook Runtime Safety Issues (QA Audit Jan 25, 2026)
+
+> Critical runtime safety issues in `usePerformanceMonitor.ts` discovered during QA audit
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| PERF-002 | Fix undefined array access in LCP/FID/CLS observers | HIGH | ready | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| PERF-003 | Add mounted ref guard to prevent state updates after unmount | MEDIUM | ready | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| PERF-004 | Fix PerformanceObserver memory leak on observe() throw | MEDIUM | ready | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| PERF-005 | Fix useWebVitals returning mutable ref (should use state) | MEDIUM | ready | 1h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+
+---
+
+#### PERF-002: Fix Undefined Array Access in Web Vitals Observers
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 0.5h
+**Module:** `client/src/hooks/work-surface/usePerformanceMonitor.ts:373-391`
+**Dependencies:** None
+
+**Problem:**
+LCP, FID, and CLS observers access array elements without checking if array is empty, causing runtime crashes:
+
+```typescript
+// Line 373-375 - LCP
+const entries = list.getEntries();
+const lastEntry = entries[entries.length - 1]; // UNDEFINED if empty
+vitalsRef.current.lcp = lastEntry.startTime;   // THROWS
+
+// Line 389-391 - FID
+const firstEntry = entries[0] as FirstInputEntry; // UNDEFINED if empty
+vitalsRef.current.fid = firstEntry.processingStart - firstEntry.startTime; // THROWS
+```
+
+**Solution:**
+```typescript
+const entries = list.getEntries();
+if (entries.length === 0) return;
+const lastEntry = entries[entries.length - 1];
+```
+
+**Acceptance Criteria:**
+- [ ] All array accesses guarded with length check
+- [ ] No runtime crashes when PerformanceObserver fires with empty entries
+- [ ] Tests added for empty entry edge case
 
 ---
 
