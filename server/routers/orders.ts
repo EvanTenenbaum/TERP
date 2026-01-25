@@ -311,7 +311,9 @@ export const ordersRouter = router({
         }
 
         // BUG-302: Validate ownership - check order belongs to user or user has admin permission
-        const hasAdminPermission = ctx.user?.role === "admin";
+        // BUG-404: Use permission service instead of hardcoded role check
+        const { isSuperAdmin } = await import("../services/permissionService");
+        const hasAdminPermission = ctx.user?.openId ? await isSuperAdmin(ctx.user.openId) : false;
         if (order.createdBy !== userId && !hasAdminPermission) {
           throw new TRPCError({
             code: "FORBIDDEN",

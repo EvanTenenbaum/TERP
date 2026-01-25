@@ -1611,15 +1611,17 @@ export const accountingRouter = router({
           // BE-QA-008-FIX: Calculate COGS from confirmed/shipped order line items
           // Fixed: BUG-305, BUG-306, BUG-318, BUG-319, BUG-320, BUG-321
           const { orders, orderLineItems } = await import("../../drizzle/schema");
-          const { gte, lte, isNull, isNotNull, ne } = await import("drizzle-orm");
+          const { gte, lte, isNull, isNotNull, ne, notInArray } = await import("drizzle-orm");
 
           // BUG-305: Fix date boundary - include full end day
+          // BUG-405: Use UTC to ensure timezone consistency across servers
           const endOfDay = new Date(input.endDate);
-          endOfDay.setHours(23, 59, 59, 999);
+          endOfDay.setUTCHours(23, 59, 59, 999);
 
           // Get orders confirmed within the period
           // BUG-320: Exclude cancelled orders
           // BUG-321: Add explicit null check for confirmedAt
+          // BUG-406: Exclude RETURNED/RESTOCKED orders - COGS should not count returned goods
           const periodOrders = await db
             .select({
               orderId: orders.id,
@@ -1634,7 +1636,10 @@ export const accountingRouter = router({
                 gte(orders.confirmedAt, input.startDate),
                 lte(orders.confirmedAt, endOfDay), // BUG-305: Include full end day
                 isNull(orders.deletedAt),
-                ne(orders.saleStatus, "CANCELLED") // BUG-320: Exclude cancelled orders
+                ne(orders.saleStatus, "CANCELLED"), // BUG-320: Exclude cancelled orders
+                // BUG-406: Only include shipped/delivered orders for COGS
+                // Exclude RETURNED, RESTOCKED, RETURNED_TO_VENDOR, CANCELLED fulfillment
+                notInArray(orders.fulfillmentStatus, ["RETURNED", "RESTOCKED", "RETURNED_TO_VENDOR", "CANCELLED"])
               )
             );
 

@@ -409,54 +409,93 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
     let estimatedRetailPrice: number;
 
     if (pricingRules.length > 0) {
-      // Get average markup from rules for estimate
+      // BUG-410: Process ALL pricing rules (markups AND markdowns) separately
+      // BUG-411: Include MARKDOWN rules - discount clients see lower prices
       const markupRules = pricingRules.filter(r =>
         r.adjustmentType === "PERCENT_MARKUP" || r.adjustmentType === "DOLLAR_MARKUP"
       );
-      if (markupRules.length > 0) {
-        // BUG-309: Track valid rules for accurate average calculation
-        let validRuleCount = 0;
-        const totalMarkup = markupRules.reduce((sum, r) => {
-          const val = parseFloat(r.adjustmentValue?.toString() || "0");
+      const markdownRules = pricingRules.filter(r =>
+        r.adjustmentType === "PERCENT_MARKDOWN" || r.adjustmentType === "DOLLAR_MARKDOWN"
+      );
 
-          // BUG-309: Skip rules with invalid adjustmentValue
+      if (markupRules.length > 0 || markdownRules.length > 0) {
+        // BUG-309: Track valid rules for accurate calculation
+        let totalMarkupPercent = 0;
+        let markupCount = 0;
+        let totalMarkdownPercent = 0;
+        let markdownCount = 0;
+
+        // Process markup rules
+        for (const r of markupRules) {
+          const val = parseFloat(r.adjustmentValue?.toString() || "0");
           if (Number.isNaN(val)) {
             logger.debug(
               { ruleId: r.id, adjustmentValue: r.adjustmentValue },
-              "Skipping pricing rule with invalid adjustmentValue in filter calculation"
+              "Skipping markup rule with invalid adjustmentValue"
             );
-            return sum;
+            continue;
           }
-          validRuleCount++;
 
           if (r.adjustmentType === "PERCENT_MARKUP") {
-            return sum + val / 100;
+            // BUG-410: PERCENT values are stored as whole numbers (30 = 30%)
+            totalMarkupPercent += val / 100;
+            markupCount++;
           } else {
-            // DOLLAR_MARKUP: convert to percentage, capped at 5x (500%)
+            // DOLLAR_MARKUP: convert to percentage relative to COGS
             const dollarMarkupPercent = val / unitCogs;
-            // BUG-310: Explicit NaN check before Math.min
             if (Number.isNaN(dollarMarkupPercent)) {
-              logger.debug(
-                { unitCogs, val },
-                "Skipping DOLLAR_MARKUP rule due to NaN result"
-              );
-              validRuleCount--; // Don't count this rule
-              return sum;
+              logger.debug({ unitCogs, val }, "Skipping DOLLAR_MARKUP due to NaN");
+              continue;
             }
-            // BUG-322: Log when using fallback markup (500% cap)
+            // Cap at 500% to prevent extreme values
+            const cappedPercent = Math.min(dollarMarkupPercent, 5);
             if (dollarMarkupPercent > 5) {
               logger.debug(
-                { unitCogs, val, originalMarkupPercent: dollarMarkupPercent },
-                "Capped extreme DOLLAR_MARKUP at 500% in filter calculation"
+                { unitCogs, val, originalPercent: dollarMarkupPercent },
+                "Capped extreme DOLLAR_MARKUP at 500%"
               );
             }
-            return sum + Math.min(dollarMarkupPercent, 5);
+            totalMarkupPercent += cappedPercent;
+            markupCount++;
           }
-        }, 0);
+        }
 
-        // BUG-309: Calculate average only from valid rules, fall back to default if none
-        const avgMarkup = validRuleCount > 0 ? totalMarkup / validRuleCount : defaultMargin;
-        estimatedRetailPrice = unitCogs * (1 + Math.max(avgMarkup, defaultMargin));
+        // BUG-411: Process markdown rules (reduce price)
+        for (const r of markdownRules) {
+          const val = parseFloat(r.adjustmentValue?.toString() || "0");
+          if (Number.isNaN(val)) {
+            logger.debug(
+              { ruleId: r.id, adjustmentValue: r.adjustmentValue },
+              "Skipping markdown rule with invalid adjustmentValue"
+            );
+            continue;
+          }
+
+          if (r.adjustmentType === "PERCENT_MARKDOWN") {
+            // PERCENT_MARKDOWN: 30 = 30% discount
+            totalMarkdownPercent += val / 100;
+            markdownCount++;
+          } else {
+            // DOLLAR_MARKDOWN: convert to percentage relative to COGS
+            const dollarMarkdownPercent = val / unitCogs;
+            if (Number.isNaN(dollarMarkdownPercent)) {
+              logger.debug({ unitCogs, val }, "Skipping DOLLAR_MARKDOWN due to NaN");
+              continue;
+            }
+            // Cap markdown at 100% (can't go below zero)
+            totalMarkdownPercent += Math.min(dollarMarkdownPercent, 1);
+            markdownCount++;
+          }
+        }
+
+        // Calculate net price adjustment
+        const avgMarkup = markupCount > 0 ? totalMarkupPercent / markupCount : defaultMargin;
+        const avgMarkdown = markdownCount > 0 ? totalMarkdownPercent / markdownCount : 0;
+
+        // Net multiplier: (1 + markup) * (1 - markdown)
+        // But ensure we don't go below COGS (minimum 0% markup)
+        const netMultiplier = Math.max(1, (1 + avgMarkup) * (1 - avgMarkdown));
+        estimatedRetailPrice = unitCogs * netMultiplier;
       } else {
         estimatedRetailPrice = unitCogs * (1 + defaultMargin);
       }
