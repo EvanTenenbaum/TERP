@@ -228,16 +228,16 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 | Task     | Description                                  | Priority | Status      | Estimate | Dependencies  |
 | -------- | -------------------------------------------- | -------- | ----------- | -------- | ------------- |
-| POST-001 | Run database seeders for new defaults        | P0       | ⚠️ PARTIAL  | 30m      | Merge to main |
+| POST-001 | Run database seeders for new defaults        | P0       | ✅ COMPLETE | 30m      | Merge to main |
 | POST-002 | Verify deployment health after merge         | P0       | ✅ COMPLETE | 15m      | POST-001      |
 | POST-003 | Run full test suite and document failures    | P1       | ✅ COMPLETE | 1h       | POST-002      |
-| POST-004 | Validate feature flags seeded correctly      | P1       | ⚠️ BLOCKED  | 15m      | POST-001      |
-| POST-005 | Test critical mutation wrapper in production | P1       | ⏳ PENDING  | 30m      | POST-002      |
+| POST-004 | Validate feature flags seeded correctly      | P1       | ✅ COMPLETE | 15m      | POST-001      |
+| POST-005 | Test critical mutation wrapper in production | P1       | ⏳ MANUAL   | 30m      | POST-002      |
 
 #### POST-001: Run Database Seeders for New Defaults
 
-**Status:** ⚠️ PARTIAL (Jan 25, 2026)
-**Notes:** Seeders attempt to run on deployment startup but fail due to schema mismatch (`unitTypeCategory` column not found in `unit_types` table). Non-fatal - server continues. Requires migration to add missing column.
+**Status:** ✅ COMPLETE (Jan 25, 2026)
+**Notes:** Fixed by PR #304 which aligned mysqlEnum names with column names. Seeders now run successfully on deployment startup. All default data seeded: RBAC, locations, categories, grades, expense categories, chart of accounts, and unit types.
 **Priority:** CRITICAL (P0)
 **Estimate:** 30 minutes
 **Module:** `server/db/seed/`
