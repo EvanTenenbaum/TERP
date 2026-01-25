@@ -7,6 +7,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-feature-flags.ts
  */
 
+import { fileURLToPath } from "url";
 import { db, closePool } from "../../db-sync";
 import { featureFlags } from "../../../drizzle/schema-feature-flags";
 import { eq } from "drizzle-orm";
@@ -317,6 +318,7 @@ export async function seedFeatureFlags(): Promise<void> {
       if (existing) {
         if (existing.deletedAt) {
           // Resurrect soft-deleted flag by updating and clearing deletedAt
+          // QA-001: Include systemEnabled/defaultEnabled when restoring
           await db
             .update(featureFlags)
             .set({
@@ -324,6 +326,8 @@ export async function seedFeatureFlags(): Promise<void> {
               description: flag.description,
               module: flag.module,
               dependsOn: flag.dependsOn,
+              systemEnabled: flag.systemEnabled,
+              defaultEnabled: flag.defaultEnabled,
               deletedAt: null,
             })
             .where(eq(featureFlags.id, existing.id));
@@ -331,10 +335,13 @@ export async function seedFeatureFlags(): Promise<void> {
           console.info(`  ↺ Restored: ${flag.key}`);
         } else if (
           // Update if any mutable field changed (SEED-005: check all fields that update sets)
+          // QA-001: Include systemEnabled/defaultEnabled in comparison and update
           existing.description !== flag.description ||
           existing.module !== flag.module ||
           existing.name !== flag.name ||
-          existing.dependsOn !== flag.dependsOn
+          existing.dependsOn !== flag.dependsOn ||
+          existing.systemEnabled !== flag.systemEnabled ||
+          existing.defaultEnabled !== flag.defaultEnabled
         ) {
           await db
             .update(featureFlags)
@@ -343,6 +350,8 @@ export async function seedFeatureFlags(): Promise<void> {
               description: flag.description,
               module: flag.module,
               dependsOn: flag.dependsOn,
+              systemEnabled: flag.systemEnabled,
+              defaultEnabled: flag.defaultEnabled,
             })
             .where(eq(featureFlags.id, existing.id));
           updated++;
@@ -384,14 +393,16 @@ export async function seedFeatureFlags(): Promise<void> {
 // CLI Entry Point
 // ============================================================================
 
-// Allow running directly
-if (require.main === module) {
+// Allow running directly (ESM-compatible pattern)
+// QA-002: Use ESM pattern instead of CommonJS require.main
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   seedFeatureFlags()
     .then(async () => {
       await closePool();
       process.exit(0);
     })
-    .catch(async (err) => {
+    .catch(async err => {
       console.error("Failed to seed feature flags:", err);
       await closePool();
       process.exit(1);

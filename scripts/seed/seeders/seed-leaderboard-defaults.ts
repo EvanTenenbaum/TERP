@@ -3,6 +3,7 @@
  * Seeds the default weight configurations for the leaderboard system
  */
 
+import { fileURLToPath } from "url";
 import { db } from "../../db-sync";
 import { leaderboardDefaultWeights } from "../../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -83,7 +84,9 @@ export async function seedLeaderboardDefaults(): Promise<void> {
 }
 
 // Allow running directly
-if (require.main === module) {
+// QA-002: Use ESM pattern instead of CommonJS require.main
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   seedLeaderboardDefaults()
     .then(() => process.exit(0))
     .catch(err => {

@@ -30,6 +30,7 @@
  * Both seeders are safe to run in any order due to their idempotent design.
  */
 
+import { fileURLToPath } from "url";
 import { db, closePool } from "../../db-sync";
 import {
   rooms,
@@ -417,8 +418,10 @@ async function seedOvertimeRules(): Promise<{
         existing.weeklyThresholdMinutes !== rule.weeklyThresholdMinutes ||
         existing.overtimeMultiplier !== rule.overtimeMultiplier ||
         existing.doubleOvertimeMultiplier !== rule.doubleOvertimeMultiplier ||
-        existing.dailyDoubleThresholdMinutes !== rule.dailyDoubleThresholdMinutes ||
-        existing.weeklyDoubleThresholdMinutes !== rule.weeklyDoubleThresholdMinutes
+        existing.dailyDoubleThresholdMinutes !==
+          rule.dailyDoubleThresholdMinutes ||
+        existing.weeklyDoubleThresholdMinutes !==
+          rule.weeklyDoubleThresholdMinutes
       ) {
         await db
           .update(overtimeRules)
@@ -503,7 +506,9 @@ export async function seedSchedulingDefaults(): Promise<void> {
     console.info(
       "   This may have been seeded by server/services/seedScheduling.ts or another source."
     );
-    console.info("   Will skip existing records and only add/update as needed.\n");
+    console.info(
+      "   Will skip existing records and only add/update as needed.\n"
+    );
   }
 
   const roomResults = await seedRooms();
@@ -526,13 +531,15 @@ export async function seedSchedulingDefaults(): Promise<void> {
 // CLI Entry Point
 // ============================================================================
 
-if (require.main === module) {
+// QA-002: Use ESM pattern instead of CommonJS require.main
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   seedSchedulingDefaults()
     .then(async () => {
       await closePool();
       process.exit(0);
     })
-    .catch(async (err) => {
+    .catch(async err => {
       console.error("Failed to seed scheduling defaults:", err);
       await closePool();
       process.exit(1);

@@ -8,6 +8,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-storage-defaults.ts
  */
 
+import { fileURLToPath } from "url";
 import { db, closePool } from "../../db-sync";
 import { sites, storageZones } from "../../../drizzle/schema-storage";
 import { and, eq, isNull } from "drizzle-orm";
@@ -465,13 +466,15 @@ export async function seedStorageDefaults(): Promise<void> {
 // CLI Entry Point
 // ============================================================================
 
-if (require.main === module) {
+// QA-002: Use ESM pattern instead of CommonJS require.main
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   seedStorageDefaults()
     .then(async () => {
       await closePool();
       process.exit(0);
     })
-    .catch(async (err) => {
+    .catch(async err => {
       console.error("Failed to seed storage defaults:", err);
       await closePool();
       process.exit(1);

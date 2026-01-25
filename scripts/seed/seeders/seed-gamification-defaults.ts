@@ -8,6 +8,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-gamification-defaults.ts
  */
 
+import { fileURLToPath } from "url";
 import { db, closePool } from "../../db-sync";
 import {
   achievements,
@@ -605,8 +606,7 @@ async function seedReferralSettings(): Promise<boolean> {
     return true;
   } catch (error) {
     // Schema mismatch - table exists with different columns (e.g., legacy schema)
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     if (
       errorMessage.includes("Unknown column") ||
@@ -656,13 +656,15 @@ export async function seedGamificationDefaults(): Promise<void> {
 // CLI Entry Point
 // ============================================================================
 
-if (require.main === module) {
+// QA-002: Use ESM pattern instead of CommonJS require.main
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   seedGamificationDefaults()
     .then(async () => {
       await closePool();
       process.exit(0);
     })
-    .catch(async (err) => {
+    .catch(async err => {
       console.error("Failed to seed gamification defaults:", err);
       await closePool();
       process.exit(1);
