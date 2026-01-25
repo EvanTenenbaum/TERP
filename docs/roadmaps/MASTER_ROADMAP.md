@@ -3343,3 +3343,506 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 - Legacy databases with long constraint names may still require cleanup.
 
 ---
+
+---
+
+## 🔴 QA Destructive Testing Findings (Jan 25, 2026)
+
+> **Source:** Comprehensive destructive testing by 8 parallel agents + senior engineering analysis
+> **Reports:** `docs/QA_DESTRUCTIVE_TEST_REPORT.md`, `docs/SENIOR_ENGINEER_AUDIT_REPORT.md`
+> **Total Bugs Found:** 92 individual bugs → 7 systemic root causes
+> **Estimated Total Remediation:** 60-80 hours
+
+### P0: Critical Security & Financial Integrity
+
+> These issues can result in financial restatement, security breaches, or data corruption.
+> **Must fix before production use.**
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH | ready | 1h | `server/routers/adminSetup.ts` |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema) | HIGH | ready | 1h | `server/routers/debug.ts` |
+| SEC-029 | Fix Default Permission Grants (new users get read all) | HIGH | ready | 2h | `server/services/permissionService.ts` |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated) | HIGH | ready | 2h | `server/routers/vipPortal.ts` |
+| ACC-002 | Add GL Reversals for Invoice Void | HIGH | ready | 4h | `server/routers/invoices.ts` |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | ready | 4h | `server/routers/returns.ts` |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | ready | 4h | `server/services/orderAccountingService.ts` |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | ready | 2h | `server/accountingDb.ts` |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | ready | 4h | `server/routers/orders.ts` |
+| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | ready | 2h | `server/ordersDb.ts` |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
+| ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
+| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
+
+---
+
+#### SEC-027: Protect Admin Setup Endpoints
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 1h
+**Module:** `server/routers/adminSetup.ts:104-259`
+**Dependencies:** None
+
+**Problem:**
+`listUsers`, `promoteToAdmin`, `promoteAllToAdmin` use `publicProcedure` with only weak setupKey protection. If setup key leaks, complete privilege escalation is possible.
+
+**Attack Vector:**
+```
+1. Learn setup key (default/leaked/brute-force)
+2. Call adminSetup.promoteToAdmin with attacker email
+3. Full system admin access in <1 minute
+```
+
+**Acceptance Criteria:**
+- [ ] All adminSetup endpoints use `protectedProcedure`
+- [ ] Require existing Super Admin role to call these endpoints
+- [ ] Remove or strengthen setupKey mechanism
+
+---
+
+#### SEC-028: Remove/Restrict Debug Endpoints
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 1h
+**Module:** `server/routers/debug.ts:18-522`
+**Dependencies:** None
+
+**Problem:**
+Six debug endpoints are completely public. They reveal all table names, schema structure, and data counts - everything needed to plan an attack.
+
+**Exposed Information:**
+- `checkDatabaseSchema`: All table names and columns
+- `getCounts`: Row counts for all tables (15,234 invoices, 523 clients, etc.)
+- `checkTableStructure`: Full schema details
+
+**Acceptance Criteria:**
+- [ ] Debug endpoints removed from production build, OR
+- [ ] Debug endpoints require Super Admin authentication
+- [ ] Rate limiting applied to prevent enumeration
+
+---
+
+#### ACC-002: Add GL Reversals for Invoice Void
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/invoices.ts:449-497`
+**Dependencies:** None
+
+**Problem:**
+Voiding an invoice only sets `status = "VOID"`. No reversing GL entries are created, even though `reverseGLEntries()` function exists at `accountingHooks.ts:478`.
+
+**Blast Radius:**
+- GL ledger becomes unbalanced
+- Voided invoices still appear in AR aging
+- Audit trail incomplete
+- Reconciliation impossible
+
+**Acceptance Criteria:**
+- [ ] `invoices.void()` calls `reverseGLEntries()` for original posting
+- [ ] Client `totalOwed` reduced by voided amount
+- [ ] Audit log records void reason and reversing entries
+
+---
+
+#### ACC-003: Add GL Reversals for Returns/Credit Memos
+
+**Status:** ready
+**Priority:** HIGH  
+**Estimate:** 4h
+**Module:** `server/routers/returns.ts:231-328`
+**Dependencies:** ACC-002
+
+**Problem:**
+Returns restock inventory but don't create credit memos, reverse invoices, update `client.totalOwed`, or create reversing GL entries.
+
+**Blast Radius:**
+- Customers who return goods still show as owing money
+- AR overstated indefinitely
+- No audit trail of returns
+
+**Acceptance Criteria:**
+- [ ] Return creates credit memo
+- [ ] Credit memo creates reversing GL entries
+- [ ] Client `totalOwed` reduced
+- [ ] Invoice shows applied credit
+
+---
+
+#### ACC-004: Create COGS GL Entries on Sale
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/services/orderAccountingService.ts:119-138`
+**Dependencies:** None
+
+**Problem:**
+Revenue is posted to GL on sale, but Cost of Goods Sold is never created. This makes gross margin appear as 100% (impossible).
+
+**Expected Flow:**
+```
+SALE creates:
+1. Debit AR, Credit Revenue (✅ exists)
+2. Debit COGS Expense, Credit Inventory Asset (❌ MISSING)
+```
+
+**Blast Radius:**
+- Inventory asset account never decreases on sales
+- COGS expense shows $0
+- Gross margin = 100% (overstated)
+- P&L shows phantom profit
+
+**Acceptance Criteria:**
+- [ ] Sale creates COGS/Inventory GL entries
+- [ ] COGS amount = SUM(lineItem.unitCogs * quantity)
+- [ ] Inventory asset reduced by COGS amount
+- [ ] GL balanced after every sale
+
+---
+
+#### INV-001: Add Inventory Deduction on Ship/Fulfill
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts:1355-1428, 1434-1494`
+**Dependencies:** None
+
+**Problem:**
+`shipOrder()` and `deliverOrder()` update order status but NEVER deduct inventory. `onHandQty` never decreases, creating phantom inventory.
+
+**Current Flow:**
+```
+1. Order created → items in JSON ✅
+2. allocateBatchesToLineItem() → reservedQty += allocation ✅
+3. Order shipped → NO DEDUCTION ❌
+4. Order delivered → STILL NO DEDUCTION ❌
+5. Inventory shows items "reserved forever"
+```
+
+**Acceptance Criteria:**
+- [ ] `shipOrder()` converts reservedQty to actual deduction
+- [ ] `batch.onHandQty -= shippedQuantity`
+- [ ] Inventory movement record created
+- [ ] `reservedQty` released after ship
+
+---
+
+#### INV-002: Fix Race Condition in Draft Order Confirmation
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Module:** `server/ordersDb.ts:1137-1161`
+**Dependencies:** None
+
+**Problem:**
+`confirmDraftOrder()` checks inventory WITHOUT row-level locks. Concurrent confirmations can both succeed when combined they exceed available inventory.
+
+**Race Condition Timeline:**
+```
+Request A: Read batch.onHandQty = 100 ✓
+Request B: Read batch.onHandQty = 100 ✓ (same value!)
+Request A: Validate 50 <= 100 ✓ Pass
+Request B: Validate 75 <= 100 ✓ Pass
+Request A: UPDATE batch SET onHandQty = 50
+Request B: UPDATE batch SET onHandQty = 25
+Result: Sold 125 units, only had 100
+```
+
+**Acceptance Criteria:**
+- [ ] Use `SELECT ... FOR UPDATE` when checking inventory
+- [ ] Transaction wraps check + update
+- [ ] Second request fails with "insufficient inventory"
+
+---
+
+#### ST-050: Fix Silent Error Handling in RED Mode Paths
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/ordersDb.ts:344-392`
+**Dependencies:** None
+
+**Problem:**
+Financial operations catch errors and continue silently:
+
+```typescript
+try {
+  await payablesService.updatePayableOnSale(...);
+} catch (payableError) {
+  console.error("...(non-fatal):", payableError);  // Continues anyway!
+}
+```
+
+**Blast Radius:**
+- Order created but no invoice (silent failure)
+- Inventory reduced but GL not posted
+- Revenue leakage undetected
+- 6+ silent failure points per order
+
+**Acceptance Criteria:**
+- [ ] Rethrow errors in financial operations
+- [ ] Wrap in transaction that rolls back on any failure
+- [ ] Add monitoring/alerts for accounting failures
+
+---
+
+#### ST-051: Add Transaction Boundaries to Critical Operations
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/ordersDb.ts`, `server/routers/orders.ts`
+**Dependencies:** ST-050
+
+**Problem:**
+Multi-step operations execute without atomicity. If step 2 fails, step 1 is not rolled back.
+
+**Example - Order Cancellation:**
+```
+Step 1: Update order status = CANCELLED → Transaction A ✅
+Step 2: Restore inventory → Transaction B (may fail)
+Step 3: Reverse GL entries → Transaction C (may fail)
+
+If Step 2 fails:
+- Order shows CANCELLED
+- Inventory NOT restored (lost forever)
+- GL NOT reversed (AR overstated)
+```
+
+**Files Affected:**
+- `ordersDb.ts:724-787` (deleteOrder)
+- `ordersDb.ts:1137-1161` (confirmDraftOrder)
+- `orders.ts:1355-1428` (shipOrder)
+- `orders.ts:1434-1494` (deliverOrder)
+
+**Acceptance Criteria:**
+- [ ] All critical operations wrapped in single transaction
+- [ ] Rollback on any step failure
+- [ ] No partial state possible
+
+---
+
+### P1: Architecture & State Machine Fixes
+
+> These issues cause data inconsistency and incorrect business logic.
+> **Should fix in current release.**
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| ARCH-001 | Create OrderOrchestrator Service | HIGH | ready | 8h | `server/services/` (new) |
+| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
+| ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
+| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | ready | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+
+---
+
+#### ARCH-001: Create OrderOrchestrator Service
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/services/orderOrchestrator.ts` (new)
+**Dependencies:** ST-051
+
+**Problem:**
+Order business logic is scattered across `ordersDb.ts` (1400+ lines), `orders.ts` router, and various services. This makes it impossible to ensure transactional integrity.
+
+**Proposed Architecture:**
+```typescript
+class OrderOrchestrator {
+  async createSaleOrder(input: CreateSaleInput): Promise<Order> {
+    return this.db.transaction(async (tx) => {
+      // 1. Create order
+      // 2. Allocate inventory (with locks)
+      // 3. Create invoice
+      // 4. Create GL entries (AR + COGS)
+      // All in one transaction
+    });
+  }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] OrderOrchestrator handles create, confirm, ship, deliver, cancel
+- [ ] All operations atomic within single transaction
+- [ ] Clear separation of concerns from router
+
+---
+
+#### ARCH-002: Eliminate Shadow Accounting
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/services/`, `server/routers/clients.ts`
+**Dependencies:** None
+
+**Problem:**
+Three independent systems track client balances:
+1. `invoices.amountDue` (per invoice)
+2. `clients.totalOwed` (denormalized, updated inconsistently)
+3. `clientTransactions` table (shadow ledger)
+
+They never sync, causing wrong balances.
+
+**Acceptance Criteria:**
+- [ ] `clients.totalOwed` derived from `SUM(invoices.amountDue)` or trigger-maintained
+- [ ] Remove manual updates to `totalOwed` scattered across codebase
+- [ ] Or convert `totalOwed` to computed view/materialized view
+
+---
+
+#### ARCH-003: Use State Machine for All Order Transitions
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts`, `server/services/orderStateMachine.ts`
+**Dependencies:** None
+
+**Problem:**
+State machine is correctly defined in `orderStateMachine.ts` but only used by `markAsReturned()`. All other transitions (ship, deliver, confirm, cancel) bypass it.
+
+**Current Usage:**
+- ✗ `confirmOrder()` - doesn't use it
+- ✗ `shipOrder()` - doesn't use it
+- ✗ `deliverOrder()` - doesn't use it
+- ✓ `markAsReturned()` - USES it
+- ✗ `markCancelled()` - doesn't exist
+
+**Acceptance Criteria:**
+- [ ] All status transitions call `canTransition(from, to)`
+- [ ] Invalid transitions throw descriptive error
+- [ ] Side effects enforced per transition
+
+---
+
+#### ARCH-004: Fix Bill Status Transitions
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/arApDb.ts:470-478`
+**Dependencies:** None
+
+**Problem:**
+`updateBillStatus()` accepts ANY status transition with no validation:
+
+```typescript
+// Current code - COMPLETELY BROKEN
+export async function updateBillStatus(id, status) {
+  await db.update(bills).set({ status }).where(eq(bills.id, id));
+}
+```
+
+**Invalid Transitions Allowed:**
+- PAID → DRAFT (undo payments!)
+- VOID → DRAFT (unvoid!)
+- DRAFT → PAID (skip approval)
+
+**Acceptance Criteria:**
+- [ ] Define valid bill status transitions
+- [ ] Validate before applying
+- [ ] Add version field for optimistic locking
+
+---
+
+### P2: Business Logic & Data Integrity
+
+> These issues affect correctness but have workarounds.
+> **Fix in next sprint.**
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| SM-001 | Implement Quote Status Transitions | MEDIUM | ready | 4h | `server/routers/quotes.ts` |
+| SM-002 | Implement Sale Status Transitions | MEDIUM | ready | 4h | `server/routers/orders.ts` |
+| SM-003 | Implement VendorReturn Status Transitions | MEDIUM | ready | 4h | `server/routers/returns.ts` |
+| ORD-002 | Validate Positive Prices in Orders | MEDIUM | ready | 2h | `server/ordersDb.ts`, `server/services/orderService.ts` |
+| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM | ready | 2h | `server/services/orderStateMachine.ts` |
+| ORD-004 | Add Credit Override Authorization | MEDIUM | ready | 2h | `server/services/orderPricingService.ts` |
+| INV-004 | Add Reservation Release on Order Cancellation | MEDIUM | ready | 2h | `server/routers/orders.ts` |
+| INV-005 | Create Batches on PO Goods Receipt | MEDIUM | ready | 4h | `server/routers/purchaseOrders.ts` |
+| NAV-017 | Add Missing /alerts Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
+| NAV-018 | Add Missing /reports/shrinkage Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
+| API-017 | Fix PaymentMethod Type Mismatch (as any) | MEDIUM | ready | 2h | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
+| API-018 | Fix Pagination Response Inconsistency | MEDIUM | ready | 4h | Multiple routers |
+
+---
+
+### P3: Observability & Testing
+
+> These issues affect debuggability and confidence.
+> **Fix as capacity allows.**
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| OBS-001 | Add GL Balance Verification Cron | LOW | ready | 4h | `server/cron/` |
+| OBS-002 | Add AR Reconciliation Check | LOW | ready | 4h | `server/cron/` |
+| OBS-003 | Add Inventory Audit Trail | LOW | ready | 4h | `server/routers/inventory.ts` |
+| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW | ready | 8h | `tests/integration/` |
+| TEST-011 | Add Concurrent Operation Tests | LOW | ready | 4h | `tests/integration/` |
+| TEST-012 | Update Batch Status Transition Test Map | LOW | ready | 2h | `server/routers/inventory.property.test.ts` |
+
+---
+
+#### OBS-001: Add GL Balance Verification Cron
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `server/cron/glBalanceCheck.ts` (new)
+**Dependencies:** None
+
+**Problem:**
+GL imbalances from silent failures go undetected until month-end close (30+ days of corruption).
+
+**Acceptance Criteria:**
+- [ ] Daily cron checks SUM(debits) = SUM(credits)
+- [ ] Alert if imbalanced by > $0.01
+- [ ] Report which date ranges are affected
+
+---
+
+### QA Audit Summary
+
+**Root Causes Identified:**
+1. **Shadow Accounting** - 3 systems tracking client balances independently
+2. **Missing COGS GL** - Revenue posted but not cost of goods sold
+3. **Silent Errors** - Financial operations fail silently
+4. **State Machine Ignored** - Defined but not used
+5. **Missing Transactions** - Multi-step ops without atomicity
+6. **Security Chains** - Individual issues combine into exploits
+7. **Party Model Debt** - 42 files reference deprecated vendors table
+
+**Blast Radius Summary:**
+| Issue | Max Impact |
+|-------|------------|
+| GL not balanced | Financial restatement |
+| Inventory phantom | All sales affected |
+| Credit bypass | $100k+ exposure |
+| Security breach | Full data exfiltration |
+| AR mismatch | All 500+ customers |
+
+**Agent IDs for Follow-up Investigation:**
+- Transaction Atomicity: `aedff89`
+- State Machines: `a575676`
+- Financial Invariants: `ab8e705`
+- Cascading Failures: `a914aaa`
+- Security Chains: `a59cc13`
+- Architecture Debt: `ad1d6ab`
+- Party Migration: `ac9f785`
+
+---
