@@ -22,6 +22,13 @@ import {
   WorkflowQueueWidget,
   WorkflowActivityWidget,
   AvailableCashWidget,
+  // FE-QA-011: Integrate unused dashboard widgets
+  CashCollectedLeaderboard,
+  ClientDebtLeaderboard,
+  ClientProfitMarginLeaderboard,
+  TopStrainFamiliesWidget,
+  AgingInventoryWidget,
+  SmartOpportunitiesWidget,
 } from "@/components/dashboard/widgets-v2";
 
 function DashboardContent() {
@@ -55,6 +62,19 @@ function DashboardContent() {
         return <WorkflowActivityWidget key={widgetId} />;
       case "available-cash":
         return <AvailableCashWidget key={widgetId} />;
+      // FE-QA-011: Integrate unused dashboard widgets
+      case "cash-collected-leaderboard":
+        return <CashCollectedLeaderboard key={widgetId} />;
+      case "client-debt-leaderboard":
+        return <ClientDebtLeaderboard key={widgetId} />;
+      case "client-profit-margin-leaderboard":
+        return <ClientProfitMarginLeaderboard key={widgetId} />;
+      case "top-strain-families":
+        return <TopStrainFamiliesWidget key={widgetId} />;
+      case "aging-inventory":
+        return <AgingInventoryWidget key={widgetId} />;
+      case "smart-opportunities":
+        return <SmartOpportunitiesWidget key={widgetId} />;
       default:
         return null;
     }

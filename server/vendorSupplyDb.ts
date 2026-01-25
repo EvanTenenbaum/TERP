@@ -1,6 +1,6 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { vendorSupply, vendors } from "../drizzle/schema";
+import { vendorSupply } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 import type { VendorSupply, InsertVendorSupply } from "../drizzle/schema";
 
@@ -9,7 +9,9 @@ import type { VendorSupply, InsertVendorSupply } from "../drizzle/schema";
  * @param supply - The vendor supply data to insert
  * @returns The created vendor supply with full details
  */
-export async function createVendorSupply(supply: InsertVendorSupply): Promise<VendorSupply> {
+export async function createVendorSupply(
+  supply: InsertVendorSupply
+): Promise<VendorSupply> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -18,12 +20,15 @@ export async function createVendorSupply(supply: InsertVendorSupply): Promise<Ve
     const [created] = await db
       .select()
       .from(vendorSupply)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .where(eq(vendorSupply.id, inserted.insertId as any));
-    
+
     return created;
   } catch (error) {
     logger.error({ error }, "Error creating vendor supply");
-    throw new Error(`Failed to create vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to create vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -32,7 +37,9 @@ export async function createVendorSupply(supply: InsertVendorSupply): Promise<Ve
  * @param id - The vendor supply ID
  * @returns The vendor supply or null if not found
  */
-export async function getVendorSupplyById(id: number): Promise<VendorSupply | null> {
+export async function getVendorSupplyById(
+  id: number
+): Promise<VendorSupply | null> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -41,11 +48,13 @@ export async function getVendorSupplyById(id: number): Promise<VendorSupply | nu
       .select()
       .from(vendorSupply)
       .where(eq(vendorSupply.id, id));
-    
+
     return supply || null;
   } catch (error) {
     logger.error({ error }, "Error fetching vendor supply");
-    throw new Error(`Failed to fetch vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -65,7 +74,7 @@ export async function getVendorSupply(filters?: {
 
   try {
     let query = db.select().from(vendorSupply);
-    
+
     const conditions = [];
     if (filters?.status) {
       conditions.push(eq(vendorSupply.status, filters.status));
@@ -81,6 +90,7 @@ export async function getVendorSupply(filters?: {
     }
 
     if (conditions.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       query = query.where(and(...conditions)) as any;
     }
 
@@ -88,7 +98,9 @@ export async function getVendorSupply(filters?: {
     return supplies;
   } catch (error) {
     logger.error({ error }, "Error fetching vendor supply list");
-    throw new Error(`Failed to fetch vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -97,13 +109,15 @@ export async function getVendorSupply(filters?: {
  * @param vendorId - Optional vendor ID filter
  * @returns Array of available vendor supply items
  */
-export async function getAvailableVendorSupply(vendorId?: number): Promise<VendorSupply[]> {
+export async function getAvailableVendorSupply(
+  vendorId?: number
+): Promise<VendorSupply[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
     const conditions = [eq(vendorSupply.status, "AVAILABLE")];
-    
+
     if (vendorId) {
       conditions.push(eq(vendorSupply.vendorId, vendorId));
     }
@@ -113,11 +127,13 @@ export async function getAvailableVendorSupply(vendorId?: number): Promise<Vendo
       .from(vendorSupply)
       .where(and(...conditions))
       .orderBy(desc(vendorSupply.createdAt));
-    
+
     return supplies;
   } catch (error) {
     logger.error({ error }, "Error fetching available vendor supply");
-    throw new Error(`Failed to fetch available vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch available vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -135,24 +151,23 @@ export async function updateVendorSupply(
   if (!db) throw new Error("Database not available");
 
   try {
-    await db
-      .update(vendorSupply)
-      .set(updates)
-      .where(eq(vendorSupply.id, id));
-    
+    await db.update(vendorSupply).set(updates).where(eq(vendorSupply.id, id));
+
     const [updated] = await db
       .select()
       .from(vendorSupply)
       .where(eq(vendorSupply.id, id));
-    
+
     if (!updated) {
       throw new Error("Vendor supply not found after update");
     }
-    
+
     return updated;
   } catch (error) {
     logger.error({ error }, "Error updating vendor supply");
-    throw new Error(`Failed to update vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to update vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -172,7 +187,9 @@ export async function reserveVendorSupply(id: number): Promise<VendorSupply> {
     });
   } catch (error) {
     logger.error({ error }, "Error reserving vendor supply");
-    throw new Error(`Failed to reserve vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to reserve vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -192,7 +209,9 @@ export async function purchaseVendorSupply(id: number): Promise<VendorSupply> {
     });
   } catch (error) {
     logger.error({ error }, "Error purchasing vendor supply");
-    throw new Error(`Failed to purchase vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to purchase vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -210,34 +229,66 @@ export async function deleteVendorSupply(id: number): Promise<boolean> {
     return true;
   } catch (error) {
     logger.error({ error }, "Error deleting vendor supply");
-    throw new Error(`Failed to delete vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to delete vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Get vendor supply with match indicators
  * @param filters - Optional filters
- * @returns Array of vendor supply items with match counts
+ * @returns Array of vendor supply items with buyer counts
  */
 export async function getVendorSupplyWithMatches(filters?: {
   status?: "AVAILABLE" | "RESERVED" | "PURCHASED" | "EXPIRED";
   vendorId?: number;
-}): Promise<Array<VendorSupply & { matchCount: number }>> {
+}): Promise<Array<VendorSupply & { buyerCount: number }>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
     const supplies = await getVendorSupply(filters);
-    
-    // For now, return supplies with matchCount = 0
-    // This will be enhanced when matching engine is implemented
-    return supplies.map(supply => ({
-      ...supply,
-      matchCount: 0,
-    }));
+
+    // FE-QA-FIX: Calculate actual buyer counts using matching engine
+    const { findBuyersForVendorSupply } =
+      await import("./matchingEngineEnhanced");
+
+    const suppliesWithCounts = await Promise.all(
+      supplies.map(async supply => {
+        try {
+          // Only calculate matches for available items
+          if (supply.status === "AVAILABLE") {
+            const buyers = await findBuyersForVendorSupply(supply.id);
+            return {
+              ...supply,
+              buyerCount: buyers.length,
+            };
+          }
+          return {
+            ...supply,
+            buyerCount: 0,
+          };
+        } catch (matchError) {
+          // Log but don't fail - return 0 if matching fails for one item
+          logger.warn(
+            { supplyId: supply.id, error: matchError },
+            "Failed to find buyers for supply item"
+          );
+          return {
+            ...supply,
+            buyerCount: 0,
+          };
+        }
+      })
+    );
+
+    return suppliesWithCounts;
   } catch (error) {
     logger.error({ error }, "Error fetching vendor supply with matches");
-    throw new Error(`Failed to fetch vendor supply with matches: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to fetch vendor supply with matches: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -259,11 +310,12 @@ export async function expireOldVendorSupply(): Promise<number> {
           sql`${vendorSupply.availableUntil} < NOW()`
         )
       );
-    
+
     return result[0].affectedRows || 0;
   } catch (error) {
     logger.error({ error }, "Error expiring old vendor supply");
-    throw new Error(`Failed to expire old vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to expire old vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
-

@@ -32,6 +32,9 @@ import {
   Tag, // NAV-012: Pricing Rules
   Workflow, // NAV-013: Workflow Queue
   Clock, // MEET-048: Time Clock
+  Inbox, // TERP-0005: Inbox navigation
+  Download, // TERP-0005: Direct Intake
+  MapPin, // TERP-0005: Locations
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +61,14 @@ export const navigationGroups: Array<{
 
 export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, group: "sales" },
+  // TERP-0005: Add Inbox to top-level Sales group
+  {
+    name: "Inbox",
+    path: "/inbox",
+    icon: Inbox,
+    group: "sales",
+    ariaLabel: "Notifications and messages inbox",
+  },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
   { name: "Orders", path: "/orders", icon: ShoppingCart, group: "sales" },
   // NAV-001: Added Interest List for tracking client product interests
@@ -69,11 +80,12 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Track client product interests and convert to orders",
   },
   // NAV-002: Added Pick & Pack for order fulfillment workflow
+  // TERP-0005: Moved from Sales to Inventory group
   {
     name: "Pick & Pack",
     path: "/pick-pack",
     icon: PackageOpen,
-    group: "sales",
+    group: "inventory",
     ariaLabel: "Order fulfillment and packing workflow",
   },
   {
@@ -92,11 +104,13 @@ export const navigationItems: NavigationItem[] = [
     // NOTE: Feature flag intentionally omitted to ensure BUG-073 fix remains active
     // Add featureFlag: "live-shopping" when ready for controlled rollout
   },
+  // TERP-0005: Moved Invoices from Sales to Finance group
   {
     name: "Invoices",
     path: "/accounting/invoices",
     icon: FileText,
-    group: "sales",
+    group: "finance",
+    ariaLabel: "Manage invoices and billing",
   },
   // NAV-006: Leaderboard for sales performance tracking
   {
@@ -189,6 +203,14 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Spreadsheet view for inventory and clients",
     featureFlag: "spreadsheet-view",
   },
+  // TERP-0005: Add Direct Intake to Inventory group
+  {
+    name: "Direct Intake",
+    path: "/intake",
+    icon: Download,
+    group: "inventory",
+    ariaLabel: "Direct intake of inventory items",
+  },
 
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
   {
@@ -266,6 +288,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Workflow,
     group: "admin",
     ariaLabel: "Manage workflow statuses and queues",
+  },
+  // TERP-0005: Add Locations to Admin group
+  {
+    name: "Locations",
+    path: "/locations",
+    icon: MapPin,
+    group: "admin",
+    ariaLabel: "Manage warehouse and storage locations",
   },
 ];
 
