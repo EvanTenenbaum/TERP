@@ -15,6 +15,8 @@ import {
   selectWeightedIndex,
   longTailRandom,
   generateWeightedQuantity,
+  setSeed,
+  random,
 } from "./utils.js";
 import type { BatchData } from "./inventory.js";
 
@@ -71,6 +73,11 @@ export function generateOrders(
   regularClientIds: number[],
   batches: BatchData[]
 ): OrderData[] {
+  // Initialize seeded random for reproducibility
+  if (CONFIG.seed) {
+    setSeed(CONFIG.seed);
+  }
+
   const orders: OrderData[] = [];
   const totalOrders = CONFIG.totalMonths * CONFIG.ordersPerMonth;
 
@@ -93,7 +100,7 @@ export function generateOrders(
   for (let i = 0; i < totalOrders; i++) {
     // Determine if this is a whale or regular client order
     // Whales order more frequently
-    const isWhaleOrder = Math.random() < 0.7; // 70% of orders from whales
+    const isWhaleOrder = random() < 0.7; // 70% of orders from whales
     const clientIds = isWhaleOrder ? whaleClientIds : regularClientIds;
     const targetRevenue = isWhaleOrder ? revenuePerWhale : revenuePerRegular;
 
@@ -122,14 +129,14 @@ export function generateOrders(
 
     // Generate order items with long-tail distribution
     // Inject order-level anomalies: special orders
-    const orderAnomalyRoll = Math.random();
+    const orderAnomalyRoll = random();
     let itemCount: number;
     let forceMargin: number | null = null;
     let forceSmallQuantity = false;
 
     if (orderAnomalyRoll < 0.1) {
       // 10% are very small orders (1-2 items with small quantities)
-      itemCount = Math.random() < 0.5 ? 1 : 2;
+      itemCount = random() < 0.5 ? 1 : 2;
       forceSmallQuantity = true;
     } else {
       // 90% normal distribution
@@ -138,12 +145,12 @@ export function generateOrders(
 
     // 3% of orders get forced low margins across all items
     if (orderAnomalyRoll >= 0.1 && orderAnomalyRoll < 0.13) {
-      forceMargin = 0.05 + Math.random() * 0.05; // 5-10% margin
+      forceMargin = 0.05 + random() * 0.05; // 5-10% margin
     }
 
     // 3% of orders get forced high margins across all items
     if (orderAnomalyRoll >= 0.13 && orderAnomalyRoll < 0.16) {
-      forceMargin = 0.5 + Math.random() * 0.2; // 50-70% margin
+      forceMargin = 0.5 + random() * 0.2; // 50-70% margin
     }
 
     const items: OrderItem[] = [];
@@ -164,13 +171,13 @@ export function generateOrders(
         margin = forceMargin;
       } else {
         // Inject item-level anomalies: 10% of items get extreme margins
-        const anomalyRoll = Math.random();
+        const anomalyRoll = random();
         if (anomalyRoll < 0.05) {
           // 5% get very high margins (50-70%)
-          margin = 0.5 + Math.random() * 0.2;
+          margin = 0.5 + random() * 0.2;
         } else if (anomalyRoll < 0.1) {
           // 5% get very low margins (5-10%)
-          margin = 0.05 + Math.random() * 0.05;
+          margin = 0.05 + random() * 0.05;
         } else {
           // 90% get normal margins with variance
           margin = addVariance(CONFIG.averageMargin, CONFIG.marginVariance);
@@ -186,8 +193,8 @@ export function generateOrders(
       if (forceSmallQuantity) {
         // Small orders get minimal quantities
         quantity = isFlower
-          ? 0.5 + Math.random() * 0.5
-          : 1 + Math.floor(Math.random() * 3);
+          ? 0.5 + random() * 0.5
+          : 1 + Math.floor(random() * 3);
       } else {
         quantity = generateWeightedQuantity(isFlower);
       }
@@ -222,7 +229,7 @@ export function generateOrders(
     const avgMarginPercent = (orderMargin / orderSubtotal) * 100;
 
     // 50% consignment sales
-    const isConsignment = Math.random() < CONFIG.salesConsignmentRate;
+    const isConsignment = random() < CONFIG.salesConsignmentRate;
     const paymentTerms = isConsignment ? "CONSIGNMENT" : "NET_30";
 
     // Due date (30 days from order)
