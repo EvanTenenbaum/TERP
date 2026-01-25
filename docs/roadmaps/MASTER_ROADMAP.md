@@ -882,27 +882,33 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 
 | Task    | Description                                    | Priority | Status      | Estimate | Module                        |
 | ------- | ---------------------------------------------- | -------- | ----------- | -------- | ----------------------------- |
-| BUG-407 | Revenue/COGS GAAP matching principle violation | CRITICAL | NOT STARTED | 4h       | accounting.ts:1620-1640       |
+| BUG-407 | Revenue/COGS GAAP matching principle violation | CRITICAL | complete    | 4h       | accounting.ts:1620-1640       |
 | BUG-408 | COGS not reconciled with inventory valuation   | CRITICAL | NOT STARTED | 4h       | accounting.ts                 |
-| BUG-409 | Unbounded catalog query O(n*m) performance     | CRITICAL | NOT STARTED | 4h       | liveCatalogService.ts:350-420 |
+| BUG-409 | Unbounded catalog query O(n\*m) performance    | CRITICAL | complete    | 4h       | liveCatalogService.ts:350-420 |
 
 ##### BUG-407: Revenue/COGS GAAP Matching Principle Violation
 
-**Status:** NOT STARTED
+**Status:** complete
+**Completed:** 2026-01-25
+**Key Commits:** `fd26aa0`
 **Priority:** CRITICAL (P0)
 **Estimate:** 4h
+**Actual Time:** 2h
 **Module:** `server/routers/accounting.ts:1620-1640`
 
 **Problem:**
 Revenue is counted from PAID invoices only, but COGS is counted from all confirmed orders regardless of payment status. This violates GAAP matching principle:
+
 - Order confirmed but not paid: COGS counted ($100), Revenue NOT counted ($0)
 - Result: Gross margin appears negative, misleading financial reporting
 
 **Fix Required:**
+
 - Join COGS query with invoices to ensure only orders with PAID invoices are counted
 - OR change COGS recognition to match revenue timing (invoice payment date)
 
 **Deliverables:**
+
 - [ ] COGS calculation aligned with revenue recognition
 - [ ] Add saleStatus filter for PAID orders only
 - [ ] Unit tests for matching principle
@@ -919,16 +925,19 @@ Revenue is counted from PAID invoices only, but COGS is counted from all confirm
 
 **Problem:**
 COGS calculation uses `orderLineItems.cogsPerUnit` without validating against batch inventory valuation. This can lead to:
+
 - Balance sheet/income statement mismatch
 - Inventory value not reduced when COGS recognized
 - Double-counting risk between inventory and COGS
 
 **Fix Required:**
+
 - Validate COGS against batch.cogsPerUnit at calculation time
 - Add reconciliation check between total COGS and inventory reduction
 - Log discrepancies for audit trail
 
 **Deliverables:**
+
 - [ ] COGS validation against batch values
 - [ ] Reconciliation check implemented
 - [ ] Discrepancy logging added
@@ -938,23 +947,29 @@ COGS calculation uses `orderLineItems.cogsPerUnit` without validating against ba
 
 ##### BUG-409: Unbounded Catalog Query Performance
 
-**Status:** NOT STARTED
+**Status:** complete
+**Completed:** 2026-01-25
+**Key Commits:** `fd26aa0`
 **Priority:** CRITICAL (P0)
 **Estimate:** 4h
+**Actual Time:** 1h
 **Module:** `server/services/liveCatalogService.ts:350-420`
 
 **Problem:**
 `getFilterOptions()` fetches ALL batches for a client without LIMIT, then iterates through all products to extract brands. For large catalogs:
-- O(n) batches × O(m) products = O(n*m) complexity
+
+- O(n) batches × O(m) products = O(n\*m) complexity
 - Memory usage scales linearly with catalog size
 - Can cause timeouts for VIP clients with thousands of products
 
 **Fix Required:**
+
 - Add LIMIT to batch query (max 1000 for filter options)
 - Use SQL aggregation for brand extraction instead of JS iteration
 - Add caching for filter options (TTL: 5 minutes)
 
 **Deliverables:**
+
 - [ ] LIMIT added to batch queries
 - [ ] SQL-based brand aggregation
 - [ ] Filter options caching implemented
@@ -969,11 +984,115 @@ COGS calculation uses `orderLineItems.cogsPerUnit` without validating against ba
 | BUG-401 | orders.confirm isSample flag not handled        | HIGH     | NOT STARTED | 2h       | orders.ts:350-360             |
 | BUG-402 | orders.confirm line items not locked            | HIGH     | NOT STARTED | 1h       | orders.ts:330-335             |
 | BUG-403 | Floating point validation/update divergence     | HIGH     | NOT STARTED | 2h       | orders.ts:335-360             |
-| BUG-412 | getAuthenticatedUserId rejects demo users       | HIGH     | NOT STARTED | 4h       | _core/trpc.ts, accounting.ts  |
+| BUG-412 | getAuthenticatedUserId rejects demo users       | HIGH     | NOT STARTED | 4h       | \_core/trpc.ts, accounting.ts |
 | BUG-413 | 17 accounting mutations missing audit trail     | HIGH     | NOT STARTED | 8h       | accounting.ts (17 locations)  |
 | BUG-414 | Order status not fully validated before confirm | HIGH     | NOT STARTED | 2h       | orders.ts:322-327             |
-| BUG-418 | COGS date range not validated (start > end)     | HIGH     | NOT STARTED | 1h       | accounting.ts:1615-1620       |
+| BUG-418 | COGS date range not validated (start > end)     | HIGH     | complete    | 1h       | accounting.ts:1615-1620       |
 | BUG-419 | Cascading rounding bias in COGS calculation     | HIGH     | NOT STARTED | 2h       | accounting.ts:1660-1687       |
+
+---
+
+### Sprint Team C Deep QA Bugs (Added Jan 25, 2026)
+
+> Discovered during deep QA audit of Sprint Team C backend API fixes.
+> **Source:** orders.confirm, accounting.generateIncomeStatement, liveCatalogService
+> **Total New Tasks:** 13 (2 P0, 5 P1, 3 P2, 3 P3)
+
+#### P0 - Critical (Ship Blockers)
+
+| Task    | Description                                              | Priority | Status      | Estimate | Module            |
+| ------- | -------------------------------------------------------- | -------- | ----------- | -------- | ----------------- |
+| BUG-501 | isSample orders decrement onHandQty instead of sampleQty | CRITICAL | NOT STARTED | 4h       | orders.ts:350-380 |
+| BUG-502 | orders.confirm lacks rate limiting/abuse protection      | CRITICAL | NOT STARTED | 4h       | orders.ts:280-420 |
+
+##### BUG-501: isSample Orders Decrement Wrong Quantity Field
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts:350-380`
+
+**Problem:**
+When `isSample=true`, the code decrements `onHandQty` instead of `sampleQty`. This causes:
+
+- Sample inventory not tracked separately
+- Available-for-sale quantity incorrectly reduced
+- Inventory reports show wrong sample vs sellable quantities
+
+**Fix Required:**
+
+- Check `isSample` flag in inventory update logic
+- Decrement `sampleQty` for sample orders
+- Decrement `onHandQty` for regular orders
+- Add validation that sufficient sampleQty exists
+
+**Deliverables:**
+
+- [ ] Conditional quantity field selection based on isSample
+- [ ] sampleQty validation before decrement
+- [ ] Unit tests for sample vs regular orders
+- [ ] Documentation updated
+
+---
+
+##### BUG-502: orders.confirm Lacks Rate Limiting
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts:280-420`
+
+**Problem:**
+The orders.confirm endpoint has no rate limiting. A malicious or buggy client could:
+
+- Spam confirm requests causing database lock contention
+- Exhaust database connections
+- Create race conditions in inventory updates
+
+**Fix Required:**
+
+- Add per-user rate limiting (e.g., 10 confirms/minute)
+- Add global rate limiting (e.g., 100 confirms/minute)
+- Return 429 Too Many Requests when exceeded
+
+**Deliverables:**
+
+- [ ] Rate limiting middleware added
+- [ ] Per-user and global limits configured
+- [ ] 429 response handling
+- [ ] Tests for rate limit behavior
+
+---
+
+#### P1 - High Priority
+
+| Task    | Description                                            | Priority | Status      | Estimate | Module                        |
+| ------- | ------------------------------------------------------ | -------- | ----------- | -------- | ----------------------------- |
+| BUG-503 | Missing composite index on batches (productId, status) | HIGH     | NOT STARTED | 2h       | schema.ts, migrations         |
+| BUG-504 | Markup/markdown could overflow for extreme values      | HIGH     | NOT STARTED | 2h       | liveCatalogService.ts:200-250 |
+| BUG-505 | COGS decimal precision loss in aggregation             | HIGH     | NOT STARTED | 2h       | accounting.ts:1660-1700       |
+| BUG-506 | liveCatalogService missing timeout protection          | HIGH     | NOT STARTED | 2h       | liveCatalogService.ts         |
+| BUG-507 | Transaction isolation level not explicitly set         | HIGH     | NOT STARTED | 1h       | orders.ts:330-340             |
+
+---
+
+#### P2 - Medium Priority
+
+| Task    | Description                                         | Priority | Status      | Estimate | Module                  |
+| ------- | --------------------------------------------------- | -------- | ----------- | -------- | ----------------------- |
+| BUG-508 | Filter options cache missing TTL                    | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts   |
+| BUG-509 | Error logging missing batch context                 | MEDIUM   | NOT STARTED | 1h       | orders.ts:350-400       |
+| BUG-510 | generateIncomeStatement large date ranges unbounded | MEDIUM   | NOT STARTED | 2h       | accounting.ts:1600-1750 |
+
+---
+
+#### P3 - Low Priority
+
+| Task    | Description                                    | Priority | Status      | Estimate | Module                   |
+| ------- | ---------------------------------------------- | -------- | ----------- | -------- | ------------------------ |
+| BUG-511 | Code comments reference incorrect line numbers | LOW      | NOT STARTED | 1h       | Multiple files           |
+| BUG-512 | Import order inconsistent across files         | LOW      | NOT STARTED | 1h       | orders.ts, accounting.ts |
+| BUG-513 | Magic numbers not extracted to constants       | LOW      | NOT STARTED | 2h       | liveCatalogService.ts    |
 
 ---
 
@@ -3460,23 +3579,23 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 > These issues can result in financial restatement, security breaches, or data corruption.
 > **Must fix before production use.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH | ready | 1h | `server/routers/adminSetup.ts` |
-| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema) | HIGH | ready | 1h | `server/routers/debug.ts` |
-| SEC-029 | Fix Default Permission Grants (new users get read all) | HIGH | ready | 2h | `server/services/permissionService.ts` |
-| SEC-030 | Fix VIP Portal Token Validation (UUID not validated) | HIGH | ready | 2h | `server/routers/vipPortal.ts` |
-| ACC-002 | Add GL Reversals for Invoice Void | HIGH | ready | 4h | `server/routers/invoices.ts` |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | ready | 4h | `server/routers/returns.ts` |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | ready | 4h | `server/services/orderAccountingService.ts` |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | ready | 2h | `server/accountingDb.ts` |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | ready | 4h | `server/routers/orders.ts` |
-| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | ready | 2h | `server/ordersDb.ts` |
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
-| ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
-| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
+| Task    | Description                                                          | Priority | Status | Estimate | Module                                           |
+| ------- | -------------------------------------------------------------------- | -------- | ------ | -------- | ------------------------------------------------ |
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready  | 1h       | `server/routers/adminSetup.ts`                   |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready  | 1h       | `server/routers/debug.ts`                        |
+| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts`           |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`                    |
+| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready  | 4h       | `server/routers/invoices.ts`                     |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready  | 4h       | `server/routers/returns.ts`                      |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready  | 4h       | `server/services/orderAccountingService.ts`      |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready  | 2h       | `server/accountingDb.ts`                         |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready  | 4h       | `server/routers/orders.ts`                       |
+| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready  | 2h       | `server/ordersDb.ts`                             |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready  | 2h       | `server/routers/orders.ts`                       |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready  | 4h       | `server/ordersDb.ts`                             |
+| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready  | 4h       | `server/ordersDb.ts`, `server/services/*`        |
+| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready  | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts` |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready  | 2h       | `server/arApDb.ts`                               |
 
 ---
 
@@ -3492,6 +3611,7 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 `listUsers`, `promoteToAdmin`, `promoteAllToAdmin` use `publicProcedure` with only weak setupKey protection. If setup key leaks, complete privilege escalation is possible.
 
 **Attack Vector:**
+
 ```
 1. Learn setup key (default/leaked/brute-force)
 2. Call adminSetup.promoteToAdmin with attacker email
@@ -3499,6 +3619,7 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All adminSetup endpoints use `protectedProcedure`
 - [ ] Require existing Super Admin role to call these endpoints
 - [ ] Remove or strengthen setupKey mechanism
@@ -3517,11 +3638,13 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 Six debug endpoints are completely public. They reveal all table names, schema structure, and data counts - everything needed to plan an attack.
 
 **Exposed Information:**
+
 - `checkDatabaseSchema`: All table names and columns
 - `getCounts`: Row counts for all tables (15,234 invoices, 523 clients, etc.)
 - `checkTableStructure`: Full schema details
 
 **Acceptance Criteria:**
+
 - [ ] Debug endpoints removed from production build, OR
 - [ ] Debug endpoints require Super Admin authentication
 - [ ] Rate limiting applied to prevent enumeration
@@ -3540,12 +3663,14 @@ Six debug endpoints are completely public. They reveal all table names, schema s
 Voiding an invoice only sets `status = "VOID"`. No reversing GL entries are created, even though `reverseGLEntries()` function exists at `accountingHooks.ts:478`.
 
 **Blast Radius:**
+
 - GL ledger becomes unbalanced
 - Voided invoices still appear in AR aging
 - Audit trail incomplete
 - Reconciliation impossible
 
 **Acceptance Criteria:**
+
 - [ ] `invoices.void()` calls `reverseGLEntries()` for original posting
 - [ ] Client `totalOwed` reduced by voided amount
 - [ ] Audit log records void reason and reversing entries
@@ -3564,11 +3689,13 @@ Voiding an invoice only sets `status = "VOID"`. No reversing GL entries are crea
 Returns restock inventory but don't create credit memos, reverse invoices, update `client.totalOwed`, or create reversing GL entries.
 
 **Blast Radius:**
+
 - Customers who return goods still show as owing money
 - AR overstated indefinitely
 - No audit trail of returns
 
 **Acceptance Criteria:**
+
 - [ ] Return creates credit memo
 - [ ] Credit memo creates reversing GL entries
 - [ ] Client `totalOwed` reduced
@@ -3588,6 +3715,7 @@ Returns restock inventory but don't create credit memos, reverse invoices, updat
 Revenue is posted to GL on sale, but Cost of Goods Sold is never created. This makes gross margin appear as 100% (impossible).
 
 **Expected Flow:**
+
 ```
 SALE creates:
 1. Debit AR, Credit Revenue (✅ exists)
@@ -3595,14 +3723,16 @@ SALE creates:
 ```
 
 **Blast Radius:**
+
 - Inventory asset account never decreases on sales
 - COGS expense shows $0
 - Gross margin = 100% (overstated)
 - P&L shows phantom profit
 
 **Acceptance Criteria:**
+
 - [ ] Sale creates COGS/Inventory GL entries
-- [ ] COGS amount = SUM(lineItem.unitCogs * quantity)
+- [ ] COGS amount = SUM(lineItem.unitCogs \* quantity)
 - [ ] Inventory asset reduced by COGS amount
 - [ ] GL balanced after every sale
 
@@ -3620,6 +3750,7 @@ SALE creates:
 `shipOrder()` and `deliverOrder()` update order status but NEVER deduct inventory. `onHandQty` never decreases, creating phantom inventory.
 
 **Current Flow:**
+
 ```
 1. Order created → items in JSON ✅
 2. allocateBatchesToLineItem() → reservedQty += allocation ✅
@@ -3629,6 +3760,7 @@ SALE creates:
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `shipOrder()` converts reservedQty to actual deduction
 - [ ] `batch.onHandQty -= shippedQuantity`
 - [ ] Inventory movement record created
@@ -3648,6 +3780,7 @@ SALE creates:
 `confirmDraftOrder()` checks inventory WITHOUT row-level locks. Concurrent confirmations can both succeed when combined they exceed available inventory.
 
 **Race Condition Timeline:**
+
 ```
 Request A: Read batch.onHandQty = 100 ✓
 Request B: Read batch.onHandQty = 100 ✓ (same value!)
@@ -3659,6 +3792,7 @@ Result: Sold 125 units, only had 100
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Use `SELECT ... FOR UPDATE` when checking inventory
 - [ ] Transaction wraps check + update
 - [ ] Second request fails with "insufficient inventory"
@@ -3685,12 +3819,14 @@ try {
 ```
 
 **Blast Radius:**
+
 - Order created but no invoice (silent failure)
 - Inventory reduced but GL not posted
 - Revenue leakage undetected
 - 6+ silent failure points per order
 
 **Acceptance Criteria:**
+
 - [ ] Rethrow errors in financial operations
 - [ ] Wrap in transaction that rolls back on any failure
 - [ ] Add monitoring/alerts for accounting failures
@@ -3709,6 +3845,7 @@ try {
 Multi-step operations execute without atomicity. If step 2 fails, step 1 is not rolled back.
 
 **Example - Order Cancellation:**
+
 ```
 Step 1: Update order status = CANCELLED → Transaction A ✅
 Step 2: Restore inventory → Transaction B (may fail)
@@ -3721,12 +3858,14 @@ If Step 2 fails:
 ```
 
 **Files Affected:**
+
 - `ordersDb.ts:724-787` (deleteOrder)
 - `ordersDb.ts:1137-1161` (confirmDraftOrder)
 - `orders.ts:1355-1428` (shipOrder)
 - `orders.ts:1434-1494` (deliverOrder)
 
 **Acceptance Criteria:**
+
 - [ ] All critical operations wrapped in single transaction
 - [ ] Rollback on any step failure
 - [ ] No partial state possible
@@ -3738,16 +3877,16 @@ If Step 2 fails:
 > These issues cause data inconsistency and incorrect business logic.
 > **Should fix in current release.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| ARCH-001 | Create OrderOrchestrator Service | HIGH | ready | 8h | `server/services/` (new) |
-| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
-| ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
-| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | ready | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
-| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+| Task      | Description                                      | Priority | Status | Estimate | Module                                                  |
+| --------- | ------------------------------------------------ | -------- | ------ | -------- | ------------------------------------------------------- |
+| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready  | 8h       | `server/services/` (new)                                |
+| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready  | 8h       | `server/services/`, `server/routers/`                   |
+| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready  | 4h       | `server/routers/orders.ts`                              |
+| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready  | 4h       | `server/arApDb.ts`                                      |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready  | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready  | 2h       | `drizzle/schema.ts`                                     |
+| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready  | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready  | 2h       | `server/routers/vendors.ts`                             |
 
 ---
 
@@ -3763,10 +3902,11 @@ If Step 2 fails:
 Order business logic is scattered across `ordersDb.ts` (1400+ lines), `orders.ts` router, and various services. This makes it impossible to ensure transactional integrity.
 
 **Proposed Architecture:**
+
 ```typescript
 class OrderOrchestrator {
   async createSaleOrder(input: CreateSaleInput): Promise<Order> {
-    return this.db.transaction(async (tx) => {
+    return this.db.transaction(async tx => {
       // 1. Create order
       // 2. Allocate inventory (with locks)
       // 3. Create invoice
@@ -3778,6 +3918,7 @@ class OrderOrchestrator {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] OrderOrchestrator handles create, confirm, ship, deliver, cancel
 - [ ] All operations atomic within single transaction
 - [ ] Clear separation of concerns from router
@@ -3794,6 +3935,7 @@ class OrderOrchestrator {
 
 **Problem:**
 Three independent systems track client balances:
+
 1. `invoices.amountDue` (per invoice)
 2. `clients.totalOwed` (denormalized, updated inconsistently)
 3. `clientTransactions` table (shadow ledger)
@@ -3801,6 +3943,7 @@ Three independent systems track client balances:
 They never sync, causing wrong balances.
 
 **Acceptance Criteria:**
+
 - [ ] `clients.totalOwed` derived from `SUM(invoices.amountDue)` or trigger-maintained
 - [ ] Remove manual updates to `totalOwed` scattered across codebase
 - [ ] Or convert `totalOwed` to computed view/materialized view
@@ -3819,6 +3962,7 @@ They never sync, causing wrong balances.
 State machine is correctly defined in `orderStateMachine.ts` but only used by `markAsReturned()`. All other transitions (ship, deliver, confirm, cancel) bypass it.
 
 **Current Usage:**
+
 - ✗ `confirmOrder()` - doesn't use it
 - ✗ `shipOrder()` - doesn't use it
 - ✗ `deliverOrder()` - doesn't use it
@@ -3826,6 +3970,7 @@ State machine is correctly defined in `orderStateMachine.ts` but only used by `m
 - ✗ `markCancelled()` - doesn't exist
 
 **Acceptance Criteria:**
+
 - [ ] All status transitions call `canTransition(from, to)`
 - [ ] Invalid transitions throw descriptive error
 - [ ] Side effects enforced per transition
@@ -3851,11 +3996,13 @@ export async function updateBillStatus(id, status) {
 ```
 
 **Invalid Transitions Allowed:**
+
 - PAID → DRAFT (undo payments!)
 - VOID → DRAFT (unvoid!)
 - DRAFT → PAID (skip approval)
 
 **Acceptance Criteria:**
+
 - [ ] Define valid bill status transitions
 - [ ] Validate before applying
 - [ ] Add version field for optimistic locking
@@ -3867,20 +4014,20 @@ export async function updateBillStatus(id, status) {
 > These issues affect correctness but have workarounds.
 > **Fix in next sprint.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| SM-001 | Implement Quote Status Transitions | MEDIUM | ready | 4h | `server/routers/quotes.ts` |
-| SM-002 | Implement Sale Status Transitions | MEDIUM | ready | 4h | `server/routers/orders.ts` |
-| SM-003 | Implement VendorReturn Status Transitions | MEDIUM | ready | 4h | `server/routers/returns.ts` |
-| ORD-002 | Validate Positive Prices in Orders | MEDIUM | ready | 2h | `server/ordersDb.ts`, `server/services/orderService.ts` |
-| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM | ready | 2h | `server/services/orderStateMachine.ts` |
-| ORD-004 | Add Credit Override Authorization | MEDIUM | ready | 2h | `server/services/orderPricingService.ts` |
-| INV-004 | Add Reservation Release on Order Cancellation | MEDIUM | ready | 2h | `server/routers/orders.ts` |
-| INV-005 | Create Batches on PO Goods Receipt | MEDIUM | ready | 4h | `server/routers/purchaseOrders.ts` |
-| NAV-017 | Add Missing /alerts Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
-| NAV-018 | Add Missing /reports/shrinkage Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
-| API-019 | Fix PaymentMethod Type Mismatch (as any) | MEDIUM | ready | 2h | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
-| API-020 | Fix Pagination Response Inconsistency | MEDIUM | ready | 4h | Multiple routers |
+| Task    | Description                                          | Priority | Status | Estimate | Module                                                         |
+| ------- | ---------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------------------- |
+| SM-001  | Implement Quote Status Transitions                   | MEDIUM   | ready  | 4h       | `server/routers/quotes.ts`                                     |
+| SM-002  | Implement Sale Status Transitions                    | MEDIUM   | ready  | 4h       | `server/routers/orders.ts`                                     |
+| SM-003  | Implement VendorReturn Status Transitions            | MEDIUM   | ready  | 4h       | `server/routers/returns.ts`                                    |
+| ORD-002 | Validate Positive Prices in Orders                   | MEDIUM   | ready  | 2h       | `server/ordersDb.ts`, `server/services/orderService.ts`        |
+| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM   | ready  | 2h       | `server/services/orderStateMachine.ts`                         |
+| ORD-004 | Add Credit Override Authorization                    | MEDIUM   | ready  | 2h       | `server/services/orderPricingService.ts`                       |
+| INV-004 | Add Reservation Release on Order Cancellation        | MEDIUM   | ready  | 2h       | `server/routers/orders.ts`                                     |
+| INV-005 | Create Batches on PO Goods Receipt                   | MEDIUM   | ready  | 4h       | `server/routers/purchaseOrders.ts`                             |
+| NAV-017 | Add Missing /alerts Route                            | MEDIUM   | ready  | 1h       | `client/src/App.tsx`                                           |
+| NAV-018 | Add Missing /reports/shrinkage Route                 | MEDIUM   | ready  | 1h       | `client/src/App.tsx`                                           |
+| API-019 | Fix PaymentMethod Type Mismatch (as any)             | MEDIUM   | ready  | 2h       | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
+| API-020 | Fix Pagination Response Inconsistency                | MEDIUM   | ready  | 4h       | Multiple routers                                               |
 
 ---
 
@@ -3889,14 +4036,14 @@ export async function updateBillStatus(id, status) {
 > These issues affect debuggability and confidence.
 > **Fix as capacity allows.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| OBS-001 | Add GL Balance Verification Cron | LOW | ready | 4h | `server/cron/` |
-| OBS-002 | Add AR Reconciliation Check | LOW | ready | 4h | `server/cron/` |
-| OBS-003 | Add Inventory Audit Trail | LOW | ready | 4h | `server/routers/inventory.ts` |
-| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW | ready | 8h | `tests/integration/` |
-| TEST-011 | Add Concurrent Operation Tests | LOW | ready | 4h | `tests/integration/` |
-| TEST-012 | Update Batch Status Transition Test Map | LOW | ready | 2h | `server/routers/inventory.property.test.ts` |
+| Task     | Description                                     | Priority | Status | Estimate | Module                                      |
+| -------- | ----------------------------------------------- | -------- | ------ | -------- | ------------------------------------------- |
+| OBS-001  | Add GL Balance Verification Cron                | LOW      | ready  | 4h       | `server/cron/`                              |
+| OBS-002  | Add AR Reconciliation Check                     | LOW      | ready  | 4h       | `server/cron/`                              |
+| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready  | 4h       | `server/routers/inventory.ts`               |
+| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready  | 8h       | `tests/integration/`                        |
+| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready  | 4h       | `tests/integration/`                        |
+| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready  | 2h       | `server/routers/inventory.property.test.ts` |
 
 ---
 
@@ -3912,6 +4059,7 @@ export async function updateBillStatus(id, status) {
 GL imbalances from silent failures go undetected until month-end close (30+ days of corruption).
 
 **Acceptance Criteria:**
+
 - [ ] Daily cron checks SUM(debits) = SUM(credits)
 - [ ] Alert if imbalanced by > $0.01
 - [ ] Report which date ranges are affected
@@ -3921,6 +4069,7 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 ### QA Audit Summary
 
 **Root Causes Identified:**
+
 1. **Shadow Accounting** - 3 systems tracking client balances independently
 2. **Missing COGS GL** - Revenue posted but not cost of goods sold
 3. **Silent Errors** - Financial operations fail silently
@@ -3939,6 +4088,7 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 | AR mismatch | All 500+ customers |
 
 **Agent IDs for Follow-up Investigation:**
+
 - Transaction Atomicity: `aedff89`
 - State Machines: `a575676`
 - Financial Invariants: `ab8e705`
@@ -3962,16 +4112,16 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 > **Client:** 531 errors, 484 warnings (1,015 total)
 > **Server:** 417 errors, 1,157 warnings (1,574 total)
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps) | HIGH | ready | 4h | `client/src/components/accounting/*.tsx` |
-| LINT-002 | Fix 'React' is not defined errors (12 files) | HIGH | ready | 2h | Multiple client components |
-| LINT-003 | Fix unused variable errors (~100 instances) | MEDIUM | ready | 4h | Client + Server |
-| LINT-004 | Fix array index key violations (~40 instances) | MEDIUM | ready | 4h | Client components |
-| LINT-005 | Replace `any` types with proper types (~200 instances) | MEDIUM | ready | 8h | Client + Server |
-| LINT-006 | Remove forbidden console.log statements (~50 instances) | LOW | ready | 2h | Server files |
-| LINT-007 | Fix non-null assertions (~30 instances) | LOW | ready | 2h | Client components |
-| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions | MEDIUM | ready | 1h | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
+| Task     | Description                                                  | Priority | Status | Estimate | Module                                                      |
+| -------- | ------------------------------------------------------------ | -------- | ------ | -------- | ----------------------------------------------------------- |
+| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps) | HIGH     | ready  | 4h       | `client/src/components/accounting/*.tsx`                    |
+| LINT-002 | Fix 'React' is not defined errors (12 files)                 | HIGH     | ready  | 2h       | Multiple client components                                  |
+| LINT-003 | Fix unused variable errors (~100 instances)                  | MEDIUM   | ready  | 4h       | Client + Server                                             |
+| LINT-004 | Fix array index key violations (~40 instances)               | MEDIUM   | ready  | 4h       | Client components                                           |
+| LINT-005 | Replace `any` types with proper types (~200 instances)       | MEDIUM   | ready  | 8h       | Client + Server                                             |
+| LINT-006 | Remove forbidden console.log statements (~50 instances)      | LOW      | ready  | 2h       | Server files                                                |
+| LINT-007 | Fix non-null assertions (~30 instances)                      | LOW      | ready  | 2h       | Client components                                           |
+| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions              | MEDIUM   | ready  | 1h       | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
 
 ---
 
@@ -3994,12 +4144,14 @@ if (condition) {
 ```
 
 **Files Affected:**
+
 - `AccountSelector.tsx:51,58` - useMemo called conditionally
 - `FiscalPeriodSelector.tsx:57` - useMemo called conditionally
 - `CalendarFilters.tsx:27` - useEffect missing dependencies
 - `AmountInput.tsx:58` - useEffect missing dependency
 
 **Acceptance Criteria:**
+
 - [ ] All hooks called unconditionally at component top level
 - [ ] All useEffect dependencies properly specified
 - [ ] ESLint react-hooks/rules-of-hooks passes
@@ -4018,6 +4170,7 @@ if (condition) {
 12 files use JSX but don't import React (required for older JSX transform):
 
 **Files Affected:**
+
 - `ErrorBoundary.tsx:41`
 - `WidgetContainer.tsx:14`
 - `AuditIcon.tsx:85`
@@ -4030,6 +4183,7 @@ if (condition) {
 - `VIPLogin.tsx:63`
 
 **Acceptance Criteria:**
+
 - [ ] Add `import React from 'react'` to all affected files, OR
 - [ ] Configure JSX transform to not require React import
 - [ ] ESLint no-undef errors for React resolved
@@ -4048,6 +4202,7 @@ if (condition) {
 ~200 instances of `any` type usage defeat TypeScript's type safety:
 
 **High-Frequency Files:**
+
 - `EventFormDialog.tsx` - 9 instances
 - `Settings.tsx` - 7 instances
 - `AccountingDashboard.tsx` - 9 instances
@@ -4056,6 +4211,7 @@ if (condition) {
 - `featureFlagMiddleware.ts` - 11 instances
 
 **Example Pattern:**
+
 ```typescript
 // Current - UNSAFE
 const handleChange = (value: any) => { ... }
@@ -4065,6 +4221,7 @@ const handleChange = (value: PaymentMethod) => { ... }
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All `any` types replaced with specific types
 - [ ] Type-only `any` (in generics) documented if unavoidable
 - [ ] ESLint @typescript-eslint/no-explicit-any passes
@@ -4075,11 +4232,11 @@ const handleChange = (value: PaymentMethod) => { ... }
 
 > Vitest mock hoisting and environment configuration issues
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| TEST-020 | Fix permissionMiddleware.test.ts mock hoisting | HIGH | ready | 2h | `server/_core/permissionMiddleware.test.ts` |
-| TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH | ready | 1h | `vitest.setup.ts` |
-| TEST-022 | Fix EventFormDialog test environment | MEDIUM | ready | 2h | `client/src/components/calendar/EventFormDialog.test.tsx` |
+| Task     | Description                                                             | Priority | Status | Estimate | Module                                                    |
+| -------- | ----------------------------------------------------------------------- | -------- | ------ | -------- | --------------------------------------------------------- |
+| TEST-020 | Fix permissionMiddleware.test.ts mock hoisting                          | HIGH     | ready  | 2h       | `server/_core/permissionMiddleware.test.ts`               |
+| TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH     | ready  | 1h       | `vitest.setup.ts`                                         |
+| TEST-022 | Fix EventFormDialog test environment                                    | MEDIUM   | ready  | 2h       | `client/src/components/calendar/EventFormDialog.test.tsx` |
 
 > **Note:** DATABASE_URL configuration for seed tests already tracked as TEST-INFRA-02.
 
@@ -4098,8 +4255,8 @@ Vitest mock hoisting causes `Cannot access '__vi_import_2__' before initializati
 
 ```typescript
 // Current - BROKEN (line 19)
-vi.mock('../db', () => ({
-  getDb: mockGetDb  // mockGetDb not yet initialized when hoisted!
+vi.mock("../db", () => ({
+  getDb: mockGetDb, // mockGetDb not yet initialized when hoisted!
 }));
 ```
 
@@ -4107,18 +4264,20 @@ vi.mock('../db', () => ({
 `simpleAuth.ts:4` imports `../db` which triggers the mock before variables are initialized.
 
 **Solution Pattern:**
+
 ```typescript
 // Use vi.hoisted() for mock variables
 const { mockGetDb } = vi.hoisted(() => ({
-  mockGetDb: vi.fn()
+  mockGetDb: vi.fn(),
 }));
 
-vi.mock('../db', () => ({
-  getDb: mockGetDb
+vi.mock("../db", () => ({
+  getDb: mockGetDb,
 }));
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Test runs without mock initialization errors
 - [ ] All assertions pass
 - [ ] Pattern documented for other tests
@@ -4141,6 +4300,7 @@ ReferenceError: ResizeObserver is not defined
 ```
 
 **Solution:**
+
 ```typescript
 // vitest.setup.ts
 global.ResizeObserver = class ResizeObserver {
@@ -4151,6 +4311,7 @@ global.ResizeObserver = class ResizeObserver {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] ResizeObserver polyfill added to vitest setup
 - [ ] EventFormDialog tests pass
 - [ ] Other jsdom tests unaffected
@@ -4159,11 +4320,11 @@ global.ResizeObserver = class ResizeObserver {
 
 ### Build & Configuration Issues
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| BUILD-001 | Add missing VITE_APP_TITLE environment variable | LOW | ready | 0.5h | `.env.example`, `vite.config.ts` |
-| BUILD-002 | Fix chunk size warnings (code splitting) | LOW | ready | 4h | `vite.config.ts` |
-| BUILD-003 | Add `pnpm lint` script (currently missing) | LOW | ready | 0.5h | `package.json` |
+| Task      | Description                                     | Priority | Status | Estimate | Module                           |
+| --------- | ----------------------------------------------- | -------- | ------ | -------- | -------------------------------- |
+| BUILD-001 | Add missing VITE_APP_TITLE environment variable | LOW      | ready  | 0.5h     | `.env.example`, `vite.config.ts` |
+| BUILD-002 | Fix chunk size warnings (code splitting)        | LOW      | ready  | 4h       | `vite.config.ts`                 |
+| BUILD-003 | Add `pnpm lint` script (currently missing)      | LOW      | ready  | 0.5h     | `package.json`                   |
 
 ---
 
@@ -4179,6 +4340,7 @@ global.ResizeObserver = class ResizeObserver {
 `pnpm lint` command not found. Users must run `pnpm eslint` directly.
 
 **Solution:**
+
 ```json
 {
   "scripts": {
@@ -4189,6 +4351,7 @@ global.ResizeObserver = class ResizeObserver {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `pnpm lint` runs ESLint on client and server
 - [ ] `pnpm lint:fix` auto-fixes what it can
 - [ ] CI/CD can use `pnpm lint` for checks
@@ -4199,23 +4362,23 @@ global.ResizeObserver = class ResizeObserver {
 
 **ESLint Error Categories:**
 
-| Category | Count | Priority |
-|----------|-------|----------|
-| React Hooks violations | ~15 | HIGH |
-| 'React' not defined | 12 | HIGH |
-| Unused variables | ~100 | MEDIUM |
-| Array index keys | ~40 | MEDIUM |
-| `any` types | ~200 | MEDIUM |
-| Non-null assertions | ~30 | LOW |
-| console.log statements | ~50 | LOW |
+| Category               | Count | Priority |
+| ---------------------- | ----- | -------- |
+| React Hooks violations | ~15   | HIGH     |
+| 'React' not defined    | 12    | HIGH     |
+| Unused variables       | ~100  | MEDIUM   |
+| Array index keys       | ~40   | MEDIUM   |
+| `any` types            | ~200  | MEDIUM   |
+| Non-null assertions    | ~30   | LOW      |
+| console.log statements | ~50   | LOW      |
 
 **Test Failures:**
 
-| Test File | Issue | Priority | Task |
-|-----------|-------|----------|------|
-| permissionMiddleware.test.ts | Mock hoisting | HIGH | TEST-020 |
-| EventFormDialog.test.tsx | ResizeObserver | HIGH | TEST-021 |
-| 6 seed tests | DATABASE_URL missing | MEDIUM | TEST-INFRA-02 (existing) |
+| Test File                    | Issue                | Priority | Task                     |
+| ---------------------------- | -------------------- | -------- | ------------------------ |
+| permissionMiddleware.test.ts | Mock hoisting        | HIGH     | TEST-020                 |
+| EventFormDialog.test.tsx     | ResizeObserver       | HIGH     | TEST-021                 |
+| 6 seed tests                 | DATABASE_URL missing | MEDIUM   | TEST-INFRA-02 (existing) |
 
 **Total New Tasks:** 10 (1 duplicate removed - TEST-023 merged with TEST-INFRA-02)
 **Estimated Hours:** 35-50h
