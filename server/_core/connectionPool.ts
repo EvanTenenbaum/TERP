@@ -125,7 +125,10 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
   // CRITICAL: Health check - Force immediate connection to verify pool works
   // This will crash the app at startup if DB is unreachable, rather than failing silently
   // Skip health check in test environments (VITEST) to avoid CRITICAL error noise
-  const isTestEnv = process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
+  const vitestValue = (process.env.VITEST || '').toLowerCase();
+  const isTestEnv = ['true', '1', 'yes'].includes(vitestValue)
+    || process.env.NODE_ENV === 'test'
+    || process.env.CI === 'true';
 
   if (!isTestEnv) {
     pool.getConnection()

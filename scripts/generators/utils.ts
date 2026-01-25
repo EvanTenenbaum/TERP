@@ -11,8 +11,12 @@ let currentSeed = 12345;
 /**
  * Initialize the seeded random number generator
  * Call this before generating data to ensure reproducibility
+ * @throws Error if seed is NaN or Infinity
  */
 export function setSeed(seed: number): void {
+  if (!Number.isFinite(seed)) {
+    throw new Error(`Invalid seed: ${seed}. Seed must be a finite number.`);
+  }
   currentSeed = seed;
 }
 
