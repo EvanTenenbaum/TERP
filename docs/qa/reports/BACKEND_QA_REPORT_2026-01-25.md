@@ -1322,11 +1322,177 @@ const confirmRateLimitMap = new Map<number, number[]>();
 
 ---
 
+## BUSINESS LOGIC TESTING ANALYSIS (Phase 6)
+
+### DD-46: Critical Business Logic Unit Test Coverage
+
+**CRITICAL FINDING:** Major business logic components lack unit tests
+
+#### Core Financial Components - NO TESTS
+
+| Component                | File                                 | Risk     | Status      |
+| ------------------------ | ------------------------------------ | -------- | ----------- |
+| Financial Math Utilities | `utils/financialMath.ts`             | CRITICAL | ❌ NO TESTS |
+| Order State Machine      | `services/orderStateMachine.ts`      | CRITICAL | ❌ NO TESTS |
+| Order Service            | `services/orderService.ts`           | CRITICAL | ❌ NO TESTS |
+| Order Validation Service | `services/orderValidationService.ts` | HIGH     | ❌ NO TESTS |
+| Order Pricing Service    | `services/orderPricingService.ts`    | HIGH     | ❌ NO TESTS |
+| Order Audit Service      | `services/orderAuditService.ts`      | HIGH     | ❌ NO TESTS |
+| Order Accounting Service | `services/orderAccountingService.ts` | HIGH     | ❌ NO TESTS |
+| Credit Engine (logic)    | `creditEngine.ts`                    | CRITICAL | ⚠️ PARTIAL  |
+
+**Credit Engine Note:** Has race condition test but NOT unit tests for calculation logic.
+
+#### Components WITH Tests ✅
+
+| Component       | File                | Test File                      | Coverage |
+| --------------- | ------------------- | ------------------------------ | -------- |
+| Pricing Engine  | `pricingEngine.ts`  | `tests/pricingEngine.test.ts`  | ✅ GOOD  |
+| COGS Calculator | `cogsCalculator.ts` | `tests/cogsCalculator.test.ts` | ✅ GOOD  |
+| Inventory Utils | `inventoryUtils.ts` | `tests/inventoryUtils.test.ts` | ✅ GOOD  |
+| Matching Engine | `matchingEngine.ts` | `tests/matchingEngine.test.ts` | ✅ GOOD  |
+
+#### Property Tests Available
+
+| Category             | File                                                | Status       |
+| -------------------- | --------------------------------------------------- | ------------ |
+| Inventory Calcs      | `property/inventory/calculations.property.test.ts`  | ✅ Good      |
+| Inventory Validation | `property/inventory/validation.property.test.ts`    | ⚠️ 2 skipped |
+| Strain Matching      | `property/matching/strain-matcher.property.test.ts` | ✅ Good      |
+| Adversarial Fuzz     | `property/fuzz/adversarial.property.test.ts`        | ⚠️ 1 skipped |
+
+---
+
+### DD-47: Business Logic Invariants Not Under Test
+
+**Order State Machine - Untested Transitions:**
+
+```typescript
+// From orderStateMachine.ts - NO TESTS VERIFY THESE
+const ORDER_STATUS_TRANSITIONS = {
+  DRAFT: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PENDING", "CANCELLED"],
+  PENDING: ["PACKED", "CANCELLED"],
+  PACKED: ["SHIPPED", "PENDING"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
+  RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
+  RESTOCKED: [], // Terminal
+  RETURNED_TO_VENDOR: [], // Terminal
+  CANCELLED: [], // Terminal
+};
+```
+
+**Risk:** Invalid state transitions could corrupt order data.
+
+**Financial Math - Untested Operations:**
+
+```typescript
+// From financialMath.ts - NO TESTS
+financialMath.add(a, b); // Currency addition
+financialMath.subtract(a, b); // Currency subtraction
+financialMath.multiply(a, b); // With precision
+financialMath.divide(a, b); // Division by zero handling
+financialMath.calculateMarginPrice(cost, marginPercent); // 100% margin edge case
+```
+
+**Risk:** Financial calculation errors in invoicing, payments, margins.
+
+---
+
+### DD-48: Integration Test Gaps
+
+| Flow                     | Integration Test | Status                            |
+| ------------------------ | ---------------- | --------------------------------- |
+| Order Creation Flow      | ⚠️ Partial       | orders.integration.test.ts exists |
+| Inventory Adjustment     | ✅ Exists        | inventory.integration.test.ts     |
+| Accounting Journal Entry | ✅ Exists        | accounting.integration.test.ts    |
+| Authentication Flow      | ✅ Exists        | auth.integration.test.ts          |
+| Credit Application       | ⚠️ Race only     | creditsDb.race-condition.test.ts  |
+| VIP Portal Auth          | ✅ Exists        | vipPortalAuth.test.ts             |
+
+---
+
+### DD-49: Test Infrastructure Quality
+
+| Aspect              | Status        | Notes                               |
+| ------------------- | ------------- | ----------------------------------- |
+| Test Framework      | ✅ Vitest     | Modern, fast                        |
+| Property Testing    | ✅ fast-check | 8 property test files               |
+| Mocking             | ⚠️ Incomplete | DB mocking causes 55+ skipped tests |
+| Test Data Factories | ⚠️ Limited    | `createMockBatch` helper exists     |
+| Snapshot Testing    | ❌ None found | Could help UI regression            |
+| Visual Regression   | ❌ None found | Playwright available but unused     |
+
+---
+
+## UPDATED FINAL FINDINGS
+
+### Critical Issues (3 - UPGRADED)
+
+1. **Floating Point Financial Calculations** (40+ instances)
+2. **Hardcoded User IDs in Production** (3 locations)
+3. **Critical Business Logic Without Unit Tests** (8 components)
+   - `financialMath.ts`, `orderStateMachine.ts`, `orderService.ts`
+   - `orderValidationService.ts`, `orderPricingService.ts`
+   - `orderAuditService.ts`, `orderAccountingService.ts`
+   - `creditEngine.ts` (calculation logic)
+
+### High Priority Issues (8 - UPDATED)
+
+1. Hard Deletes (14 occurrences)
+2. Deprecated vendors Table (4 files)
+3. N+1 Query Patterns (81 files)
+4. Audit Trail Gap (4% coverage)
+5. Console Statements (30+ in production)
+6. Security Headers Missing (minimal Helmet/CSP)
+7. Skipped Tests (55+ not running)
+8. **Order State Machine Untested** (10 transitions)
+
+---
+
+## RECOMMENDATIONS FOR BUSINESS LOGIC TESTING
+
+### Immediate (This Sprint)
+
+1. **Create unit tests for `financialMath.ts`**
+   - Test add/subtract with penny precision
+   - Test division by zero handling
+   - Test 100% margin edge case
+   - Test rounding behavior
+
+2. **Create unit tests for `orderStateMachine.ts`**
+   - Test all valid transitions
+   - Test rejection of invalid transitions
+   - Test terminal state detection
+   - Test getNextStatuses helper
+
+### High Priority (Next Sprint)
+
+3. **Create tests for order service layer**
+   - `orderService.ts` - Order creation, modification
+   - `orderValidationService.ts` - Input validation
+   - `orderPricingService.ts` - Price calculations
+
+4. **Expand property tests**
+   - Add financial math property tests
+   - Add order state transition property tests
+
+### Medium Priority (Backlog)
+
+5. Fix DB mocking to enable skipped tests
+6. Add snapshot tests for critical UI components
+7. Add E2E tests for complete order flow
+
+---
+
 **Report Generated:** 2026-01-25
 **Extended Analysis Added:** 2026-01-25
 **10X Deep Dive Added:** 2026-01-25
 **Comprehensive Audit Added:** 2026-01-25
 **Infrastructure & Quality Audit Added:** 2026-01-25
-**Total Findings:** 27 issues across 4 severity levels
-**Files Analyzed:** 500+ source files
+**Business Logic Testing Audit Added:** 2026-01-25
+**Total Findings:** 30 issues across 4 severity levels (3 Critical, 8 High, 8 Medium, 11 Low)
+**Files Analyzed:** 500+ source files, 91 test files
+**Test Files Without Coverage for Critical Logic:** 8 business logic modules
 **Next Review:** On next feature deployment or security concern
