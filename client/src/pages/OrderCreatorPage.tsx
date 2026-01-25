@@ -88,6 +88,7 @@ interface CreditCheckResult {
 
 interface InventoryItemForOrder {
   id: number;
+  productId?: number; // WSQA-002: Product ID for flexible lot selection
   name: string;
   basePrice: number;
   retailPrice?: number;
@@ -458,6 +459,7 @@ export default function OrderCreatorPageV2() {
 
       return {
         ...calculated,
+        productId: item.productId, // WSQA-002: Include productId for flexible lot selection
         marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number

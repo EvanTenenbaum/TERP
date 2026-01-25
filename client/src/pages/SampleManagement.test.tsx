@@ -293,7 +293,7 @@ describe("SampleManagement", () => {
       render(<SampleManagement />);
 
       expect(screen.getByTestId("samples-empty")).toBeInTheDocument();
-      expect(screen.getByText(/No Samples Found/i)).toBeInTheDocument();
+      expect(screen.getByText(/No samples yet/i)).toBeInTheDocument();
     });
 
     it("provides create button in empty state", () => {
@@ -308,7 +308,7 @@ describe("SampleManagement", () => {
       render(<SampleManagement />);
 
       expect(
-        screen.getByRole("button", { name: /Create New Sample Request/i })
+        screen.getByRole("button", { name: /Create Sample Request/i })
       ).toBeInTheDocument();
     });
 

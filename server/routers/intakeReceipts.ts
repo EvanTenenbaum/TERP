@@ -12,7 +12,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   intakeReceipts,
@@ -355,7 +355,7 @@ export const intakeReceiptsRouter = router({
   /**
    * Get receipt by shareable token (public endpoint for farmer verification)
    */
-  getReceiptByToken: publicProcedure
+  getReceiptByToken: protectedProcedure
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -427,7 +427,7 @@ export const intakeReceiptsRouter = router({
   /**
    * Farmer acknowledges receipt (via shareable token)
    */
-  verifyAsFarmer: publicProcedure
+  verifyAsFarmer: protectedProcedure
     .input(z.object({
       token: z.string().min(1),
       acknowledged: z.boolean(),

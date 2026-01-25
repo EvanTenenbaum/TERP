@@ -275,12 +275,19 @@ export const paymentsRouter = router({
 
       const amountDue = parseFloat(invoice.amountDue || "0");
 
-      if (input.amount > amountDue) {
+      // TERP-0016: Validate payment amount doesn't exceed amount due
+      // Use tolerance (0.01) for floating point comparison consistency
+      // This matches the tolerance used in recordMultiInvoicePayment
+      if (input.amount > amountDue + 0.01) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDue)})`,
+          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDue)}). Overpayments are not allowed.`,
         });
       }
+
+      // TERP-0016: Warn and cap payment if slightly over due to rounding
+      const effectiveAmount =
+        input.amount > amountDue ? amountDue : input.amount;
 
       // Get account IDs for GL entries
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
@@ -295,6 +302,7 @@ export const paymentsRouter = router({
         const paymentNumber = await generatePaymentNumber();
 
         // Create payment record
+        // TERP-0016: Use effectiveAmount which is capped at amountDue
         const [payment] = await tx
           .insert(payments)
           .values({
@@ -305,7 +313,7 @@ export const paymentsRouter = router({
             paymentDate: input.paymentDate
               ? new Date(input.paymentDate)
               : new Date(),
-            amount: input.amount.toFixed(2),
+            amount: effectiveAmount.toFixed(2),
             paymentMethod: input.paymentMethod,
             referenceNumber: input.referenceNumber,
             notes: input.notes,
@@ -316,8 +324,9 @@ export const paymentsRouter = router({
         const paymentId = payment.id;
 
         // Update invoice amounts
+        // TERP-0016: Use effectiveAmount for calculations
         const currentPaid = parseFloat(invoice.amountPaid || "0");
-        const newPaid = currentPaid + input.amount;
+        const newPaid = currentPaid + effectiveAmount;
         const totalAmount = parseFloat(invoice.totalAmount || "0");
         const newDue = Math.max(0, totalAmount - newPaid);
 
@@ -343,11 +352,12 @@ export const paymentsRouter = router({
         const entryNumber = `PMT-${paymentId}`;
 
         // Debit Cash
+        // TERP-0016: Use effectiveAmount for GL entries
         await tx.insert(ledgerEntries).values({
           entryNumber: `${entryNumber}-DR`,
           entryDate: new Date(),
           accountId: cashAccountId,
-          debit: input.amount.toFixed(2),
+          debit: effectiveAmount.toFixed(2),
           credit: "0.00",
           description: `Payment received - Invoice #${invoice.invoiceNumber}`,
           referenceType: "PAYMENT",
@@ -363,7 +373,7 @@ export const paymentsRouter = router({
           entryDate: new Date(),
           accountId: arAccountId,
           debit: "0.00",
-          credit: input.amount.toFixed(2),
+          credit: effectiveAmount.toFixed(2),
           description: `Payment received - Invoice #${invoice.invoiceNumber}`,
           referenceType: "PAYMENT",
           referenceId: paymentId,
@@ -376,7 +386,7 @@ export const paymentsRouter = router({
         await tx
           .update(clients)
           .set({
-            totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${input.amount}`,
+            totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${effectiveAmount}`,
           })
           .where(eq(clients.id, invoice.customerId));
 
@@ -385,7 +395,7 @@ export const paymentsRouter = router({
           paymentId,
           paymentNumber,
           invoiceId: input.invoiceId,
-          amount: input.amount,
+          amount: effectiveAmount,
           newInvoiceStatus: newStatus,
           newAmountDue: newDue,
         });
@@ -394,7 +404,7 @@ export const paymentsRouter = router({
           paymentId,
           paymentNumber,
           invoiceId: input.invoiceId,
-          amount: input.amount,
+          amount: effectiveAmount,
           invoiceStatus: newStatus,
           amountDue: newDue,
         };

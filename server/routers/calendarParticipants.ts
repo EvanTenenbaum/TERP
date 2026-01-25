@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -21,7 +21,7 @@ const responseStatusSchema = z.enum(["PENDING", "ACCEPTED", "DECLINED", "TENTATI
 
 export const calendarParticipantsRouter = router({
   // Get participants for an event
-  getParticipants: publicProcedure
+  getParticipants: protectedProcedure
     .input(z.object({ eventId: idSchema }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -41,7 +41,7 @@ export const calendarParticipantsRouter = router({
     }),
 
   // Add participant to event
-  addParticipant: publicProcedure
+  addParticipant: protectedProcedure
     .input(
       z.object({
         eventId: idSchema,
@@ -120,7 +120,7 @@ export const calendarParticipantsRouter = router({
     }),
 
   // Update participant response (RSVP)
-  updateResponse: publicProcedure
+  updateResponse: protectedProcedure
     .input(
       z.object({
         eventId: idSchema,
@@ -152,7 +152,7 @@ export const calendarParticipantsRouter = router({
     }),
 
   // Remove participant from event
-  removeParticipant: publicProcedure
+  removeParticipant: protectedProcedure
     .input(
       z.object({
         eventId: idSchema,
@@ -191,7 +191,7 @@ export const calendarParticipantsRouter = router({
     }),
 
   // Bulk add participants
-  addParticipants: publicProcedure
+  addParticipants: protectedProcedure
     .input(
       z.object({
         eventId: idSchema,

@@ -26,6 +26,7 @@ import { logger } from "./_core/logger";
 
 export interface PricedInventoryItem {
   id: number;
+  productId?: number; // WSQA-002: Product ID for flexible lot selection
   name: string;
   category?: string;
   subcategory?: string;
@@ -163,6 +164,7 @@ export async function getInventoryWithPricing(
       .filter(({ batch }) => batch !== null && batch !== undefined)
       .map(({ batch, product, vendor, strain }) => ({
         id: batch.id,
+        productId: product?.id || undefined, // WSQA-002: Include productId for flexible lot selection
         name: product?.nameCanonical || batch.sku || `Batch #${batch.id}`,
         category: product?.category || undefined,
         subcategory: product?.subcategory || undefined,
@@ -186,10 +188,12 @@ export async function getInventoryWithPricing(
 
       // Ensure all items have quantity defined and preserve new fields
       // INV-CONSISTENCY-002: Include status for display/filtering
+      // WSQA-002: Include productId for flexible lot selection
       return pricedItems.map((item, index) => ({
         ...item,
         quantity: item.quantity || 0,
         // Preserve joined fields that pricing engine doesn't know about
+        productId: inventoryItems[index].productId,
         strainId: inventoryItems[index].strainId,
         strainFamily: inventoryItems[index].strainFamily,
         vendorId: inventoryItems[index].vendorId,
@@ -202,6 +206,7 @@ export async function getInventoryWithPricing(
       );
 
       // Return items with base prices as fallback
+      // WSQA-002: productId is already in inventoryItems
       return inventoryItems.map(item => ({
         ...item,
         retailPrice: item.basePrice,

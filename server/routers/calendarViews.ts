@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarViews } from "../../drizzle/schema";
@@ -97,7 +97,7 @@ export const calendarViewsRouter = router({
     }),
 
   // Update calendar view
-  updateView: publicProcedure
+  updateView: protectedProcedure
     .input(
       z.object({
         viewId: z.number(),

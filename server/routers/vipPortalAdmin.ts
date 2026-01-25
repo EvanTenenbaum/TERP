@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as vipPortalAdminService from "../services/vipPortalAdminService";
 import {
@@ -372,7 +372,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Exchange one-time token for session token (public endpoint for impersonation page)
-    exchangeToken: publicProcedure
+    exchangeToken: protectedProcedure
       .input(z.object({
         oneTimeToken: z.string(),
       }))

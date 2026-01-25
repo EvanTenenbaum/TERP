@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarEvents, calendarEventParticipants, clientMeetingHistory } from "../../drizzle/schema";
@@ -52,7 +52,7 @@ function determineMeetingType(
 
 export const calendarMeetingsRouter = router({
   // Get unconfirmed meetings for user
-  getUnconfirmedMeetings: publicProcedure.query(async ({ ctx }) => {
+  getUnconfirmedMeetings: protectedProcedure.query(async ({ ctx }) => {
     const userId = getAuthenticatedUserId(ctx);
     const db = await getDb();
         if (!db) throw new Error("Database not available");
@@ -92,7 +92,7 @@ export const calendarMeetingsRouter = router({
   }),
 
   // Confirm meeting and create history entry
-  confirmMeeting: publicProcedure
+  confirmMeeting: protectedProcedure
     .input(
       z.object({
         eventId: z.number(),
@@ -170,14 +170,14 @@ export const calendarMeetingsRouter = router({
     }),
 
   // Get meeting history for client
-  getMeetingHistory: publicProcedure
+  getMeetingHistory: protectedProcedure
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await calendarDb.getClientMeetingHistory(input.clientId);
     }),
 
   // Update meeting history entry
-  updateMeetingHistory: publicProcedure
+  updateMeetingHistory: protectedProcedure
     .input(
       z.object({
         entryId: z.number(),
@@ -203,7 +203,7 @@ export const calendarMeetingsRouter = router({
     }),
 
   // Get upcoming client meetings
-  getUpcomingClientMeetings: publicProcedure
+  getUpcomingClientMeetings: protectedProcedure
     .input(
       z.object({
         clientId: z.number(),
@@ -236,7 +236,7 @@ export const calendarMeetingsRouter = router({
     }),
 
   // Mark action item as complete
-  completeActionItem: publicProcedure
+  completeActionItem: protectedProcedure
     .input(
       z.object({
         entryId: z.number(),

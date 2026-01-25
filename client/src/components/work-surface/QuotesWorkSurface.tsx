@@ -41,11 +41,14 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -325,6 +328,8 @@ export function QuotesWorkSurface() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);        // API-016
+  const [sendCustomMessage, setSendCustomMessage] = useState("");     // API-016
 
   // Work Surface hooks
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -399,6 +404,27 @@ export function QuotesWorkSurface() {
     },
   });
 
+  // API-016: Send quote via email
+  const sendQuoteMutation = trpc.quotes.send.useMutation({
+    onMutate: () => setSaving("Sending quote..."),
+    onSuccess: (result) => {
+      if (result.emailSent) {
+        toast.success("Quote sent successfully");
+      } else {
+        toast.info("Quote marked as sent (email not configured or no client email)");
+      }
+      setSaved();
+      refetchQuotes();
+      setShowSendDialog(false);
+      setSendCustomMessage("");
+      inspector.close();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to send quote");
+      setError(err.message);
+    },
+  });
+
   // Keyboard contract
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: false,
@@ -439,7 +465,8 @@ export function QuotesWorkSurface() {
       },
     },
     onCancel: () => {
-      if (showConvertDialog) setShowConvertDialog(false);
+      if (showSendDialog) setShowSendDialog(false);
+      else if (showConvertDialog) setShowConvertDialog(false);
       else if (showDeleteDialog) setShowDeleteDialog(false);
       else if (inspector.isOpen) inspector.close();
     },
@@ -447,7 +474,12 @@ export function QuotesWorkSurface() {
 
   // Handlers
   const handleEdit = (quoteId: number) => setLocation(`/orders/create?quoteId=${quoteId}`);
-  const handleSend = (quoteId: number) => toast.info("Send quote functionality coming soon");
+  // API-016: Open send dialog
+  const handleSend = (quoteId: number) => {
+    setSelectedQuoteId(quoteId);
+    setSendCustomMessage("");
+    setShowSendDialog(true);
+  };
   const handleConvert = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowConvertDialog(true);
@@ -637,6 +669,58 @@ export function QuotesWorkSurface() {
             </Button>
             <Button variant="destructive" onClick={() => toast.info("Delete functionality coming soon")}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* API-016: Send Quote Dialog */}
+      <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Quote to Client</DialogTitle>
+            <DialogDescription>
+              Send this quote via email to the client. You can add an optional personalized message.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customMessage">Custom Message (Optional)</Label>
+              <Textarea
+                id="customMessage"
+                placeholder="Add a personal note to include with the quote email..."
+                value={sendCustomMessage}
+                onChange={(e) => setSendCustomMessage(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSendDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                selectedQuoteId &&
+                sendQuoteMutation.mutate({
+                  id: selectedQuoteId,
+                  sendEmail: true,
+                  customMessage: sendCustomMessage || undefined,
+                })
+              }
+              disabled={sendQuoteMutation.isPending}
+            >
+              {sendQuoteMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Quote
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

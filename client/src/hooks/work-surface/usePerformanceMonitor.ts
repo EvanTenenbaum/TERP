@@ -182,8 +182,9 @@ export function usePerformanceMonitor(
       if (typeof performance !== 'undefined' && performance.mark) {
         try {
           performance.mark(`${surfaceName}-${name}-start`);
-        } catch (e) {
-          // Ignore errors
+        } catch {
+          // Performance API may not support marking in some environments
+          // Silently ignore - this is optional performance instrumentation
         }
       }
     },
@@ -226,8 +227,9 @@ export function usePerformanceMonitor(
             `${surfaceName}-${name}-start`,
             `${surfaceName}-${name}-end`
           );
-        } catch (e) {
-          // Ignore errors
+        } catch {
+          // Performance API may fail if start mark doesn't exist or isn't supported
+          // Silently ignore - this is optional performance instrumentation
         }
       }
 
@@ -327,8 +329,8 @@ export function usePerformanceObserver(options: UsePerformanceObserverOptions = 
       observer.observe({ entryTypes: entryTypes as string[] });
 
       return () => observer.disconnect();
-    } catch (e) {
-      // Browser doesn't support this entry type
+    } catch {
+      // Browser doesn't support this entry type - silently ignore
       return;
     }
   }, [entryTypes, onEntry, filter]);
@@ -372,7 +374,9 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as any);
       observers.push(lcpObserver);
-    } catch (e) {}
+    } catch {
+      // LCP observer not supported in this browser - silently ignore
+    }
 
     // FID
     try {
@@ -384,7 +388,9 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       fidObserver.observe({ type: 'first-input', buffered: true } as any);
       observers.push(fidObserver);
-    } catch (e) {}
+    } catch {
+      // FID observer not supported in this browser - silently ignore
+    }
 
     // CLS
     try {
@@ -400,7 +406,9 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       clsObserver.observe({ type: 'layout-shift', buffered: true } as any);
       observers.push(clsObserver);
-    } catch (e) {}
+    } catch {
+      // CLS observer not supported in this browser - silently ignore
+    }
 
     return () => {
       observers.forEach((o) => o.disconnect());

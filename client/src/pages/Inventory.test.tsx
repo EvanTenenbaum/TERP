@@ -46,10 +46,19 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     inventory: {
       list: { useQuery: () => ({ data: undefined, isLoading: true }) },
+      getEnhanced: { useQuery: () => ({ data: undefined, isLoading: true }) },
       dashboardStats: { useQuery: () => ({ data: undefined }) },
       bulk: {
         updateStatus: { useMutation: () => ({}) },
         delete: { useMutation: () => ({}) },
+      },
+    },
+    productCatalogue: {
+      getCategories: { useQuery: () => ({ data: [] }) },
+    },
+    settings: {
+      subcategories: {
+        list: { useQuery: () => ({ data: [] }) },
       },
     },
   },

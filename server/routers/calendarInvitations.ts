@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { adminProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import { calendarLogger } from "../_core/logger";
 import {
@@ -172,7 +172,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Create a draft invitation
    */
-  createInvitation: publicProcedure
+  createInvitation: protectedProcedure
     .input(
       z.object({
         eventId: z.number(),
@@ -290,7 +290,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Send invitation (changes status from DRAFT to PENDING or AUTO_ACCEPTED)
    */
-  sendInvitation: publicProcedure
+  sendInvitation: protectedProcedure
     .input(
       z.object({
         invitationId: z.number(),
@@ -377,7 +377,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Respond to invitation (accept or decline)
    */
-  respondToInvitation: publicProcedure
+  respondToInvitation: protectedProcedure
     .input(
       z.object({
         invitationId: z.number(),
@@ -451,7 +451,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Get user's invitation settings
    */
-  getInvitationSettings: publicProcedure.query(async ({ ctx }) => {
+  getInvitationSettings: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -490,7 +490,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Update user's invitation settings
    */
-  updateInvitationSettings: publicProcedure
+  updateInvitationSettings: protectedProcedure
     .input(
       z.object({
         autoAcceptAll: z.boolean().optional(),
@@ -664,7 +664,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Get all invitations for an event
    */
-  getInvitationsByEvent: publicProcedure
+  getInvitationsByEvent: protectedProcedure
     .input(
       z.object({
         eventId: z.number(),
@@ -699,7 +699,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Get user's pending invitations
    */
-  getPendingInvitations: publicProcedure.query(async ({ ctx }) => {
+  getPendingInvitations: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -722,7 +722,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Bulk send invitations
    */
-  bulkSendInvitations: publicProcedure
+  bulkSendInvitations: protectedProcedure
     .input(
       z.object({
         eventId: z.number(),
@@ -849,7 +849,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Cancel invitation
    */
-  cancelInvitation: publicProcedure
+  cancelInvitation: protectedProcedure
     .input(
       z.object({
         invitationId: z.number(),
@@ -908,7 +908,7 @@ export const calendarInvitationsRouter = router({
   /**
    * Get invitation history
    */
-  getInvitationHistory: publicProcedure
+  getInvitationHistory: protectedProcedure
     .input(
       z.object({
         invitationId: z.number(),

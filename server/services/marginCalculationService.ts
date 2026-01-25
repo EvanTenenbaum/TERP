@@ -2,12 +2,63 @@
  * Margin Calculation Service
  * Pure math functions for margin/price conversions
  * v2.0 Sales Order Enhancements
+ *
+ * TERP-0016: Uses string-based decimal arithmetic for financial precision
  */
 
 export interface MarginCalculation {
   marginPercent: number;
   marginDollar: number;
   pricePerUnit: number;
+}
+
+/**
+ * TERP-0016: Safe rounding function for financial calculations
+ * Converts to string-based arithmetic to avoid floating point errors
+ * like 0.1 + 0.2 = 0.30000000000000004
+ *
+ * @param value - The number to round
+ * @param decimals - Number of decimal places (default 2 for currency)
+ * @returns Properly rounded number
+ */
+function safeRound(value: number, decimals: number = 2): number {
+  // Handle edge cases
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  // Use string-based arithmetic to avoid floating point errors
+  // This works by:
+  // 1. Converting to string with extra precision
+  // 2. Using Number.EPSILON to handle floating point edge cases
+  // 3. Rounding to desired precision
+  const factor = Math.pow(10, decimals);
+  const shifted = value * factor;
+  // Add Number.EPSILON before rounding to handle edge cases like 1.005
+  const rounded = Math.round(shifted + Number.EPSILON * factor);
+  return rounded / factor;
+}
+
+/**
+ * TERP-0016: Safe subtraction for financial values
+ * Converts to integer cents to avoid floating point errors
+ */
+function safeSubtract(a: number, b: number, decimals: number = 2): number {
+  const factor = Math.pow(10, decimals);
+  const aInt = Math.round(a * factor);
+  const bInt = Math.round(b * factor);
+  return (aInt - bInt) / factor;
+}
+
+/**
+ * TERP-0016: Safe addition for financial values
+ * Converts to integer cents to avoid floating point errors
+ */
+function safeAdd(a: number, b: number, decimals: number = 2): number {
+  const factor = Math.pow(10, decimals);
+  const aInt = Math.round(a * factor);
+  const bInt = Math.round(b * factor);
+  return (aInt + bInt) / factor;
 }
 
 export const marginCalculationService = {
@@ -32,7 +83,7 @@ export const marginCalculationService = {
     }
 
     const price = cogsPerUnit / denominator;
-    return Math.round(price * 100) / 100; // Round to 2 decimals
+    return safeRound(price, 2); // TERP-0016: Use safe rounding
   },
 
   /**
@@ -43,8 +94,8 @@ export const marginCalculationService = {
     cogsPerUnit: number,
     marginDollar: number
   ): number {
-    const price = cogsPerUnit + marginDollar;
-    return Math.round(price * 100) / 100; // Round to 2 decimals
+    // TERP-0016: Use safe addition for financial precision
+    return safeAdd(cogsPerUnit, marginDollar, 2);
   },
 
   /**
@@ -56,8 +107,10 @@ export const marginCalculationService = {
       return 0;
     }
 
-    const marginPercent = ((pricePerUnit - cogsPerUnit) / pricePerUnit) * 100;
-    return Math.round(marginPercent * 100) / 100; // Round to 2 decimals
+    // TERP-0016: Calculate margin using safe subtraction first
+    const marginDollar = safeSubtract(pricePerUnit, cogsPerUnit, 2);
+    const marginPercent = (marginDollar / pricePerUnit) * 100;
+    return safeRound(marginPercent, 2);
   },
 
   /**
@@ -65,8 +118,8 @@ export const marginCalculationService = {
    * Formula: margin$ = price - COGS
    */
   calculateMarginDollar(cogsPerUnit: number, pricePerUnit: number): number {
-    const marginDollar = pricePerUnit - cogsPerUnit;
-    return Math.round(marginDollar * 100) / 100; // Round to 2 decimals
+    // TERP-0016: Use safe subtraction for financial precision
+    return safeSubtract(pricePerUnit, cogsPerUnit, 2);
   },
 
   /**

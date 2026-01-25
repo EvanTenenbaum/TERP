@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as dashboardAnalytics from "../dashboardAnalytics";
 import * as inventoryAlerts from "../inventoryAlerts";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -52,7 +52,7 @@ interface SuccessResponse {
 
 export const dashboardEnhancedRouter = router({
   // Get comprehensive dashboard data
-  getDashboardData: publicProcedure
+  getDashboardData: protectedProcedure
     .input(dateRangeInput)
     .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getDashboardData>>> => {
       return await dashboardAnalytics.getDashboardData(
@@ -62,7 +62,7 @@ export const dashboardEnhancedRouter = router({
     }),
 
   // Get sales performance metrics
-  getSalesPerformance: publicProcedure
+  getSalesPerformance: protectedProcedure
     .input(dateRangeInput)
     .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getSalesPerformance>>> => {
       return await dashboardAnalytics.getSalesPerformance(
@@ -72,19 +72,19 @@ export const dashboardEnhancedRouter = router({
     }),
 
   // Get AR aging report
-  getARAgingReport: publicProcedure
+  getARAgingReport: protectedProcedure
     .query(async (): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getARAgingReport>>> => {
       return await dashboardAnalytics.getARAgingReport();
     }),
 
   // Get inventory valuation
-  getInventoryValuation: publicProcedure
+  getInventoryValuation: protectedProcedure
     .query(async (): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getInventoryValuation>>> => {
       return await dashboardAnalytics.getInventoryValuation();
     }),
 
   // Get top performing products
-  getTopProducts: publicProcedure
+  getTopProducts: protectedProcedure
     .input(dateRangeWithLimitInput)
     .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getTopPerformingProducts>>> => {
       return await dashboardAnalytics.getTopPerformingProducts(
@@ -95,7 +95,7 @@ export const dashboardEnhancedRouter = router({
     }),
 
   // Get top clients
-  getTopClients: publicProcedure
+  getTopClients: protectedProcedure
     .input(dateRangeWithLimitInput)
     .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getTopClients>>> => {
       return await dashboardAnalytics.getTopClients(
@@ -106,7 +106,7 @@ export const dashboardEnhancedRouter = router({
     }),
 
   // Get profitability metrics
-  getProfitabilityMetrics: publicProcedure
+  getProfitabilityMetrics: protectedProcedure
     .input(dateRangeInput)
     .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getProfitabilityMetrics>>> => {
       return await dashboardAnalytics.getProfitabilityMetrics(
@@ -116,7 +116,7 @@ export const dashboardEnhancedRouter = router({
     }),
 
   // Export dashboard data
-  exportData: publicProcedure
+  exportData: protectedProcedure
     .input(exportInput)
     .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.exportDashboardData>>> => {
       return await dashboardAnalytics.exportDashboardData(
@@ -127,30 +127,30 @@ export const dashboardEnhancedRouter = router({
     }),
 
   // Inventory Alerts
-  generateAlerts: publicProcedure
+  generateAlerts: protectedProcedure
     .mutation(async (): Promise<SuccessResponse> => {
       await inventoryAlerts.generateInventoryAlerts();
       return { success: true };
     }),
 
-  getActiveAlerts: publicProcedure
+  getActiveAlerts: protectedProcedure
     .query(async (): Promise<Awaited<ReturnType<typeof inventoryAlerts.getActiveInventoryAlerts>>> => {
       return await inventoryAlerts.getActiveInventoryAlerts();
     }),
 
-  getAlertSummary: publicProcedure
+  getAlertSummary: protectedProcedure
     .query(async (): Promise<Awaited<ReturnType<typeof inventoryAlerts.getAlertSummary>>> => {
       return await inventoryAlerts.getAlertSummary();
     }),
 
-  acknowledgeAlert: publicProcedure
+  acknowledgeAlert: protectedProcedure
     .input(acknowledgeAlertInput)
     .mutation(async ({ input }): Promise<SuccessResponse> => {
       await inventoryAlerts.acknowledgeAlert(input.alertId, input.userId);
       return { success: true };
     }),
 
-  resolveAlert: publicProcedure
+  resolveAlert: protectedProcedure
     .input(resolveAlertInput)
     .mutation(async ({ input }): Promise<SuccessResponse> => {
       await inventoryAlerts.resolveAlert(input.alertId, input.resolution, input.userId);

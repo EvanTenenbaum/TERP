@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as salesSheetsDb from "../salesSheetsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { randomBytes } from "crypto";
@@ -328,7 +328,7 @@ export const salesSheetsRouter = router({
   /**
    * Get a sales sheet by share token (public - no auth required)
    */
-  getByToken: publicProcedure
+  getByToken: protectedProcedure
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
       const sheet = await salesSheetsDb.getSalesSheetByToken(input.token);

@@ -1,33 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-// Create mock functions for tRPC hooks
-const mockMutateAsync = vi.fn();
-const mockCreateMutation = vi.fn(() => ({
-  mutateAsync: mockMutateAsync,
-  isLoading: false,
-  isPending: false,
-}));
-const mockUpdateMutation = vi.fn(() => ({
-  mutateAsync: mockMutateAsync,
-  isLoading: false,
-  isPending: false,
-}));
-const mockGetEventById = vi.fn(() => ({
-  data: null,
-  isLoading: false,
-  isError: false,
-}));
-const mockListUsers = vi.fn(() => ({
-  data: [],
-  isLoading: false,
-  isError: false,
-}));
-const mockClientsList = vi.fn(() => ({
-  data: [],
-  isLoading: false,
-  isError: false,
-}));
+// Use vi.hoisted to declare mocks that can be used in vi.mock() factory
+const { mockMutateAsync, mockCreateMutation, mockUpdateMutation, mockGetEventById, mockListUsers, mockClientsList } = vi.hoisted(() => {
+  const mockMutateAsync = vi.fn();
+  return {
+    mockMutateAsync,
+    mockCreateMutation: vi.fn(() => ({
+      mutateAsync: mockMutateAsync,
+      isLoading: false,
+      isPending: false,
+    })),
+    mockUpdateMutation: vi.fn(() => ({
+      mutateAsync: mockMutateAsync,
+      isLoading: false,
+      isPending: false,
+    })),
+    mockGetEventById: vi.fn(() => ({
+      data: null,
+      isLoading: false,
+      isError: false,
+    })),
+    mockListUsers: vi.fn(() => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+    })),
+    mockClientsList: vi.fn(() => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+    })),
+  };
+});
 
 // Mock tRPC before importing components that use it
 vi.mock('../../lib/trpc', () => ({
@@ -42,6 +47,9 @@ vi.mock('../../lib/trpc', () => ({
     },
     clients: {
       list: { useQuery: mockClientsList },
+    },
+    calendarsManagement: {
+      list: { useQuery: () => ({ data: [], isLoading: false }) },
     },
   },
 }));

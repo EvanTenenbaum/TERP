@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 // Label used in form fields - import available if needed
 import { Badge } from "@/components/ui/badge";
+import { AddClientWizard } from "@/components/clients/AddClientWizard"; // TERP-0003
 import {
   Table,
   TableBody,
@@ -854,6 +855,17 @@ export function ClientsWorkSurface() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* TERP-0003: Add Client Wizard */}
+      <AddClientWizard
+        open={isAddClientOpen}
+        onOpenChange={setIsAddClientOpen}
+        onSuccess={(clientId) => {
+          refetch();
+          toast.success("Client created successfully");
+          setLocation(`/clients/${clientId}`);
+        }}
+      />
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as clientNeedsDb from "../clientNeedsDbEnhanced";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as needsMatchingService from "../needsMatchingService";
@@ -13,7 +13,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Create a new client need (with duplicate prevention)
    */
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         clientId: z.number(),
@@ -60,7 +60,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Create need and immediately find matches
    */
-  createAndFindMatches: publicProcedure
+  createAndFindMatches: protectedProcedure
     .input(
       z.object({
         clientId: z.number(),
@@ -102,7 +102,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Get a client need by ID
    */
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -131,7 +131,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Get all client needs with optional filters
    */
-  getAll: publicProcedure
+  getAll: protectedProcedure
     .input(
       z.object({
         status: z.enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).optional(),
@@ -161,7 +161,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Get active client needs for a specific client
    */
-  getActiveByClient: publicProcedure
+  getActiveByClient: protectedProcedure
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -183,7 +183,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Update a client need
    */
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -233,7 +233,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Mark a client need as fulfilled
    */
-  fulfill: publicProcedure
+  fulfill: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -255,7 +255,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Cancel a client need
    */
-  cancel: publicProcedure
+  cancel: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -277,7 +277,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Delete a client need
    */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -298,7 +298,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Get client needs with match counts
    */
-  getAllWithMatches: publicProcedure
+  getAllWithMatches: protectedProcedure
     .input(
       z.object({
         status: z.enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).optional(),
@@ -325,7 +325,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Find matches for a specific client need
    */
-  findMatches: publicProcedure
+  findMatches: protectedProcedure
     .input(z.object({ needId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -347,7 +347,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Create quote from match
    */
-  createQuoteFromMatch: publicProcedure
+  createQuoteFromMatch: protectedProcedure
     .input(
       z.object({
         clientId: z.number(),
@@ -374,7 +374,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Expire old client needs
    */
-  expireOld: publicProcedure
+  expireOld: protectedProcedure
     .mutation(async () => {
       try {
         const count = await clientNeedsDb.expireOldClientNeeds();
@@ -395,7 +395,7 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Get smart opportunities (top matches)
    */
-  getSmartOpportunities: publicProcedure
+  getSmartOpportunities: protectedProcedure
     .input(z.object({ limit: z.number().default(5) }))
     .query(async ({ input }) => {
       try {

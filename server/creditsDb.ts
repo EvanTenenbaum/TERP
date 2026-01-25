@@ -23,14 +23,39 @@ import { logger } from "./_core/logger";
 import { withTransaction } from "./dbTransaction";
 
 /**
+ * Credit reasons that require a transaction reference (original invoice)
+ * These are essentially "credit notes" that must be linked to an original transaction
+ */
+const CREDIT_REASONS_REQUIRING_INVOICE = [
+  "RETURN",
+  "BILLING_ERROR",
+  "PRICE_ADJUSTMENT",
+  "CREDIT_NOTE"
+] as const;
+
+/**
  * Create a new credit
  * @param data Credit data to insert
  * @returns The created credit
+ * @throws Error if credit_note type is created without originalInvoiceId (transactionId)
  */
 export async function createCredit(data: InsertCredit): Promise<Credit> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  // Validate: Credit notes and related types require a transaction reference
+  const creditReason = data.creditReason?.toUpperCase().replace(/\s+/g, "_");
+  const requiresInvoice = CREDIT_REASONS_REQUIRING_INVOICE.some(
+    reason => creditReason === reason
+  );
+
+  if (requiresInvoice && !data.transactionId) {
+    throw new Error(
+      `Credit with reason '${data.creditReason}' requires an originalInvoiceId (transactionId). ` +
+      `Credit notes must be linked to the original invoice they are adjusting.`
+    );
+  }
+
   try {
     // Ensure amountRemaining equals creditAmount for new credits
     const creditData = {

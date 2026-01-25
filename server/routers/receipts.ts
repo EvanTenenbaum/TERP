@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, adminProcedure, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure, protectedProcedure } from "../_core/trpc";
 import { db } from "../db";
 import { receipts, clients } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -608,7 +608,7 @@ export const receiptsRouter = router({
    * Public endpoint to view receipt by receipt number
    * SECURITY: Only shows minimal receipt info, no financial balances
    */
-  getPublicReceipt: publicProcedure
+  getPublicReceipt: protectedProcedure
     .input(z.object({ receiptNumber: z.string() }))
     .query(async ({ input }) => {
       const receipt = await db

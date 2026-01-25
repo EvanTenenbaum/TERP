@@ -3,12 +3,14 @@ import { router, protectedProcedure } from "../_core/trpc";
 import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
+import * as ordersDb from "../ordersDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import {
   fetchClientNamesMap,
   calculateDateRange,
   calculateSalesComparison,
 } from "../dashboardHelpers";
+import { logger } from "../_core/logger";
 import type { Invoice, Payment } from "../../drizzle/schema";
 import { subDays, differenceInDays } from "date-fns";
 
@@ -566,35 +568,65 @@ export const dashboardRouter = router({
     .use(requirePermission("dashboard:read"))
     .input(paginationInputSchema)
     .query(async ({ input }): Promise<PaginatedResponse<ClientMargin>> => {
-      const invoices = await arApDb.getInvoices({});
-      const allInvoices = invoices.invoices || [];
+      // TERP-0001: Get actual COGS from orders instead of using hardcoded percentage
+      // Orders have proper COGS data calculated from batch/lot inventory data
+      const allOrders = await ordersDb.getAllOrders({
+        isDraft: false, // Only confirmed orders, not drafts
+        orderType: "SALE", // Only sales, not quotes
+        limit: 500, // Get a reasonable number for dashboard
+      });
 
-      // Calculate profit margin by client (simplified)
-      const marginByClient = allInvoices.reduce(
-        (acc: Record<number, ClientMargin>, inv: Invoice) => {
-          const customerId = inv.customerId;
-          if (!acc[customerId]) {
-            acc[customerId] = {
-              customerId,
-              customerName: `Customer ${customerId}`, // Will be updated with actual name below
-              revenue: 0,
-              cost: 0,
-              profitMargin: 0,
-            };
-          }
-          acc[customerId].revenue += Number(inv.totalAmount || 0);
-          // Simplified: assume 60% margin
-          acc[customerId].cost += Number(inv.totalAmount || 0) * 0.4;
-          // Calculate profit margin
-          const profit = acc[customerId].revenue - acc[customerId].cost;
-          acc[customerId].profitMargin =
-            acc[customerId].revenue > 0
-              ? (profit / acc[customerId].revenue) * 100
-              : 0;
-          return acc;
-        },
-        {}
-      );
+      // Calculate profit margin by client using actual COGS from orders
+      const marginByClient: Record<number, ClientMargin> = {};
+      let ordersWithoutCogs = 0;
+
+      for (const order of allOrders) {
+        const clientId = order.clientId;
+        if (!clientId) continue;
+
+        if (!marginByClient[clientId]) {
+          marginByClient[clientId] = {
+            customerId: clientId,
+            customerName: `Customer ${clientId}`, // Will be updated with actual name below
+            revenue: 0,
+            cost: 0,
+            profitMargin: 0,
+          };
+        }
+
+        const orderTotal = Number(order.total || 0);
+        const orderCogs = Number(order.totalCogs || 0);
+
+        marginByClient[clientId].revenue += orderTotal;
+
+        // Use actual COGS from order if available
+        if (order.totalCogs && orderCogs > 0) {
+          marginByClient[clientId].cost += orderCogs;
+        } else {
+          // Fallback: estimate COGS from average batch cost if order COGS is missing
+          // This should be rare for properly created orders
+          ordersWithoutCogs++;
+          // Use a conservative 40% estimate as last resort (with warning log)
+          marginByClient[clientId].cost += orderTotal * 0.4;
+        }
+      }
+
+      // Log warning if we had to use estimated COGS
+      if (ordersWithoutCogs > 0) {
+        logger.warn({
+          msg: "Dashboard profit margin used estimated COGS for some orders",
+          ordersWithoutCogs,
+          totalOrders: allOrders.length,
+          note: "Orders without actual COGS data - using 40% estimate as fallback",
+        });
+      }
+
+      // Calculate profit margins
+      for (const clientId of Object.keys(marginByClient)) {
+        const data = marginByClient[Number(clientId)];
+        const profit = data.revenue - data.cost;
+        data.profitMargin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
+      }
 
       // Fetch actual client names for all customer IDs
       const customerIds = Object.keys(marginByClient).map(Number);

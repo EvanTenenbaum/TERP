@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as vendorSupplyDb from "../vendorSupplyDb";
 import * as matchingEngine from "../matchingEngine";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -12,7 +12,7 @@ export const vendorSupplyRouter = router({
   /**
    * Create a new vendor supply item
    */
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         vendorId: z.number(),
@@ -52,7 +52,7 @@ export const vendorSupplyRouter = router({
   /**
    * Get a vendor supply item by ID
    */
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -81,7 +81,7 @@ export const vendorSupplyRouter = router({
   /**
    * Get all vendor supply items with optional filters
    */
-  getAll: publicProcedure
+  getAll: protectedProcedure
     .input(
       z.object({
         status: z.enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).optional(),
@@ -110,7 +110,7 @@ export const vendorSupplyRouter = router({
   /**
    * Get available vendor supply items
    */
-  getAvailable: publicProcedure
+  getAvailable: protectedProcedure
     .input(z.object({ vendorId: z.number().optional() }))
     .query(async ({ input }) => {
       try {
@@ -132,7 +132,7 @@ export const vendorSupplyRouter = router({
   /**
    * Update a vendor supply item
    */
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -176,7 +176,7 @@ export const vendorSupplyRouter = router({
   /**
    * Mark a vendor supply item as reserved
    */
-  reserve: publicProcedure
+  reserve: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -198,7 +198,7 @@ export const vendorSupplyRouter = router({
   /**
    * Mark a vendor supply item as purchased
    */
-  purchase: publicProcedure
+  purchase: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -220,7 +220,7 @@ export const vendorSupplyRouter = router({
   /**
    * Delete a vendor supply item
    */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -241,7 +241,7 @@ export const vendorSupplyRouter = router({
   /**
    * Get vendor supply with match counts
    */
-  getAllWithMatches: publicProcedure
+  getAllWithMatches: protectedProcedure
     .input(
       z.object({
         status: z.enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).optional(),
@@ -268,7 +268,7 @@ export const vendorSupplyRouter = router({
   /**
    * Find potential buyers for a vendor supply item
    */
-  findBuyers: publicProcedure
+  findBuyers: protectedProcedure
     .input(z.object({ supplyId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -290,7 +290,7 @@ export const vendorSupplyRouter = router({
   /**
    * Expire old vendor supply items
    */
-  expireOld: publicProcedure
+  expireOld: protectedProcedure
     .mutation(async () => {
       try {
         const count = await vendorSupplyDb.expireOldVendorSupply();

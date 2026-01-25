@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import InstanceGenerationService from "../_core/instanceGenerationService";
 import PermissionService from "../_core/permissionService";
@@ -45,7 +45,7 @@ const recurrenceRuleUpdatesSchema = z.object({
 
 export const calendarRecurrenceRouter = router({
   // Get recurrence rule for event
-  getRecurrenceRule: publicProcedure
+  getRecurrenceRule: protectedProcedure
     .input(z.object({ eventId: idSchema }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -61,7 +61,7 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Get instances for recurring event
-  getInstances: publicProcedure
+  getInstances: protectedProcedure
     .input(
       z.object({
         eventId: idSchema,

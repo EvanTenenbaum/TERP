@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { fiscalPeriods } from "../../drizzle/schema";
-import { and, lte, gte, sql } from "drizzle-orm";
+import { and, lte, gte, sql, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 /**
@@ -63,5 +63,56 @@ export async function getFiscalPeriodIdOrDefault(
     return await getFiscalPeriodId(date);
   } catch {
     return defaultPeriodId;
+  }
+}
+
+/**
+ * Check if a fiscal period is locked (cannot accept new postings).
+ * A period is considered locked if its status is "LOCKED" or "CLOSED".
+ *
+ * @param periodId - The fiscal period ID to check
+ * @returns true if the period is locked, false if open for posting
+ * @throws TRPCError with code NOT_FOUND if period doesn't exist
+ */
+export async function isFiscalPeriodLocked(periodId: number): Promise<boolean> {
+  if (!db) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+  }
+
+  const period = await db.query.fiscalPeriods.findFirst({
+    where: eq(fiscalPeriods.id, periodId),
+  });
+
+  if (!period) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Fiscal period with ID ${periodId} not found`,
+    });
+  }
+
+  // Period is locked if status is LOCKED or CLOSED
+  return period.status === "LOCKED" || period.status === "CLOSED";
+}
+
+/**
+ * Validate that posting is allowed to a fiscal period.
+ * Throws an error if the period is locked.
+ *
+ * @param date - The date of the transaction to post
+ * @throws TRPCError with code FORBIDDEN if the period is locked
+ * @throws TRPCError with code NOT_FOUND if no period matches the date
+ */
+export async function validatePeriodOpenForPosting(date: Date): Promise<void> {
+  const periodId = await getFiscalPeriodId(date);
+  const isLocked = await isFiscalPeriodLocked(periodId);
+
+  if (isLocked) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `Cannot post to fiscal period for date ${date.toISOString().split("T")[0]}. The period is locked or closed.`,
+    });
   }
 }

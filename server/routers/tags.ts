@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { tags, productTags, clientTags, type Tag } from "../../drizzle/schema";
 import { eq, like, or, and, isNull, desc } from "drizzle-orm";
@@ -16,7 +16,7 @@ export const tagsRouter = router({
   /**
    * List all tags
    */
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z
         .object({
@@ -66,7 +66,7 @@ export const tagsRouter = router({
   /**
    * Get a single tag by ID
    */
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -88,7 +88,7 @@ export const tagsRouter = router({
   /**
    * Create a new tag
    */
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1, "Tag name is required"),
@@ -133,7 +133,7 @@ export const tagsRouter = router({
   /**
    * Update an existing tag
    */
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -182,7 +182,7 @@ export const tagsRouter = router({
   /**
    * Soft delete a tag
    */
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -211,7 +211,7 @@ export const tagsRouter = router({
   /**
    * Get tags for a specific product
    */
-  getProductTags: publicProcedure
+  getProductTags: protectedProcedure
     .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -237,7 +237,7 @@ export const tagsRouter = router({
   /**
    * Get tags for a specific client
    */
-  getClientTags: publicProcedure
+  getClientTags: protectedProcedure
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -263,7 +263,7 @@ export const tagsRouter = router({
   /**
    * Add tags to a product
    */
-  addProductTags: publicProcedure
+  addProductTags: protectedProcedure
     .input(
       z.object({
         productId: z.number(),
@@ -302,7 +302,7 @@ export const tagsRouter = router({
   /**
    * Add tags to a client
    */
-  addClientTags: publicProcedure
+  addClientTags: protectedProcedure
     .input(
       z.object({
         clientId: z.number(),
@@ -341,7 +341,7 @@ export const tagsRouter = router({
   /**
    * Remove tags from a product
    */
-  removeProductTags: publicProcedure
+  removeProductTags: protectedProcedure
     .input(
       z.object({
         productId: z.number(),
@@ -370,7 +370,7 @@ export const tagsRouter = router({
   /**
    * Remove tags from a client
    */
-  removeClientTags: publicProcedure
+  removeClientTags: protectedProcedure
     .input(
       z.object({
         clientId: z.number(),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { getDb } from "../db";
@@ -26,7 +26,7 @@ const relativeMinutesSchema = z.number()
 
 export const calendarRemindersRouter = router({
   // Get reminders for an event
-  getReminders: publicProcedure
+  getReminders: protectedProcedure
     .input(z.object({ eventId: idSchema }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -46,7 +46,7 @@ export const calendarRemindersRouter = router({
     }),
 
   // Create reminder
-  createReminder: publicProcedure
+  createReminder: protectedProcedure
     .input(
       z.object({
         eventId: idSchema,
@@ -91,7 +91,7 @@ export const calendarRemindersRouter = router({
     }),
 
   // Delete reminder
-  deleteReminder: publicProcedure
+  deleteReminder: protectedProcedure
     .input(z.object({ reminderId: idSchema }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
@@ -109,20 +109,20 @@ export const calendarRemindersRouter = router({
     }),
 
   // Get pending reminders (for background job)
-  getPendingReminders: publicProcedure.query(async () => {
+  getPendingReminders: protectedProcedure.query(async () => {
     const now = new Date();
     return await calendarDb.getPendingReminders(now);
   }),
 
   // Mark reminder as sent (for background job)
-  markSent: publicProcedure
+  markSent: protectedProcedure
     .input(z.object({ reminderId: idSchema }))
     .mutation(async ({ input }) => {
       return await calendarDb.updateReminderStatus(input.reminderId, "SENT");
     }),
 
   // Mark reminder as failed (for background job)
-  markFailed: publicProcedure
+  markFailed: protectedProcedure
     .input(
       z.object({
         reminderId: idSchema,
@@ -138,7 +138,7 @@ export const calendarRemindersRouter = router({
     }),
 
   // Get user's upcoming reminders
-  getMyUpcomingReminders: publicProcedure
+  getMyUpcomingReminders: protectedProcedure
     .input(
       z.object({
         hoursAhead: z.number().int().min(1, "Hours must be at least 1").max(168, "Cannot look more than 1 week ahead").default(24),
