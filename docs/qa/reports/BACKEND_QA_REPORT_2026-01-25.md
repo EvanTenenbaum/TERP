@@ -1486,13 +1486,253 @@ financialMath.calculateMarginPrice(cost, marginPercent); // 100% margin edge cas
 
 ---
 
+## SYSTEMIC ISSUES ANALYSIS (Phase 7)
+
+### DD-50: Root Cause Analysis - Financial Math
+
+**SYSTEMIC PATTERN:** `financialMath.ts` utility exists but was never retrofitted
+
+| Category                        | Count | Files                             |
+| ------------------------------- | ----- | --------------------------------- |
+| Files importing `financialMath` | 4     | All in `live-shopping/` directory |
+| Files using `parseFloat` on $   | 50+   | Scattered across entire codebase  |
+| `reduce + parseFloat` pattern   | 17    | Duplicated financial sum logic    |
+
+**Root Cause:** The `financialMath` utility was created for the Live Shopping feature in isolation and was **never retrofitted** to the existing codebase. This created a two-tier system where new code uses proper Decimal.js math while legacy code uses floating point.
+
+**Files with duplicated financial sum pattern:**
+
+```typescript
+// This exact pattern appears in 17+ locations:
+const total = items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+```
+
+- `dashboardAnalytics.ts` (4 occurrences)
+- `samplesAnalytics.ts` (6 occurrences)
+- `vipPortal.ts` (5 occurrences)
+- `purchaseOrders.ts` (1 occurrence)
+- `referrals.ts` (2 occurrences)
+
+---
+
+### DD-51: Architectural Anti-Patterns
+
+**PATTERN 1: Direct DB Access from Routers**
+
+| Metric                       | Count |
+| ---------------------------- | ----- |
+| `*Db` imports in routers     | 89    |
+| Routers with direct DB calls | 63    |
+| Proper service layer usage   | ~30%  |
+
+**Issue:** Routers should call services, services should call DB layers. Direct DB access from routers:
+
+- Creates tight coupling
+- Makes testing difficult (root cause of 55+ skipped tests)
+- Prevents proper transaction management
+- Bypasses business logic validation
+
+**PATTERN 2: Inconsistent Layer Boundaries**
+
+```
+EXPECTED:        Router → Service → DB Layer
+ACTUAL:          Router → DB Layer (bypassing services)
+                 Router → Service → DB Layer (inconsistent)
+```
+
+---
+
+### DD-52: Error Handling Inconsistency
+
+**FINDING:** Two competing error systems with no clear ownership
+
+| System           | Usage    | Files  |
+| ---------------- | -------- | ------ |
+| ErrorCatalog     | 24 calls | 1 file |
+| Inline TRPCError | 1500+    | 100+   |
+
+**ErrorCatalog only used in:** `inventory.ts`
+
+**Problem:** The centralized error catalog was created but never adopted. 99% of errors are inline:
+
+```typescript
+// ErrorCatalog (1% - only in inventory.ts)
+throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(123);
+
+// Inline (99% - everywhere else)
+throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+```
+
+**Impact:**
+
+- Inconsistent error messages
+- No error code standardization
+- Difficult to track/monitor specific errors
+- No internationalization support
+
+---
+
+### DD-53: Configuration Access Pattern
+
+**FINDING:** Mixed direct `process.env` and centralized `getEnv()` access
+
+| Pattern                    | Occurrences |
+| -------------------------- | ----------- |
+| Direct `process.env.*`     | 150+        |
+| Centralized `getEnv()` use | 14          |
+
+**Example of inconsistency:**
+
+```typescript
+// File A: Direct access
+const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+
+// File B: Centralized
+const secret = getEnv().getJwtSecret();
+```
+
+**Risk:** Environment variable handling is inconsistent, making it harder to:
+
+- Validate required variables at startup
+- Mock in tests
+- Manage across environments
+
+---
+
+### DD-54: Critical Security Pattern - Fallback User IDs
+
+**CRITICAL FINDING:** 11 occurrences of `ctx.user?.id || 0`
+
+| File             | Count | Lines                     |
+| ---------------- | ----- | ------------------------- |
+| `inventory.ts`   | 8     | 860, 952, 985, 1000, etc. |
+| `catalog.ts`     | 2     | 36, 128                   |
+| `poReceiving.ts` | 1     | 562                       |
+
+**This is a variant of the forbidden `|| 1` pattern:**
+
+```typescript
+// FORBIDDEN (documented)
+createdBy: ctx.user?.id || 1;
+
+// ALSO PROBLEMATIC (not documented)
+actorId: ctx.user?.id || 0; // Found 11 times!
+```
+
+**Risk:**
+
+- User ID 0 likely doesn't exist
+- Masks authentication failures
+- Corrupts audit trails with invalid actor attribution
+
+---
+
+### DD-55: Transaction Coverage Analysis
+
+**FINDING:** Only 3 production routers use `withTransaction`
+
+| Router                         | Uses Transaction |
+| ------------------------------ | ---------------- |
+| `orders.ts`                    | ✅               |
+| `intakeReceipts.ts`            | ✅               |
+| `productCategoriesExtended.ts` | ✅               |
+| Other 60+ routers              | ❌               |
+
+**Multi-step mutations WITHOUT transactions:**
+
+- `accounting.ts` - Invoice creation with line items
+- `credits.ts` - Credit application
+- `purchaseOrders.ts` - PO with items
+- `returns.ts` - Return processing
+- `payments.ts` - Payment allocation
+
+**Risk:** Partial writes on failure can leave data in inconsistent state.
+
+---
+
+### DD-56: Test Mock Architecture Issue
+
+**ROOT CAUSE:** DB mock doesn't support query chaining
+
+```typescript
+// Tests fail because mock can't handle:
+db.select().from().where().groupBy().limit();
+
+// Mock only handles basic patterns:
+db.select().from().where();
+```
+
+**Files affected:**
+
+- `rbac-permissions.test.ts` - 6 skipped (mock chain)
+- `rbac-roles.test.ts` - 4 skipped (mock chain)
+- `calendarFinancials.test.ts` - 8 skipped (complex queries)
+- `accounting.test.ts` - 5 skipped (DB mocking)
+
+**This is documented as TEST-020** but not addressed.
+
+---
+
+## SYSTEMIC ISSUE SUMMARY
+
+| Issue Category         | Root Cause                    | Impact              |
+| ---------------------- | ----------------------------- | ------------------- | ------------------------------ | ---------------- |
+| Financial precision    | Utility not retrofitted       | Calculation errors  |
+| Test coverage gaps     | DB mock architecture          | 55+ tests skipped   |
+| Error inconsistency    | ErrorCatalog not adopted      | Debug difficulty    |
+| Config access          | No enforced pattern           | Testing/maintenance |
+| Transaction gaps       | No architectural enforcement  | Data integrity      |
+| Actor attribution      | `                             |                     | 0` not recognized as forbidden | Audit trail gaps |
+| Architectural coupling | Direct DB access from routers | Testing difficulty  |
+
+---
+
+## UPDATED CRITICAL FINDINGS (4)
+
+1. **Floating Point Financial Calculations** (40+ instances)
+2. **Hardcoded User IDs** (`createdBy: 1`) - 3 locations
+3. **Fallback User IDs** (`ctx.user?.id || 0`) - 11 locations ⬆️ NEW
+4. **Critical Business Logic Without Unit Tests** - 8 components
+
+---
+
+## SYSTEMIC RECOMMENDATIONS
+
+### Architecture (Long-term)
+
+1. **Enforce service layer boundary**
+   - Routers should ONLY call services
+   - Services call DB layers
+   - Add lint rule to prevent direct `*Db` imports in routers
+
+2. **Standardize error handling**
+   - Adopt ErrorCatalog across codebase
+   - Add lint rule requiring ErrorCatalog usage
+
+3. **Fix DB mock architecture (TEST-020)**
+   - Implement proper Drizzle query chain mocking
+   - Unblock 55+ tests
+
+### Immediate (This Sprint)
+
+4. **Fix all `ctx.user?.id || 0` patterns**
+   - Replace with `getAuthenticatedUserId(ctx)`
+   - Same as `|| 1` - must throw if not authenticated
+
+5. **Retrofit financialMath utility**
+   - Create codemod to replace `parseFloat` on money
+   - Priority: accounting.ts, audit.ts, dashboard
+
+---
+
 **Report Generated:** 2026-01-25
 **Extended Analysis Added:** 2026-01-25
 **10X Deep Dive Added:** 2026-01-25
 **Comprehensive Audit Added:** 2026-01-25
 **Infrastructure & Quality Audit Added:** 2026-01-25
 **Business Logic Testing Audit Added:** 2026-01-25
-**Total Findings:** 30 issues across 4 severity levels (3 Critical, 8 High, 8 Medium, 11 Low)
+**Systemic Issues Analysis Added:** 2026-01-25
+**Total Findings:** 35 issues across 4 severity levels (4 Critical, 9 High, 9 Medium, 13 Low)
+**Systemic Patterns Identified:** 7 root cause categories
 **Files Analyzed:** 500+ source files, 91 test files
-**Test Files Without Coverage for Critical Logic:** 8 business logic modules
 **Next Review:** On next feature deployment or security concern
