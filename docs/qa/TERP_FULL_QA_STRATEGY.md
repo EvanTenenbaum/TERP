@@ -279,7 +279,8 @@ PENDING → APPROVED → RECEIVED → PROCESSED
     ↓         ↓
 CANCELLED  REJECTED → CANCELLED
 
-IMPORTANT: Returns must be APPROVED before they can be RECEIVED
+NOTE: Status enum exists but transitions are NOT enforced in code.
+QA should verify if approval is actually required before receiving.
 
 Sample Status (samples.ts:41) - ADDED v1.2
 ══════════════════════════════════════════════════════════════

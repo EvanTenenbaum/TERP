@@ -71,34 +71,31 @@ function calculateStockStatus(
 
 ---
 
-### ISSUE-003: Return Flow Missing APPROVED/REJECTED Steps
+### ISSUE-003: Return Flow Status Transitions NOT Enforced
 
 **Location:** TERP_FULL_QA_STRATEGY.md, E2E Flow 7
 
-**Problem:** The return workflow has an approval step I didn't document.
+**Problem:** The return status enum exists but transitions are NOT enforced in code.
 
-**What I Documented:**
+**Status Enum (returns.ts:67-74):**
 ```
-1. Create return
-2. Submit return
-3. Receive returned items
-4. Process
+PENDING, APPROVED, REJECTED, RECEIVED, PROCESSED, CANCELLED
 ```
 
-**Actual Status Flow (returns.ts:67-74):**
-```
-PENDING → APPROVED → RECEIVED → PROCESSED
-    ↓
-REJECTED
-    ↓
-CANCELLED
-```
+**Actual Behavior (verified):**
+- `approve` procedure exists but receive does NOT check if status is APPROVED
+- A return can be received without approval (no state machine validation)
+- Status changes are recorded in notes but not enforced
 
-**Missing Steps:**
-- After submission, return must be APPROVED before it can be received
-- REJECTED path not tested
-- What happens to inventory if return is rejected?
+**QA Should Verify:**
+- Can a PENDING return be received without approval?
+- Is there business logic elsewhere enforcing the flow?
+- Should this be flagged as a potential bug?
+
+**Missing Tests:**
+- REJECTED path (what happens to inventory?)
 - QUARANTINE condition for damaged returns
+- Concurrent approval attempts
 
 ---
 
