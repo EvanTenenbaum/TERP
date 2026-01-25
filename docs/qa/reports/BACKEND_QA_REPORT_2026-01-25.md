@@ -297,5 +297,221 @@ Security:   ✅ PASS (no forbidden patterns in active code)
 
 ---
 
+---
+
+## DEEP DIVE ANALYSIS (Extended Testing)
+
+### DD-1: Financial Calculation Integrity
+
+**CRITICAL FINDING:** `financialMath.ts` utility exists but is NOT used in routers
+
+| File              | Floating Point Operations                     | Risk   |
+| ----------------- | --------------------------------------------- | ------ |
+| `accounting.ts`   | 8+ uses of `parseFloat()` for amounts         | HIGH   |
+| `audit.ts`        | 13+ uses of `parseFloat()` for financial data | HIGH   |
+| `clientLedger.ts` | 6+ uses of `Number()/parseFloat()`            | HIGH   |
+| `returns.ts`      | `parseFloat(order.total)`                     | MEDIUM |
+| `orders.ts`       | `parseFloat(existingOrder.total)`             | MEDIUM |
+
+**Example of problematic code:**
+
+```typescript
+// accounting.ts:808
+const totalAmount = parseFloat(invoiceData.totalAmount);
+// ...
+amountDue: totalAmount.toFixed(2); // Floating point precision loss
+```
+
+**Correct approach exists at:** `server/utils/financialMath.ts`
+
+```typescript
+import Decimal from "decimal.js";
+financialMath.add(a, b); // Returns precise string
+```
+
+**Impact:** Potential penny-level discrepancies in financial calculations over time.
+
+---
+
+### DD-2: N+1 Query Pattern Analysis
+
+**FINDING:** 81 files contain potential N+1 query patterns (for loops with `await db.` inside)
+
+**High-risk files identified:**
+
+- `server/services/liveCatalogService.ts`
+- `server/routers/orders.ts`
+- `server/routers/vipPortal.ts`
+- `server/inventoryDb.ts`
+- `server/ordersDb.ts`
+
+**Pattern detected:**
+
+```typescript
+for (const item of items) {
+  await db.select(...).where(eq(table.id, item.id));  // N+1!
+}
+```
+
+**Impact:** Performance degradation under load, especially for list operations.
+
+---
+
+### DD-3: Transaction Coverage Analysis
+
+| Metric                             | Count          | Assessment                             |
+| ---------------------------------- | -------------- | -------------------------------------- |
+| `withTransaction` usage in routers | 15 occurrences | LOW - Many write ops lack transactions |
+| `db.transaction()` direct usage    | 47 occurrences | MODERATE                               |
+| Total router files                 | 126            | -                                      |
+
+**Files with proper transaction handling:**
+
+- `orders.ts` - Uses `withTransaction` ✅
+- `intakeReceipts.ts` - Uses `withTransaction` ✅
+- `productCategoriesExtended.ts` - Uses `withTransaction` ✅
+
+**Files needing transaction review:**
+
+- Multi-step mutations without explicit transaction boundaries
+
+---
+
+### DD-4: Concurrency & Locking Mechanisms
+
+**POSITIVE:** Robust inventory locking at `server/_core/inventoryLocking.ts`:
+
+- Row-level locking with `SELECT ... FOR UPDATE`
+- Deadlock prevention via sorted ID locking
+- Timeout handling (10s single, 30s multi-batch)
+- Return quantity validation
+
+**CONCERN:** In-memory rate limiting in `orders.ts`:
+
+```typescript
+const confirmRateLimitMap = new Map<number, number[]>();
+```
+
+- Works only in single-instance deployments
+- Has memory leak protection (P1-001 fix) ✅
+- Should migrate to Redis for multi-instance
+
+---
+
+### DD-5: Rate Limiting Coverage
+
+| Limiter         | Config        | Applied To          |
+| --------------- | ------------- | ------------------- |
+| `apiLimiter`    | 500 req/15min | `/api/trpc` ✅      |
+| `authLimiter`   | 10 req/15min  | `/api/trpc/auth` ✅ |
+| `strictLimiter` | 30 req/min    | **NOT APPLIED** ⚠️  |
+
+**Finding:** `strictLimiter` is defined but not applied to any routes.
+
+---
+
+### DD-6: SQL Injection Risk Assessment
+
+| Location               | Pattern                        | Risk | Status                                  |
+| ---------------------- | ------------------------------ | ---- | --------------------------------------- |
+| `clientNeedsDb.ts:281` | `sql.raw(clientIds.join(","))` | LOW  | IDs from DB, but should use `inArray()` |
+| `inventoryLocking.ts`  | `sql.raw(SET SESSION...)`      | NONE | Integer-validated input                 |
+| `dbTransaction.ts`     | `sql.raw(SET SESSION...)`      | NONE | Integer-validated input                 |
+
+**Recommendation:** Replace `sql.raw(clientIds.join(","))` with Drizzle's `inArray()`.
+
+---
+
+### DD-7: Error Handling Patterns
+
+| Pattern                     | Count              | Assessment    |
+| --------------------------- | ------------------ | ------------- |
+| `throw new Error/TRPCError` | 1,562 in 116 files | Comprehensive |
+| `handleError/ErrorCatalog`  | 32 in 2 files      | Underutilized |
+
+**Observation:** Centralized error catalog exists but most errors are thrown inline.
+
+---
+
+### DD-8: API Response Consistency
+
+| Pattern                     | Usage          | Files    |
+| --------------------------- | -------------- | -------- |
+| `createSafeUnifiedResponse` | 60 occurrences | 16 files |
+| Custom `{items, total}`     | Various        | 18 files |
+
+**Recommendation:** Standardize all list endpoints to use `createSafeUnifiedResponse`.
+
+---
+
+### DD-9: Memory & Performance Patterns
+
+| Check                     | Status          | Notes                           |
+| ------------------------- | --------------- | ------------------------------- |
+| Unbounded `.push()` calls | 364 occurrences | Review needed in hot paths      |
+| Timer cleanup             | ✅ Good         | No orphaned `setInterval` found |
+| Query limits enforced     | ✅ Good         | Limits validated with `.max()`  |
+
+---
+
+## Updated Findings Summary
+
+### Critical Issues (1)
+
+1. **Floating Point Financial Calculations**
+   - `financialMath.ts` exists but unused in financial routers
+   - 40+ instances of `parseFloat/Number()` on monetary values
+   - Risk: Cumulative precision errors in accounting
+   - **Priority: P0 - Should be fixed before next release**
+
+### High Priority Issues (3)
+
+1. **Hard Deletes in Production Code** (unchanged)
+2. **Deprecated `vendors` Table Usage** (unchanged)
+3. **N+1 Query Patterns**
+   - 81 files with potential N+1 patterns
+   - Risk: Performance degradation under load
+
+### Medium Priority Issues (3)
+
+1. **`any` Type Usage** (unchanged)
+2. **Low Transaction Coverage**
+   - Only 15 routers use `withTransaction`
+   - Risk: Partial writes on failure
+3. **Unused `strictLimiter`**
+   - Defined but not applied to sensitive endpoints
+
+### Low Priority Issues (3)
+
+1. **Missing Lint Script** (unchanged)
+2. **API Response Inconsistency**
+   - Mixed use of response formats
+3. **SQL Pattern in clientNeedsDb.ts**
+   - Should use `inArray()` instead of `sql.raw()`
+
+---
+
+## Extended Recommendations
+
+### Critical (This Sprint)
+
+1. Audit and fix all `parseFloat/Number()` on financial values
+2. Replace with `financialMath` utility calls
+
+### High Priority (Next Sprint)
+
+1. Profile and optimize top N+1 query hot spots
+2. Add transactions to multi-step mutations
+3. Apply `strictLimiter` to sensitive endpoints
+
+### Medium Priority (Backlog)
+
+1. Complete vendors table migration
+2. Standardize API response formats
+3. Replace in-memory rate limiting with Redis
+
+---
+
 **Report Generated:** 2026-01-25
+**Extended Analysis Added:** 2026-01-25
 **Next Review:** On next feature deployment or security concern
