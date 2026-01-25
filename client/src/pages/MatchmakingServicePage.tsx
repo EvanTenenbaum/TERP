@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { Search, Plus, Package, Users, Target, Loader2 } from "lucide-react";
 import { ListSkeleton } from "@/components/ui/skeleton-loaders";
@@ -59,9 +68,13 @@ export default function MatchmakingServicePage() {
   );
   // ERR-005: Track which item is being reserved to prevent race conditions
   const [reservingItemId, setReservingItemId] = useState<number | null>(null);
+  // UX-002: State for dismiss confirmation dialog
+  const [dismissDialogOpen, setDismissDialogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [matchToDismiss, setMatchToDismiss] = useState<any>(null);
 
-  // ERR-001: Get query client for invalidation
-  const queryClient = useQueryClient();
+  // ERR-001: Get tRPC utils for proper cache invalidation
+  const utils = trpc.useUtils();
 
   // Fetch client needs with match counts
   const { data: needsData, isLoading: needsLoading } =
@@ -89,13 +102,14 @@ export default function MatchmakingServicePage() {
 
   // FE-QA-010: Mutation to reserve a supply item
   // FE-QA-FIX: Use dedicated reserve endpoint instead of generic update
-  // ERR-001: Add query invalidation on success
+  // ERR-001: Add query invalidation on success using tRPC utils
   const reserveMutation = trpc.vendorSupply.reserve.useMutation({
     onSuccess: () => {
       toast.success("Supply item reserved successfully");
-      // ERR-001: Invalidate queries to refresh UI
-      queryClient.invalidateQueries({ queryKey: [["vendorSupply"]] });
-      queryClient.invalidateQueries({ queryKey: [["matching"]] });
+      // ERR-001: Invalidate queries using proper tRPC utils pattern
+      utils.vendorSupply.getAll.invalidate();
+      utils.vendorSupply.getAllWithMatches.invalidate();
+      utils.matching.getAllActiveNeedsWithMatches.invalidate();
       setReservingItemId(null);
     },
     onError: error => {
@@ -193,8 +207,8 @@ export default function MatchmakingServicePage() {
 
   // FE-QA-010: Handler for Create Quote button
   // UX-005: Validate match has required IDs before navigation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleCreateQuote = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (match: any) => {
       // UX-005: Validate that we have at least a needId or clientId
       if (!match.needId && !match.clientId) {
@@ -211,21 +225,24 @@ export default function MatchmakingServicePage() {
   );
 
   // FE-QA-010: Handler for Dismiss button
-  // UX-002: Add confirmation before dismissing
+  // UX-002: Open confirmation dialog instead of window.confirm
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDismiss = useCallback((match: any) => {
-    // UX-002: Confirm before dismissing (prevents accidental data loss)
-    if (
-      !window.confirm(
-        "Are you sure you want to dismiss this match? You can refresh the page to see it again."
-      )
-    ) {
-      return;
-    }
-    // Add to dismissed set (client-side only for now)
-    setDismissedMatches(prev => new Set([...prev, match.needId || match.id]));
-    toast.success("Match dismissed");
+  const handleDismissClick = useCallback((match: any) => {
+    setMatchToDismiss(match);
+    setDismissDialogOpen(true);
   }, []);
+
+  // UX-002: Confirm dismiss action from AlertDialog
+  const handleConfirmDismiss = useCallback(() => {
+    if (matchToDismiss) {
+      setDismissedMatches(
+        prev => new Set([...prev, matchToDismiss.needId || matchToDismiss.id])
+      );
+      toast.success("Match dismissed");
+    }
+    setDismissDialogOpen(false);
+    setMatchToDismiss(null);
+  }, [matchToDismiss]);
 
   // Filter out dismissed matches
   const visibleMatches = topMatches.filter(
@@ -592,7 +609,7 @@ export default function MatchmakingServicePage() {
                           size="sm"
                           variant="outline"
                           className="text-xs"
-                          onClick={() => handleDismiss(match)}
+                          onClick={() => handleDismissClick(match)}
                         >
                           Dismiss
                         </Button>
@@ -655,6 +672,25 @@ export default function MatchmakingServicePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* UX-002: Dismiss Confirmation Dialog (accessible, matches design system) */}
+      <AlertDialog open={dismissDialogOpen} onOpenChange={setDismissDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dismiss Match</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to dismiss this match? You can refresh the
+              page to see it again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDismiss}>
+              Dismiss
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
