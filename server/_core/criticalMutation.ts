@@ -76,8 +76,18 @@ export interface CriticalMutationResult<T> {
 }
 
 // ============================================================================
-// IDEMPOTENCY CACHE (In-Memory for now)
-// TODO: Move to database or Redis for production multi-instance support
+// IDEMPOTENCY CACHE
+// ============================================================================
+//
+// KNOWN LIMITATION: This in-memory cache only works for single-instance deployments.
+// For multi-instance/horizontal scaling, migrate to one of:
+// - Redis-backed cache (recommended for production)
+// - Database table with idempotency_keys (alternative)
+//
+// Migration path:
+// 1. Create idempotency_keys table with (key, result, expires_at, created_at)
+// 2. Replace getCachedResult/setCachedResult with database queries
+// 3. Use SELECT ... FOR UPDATE to prevent race conditions
 // ============================================================================
 
 interface CachedResult {
@@ -88,6 +98,9 @@ interface CachedResult {
 // In-memory cache with TTL (24 hours default)
 const idempotencyCache = new Map<string, CachedResult>();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Timer reference for cleanup (allows proper cleanup in tests/shutdown)
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Get cached result for idempotency key
@@ -126,8 +139,35 @@ function cleanupExpiredCache(): void {
   }
 }
 
-// Cleanup every hour
-setInterval(cleanupExpiredCache, 60 * 60 * 1000);
+/**
+ * Start the periodic cache cleanup timer
+ * Called automatically on module load, but can be restarted after stopCacheCleanup()
+ */
+export function startCacheCleanup(): void {
+  if (cleanupTimer) return; // Already running
+  cleanupTimer = setInterval(cleanupExpiredCache, 60 * 60 * 1000); // Every hour
+}
+
+/**
+ * Stop the periodic cache cleanup timer
+ * Call this during graceful shutdown or in tests to prevent resource leaks
+ */
+export function stopCacheCleanup(): void {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+  }
+}
+
+/**
+ * Clear the idempotency cache (useful for testing)
+ */
+export function clearIdempotencyCache(): void {
+  idempotencyCache.clear();
+}
+
+// Start cleanup timer on module load
+startCacheCleanup();
 
 // ============================================================================
 // CRITICAL MUTATION WRAPPER

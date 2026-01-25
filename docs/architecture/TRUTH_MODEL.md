@@ -28,11 +28,11 @@ The inventory system tracks physical goods. The `batches` table holds current qu
 
 #### Truth Tables
 
-| Table                | Purpose                 | Key Columns                                        |
-| -------------------- | ----------------------- | -------------------------------------------------- |
-| `batches`            | Current inventory state | `id`, `onHandQty`, `allocatedQty`, `status`        |
-| `lots`               | Receiving groupings     | `id`, `status`, `totalQty`, `remainingQty`         |
-| `inventoryMovements` | Audit trail             | `batchId`, `movementType`, `quantity`, `createdAt` |
+| Table                | Purpose                 | Key Columns                                                         |
+| -------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `batches`            | Current inventory state | `id`, `onHandQty`, `allocatedQty`, `status`                         |
+| `lots`               | Receiving groupings     | `id`, `status`, `totalQty`, `remainingQty`                          |
+| `inventoryMovements` | Audit trail             | `batchId`, `inventoryMovementType`, `quantityChange`, `performedBy` |
 
 #### Invariants
 
@@ -47,7 +47,7 @@ batches.allocatedQty <= batches.onHandQty
 lots.remainingQty = SUM(batches.onHandQty WHERE batches.lotId = lots.id)
 
 -- INV-004: Movement history reconciles to current qty
-batches.onHandQty = initial_qty + SUM(inventoryMovements.quantity)
+batches.onHandQty = initial_qty + SUM(inventoryMovements.quantityChange)
 
 -- INV-005: Only LIVE/PHOTOGRAPHY_COMPLETE batches can be allocated
 IF batch is allocated THEN batch.status IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')
@@ -229,8 +229,12 @@ All critical mutations use the `criticalMutation` wrapper (REL-004) which:
 
 1. Wraps operations in database transactions
 2. Retries on transient failures (deadlocks, timeouts)
-3. Provides idempotency for duplicate request protection
+3. Provides idempotency for duplicate request protection (single-instance only)
 4. Logs all operations for debugging
+
+> **Known Limitation**: Idempotency cache is in-memory and does not work across
+> multiple server instances. For multi-instance deployments, migrate to Redis
+> or database-backed idempotency keys before scaling horizontally.
 
 ### Row-Level Locking
 

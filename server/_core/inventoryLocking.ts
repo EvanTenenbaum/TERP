@@ -14,12 +14,16 @@
 
 import { TRPCError } from "@trpc/server";
 import { eq, sql } from "drizzle-orm";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import { batches, inventoryMovements } from "../../drizzle/schema";
 import { logger } from "./logger";
 
-// Type for transaction context passed from Drizzle
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DrizzleTx = any;
+/**
+ * Type for Drizzle transaction context
+ * Uses MySql2Database as base type for better type safety while maintaining flexibility
+ * The Record<string, unknown> schema allows any table operations within the transaction
+ */
+type DrizzleTx = MySql2Database<Record<string, unknown>>;
 
 // ============================================================================
 // TYPES
