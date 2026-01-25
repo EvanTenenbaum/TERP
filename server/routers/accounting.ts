@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
@@ -1557,6 +1558,14 @@ export const accountingRouter = router({
           const db = await getDb();
           if (!db) throw new Error("Database not available");
 
+          // BUG-407: Validate date range
+          if (input.startDate > input.endDate) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "startDate must be less than or equal to endDate",
+            });
+          }
+
           const startDateStr = input.startDate.toISOString().split("T")[0];
           const endDateStr = input.endDate.toISOString().split("T")[0];
 
@@ -1609,94 +1618,106 @@ export const accountingRouter = router({
           const totalExpenses = expensesByCategory.reduce((sum, e) => sum + e.amount, 0);
 
           // BE-QA-008-FIX: Calculate COGS from confirmed/shipped order line items
-          // Fixed: BUG-305, BUG-306, BUG-318, BUG-319, BUG-320, BUG-321
+          // Fixed: BUG-305, BUG-306, BUG-318, BUG-319, BUG-320, BUG-321, BUG-407
           const { orders, orderLineItems } = await import("../../drizzle/schema");
-          const { gte, lte, isNull, isNotNull, ne, notInArray } = await import("drizzle-orm");
+          const { isNull, ne, notInArray } = await import("drizzle-orm");
 
-          // BUG-305: Fix date boundary - include full end day
-          // BUG-405: Use UTC to ensure timezone consistency across servers
-          const endOfDay = new Date(input.endDate);
-          endOfDay.setUTCHours(23, 59, 59, 999);
-
-          // Get orders confirmed within the period
-          // BUG-320: Exclude cancelled orders
-          // BUG-321: Add explicit null check for confirmedAt
-          // BUG-406: Exclude RETURNED/RESTOCKED orders - COGS should not count returned goods
-          const periodOrders = await db
-            .select({
-              orderId: orders.id,
-              confirmedAt: orders.confirmedAt,
-            })
-            .from(orders)
-            .where(
-              and(
-                eq(orders.orderType, "SALE"),
-                eq(orders.isDraft, false),
-                isNotNull(orders.confirmedAt), // BUG-321: Explicit null check
-                gte(orders.confirmedAt, input.startDate),
-                lte(orders.confirmedAt, endOfDay), // BUG-305: Include full end day
-                isNull(orders.deletedAt),
-                ne(orders.saleStatus, "CANCELLED"), // BUG-320: Exclude cancelled orders
-                // BUG-406: Only include shipped/delivered orders for COGS
-                // Exclude RETURNED, RESTOCKED, RETURNED_TO_VENDOR, CANCELLED fulfillment
-                notInArray(orders.fulfillmentStatus, ["RETURNED", "RESTOCKED", "RETURNED_TO_VENDOR", "CANCELLED"])
-              )
-            );
+          // BUG-407: GAAP Matching Principle - Only count COGS for orders with PAID invoices
+          // Revenue is recognized when invoices are paid, so COGS must match those same orders
+          // Extract order IDs from paid invoices (referenceType='ORDER' or 'SALE' with valid referenceId)
+          const paidOrderIds = paidInvoices
+            .filter(inv =>
+              (inv.referenceType === "ORDER" || inv.referenceType === "SALE") &&
+              inv.referenceId != null
+            )
+            .map(inv => inv.referenceId as number);
 
           let totalCOGS = 0;
 
-          if (periodOrders.length > 0) {
+          // BUG-407: Only calculate COGS if there are orders with paid invoices
+          if (paidOrderIds.length > 0) {
+            // Get orders that have PAID invoices and meet quality criteria
+            // BUG-320: Exclude cancelled orders
+            // BUG-406: Exclude RETURNED/RESTOCKED orders - COGS should not count returned goods
+            const periodOrders = await db
+              .select({
+                orderId: orders.id,
+              })
+              .from(orders)
+              .where(
+                and(
+                  inArray(orders.id, paidOrderIds), // BUG-407: Only orders with PAID invoices
+                  eq(orders.orderType, "SALE"),
+                  eq(orders.isDraft, false),
+                  isNull(orders.deletedAt),
+                  ne(orders.saleStatus, "CANCELLED"), // BUG-320: Exclude cancelled orders
+                  // BUG-406: Only include shipped/delivered orders for COGS
+                  // Exclude RETURNED, RESTOCKED, RETURNED_TO_VENDOR, CANCELLED fulfillment
+                  notInArray(orders.fulfillmentStatus, ["RETURNED", "RESTOCKED", "RETURNED_TO_VENDOR", "CANCELLED"])
+                )
+              );
+
             const orderIds = periodOrders.map(o => o.orderId);
 
-            // Get line items for these orders and calculate COGS
-            // BUG-319: orderLineItems does not have deletedAt column (no soft delete)
-            const lineItems = await db
-              .select({
-                orderId: orderLineItems.orderId,
-                quantity: orderLineItems.quantity,
-                cogsPerUnit: orderLineItems.cogsPerUnit,
-              })
-              .from(orderLineItems)
-              .where(inArray(orderLineItems.orderId, orderIds));
+            // Only query line items if there are matching orders
+            if (orderIds.length > 0) {
+              // Get line items for these orders and calculate COGS
+              // BUG-319: orderLineItems does not have deletedAt column (no soft delete)
+              const lineItems = await db
+                .select({
+                  orderId: orderLineItems.orderId,
+                  quantity: orderLineItems.quantity,
+                  cogsPerUnit: orderLineItems.cogsPerUnit,
+                })
+                .from(orderLineItems)
+                .where(inArray(orderLineItems.orderId, orderIds));
 
-            // BUG-306: Use integer cents for precision
-            // BUG-318: Handle nulls properly (schema says notNull, but log warning if found)
-            let totalCOGSCents = 0;
-            for (const item of lineItems) {
-              const qty = parseFloat(item.quantity || "0");
-              const cogsCents = Math.round(parseFloat(item.cogsPerUnit || "0") * 100);
+              // BUG-306: Use integer cents for precision
+              // BUG-318: Handle nulls properly (schema says notNull, but log warning if found)
+              let totalCOGSCents = 0;
+              for (const item of lineItems) {
+                const qty = parseFloat(item.quantity || "0");
+                const cogsCents = Math.round(parseFloat(item.cogsPerUnit || "0") * 100);
 
-              // BUG-318: Log warning if unexpected null values found
-              if (item.quantity === null || item.cogsPerUnit === null) {
-                logger.warn({
-                  msg: "[Accounting] Unexpected null COGS data found",
-                  orderId: item.orderId,
-                  quantity: item.quantity,
-                  cogsPerUnit: item.cogsPerUnit,
-                });
-                continue;
+                // BUG-318: Log warning if unexpected null values found
+                if (item.quantity === null || item.cogsPerUnit === null) {
+                  logger.warn({
+                    msg: "[Accounting] Unexpected null COGS data found",
+                    orderId: item.orderId,
+                    quantity: item.quantity,
+                    cogsPerUnit: item.cogsPerUnit,
+                  });
+                  continue;
+                }
+
+                if (Number.isNaN(qty) || Number.isNaN(cogsCents)) {
+                  logger.warn({
+                    msg: "[Accounting] Invalid COGS data found",
+                    orderId: item.orderId,
+                    quantity: item.quantity,
+                    cogsPerUnit: item.cogsPerUnit,
+                  });
+                  continue;
+                }
+
+                totalCOGSCents += Math.round(qty * cogsCents);
               }
-
-              if (Number.isNaN(qty) || Number.isNaN(cogsCents)) {
-                logger.warn({
-                  msg: "[Accounting] Invalid COGS data found",
-                  orderId: item.orderId,
-                  quantity: item.quantity,
-                  cogsPerUnit: item.cogsPerUnit,
-                });
-                continue;
-              }
-
-              totalCOGSCents += Math.round(qty * cogsCents);
+              totalCOGS = totalCOGSCents / 100; // BUG-306: Convert back from cents
             }
-            totalCOGS = totalCOGSCents / 100; // BUG-306: Convert back from cents
-          }
 
-          logger.info({
-            msg: "[Accounting] COGS calculated for income statement",
-            periodOrders: periodOrders.length,
-            totalCOGS,
-          });
+            logger.info({
+              msg: "[Accounting] COGS calculated for income statement",
+              paidOrderIds: paidOrderIds.length,
+              matchingOrders: orderIds.length,
+              totalCOGS,
+            });
+          } else {
+            logger.info({
+              msg: "[Accounting] No orders with paid invoices found for COGS",
+              paidOrderIds: paidOrderIds.length,
+              totalCOGS: 0,
+            });
+          }
 
           const grossProfit = totalRevenue - totalCOGS;
           const netIncome = grossProfit - totalExpenses;

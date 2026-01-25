@@ -334,6 +334,8 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
 
   // Query distinct values from visible inventory with brand info
   // Note: brands are associated with products, not batches directly
+  // BUG-409: Limit to 1000 batches to prevent unbounded query performance issues
+  const FILTER_OPTIONS_BATCH_LIMIT = 1000;
   const batchesWithProducts = await db
     .select({
       batch: batches,
@@ -343,7 +345,16 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
-    .where(inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]));
+    .where(inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]))
+    .limit(FILTER_OPTIONS_BATCH_LIMIT);
+
+  // BUG-409: Log if we hit the limit (indicates filter options may be incomplete)
+  if (batchesWithProducts.length >= FILTER_OPTIONS_BATCH_LIMIT) {
+    logger.info(
+      { clientId, batchCount: batchesWithProducts.length, limit: FILTER_OPTIONS_BATCH_LIMIT },
+      "Filter options query hit batch limit - some filter options may be incomplete"
+    );
+  }
 
   // Extract unique categories
   const categoryMap = new Map<string, number>();

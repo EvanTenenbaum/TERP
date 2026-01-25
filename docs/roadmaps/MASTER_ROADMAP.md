@@ -873,7 +873,109 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 
 ---
 
-### Deep Audit Additional Findings (P0-P3) - Added Jan 20, 2026
+### Sprint Team C Backend API Bugs (Added Jan 25, 2026)
+
+> Discovered during comprehensive QA audit of Sprint Team C backend API implementations.
+> **Source:** orders.confirm, accounting.generateIncomeStatement, liveCatalogService
+
+#### P0 - Critical (Ship Blockers)
+
+| Task    | Description                                    | Priority | Status      | Estimate | Module                        |
+| ------- | ---------------------------------------------- | -------- | ----------- | -------- | ----------------------------- |
+| BUG-407 | Revenue/COGS GAAP matching principle violation | CRITICAL | NOT STARTED | 4h       | accounting.ts:1620-1640       |
+| BUG-408 | COGS not reconciled with inventory valuation   | CRITICAL | NOT STARTED | 4h       | accounting.ts                 |
+| BUG-409 | Unbounded catalog query O(n*m) performance     | CRITICAL | NOT STARTED | 4h       | liveCatalogService.ts:350-420 |
+
+##### BUG-407: Revenue/COGS GAAP Matching Principle Violation
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `server/routers/accounting.ts:1620-1640`
+
+**Problem:**
+Revenue is counted from PAID invoices only, but COGS is counted from all confirmed orders regardless of payment status. This violates GAAP matching principle:
+- Order confirmed but not paid: COGS counted ($100), Revenue NOT counted ($0)
+- Result: Gross margin appears negative, misleading financial reporting
+
+**Fix Required:**
+- Join COGS query with invoices to ensure only orders with PAID invoices are counted
+- OR change COGS recognition to match revenue timing (invoice payment date)
+
+**Deliverables:**
+- [ ] COGS calculation aligned with revenue recognition
+- [ ] Add saleStatus filter for PAID orders only
+- [ ] Unit tests for matching principle
+- [ ] Documentation updated
+
+---
+
+##### BUG-408: COGS Not Reconciled with Inventory Valuation
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `server/routers/accounting.ts`
+
+**Problem:**
+COGS calculation uses `orderLineItems.cogsPerUnit` without validating against batch inventory valuation. This can lead to:
+- Balance sheet/income statement mismatch
+- Inventory value not reduced when COGS recognized
+- Double-counting risk between inventory and COGS
+
+**Fix Required:**
+- Validate COGS against batch.cogsPerUnit at calculation time
+- Add reconciliation check between total COGS and inventory reduction
+- Log discrepancies for audit trail
+
+**Deliverables:**
+- [ ] COGS validation against batch values
+- [ ] Reconciliation check implemented
+- [ ] Discrepancy logging added
+- [ ] Tests for inventory/COGS consistency
+
+---
+
+##### BUG-409: Unbounded Catalog Query Performance
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 4h
+**Module:** `server/services/liveCatalogService.ts:350-420`
+
+**Problem:**
+`getFilterOptions()` fetches ALL batches for a client without LIMIT, then iterates through all products to extract brands. For large catalogs:
+- O(n) batches × O(m) products = O(n*m) complexity
+- Memory usage scales linearly with catalog size
+- Can cause timeouts for VIP clients with thousands of products
+
+**Fix Required:**
+- Add LIMIT to batch query (max 1000 for filter options)
+- Use SQL aggregation for brand extraction instead of JS iteration
+- Add caching for filter options (TTL: 5 minutes)
+
+**Deliverables:**
+- [ ] LIMIT added to batch queries
+- [ ] SQL-based brand aggregation
+- [ ] Filter options caching implemented
+- [ ] Performance tests for large catalogs
+
+---
+
+#### P1 - High Priority
+
+| Task    | Description                                     | Priority | Status      | Estimate | Module                        |
+| ------- | ----------------------------------------------- | -------- | ----------- | -------- | ----------------------------- |
+| BUG-401 | orders.confirm isSample flag not handled        | HIGH     | NOT STARTED | 2h       | orders.ts:350-360             |
+| BUG-402 | orders.confirm line items not locked            | HIGH     | NOT STARTED | 1h       | orders.ts:330-335             |
+| BUG-403 | Floating point validation/update divergence     | HIGH     | NOT STARTED | 2h       | orders.ts:335-360             |
+| BUG-412 | getAuthenticatedUserId rejects demo users       | HIGH     | NOT STARTED | 4h       | _core/trpc.ts, accounting.ts  |
+| BUG-413 | 17 accounting mutations missing audit trail     | HIGH     | NOT STARTED | 8h       | accounting.ts (17 locations)  |
+| BUG-414 | Order status not fully validated before confirm | HIGH     | NOT STARTED | 2h       | orders.ts:322-327             |
+| BUG-418 | COGS date range not validated (start > end)     | HIGH     | NOT STARTED | 1h       | accounting.ts:1615-1620       |
+| BUG-419 | Cascading rounding bias in COGS calculation     | HIGH     | NOT STARTED | 2h       | accounting.ts:1660-1687       |
+
+---
 
 > Discovered during comprehensive git commit analysis (484 commits, Dec 20 - Jan 20).
 > **Source:** `docs/reports/INCOMPLETE_FEATURES_AUDIT_JAN_2026.md`
