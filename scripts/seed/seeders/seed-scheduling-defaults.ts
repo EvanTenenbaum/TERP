@@ -6,15 +6,37 @@
  *
  * Dependencies: drizzle/schema-scheduling.ts
  * Usage: npx tsx scripts/seed/seeders/seed-scheduling-defaults.ts
+ *
+ * RELATIONSHIP WITH server/services/seedScheduling.ts:
+ * ======================================================
+ * There are TWO scheduling seeders in this codebase:
+ *
+ * 1. THIS FILE (scripts/seed/seeders/seed-scheduling-defaults.ts):
+ *    - Part of the unified scripts/seed/ seeding system
+ *    - Run via: npx tsx scripts/seed/seeders/seed-all-defaults.ts --module=scheduling
+ *    - More comprehensive data set (9 shift templates, warehouse-specific options)
+ *    - Can update existing records if descriptions/details change
+ *
+ * 2. server/services/seedScheduling.ts (pre-existing):
+ *    - Standalone seeder in the server services directory
+ *    - Run via: npx tsx server/services/seedScheduling.ts
+ *    - Simpler data set (5 shift templates)
+ *    - Only creates if not exists (never updates)
+ *
+ * COORDINATION:
+ * This seeder checks if scheduling data already exists before seeding.
+ * If the server seeder (or any other source) has already populated the tables,
+ * this seeder will skip creation and only update existing records if needed.
+ * Both seeders are safe to run in any order due to their idempotent design.
  */
 
-import { db } from "../../db-sync";
+import { db, closePool } from "../../db-sync";
 import {
   rooms,
   shiftTemplates,
   overtimeRules,
 } from "../../../drizzle/schema-scheduling";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 // ============================================================================
 // Room Definitions
@@ -190,12 +212,12 @@ const SHIFT_TEMPLATES: ShiftTemplateDefinition[] = [
 interface OvertimeRuleDefinition {
   name: string;
   description: string;
-  dailyThresholdMinutes: number;
-  weeklyThresholdMinutes: number;
+  dailyThresholdMinutes: number | null; // null = no daily threshold (use null, not 0)
+  weeklyThresholdMinutes: number | null; // null = no weekly threshold (use null, not 0)
   overtimeMultiplier: number; // 150 = 1.5x
-  doubleOvertimeMultiplier: number; // 200 = 2.0x
-  dailyDoubleThresholdMinutes: number;
-  weeklyDoubleThresholdMinutes?: number;
+  doubleOvertimeMultiplier: number | null; // null = no double OT (use null, not 0)
+  dailyDoubleThresholdMinutes: number | null; // null = no daily double threshold
+  weeklyDoubleThresholdMinutes?: number | null;
   isDefault: boolean;
 }
 
@@ -214,21 +236,23 @@ const OVERTIME_RULES: OvertimeRuleDefinition[] = [
   {
     name: "Federal Standard",
     description: "Federal overtime rules: OT after 40hrs/week only",
-    dailyThresholdMinutes: 0, // No daily OT
+    dailyThresholdMinutes: null, // No daily OT - use null, not 0
     weeklyThresholdMinutes: 2400, // 40 hours
     overtimeMultiplier: 150,
-    doubleOvertimeMultiplier: 200,
-    dailyDoubleThresholdMinutes: 0, // No daily double OT
+    doubleOvertimeMultiplier: null, // No double OT for federal
+    dailyDoubleThresholdMinutes: null, // No daily double OT
+    weeklyDoubleThresholdMinutes: null,
     isDefault: false,
   },
   {
     name: "No Overtime",
     description: "Exempt employees - no overtime calculations",
-    dailyThresholdMinutes: 0,
-    weeklyThresholdMinutes: 0,
-    overtimeMultiplier: 100, // No multiplier
-    doubleOvertimeMultiplier: 100,
-    dailyDoubleThresholdMinutes: 0,
+    dailyThresholdMinutes: null, // Disabled - use null, not 0
+    weeklyThresholdMinutes: null, // Disabled - use null, not 0
+    overtimeMultiplier: 100, // No multiplier (1x)
+    doubleOvertimeMultiplier: null, // Disabled
+    dailyDoubleThresholdMinutes: null, // Disabled
+    weeklyDoubleThresholdMinutes: null,
     isDefault: false,
   },
 ];
@@ -252,14 +276,21 @@ async function seedRooms(): Promise<{
   let skipped = 0;
 
   for (const room of ROOMS) {
+    // SEED-009: Filter out soft-deleted records so they don't block re-creation
     const existing = await db.query.rooms.findFirst({
-      where: eq(rooms.name, room.name),
+      where: and(eq(rooms.name, room.name), isNull(rooms.deletedAt)),
     });
 
     if (existing) {
+      // SEED-005: Check all mutable fields that we set in the update
+      const featuresMatch =
+        JSON.stringify(existing.features) === JSON.stringify(room.features);
       if (
         existing.description !== room.description ||
-        existing.capacity !== room.capacity
+        existing.capacity !== room.capacity ||
+        !featuresMatch ||
+        existing.color !== room.color ||
+        existing.displayOrder !== room.displayOrder
       ) {
         await db
           .update(rooms)
@@ -315,10 +346,14 @@ async function seedShiftTemplates(): Promise<{
     });
 
     if (existing) {
+      // SEED-005: Check all mutable fields that we set in the update
       if (
         existing.description !== template.description ||
         existing.startTime !== template.startTime ||
-        existing.endTime !== template.endTime
+        existing.endTime !== template.endTime ||
+        existing.breakStart !== template.breakStart ||
+        existing.breakEnd !== template.breakEnd ||
+        existing.color !== template.color
       ) {
         await db
           .update(shiftTemplates)
@@ -375,10 +410,15 @@ async function seedOvertimeRules(): Promise<{
     });
 
     if (existing) {
+      // SEED-005: Check all mutable fields that we set in the update
       if (
         existing.description !== rule.description ||
         existing.dailyThresholdMinutes !== rule.dailyThresholdMinutes ||
-        existing.weeklyThresholdMinutes !== rule.weeklyThresholdMinutes
+        existing.weeklyThresholdMinutes !== rule.weeklyThresholdMinutes ||
+        existing.overtimeMultiplier !== rule.overtimeMultiplier ||
+        existing.doubleOvertimeMultiplier !== rule.doubleOvertimeMultiplier ||
+        existing.dailyDoubleThresholdMinutes !== rule.dailyDoubleThresholdMinutes ||
+        existing.weeklyDoubleThresholdMinutes !== rule.weeklyDoubleThresholdMinutes
       ) {
         await db
           .update(overtimeRules)
@@ -422,8 +462,49 @@ async function seedOvertimeRules(): Promise<{
 // Main Seeder
 // ============================================================================
 
+/**
+ * Check if scheduling data already exists in the database.
+ * This helps detect if the server seeder (server/services/seedScheduling.ts)
+ * or another source has already populated the tables.
+ */
+async function checkExistingData(): Promise<{
+  roomCount: number;
+  shiftTemplateCount: number;
+  overtimeRuleCount: number;
+}> {
+  // SEED-009: Filter out soft-deleted rooms for accurate count
+  const existingRooms = await db.query.rooms.findMany({
+    where: isNull(rooms.deletedAt),
+  });
+  const existingShiftTemplates = await db.query.shiftTemplates.findMany();
+  const existingOvertimeRules = await db.query.overtimeRules.findMany();
+
+  return {
+    roomCount: existingRooms.length,
+    shiftTemplateCount: existingShiftTemplates.length,
+    overtimeRuleCount: existingOvertimeRules.length,
+  };
+}
+
 export async function seedSchedulingDefaults(): Promise<void> {
   console.info("📅 Seeding scheduling defaults...");
+
+  // Check for existing data (may have been seeded by server/services/seedScheduling.ts)
+  const existing = await checkExistingData();
+  const hasExistingData =
+    existing.roomCount > 0 ||
+    existing.shiftTemplateCount > 0 ||
+    existing.overtimeRuleCount > 0;
+
+  if (hasExistingData) {
+    console.info(
+      `\n📌 Found existing scheduling data (rooms: ${existing.roomCount}, shifts: ${existing.shiftTemplateCount}, overtime: ${existing.overtimeRuleCount})`
+    );
+    console.info(
+      "   This may have been seeded by server/services/seedScheduling.ts or another source."
+    );
+    console.info("   Will skip existing records and only add/update as needed.\n");
+  }
 
   const roomResults = await seedRooms();
   const shiftResults = await seedShiftTemplates();
@@ -447,9 +528,13 @@ export async function seedSchedulingDefaults(): Promise<void> {
 
 if (require.main === module) {
   seedSchedulingDefaults()
-    .then(() => process.exit(0))
-    .catch(err => {
+    .then(async () => {
+      await closePool();
+      process.exit(0);
+    })
+    .catch(async (err) => {
       console.error("Failed to seed scheduling defaults:", err);
+      await closePool();
       process.exit(1);
     });
 }

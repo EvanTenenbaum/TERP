@@ -7,7 +7,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-feature-flags.ts
  */
 
-import { db } from "../../db-sync";
+import { db, closePool } from "../../db-sync";
 import { featureFlags } from "../../../drizzle/schema-feature-flags";
 import { eq } from "drizzle-orm";
 
@@ -303,21 +303,38 @@ export async function seedFeatureFlags(): Promise<void> {
 
   let inserted = 0;
   let updated = 0;
+  let restored = 0;
   let skipped = 0;
 
   for (const flag of ALL_FLAGS) {
     try {
-      // Check if flag exists
+      // Check for ANY record with this key (including soft-deleted)
+      // This prevents ER_DUP_ENTRY when a soft-deleted record holds the unique key
       const existing = await db.query.featureFlags.findFirst({
         where: eq(featureFlags.key, flag.key),
       });
 
       if (existing) {
-        // Update description and module if changed
-        if (
+        if (existing.deletedAt) {
+          // Resurrect soft-deleted flag by updating and clearing deletedAt
+          await db
+            .update(featureFlags)
+            .set({
+              name: flag.name,
+              description: flag.description,
+              module: flag.module,
+              dependsOn: flag.dependsOn,
+              deletedAt: null,
+            })
+            .where(eq(featureFlags.id, existing.id));
+          restored++;
+          console.info(`  ↺ Restored: ${flag.key}`);
+        } else if (
+          // Update if any mutable field changed (SEED-005: check all fields that update sets)
           existing.description !== flag.description ||
           existing.module !== flag.module ||
-          existing.name !== flag.name
+          existing.name !== flag.name ||
+          existing.dependsOn !== flag.dependsOn
         ) {
           await db
             .update(featureFlags)
@@ -327,7 +344,7 @@ export async function seedFeatureFlags(): Promise<void> {
               module: flag.module,
               dependsOn: flag.dependsOn,
             })
-            .where(eq(featureFlags.key, flag.key));
+            .where(eq(featureFlags.id, existing.id));
           updated++;
           console.info(`  ↻ Updated: ${flag.key}`);
         } else {
@@ -358,6 +375,7 @@ export async function seedFeatureFlags(): Promise<void> {
   console.info(`\n✅ Feature flags seeding complete:`);
   console.info(`   - Inserted: ${inserted}`);
   console.info(`   - Updated: ${updated}`);
+  console.info(`   - Restored: ${restored}`);
   console.info(`   - Skipped: ${skipped}`);
   console.info(`   - Total: ${ALL_FLAGS.length}`);
 }
@@ -369,9 +387,13 @@ export async function seedFeatureFlags(): Promise<void> {
 // Allow running directly
 if (require.main === module) {
   seedFeatureFlags()
-    .then(() => process.exit(0))
-    .catch(err => {
+    .then(async () => {
+      await closePool();
+      process.exit(0);
+    })
+    .catch(async (err) => {
       console.error("Failed to seed feature flags:", err);
+      await closePool();
       process.exit(1);
     });
 }

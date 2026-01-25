@@ -9,6 +9,25 @@
  *
  * Note: AppointmentTypes require a calendar reference and are seeded
  * per-calendar when calendars are created.
+ *
+ * RELATIONSHIP WITH scripts/seed/seeders/seed-scheduling-defaults.ts:
+ * ====================================================================
+ * There are TWO scheduling seeders in this codebase:
+ *
+ * 1. THIS FILE (server/services/seedScheduling.ts):
+ *    - Standalone seeder in the server services directory
+ *    - Run via: npx tsx server/services/seedScheduling.ts
+ *    - Simpler data set (5 shift templates)
+ *    - Only creates if not exists (never updates)
+ *
+ * 2. scripts/seed/seeders/seed-scheduling-defaults.ts (unified seeder):
+ *    - Part of the unified scripts/seed/ seeding system
+ *    - Run via: npx tsx scripts/seed/seeders/seed-all-defaults.ts --module=scheduling
+ *    - More comprehensive data set (9 shift templates, warehouse-specific options)
+ *    - Can update existing records if descriptions/details change
+ *
+ * Both seeders are safe to run in any order. They check for existing records
+ * by name before inserting, ensuring idempotent behavior.
  */
 
 import { getDb } from "../db";

@@ -8,7 +8,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-gamification-defaults.ts
  */
 
-import { db } from "../../db-sync";
+import { db, closePool } from "../../db-sync";
 import {
   achievements,
   rewardCatalog,
@@ -430,8 +430,15 @@ async function seedAchievements(): Promise<{
 
     if (existing) {
       codeToIdMap.set(achievement.code, existing.id);
-      // Update if description changed
-      if (existing.description !== achievement.description) {
+      // Update if any mutable field changed
+      const expectedMarkupDiscount =
+        achievement.markupDiscountPercent?.toString() ?? "0";
+      if (
+        existing.name !== achievement.name ||
+        existing.description !== achievement.description ||
+        existing.pointsAwarded !== achievement.pointsAwarded ||
+        existing.markupDiscountPercent !== expectedMarkupDiscount
+      ) {
         await db
           .update(achievements)
           .set({
@@ -507,9 +514,13 @@ async function seedRewardCatalog(): Promise<{
     });
 
     if (existing) {
+      // Check all mutable fields that could trigger an update
+      const expectedRewardValue = reward.rewardValue.toString();
       if (
+        existing.name !== reward.name ||
         existing.description !== reward.description ||
-        existing.pointsCost !== reward.pointsCost
+        existing.pointsCost !== reward.pointsCost ||
+        existing.rewardValue !== expectedRewardValue
       ) {
         await db
           .update(rewardCatalog)
@@ -517,7 +528,7 @@ async function seedRewardCatalog(): Promise<{
             name: reward.name,
             description: reward.description,
             pointsCost: reward.pointsCost,
-            rewardValue: reward.rewardValue.toString(),
+            rewardValue: expectedRewardValue,
           })
           .where(eq(rewardCatalog.code, reward.code));
         updated++;
@@ -549,23 +560,73 @@ async function seedRewardCatalog(): Promise<{
 
 /**
  * Seed referral settings
+ *
+ * Note: There are two versions of the referral_settings table:
+ * - Legacy (migration 0014): Uses client_tier, credit_percentage columns
+ * - Gamification (migration 0050): Uses default_couch_tax_percent, etc.
+ *
+ * This seeder checks for schema compatibility before inserting to avoid
+ * "Unknown column" errors if the legacy schema is in use.
  */
 async function seedReferralSettings(): Promise<boolean> {
-  console.info("\n🤝 Seeding referral settings...");
+  console.info("\n🤝 Checking referral settings compatibility...");
 
-  // Check if any active settings exist
-  const existing = await db.query.referralSettings.findFirst({
-    where: eq(referralSettings.isActive, true),
-  });
+  try {
+    // First, try to query with gamification schema to verify columns exist
+    // This will fail if the table has legacy columns instead
+    const existing = await db.query.referralSettings.findFirst({
+      where: eq(referralSettings.isActive, true),
+    });
 
-  if (existing) {
-    console.info("  ⏭ Referral settings already exist, skipping");
-    return false;
+    if (existing) {
+      // Check if this is actually a gamification schema record
+      // by verifying it has the expected gamification fields
+      if ("defaultCouchTaxPercent" in existing) {
+        console.info("  ⏭ Referral settings already exist, skipping");
+        return false;
+      }
+      // If we get here, the record exists but doesn't have gamification columns
+      // This indicates schema mismatch
+      console.warn(
+        "  ⚠ Referral settings table uses legacy schema - skipping gamification seeding"
+      );
+      console.warn(
+        "    The table has records but lacks gamification columns (default_couch_tax_percent, etc.)"
+      );
+      console.warn(
+        "    To use gamification referrals, migrate the table or use a different table name"
+      );
+      return false;
+    }
+
+    // No existing records - try to insert
+    await db.insert(referralSettings).values(DEFAULT_REFERRAL_SETTINGS);
+    console.info("  ✓ Created default referral settings");
+    return true;
+  } catch (error) {
+    // Schema mismatch - table exists with different columns (e.g., legacy schema)
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+
+    if (
+      errorMessage.includes("Unknown column") ||
+      errorMessage.includes("ER_BAD_FIELD_ERROR")
+    ) {
+      console.warn(
+        "  ⚠ Referral settings table uses legacy schema - skipping gamification seeding"
+      );
+      console.warn(
+        "    Expected gamification columns (default_couch_tax_percent) not found"
+      );
+      console.warn(
+        "    Run migration 0050 or ALTER TABLE to add gamification columns if needed"
+      );
+      return false;
+    }
+
+    // Re-throw unexpected errors
+    throw error;
   }
-
-  await db.insert(referralSettings).values(DEFAULT_REFERRAL_SETTINGS);
-  console.info("  ✓ Created default referral settings");
-  return true;
 }
 
 // ============================================================================
@@ -597,9 +658,13 @@ export async function seedGamificationDefaults(): Promise<void> {
 
 if (require.main === module) {
   seedGamificationDefaults()
-    .then(() => process.exit(0))
-    .catch(err => {
+    .then(async () => {
+      await closePool();
+      process.exit(0);
+    })
+    .catch(async (err) => {
       console.error("Failed to seed gamification defaults:", err);
+      await closePool();
       process.exit(1);
     });
 }

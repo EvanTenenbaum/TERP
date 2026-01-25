@@ -8,9 +8,9 @@
  * Usage: npx tsx scripts/seed/seeders/seed-storage-defaults.ts
  */
 
-import { db } from "../../db-sync";
+import { db, closePool } from "../../db-sync";
 import { sites, storageZones } from "../../../drizzle/schema-storage";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 // ============================================================================
 // Site Definitions
@@ -189,8 +189,8 @@ const ZONES: ZoneDefinition[] = [
     accessLevel: "restricted",
     maxCapacity: 300,
     capacityUnit: "units",
-    minTemp: 4,
-    maxTemp: 10,
+    minTemp: 40,
+    maxTemp: 50,
     color: "#06B6D4",
     displayOrder: 1,
   },
@@ -203,8 +203,8 @@ const ZONES: ZoneDefinition[] = [
     accessLevel: "restricted",
     maxCapacity: 200,
     capacityUnit: "units",
-    minTemp: 0,
-    maxTemp: 4,
+    minTemp: 32,
+    maxTemp: 40,
     color: "#3B82F6",
     displayOrder: 2,
   },
@@ -281,16 +281,28 @@ async function seedSites(): Promise<{
   let skipped = 0;
 
   for (const site of SITES) {
+    // SEED-009: Filter soft-deleted records in existence check
     const existing = await db.query.sites.findFirst({
-      where: eq(sites.code, site.code),
+      where: and(eq(sites.code, site.code), isNull(sites.deletedAt)),
     });
 
     if (existing) {
       siteMap.set(site.code, existing.id);
-      if (
+      // SEED-005: Check ALL mutable fields that might trigger an update
+      const needsUpdate =
+        existing.name !== site.name ||
         existing.description !== site.description ||
-        existing.name !== site.name
-      ) {
+        existing.siteType !== site.siteType ||
+        existing.address !== site.address ||
+        existing.city !== site.city ||
+        existing.state !== site.state ||
+        existing.zipCode !== site.zipCode ||
+        existing.contactName !== site.contactName ||
+        existing.contactPhone !== site.contactPhone ||
+        existing.color !== site.color ||
+        existing.displayOrder !== site.displayOrder;
+
+      if (needsUpdate) {
         await db
           .update(sites)
           .set({
@@ -360,15 +372,31 @@ async function seedZones(
       continue;
     }
 
+    // SEED-009: Filter soft-deleted records in existence check
     const existing = await db.query.storageZones.findFirst({
-      where: eq(storageZones.code, zone.code),
+      where: and(
+        eq(storageZones.code, zone.code),
+        eq(storageZones.siteId, siteId),
+        isNull(storageZones.deletedAt)
+      ),
     });
 
     if (existing) {
-      if (
+      // SEED-005: Check ALL mutable fields that might trigger an update
+      const needsUpdate =
+        existing.name !== zone.name ||
         existing.description !== zone.description ||
-        existing.name !== zone.name
-      ) {
+        existing.siteId !== siteId ||
+        existing.temperatureControl !== zone.temperatureControl ||
+        existing.accessLevel !== zone.accessLevel ||
+        existing.maxCapacity !== zone.maxCapacity?.toString() ||
+        existing.capacityUnit !== zone.capacityUnit ||
+        existing.minTemp !== zone.minTemp?.toString() ||
+        existing.maxTemp !== zone.maxTemp?.toString() ||
+        existing.color !== zone.color ||
+        existing.displayOrder !== zone.displayOrder;
+
+      if (needsUpdate) {
         await db
           .update(storageZones)
           .set({
@@ -384,7 +412,7 @@ async function seedZones(
             color: zone.color,
             displayOrder: zone.displayOrder,
           })
-          .where(eq(storageZones.code, zone.code));
+          .where(eq(storageZones.id, existing.id));
         updated++;
         console.info(`  ↻ Updated: ${zone.code} - ${zone.name}`);
       } else {
@@ -439,9 +467,13 @@ export async function seedStorageDefaults(): Promise<void> {
 
 if (require.main === module) {
   seedStorageDefaults()
-    .then(() => process.exit(0))
-    .catch(err => {
+    .then(async () => {
+      await closePool();
+      process.exit(0);
+    })
+    .catch(async (err) => {
       console.error("Failed to seed storage defaults:", err);
+      await closePool();
       process.exit(1);
     });
 }
