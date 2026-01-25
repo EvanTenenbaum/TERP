@@ -110,6 +110,9 @@ export default function MatchmakingServicePage() {
       utils.vendorSupply.getAll.invalidate();
       utils.vendorSupply.getAllWithMatches.invalidate();
       utils.matching.getAllActiveNeedsWithMatches.invalidate();
+      // FE-BUG-004: Add missing invalidations for related queries
+      utils.matching.findMatchesForVendorSupply.invalidate();
+      utils.clientNeeds.getAllWithMatches.invalidate();
       setReservingItemId(null);
     },
     onError: error => {
@@ -243,6 +246,24 @@ export default function MatchmakingServicePage() {
     setDismissDialogOpen(false);
     setMatchToDismiss(null);
   }, [matchToDismiss]);
+
+  // FE-BUG-002: Handle AlertDialog close (cancel/escape) to clear matchToDismiss state
+  const handleDismissDialogChange = useCallback((open: boolean) => {
+    setDismissDialogOpen(open);
+    // Clear matchToDismiss when dialog closes to prevent state pollution
+    if (!open) {
+      setMatchToDismiss(null);
+    }
+  }, []);
+
+  // FE-BUG-003: Handle buyers modal close to clear selectedSupplyId and stop query
+  const handleBuyersModalChange = useCallback((open: boolean) => {
+    setBuyersModalOpen(open);
+    // Clear selectedSupplyId when modal closes to stop unnecessary queries
+    if (!open) {
+      setSelectedSupplyId(null);
+    }
+  }, []);
 
   // Filter out dismissed matches
   const visibleMatches = topMatches.filter(
@@ -624,7 +645,8 @@ export default function MatchmakingServicePage() {
       </div>
 
       {/* FE-QA-010: Buyers Modal */}
-      <Dialog open={buyersModalOpen} onOpenChange={setBuyersModalOpen}>
+      {/* FE-BUG-003: Use handleBuyersModalChange to clear selectedSupplyId on close */}
+      <Dialog open={buyersModalOpen} onOpenChange={handleBuyersModalChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Potential Buyers</DialogTitle>
@@ -674,7 +696,11 @@ export default function MatchmakingServicePage() {
       </Dialog>
 
       {/* UX-002: Dismiss Confirmation Dialog (accessible, matches design system) */}
-      <AlertDialog open={dismissDialogOpen} onOpenChange={setDismissDialogOpen}>
+      {/* FE-BUG-002: Use handleDismissDialogChange to clear state on cancel */}
+      <AlertDialog
+        open={dismissDialogOpen}
+        onOpenChange={handleDismissDialogChange}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Dismiss Match</AlertDialogTitle>

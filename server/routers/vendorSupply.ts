@@ -211,11 +211,18 @@ export const vendorSupplyRouter = router({
 
   /**
    * Mark a vendor supply item as reserved
+   * FE-BUG-007: Added actor attribution for audit trail
    */
   reserve: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
+        // FE-BUG-007: Get authenticated user for audit logging
+        const userId = getAuthenticatedUserId(ctx);
+        console.info(
+          `[AUDIT] User ${userId} reserving vendor supply ${input.id}`
+        );
+
         const supply = await vendorSupplyDb.reserveVendorSupply(input.id);
 
         return {

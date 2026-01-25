@@ -93,12 +93,12 @@ export default function VendorSupplyPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formState, setFormState] = useState<SupplyFormState>(initialFormState);
 
-  // Fetch all vendor supply items
+  // FE-BUG-001: Use getAllWithMatches to get buyerCount for display
   const {
     data: supplyData,
     isLoading,
     refetch,
-  } = trpc.vendorSupply.getAll.useQuery({});
+  } = trpc.vendorSupply.getAllWithMatches.useQuery({});
 
   // Fetch vendors (clients with isSeller=true) for dropdown
   const { data: vendorsData, isLoading: vendorsLoading } =
