@@ -14,6 +14,71 @@
  * - Structured logging for debugging
  *
  * @see TRUTH_MODEL.md for invariants these mutations must preserve
+ *
+ * ## PRODUCTION DEPLOYMENT WARNING
+ *
+ * ⚠️  IDEMPOTENCY LIMITATION: The in-memory cache only works for SINGLE-INSTANCE deployments.
+ * ⚠️  For multi-instance/load-balanced deployments, you MUST either:
+ *     - Use sticky sessions (not recommended)
+ *     - Migrate to Redis-backed idempotency (recommended)
+ *     - Use database-backed idempotency table
+ *
+ * ## CALLER COMPOSITION GUIDE
+ *
+ * ### Basic usage - wrap a mutation:
+ * ```typescript
+ * const result = await criticalMutation(
+ *   async (tx) => {
+ *     await tx.update(batches).set({ onHandQty: sql`on_hand_qty - ${qty}` });
+ *     return { success: true };
+ *   },
+ *   { domain: "inventory", operation: "allocateBatch" }
+ * );
+ * ```
+ *
+ * ### With idempotency (for user-facing APIs):
+ * ```typescript
+ * await criticalMutation(
+ *   async (tx) => { ... },
+ *   {
+ *     idempotencyKey: `order-${orderId}-payment-${paymentId}`,
+ *     domain: "payments",
+ *     operation: "recordPayment",
+ *   }
+ * );
+ * ```
+ *
+ * ### As tRPC handler wrapper:
+ * ```typescript
+ * recordPayment: protectedProcedure
+ *   .input(paymentSchema)
+ *   .mutation(withCriticalMutation(
+ *     async ({ ctx, input }, tx) => {
+ *       // Mutation logic here
+ *     },
+ *     { domain: "payments", operation: "recordPayment" }
+ *   )),
+ * ```
+ *
+ * ### With inventoryLocking (for inventory operations):
+ * ```typescript
+ * await criticalMutation(
+ *   async (tx) => {
+ *     return await allocateFromBatch(tx, { batchId, quantity, orderId, userId });
+ *   },
+ *   {
+ *     idempotencyKey: `order-${orderId}-allocate-${batchId}`,
+ *     domain: "inventory",
+ *     operation: "allocateBatch",
+ *   }
+ * );
+ * ```
+ *
+ * ### Retry behavior:
+ * - Retries on: deadlock, lock wait timeout, serialization failure, connection errors
+ * - Does NOT retry on: validation errors, business logic errors, permission errors
+ * - Exponential backoff: 100ms, 200ms, 400ms, ...
+ * - Default max retries: 3
  */
 
 import { TRPCError } from "@trpc/server";
@@ -62,6 +127,59 @@ export interface CriticalMutationOptions {
    * User ID performing the mutation (for audit)
    */
   userId?: number;
+}
+
+/**
+ * Validate critical mutation options
+ * @throws TRPCError if options are invalid
+ */
+function validateOptions(options: CriticalMutationOptions): void {
+  const { maxRetries, timeout, idempotencyKey } = options;
+
+  if (maxRetries !== undefined) {
+    if (typeof maxRetries !== "number" || isNaN(maxRetries)) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "criticalMutation: maxRetries must be a valid number",
+      });
+    }
+    if (maxRetries < 0 || maxRetries > 10) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `criticalMutation: maxRetries must be between 0 and 10, got ${maxRetries}`,
+      });
+    }
+  }
+
+  if (timeout !== undefined) {
+    if (typeof timeout !== "number" || isNaN(timeout)) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "criticalMutation: timeout must be a valid number",
+      });
+    }
+    if (timeout <= 0 || timeout > 300) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `criticalMutation: timeout must be between 1 and 300 seconds, got ${timeout}`,
+      });
+    }
+  }
+
+  if (idempotencyKey !== undefined) {
+    if (typeof idempotencyKey !== "string") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "criticalMutation: idempotencyKey must be a string",
+      });
+    }
+    if (idempotencyKey.length === 0 || idempotencyKey.length > 255) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `criticalMutation: idempotencyKey must be 1-255 characters, got ${idempotencyKey.length}`,
+      });
+    }
+  }
 }
 
 /**
@@ -198,6 +316,9 @@ export async function criticalMutation<T>(
   fn: (tx: unknown) => Promise<T>,
   options: CriticalMutationOptions = {}
 ): Promise<CriticalMutationResult<T>> {
+  // Validate options first
+  validateOptions(options);
+
   const {
     maxRetries = 3,
     idempotencyKey,

@@ -619,4 +619,99 @@ describe("criticalMutation Integration Tests", () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
     });
   });
+
+  describe("Options Validation", () => {
+    it("should reject negative maxRetries", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      await expect(
+        criticalMutation(mutationFn, {
+          maxRetries: -1,
+          domain: "test",
+        })
+      ).rejects.toThrow(/maxRetries must be between 0 and 10/);
+    });
+
+    it("should reject maxRetries greater than 10", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      await expect(
+        criticalMutation(mutationFn, {
+          maxRetries: 11,
+          domain: "test",
+        })
+      ).rejects.toThrow(/maxRetries must be between 0 and 10/);
+    });
+
+    it("should reject zero timeout", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      await expect(
+        criticalMutation(mutationFn, {
+          timeout: 0,
+          domain: "test",
+        })
+      ).rejects.toThrow(/timeout must be between 1 and 300/);
+    });
+
+    it("should reject timeout greater than 300", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      await expect(
+        criticalMutation(mutationFn, {
+          timeout: 301,
+          domain: "test",
+        })
+      ).rejects.toThrow(/timeout must be between 1 and 300/);
+    });
+
+    it("should reject empty idempotencyKey", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      await expect(
+        criticalMutation(mutationFn, {
+          idempotencyKey: "",
+          domain: "test",
+        })
+      ).rejects.toThrow(/idempotencyKey must be 1-255 characters/);
+    });
+
+    it("should reject idempotencyKey longer than 255 characters", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+      const longKey = "a".repeat(256);
+
+      await expect(
+        criticalMutation(mutationFn, {
+          idempotencyKey: longKey,
+          domain: "test",
+        })
+      ).rejects.toThrow(/idempotencyKey must be 1-255 characters/);
+    });
+
+    it("should accept valid options", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      const result = await criticalMutation(mutationFn, {
+        maxRetries: 5,
+        timeout: 60,
+        idempotencyKey: "valid-key-123",
+        domain: "test",
+        operation: "validate-options",
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it("should accept maxRetries of 0", async () => {
+      const mutationFn = vi.fn().mockResolvedValue({ success: true });
+
+      const result = await criticalMutation(mutationFn, {
+        maxRetries: 0,
+        domain: "test",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.attempts).toBe(1);
+    });
+  });
 });
