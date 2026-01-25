@@ -81,6 +81,12 @@ const DEFAULT_MULTI_BATCH_LOCK_TIMEOUT = 30;
 /** Maximum allowed quantity for any single operation (prevents overflow) */
 const MAX_QUANTITY = 10_000_000;
 
+/** Minimum lock timeout in seconds */
+const MIN_LOCK_TIMEOUT = 1;
+
+/** Maximum lock timeout in seconds (5 minutes) */
+const MAX_LOCK_TIMEOUT = 300;
+
 /**
  * Type for Drizzle transaction context
  * Uses MySql2Database as base type for better type safety while maintaining flexibility
@@ -203,6 +209,50 @@ function validateUserId(userId: number, operation: string): void {
 }
 
 /**
+ * Validate and sanitize lock timeout
+ * CRITICAL: This prevents SQL injection via sql.raw()
+ * @returns Validated integer timeout in seconds
+ * @throws TRPCError with BAD_REQUEST if invalid
+ */
+function validateLockTimeout(
+  timeout: unknown,
+  defaultValue: number,
+  operation: string
+): number {
+  // If not provided, use default
+  if (timeout === undefined || timeout === null) {
+    return defaultValue;
+  }
+
+  // Must be a number
+  if (typeof timeout !== "number" || isNaN(timeout)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: lockTimeout must be a valid number`,
+    });
+  }
+
+  // Must be finite
+  if (!Number.isFinite(timeout)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: lockTimeout must be finite`,
+    });
+  }
+
+  // Must be within valid range
+  if (timeout < MIN_LOCK_TIMEOUT || timeout > MAX_LOCK_TIMEOUT) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: lockTimeout must be between ${MIN_LOCK_TIMEOUT} and ${MAX_LOCK_TIMEOUT} seconds, got ${timeout}`,
+    });
+  }
+
+  // Return as integer to prevent any decimal SQL injection attempts
+  return Math.floor(timeout);
+}
+
+/**
  * Validate that batchId is a positive integer
  * @throws TRPCError with BAD_REQUEST if invalid
  */
@@ -245,14 +295,19 @@ export async function withBatchLock<T>(
   callback: (batch: LockedBatch) => Promise<T>,
   options: LockOptions = {}
 ): Promise<T> {
-  const { lockTimeout = DEFAULT_SINGLE_BATCH_LOCK_TIMEOUT } = options;
   const db = tx;
 
-  // Input validation
+  // Input validation - CRITICAL: validate lockTimeout to prevent SQL injection
   validateBatchId(batchId, "withBatchLock");
+  const lockTimeout = validateLockTimeout(
+    options.lockTimeout,
+    DEFAULT_SINGLE_BATCH_LOCK_TIMEOUT,
+    "withBatchLock"
+  );
 
   try {
     // Set lock timeout for this transaction
+    // SECURITY: lockTimeout is validated as integer, safe to interpolate
     await db.execute(
       sql.raw(`SET SESSION innodb_lock_wait_timeout = ${lockTimeout}`)
     );
@@ -327,8 +382,6 @@ export async function withMultiBatchLock<T>(
   callback: (batches: Map<number, LockedBatch>) => Promise<T>,
   options: LockOptions = {}
 ): Promise<T> {
-  // Use longer timeout for multi-batch operations
-  const { lockTimeout = DEFAULT_MULTI_BATCH_LOCK_TIMEOUT } = options;
   const db = tx;
 
   if (batchIds.length === 0) {
@@ -337,6 +390,13 @@ export async function withMultiBatchLock<T>(
       message: "No batch IDs provided for locking",
     });
   }
+
+  // Input validation - CRITICAL: validate lockTimeout to prevent SQL injection
+  const lockTimeout = validateLockTimeout(
+    options.lockTimeout,
+    DEFAULT_MULTI_BATCH_LOCK_TIMEOUT,
+    "withMultiBatchLock"
+  );
 
   // Validate all batch IDs
   for (const batchId of batchIds) {
@@ -347,6 +407,8 @@ export async function withMultiBatchLock<T>(
   const sortedIds = [...batchIds].sort((a, b) => a - b);
 
   try {
+    // Set lock timeout for this transaction
+    // SECURITY: lockTimeout is validated as integer, safe to interpolate
     await db.execute(
       sql.raw(`SET SESSION innodb_lock_wait_timeout = ${lockTimeout}`)
     );
@@ -653,6 +715,14 @@ export async function returnToBatch(
   validateQuantity(quantity, "returnToBatch");
   validateUserId(userId, "returnToBatch");
 
+  // SECURITY WARNING: Log when validation is bypassed
+  if (!validateReturnQuantity) {
+    logger.warn(
+      { batchId, quantity, userId, orderId },
+      "REL-006: Return validation bypassed - validateReturnQuantity=false. Ensure this is intentional."
+    );
+  }
+
   return await withBatchLock(tx, batchId, async batch => {
     // Validate return quantity against historical allocations
     if (validateReturnQuantity) {
@@ -799,7 +869,23 @@ export async function allocateFromMultipleBatches(
 
     for (const alloc of allocations) {
       const batch = batchMap.get(alloc.batchId);
-      if (!batch) continue;
+
+      // CRITICAL: This should never happen - withMultiBatchLock validates all batches exist
+      // If we get here, it's a serious bug that must not be silently ignored
+      if (!batch) {
+        logger.error(
+          {
+            batchId: alloc.batchId,
+            allocations,
+            batchMapKeys: [...batchMap.keys()],
+          },
+          "REL-006: CRITICAL - Batch missing from locked map, this should never happen"
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Internal error: Batch ${alloc.batchId} missing from locked set. This is a bug.`,
+        });
+      }
 
       // Use _allocateBatchDirect to avoid double-locking
       // The batch is already locked by withMultiBatchLock

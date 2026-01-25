@@ -1040,6 +1040,66 @@ describe("inventoryLocking Integration Tests", () => {
     });
   });
 
+  describe("Lock Timeout Security", () => {
+    it("should reject string lockTimeout (SQL injection attempt)", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        withBatchLock(tx as any, 1, async () => ({ success: true }), {
+          lockTimeout: "10; DROP TABLE batches; --" as unknown as number,
+        })
+      ).rejects.toThrow(/lockTimeout must be a valid number/);
+    });
+
+    it("should reject negative lockTimeout", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        withBatchLock(tx as any, 1, async () => ({ success: true }), {
+          lockTimeout: -5,
+        })
+      ).rejects.toThrow(/lockTimeout must be between/);
+    });
+
+    it("should reject lockTimeout exceeding maximum (300s)", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        withBatchLock(tx as any, 1, async () => ({ success: true }), {
+          lockTimeout: 301,
+        })
+      ).rejects.toThrow(/lockTimeout must be between/);
+    });
+
+    it("should reject Infinity lockTimeout", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        withBatchLock(tx as any, 1, async () => ({ success: true }), {
+          lockTimeout: Infinity,
+        })
+      ).rejects.toThrow(/lockTimeout must be finite/);
+    });
+
+    it("should accept valid lockTimeout", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      const result = await withBatchLock(
+        tx as any,
+        1,
+        async () => ({ success: true }),
+        { lockTimeout: 60 }
+      );
+
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe("Multi-batch Validation", () => {
     it("should reject duplicate batchIds in allocateFromMultipleBatches", async () => {
       const batches: LockedBatch[] = [
