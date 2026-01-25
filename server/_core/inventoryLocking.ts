@@ -312,6 +312,10 @@ export async function allocateFromBatch(
         };
       }
 
+      // Calculate before/after quantities
+      const quantityBefore = batch.onHandQty;
+      const quantityAfter = batch.onHandQty - quantity;
+
       // Update batch quantities
       await db
         .update(batches)
@@ -321,19 +325,21 @@ export async function allocateFromBatch(
         })
         .where(eq(batches.id, batchId));
 
-      // Record inventory movement
+      // Record inventory movement (using correct schema column names)
       await db.insert(inventoryMovements).values({
         batchId,
-        movementType: "ALLOCATION",
-        quantity: -quantity,
+        inventoryMovementType: "SALE", // SALE is the correct type for allocations
+        quantityChange: (-quantity).toString(),
+        quantityBefore: quantityBefore.toString(),
+        quantityAfter: quantityAfter.toString(),
         referenceType: orderId
-          ? "order"
+          ? "ORDER"
           : orderLineItemId
-            ? "order_line_item"
+            ? "ORDER_LINE_ITEM"
             : null,
         referenceId: orderId || orderLineItemId || null,
         notes: orderId ? `Allocated for order #${orderId}` : "Allocated",
-        createdBy: userId,
+        performedBy: userId,
       });
 
       logger.info(
@@ -378,6 +384,10 @@ export async function returnToBatch(
   const db = tx;
 
   return await withBatchLock(tx, batchId, async batch => {
+    // Calculate before/after quantities
+    const quantityBefore = batch.onHandQty;
+    const quantityAfter = batch.onHandQty + quantity;
+
     // Update batch quantity (increase)
     await db
       .update(batches)
@@ -387,17 +397,19 @@ export async function returnToBatch(
       })
       .where(eq(batches.id, batchId));
 
-    // Record inventory movement
+    // Record inventory movement (using correct schema column names)
     await db.insert(inventoryMovements).values({
       batchId,
-      movementType: "RETURN",
-      quantity: quantity, // Positive for returns
-      referenceType: orderId ? "order" : null,
+      inventoryMovementType: "RETURN",
+      quantityChange: quantity.toString(), // Positive for returns
+      quantityBefore: quantityBefore.toString(),
+      quantityAfter: quantityAfter.toString(),
+      referenceType: orderId ? "RETURN" : null,
       referenceId: orderId || null,
       notes:
         reason ||
         (orderId ? `Returned from order #${orderId}` : "Returned to inventory"),
-      createdBy: userId,
+      performedBy: userId,
     });
 
     logger.info(
