@@ -788,16 +788,16 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 #### P1 - High Priority (Data Seeding)
 
-| Task     | Description                               | Priority | Status                                | Estimate | Prompt                     |
-| -------- | ----------------------------------------- | -------- | ------------------------------------- | -------- | -------------------------- |
-| DATA-012 | Seed work surface feature flags (17+)     | HIGH     | BLOCKED (SEED-003: dependsOn invalid) | 4h       | -                          |
-| DATA-013 | Seed gamification module defaults         | HIGH     | BLOCKED (SEED-001: schema re-export)  | 4-8h     | -                          |
-| DATA-014 | Seed scheduling module defaults           | HIGH     | BLOCKED (SEED-004: duplicate seeder)  | 4h       | -                          |
-| DATA-015 | Seed storage sites and zones              | HIGH     | BLOCKED (SEED-001, SEED-002)          | 2-4h     | -                          |
-| DATA-021 | Seed mock product images for live catalog | HIGH     | NOT STARTED                           | 6h       | `docs/prompts/DATA-021.md` |
+| Task     | Description                               | Priority | Status                     | Estimate | Prompt                     |
+| -------- | ----------------------------------------- | -------- | -------------------------- | -------- | -------------------------- |
+| DATA-012 | Seed work surface feature flags (17+)     | HIGH     | ✅ COMPLETE (Jan 25, 2026) | 4h       | -                          |
+| DATA-013 | Seed gamification module defaults         | HIGH     | ✅ COMPLETE (Jan 25, 2026) | 4-8h     | -                          |
+| DATA-014 | Seed scheduling module defaults           | HIGH     | ✅ COMPLETE (Jan 25, 2026) | 4h       | -                          |
+| DATA-015 | Seed storage sites and zones              | HIGH     | ✅ COMPLETE (Jan 25, 2026) | 2-4h     | -                          |
+| DATA-021 | Seed mock product images for live catalog | HIGH     | NOT STARTED                | 6h       | `docs/prompts/DATA-021.md` |
 
-> **Note (Jan 25, 2026):** DATA-012 through DATA-015 seeders were created but QA audit discovered P0 blocking bugs.
-> See **Seeder QA Defects** section below for full breakdown and required fixes.
+> **Note (Jan 25, 2026):** DATA-012 through DATA-015 seeders created and all blocking bugs fixed.
+> All SEED-001 through SEED-012 defects resolved. See **Seeder QA Defects** section for full history.
 
 ##### DATA-021: Seed Mock Product Images for Live Catalog Testing
 
@@ -1010,12 +1010,12 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 
 #### P0 - Critical (Seeders Will Fail to Execute)
 
-| Task     | Description                                            | Priority | Status      | Estimate | Module                                         |
-| -------- | ------------------------------------------------------ | -------- | ----------- | -------- | ---------------------------------------------- |
-| SEED-001 | Add missing schema re-exports for gamification/storage | CRITICAL | NOT STARTED | 1h       | drizzle/schema.ts                              |
-| SEED-002 | Fix zone lookup missing siteId constraint              | CRITICAL | NOT STARTED | 1h       | seed-storage-defaults.ts:363-365               |
-| SEED-003 | Fix feature flag dependsOn using module instead of key | CRITICAL | NOT STARTED | 2h       | seed-feature-flags.ts:51,59,67,...             |
-| SEED-004 | Reconcile duplicate scheduling seeders                 | CRITICAL | NOT STARTED | 2h       | seed-scheduling-defaults.ts, seedScheduling.ts |
+| Task     | Description                                            | Priority | Status                  | Estimate | Module                                         |
+| -------- | ------------------------------------------------------ | -------- | ----------------------- | -------- | ---------------------------------------------- |
+| SEED-001 | Add missing schema re-exports for gamification/storage | CRITICAL | ✅ FIXED (Jan 25, 2026) | 1h       | drizzle/schema.ts                              |
+| SEED-002 | Fix zone lookup missing siteId constraint              | CRITICAL | ✅ FIXED (Jan 25, 2026) | 1h       | seed-storage-defaults.ts:363-365               |
+| SEED-003 | Fix feature flag dependsOn using module instead of key | CRITICAL | ✅ VERIFIED (correct)   | 2h       | seed-feature-flags.ts:51,59,67,...             |
+| SEED-004 | Reconcile duplicate scheduling seeders                 | CRITICAL | ✅ FIXED (Jan 25, 2026) | 2h       | seed-scheduling-defaults.ts, seedScheduling.ts |
 
 ##### SEED-001: Add Missing Schema Re-exports for Gamification and Storage
 
@@ -1135,13 +1135,13 @@ The seeders have different room names, shift templates, and overtime rules. Runn
 
 #### P1 - High Priority (Data Integrity Issues)
 
-| Task     | Description                                       | Priority | Status      | Estimate | Module                   |
-| -------- | ------------------------------------------------- | -------- | ----------- | -------- | ------------------------ |
-| SEED-005 | Add missing fields to update logic in all seeders | HIGH     | NOT STARTED | 4h       | All seed-\*.ts files     |
-| SEED-006 | Enforce dependency order in seed-all-defaults.ts  | HIGH     | NOT STARTED | 2h       | seed-all-defaults.ts     |
-| SEED-007 | Add fail-fast on seeder failures                  | HIGH     | NOT STARTED | 1h       | seed-all-defaults.ts     |
-| SEED-008 | Fix temperature unit inconsistency                | HIGH     | NOT STARTED | 1h       | seed-storage-defaults.ts |
-| SEED-009 | Filter soft-deleted records in upsert logic       | HIGH     | NOT STARTED | 2h       | All seed-\*.ts files     |
+| Task     | Description                                       | Priority | Status                  | Estimate | Module                   |
+| -------- | ------------------------------------------------- | -------- | ----------------------- | -------- | ------------------------ |
+| SEED-005 | Add missing fields to update logic in all seeders | HIGH     | ✅ FIXED (Jan 25, 2026) | 4h       | All seed-\*.ts files     |
+| SEED-006 | Enforce dependency order in seed-all-defaults.ts  | HIGH     | ✅ FIXED (Jan 25, 2026) | 2h       | seed-all-defaults.ts     |
+| SEED-007 | Add fail-fast on seeder failures                  | HIGH     | ✅ FIXED (Jan 25, 2026) | 1h       | seed-all-defaults.ts     |
+| SEED-008 | Fix temperature unit inconsistency                | HIGH     | ✅ FIXED (Jan 25, 2026) | 1h       | seed-storage-defaults.ts |
+| SEED-009 | Filter soft-deleted records in upsert logic       | HIGH     | ✅ FIXED (Jan 25, 2026) | 2h       | All seed-\*.ts files     |
 
 ##### SEED-005: Add Missing Fields to Update Logic in All Seeders
 
@@ -1289,11 +1289,11 @@ const existing = await db.query.sites.findFirst({
 
 #### P2 - Medium Priority (Reliability Issues)
 
-| Task     | Description                            | Priority | Status      | Estimate | Module               |
-| -------- | -------------------------------------- | -------- | ----------- | -------- | -------------------- |
-| SEED-010 | Close database pool after seeding      | MEDIUM   | NOT STARTED | 30m      | All seed-\*.ts files |
-| SEED-011 | Add transaction wrappers for atomicity | MEDIUM   | NOT STARTED | 4h       | All seed-\*.ts files |
-| SEED-012 | Improve connection error handling      | MEDIUM   | NOT STARTED | 1h       | scripts/db-sync.ts   |
+| Task     | Description                            | Priority | Status                  | Estimate | Module               |
+| -------- | -------------------------------------- | -------- | ----------------------- | -------- | -------------------- |
+| SEED-010 | Close database pool after seeding      | MEDIUM   | ✅ FIXED (Jan 25, 2026) | 30m      | All seed-\*.ts files |
+| SEED-011 | Add transaction wrappers for atomicity | MEDIUM   | DEFERRED                | 4h       | All seed-\*.ts files |
+| SEED-012 | Improve connection error handling      | MEDIUM   | ✅ FIXED (Jan 25, 2026) | 1h       | scripts/db-sync.ts   |
 
 ##### SEED-010: Close Database Pool After Seeding
 
