@@ -27,7 +27,7 @@ Ask Evan for test credentials for these roles:
 | Category | Count | Priority |
 |----------|-------|----------|
 | Frontend Pages | 72 | Test all |
-| E2E User Flows | 10 | Critical |
+| E2E User Flows | 15 | Critical (1-5), High (6-15) |
 | Cross-Browser | 4 browsers | After main testing |
 
 ## Key Business Logic to Verify (FROM CODE)

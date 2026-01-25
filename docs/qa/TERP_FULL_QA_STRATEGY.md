@@ -1,7 +1,8 @@
 # TERP Full QA Strategy: Claude + Manus Collaboration
 
-**Version:** 1.0
+**Version:** 1.3
 **Created:** 2026-01-25
+**Updated:** 2026-01-25
 **Authors:** Claude (Backend QA) + Manus (Frontend QA)
 **Target Environment:** Production - https://terp-app-b9s35.ondigitalocean.app
 
@@ -17,9 +18,12 @@ This document outlines a comprehensive QA strategy for TERP that leverages two A
 | **Manus** | Frontend QA Lead | Live browser testing, UI/UX verification, E2E user flows |
 
 **Total Estimated QA Time:** 40-60 hours across both agents
-**Target Coverage:** All 121 tRPC routers, 72 frontend pages, critical business flows
+**Target Coverage:** All 121 tRPC routers, 72 frontend pages, 15 E2E flows
 
-> **Version 1.1 Update:** Corrected page count, business logic formulas, status flows, and added missing user flows based on thorough codebase verification.
+> **Version History:**
+> - **v1.3:** Improved user flows with prerequisites/verification steps, expanded edge case matrices (50+ scenarios with priorities), comprehensive test data requirements, added 5 new E2E flows (11-15)
+> - **v1.2:** Skeptical review corrections - fixed state machine, noted configurable thresholds, documented unenforced return status transitions
+> - **v1.1:** Corrected page count (72), business logic formulas, status flows based on code verification
 
 ---
 
@@ -450,39 +454,100 @@ Manus will test all 72 frontend pages with live browser interactions.
 
 Manus will execute complete user journeys:
 
-#### Flow 1: Complete Order Cycle (CRITICAL)
+#### Flow 1: Complete Order Cycle (CRITICAL) - IMPROVED v1.3
 ```
+PREREQUISITES:
+- Client with available credit
+- Inventory with sufficient stock
+- User with orders:create, orders:update, inventory:read permissions
+
+STEPS:
 1. Login as sales rep
-2. Navigate to Clients
-3. Select a client
-4. View client 360
-5. Navigate to Orders
-6. Create new order
-7. Add line items from inventory
-8. Apply pricing
-9. Review margins
-10. Submit order
-11. Navigate to Pick/Pack
-12. Pick items
-13. Pack order
-14. Mark as shipped
-15. Verify inventory reduced
-16. Generate invoice
-17. Record payment
-18. Verify AR updated
+2. Navigate to Clients (/clients)
+3. Select a client → VERIFY: Client 360 shows credit available
+4. Note client's current AR balance and credit limit
+5. Navigate to Orders (/orders)
+6. Click "Create New Order"
+7. Select client → VERIFY: Client info populates correctly
+8. Add line items from inventory:
+   - VERIFY: Only batches with available qty shown
+   - VERIFY: COGS per unit displays correctly
+   - VERIFY: Price calculates based on pricing rules
+9. Set quantity → VERIFY: Margin % and $ update in real-time
+10. Apply discount (if any) → VERIFY: Total recalculates
+11. Review order summary:
+    - VERIFY: Line totals = qty × price
+    - VERIFY: Order total = sum of line totals - discounts
+    - VERIFY: Total margin displays
+12. Submit order → VERIFY: Status = CONFIRMED
+13. VERIFY: Inventory reserved (available qty reduced)
+14. Navigate to Pick/Pack (/pick-pack)
+15. Find the order → VERIFY: Appears in pending list
+16. Start picking → VERIFY: Location guidance shown
+17. Complete picking → VERIFY: Status = PACKED
+18. Mark as shipped → VERIFY: Status = SHIPPED
+19. VERIFY: Inventory deducted (onHand reduced)
+20. Navigate to Invoices (/accounting/invoices)
+21. Create invoice from order
+    - VERIFY: Line items match order
+    - VERIFY: Invoice number generated
+22. Send invoice → VERIFY: Status = SENT
+23. Navigate to Payments (/accounting/payments)
+24. Record payment for invoice
+    - VERIFY: Can apply to specific invoice
+    - VERIFY: Partial payment allowed
+25. Apply full payment → VERIFY: Invoice status = PAID
+26. Navigate to Client profile
+27. VERIFY: AR balance updated (reduced by payment amount)
+28. VERIFY: Order appears in client history
+
+EXPECTED DURATION: 15-20 minutes
+ROLLBACK: Delete order if test fails mid-way
 ```
 
-#### Flow 2: Inventory Intake Cycle
+#### Flow 2: Inventory Intake Cycle - IMPROVED v1.3
 ```
+PREREQUISITES:
+- Supplier client (isSeller=true) exists
+- User with inventory:create, orders:create permissions
+
+STEPS:
 1. Login as warehouse manager
-2. Navigate to Purchase Orders
-3. Create new PO
-4. Submit for approval
-5. Navigate to Intake
-6. Receive goods against PO
-7. Verify batch created
-8. Check inventory updated
-9. Verify COGS calculated
+2. Navigate to Purchase Orders (/purchase-orders)
+3. Click "Create PO"
+4. Select supplier → VERIFY: Supplier info loads
+5. Add line items:
+   - Select product
+   - Enter quantity and unit cost
+   - VERIFY: Extended cost = qty × unit cost
+6. Set expected delivery date
+7. Submit PO → VERIFY: Status = SENT
+8. [SIMULATE] PO confirmed by supplier → Status = CONFIRMED
+9. Navigate to Intake (/intake)
+10. Select the PO → VERIFY: PO details shown
+11. Enter received quantities:
+    - VERIFY: Can receive partial quantities
+    - VERIFY: Variance highlighted if qty differs
+12. Enter batch information:
+    - Lot number
+    - Expiration date (if applicable)
+    - Storage location
+13. Complete receiving → VERIFY: Status = RECEIVED
+14. Navigate to Inventory (/inventory)
+15. Find new batch → VERIFY:
+    - Batch created with correct qty
+    - COGS = total cost / total qty
+    - Aging = FRESH (received today)
+    - Location matches intake entry
+16. Navigate to supplier profile
+17. VERIFY: PO appears in purchase history
+18. VERIFY: AP balance updated (bill created)
+
+EXPECTED DURATION: 10-15 minutes
+EDGE CASES TO TEST:
+- Receive less than ordered (partial)
+- Receive more than ordered (overage)
+- Multiple batches from same PO
 ```
 
 #### Flow 3: VIP Customer Experience (CORRECTED v1.2)
@@ -501,16 +566,55 @@ Manus will execute complete user journeys:
 12. Logout and verify session destroyed
 ```
 
-#### Flow 4: Accounting Reconciliation
+#### Flow 4: Accounting Reconciliation - IMPROVED v1.3
 ```
+PREREQUISITES:
+- Multiple invoices in various statuses
+- Some invoices overdue (>30, >60, >90 days)
+- User with accounting:read, accounting:update, payments:create permissions
+
+PART A: ACCOUNTS RECEIVABLE
 1. Login as accountant
-2. View AR aging dashboard
-3. Drill into overdue invoices
-4. Record customer payment
-5. Apply payment to invoices
-6. Verify AR balance reduced
-7. View top debtors list
-8. Generate reports
+2. Navigate to Accounting Dashboard (/accounting)
+3. View AR Aging Summary:
+   - VERIFY: Buckets show (Current, 1-30, 31-60, 61-90, 90+)
+   - VERIFY: Total AR = sum of all buckets
+   - VERIFY: Numbers match invoice totals
+4. Click into "90+ days" bucket
+5. VERIFY: List shows only invoices >90 days past due
+6. Select overdue invoice → View details
+7. Record customer payment:
+   - Enter amount received
+   - Select payment method
+   - Enter reference number
+8. Apply payment to invoice
+   - VERIFY: Partial payment → Invoice status = PARTIAL
+   - VERIFY: Full payment → Invoice status = PAID
+9. Navigate back to AR dashboard
+10. VERIFY: Bucket totals updated
+11. Check Top Debtors widget:
+    - VERIFY: Sorted by total owed descending
+    - VERIFY: Click drills into client ledger
+
+PART B: ACCOUNTS PAYABLE
+12. Switch to AP view
+13. View AP Aging Summary:
+    - VERIFY: Bills grouped by vendor
+    - VERIFY: Aging buckets accurate
+14. Record vendor payment:
+    - Select bills to pay
+    - Enter check/payment details
+15. VERIFY: Bill status updated
+16. VERIFY: AP balance reduced
+
+PART C: RECONCILIATION
+17. Navigate to Bank Transactions (/accounting/bank-transactions)
+18. Match transactions to payments/receipts
+19. VERIFY: Reconciliation status updates
+20. Generate aging report
+21. VERIFY: Report matches dashboard totals
+
+EXPECTED DURATION: 20-25 minutes
 ```
 
 #### Flow 5: Calendar & Scheduling
@@ -621,47 +725,263 @@ Manus will execute complete user journeys:
 10. Verify payroll data accurate
 ```
 
-### 3.4 Edge Case & Error Scenario Tests (ADDED v1.2)
+#### Flow 11: Admin User & Role Management (NEW v1.3)
+```
+PREREQUISITES:
+- User with admin, rbac:* permissions
+- Test user account to modify
+
+STEPS:
+1. Login as admin
+2. Navigate to Users (/users)
+3. VERIFY: User list shows all users
+4. Create new user:
+   - Enter email, name
+   - Set initial password
+   - VERIFY: User created with no roles
+5. Navigate to user's profile
+6. Assign role (e.g., "Sales Rep"):
+   - VERIFY: Role permissions shown
+   - VERIFY: User can now access sales features
+7. Test permission override:
+   - Grant additional permission (e.g., credits:create)
+   - VERIFY: Override saved
+8. Login as new user
+9. VERIFY: Can access sales pages
+10. VERIFY: Can access credits (overridden permission)
+11. VERIFY: Cannot access admin pages
+12. Login as admin
+13. Revoke role from user
+14. VERIFY: User loses role permissions
+15. VERIFY: Override permission still active
+
+PERMISSION MATRIX TO VERIFY:
+| Role | Expected Access |
+|------|-----------------|
+| Admin | All pages |
+| Sales Rep | Orders, Clients, Quotes, Calendar |
+| Warehouse | Inventory, Pick/Pack, Intake, Locations |
+| Accountant | Accounting, Invoices, Payments, Credits |
+| Read-Only | All read pages, no create/update/delete |
+```
+
+#### Flow 12: Vendor/Supplier Management (NEW v1.3)
+```
+PREREQUISITES:
+- User with clients:create, vendors:read permissions
+
+STEPS:
+1. Login as admin/purchasing
+2. Navigate to Vendors (/vendors)
+3. VERIFY: List shows only clients with isSeller=true
+4. Click "Add Vendor"
+5. Enter vendor details:
+   - Company name
+   - Contact information
+   - VERIFY: isSeller flag auto-set
+6. Set payment terms:
+   - Net days (7/15/30)
+   - Credit limit (if applicable)
+7. Add license information (cannabis-specific):
+   - License number
+   - Expiration date
+8. Save vendor → VERIFY: Appears in vendor list
+9. Navigate to vendor profile
+10. Add first purchase:
+    - Create PO for this vendor
+    - VERIFY: Vendor details auto-populate
+11. Complete PO cycle (per Flow 2)
+12. Return to vendor profile
+13. VERIFY: Purchase history shows
+14. VERIFY: AP balance updated
+15. Create vendor return:
+    - Select items to return
+    - Specify reason
+    - VERIFY: Status = PENDING_VENDOR_CREDIT
+16. Process credit received
+17. VERIFY: AP balance reduced
+
+EXPECTED DURATION: 15 minutes
+```
+
+#### Flow 13: Product & Catalog Management (NEW v1.3)
+```
+PREREQUISITES:
+- User with inventory:create, pricing:create permissions
+
+STEPS:
+1. Login as admin/catalog manager
+2. Navigate to Products (/products)
+3. VERIFY: Product list with categories
+4. Create new product:
+   - Enter name, SKU
+   - Select category and subcategory
+   - Select strain (if applicable)
+   - Set grade (AAAA/AAA/AA/B/C)
+   - Add images
+5. Save product → VERIFY: Appears in catalog
+6. Set pricing defaults:
+   - Navigate to Pricing Rules (/pricing/rules)
+   - Create rule for product category
+   - Set margin % or price formula
+7. Create batch for product:
+   - Navigate to Intake
+   - Receive inventory
+   - VERIFY: COGS calculated
+8. Navigate to Inventory
+9. VERIFY: New batch appears with product info
+10. Create order with new product
+11. VERIFY: Price calculated per pricing rules
+12. VERIFY: Product searchable in order creator
+
+EXPECTED DURATION: 15 minutes
+```
+
+#### Flow 14: Global Search & Navigation (NEW v1.3)
+```
+STEPS:
+1. Login as any user
+2. Use global search (Cmd/Ctrl + K):
+   - Search for client name → VERIFY: Results shown
+   - Search for order number → VERIFY: Order found
+   - Search for product → VERIFY: Product found
+   - Search for batch ID → VERIFY: Batch found
+3. Click result → VERIFY: Navigates to correct page
+4. Test keyboard navigation:
+   - Tab through search results
+   - Enter to select
+   - Escape to close
+5. Test "no results" state:
+   - Search for gibberish
+   - VERIFY: "No results" message shown
+6. Test recent searches:
+   - VERIFY: Previous searches remembered
+
+EXPECTED DURATION: 5 minutes
+```
+
+#### Flow 15: Notification & Alert System (NEW v1.3)
+```
+STEPS:
+1. Login as user
+2. Check notification bell icon
+3. VERIFY: Unread count shown (if any)
+4. Click bell → VERIFY: Notification dropdown opens
+5. Check notification types:
+   - Order created notification
+   - Payment received notification
+   - Low stock alert
+   - Appointment reminder
+6. Click notification → VERIFY: Navigates to relevant page
+7. Mark as read → VERIFY: Unread count decreases
+8. Navigate to Notification Preferences (/settings/notifications)
+9. Toggle email notifications off
+10. VERIFY: Preference saved
+11. Trigger notification event
+12. VERIFY: No email sent, in-app notification still works
+13. Test low stock alert:
+    - Find batch with low quantity
+    - VERIFY: Alert appears in dashboard/notifications
+
+EXPECTED DURATION: 10 minutes
+```
+
+### 3.4 Edge Case & Error Scenario Tests (IMPROVED v1.3)
 
 **These tests verify system behavior in abnormal conditions:**
 
 #### Inventory Edge Cases
-| Scenario | Expected Behavior | Test Steps |
-|----------|-------------------|------------|
-| Order exceeds available inventory | Error shown, order not created | Try to order qty > available |
-| Concurrent orders for same batch | One succeeds, one fails gracefully | Two users order simultaneously |
-| Batch at 0 quantity | Cannot be selected for order | Verify batch not in dropdown |
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| Order exceeds available inventory | Error shown, order not created | Try to order qty > available | P1 |
+| Concurrent orders for same batch | One succeeds, one fails gracefully | Two users order simultaneously | P1 |
+| Batch at 0 quantity | Cannot be selected for order | Verify batch not in dropdown | P2 |
+| Batch fully reserved | Cannot be ordered | Reserve all qty, then try to order | P1 |
+| Negative quantity entry | Validation error | Enter -5 in quantity field | P2 |
+| Decimal quantity (where not allowed) | Error or round to integer | Enter 5.5 units | P3 |
+| Very large quantity (>999999) | Max value enforced or error | Enter 1000000 | P3 |
+| Batch with expired date | Warning shown | Order batch past expiration | P2 |
 
 #### Financial Edge Cases
-| Scenario | Expected Behavior | Test Steps |
-|----------|-------------------|------------|
-| Client over credit limit | Warning shown, manager approval required | Order total > credit limit |
-| Apply credit > order total | Credit capped at order total | Apply $500 credit to $200 order |
-| Expired credit application | Error: credit expired | Try to apply expired credit |
-| Negative margin order | Warning shown, requires override | Set price < COGS |
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| Client over credit limit | Warning shown, manager approval required | Order total > credit limit | P1 |
+| Apply credit > order total | Credit capped at order total | Apply $500 credit to $200 order | P1 |
+| Expired credit application | Error: credit expired | Try to apply expired credit | P1 |
+| Negative margin order | Warning shown, requires override | Set price < COGS | P1 |
+| Zero price order | Validation error or warning | Set unit price = $0 | P2 |
+| Currency precision (3+ decimals) | Round to 2 decimals | Enter $10.999 | P2 |
+| Payment > invoice amount | Overpayment handled or blocked | Pay $200 on $150 invoice | P2 |
+| Duplicate payment | Warning or block | Record same payment twice | P1 |
+| Invoice with $0 total | Allow or block based on rules | Create invoice with no charges | P3 |
 
 #### Status Edge Cases
-| Scenario | Expected Behavior | Test Steps |
-|----------|-------------------|------------|
-| Cancel SHIPPED order | Error: cannot cancel | Try to cancel shipped order |
-| Re-approve rejected return | Error: invalid transition | Try REJECTED → APPROVED |
-| Convert expired quote | Error: quote expired | Try to convert expired quote |
-| Clock in while already clocked in | Error: already clocked in | Double clock-in attempt |
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| Cancel SHIPPED order | Error: cannot cancel | Try to cancel shipped order | P1 |
+| Cancel DELIVERED order | Error: cannot cancel | Try to cancel delivered order | P1 |
+| Re-approve rejected return | Error: invalid transition | Try REJECTED → APPROVED | P2 |
+| Convert expired quote | Error: quote expired | Try to convert expired quote | P1 |
+| Convert already-converted quote | Error: already converted | Try to convert twice | P1 |
+| Clock in while already clocked in | Error: already clocked in | Double clock-in attempt | P2 |
+| Void paid invoice | Error or warning + reversal | Try to void paid invoice | P1 |
+| Delete client with orders | Soft delete or block | Delete client with order history | P1 |
+| Restore deleted record | Record restored correctly | Soft delete then restore | P2 |
+
+#### Permission & Access Edge Cases (NEW)
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| Access page without permission | Redirect to unauthorized or 403 | Remove role, try to access | P1 |
+| Permission revoked mid-session | Next action fails gracefully | Revoke permission while logged in | P1 |
+| Role change mid-session | New permissions apply | Change role, refresh page | P1 |
+| View-only user tries to edit | Edit controls disabled/hidden | Login as read-only, try to save | P1 |
+| Admin impersonates user | See what user sees | Use impersonation feature | P2 |
+| Session expired during edit | Redirect to login, draft saved | Let session expire mid-form | P1 |
+
+#### Data Validation Edge Cases (NEW)
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| SQL injection in text field | Input sanitized, no error | Enter `'; DROP TABLE users;--` | P0 |
+| XSS in text field | Script not executed | Enter `<script>alert('xss')</script>` | P0 |
+| Unicode/emoji in names | Handled correctly | Enter client name with emoji | P3 |
+| Very long text (>10000 chars) | Truncated or error | Paste long text in notes | P2 |
+| Special characters in search | Search still works | Search for `client & co.` | P2 |
+| Empty required field | Validation error | Submit form with empty required field | P1 |
+| Whitespace-only input | Treated as empty or trimmed | Enter "   " in name field | P2 |
+| Date in past (where invalid) | Validation error | Set quote expiry to yesterday | P2 |
+| Date far in future | Handled or capped | Set date to year 2099 | P3 |
+
+#### Pagination & List Edge Cases (NEW)
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| Page beyond data | Empty or redirect to last page | Go to page 999 with 10 items | P2 |
+| Page 0 or negative | Error or redirect to page 1 | Manually enter page=0 in URL | P2 |
+| Very large page size | Capped at max (100) | Set pageSize=10000 | P2 |
+| Sort by non-existent column | Ignore or error | sortBy=fakeColumn in URL | P3 |
+| Filter returns 0 results | "No results" message | Filter to impossible criteria | P2 |
+| Filter + sort + pagination | All work together | Apply filter, sort, go to page 2 | P2 |
 
 #### Concurrent Access Tests
-| Scenario | Expected Behavior | Test Steps |
-|----------|-------------------|------------|
-| Two users approve same return | One succeeds, one gets "already approved" | Parallel approval clicks |
-| Session timeout mid-order | Redirect to login, draft saved | Let session expire during order creation |
-| Network disconnect during save | Retry mechanism, data not lost | Disconnect network during save |
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| Two users approve same return | One succeeds, one gets "already approved" | Parallel approval clicks | P1 |
+| Two users edit same record | Last save wins or conflict detection | Edit same client simultaneously | P1 |
+| Session timeout mid-order | Redirect to login, draft saved | Let session expire during order creation | P1 |
+| Network disconnect during save | Retry mechanism, data not lost | Disconnect network during save | P2 |
+| Rapid double-click on submit | Single submission (debounced) | Click submit twice quickly | P1 |
+| Browser back during save | Confirmation dialog or handle gracefully | Hit back while saving | P2 |
 
 #### Error State UI Tests
-| Scenario | Expected Behavior | Test Steps |
-|----------|-------------------|------------|
-| API 500 error | User-friendly error message | Trigger server error |
-| Network timeout | Loading indicator, retry option | Slow network simulation |
-| Empty data | "No results" message, not blank | Filter to 0 results |
-| Permission denied | Clear error, redirect if needed | Access page without permission |
+| Scenario | Expected Behavior | Test Steps | Priority |
+|----------|-------------------|------------|----------|
+| API 500 error | User-friendly error message | Trigger server error | P1 |
+| API 404 error | "Not found" message | Access deleted record | P1 |
+| Network timeout | Loading indicator, retry option | Slow network simulation | P1 |
+| Empty data | "No results" message, not blank | Filter to 0 results | P2 |
+| Permission denied | Clear error, redirect if needed | Access page without permission | P1 |
+| Form validation error | Errors shown inline | Submit invalid form | P1 |
+| Multiple validation errors | All errors shown, scroll to first | Multiple invalid fields | P2 |
+| Toast/notification dismissed | Can be dismissed, auto-dismiss after timeout | Trigger success toast | P3 |
 
 ### 3.5 Cross-Browser Testing Matrix
 
@@ -1098,47 +1418,188 @@ Start with: Navigate to login page and verify access
 
 ---
 
-## Appendix B: Test Data Requirements
+## Appendix B: Test Data Requirements (IMPROVED v1.3)
 
-For effective QA, ensure the following test data exists:
+For effective QA, ensure the following test data exists. Specific data is required for each E2E flow.
 
+### User Accounts (Required Roles)
+| Username | Role | Permissions | Purpose |
+|----------|------|-------------|---------|
+| admin@test.com | Super Admin | All permissions | Full system testing |
+| sales@test.com | Sales Rep | orders:*, clients:*, quotes:*, calendar:* | Sales flow testing |
+| warehouse@test.com | Warehouse Manager | inventory:*, pickPack | Inventory/fulfillment testing |
+| accountant@test.com | Accountant | accounting:*, payments:*, credits:* | Financial testing |
+| readonly@test.com | Read Only | *:read only | Permission testing |
+| newuser@test.com | No Role | None | Role assignment testing |
+| vip@test.com | VIP Customer | VIP portal access | VIP flow testing |
+
+### Client Data
 ```
-Clients:
-- 10+ buyer clients (various credit levels)
-- 5+ seller/supplier clients
-- 1+ VIP tier clients
+BUYERS (isBuyer=true):
+├── Client A: $5,000 credit limit, $0 balance (for order testing)
+├── Client B: $10,000 credit limit, $8,000 balance (near limit)
+├── Client C: $1,000 credit limit, $1,500 balance (OVER limit)
+├── Client D: $0 credit limit (cash only)
+├── Client E: VIP Tier Gold (for VIP testing)
+├── Client F: Multiple orders history (for 360 view)
+├── Client G: Has credits available ($500)
+├── Client H: Has overdue invoices (>90 days)
+├── Client I: New client, no history
+└── Client J: Soft-deleted (for restore testing)
 
-Products:
-- 20+ active products with batches
-- Multiple strains, categories, grades
-- Products with images
+SUPPLIERS (isSeller=true):
+├── Supplier 1: Active, with purchase history
+├── Supplier 2: Active, new (no POs)
+├── Supplier 3: With pending vendor returns
+├── Supplier 4: License expiring soon
+└── Supplier 5: Soft-deleted
+```
 
-Inventory:
-- 50+ batches across multiple locations
-- Batches at various aging levels
-- Reserved and available inventory
+### Inventory Data
+```
+BATCHES BY AGING:
+├── 5 batches: FRESH (received 0-7 days ago)
+├── 5 batches: MODERATE (received 8-14 days ago)
+├── 5 batches: AGING (received 15-30 days ago)
+├── 5 batches: CRITICAL (received 30+ days ago)
 
-Orders:
-- 10+ orders in various statuses
-- Orders with multiple line items
-- Orders with margin overrides
+BATCHES BY STOCK STATUS:
+├── 10 batches: OPTIMAL (>50 available)
+├── 5 batches: LOW (11-50 available)
+├── 3 batches: CRITICAL (1-10 available)
+├── 2 batches: OUT_OF_STOCK (0 available)
+├── 2 batches: Fully reserved (available=0, reserved>0)
 
-Accounting:
-- 20+ invoices (paid, partial, overdue)
-- Payment records
-- AR aging spread across buckets
+BATCHES BY LOCATION:
+├── Warehouse A: 15 batches
+├── Warehouse B: 5 batches
+└── Sample Room: 3 batches
 
-Calendar:
-- 10+ events (single and recurring)
-- Events with participants
-- Upcoming appointments
+SPECIAL BATCHES:
+├── 1 batch with expiration date passed
+├── 1 batch with expiration date this week
+├── 1 batch with COGS override
+└── 1 batch soft-deleted
+```
 
-Users:
-- Admin user (full access)
-- Sales rep (limited access)
-- Warehouse manager
-- Accountant
-- VIP customer
+### Order Data
+```
+ORDERS BY STATUS:
+├── 2 orders: DRAFT
+├── 2 orders: CONFIRMED
+├── 2 orders: PENDING (ready for pick)
+├── 2 orders: PACKED
+├── 2 orders: SHIPPED
+├── 3 orders: DELIVERED
+├── 2 orders: CANCELLED
+└── 1 order: RETURNED
+
+ORDERS WITH SPECIAL CONDITIONS:
+├── Order with 5+ line items
+├── Order with margin override
+├── Order with discount applied
+├── Order with partial payment
+├── Order with full payment
+├── Order with attached invoice
+├── Sample order (isSample=true)
+└── Order for over-limit client (requires approval)
+```
+
+### Accounting Data
+```
+INVOICES:
+├── 5 invoices: PAID (for history)
+├── 3 invoices: PARTIAL (payment in progress)
+├── 2 invoices: SENT (waiting for payment)
+├── 2 invoices: OVERDUE 1-30 days
+├── 2 invoices: OVERDUE 31-60 days
+├── 2 invoices: OVERDUE 61-90 days
+├── 2 invoices: OVERDUE 90+ days
+├── 1 invoice: VOID
+└── 1 invoice: DRAFT
+
+PAYMENTS:
+├── 10+ payment records linked to invoices
+├── 1 partial payment
+├── 1 overpayment scenario
+
+CREDITS:
+├── 2 credits: ACTIVE (available to use)
+├── 1 credit: PARTIALLY_USED
+├── 1 credit: FULLY_USED
+├── 1 credit: EXPIRED
+└── 1 credit: CANCELLED
+
+BILLS (AP):
+├── 3 bills: PENDING
+├── 2 bills: PAID
+└── 1 bill: OVERDUE
+```
+
+### Calendar & Scheduling Data
+```
+EVENTS:
+├── 5 single events (various dates)
+├── 3 recurring events (daily, weekly, monthly)
+├── 2 events with multiple participants
+├── 1 event in the past
+├── 1 event today
+├── 2 events this week
+└── 1 cancelled event
+
+APPOINTMENTS:
+├── 2 pending approval
+├── 3 confirmed
+├── 1 completed
+└── 1 cancelled
+```
+
+### Product Catalog Data
+```
+PRODUCTS:
+├── 20+ active products
+├── Products in each category
+├── Products with each grade (AAAA, AAA, AA, B, C)
+├── 5+ strains
+├── Products with images
+├── 1 product soft-deleted
+└── 1 product with no batches
+
+PRICING RULES:
+├── Category-level rule
+├── Client-specific rule
+├── Volume discount rule
+└── Date-based promotion
+```
+
+### Sample Data
+```
+SAMPLES:
+├── 2 PENDING requests
+├── 2 FULFILLED (with client)
+├── 1 RETURN_REQUESTED
+├── 1 RETURNED
+└── 1 CANCELLED
+```
+
+### Return Data
+```
+RETURNS:
+├── 2 PENDING (awaiting approval)
+├── 1 APPROVED (ready to receive)
+├── 1 RECEIVED (processing)
+├── 1 PROCESSED (complete)
+├── 1 REJECTED
+└── 1 CANCELLED
+```
+
+### Notification Data
+```
+├── 5+ unread notifications (various types)
+├── 10+ read notifications (history)
+├── Low stock alert triggered
+├── Overdue invoice alert
+└── Appointment reminder
 ```
 
 ---
