@@ -512,6 +512,272 @@ const confirmRateLimitMap = new Map<number, number[]>();
 
 ---
 
+---
+
+## 10X DEEP DIVE ANALYSIS (Phase 3)
+
+### DD-10: Hardcoded User IDs in Production Code
+
+**CRITICAL SECURITY FINDING:**
+
+| File                       | Line | Issue                                                          |
+| -------------------------- | ---- | -------------------------------------------------------------- |
+| `services/orderService.ts` | 76   | `createdBy: 1, // System user - should be passed from context` |
+| `_core/calendarJobs.ts`    | 280  | `createdBy: 1, // System user`                                 |
+| `_core/calendarJobs.ts`    | 290  | `userId: 1` for notifications                                  |
+
+**Risk:**
+
+- User ID 1 may not exist in all environments
+- Violates principle of proper actor attribution
+- Code explicitly acknowledges issue with TODO comments
+
+---
+
+### DD-11: Audit Trail Coverage
+
+**FINDING:** Low audit logging coverage
+
+| Metric                     | Count | Assessment                    |
+| -------------------------- | ----- | ----------------------------- |
+| Audit log calls in routers | 22    | VERY LOW for 126 router files |
+| Routers with audit logging | 5     | Only 4% coverage              |
+
+**Files with audit logging:**
+
+- `auth.ts` - 3 calls
+- `auditLogs.ts` - 7 calls
+- `inventory.ts` - 3 calls
+- `userManagement.ts` - 4 calls
+
+**Missing:** Most critical mutations lack audit trail.
+
+---
+
+### DD-12: Console Statements in Production Code
+
+**FINDING:** 30+ console.log/error statements in production routers
+
+| File                      | Count | Issue          |
+| ------------------------- | ----- | -------------- |
+| `admin.ts`                | 10    | Setup logging  |
+| `accounting.ts`           | 2     | Error logging  |
+| `adminImport.ts`          | 2     | Bulk import    |
+| `productCatalogue.ts`     | 2     | Quick create   |
+| `dashboardPreferences.ts` | 3     | Error handling |
+
+**Recommendation:** Replace with structured logger (`logger.info/error`).
+
+---
+
+### DD-13: Deprecated Code Markers
+
+**FINDING:** 24 `@deprecated` annotations across 6 files
+
+| File                      | Deprecated Items              |
+| ------------------------- | ----------------------------- |
+| `utils/featureFlags.ts`   | 5 deprecated functions        |
+| `inventoryDb.ts`          | 4 deprecated vendor functions |
+| `configurationManager.ts` | 6 legacy feature flags        |
+| `routers/vendors.ts`      | 6 deprecated endpoints        |
+
+---
+
+### DD-14: RegExp DOS Risk Assessment
+
+| File                                           | Pattern                                      | Risk                      |
+| ---------------------------------------------- | -------------------------------------------- | ------------------------- |
+| `productsDb.ts:411`                            | `new RegExp(\`^${prefix}\`)`                 | LOW - prefix is validated |
+| `_core/permissionService.ts:506`               | `new RegExp(\`^calendarEvent:${eventId}:\`)` | LOW - eventId is integer  |
+| `services/leaderboard/privacySanitizer.ts:152` | Dynamic key pattern                          | MEDIUM - review needed    |
+
+---
+
+### DD-15: Shell Command Execution
+
+| File                       | Command                               | Risk                |
+| -------------------------- | ------------------------------------- | ------------------- |
+| `adminSchema.ts:22`        | `execSync('npm run validate:schema')` | MEDIUM - Admin only |
+| `_core/healthCheck.ts:303` | `spawn('df', ['-BM', '/'])`           | LOW - No user input |
+
+---
+
+### DD-16: Queue/Job Processing Analysis
+
+| Metric               | Count | Notes                        |
+| -------------------- | ----- | ---------------------------- |
+| BullMQ-related files | 20    | Comprehensive queue system   |
+| Queue workers        | 12    | Multiple job types           |
+| Notification queue   | ✅    | Well-implemented             |
+| Workflow queue       | ✅    | State machine implementation |
+
+**Positive:** Queue system is well-architected.
+
+---
+
+### DD-17: Promise.all Usage
+
+**FINDING:** 34 occurrences of `Promise.all()` across 26 files
+
+**Concern:** No error handling for partial failures in some cases.
+
+**High-risk files:**
+
+- `orders.ts` - 4 occurrences
+- `debug.ts` - 4 occurrences
+- `services/leaderboard/metricCalculator.ts` - 3 occurrences
+
+---
+
+### DD-18: JSON Parse/Stringify Usage
+
+**FINDING:** 57 JSON operations across 20 router files
+
+| File                      | Operations | Risk              |
+| ------------------------- | ---------- | ----------------- |
+| `cogs.ts`                 | 9          | Complex JSON data |
+| `organizationSettings.ts` | 9          | Settings storage  |
+| `liveShopping.ts`         | 4          | Session data      |
+
+---
+
+### DD-19: SELECT \* Usage
+
+**FINDING:** 10 occurrences of `SELECT *` across 6 files
+
+| File               | Count | Assessment              |
+| ------------------ | ----- | ----------------------- |
+| `debug.ts`         | 3     | Diagnostic (acceptable) |
+| `strainService.ts` | 2     | Data access             |
+| `admin.ts`         | 1     | Setup                   |
+
+---
+
+### DD-20: Date/Timezone Handling
+
+**FINDING:** 504 occurrences of `new Date()`, `Date.now()`, `.toISOString()`
+
+**Concerns:**
+
+- No consistent timezone handling utility
+- `new Date()` uses server timezone, not UTC
+- Potential inconsistencies between environments
+
+**Files with heavy date usage:**
+
+- `liveShopping.ts` - 21 occurrences
+- `vipPortal.ts` - 21 occurrences
+- `accounting.ts` - 20 occurrences
+- `payments.ts` - 16 occurrences
+
+---
+
+### DD-21: Service Layer Statistics
+
+| Metric                      | Count    |
+| --------------------------- | -------- |
+| Service files (non-test)    | 65       |
+| Services with `import * as` | 78 files |
+| DB layer files              | 25+      |
+
+**Architecture:** Good separation between routers → services → DB layers.
+
+---
+
+### DD-22: Optional Field Patterns
+
+**FINDING:** 782 occurrences of `.optional().default()` or `z.string().optional()`
+
+**Risk:** Over-use of optional fields can mask required data issues.
+
+**High-usage files:**
+
+- `clientNeedsEnhanced.ts` - 38 optionals
+- `scheduling.ts` - 34 optionals
+- `accounting.ts` - 58 optionals
+
+---
+
+## FINAL FINDINGS SUMMARY
+
+### Critical Issues (2)
+
+1. **Floating Point Financial Calculations**
+   - `financialMath.ts` exists but unused
+   - 40+ instances in accounting/audit/ledger
+   - **Priority: P0**
+
+2. **Hardcoded User IDs in Production Code**
+   - 3 locations use `createdBy: 1` or `userId: 1`
+   - Violates actor attribution requirements
+   - **Priority: P0**
+
+### High Priority Issues (5)
+
+1. **Hard Deletes** - 14 occurrences in 8 files
+2. **Deprecated vendors Table** - 4 router files
+3. **N+1 Query Patterns** - 81 files
+4. **Audit Trail Coverage Gap** - Only 4% of routers
+5. **Console Statements** - 30+ in production code
+
+### Medium Priority Issues (5)
+
+1. **`any` Type Usage** - 30+ occurrences
+2. **Low Transaction Coverage** - Only 15 routers
+3. **Unused `strictLimiter`** - Not applied
+4. **Date/Timezone Inconsistency** - 504 operations
+5. **Promise.all Error Handling** - 34 occurrences
+
+### Low Priority Issues (6)
+
+1. Missing Lint Script
+2. API Response Inconsistency
+3. SQL Pattern in clientNeedsDb.ts
+4. SELECT \* Usage - 10 occurrences
+5. Deprecated Code - 24 @deprecated items
+6. RegExp patterns - 3 need review
+
+---
+
+## FINAL RECOMMENDATIONS
+
+### Critical (This Week)
+
+1. Fix hardcoded `createdBy: 1` in production code
+2. Audit all `parseFloat/Number()` on financial values
+3. Create system user constant or service account
+
+### High Priority (This Sprint)
+
+1. Add comprehensive audit logging
+2. Replace console.log with structured logger
+3. Profile top N+1 query hot spots
+4. Convert hard deletes to soft deletes
+
+### Medium Priority (Next Sprint)
+
+1. Create consistent timezone/date utility
+2. Apply `strictLimiter` to sensitive endpoints
+3. Add transactions to multi-step mutations
+4. Use `Promise.allSettled()` where appropriate
+
+---
+
+## TEST RESULTS FINAL
+
+| Category          | Pass | Fail | Coverage  |
+| ----------------- | ---- | ---- | --------- |
+| Unit Tests        | 2273 | 9    | 99.6%     |
+| Type Safety       | ✅   | -    | 100%      |
+| Build             | ✅   | -    | -         |
+| Security Patterns | ⚠️   | -    | 126 files |
+
+**Note:** 2 Critical issues found in security patterns scan.
+
+---
+
 **Report Generated:** 2026-01-25
 **Extended Analysis Added:** 2026-01-25
+**10X Deep Dive Added:** 2026-01-25
+**Total Findings:** 18 issues across 4 severity levels
 **Next Review:** On next feature deployment or security concern
