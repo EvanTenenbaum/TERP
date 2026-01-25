@@ -16,3 +16,5 @@ export { WorkflowActivityWidget } from "./WorkflowActivityWidget";
 export { AvailableCashWidget } from "./AvailableCashWidget";
 // Sprint 4 Track A: 4.A.4 MEET-025 - Dashboard Aging Quick View
 export { AgingInventoryWidget } from "./AgingInventoryWidget";
+// FE-QA-011: Smart Opportunities Widget
+export { SmartOpportunitiesWidget } from "./SmartOpportunitiesWidget";

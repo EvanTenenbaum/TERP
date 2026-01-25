@@ -8,9 +8,13 @@
  * - Unusual order patterns
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { generateOrders } from "../../scripts/generators/orders.js";
+import { setSeed } from "../../scripts/generators/utils.js";
 import type { BatchData } from "../../scripts/generators/inventory.js";
+
+// Use deterministic seed for reproducible tests
+const TEST_SEED = 12345;
 
 // Mock batch data for testing
 const createMockBatches = (count: number): BatchData[] => {
@@ -32,6 +36,11 @@ const createMockBatches = (count: number): BatchData[] => {
 };
 
 describe("Data Anomalies and Edge Cases", () => {
+  // Reset seed before each test for deterministic results
+  beforeEach(() => {
+    setSeed(TEST_SEED);
+  });
+
   describe("Margin Variation", () => {
     it("should have some high-margin outliers (>50%)", () => {
       const whaleClientIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -84,7 +93,7 @@ describe("Data Anomalies and Edge Cases", () => {
         return total < 2000;
       });
 
-      // At least 8% of orders should be small (allowing for randomness)
+      // At least 8% of orders should be small (deterministic with seed=12345)
       const smallOrderPercent = (smallOrders.length / orders.length) * 100;
       expect(smallOrderPercent).toBeGreaterThanOrEqual(8);
     });

@@ -142,26 +142,26 @@ export const paymentTermsEnum = mysqlEnum("paymentTerms", [
  * Defines how inventory is owned - consigned from vendor, office-owned, or sample
  */
 export const ownershipTypeEnum = mysqlEnum("ownership_type", [
-  "CONSIGNED",     // Inventory consigned from vendor - payable due when sold
-  "OFFICE_OWNED",  // Office purchased outright - no payable to vendor
-  "SAMPLE",        // Sample inventory - not for sale
+  "CONSIGNED", // Inventory consigned from vendor - payable due when sold
+  "OFFICE_OWNED", // Office purchased outright - no payable to vendor
+  "SAMPLE", // Sample inventory - not for sale
 ]);
 
 /**
  * Vendors table
  * Represents suppliers/vendors who provide products
- * 
+ *
  * @deprecated As of 2025-12-16, vendors have been migrated to the unified clients table.
  * Use clients with isSeller=true and supplier_profiles for vendor data.
- * 
+ *
  * Migration mapping:
  * - Vendor data → clients table (with isSeller=true)
  * - Vendor-specific fields → supplier_profiles table
  * - Legacy vendor ID → supplier_profiles.legacy_vendor_id
- * 
- * To get client ID for a vendor: 
+ *
+ * To get client ID for a vendor:
  *   SELECT client_id FROM supplier_profiles WHERE legacy_vendor_id = ?
- * 
+ *
  * This table will be removed in a future release after all references are updated.
  */
 export const vendors = mysqlTable("vendors", {
@@ -473,7 +473,15 @@ export const tags = mysqlTable("tags", {
   name: varchar("name", { length: 100 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   standardizedName: varchar("standardizedName", { length: 100 }).notNull(),
-  category: mysqlEnum("category", ["STATUS", "PRIORITY", "TYPE", "CUSTOM", "STRAIN", "FLAVOR", "EFFECT"]).default("CUSTOM"), // FEAT-002: Structured categories
+  category: mysqlEnum("category", [
+    "STATUS",
+    "PRIORITY",
+    "TYPE",
+    "CUSTOM",
+    "STRAIN",
+    "FLAVOR",
+    "EFFECT",
+  ]).default("CUSTOM"), // FEAT-002: Structured categories
   color: varchar("color", { length: 7 }).default("#6B7280"), // FEAT-002: Hex color for visual organization
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -557,6 +565,19 @@ export type InsertLot = typeof lots.$inferInsert;
 /**
  * Batches table
  * Represents sellable units of a specific product within a lot
+ *
+ * INVENTORY QUANTITY FIELDS:
+ * - onHandQty: Current available quantity for sale. Decremented with each sale,
+ *   adjusted via inventory adjustments, returns, etc. This is the "live" quantity.
+ * - sampleQty: Quantity allocated for samples (separate from saleable inventory)
+ * - reservedQty: Quantity reserved for pending orders (not yet fulfilled)
+ * - quarantineQty: Quantity held for inspection/quality control
+ * - holdQty: Quantity on administrative hold
+ * - defectiveQty: Quantity marked as defective/damaged
+ *
+ * NOTE: Original received quantity is tracked via the intake process (lots + PO line items).
+ * Total received = onHandQty + sampleQty + sold + adjustments + returns
+ *
  * ADDED: amountPaid for COD/Partial payment tracking
  * REMOVED: unitCogsFloor (FLOOR mode removed)
  */
@@ -593,13 +614,26 @@ export const batches = mysqlTable(
       { onDelete: "set null" }
     ),
 
-    onHandQty: decimal("onHandQty", { precision: 15, scale: 4 }).notNull().default("0"),
-    sampleQty: decimal("sampleQty", { precision: 15, scale: 4 }).notNull().default("0"),
-    reservedQty: decimal("reservedQty", { precision: 15, scale: 4 }).notNull().default("0"),
+    /**
+     * onHandQty: Current available quantity for sale
+     * This is the "live" quantity that changes with every transaction.
+     * Decremented on sales, adjusted via inventory adjustments.
+     */
+    onHandQty: decimal("onHandQty", { precision: 15, scale: 4 })
+      .notNull()
+      .default("0"),
+    sampleQty: decimal("sampleQty", { precision: 15, scale: 4 })
+      .notNull()
+      .default("0"),
+    reservedQty: decimal("reservedQty", { precision: 15, scale: 4 })
+      .notNull()
+      .default("0"),
     quarantineQty: decimal("quarantineQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
-    holdQty: decimal("holdQty", { precision: 15, scale: 4 }).notNull().default("0"),
+    holdQty: decimal("holdQty", { precision: 15, scale: 4 })
+      .notNull()
+      .default("0"),
     defectiveQty: decimal("defectiveQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
@@ -1120,8 +1154,12 @@ export const invoiceLineItems = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => ({
-    invoiceIdIdx: index("idx_invoice_line_items_invoice_id").on(table.invoiceId),
-    productIdIdx: index("idx_invoice_line_items_product_id").on(table.productId),
+    invoiceIdIdx: index("idx_invoice_line_items_invoice_id").on(
+      table.invoiceId
+    ),
+    productIdIdx: index("idx_invoice_line_items_product_id").on(
+      table.productId
+    ),
     batchIdIdx: index("idx_invoice_line_items_batch_id").on(table.batchId),
   })
 );
@@ -1849,13 +1887,17 @@ export const clientLedgerAdjustments = mysqlTable(
   },
   table => ({
     clientIdIdx: index("idx_ledger_adj_client_id").on(table.clientId),
-    effectiveDateIdx: index("idx_ledger_adj_effective_date").on(table.effectiveDate),
+    effectiveDateIdx: index("idx_ledger_adj_effective_date").on(
+      table.effectiveDate
+    ),
     typeIdx: index("idx_ledger_adj_type").on(table.transactionType),
   })
 );
 
-export type ClientLedgerAdjustment = typeof clientLedgerAdjustments.$inferSelect;
-export type InsertClientLedgerAdjustment = typeof clientLedgerAdjustments.$inferInsert;
+export type ClientLedgerAdjustment =
+  typeof clientLedgerAdjustments.$inferSelect;
+export type InsertClientLedgerAdjustment =
+  typeof clientLedgerAdjustments.$inferInsert;
 
 // ============================================================================
 // CREDIT INTELLIGENCE SYSTEM
@@ -2098,9 +2140,9 @@ export type InsertCreditAuditLog = typeof creditAuditLog.$inferInsert;
  * Defines how credit limits are enforced during order creation
  */
 export const creditEnforcementModeEnum = mysqlEnum("creditEnforcementMode", [
-  "WARNING",     // Show warning but allow order
-  "SOFT_BLOCK",  // Block by default, allow override with reason
-  "HARD_BLOCK",  // Block completely, no override
+  "WARNING", // Show warning but allow order
+  "SOFT_BLOCK", // Block by default, allow override with reason
+  "HARD_BLOCK", // Block completely, no override
 ]);
 
 /**
@@ -2136,9 +2178,7 @@ export const creditVisibilitySettings = mysqlTable(
     warningThresholdPercent: int("warning_threshold_percent")
       .default(75)
       .notNull(),
-    alertThresholdPercent: int("alert_threshold_percent")
-      .default(90)
-      .notNull(),
+    alertThresholdPercent: int("alert_threshold_percent").default(90).notNull(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -2470,7 +2510,10 @@ export const salesSheetHistory = mysqlTable(
     lastViewedAt: timestamp("last_viewed_at"),
 
     // USP: Link to converted order (when sales sheet becomes a quote/order)
-    convertedToOrderId: int("converted_to_order_id").references(() => orders.id, { onDelete: "set null" }),
+    convertedToOrderId: int("converted_to_order_id").references(
+      () => orders.id,
+      { onDelete: "set null" }
+    ),
     // USP: Link to converted live shopping session
     convertedToSessionId: varchar("converted_to_session_id", { length: 36 }),
     // USP: Soft delete support for sales sheets
@@ -2483,7 +2526,9 @@ export const salesSheetHistory = mysqlTable(
     // Sharing: Index for share token lookups
     shareTokenIdx: index("idx_sales_sheet_share_token").on(table.shareToken),
     // USP: Index for converted order lookups
-    convertedToOrderIdIdx: index("idx_converted_to_order_id").on(table.convertedToOrderId),
+    convertedToOrderIdIdx: index("idx_converted_to_order_id").on(
+      table.convertedToOrderId
+    ),
     // USP: Index for soft delete filtering
     deletedAtIdx: index("idx_deleted_at").on(table.deletedAt),
   })
@@ -2507,32 +2552,34 @@ export const salesSheetDrafts = mysqlTable(
     createdBy: int("created_by")
       .notNull()
       .references(() => users.id),
-    
+
     // Draft metadata
     name: varchar("name", { length: 255 }).notNull(),
-    
+
     // Items with pricing (same structure as salesSheetHistory)
-    items: json("items").notNull().$type<Array<{
-      id: number;
-      name: string;
-      category?: string;
-      subcategory?: string;
-      strain?: string;
-      basePrice: number;
-      retailPrice: number;
-      quantity: number;
-      grade?: string;
-      vendor?: string;
-      priceMarkup: number;
-      appliedRules?: Array<{
-        ruleId: number;
-        ruleName: string;
-        adjustment: string;
-      }>;
-    }>>(),
+    items: json("items").notNull().$type<
+      Array<{
+        id: number;
+        name: string;
+        category?: string;
+        subcategory?: string;
+        strain?: string;
+        basePrice: number;
+        retailPrice: number;
+        quantity: number;
+        grade?: string;
+        vendor?: string;
+        priceMarkup: number;
+        appliedRules?: Array<{
+          ruleId: number;
+          ruleName: string;
+          adjustment: string;
+        }>;
+      }>
+    >(),
     totalValue: decimal("total_value", { precision: 15, scale: 2 }).notNull(),
     itemCount: int("item_count").notNull(),
-    
+
     // Timestamps
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -2607,10 +2654,10 @@ export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
  * Tracks the warehouse picking/packing workflow status
  */
 export const pickPackStatusEnum = mysqlEnum("pickPackStatus", [
-  "PENDING",   // Order confirmed, waiting to be picked
-  "PICKING",   // Currently being picked
-  "PACKED",    // All items packed into bags
-  "READY",     // Ready for shipping/pickup
+  "PENDING", // Order confirmed, waiting to be picked
+  "PICKING", // Currently being picked
+  "PACKED", // All items packed into bags
+  "READY", // Ready for shipping/pickup
 ]);
 
 /**
@@ -2671,7 +2718,9 @@ export const orders = mysqlTable(
     pickPackStatus: pickPackStatusEnum.default("PENDING"),
 
     // WS-004: Referral tracking
-    referredByClientId: int("referred_by_client_id").references(() => clients.id),
+    referredByClientId: int("referred_by_client_id").references(
+      () => clients.id
+    ),
     isReferralOrder: boolean("is_referral_order").default(false),
 
     // Conversion tracking
@@ -2810,7 +2859,9 @@ export const vendorReturnItems = mysqlTable(
     unitCost: decimal("unit_cost", { precision: 12, scale: 4 }).notNull(),
   },
   table => ({
-    vendorReturnIdIdx: index("idx_vendor_return_items_return").on(table.vendorReturnId),
+    vendorReturnIdIdx: index("idx_vendor_return_items_return").on(
+      table.vendorReturnId
+    ),
   })
 );
 
@@ -2835,7 +2886,10 @@ export const orderBags = mysqlTable(
   },
   table => ({
     orderIdIdx: index("idx_order_bags_order_id").on(table.orderId),
-    uniqueBagPerOrder: uniqueIndex("unique_bag_per_order").on(table.orderId, table.bagIdentifier),
+    uniqueBagPerOrder: uniqueIndex("unique_bag_per_order").on(
+      table.orderId,
+      table.bagIdentifier
+    ),
   })
 );
 
@@ -2859,7 +2913,10 @@ export const orderItemBags = mysqlTable(
   },
   table => ({
     bagIdIdx: index("idx_order_item_bags_bag_id").on(table.bagId),
-    uniqueItemBag: uniqueIndex("unique_item_bag").on(table.orderItemId, table.bagId),
+    uniqueItemBag: uniqueIndex("unique_item_bag").on(
+      table.orderItemId,
+      table.bagId
+    ),
   })
 );
 
@@ -3174,9 +3231,17 @@ export const credits = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     transactionId: int("transactionId").references(() => transactions.id), // Link to base transaction
-    creditAmount: decimal("creditAmount", { precision: 12, scale: 2 }).notNull(),
-    amountUsed: decimal("amountUsed", { precision: 12, scale: 2 }).notNull().default("0"),
-    amountRemaining: decimal("amountRemaining", { precision: 12, scale: 2 }).notNull(),
+    creditAmount: decimal("creditAmount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    amountUsed: decimal("amountUsed", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+    amountRemaining: decimal("amountRemaining", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
     creditReason: varchar("creditReason", { length: 100 }),
     expirationDate: timestamp("expirationDate"),
     creditStatus: creditStatusEnum.notNull().default("ACTIVE"),
@@ -3211,7 +3276,10 @@ export const creditApplications = mysqlTable(
     invoiceId: int("invoiceId")
       .notNull()
       .references(() => transactions.id, { onDelete: "cascade" }),
-    amountApplied: decimal("amountApplied", { precision: 12, scale: 2 }).notNull(),
+    amountApplied: decimal("amountApplied", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
     appliedDate: timestamp("appliedDate").notNull(),
     notes: text("notes"),
     appliedBy: int("appliedBy")
@@ -3223,7 +3291,9 @@ export const creditApplications = mysqlTable(
   table => ({
     creditIdIdx: index("idx_credit_applications_credit").on(table.creditId),
     invoiceIdIdx: index("idx_credit_applications_invoice").on(table.invoiceId),
-    idempotencyKeyIdx: uniqueIndex("idx_credit_applications_idempotency").on(table.idempotencyKey),
+    idempotencyKeyIdx: uniqueIndex("idx_credit_applications_idempotency").on(
+      table.idempotencyKey
+    ),
   })
 );
 
@@ -3310,9 +3380,18 @@ export const inventoryMovements = mysqlTable(
       .notNull()
       .references(() => batches.id, { onDelete: "restrict" }), // QUAL-004: Protect audit trail
     inventoryMovementType: inventoryMovementTypeEnum.notNull(),
-    quantityChange: decimal("quantityChange", { precision: 15, scale: 4 }).notNull(), // Can be negative
-    quantityBefore: decimal("quantityBefore", { precision: 15, scale: 4 }).notNull(),
-    quantityAfter: decimal("quantityAfter", { precision: 15, scale: 4 }).notNull(),
+    quantityChange: decimal("quantityChange", {
+      precision: 15,
+      scale: 4,
+    }).notNull(), // Can be negative
+    quantityBefore: decimal("quantityBefore", {
+      precision: 15,
+      scale: 4,
+    }).notNull(),
+    quantityAfter: decimal("quantityAfter", {
+      precision: 15,
+      scale: 4,
+    }).notNull(),
     referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
     referenceId: int("referenceId"),
     adjustmentReason: adjustmentReasonEnum, // Reason for manual adjustments (DATA-010)
@@ -3411,7 +3490,9 @@ export const sampleRequests = mysqlTable(
     returnApprovedBy: int("returnApprovedBy").references(() => users.id),
     returnDate: timestamp("returnDate"),
     // Vendor return workflow fields (SAMPLE-007)
-    vendorReturnTrackingNumber: varchar("vendorReturnTrackingNumber", { length: 100 }),
+    vendorReturnTrackingNumber: varchar("vendorReturnTrackingNumber", {
+      length: 100,
+    }),
     vendorShippedDate: timestamp("vendorShippedDate"),
     vendorConfirmedDate: timestamp("vendorConfirmedDate"),
     // Location tracking (SAMPLE-008)
@@ -3431,7 +3512,9 @@ export const sampleRequests = mysqlTable(
       table.relatedOrderId
     ),
     locationIdx: index("idx_sample_requests_location").on(table.location),
-    expirationIdx: index("idx_sample_requests_expiration").on(table.expirationDate),
+    expirationIdx: index("idx_sample_requests_expiration").on(
+      table.expirationDate
+    ),
   })
 );
 
@@ -3450,11 +3533,17 @@ export const sampleAllocations = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     monthYear: varchar("monthYear", { length: 7 }).notNull(), // Format: "2025-10"
-    allocatedQuantity: decimal("allocatedQuantity", { precision: 15, scale: 4 }).notNull(), // e.g., "7.0" grams
+    allocatedQuantity: decimal("allocatedQuantity", {
+      precision: 15,
+      scale: 4,
+    }).notNull(), // e.g., "7.0" grams
     usedQuantity: decimal("usedQuantity", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
-    remainingQuantity: decimal("remainingQuantity", { precision: 15, scale: 4 }).notNull(), // computed
+    remainingQuantity: decimal("remainingQuantity", {
+      precision: 15,
+      scale: 4,
+    }).notNull(), // computed
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -3493,13 +3582,16 @@ export const sampleLocationHistory = mysqlTable(
     notes: text("notes"),
   },
   table => ({
-    sampleIdIdx: index("idx_sample_location_history_sample").on(table.sampleRequestId),
+    sampleIdIdx: index("idx_sample_location_history_sample").on(
+      table.sampleRequestId
+    ),
     changedAtIdx: index("idx_sample_location_history_date").on(table.changedAt),
   })
 );
 
 export type SampleLocationHistory = typeof sampleLocationHistory.$inferSelect;
-export type InsertSampleLocationHistory = typeof sampleLocationHistory.$inferInsert;
+export type InsertSampleLocationHistory =
+  typeof sampleLocationHistory.$inferInsert;
 
 // ============================================================================
 // DASHBOARD ENHANCEMENTS (Phase 7)
@@ -4002,10 +4094,13 @@ export const clientNeeds = mysqlTable(
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
     // Attribution - either internal user OR VIP portal client (BUG-037)
-    createdBy: int("created_by")
-      .references(() => users.id, { onDelete: "restrict" }), // Internal user (nullable for VIP portal)
-    createdByClientId: int("created_by_client_id")
-      .references(() => clients.id, { onDelete: "restrict" }), // VIP portal client (nullable for internal)
+    createdBy: int("created_by").references(() => users.id, {
+      onDelete: "restrict",
+    }), // Internal user (nullable for VIP portal)
+    createdByClientId: int("created_by_client_id").references(
+      () => clients.id,
+      { onDelete: "restrict" }
+    ), // VIP portal client (nullable for internal)
   },
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
@@ -4067,10 +4162,13 @@ export const vendorSupply = mysqlTable(
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
     // Attribution - either internal user OR VIP portal client (BUG-037)
-    createdBy: int("created_by")
-      .references(() => users.id, { onDelete: "restrict" }), // Internal user (nullable for VIP portal)
-    createdByClientId: int("created_by_client_id")
-      .references(() => clients.id, { onDelete: "restrict" }), // VIP portal client (nullable for internal)
+    createdBy: int("created_by").references(() => users.id, {
+      onDelete: "restrict",
+    }), // Internal user (nullable for VIP portal)
+    createdByClientId: int("created_by_client_id").references(
+      () => clients.id,
+      { onDelete: "restrict" }
+    ), // VIP portal client (nullable for internal)
   },
   table => ({
     vendorIdIdx: index("idx_vendor_id").on(table.vendorId),
@@ -4429,7 +4527,10 @@ export const orderLineItemAllocations = mysqlTable(
     id: int("id").primaryKey().autoincrement(),
     orderLineItemId: int("order_line_item_id").notNull(),
     batchId: int("batch_id").notNull(),
-    quantityAllocated: decimal("quantity_allocated", { precision: 10, scale: 2 }).notNull(),
+    quantityAllocated: decimal("quantity_allocated", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
     unitCost: decimal("unit_cost", { precision: 12, scale: 4 }).notNull(),
     allocatedAt: timestamp("allocated_at").defaultNow().notNull(),
     allocatedBy: int("allocated_by"),
@@ -4440,8 +4541,10 @@ export const orderLineItemAllocations = mysqlTable(
   })
 );
 
-export type OrderLineItemAllocation = typeof orderLineItemAllocations.$inferSelect;
-export type InsertOrderLineItemAllocation = typeof orderLineItemAllocations.$inferInsert;
+export type OrderLineItemAllocation =
+  typeof orderLineItemAllocations.$inferSelect;
+export type InsertOrderLineItemAllocation =
+  typeof orderLineItemAllocations.$inferInsert;
 
 // Order Audit Log (v2.0 Sales Order Enhancements)
 export const orderAuditLog = mysqlTable(
@@ -4729,7 +4832,9 @@ export const notifications = mysqlTable(
       .notNull()
       .default("user"),
     userId: int("user_id").references(() => users.id, { onDelete: "cascade" }),
-    clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
     type: mysqlEnum("type", ["info", "warning", "success", "error"]).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     message: text("message"),
@@ -4780,7 +4885,9 @@ export const notificationPreferences = mysqlTable(
       .notNull()
       .default("user"),
     userId: int("user_id").references(() => users.id, { onDelete: "cascade" }),
-    clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
     inAppEnabled: boolean("in_app_enabled").notNull().default(true),
     emailEnabled: boolean("email_enabled").notNull().default(true),
     smsEnabled: boolean("sms_enabled").notNull().default(false),
@@ -4799,13 +4906,16 @@ export const notificationPreferences = mysqlTable(
       table.userId,
       table.clientId
     ),
-    recipientUnique: uniqueIndex(
-      "uid_notification_preferences_recipient"
-    ).on(table.recipientType, table.userId, table.clientId),
+    recipientUnique: uniqueIndex("uid_notification_preferences_recipient").on(
+      table.recipientType,
+      table.userId,
+      table.clientId
+    ),
   })
 );
 
-export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type NotificationPreference =
+  typeof notificationPreferences.$inferSelect;
 export type InsertNotificationPreference =
   typeof notificationPreferences.$inferInsert;
 
@@ -4991,7 +5101,9 @@ export const calendarEvents = mysqlTable(
     clientIdIdx: index("idx_calendar_events_client_id").on(table.clientId),
     vendorIdIdx: index("idx_calendar_events_vendor_id").on(table.vendorId),
     // CAL-001: Index for calendar filtering
-    calendarIdIdx: index("idx_calendar_events_calendar_id").on(table.calendarId),
+    calendarIdIdx: index("idx_calendar_events_calendar_id").on(
+      table.calendarId
+    ),
   })
 );
 
@@ -5630,7 +5742,9 @@ export const calendars = mysqlTable(
     type: varchar("type", { length: 50 }).notNull().default("workspace"), // workspace, personal
     isDefault: boolean("is_default").notNull().default(false),
     isArchived: boolean("is_archived").notNull().default(false),
-    ownerId: int("owner_id").references(() => users.id, { onDelete: "set null" }),
+    ownerId: int("owner_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
@@ -5658,14 +5772,19 @@ export const calendarUserAccess = mysqlTable(
     userId: int("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    accessLevel: varchar("access_level", { length: 20 }).notNull().default("view"), // view, edit, admin
+    accessLevel: varchar("access_level", { length: 20 })
+      .notNull()
+      .default("view"), // view, edit, admin
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
   table => ({
     calendarIdx: index("idx_calendar_access_calendar").on(table.calendarId),
     userIdx: index("idx_calendar_access_user").on(table.userId),
-    uniqueUserCalendar: unique("unique_user_calendar").on(table.calendarId, table.userId),
+    uniqueUserCalendar: unique("unique_user_calendar").on(
+      table.calendarId,
+      table.userId
+    ),
   })
 );
 
@@ -5685,16 +5804,19 @@ export const calendarsRelations = relations(calendars, ({ one, many }) => ({
   blockedDates: many(calendarBlockedDates),
 }));
 
-export const calendarUserAccessRelations = relations(calendarUserAccess, ({ one }) => ({
-  calendar: one(calendars, {
-    fields: [calendarUserAccess.calendarId],
-    references: [calendars.id],
-  }),
-  user: one(users, {
-    fields: [calendarUserAccess.userId],
-    references: [users.id],
-  }),
-}));
+export const calendarUserAccessRelations = relations(
+  calendarUserAccess,
+  ({ one }) => ({
+    calendar: one(calendars, {
+      fields: [calendarUserAccess.calendarId],
+      references: [calendars.id],
+    }),
+    user: one(users, {
+      fields: [calendarUserAccess.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 // ============================================================================
 // CAL-002: AVAILABILITY SYSTEM (Availability & Booking Foundation)
@@ -5757,7 +5879,8 @@ export const calendarAvailability = mysqlTable(
 );
 
 export type CalendarAvailabilityRow = typeof calendarAvailability.$inferSelect;
-export type InsertCalendarAvailability = typeof calendarAvailability.$inferInsert;
+export type InsertCalendarAvailability =
+  typeof calendarAvailability.$inferInsert;
 
 /**
  * Calendar Blocked Dates table (CAL-002)
@@ -5782,29 +5905,39 @@ export const calendarBlockedDates = mysqlTable(
 );
 
 export type CalendarBlockedDate = typeof calendarBlockedDates.$inferSelect;
-export type InsertCalendarBlockedDate = typeof calendarBlockedDates.$inferInsert;
+export type InsertCalendarBlockedDate =
+  typeof calendarBlockedDates.$inferInsert;
 
 // Relations for availability system
-export const appointmentTypesRelations = relations(appointmentTypes, ({ one }) => ({
-  calendar: one(calendars, {
-    fields: [appointmentTypes.calendarId],
-    references: [calendars.id],
-  }),
-}));
+export const appointmentTypesRelations = relations(
+  appointmentTypes,
+  ({ one }) => ({
+    calendar: one(calendars, {
+      fields: [appointmentTypes.calendarId],
+      references: [calendars.id],
+    }),
+  })
+);
 
-export const calendarAvailabilityRelations = relations(calendarAvailability, ({ one }) => ({
-  calendar: one(calendars, {
-    fields: [calendarAvailability.calendarId],
-    references: [calendars.id],
-  }),
-}));
+export const calendarAvailabilityRelations = relations(
+  calendarAvailability,
+  ({ one }) => ({
+    calendar: one(calendars, {
+      fields: [calendarAvailability.calendarId],
+      references: [calendars.id],
+    }),
+  })
+);
 
-export const calendarBlockedDatesRelations = relations(calendarBlockedDates, ({ one }) => ({
-  calendar: one(calendars, {
-    fields: [calendarBlockedDates.calendarId],
-    references: [calendars.id],
-  }),
-}));
+export const calendarBlockedDatesRelations = relations(
+  calendarBlockedDates,
+  ({ one }) => ({
+    calendar: one(calendars, {
+      fields: [calendarBlockedDates.calendarId],
+      references: [calendars.id],
+    }),
+  })
+);
 
 // ============================================================================
 // CAL-003: APPOINTMENT REQUESTS (Request/Approval Workflow)
@@ -5832,15 +5965,28 @@ export const appointmentRequests = mysqlTable(
     responseNotes: text("response_notes"), // Notes from manager when responding
     createdAt: timestamp("created_at").defaultNow().notNull(),
     respondedAt: timestamp("responded_at"),
-    respondedById: int("responded_by_id").references(() => users.id, { onDelete: "set null" }),
-    calendarEventId: int("calendar_event_id").references(() => calendarEvents.id, { onDelete: "set null" }), // Populated upon approval
+    respondedById: int("responded_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    calendarEventId: int("calendar_event_id").references(
+      () => calendarEvents.id,
+      { onDelete: "set null" }
+    ), // Populated upon approval
   },
   table => ({
-    calendarIdx: index("idx_appointment_requests_calendar").on(table.calendarId),
+    calendarIdx: index("idx_appointment_requests_calendar").on(
+      table.calendarId
+    ),
     statusIdx: index("idx_appointment_requests_status").on(table.status),
-    requestedByIdx: index("idx_appointment_requests_requested_by").on(table.requestedById),
-    respondedByIdx: index("idx_appointment_requests_responded_by").on(table.respondedById),
-    createdAtIdx: index("idx_appointment_requests_created_at").on(table.createdAt),
+    requestedByIdx: index("idx_appointment_requests_requested_by").on(
+      table.requestedById
+    ),
+    respondedByIdx: index("idx_appointment_requests_responded_by").on(
+      table.respondedById
+    ),
+    createdAtIdx: index("idx_appointment_requests_created_at").on(
+      table.createdAt
+    ),
   })
 );
 
@@ -5848,24 +5994,27 @@ export type AppointmentRequest = typeof appointmentRequests.$inferSelect;
 export type InsertAppointmentRequest = typeof appointmentRequests.$inferInsert;
 
 // Relations for appointment requests
-export const appointmentRequestsRelations = relations(appointmentRequests, ({ one }) => ({
-  calendar: one(calendars, {
-    fields: [appointmentRequests.calendarId],
-    references: [calendars.id],
-  }),
-  appointmentType: one(appointmentTypes, {
-    fields: [appointmentRequests.appointmentTypeId],
-    references: [appointmentTypes.id],
-  }),
-  respondedBy: one(users, {
-    fields: [appointmentRequests.respondedById],
-    references: [users.id],
-  }),
-  calendarEvent: one(calendarEvents, {
-    fields: [appointmentRequests.calendarEventId],
-    references: [calendarEvents.id],
-  }),
-}));
+export const appointmentRequestsRelations = relations(
+  appointmentRequests,
+  ({ one }) => ({
+    calendar: one(calendars, {
+      fields: [appointmentRequests.calendarId],
+      references: [calendars.id],
+    }),
+    appointmentType: one(appointmentTypes, {
+      fields: [appointmentRequests.appointmentTypeId],
+      references: [appointmentTypes.id],
+    }),
+    respondedBy: one(users, {
+      fields: [appointmentRequests.respondedById],
+      references: [users.id],
+    }),
+    calendarEvent: one(calendarEvents, {
+      fields: [appointmentRequests.calendarEventId],
+      references: [calendarEvents.id],
+    }),
+  })
+);
 
 // ============================================================================
 // CAL-004: TIME OFF REQUESTS (Enhanced Features)
@@ -5892,11 +6041,16 @@ export const timeOffRequests = mysqlTable(
     status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected
     notes: text("notes"), // Employee notes
     responseNotes: text("response_notes"), // Manager response notes
-    calendarEventId: int("calendar_event_id").references(() => calendarEvents.id, { onDelete: "set null" }), // Created upon approval
+    calendarEventId: int("calendar_event_id").references(
+      () => calendarEvents.id,
+      { onDelete: "set null" }
+    ), // Created upon approval
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
     respondedAt: timestamp("responded_at"),
-    respondedById: int("responded_by_id").references(() => users.id, { onDelete: "set null" }),
+    respondedById: int("responded_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
   },
   table => ({
     userIdx: index("idx_time_off_requests_user").on(table.userId),
@@ -5911,21 +6065,24 @@ export type TimeOffRequest = typeof timeOffRequests.$inferSelect;
 export type InsertTimeOffRequest = typeof timeOffRequests.$inferInsert;
 
 // Relations for time off requests
-export const timeOffRequestsRelations = relations(timeOffRequests, ({ one }) => ({
-  user: one(users, {
-    fields: [timeOffRequests.userId],
-    references: [users.id],
-  }),
-  respondedBy: one(users, {
-    fields: [timeOffRequests.respondedById],
-    references: [users.id],
-    relationName: "timeOffResponder",
-  }),
-  calendarEvent: one(calendarEvents, {
-    fields: [timeOffRequests.calendarEventId],
-    references: [calendarEvents.id],
-  }),
-}));
+export const timeOffRequestsRelations = relations(
+  timeOffRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [timeOffRequests.userId],
+      references: [users.id],
+    }),
+    respondedBy: one(users, {
+      fields: [timeOffRequests.respondedById],
+      references: [users.id],
+      relationName: "timeOffResponder",
+    }),
+    calendarEvent: one(calendarEvents, {
+      fields: [timeOffRequests.calendarEventId],
+      references: [calendarEvents.id],
+    }),
+  })
+);
 
 // ============================================================================
 // WORKFLOW QUEUE MANAGEMENT TABLES (Initiative 1.3)
@@ -6132,7 +6289,6 @@ export {
   userPermissionOverridesRelations,
 } from "./schema-rbac";
 
-
 // ============================================================================
 // LEADERBOARD SYSTEM SCHEMA
 // ============================================================================
@@ -6140,7 +6296,7 @@ export {
 /**
  * Client Type Enum for Leaderboard
  * Defines the type of clients for leaderboard filtering
- * 
+ *
  * FIX-011: The enum name "leaderboard_client_type" was being used as the column name,
  * but the database column is actually "client_type" (from migration 0041).
  * We keep this enum definition for type inference but use explicit column names in tables.
@@ -6162,9 +6318,13 @@ export const leaderboardWeightConfigs = mysqlTable(
     userId: int("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    configName: varchar("config_name", { length: 100 }).notNull().default("default"),
+    configName: varchar("config_name", { length: 100 })
+      .notNull()
+      .default("default"),
     // FIX-011: Explicitly specify column name as 'client_type' to match database (migration 0041)
-    clientType: mysqlEnum("client_type", ["CUSTOMER", "SUPPLIER", "ALL"]).notNull().default("ALL"),
+    clientType: mysqlEnum("client_type", ["CUSTOMER", "SUPPLIER", "ALL"])
+      .notNull()
+      .default("ALL"),
     weights: json("weights").$type<Record<string, number>>().notNull(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -6181,8 +6341,10 @@ export const leaderboardWeightConfigs = mysqlTable(
   })
 );
 
-export type LeaderboardWeightConfig = typeof leaderboardWeightConfigs.$inferSelect;
-export type InsertLeaderboardWeightConfig = typeof leaderboardWeightConfigs.$inferInsert;
+export type LeaderboardWeightConfig =
+  typeof leaderboardWeightConfigs.$inferSelect;
+export type InsertLeaderboardWeightConfig =
+  typeof leaderboardWeightConfigs.$inferInsert;
 
 /**
  * Leaderboard Default Weights
@@ -6193,19 +6355,29 @@ export const leaderboardDefaultWeights = mysqlTable(
   {
     id: int("id").primaryKey().autoincrement(),
     // FIX-011: Explicitly specify column name as 'client_type' to match database (migration 0041)
-    clientType: mysqlEnum("client_type", ["CUSTOMER", "SUPPLIER", "ALL"]).notNull(),
+    clientType: mysqlEnum("client_type", [
+      "CUSTOMER",
+      "SUPPLIER",
+      "ALL",
+    ]).notNull(),
     weights: json("weights").$type<Record<string, number>>().notNull(),
-    updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedBy: int("updated_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
   table => ({
-    clientTypeIdx: unique("idx_default_weights_client_type").on(table.clientType),
+    clientTypeIdx: unique("idx_default_weights_client_type").on(
+      table.clientType
+    ),
   })
 );
 
-export type LeaderboardDefaultWeight = typeof leaderboardDefaultWeights.$inferSelect;
-export type InsertLeaderboardDefaultWeight = typeof leaderboardDefaultWeights.$inferInsert;
+export type LeaderboardDefaultWeight =
+  typeof leaderboardDefaultWeights.$inferSelect;
+export type InsertLeaderboardDefaultWeight =
+  typeof leaderboardDefaultWeights.$inferInsert;
 
 /**
  * Leaderboard Metric Cache
@@ -6231,14 +6403,18 @@ export const leaderboardMetricCache = mysqlTable(
     expiresAt: timestamp("expires_at").notNull(),
   },
   table => ({
-    clientMetricIdx: unique("idx_client_metric").on(table.clientId, table.metricType),
+    clientMetricIdx: unique("idx_client_metric").on(
+      table.clientId,
+      table.metricType
+    ),
     expiresIdx: index("idx_expires").on(table.expiresAt),
     metricTypeIdx: index("idx_metric_type").on(table.metricType),
   })
 );
 
 export type LeaderboardMetricCache = typeof leaderboardMetricCache.$inferSelect;
-export type InsertLeaderboardMetricCache = typeof leaderboardMetricCache.$inferInsert;
+export type InsertLeaderboardMetricCache =
+  typeof leaderboardMetricCache.$inferInsert;
 
 /**
  * Leaderboard Rank History
@@ -6262,13 +6438,17 @@ export const leaderboardRankHistory = mysqlTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   table => ({
-    clientDateIdx: unique("idx_client_date").on(table.clientId, table.snapshotDate),
+    clientDateIdx: unique("idx_client_date").on(
+      table.clientId,
+      table.snapshotDate
+    ),
     snapshotDateIdx: index("idx_snapshot_date").on(table.snapshotDate),
   })
 );
 
 export type LeaderboardRankHistory = typeof leaderboardRankHistory.$inferSelect;
-export type InsertLeaderboardRankHistory = typeof leaderboardRankHistory.$inferInsert;
+export type InsertLeaderboardRankHistory =
+  typeof leaderboardRankHistory.$inferInsert;
 
 /**
  * Dashboard Widget Configurations
@@ -6282,13 +6462,15 @@ export const dashboardWidgetConfigs = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     widgetType: varchar("widget_type", { length: 50 }).notNull(),
-    config: json("config").$type<{
-      metric?: string;
-      mode?: "top" | "bottom";
-      limit?: number;
-      clientType?: "ALL" | "CUSTOMER" | "SUPPLIER";
-      [key: string]: unknown;
-    }>().notNull(),
+    config: json("config")
+      .$type<{
+        metric?: string;
+        mode?: "top" | "bottom";
+        limit?: number;
+        clientType?: "ALL" | "CUSTOMER" | "SUPPLIER";
+        [key: string]: unknown;
+      }>()
+      .notNull(),
     position: int("position").notNull().default(0),
     isVisible: boolean("is_visible").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -6300,7 +6482,8 @@ export const dashboardWidgetConfigs = mysqlTable(
 );
 
 export type DashboardWidgetConfig = typeof dashboardWidgetConfigs.$inferSelect;
-export type InsertDashboardWidgetConfig = typeof dashboardWidgetConfigs.$inferInsert;
+export type InsertDashboardWidgetConfig =
+  typeof dashboardWidgetConfigs.$inferInsert;
 
 // Leaderboard Relations
 export const leaderboardWeightConfigsRelations = relations(
@@ -6362,11 +6545,11 @@ export const dashboardWidgetConfigsRelations = relations(
  * Tracks the lifecycle of referral credits
  */
 export const referralCreditStatusEnum = mysqlEnum("referralCreditStatus", [
-  "PENDING",    // Created when referred order created, waiting for finalization
-  "AVAILABLE",  // Referred order finalized, credit available for use
-  "APPLIED",    // Credit applied to VIP's order
-  "EXPIRED",    // Credit expired (if expiry configured)
-  "CANCELLED",  // Referred order was cancelled
+  "PENDING", // Created when referred order created, waiting for finalization
+  "AVAILABLE", // Referred order finalized, credit available for use
+  "APPLIED", // Credit applied to VIP's order
+  "EXPIRED", // Credit expired (if expiry configured)
+  "CANCELLED", // Referred order was cancelled
 ]);
 
 /**
@@ -6390,7 +6573,10 @@ export const referralCredits = mysqlTable(
       .notNull()
       .default("10.00"),
     orderTotal: decimal("order_total", { precision: 12, scale: 2 }).notNull(),
-    creditAmount: decimal("credit_amount", { precision: 12, scale: 2 }).notNull(),
+    creditAmount: decimal("credit_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
     status: referralCreditStatusEnum.notNull().default("PENDING"),
     appliedToOrderId: int("applied_to_order_id").references(() => orders.id),
     appliedAmount: decimal("applied_amount", { precision: 12, scale: 2 }),
@@ -6403,7 +6589,9 @@ export const referralCredits = mysqlTable(
   },
   table => ({
     referrerIdx: index("idx_referral_referrer").on(table.referrerClientId),
-    referredOrderIdx: index("idx_referral_referred_order").on(table.referredOrderId),
+    referredOrderIdx: index("idx_referral_referred_order").on(
+      table.referredOrderId
+    ),
     statusIdx: index("idx_referral_status").on(table.status),
   })
 );
@@ -6423,7 +6611,10 @@ export const referralSettings = mysqlTable(
     creditPercentage: decimal("credit_percentage", { precision: 5, scale: 2 })
       .notNull()
       .default("10.00"),
-    minOrderAmount: decimal("min_order_amount", { precision: 12, scale: 2 }).default("0"),
+    minOrderAmount: decimal("min_order_amount", {
+      precision: 12,
+      scale: 2,
+    }).default("0"),
     maxCreditAmount: decimal("max_credit_amount", { precision: 12, scale: 2 }), // NULL for no limit
     creditExpiryDays: int("credit_expiry_days"), // NULL for no expiry
     isActive: boolean("is_active").notNull().default(true),
@@ -6439,44 +6630,45 @@ export type ReferralSetting = typeof referralSettings.$inferSelect;
 export type InsertReferralSetting = typeof referralSettings.$inferInsert;
 
 // WS-004: Relations for referral credits
-export const referralCreditsRelations = relations(referralCredits, ({ one }) => ({
-  referrer: one(clients, {
-    fields: [referralCredits.referrerClientId],
-    references: [clients.id],
-    relationName: "referrer",
-  }),
-  referredClient: one(clients, {
-    fields: [referralCredits.referredClientId],
-    references: [clients.id],
-    relationName: "referredClient",
-  }),
-  referredOrder: one(orders, {
-    fields: [referralCredits.referredOrderId],
-    references: [orders.id],
-    relationName: "referredOrder",
-  }),
-  appliedToOrder: one(orders, {
-    fields: [referralCredits.appliedToOrderId],
-    references: [orders.id],
-    relationName: "appliedToOrder",
-  }),
-  appliedByUser: one(users, {
-    fields: [referralCredits.appliedBy],
-    references: [users.id],
-  }),
-}));
+export const referralCreditsRelations = relations(
+  referralCredits,
+  ({ one }) => ({
+    referrer: one(clients, {
+      fields: [referralCredits.referrerClientId],
+      references: [clients.id],
+      relationName: "referrer",
+    }),
+    referredClient: one(clients, {
+      fields: [referralCredits.referredClientId],
+      references: [clients.id],
+      relationName: "referredClient",
+    }),
+    referredOrder: one(orders, {
+      fields: [referralCredits.referredOrderId],
+      references: [orders.id],
+      relationName: "referredOrder",
+    }),
+    appliedToOrder: one(orders, {
+      fields: [referralCredits.appliedToOrderId],
+      references: [orders.id],
+      relationName: "appliedToOrder",
+    }),
+    appliedByUser: one(users, {
+      fields: [referralCredits.appliedBy],
+      references: [users.id],
+    }),
+  })
+);
 
 // ============================================================================
 // WS-006: RECEIPTS MODULE
 // ============================================================================
 
 // Receipt transaction type enum
-export const receiptTransactionTypeEnum = mysqlEnum("receipt_transaction_type", [
-  "PAYMENT",
-  "CREDIT",
-  "ADJUSTMENT",
-  "STATEMENT",
-]);
+export const receiptTransactionTypeEnum = mysqlEnum(
+  "receipt_transaction_type",
+  ["PAYMENT", "CREDIT", "ADJUSTMENT", "STATEMENT"]
+);
 
 // Receipts table for tracking generated receipts
 export const receipts = mysqlTable(
@@ -6484,11 +6676,19 @@ export const receipts = mysqlTable(
   {
     id: int("id").primaryKey().autoincrement(),
     receiptNumber: varchar("receipt_number", { length: 50 }).notNull().unique(),
-    clientId: int("client_id").notNull().references(() => clients.id),
+    clientId: int("client_id")
+      .notNull()
+      .references(() => clients.id),
     transactionType: receiptTransactionTypeEnum.notNull(),
     transactionId: int("transaction_id"), // Reference to payment/credit/etc.
-    previousBalance: decimal("previous_balance", { precision: 12, scale: 2 }).notNull(),
-    transactionAmount: decimal("transaction_amount", { precision: 12, scale: 2 }).notNull(),
+    previousBalance: decimal("previous_balance", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    transactionAmount: decimal("transaction_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
     newBalance: decimal("new_balance", { precision: 12, scale: 2 }).notNull(),
     note: text("note"),
     pdfUrl: varchar("pdf_url", { length: 500 }),
@@ -6532,8 +6732,12 @@ export const productImages = mysqlTable(
   "product_images",
   {
     id: int("id").primaryKey().autoincrement(),
-    batchId: int("batch_id").references(() => batches.id, { onDelete: "cascade" }),
-    productId: int("product_id").references(() => products.id, { onDelete: "cascade" }),
+    batchId: int("batch_id").references(() => batches.id, {
+      onDelete: "cascade",
+    }),
+    productId: int("product_id").references(() => products.id, {
+      onDelete: "cascade",
+    }),
     imageUrl: varchar("image_url", { length: 500 }).notNull(),
     thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
     caption: varchar("caption", { length: 255 }),
@@ -6592,11 +6796,16 @@ export const vendorHarvestReminders = mysqlTable(
   "vendor_harvest_reminders",
   {
     id: int("id").primaryKey().autoincrement(),
-    vendorId: int("vendor_id").notNull().references(() => vendors.id, { onDelete: "cascade" }),
+    vendorId: int("vendor_id")
+      .notNull()
+      .references(() => vendors.id, { onDelete: "cascade" }),
     expectedHarvestDate: date("expected_harvest_date").notNull(),
     reminderDate: date("reminder_date").notNull(),
     strain: varchar("strain", { length: 100 }),
-    estimatedQuantity: decimal("estimated_quantity", { precision: 12, scale: 2 }),
+    estimatedQuantity: decimal("estimated_quantity", {
+      precision: 12,
+      scale: 2,
+    }),
     actualQuantity: decimal("actual_quantity", { precision: 12, scale: 2 }),
     notes: text("notes"),
     status: reminderStatusEnum.default("PENDING"),
@@ -6609,31 +6818,41 @@ export const vendorHarvestReminders = mysqlTable(
     completionNotes: text("completion_notes"),
   },
   table => ({
-    vendorStatusIdx: index("idx_vendor_reminders").on(table.vendorId, table.status),
-    reminderDateIdx: index("idx_reminder_date").on(table.reminderDate, table.status),
+    vendorStatusIdx: index("idx_vendor_reminders").on(
+      table.vendorId,
+      table.status
+    ),
+    reminderDateIdx: index("idx_reminder_date").on(
+      table.reminderDate,
+      table.status
+    ),
   })
 );
 
 export type VendorHarvestReminder = typeof vendorHarvestReminders.$inferSelect;
-export type InsertVendorHarvestReminder = typeof vendorHarvestReminders.$inferInsert;
+export type InsertVendorHarvestReminder =
+  typeof vendorHarvestReminders.$inferInsert;
 
 // Relations for vendorHarvestReminders
-export const vendorHarvestRemindersRelations = relations(vendorHarvestReminders, ({ one }) => ({
-  vendor: one(vendors, {
-    fields: [vendorHarvestReminders.vendorId],
-    references: [vendors.id],
-  }),
-  creator: one(users, {
-    fields: [vendorHarvestReminders.createdBy],
-    references: [users.id],
-    relationName: "reminderCreator",
-  }),
-  contacter: one(users, {
-    fields: [vendorHarvestReminders.contactedBy],
-    references: [users.id],
-    relationName: "reminderContacter",
-  }),
-}));
+export const vendorHarvestRemindersRelations = relations(
+  vendorHarvestReminders,
+  ({ one }) => ({
+    vendor: one(vendors, {
+      fields: [vendorHarvestReminders.vendorId],
+      references: [vendors.id],
+    }),
+    creator: one(users, {
+      fields: [vendorHarvestReminders.createdBy],
+      references: [users.id],
+      relationName: "reminderCreator",
+    }),
+    contacter: one(users, {
+      fields: [vendorHarvestReminders.contactedBy],
+      references: [users.id],
+      relationName: "reminderContacter",
+    }),
+  })
+);
 
 // ============================================================================
 // USER PREFERENCES (FEAT-010: Default Warehouse Selection)
@@ -6651,16 +6870,26 @@ export const userPreferences = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" })
       .unique(),
-    defaultWarehouseId: int("default_warehouse_id").references(() => locations.id, {
-      onDelete: "set null",
-    }),
-    defaultLocationId: int("default_location_id").references(() => locations.id, {
-      onDelete: "set null",
-    }),
+    defaultWarehouseId: int("default_warehouse_id").references(
+      () => locations.id,
+      {
+        onDelete: "set null",
+      }
+    ),
+    defaultLocationId: int("default_location_id").references(
+      () => locations.id,
+      {
+        onDelete: "set null",
+      }
+    ),
     showCogsInOrders: boolean("show_cogs_in_orders").notNull().default(true),
-    showMarginInOrders: boolean("show_margin_in_orders").notNull().default(true),
+    showMarginInOrders: boolean("show_margin_in_orders")
+      .notNull()
+      .default(true),
     showGradeField: boolean("show_grade_field").notNull().default(true),
-    hideExpectedDelivery: boolean("hide_expected_delivery").notNull().default(false),
+    hideExpectedDelivery: boolean("hide_expected_delivery")
+      .notNull()
+      .default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
@@ -6680,26 +6909,31 @@ export type InsertUserPreference = typeof userPreferences.$inferInsert;
  * Organization Settings Table
  * Stores organization-wide configuration options
  */
-export const organizationSettings = mysqlTable(
-  "organization_settings",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    settingKey: varchar("setting_key", { length: 100 }).notNull().unique(),
-    settingValue: json("setting_value"),
-    settingType: mysqlEnum("setting_type", ["BOOLEAN", "STRING", "NUMBER", "JSON"])
-      .notNull()
-      .default("STRING"),
-    description: text("description"),
-    isActive: boolean("is_active").notNull().default(true),
-    // FEAT-021/FEAT-023: Scope for system vs user level settings
-    scope: mysqlEnum("scope", ["SYSTEM", "USER", "TEAM"]).notNull().default("SYSTEM"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-  }
-);
+export const organizationSettings = mysqlTable("organization_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("setting_key", { length: 100 }).notNull().unique(),
+  settingValue: json("setting_value"),
+  settingType: mysqlEnum("setting_type", [
+    "BOOLEAN",
+    "STRING",
+    "NUMBER",
+    "JSON",
+  ])
+    .notNull()
+    .default("STRING"),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  // FEAT-021/FEAT-023: Scope for system vs user level settings
+  scope: mysqlEnum("scope", ["SYSTEM", "USER", "TEAM"])
+    .notNull()
+    .default("SYSTEM"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
 
 export type OrganizationSetting = typeof organizationSettings.$inferSelect;
-export type InsertOrganizationSetting = typeof organizationSettings.$inferInsert;
+export type InsertOrganizationSetting =
+  typeof organizationSettings.$inferInsert;
 
 // ============================================================================
 // UNIT TYPES (FEAT-013: Packaged Unit Type)
@@ -6719,22 +6953,22 @@ export const unitTypeCategoryEnum = mysqlEnum("unitTypeCategory", [
  * Unit Types Table
  * Customizable unit types including packaged products
  */
-export const unitTypes = mysqlTable(
-  "unit_types",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    code: varchar("code", { length: 20 }).notNull().unique(),
-    name: varchar("name", { length: 100 }).notNull(),
-    description: text("description"),
-    category: unitTypeCategoryEnum.notNull(),
-    conversionFactor: decimal("conversion_factor", { precision: 15, scale: 6 }).default("1"),
-    baseUnitCode: varchar("base_unit_code", { length: 20 }),
-    isActive: boolean("is_active").notNull().default(true),
-    sortOrder: int("sort_order").notNull().default(0),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-  }
-);
+export const unitTypes = mysqlTable("unit_types", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  category: unitTypeCategoryEnum.notNull(),
+  conversionFactor: decimal("conversion_factor", {
+    precision: 15,
+    scale: 6,
+  }).default("1"),
+  baseUnitCode: varchar("base_unit_code", { length: 20 }),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
 
 export type UnitType = typeof unitTypes.$inferSelect;
 export type InsertUnitType = typeof unitTypes.$inferInsert;
@@ -6775,14 +7009,20 @@ export const customFinanceStatuses = mysqlTable(
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
   table => ({
-    entityTypeIdx: index("idx_custom_finance_statuses_entity").on(table.entityType),
+    entityTypeIdx: index("idx_custom_finance_statuses_entity").on(
+      table.entityType
+    ),
     activeIdx: index("idx_custom_finance_statuses_active").on(table.isActive),
-    uniqueEntityStatus: unique("unique_entity_status").on(table.entityType, table.statusCode),
+    uniqueEntityStatus: unique("unique_entity_status").on(
+      table.entityType,
+      table.statusCode
+    ),
   })
 );
 
 export type CustomFinanceStatus = typeof customFinanceStatuses.$inferSelect;
-export type InsertCustomFinanceStatus = typeof customFinanceStatuses.$inferInsert;
+export type InsertCustomFinanceStatus =
+  typeof customFinanceStatuses.$inferInsert;
 
 // ============================================================================
 // CASH AUDIT MODULE (FEAT-007)
@@ -6799,7 +7039,10 @@ export const cashLocations = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
-    currentBalance: decimal("current_balance", { precision: 12, scale: 2 }).default("0"),
+    currentBalance: decimal("current_balance", {
+      precision: 12,
+      scale: 2,
+    }).default("0"),
     isActive: boolean("is_active").default(true),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
@@ -6838,7 +7081,10 @@ export const cashLocationTransactions = mysqlTable(
     locationIdIdx: index("idx_cash_loc_tx_location").on(table.locationId),
     typeIdx: index("idx_cash_loc_tx_type").on(table.transactionType),
     createdAtIdx: index("idx_cash_loc_tx_created").on(table.createdAt),
-    referenceIdx: index("idx_cash_loc_tx_reference").on(table.referenceType, table.referenceId),
+    referenceIdx: index("idx_cash_loc_tx_reference").on(
+      table.referenceType,
+      table.referenceId
+    ),
     // FKs with explicit short names to avoid MySQL 64-char identifier limit
     locationFk: foreignKey({
       name: "fk_cash_loc_tx_loc",
@@ -6863,34 +7109,39 @@ export const cashLocationTransactions = mysqlTable(
   })
 );
 
-export type CashLocationTransaction = typeof cashLocationTransactions.$inferSelect;
-export type InsertCashLocationTransaction = typeof cashLocationTransactions.$inferInsert;
+export type CashLocationTransaction =
+  typeof cashLocationTransactions.$inferSelect;
+export type InsertCashLocationTransaction =
+  typeof cashLocationTransactions.$inferInsert;
 
 // Relations for cash audit module
 export const cashLocationsRelations = relations(cashLocations, ({ many }) => ({
   transactions: many(cashLocationTransactions),
 }));
 
-export const cashLocationTransactionsRelations = relations(cashLocationTransactions, ({ one }) => ({
-  location: one(cashLocations, {
-    fields: [cashLocationTransactions.locationId],
-    references: [cashLocations.id],
-  }),
-  createdByUser: one(users, {
-    fields: [cashLocationTransactions.createdBy],
-    references: [users.id],
-  }),
-  transferToLocation: one(cashLocations, {
-    fields: [cashLocationTransactions.transferToLocationId],
-    references: [cashLocations.id],
-    relationName: "transferTo",
-  }),
-  transferFromLocation: one(cashLocations, {
-    fields: [cashLocationTransactions.transferFromLocationId],
-    references: [cashLocations.id],
-    relationName: "transferFrom",
-  }),
-}));
+export const cashLocationTransactionsRelations = relations(
+  cashLocationTransactions,
+  ({ one }) => ({
+    location: one(cashLocations, {
+      fields: [cashLocationTransactions.locationId],
+      references: [cashLocations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [cashLocationTransactions.createdBy],
+      references: [users.id],
+    }),
+    transferToLocation: one(cashLocations, {
+      fields: [cashLocationTransactions.transferToLocationId],
+      references: [cashLocations.id],
+      relationName: "transferTo",
+    }),
+    transferFromLocation: one(cashLocations, {
+      fields: [cashLocationTransactions.transferFromLocationId],
+      references: [cashLocations.id],
+      relationName: "transferFrom",
+    }),
+  })
+);
 
 /**
  * Shift Audits Table
@@ -6948,23 +7199,26 @@ export const shiftAuditsRelations = relations(shiftAudits, ({ one }) => ({
  * Tracks the status of payables to vendors for consigned inventory
  */
 export const vendorPayableStatusEnum = mysqlEnum("vendor_payable_status", [
-  "PENDING",  // Inventory still on hand, payable not yet due
-  "DUE",      // Inventory sold out, payable is now due to vendor
-  "PARTIAL",  // Some payment made, balance remaining
-  "PAID",     // Fully paid
-  "VOID",     // Voided (e.g., inventory returned or destroyed)
+  "PENDING", // Inventory still on hand, payable not yet due
+  "DUE", // Inventory sold out, payable is now due to vendor
+  "PARTIAL", // Some payment made, balance remaining
+  "PAID", // Fully paid
+  "VOID", // Voided (e.g., inventory returned or destroyed)
 ]);
 
 /**
  * Payable Notification Type Enum (MEET-005)
  * Types of notifications for payables
  */
-export const payableNotificationTypeEnum = mysqlEnum("payable_notification_type", [
-  "GRACE_PERIOD_WARNING",  // Warning before payable becomes due
-  "PAYABLE_DUE",           // Payable is now due
-  "PAYMENT_REMINDER",      // Reminder for outstanding payable
-  "OVERDUE",               // Payable is past due
-]);
+export const payableNotificationTypeEnum = mysqlEnum(
+  "payable_notification_type",
+  [
+    "GRACE_PERIOD_WARNING", // Warning before payable becomes due
+    "PAYABLE_DUE", // Payable is now due
+    "PAYMENT_REMINDER", // Reminder for outstanding payable
+    "OVERDUE", // Payable is past due
+  ]
+);
 
 /**
  * Vendor Payables Table (MEET-005)
@@ -6993,11 +7247,22 @@ export const vendorPayables = mysqlTable(
 
     // Payable details
     payableNumber: varchar("payable_number", { length: 50 }).notNull().unique(),
-    unitsSold: decimal("units_sold", { precision: 15, scale: 2 }).notNull().default("0"),
-    cogsPerUnit: decimal("cogs_per_unit", { precision: 15, scale: 2 }).notNull(),
-    totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull().default("0"),
-    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).notNull().default("0"),
-    amountDue: decimal("amount_due", { precision: 15, scale: 2 }).notNull().default("0"),
+    unitsSold: decimal("units_sold", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0"),
+    cogsPerUnit: decimal("cogs_per_unit", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+    totalAmount: decimal("total_amount", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0"),
+    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0"),
+    amountDue: decimal("amount_due", { precision: 15, scale: 2 })
+      .notNull()
+      .default("0"),
 
     // Status tracking
     status: vendorPayableStatusEnum.notNull().default("PENDING"),
@@ -7042,7 +7307,9 @@ export const payableNotifications = mysqlTable(
       .notNull()
       .references(() => vendorPayables.id, { onDelete: "cascade" }),
     notificationType: payableNotificationTypeEnum.notNull(),
-    sentToUserId: int("sent_to_user_id").references(() => users.id, { onDelete: "set null" }),
+    sentToUserId: int("sent_to_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     sentToRole: varchar("sent_to_role", { length: 50 }),
 
     // Notification content
@@ -7052,7 +7319,9 @@ export const payableNotifications = mysqlTable(
     // Status
     sentAt: timestamp("sent_at").defaultNow().notNull(),
     readAt: timestamp("read_at"),
-    acknowledgedBy: int("acknowledged_by").references(() => users.id, { onDelete: "set null" }),
+    acknowledgedBy: int("acknowledged_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     acknowledgedAt: timestamp("acknowledged_at"),
   },
   table => ({
@@ -7062,7 +7331,8 @@ export const payableNotifications = mysqlTable(
 );
 
 export type PayableNotification = typeof payableNotifications.$inferSelect;
-export type InsertPayableNotification = typeof payableNotifications.$inferInsert;
+export type InsertPayableNotification =
+  typeof payableNotifications.$inferInsert;
 
 /**
  * Invoice Payments Junction Table (FEAT-007)
@@ -7081,7 +7351,10 @@ export const invoicePayments = mysqlTable(
     invoiceId: int("invoice_id")
       .notNull()
       .references(() => invoices.id, { onDelete: "restrict" }),
-    allocatedAmount: decimal("allocated_amount", { precision: 15, scale: 2 }).notNull(),
+    allocatedAmount: decimal("allocated_amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
     // Allocation metadata
     allocatedAt: timestamp("allocated_at").defaultNow().notNull(),
@@ -7093,7 +7366,10 @@ export const invoicePayments = mysqlTable(
   table => ({
     paymentIdx: index("idx_invoice_payments_payment").on(table.paymentId),
     invoiceIdx: index("idx_invoice_payments_invoice").on(table.invoiceId),
-    uniqueAllocation: uniqueIndex("uk_invoice_payments").on(table.paymentId, table.invoiceId),
+    uniqueAllocation: uniqueIndex("uk_invoice_payments").on(
+      table.paymentId,
+      table.invoiceId
+    ),
   })
 );
 
@@ -7101,63 +7377,71 @@ export type InvoicePayment = typeof invoicePayments.$inferSelect;
 export type InsertInvoicePayment = typeof invoicePayments.$inferInsert;
 
 // Relations for vendor payables
-export const vendorPayablesRelations = relations(vendorPayables, ({ one, many }) => ({
-  vendor: one(clients, {
-    fields: [vendorPayables.vendorClientId],
-    references: [clients.id],
-  }),
-  batch: one(batches, {
-    fields: [vendorPayables.batchId],
-    references: [batches.id],
-  }),
-  lot: one(lots, {
-    fields: [vendorPayables.lotId],
-    references: [lots.id],
-  }),
-  createdByUser: one(users, {
-    fields: [vendorPayables.createdBy],
-    references: [users.id],
-  }),
-  notifications: many(payableNotifications),
-}));
+export const vendorPayablesRelations = relations(
+  vendorPayables,
+  ({ one, many }) => ({
+    vendor: one(clients, {
+      fields: [vendorPayables.vendorClientId],
+      references: [clients.id],
+    }),
+    batch: one(batches, {
+      fields: [vendorPayables.batchId],
+      references: [batches.id],
+    }),
+    lot: one(lots, {
+      fields: [vendorPayables.lotId],
+      references: [lots.id],
+    }),
+    createdByUser: one(users, {
+      fields: [vendorPayables.createdBy],
+      references: [users.id],
+    }),
+    notifications: many(payableNotifications),
+  })
+);
 
 // Relations for payable notifications
-export const payableNotificationsRelations = relations(payableNotifications, ({ one }) => ({
-  payable: one(vendorPayables, {
-    fields: [payableNotifications.payableId],
-    references: [vendorPayables.id],
-  }),
-  sentToUser: one(users, {
-    fields: [payableNotifications.sentToUserId],
-    references: [users.id],
-  }),
-  acknowledgedByUser: one(users, {
-    fields: [payableNotifications.acknowledgedBy],
-    references: [users.id],
-  }),
-}));
+export const payableNotificationsRelations = relations(
+  payableNotifications,
+  ({ one }) => ({
+    payable: one(vendorPayables, {
+      fields: [payableNotifications.payableId],
+      references: [vendorPayables.id],
+    }),
+    sentToUser: one(users, {
+      fields: [payableNotifications.sentToUserId],
+      references: [users.id],
+    }),
+    acknowledgedByUser: one(users, {
+      fields: [payableNotifications.acknowledgedBy],
+      references: [users.id],
+    }),
+  })
+);
 
 // Relations for invoice payments
-export const invoicePaymentsRelations = relations(invoicePayments, ({ one }) => ({
-  payment: one(payments, {
-    fields: [invoicePayments.paymentId],
-    references: [payments.id],
-  }),
-  invoice: one(invoices, {
-    fields: [invoicePayments.invoiceId],
-    references: [invoices.id],
-  }),
-  allocatedByUser: one(users, {
-    fields: [invoicePayments.allocatedBy],
-    references: [users.id],
-  }),
-}));
+export const invoicePaymentsRelations = relations(
+  invoicePayments,
+  ({ one }) => ({
+    payment: one(payments, {
+      fields: [invoicePayments.paymentId],
+      references: [payments.id],
+    }),
+    invoice: one(invoices, {
+      fields: [invoicePayments.invoiceId],
+      references: [invoices.id],
+    }),
+    allocatedByUser: one(users, {
+      fields: [invoicePayments.allocatedBy],
+      references: [users.id],
+    }),
+  })
+);
 
 // ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)
 // ============================================================================
 export * from "./schema-live-shopping";
-
 
 // ============================================================================
 // FEATURE FLAGS MODULE
@@ -7168,6 +7452,16 @@ export * from "./schema-feature-flags";
 // SCHEDULING MODULE (Sprint 4 Track D)
 // ============================================================================
 export * from "./schema-scheduling";
+
+// ============================================================================
+// GAMIFICATION MODULE (Sprint 5 Track B)
+// ============================================================================
+export * from "./schema-gamification";
+
+// ============================================================================
+// STORAGE & LOCATION MODULE (Sprint 5 Track E)
+// ============================================================================
+export * from "./schema-storage";
 
 // ============================================================================
 // ACCOUNTING MODULE RELATIONS (BUG-046 FIX)
@@ -7187,12 +7481,15 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
 }));
 
 // Relations for invoiceLineItems
-export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({
-  invoice: one(invoices, {
-    fields: [invoiceLineItems.invoiceId],
-    references: [invoices.id],
-  }),
-}));
+export const invoiceLineItemsRelations = relations(
+  invoiceLineItems,
+  ({ one }) => ({
+    invoice: one(invoices, {
+      fields: [invoiceLineItems.invoiceId],
+      references: [invoices.id],
+    }),
+  })
+);
 
 // Relations for bills
 export const billsRelations = relations(bills, ({ one, many }) => ({
@@ -7241,33 +7538,39 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
 }));
 
 // Relations for orderLineItems
-export const orderLineItemsRelations = relations(orderLineItems, ({ one, many }) => ({
-  order: one(orders, {
-    fields: [orderLineItems.orderId],
-    references: [orders.id],
-  }),
-  batch: one(batches, {
-    fields: [orderLineItems.batchId],
-    references: [batches.id],
-  }),
-  allocations: many(orderLineItemAllocations),
-}));
+export const orderLineItemsRelations = relations(
+  orderLineItems,
+  ({ one, many }) => ({
+    order: one(orders, {
+      fields: [orderLineItems.orderId],
+      references: [orders.id],
+    }),
+    batch: one(batches, {
+      fields: [orderLineItems.batchId],
+      references: [batches.id],
+    }),
+    allocations: many(orderLineItemAllocations),
+  })
+);
 
 // WSQA-002: Relations for orderLineItemAllocations
-export const orderLineItemAllocationsRelations = relations(orderLineItemAllocations, ({ one }) => ({
-  lineItem: one(orderLineItems, {
-    fields: [orderLineItemAllocations.orderLineItemId],
-    references: [orderLineItems.id],
-  }),
-  batch: one(batches, {
-    fields: [orderLineItemAllocations.batchId],
-    references: [batches.id],
-  }),
-  allocatedByUser: one(users, {
-    fields: [orderLineItemAllocations.allocatedBy],
-    references: [users.id],
-  }),
-}));
+export const orderLineItemAllocationsRelations = relations(
+  orderLineItemAllocations,
+  ({ one }) => ({
+    lineItem: one(orderLineItems, {
+      fields: [orderLineItemAllocations.orderLineItemId],
+      references: [orderLineItems.id],
+    }),
+    batch: one(batches, {
+      fields: [orderLineItemAllocations.batchId],
+      references: [batches.id],
+    }),
+    allocatedByUser: one(users, {
+      fields: [orderLineItemAllocations.allocatedBy],
+      references: [users.id],
+    }),
+  })
+);
 
 // Relations for clients
 export const clientsRelations = relations(clients, ({ many }) => ({
@@ -7285,31 +7588,34 @@ export const clientsRelations = relations(clients, ({ many }) => ({
  * Tracks the lifecycle of an intake receipt through verification
  */
 export const intakeReceiptStatusEnum = mysqlEnum("intake_receipt_status", [
-  "PENDING",          // Initial state - awaiting farmer verification
-  "FARMER_VERIFIED",  // Farmer has acknowledged the receipt
+  "PENDING", // Initial state - awaiting farmer verification
+  "FARMER_VERIFIED", // Farmer has acknowledged the receipt
   "STACKER_VERIFIED", // Stacker has verified actual quantities
-  "FINALIZED",        // Both parties verified, inventory updated
-  "DISPUTED",         // Discrepancy requires admin resolution
+  "FINALIZED", // Both parties verified, inventory updated
+  "DISPUTED", // Discrepancy requires admin resolution
 ]);
 
 /**
  * Intake Receipt Verification Status Enum
  * Status for individual line items
  */
-export const intakeVerificationStatusEnum = mysqlEnum("intake_verification_status", [
-  "PENDING",     // Not yet verified
-  "VERIFIED",    // Verified as correct
-  "DISCREPANCY", // Quantity mismatch found
-]);
+export const intakeVerificationStatusEnum = mysqlEnum(
+  "intake_verification_status",
+  [
+    "PENDING", // Not yet verified
+    "VERIFIED", // Verified as correct
+    "DISCREPANCY", // Quantity mismatch found
+  ]
+);
 
 /**
  * Intake Discrepancy Resolution Enum
  * How a discrepancy was resolved
  */
 export const intakeResolutionEnum = mysqlEnum("intake_resolution", [
-  "ACCEPTED",  // Accept actual quantity
-  "ADJUSTED",  // Adjust to expected quantity
-  "REJECTED",  // Reject the item entirely
+  "ACCEPTED", // Accept actual quantity
+  "ADJUSTED", // Adjust to expected quantity
+  "REJECTED", // Reject the item entirely
 ]);
 
 /**
@@ -7347,7 +7653,7 @@ export const intakeReceipts = mysqlTable(
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
-  (table) => ({
+  table => ({
     supplierIdx: index("idx_intake_receipts_supplier").on(table.supplierId),
     statusIdx: index("idx_intake_receipts_status").on(table.status),
     createdIdx: index("idx_intake_receipts_created").on(table.createdAt),
@@ -7372,16 +7678,21 @@ export const intakeReceiptItems = mysqlTable(
       .references(() => intakeReceipts.id, { onDelete: "cascade" }),
     productId: int("product_id").references(() => products.id),
     productName: varchar("product_name", { length: 255 }).notNull(),
-    expectedQuantity: decimal("expected_quantity", { precision: 12, scale: 4 }).notNull(),
+    expectedQuantity: decimal("expected_quantity", {
+      precision: 12,
+      scale: 4,
+    }).notNull(),
     actualQuantity: decimal("actual_quantity", { precision: 12, scale: 4 }),
     unit: varchar("unit", { length: 20 }).notNull(),
     expectedPrice: decimal("expected_price", { precision: 12, scale: 2 }),
-    verificationStatus: varchar("verification_status", { length: 20 }).default("PENDING"),
+    verificationStatus: varchar("verification_status", { length: 20 }).default(
+      "PENDING"
+    ),
     // Status: 'PENDING', 'VERIFIED', 'DISCREPANCY'
     discrepancyNotes: text("discrepancy_notes"),
     createdAt: timestamp("created_at").defaultNow(),
   },
-  (table) => ({
+  table => ({
     receiptIdx: index("idx_intake_receipt_items_receipt").on(table.receiptId),
     productIdx: index("idx_intake_receipt_items_product").on(table.productId),
   })
@@ -7415,10 +7726,12 @@ export const intakeDiscrepancies = mysqlTable(
     resolvedAt: timestamp("resolved_at"),
     createdAt: timestamp("created_at").defaultNow(),
   },
-  (table) => ({
+  table => ({
     receiptIdx: index("idx_intake_discrepancies_receipt").on(table.receiptId),
     itemIdx: index("idx_intake_discrepancies_item").on(table.itemId),
-    resolutionIdx: index("idx_intake_discrepancies_resolution").on(table.resolution),
+    resolutionIdx: index("idx_intake_discrepancies_resolution").on(
+      table.resolution
+    ),
   })
 );
 
@@ -7426,60 +7739,69 @@ export type IntakeDiscrepancy = typeof intakeDiscrepancies.$inferSelect;
 export type InsertIntakeDiscrepancy = typeof intakeDiscrepancies.$inferInsert;
 
 // Relations for intake receipts
-export const intakeReceiptsRelations = relations(intakeReceipts, ({ one, many }) => ({
-  supplier: one(clients, {
-    fields: [intakeReceipts.supplierId],
-    references: [clients.id],
-  }),
-  creator: one(users, {
-    fields: [intakeReceipts.createdBy],
-    references: [users.id],
-    relationName: "intakeReceiptCreator",
-  }),
-  farmerVerifier: one(users, {
-    fields: [intakeReceipts.farmerVerifiedBy],
-    references: [users.id],
-    relationName: "intakeReceiptFarmerVerifier",
-  }),
-  stackerVerifier: one(users, {
-    fields: [intakeReceipts.stackerVerifiedBy],
-    references: [users.id],
-    relationName: "intakeReceiptStackerVerifier",
-  }),
-  finalizer: one(users, {
-    fields: [intakeReceipts.finalizedBy],
-    references: [users.id],
-    relationName: "intakeReceiptFinalizer",
-  }),
-  items: many(intakeReceiptItems),
-  discrepancies: many(intakeDiscrepancies),
-}));
+export const intakeReceiptsRelations = relations(
+  intakeReceipts,
+  ({ one, many }) => ({
+    supplier: one(clients, {
+      fields: [intakeReceipts.supplierId],
+      references: [clients.id],
+    }),
+    creator: one(users, {
+      fields: [intakeReceipts.createdBy],
+      references: [users.id],
+      relationName: "intakeReceiptCreator",
+    }),
+    farmerVerifier: one(users, {
+      fields: [intakeReceipts.farmerVerifiedBy],
+      references: [users.id],
+      relationName: "intakeReceiptFarmerVerifier",
+    }),
+    stackerVerifier: one(users, {
+      fields: [intakeReceipts.stackerVerifiedBy],
+      references: [users.id],
+      relationName: "intakeReceiptStackerVerifier",
+    }),
+    finalizer: one(users, {
+      fields: [intakeReceipts.finalizedBy],
+      references: [users.id],
+      relationName: "intakeReceiptFinalizer",
+    }),
+    items: many(intakeReceiptItems),
+    discrepancies: many(intakeDiscrepancies),
+  })
+);
 
 // Relations for intake receipt items
-export const intakeReceiptItemsRelations = relations(intakeReceiptItems, ({ one, many }) => ({
-  receipt: one(intakeReceipts, {
-    fields: [intakeReceiptItems.receiptId],
-    references: [intakeReceipts.id],
-  }),
-  product: one(products, {
-    fields: [intakeReceiptItems.productId],
-    references: [products.id],
-  }),
-  discrepancies: many(intakeDiscrepancies),
-}));
+export const intakeReceiptItemsRelations = relations(
+  intakeReceiptItems,
+  ({ one, many }) => ({
+    receipt: one(intakeReceipts, {
+      fields: [intakeReceiptItems.receiptId],
+      references: [intakeReceipts.id],
+    }),
+    product: one(products, {
+      fields: [intakeReceiptItems.productId],
+      references: [products.id],
+    }),
+    discrepancies: many(intakeDiscrepancies),
+  })
+);
 
 // Relations for intake discrepancies
-export const intakeDiscrepanciesRelations = relations(intakeDiscrepancies, ({ one }) => ({
-  receipt: one(intakeReceipts, {
-    fields: [intakeDiscrepancies.receiptId],
-    references: [intakeReceipts.id],
-  }),
-  item: one(intakeReceiptItems, {
-    fields: [intakeDiscrepancies.itemId],
-    references: [intakeReceiptItems.id],
-  }),
-  resolver: one(users, {
-    fields: [intakeDiscrepancies.resolvedBy],
-    references: [users.id],
-  }),
-}));
+export const intakeDiscrepanciesRelations = relations(
+  intakeDiscrepancies,
+  ({ one }) => ({
+    receipt: one(intakeReceipts, {
+      fields: [intakeDiscrepancies.receiptId],
+      references: [intakeReceipts.id],
+    }),
+    item: one(intakeReceiptItems, {
+      fields: [intakeDiscrepancies.itemId],
+      references: [intakeReceiptItems.id],
+    }),
+    resolver: one(users, {
+      fields: [intakeDiscrepancies.resolvedBy],
+      references: [users.id],
+    }),
+  })
+);

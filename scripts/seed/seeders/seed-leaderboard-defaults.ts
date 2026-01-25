@@ -3,7 +3,8 @@
  * Seeds the default weight configurations for the leaderboard system
  */
 
-import { db } from "../../../server/_core/db";
+import { fileURLToPath } from "url";
+import { db } from "../../db-sync";
 import { leaderboardDefaultWeights } from "../../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
@@ -50,7 +51,7 @@ const ALL_DEFAULT_WEIGHTS: Record<string, number> = {
 };
 
 export async function seedLeaderboardDefaults(): Promise<void> {
-  console.log("🏆 Seeding leaderboard default weights...");
+  console.info("🏆 Seeding leaderboard default weights...");
 
   const configs = [
     { clientType: "CUSTOMER" as const, weights: CUSTOMER_DEFAULT_WEIGHTS },
@@ -65,7 +66,7 @@ export async function seedLeaderboardDefaults(): Promise<void> {
     });
 
     if (existing) {
-      console.log(`  ✓ ${config.clientType} weights already exist, skipping`);
+      console.info(`  ✓ ${config.clientType} weights already exist, skipping`);
       continue;
     }
 
@@ -76,14 +77,16 @@ export async function seedLeaderboardDefaults(): Promise<void> {
       updatedBy: null, // System-generated
     });
 
-    console.log(`  ✓ Created ${config.clientType} default weights`);
+    console.info(`  ✓ Created ${config.clientType} default weights`);
   }
 
-  console.log("✅ Leaderboard default weights seeded successfully");
+  console.info("✅ Leaderboard default weights seeded successfully");
 }
 
 // Allow running directly
-if (require.main === module) {
+// QA-002: Use ESM pattern instead of CommonJS require.main
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
   seedLeaderboardDefaults()
     .then(() => process.exit(0))
     .catch(err => {

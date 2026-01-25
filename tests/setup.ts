@@ -1,6 +1,18 @@
-import { expect, afterEach, vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+
+// Mock ResizeObserver for jsdom (browser global not available in test environment)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof window !== 'undefined' && !(window as any).ResizeObserver) {
+  class ResizeObserverMock {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).ResizeObserver = ResizeObserverMock;
+}
 
 // Cleanup after each test case (for React tests)
 afterEach(() => {
@@ -15,6 +27,15 @@ const testJwtValue = 'test-jwt-value-for-testing-minimum-32-chars';
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = testJwtValue;
 }
+// Set a test DATABASE_URL to allow modules that check for it to load
+// This is a placeholder - actual database connections will fail but pure function tests will work
+// NOTE: Some server modules will attempt to connect and log CRITICAL errors - this is expected
+// in unit tests and does not affect test results. For integration tests, use a real database.
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'mysql://test:test@localhost:3306/terp_test';
+}
+// Mark this as a test environment to allow server modules to skip health checks
+process.env.VITEST = 'true';
 
 // Global test utilities
 global.testUtils = {
@@ -107,7 +128,7 @@ const createTrpcMockProxy = (path: string): any => {
   return new Proxy(
     {},
     {
-      get: (target, prop, receiver) => {
+      get: (_target, prop, _receiver) => {
         const fullPath = `${path}.${String(prop)}`;
         
         // Handle the terminal hook calls (useQuery, useMutation, etc.)
