@@ -132,7 +132,7 @@
     "gate:placeholder": "bash scripts/qa/placeholder-scan.sh",
     "gate:rbac": "bash scripts/qa/rbac-verify.sh",
     "gate:parity": "bash scripts/qa/feature-parity.sh",
-    "gate:invariants": "npx tsx scripts/qa/invariant-checks.ts",
+    "gate:invariants": "tsx scripts/qa/invariant-checks.ts",
     "gate:all": "npm run gate:placeholder && npm run gate:rbac && npm run gate:parity",
     "validate:accelerated": "bash scripts/validation/run-accelerated-validation.sh"
   },

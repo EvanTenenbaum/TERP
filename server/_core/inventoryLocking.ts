@@ -265,6 +265,100 @@ export async function withMultiBatchLock<T>(
 // ============================================================================
 
 /**
+ * Internal helper: Allocate from an already-locked batch directly
+ * This function does NOT acquire a lock - the caller must ensure the batch is already locked.
+ * Used by allocateFromMultipleBatches to avoid double-locking.
+ *
+ * @internal
+ */
+async function _allocateBatchDirect(
+  tx: DrizzleTx,
+  batch: LockedBatch,
+  request: {
+    quantity: number;
+    orderId?: number;
+    orderLineItemId?: number;
+    userId: number;
+  },
+  options: { throwOnInsufficient?: boolean } = {}
+): Promise<AllocationResult> {
+  const { quantity, orderId, orderLineItemId, userId } = request;
+  const { throwOnInsufficient = true } = options;
+  const db = tx;
+  const batchId = batch.id;
+
+  // Validate available quantity
+  const availableQty = batch.onHandQty - (batch.allocatedQty || 0);
+  if (availableQty < quantity) {
+    if (throwOnInsufficient) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: `Insufficient quantity in batch ${batchId}. Available: ${availableQty}, Requested: ${quantity}`,
+      });
+    }
+    // Return partial allocation if allowed
+    return {
+      batchId,
+      quantityAllocated: 0,
+      unitCogs: batch.unitCogs || 0,
+      previousQty: batch.onHandQty,
+      newQty: batch.onHandQty,
+    };
+  }
+
+  // Calculate before/after quantities
+  const quantityBefore = batch.onHandQty;
+  const quantityAfter = batch.onHandQty - quantity;
+
+  // Update batch quantities
+  await db
+    .update(batches)
+    .set({
+      onHandQty: sql`on_hand_qty - ${quantity}`,
+      updatedAt: new Date(),
+    })
+    .where(eq(batches.id, batchId));
+
+  // Record inventory movement (using correct schema column names)
+  await db.insert(inventoryMovements).values({
+    batchId,
+    inventoryMovementType: "SALE", // SALE is the correct type for allocations
+    quantityChange: (-quantity).toString(),
+    quantityBefore: quantityBefore.toString(),
+    quantityAfter: quantityAfter.toString(),
+    referenceType: orderId
+      ? "ORDER"
+      : orderLineItemId
+        ? "ORDER_LINE_ITEM"
+        : null,
+    referenceId: orderId || orderLineItemId || null,
+    notes: orderId ? `Allocated for order #${orderId}` : "Allocated",
+    performedBy: userId,
+  });
+
+  logger.info(
+    {
+      batchId,
+      quantity,
+      previousQty: batch.onHandQty,
+      newQty: batch.onHandQty - quantity,
+      orderId,
+      orderLineItemId,
+      userId,
+    },
+    "REL-006: Batch allocation completed"
+  );
+
+  return {
+    batchId,
+    quantityAllocated: quantity,
+    unitCogs: batch.unitCogs || 0,
+    previousQty: batch.onHandQty,
+    newQty: batch.onHandQty - quantity,
+  };
+}
+
+/**
  * Allocate quantity from a batch with proper locking
  * Validates sufficient quantity and updates atomically
  *
@@ -441,6 +535,10 @@ export async function returnToBatch(
 
 /**
  * Allocate from multiple batches atomically (for order fulfillment)
+ *
+ * Uses _allocateBatchDirect internally to avoid double-locking.
+ * The batches are locked once via withMultiBatchLock, then allocations
+ * are performed directly on the locked batches.
  */
 export async function allocateFromMultipleBatches(
   tx: DrizzleTx,
@@ -460,19 +558,12 @@ export async function allocateFromMultipleBatches(
       const batch = batchMap.get(alloc.batchId);
       if (!batch) continue;
 
-      // Validate quantity
-      if (batch.onHandQty < alloc.quantity) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: `Insufficient quantity in batch ${alloc.batchId}. Available: ${batch.onHandQty}, Requested: ${alloc.quantity}`,
-        });
-      }
-
-      // Perform allocation
-      const result = await allocateFromBatch(
+      // Use _allocateBatchDirect to avoid double-locking
+      // The batch is already locked by withMultiBatchLock
+      const result = await _allocateBatchDirect(
         tx,
+        batch,
         {
-          batchId: alloc.batchId,
           quantity: alloc.quantity,
           ...context,
         },

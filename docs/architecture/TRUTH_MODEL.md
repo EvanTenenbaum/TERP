@@ -247,25 +247,34 @@ Inventory operations use `inventoryLocking` (REL-006) which:
 
 ### Gate Scripts
 
-Validation scripts verify invariants hold:
+Validation scripts verify invariants hold before deployments:
 
 ```bash
 # Check all invariants before deployment
-npm run gate:invariants
-
-# Individual domain checks
-npm run gate:inventory-invariants
-npm run gate:ar-invariants
-npm run gate:order-invariants
+pnpm gate:invariants
 ```
+
+The gate script (`scripts/qa/invariant-checks.ts`) validates:
+
+- **INV-001**: Batch quantities non-negative
+- **INV-002**: Allocated qty <= on-hand qty
+- **AR-001**: Invoice amounts consistent (amountDue = totalAmount - amountPaid)
+- **AR-002**: Amount paid matches payment records
+- **ORD-001**: Order totals match line items
+- **ORD-REF**: No orphaned order items
+- **CLI-001**: Supplier profiles have isSeller flag
+- **PAY-001**: Payment amounts are positive
+
+See also: `pnpm mega:qa:invariants` for the Mega QA invariant suite.
 
 ### Monitoring
 
-Production monitoring alerts on invariant violations:
-
-- `terp.invariant.inventory.negative_qty` - Batch has negative quantity
-- `terp.invariant.ar.mismatch` - Invoice amounts don't reconcile
-- `terp.invariant.order.invalid_transition` - Invalid status change attempted
+> **TODO**: Production monitoring alerts are not yet implemented.
+> Future work should add alerts for invariant violations:
+>
+> - Batch has negative quantity
+> - Invoice amounts don't reconcile
+> - Invalid order status transitions
 
 ---
 
