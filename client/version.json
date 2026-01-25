@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "commit": "8e3a0160",
+  "commit": "2672f2c",
   "date": "2026-01-25",
-  "branch": "staging/integration-sprint-2026-01-25",
+  "branch": "claude/fix-post-001-unitTypeCategory-kakkC",
   "phase": "Development",
-  "buildTime": "2026-01-25T18:16:42.105Z"
+  "buildTime": "2026-01-25T19:24:29.757Z"
 }

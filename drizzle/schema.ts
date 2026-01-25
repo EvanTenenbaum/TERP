@@ -2807,7 +2807,13 @@ export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
  * WSQA-003: Vendor Returns Table
  * Tracks items returned to vendors for credit
  */
-export const vendorReturnStatusEnum = mysqlEnum("vendorReturnStatus", [
+/**
+ * Vendor Return Status Enum
+ * Note: The first argument to mysqlEnum must match the column name where it's used
+ * to avoid "column not found" errors. This enum is used for the 'status' column
+ * in the vendor_returns table.
+ */
+export const vendorReturnStatusEnum = mysqlEnum("status", [
   "PENDING_VENDOR_CREDIT",
   "CREDIT_RECEIVED",
   "DISPUTED",
@@ -6543,8 +6549,11 @@ export const dashboardWidgetConfigsRelations = relations(
 /**
  * Referral Credit Status Enum
  * Tracks the lifecycle of referral credits
+ * Note: The first argument to mysqlEnum must match the column name where it's used
+ * to avoid "column not found" errors during seeding. This enum is used for the
+ * 'status' column in the referral_credits table.
  */
-export const referralCreditStatusEnum = mysqlEnum("referralCreditStatus", [
+export const referralCreditStatusEnum = mysqlEnum("status", [
   "PENDING", // Created when referred order created, waiting for finalization
   "AVAILABLE", // Referred order finalized, credit available for use
   "APPLIED", // Credit applied to VIP's order
@@ -6941,8 +6950,11 @@ export type InsertOrganizationSetting =
 
 /**
  * Unit Type Category Enum
+ * Note: The first argument to mysqlEnum must match the column name where it's used
+ * to avoid "column not found" errors during seeding. This enum is used for the
+ * 'category' column in the unit_types table.
  */
-export const unitTypeCategoryEnum = mysqlEnum("unitTypeCategory", [
+export const unitTypeCategoryEnum = mysqlEnum("category", [
   "WEIGHT",
   "COUNT",
   "VOLUME",
@@ -6979,8 +6991,11 @@ export type InsertUnitType = typeof unitTypes.$inferInsert;
 
 /**
  * Finance Entity Type Enum
+ * Note: The first argument to mysqlEnum must match the column name where it's used
+ * to avoid "column not found" errors during seeding. This enum is used for the
+ * 'entity_type' column in the custom_finance_statuses table.
  */
-export const financeEntityTypeEnum = mysqlEnum("financeEntityType", [
+export const financeEntityTypeEnum = mysqlEnum("entity_type", [
   "INVOICE",
   "ORDER",
   "PAYMENT",
