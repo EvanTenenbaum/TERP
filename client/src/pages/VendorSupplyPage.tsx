@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -100,10 +101,11 @@ export default function VendorSupplyPage() {
   } = trpc.vendorSupply.getAll.useQuery({});
 
   // Fetch vendors (clients with isSeller=true) for dropdown
-  const { data: vendorsData } = trpc.clients.list.useQuery({
-    clientTypes: ["seller"],
-    limit: 200,
-  });
+  const { data: vendorsData, isLoading: vendorsLoading } =
+    trpc.clients.list.useQuery({
+      clientTypes: ["seller"],
+      limit: 200,
+    });
 
   // FE-QA-009: Create mutation
   const createMutation = trpc.vendorSupply.create.useMutation({
@@ -118,7 +120,10 @@ export default function VendorSupplyPage() {
     },
   });
 
-  // FE-QA-009: Handle form submission
+  // VAL-001/VAL-002: Get today's date for validation
+  const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
+
+  // FE-QA-009: Handle form submission with enhanced validation
   const handleSubmit = () => {
     if (!formState.vendorId) {
       toast.error("Please select a vendor");
@@ -126,6 +131,25 @@ export default function VendorSupplyPage() {
     }
     if (!formState.quantityAvailable) {
       toast.error("Please enter quantity available");
+      return;
+    }
+    // VAL-001: Validate quantity is positive
+    const qty = parseFloat(formState.quantityAvailable);
+    if (isNaN(qty) || qty <= 0) {
+      toast.error("Quantity must be a positive number");
+      return;
+    }
+    // VAL-001: Validate price is non-negative if provided
+    if (formState.unitPrice) {
+      const price = parseFloat(formState.unitPrice);
+      if (isNaN(price) || price < 0) {
+        toast.error("Price must be a non-negative number");
+        return;
+      }
+    }
+    // VAL-002: Validate date is not in the past if provided
+    if (formState.availableUntil && formState.availableUntil < todayDate) {
+      toast.error("Available until date cannot be in the past");
       return;
     }
 
@@ -213,9 +237,14 @@ export default function VendorSupplyPage() {
                   onValueChange={v =>
                     setFormState({ ...formState, vendorId: v })
                   }
+                  disabled={vendorsLoading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a vendor" />
+                    {vendorsLoading ? (
+                      <Skeleton className="h-4 w-24" />
+                    ) : (
+                      <SelectValue placeholder="Select a vendor" />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     {vendorsData?.items?.map(vendor => (
@@ -304,6 +333,8 @@ export default function VendorSupplyPage() {
                   <Input
                     id="quantityAvailable"
                     type="number"
+                    min="0.01"
+                    step="0.01"
                     value={formState.quantityAvailable}
                     onChange={e =>
                       setFormState({
@@ -319,6 +350,7 @@ export default function VendorSupplyPage() {
                   <Input
                     id="unitPrice"
                     type="number"
+                    min="0"
                     step="0.01"
                     value={formState.unitPrice}
                     onChange={e =>
@@ -333,6 +365,7 @@ export default function VendorSupplyPage() {
                 <Input
                   id="availableUntil"
                   type="date"
+                  min={todayDate}
                   value={formState.availableUntil}
                   onChange={e =>
                     setFormState({
@@ -435,21 +468,23 @@ export default function VendorSupplyPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                   {item.quantityAvailable && (
                     <div>
                       <p className="text-muted-foreground">
                         Available Quantity
                       </p>
                       <p className="font-medium">
-                        {item.quantityAvailable} units
+                        {item.quantityAvailable} lbs
                       </p>
                     </div>
                   )}
-                  {item.pricePerUnit && (
+                  {item.unitPrice && (
                     <div>
                       <p className="text-muted-foreground">Price</p>
-                      <p className="font-medium">${item.pricePerUnit}/unit</p>
+                      <p className="font-medium">
+                        ${parseFloat(item.unitPrice).toFixed(2)}/lb
+                      </p>
                     </div>
                   )}
                   {/* UX-012: Use standardized date formatting */}

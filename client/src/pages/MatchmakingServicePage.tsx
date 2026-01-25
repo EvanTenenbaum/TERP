@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -56,6 +57,11 @@ export default function MatchmakingServicePage() {
   const [dismissedMatches, setDismissedMatches] = useState<Set<number>>(
     new Set()
   );
+  // ERR-005: Track which item is being reserved to prevent race conditions
+  const [reservingItemId, setReservingItemId] = useState<number | null>(null);
+
+  // ERR-001: Get query client for invalidation
+  const queryClient = useQueryClient();
 
   // Fetch client needs with match counts
   const { data: needsData, isLoading: needsLoading } =
@@ -83,12 +89,18 @@ export default function MatchmakingServicePage() {
 
   // FE-QA-010: Mutation to reserve a supply item
   // FE-QA-FIX: Use dedicated reserve endpoint instead of generic update
+  // ERR-001: Add query invalidation on success
   const reserveMutation = trpc.vendorSupply.reserve.useMutation({
     onSuccess: () => {
       toast.success("Supply item reserved successfully");
+      // ERR-001: Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: [["vendorSupply"]] });
+      queryClient.invalidateQueries({ queryKey: [["matching"]] });
+      setReservingItemId(null);
     },
     onError: error => {
       toast.error(error.message || "Failed to reserve supply item");
+      setReservingItemId(null);
     },
   });
 
@@ -169,27 +181,51 @@ export default function MatchmakingServicePage() {
 
   // FE-QA-010: Handler for Reserve button
   // FE-QA-FIX: Reserve endpoint only needs id, not status
-  const handleReserve = (supplyId: number) => {
-    reserveMutation.mutate({ id: supplyId });
-  };
+  // ERR-005: Track which item is being reserved to prevent race conditions
+  const handleReserve = useCallback(
+    (supplyId: number) => {
+      if (reservingItemId !== null) return; // Prevent concurrent reserves
+      setReservingItemId(supplyId);
+      reserveMutation.mutate({ id: supplyId });
+    },
+    [reservingItemId, reserveMutation]
+  );
 
   // FE-QA-010: Handler for Create Quote button
+  // UX-005: Validate match has required IDs before navigation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleCreateQuote = (match: any) => {
-    const params = new URLSearchParams();
-    if (match.needId) params.set("needId", match.needId.toString());
-    if (match.supplyId) params.set("supplyId", match.supplyId.toString());
-    if (match.clientId) params.set("clientId", match.clientId.toString());
-    setLocation(`/quotes?action=create&${params.toString()}`);
-  };
+  const handleCreateQuote = useCallback(
+    (match: any) => {
+      // UX-005: Validate that we have at least a needId or clientId
+      if (!match.needId && !match.clientId) {
+        toast.error("Cannot create quote: missing client or need information");
+        return;
+      }
+      const params = new URLSearchParams();
+      if (match.needId) params.set("needId", match.needId.toString());
+      if (match.supplyId) params.set("supplyId", match.supplyId.toString());
+      if (match.clientId) params.set("clientId", match.clientId.toString());
+      setLocation(`/quotes?action=create&${params.toString()}`);
+    },
+    [setLocation]
+  );
 
   // FE-QA-010: Handler for Dismiss button
+  // UX-002: Add confirmation before dismissing
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleDismiss = (match: any) => {
+  const handleDismiss = useCallback((match: any) => {
+    // UX-002: Confirm before dismissing (prevents accidental data loss)
+    if (
+      !window.confirm(
+        "Are you sure you want to dismiss this match? You can refresh the page to see it again."
+      )
+    ) {
+      return;
+    }
     // Add to dismissed set (client-side only for now)
     setDismissedMatches(prev => new Set([...prev, match.needId || match.id]));
     toast.success("Match dismissed");
-  };
+  }, []);
 
   // Filter out dismissed matches
   const visibleMatches = topMatches.filter(
@@ -468,9 +504,9 @@ export default function MatchmakingServicePage() {
                           e.stopPropagation();
                           handleReserve(item.id);
                         }}
-                        disabled={reserveMutation.isPending}
+                        disabled={reservingItemId !== null}
                       >
-                        {reserveMutation.isPending ? (
+                        {reservingItemId === item.id ? (
                           <Loader2 className="h-3 w-3 animate-spin mr-1" />
                         ) : null}
                         Reserve
