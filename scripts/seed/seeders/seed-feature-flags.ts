@@ -7,7 +7,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-feature-flags.ts
  */
 
-import { db } from "../../../server/_core/db";
+import { db } from "../../db-sync";
 import { featureFlags } from "../../../drizzle/schema-feature-flags";
 import { eq } from "drizzle-orm";
 

@@ -8,7 +8,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-storage-defaults.ts
  */
 
-import { db } from "../../../server/_core/db";
+import { db } from "../../db-sync";
 import { sites, storageZones } from "../../../drizzle/schema-storage";
 import { eq } from "drizzle-orm";
 

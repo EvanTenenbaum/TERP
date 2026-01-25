@@ -8,7 +8,7 @@
  * Usage: npx tsx scripts/seed/seeders/seed-scheduling-defaults.ts
  */
 
-import { db } from "../../../server/_core/db";
+import { db } from "../../db-sync";
 import {
   rooms,
   shiftTemplates,

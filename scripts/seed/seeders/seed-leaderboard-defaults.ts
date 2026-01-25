@@ -3,7 +3,7 @@
  * Seeds the default weight configurations for the leaderboard system
  */
 
-import { db } from "../../../server/_core/db";
+import { db } from "../../db-sync";
 import { leaderboardDefaultWeights } from "../../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
