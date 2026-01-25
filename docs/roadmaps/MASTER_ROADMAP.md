@@ -496,6 +496,51 @@ pnpm test --run 2>&1 | tee test-results.log
 
 ---
 
+### Frontend QA Findings (Jan 25, 2026)
+
+> Discovered during comprehensive Frontend QA testing by Manus agent.
+> See: `terp-qa-screenshots/QA_FINDINGS.md` for full analysis and screenshots.
+
+#### Security Issues (P0)
+
+| Task    | Description                                              | Priority | Status      | Estimate | Prompt                    |
+| ------- | -------------------------------------------------------- | -------- | ----------- | -------- | ------------------------- |
+| BUG-103 | QA Role Switcher exposes password hint in production     | HIGH     | ready       | 2h       | `docs/prompts/BUG-103.md` |
+
+**BUG-103 Details:**
+- **Location:** `/login` page
+- **Issue:** The "QA Role Switcher" panel displays a visible password hint "TerpQA2026!" to anyone viewing the login page
+- **Impact:** Security vulnerability - test credentials exposed publicly
+- **Fix:** Add environment-based conditional rendering to hide QA tools in production
+
+#### Navigation/Routing Issues (P2)
+
+| Task    | Description                                              | Priority | Status      | Estimate | Prompt                    |
+| ------- | -------------------------------------------------------- | -------- | ----------- | -------- | ------------------------- |
+| BUG-104 | Client detail page shows "Client not found" error        | MEDIUM   | ready       | 4h       | `docs/prompts/BUG-104.md` |
+| BUG-105 | Reports page returns 404 error                           | MEDIUM   | ready       | 4h       | `docs/prompts/BUG-105.md` |
+| BUG-106 | AR/AP page returns 404 error                             | MEDIUM   | ready       | 4h       | `docs/prompts/BUG-106.md` |
+
+**BUG-104 Details:**
+- **Location:** `/clients/:id`
+- **Issue:** Navigating directly to a client detail page by ID shows "Client not found" error even though clients exist
+- **Impact:** Users cannot access client details via direct URL
+- **Fix:** Fix routing or data fetching for client detail page
+
+**BUG-105 Details:**
+- **Location:** `/accounting/reports`
+- **Issue:** Reports link in Finance navigation leads to 404 page
+- **Impact:** Users cannot access financial reports
+- **Fix:** Implement Reports page or fix route configuration
+
+**BUG-106 Details:**
+- **Location:** `/accounting/arap`
+- **Issue:** AR/AP link in Finance navigation leads to 404 page
+- **Impact:** Users cannot access accounts receivable/payable management
+- **Fix:** Implement AR/AP page or fix route configuration
+
+---
+
 ### API Registration Issues (P1)
 
 > tRPC procedures returning NOT_FOUND - may be missing router registration or endpoint implementation.
