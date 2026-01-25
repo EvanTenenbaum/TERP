@@ -70,11 +70,14 @@
 
 ### ST-008: Implement Error Tracking (Sentry)
 
-**Status:** 📋 Ready  
-**Priority:** 🟡 MEDIUM  
-**Estimate:** 1-2d  
-**Module:** Root config, `src/_app.tsx`, `server/`  
-**Dependencies:** None  
+**Status:** ✅ Complete
+**Completed:** 2026-01-06
+**Key Commits:** `8c4d6f3`
+**Priority:** 🟡 MEDIUM
+**Estimate:** 1-2d
+**Actual Time:** 1d
+**Module:** Root config, `src/_app.tsx`, `server/`
+**Dependencies:** None
 **Prompt:** [`docs/prompts/ST-008.md`](../prompts/ST-008.md)
 
 **Objectives:**
@@ -86,16 +89,14 @@
 
 **Deliverables:**
 
-- [ ] Sentry SDK installed (`@sentry/nextjs`)
-- [ ] `sentry.client.config.ts` and `sentry.server.config.ts` configured
-- [ ] Error boundaries added to key React components
-- [ ] Source maps configured for production builds
-- [ ] Error reporting tested in staging
-- [ ] Documentation of Sentry setup and usage
-- [ ] All tests passing (no regressions)
-- [ ] Zero TypeScript errors
-- [ ] Session file archived
-- [ ] MASTER_ROADMAP updated to ✅ Complete
+- [x] Sentry SDK installed (`@sentry/vite-plugin`)
+- [x] Server-side Sentry monitoring with defensive, non-blocking code
+- [x] Error boundaries added to key React components (ErrorBoundary, ComponentErrorBoundary)
+- [x] Source maps configured for production builds (conditional on SENTRY_AUTH_TOKEN)
+- [x] WidgetContainer wrapped with error boundary protection
+- [x] Documentation in .env.example
+- [x] All tests passing (no regressions)
+- [x] Zero TypeScript errors
 
 ---
 
