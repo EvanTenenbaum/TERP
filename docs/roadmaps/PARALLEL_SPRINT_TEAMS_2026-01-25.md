@@ -355,6 +355,27 @@ The following files are **FROZEN** during parallel execution:
 
 ## PR Integration Strategy
 
+### Phase 0: Setup (Evan Does This First)
+
+**Before any team starts, create the staging branch:**
+
+```bash
+# 1. Ensure you're on latest main
+git checkout main
+git pull origin main
+
+# 2. Create staging branch
+git checkout -b staging/integration-sprint-2026-01-25
+git push -u origin staging/integration-sprint-2026-01-25
+
+# 3. Verify branch exists
+git branch -r | grep staging
+```
+
+**The staging branch is the integration point for all team PRs.**
+
+---
+
 ### Phase 1: Team PRs (Parallel)
 
 Each team creates PRs to the staging branch:
@@ -379,12 +400,45 @@ EOF
 )"
 ```
 
-### Phase 2: Integration Testing
+### Phase 2: Merge Team PRs to Staging (Integration Coordinator)
+
+**Merge order matters due to dependencies:**
+
+```
+1. Team D PR (schema/data first - no code dependencies)
+2. Team A PR (TypeScript fixes enable everything else)
+3. Team C PR (backend APIs)
+4. Team B PR (frontend needs APIs)
+5. Team E PR (integration needs everything)
+```
+
+**For each merge:**
+```bash
+# Checkout staging
+git checkout staging/integration-sprint-2026-01-25
+git pull origin staging/integration-sprint-2026-01-25
+
+# Merge team PR (via GitHub UI or CLI)
+gh pr merge <PR-NUMBER> --merge
+
+# Verify after each merge
+pnpm install
+pnpm check && pnpm build
+
+# If conflicts, resolve before next merge
+```
+
+---
+
+### Phase 3: Integration Testing
 
 After all team PRs are merged to staging:
 
 1. **Run full test suite:**
    ```bash
+   git checkout staging/integration-sprint-2026-01-25
+   git pull origin staging/integration-sprint-2026-01-25
+   pnpm install
    pnpm check && pnpm lint && pnpm test && pnpm build
    ```
 
@@ -398,7 +452,11 @@ After all team PRs are merged to staging:
    pnpm test:golden-flows
    ```
 
-### Phase 3: Main Branch Merge
+4. **Fix any integration issues** before proceeding
+
+---
+
+### Phase 4: Main Branch Merge
 
 Create a single "Release PR" from staging to main:
 
@@ -516,11 +574,32 @@ Track in `docs/sprint-metrics/`:
 
 ## Next Steps
 
+### For Evan (Before Teams Start)
+
+1. **Create staging branch:**
+   ```bash
+   git checkout main && git pull origin main
+   git checkout -b staging/integration-sprint-2026-01-25
+   git push -u origin staging/integration-sprint-2026-01-25
+   ```
+2. **Give each team their prompt** from `docs/prompts/sprint-teams/`
+
+### For Each Team
+
 1. **Read this document** and confirm understanding
 2. **Claim your team assignment** in `docs/ACTIVE_SESSIONS.md`
 3. **Create your feature branch** from main
 4. **Start working on P0 tasks first**
 5. **Post daily updates** in `docs/sprint-updates/`
+6. **Create PR to staging** when complete (NOT to main)
+
+### After All Teams Complete
+
+1. **Run Integration Coordinator** prompt
+2. Coordinator merges PRs in order: D → A → C → B → E
+3. Coordinator runs integration tests
+4. Coordinator creates release PR to main
+5. Coordinator verifies production deployment
 
 ---
 

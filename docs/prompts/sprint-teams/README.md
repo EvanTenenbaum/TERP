@@ -5,7 +5,19 @@
 
 ---
 
-## Quick Start
+## Before Teams Start (Evan Does This)
+
+```bash
+# Create the staging branch that all teams will target
+git checkout main
+git pull origin main
+git checkout -b staging/integration-sprint-2026-01-25
+git push -u origin staging/integration-sprint-2026-01-25
+```
+
+---
+
+## Quick Start (For Each Team)
 
 1. **Read the strategy document** first to understand the overall plan
 2. **Claim your team** by updating `/docs/ACTIVE_SESSIONS.md`
@@ -23,6 +35,7 @@
 | **Team C** | Backend API | [TEAM_C_BACKEND_API.md](./TEAM_C_BACKEND_API.md) | `claude/sprint-team-c-backend` |
 | **Team D** | Data & Schema | [TEAM_D_DATA_SCHEMA.md](./TEAM_D_DATA_SCHEMA.md) | `claude/sprint-team-d-data` |
 | **Team E** | Integration | [TEAM_E_INTEGRATION.md](./TEAM_E_INTEGRATION.md) | `claude/sprint-team-e-integration` |
+| **Coordinator** | Final Merge | [INTEGRATION_COORDINATOR.md](./INTEGRATION_COORDINATOR.md) | `staging/integration-sprint-2026-01-25` |
 
 ---
 
@@ -43,7 +56,15 @@
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│ Week 1, Days 1-2: Teams A, B, C, D work in parallel            │
+│ STEP 0: Evan creates staging branch                            │
+│                                                                 │
+│   git checkout -b staging/integration-sprint-2026-01-25        │
+│   git push -u origin staging/integration-sprint-2026-01-25     │
+└────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────────┐
+│ Week 1, Days 1-4: Teams A, B, C, D work in parallel            │
 │                                                                 │
 │   Team A: TypeScript + Tests (P0)                              │
 │   Team B: Navigation + Quick Wins                               │
@@ -53,28 +74,27 @@
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────┐
-│ Week 1, Day 5: First Integration Checkpoint                     │
+│ Week 1, Day 5: Teams create PRs to staging                     │
 │                                                                 │
-│   All teams create PRs to staging branch                        │
-│   Integration testing                                           │
+│   Each team: gh pr create --base staging/integration-sprint... │
 └────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────┐
-│ Week 2, Days 6-10: Team E starts                                │
+│ Week 2, Days 6-10: Team E works + Integration Coordinator      │
 │                                                                 │
-│   Work Surfaces QA Blockers                                     │
-│   Reliability Program                                           │
-│   Work Surfaces Deployment                                      │
+│   Team E: Work Surfaces + Reliability                          │
+│   Coordinator: Merge PRs in order (D→A→C→B→E)                  │
+│   Coordinator: Run integration tests                           │
 └────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌────────────────────────────────────────────────────────────────┐
-│ Week 3: Final Integration                                       │
+│ Week 3: Final Release                                          │
 │                                                                 │
-│   Staging → Main merge                                          │
-│   Production deployment                                         │
-│   Verification                                                  │
+│   Coordinator: Create release PR (staging → main)              │
+│   Coordinator: Merge and verify production                     │
+│   Coordinator: Post release report                             │
 └────────────────────────────────────────────────────────────────┘
 ```
 
