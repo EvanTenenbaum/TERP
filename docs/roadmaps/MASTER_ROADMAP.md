@@ -3777,8 +3777,8 @@ export async function updateBillStatus(id, status) {
 | INV-005 | Create Batches on PO Goods Receipt | MEDIUM | ready | 4h | `server/routers/purchaseOrders.ts` |
 | NAV-017 | Add Missing /alerts Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
 | NAV-018 | Add Missing /reports/shrinkage Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
-| API-017 | Fix PaymentMethod Type Mismatch (as any) | MEDIUM | ready | 2h | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
-| API-018 | Fix Pagination Response Inconsistency | MEDIUM | ready | 4h | Multiple routers |
+| API-019 | Fix PaymentMethod Type Mismatch (as any) | MEDIUM | ready | 2h | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
+| API-020 | Fix Pagination Response Inconsistency | MEDIUM | ready | 4h | Multiple routers |
 
 ---
 
@@ -3844,5 +3844,278 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 - Security Chains: `a59cc13`
 - Architecture Debt: `ad1d6ab`
 - Party Migration: `ac9f785`
+
+---
+
+---
+
+## 🟡 PR #294 QA Audit Findings (Jan 25, 2026)
+
+> **Source:** External QA audit via PR #294 (codex/conduct-qa-audit-for-terp-web-app)
+> **Total Issues:** 2,589 ESLint problems + 8 test failures + build warnings
+> **Estimated Remediation:** 40-60 hours
+
+### Code Quality: ESLint Violations
+
+> **Client:** 531 errors, 484 warnings (1,015 total)
+> **Server:** 417 errors, 1,157 warnings (1,574 total)
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps) | HIGH | ready | 4h | `client/src/components/accounting/*.tsx` |
+| LINT-002 | Fix 'React' is not defined errors (12 files) | HIGH | ready | 2h | Multiple client components |
+| LINT-003 | Fix unused variable errors (~100 instances) | MEDIUM | ready | 4h | Client + Server |
+| LINT-004 | Fix array index key violations (~40 instances) | MEDIUM | ready | 4h | Client components |
+| LINT-005 | Replace `any` types with proper types (~200 instances) | MEDIUM | ready | 8h | Client + Server |
+| LINT-006 | Remove forbidden console.log statements (~50 instances) | LOW | ready | 2h | Server files |
+| LINT-007 | Fix non-null assertions (~30 instances) | LOW | ready | 2h | Client components |
+| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions | MEDIUM | ready | 1h | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
+
+---
+
+#### LINT-001: Fix React Hooks Violations
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/components/accounting/*.tsx`
+**Dependencies:** None
+
+**Problem:**
+React Hooks are called conditionally, violating the Rules of Hooks:
+
+```typescript
+// AccountSelector.tsx:51 - BROKEN
+if (condition) {
+  const memoized = React.useMemo(...);  // Hook called conditionally!
+}
+```
+
+**Files Affected:**
+- `AccountSelector.tsx:51,58` - useMemo called conditionally
+- `FiscalPeriodSelector.tsx:57` - useMemo called conditionally
+- `CalendarFilters.tsx:27` - useEffect missing dependencies
+- `AmountInput.tsx:58` - useEffect missing dependency
+
+**Acceptance Criteria:**
+- [ ] All hooks called unconditionally at component top level
+- [ ] All useEffect dependencies properly specified
+- [ ] ESLint react-hooks/rules-of-hooks passes
+
+---
+
+#### LINT-002: Fix 'React' is not defined Errors
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Module:** Multiple client components
+**Dependencies:** None
+
+**Problem:**
+12 files use JSX but don't import React (required for older JSX transform):
+
+**Files Affected:**
+- `ErrorBoundary.tsx:41`
+- `WidgetContainer.tsx:14`
+- `AuditIcon.tsx:85`
+- `TimeOffRequestForm.tsx:52`
+- `CalendarAppointmentTypes.tsx:250`
+- `CalendarGeneralSettings.tsx:235`
+- `AddCommunicationModal.tsx:46`
+- `ChartOfAccounts.tsx:409,527`
+- `FiscalPeriods.tsx:355`
+- `VIPLogin.tsx:63`
+
+**Acceptance Criteria:**
+- [ ] Add `import React from 'react'` to all affected files, OR
+- [ ] Configure JSX transform to not require React import
+- [ ] ESLint no-undef errors for React resolved
+
+---
+
+#### LINT-005: Replace `any` Types with Proper Types
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** Client + Server
+**Dependencies:** None
+
+**Problem:**
+~200 instances of `any` type usage defeat TypeScript's type safety:
+
+**High-Frequency Files:**
+- `EventFormDialog.tsx` - 9 instances
+- `Settings.tsx` - 7 instances
+- `AccountingDashboard.tsx` - 9 instances
+- `CalendarFilters.tsx` - 3 instances
+- `connectionPool.ts` - 6 instances
+- `featureFlagMiddleware.ts` - 11 instances
+
+**Example Pattern:**
+```typescript
+// Current - UNSAFE
+const handleChange = (value: any) => { ... }
+
+// Fixed - TYPE SAFE
+const handleChange = (value: PaymentMethod) => { ... }
+```
+
+**Acceptance Criteria:**
+- [ ] All `any` types replaced with specific types
+- [ ] Type-only `any` (in generics) documented if unavoidable
+- [ ] ESLint @typescript-eslint/no-explicit-any passes
+
+---
+
+### Test Infrastructure Issues
+
+> Vitest mock hoisting and environment configuration issues
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| TEST-020 | Fix permissionMiddleware.test.ts mock hoisting | HIGH | ready | 2h | `server/_core/permissionMiddleware.test.ts` |
+| TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH | ready | 1h | `vitest.setup.ts` |
+| TEST-022 | Fix EventFormDialog test environment | MEDIUM | ready | 2h | `client/src/components/calendar/EventFormDialog.test.tsx` |
+
+> **Note:** DATABASE_URL configuration for seed tests already tracked as TEST-INFRA-02.
+
+---
+
+#### TEST-020: Fix permissionMiddleware.test.ts Mock Hoisting
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Module:** `server/_core/permissionMiddleware.test.ts`
+**Dependencies:** None
+
+**Problem:**
+Vitest mock hoisting causes `Cannot access '__vi_import_2__' before initialization`:
+
+```typescript
+// Current - BROKEN (line 19)
+vi.mock('../db', () => ({
+  getDb: mockGetDb  // mockGetDb not yet initialized when hoisted!
+}));
+```
+
+**Root Cause:**
+`simpleAuth.ts:4` imports `../db` which triggers the mock before variables are initialized.
+
+**Solution Pattern:**
+```typescript
+// Use vi.hoisted() for mock variables
+const { mockGetDb } = vi.hoisted(() => ({
+  mockGetDb: vi.fn()
+}));
+
+vi.mock('../db', () => ({
+  getDb: mockGetDb
+}));
+```
+
+**Acceptance Criteria:**
+- [ ] Test runs without mock initialization errors
+- [ ] All assertions pass
+- [ ] Pattern documented for other tests
+
+---
+
+#### TEST-021: Add ResizeObserver Polyfill for jsdom Tests
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 1h
+**Module:** `vitest.setup.ts`
+**Dependencies:** None
+
+**Problem:**
+jsdom environment doesn't include ResizeObserver, causing 6/7 EventFormDialog tests to fail:
+
+```
+ReferenceError: ResizeObserver is not defined
+```
+
+**Solution:**
+```typescript
+// vitest.setup.ts
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+```
+
+**Acceptance Criteria:**
+- [ ] ResizeObserver polyfill added to vitest setup
+- [ ] EventFormDialog tests pass
+- [ ] Other jsdom tests unaffected
+
+---
+
+### Build & Configuration Issues
+
+| Task | Description | Priority | Status | Estimate | Module |
+|------|-------------|----------|--------|----------|--------|
+| BUILD-001 | Add missing VITE_APP_TITLE environment variable | LOW | ready | 0.5h | `.env.example`, `vite.config.ts` |
+| BUILD-002 | Fix chunk size warnings (code splitting) | LOW | ready | 4h | `vite.config.ts` |
+| BUILD-003 | Add `pnpm lint` script (currently missing) | LOW | ready | 0.5h | `package.json` |
+
+---
+
+#### BUILD-003: Add pnpm lint Script
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 0.5h
+**Module:** `package.json`
+**Dependencies:** None
+
+**Problem:**
+`pnpm lint` command not found. Users must run `pnpm eslint` directly.
+
+**Solution:**
+```json
+{
+  "scripts": {
+    "lint": "eslint client/src server --ext .ts,.tsx",
+    "lint:fix": "eslint client/src server --ext .ts,.tsx --fix"
+  }
+}
+```
+
+**Acceptance Criteria:**
+- [ ] `pnpm lint` runs ESLint on client and server
+- [ ] `pnpm lint:fix` auto-fixes what it can
+- [ ] CI/CD can use `pnpm lint` for checks
+
+---
+
+### PR #294 Summary
+
+**ESLint Error Categories:**
+
+| Category | Count | Priority |
+|----------|-------|----------|
+| React Hooks violations | ~15 | HIGH |
+| 'React' not defined | 12 | HIGH |
+| Unused variables | ~100 | MEDIUM |
+| Array index keys | ~40 | MEDIUM |
+| `any` types | ~200 | MEDIUM |
+| Non-null assertions | ~30 | LOW |
+| console.log statements | ~50 | LOW |
+
+**Test Failures:**
+
+| Test File | Issue | Priority | Task |
+|-----------|-------|----------|------|
+| permissionMiddleware.test.ts | Mock hoisting | HIGH | TEST-020 |
+| EventFormDialog.test.tsx | ResizeObserver | HIGH | TEST-021 |
+| 6 seed tests | DATABASE_URL missing | MEDIUM | TEST-INFRA-02 (existing) |
+
+**Total New Tasks:** 10 (1 duplicate removed - TEST-023 merged with TEST-INFRA-02)
+**Estimated Hours:** 35-50h
 
 ---
