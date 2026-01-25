@@ -392,6 +392,7 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
     try {
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
+        if (entries.length === 0) return;
         const lastEntry = entries[entries.length - 1];
         vitalsRef.current.lcp = lastEntry.startTime;
         onReport?.({ ...vitalsRef.current });
@@ -408,6 +409,7 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
     try {
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
+        if (entries.length === 0) return;
         const firstEntry = entries[0] as FirstInputEntry;
         vitalsRef.current.fid = firstEntry.processingStart - firstEntry.startTime;
         onReport?.({ ...vitalsRef.current });
