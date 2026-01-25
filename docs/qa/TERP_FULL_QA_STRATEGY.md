@@ -17,7 +17,9 @@ This document outlines a comprehensive QA strategy for TERP that leverages two A
 | **Manus** | Frontend QA Lead | Live browser testing, UI/UX verification, E2E user flows |
 
 **Total Estimated QA Time:** 40-60 hours across both agents
-**Target Coverage:** All 121 tRPC routers, 60 frontend pages, critical business flows
+**Target Coverage:** All 121 tRPC routers, 72 frontend pages, critical business flows
+
+> **Version 1.1 Update:** Corrected page count, business logic formulas, status flows, and added missing user flows based on thorough codebase verification.
 
 ---
 
@@ -176,36 +178,95 @@ Claude will validate data integrity across all 233 tables:
 
 ### 2.3 Business Logic Verification
 
-#### Financial Calculations
+#### Financial Calculations (VERIFIED FROM CODE)
 ```typescript
-// COGS per Unit
+// COGS per Unit (marginCalculationService.ts)
 Test: cogsPerUnit = batchCost / batchQuantity
 Verify: All order line items use correct COGS
 
-// Margin Calculations
-Test: marginPercent = ((salePrice - cogsPerUnit) / salePrice) * 100
-Test: marginDollar = salePrice - cogsPerUnit
+// Margin Calculations (marginCalculationService.ts:105-123)
+// Uses safe decimal arithmetic to avoid floating point errors
+Test: marginPercent = ((pricePerUnit - cogsPerUnit) / pricePerUnit) * 100
+Test: marginDollar = pricePerUnit - cogsPerUnit
+Test: priceFromMarginPercent = cogsPerUnit / (1 - marginPercent/100)
+Test: priceFromMarginDollar = cogsPerUnit + marginDollar
 
-// AR Aging Buckets
-Test: current (0-30), 30-60, 60-90, 90+ days
+// AR Aging Buckets (arApDb.ts:254-300)
+// Based on DAYS PAST DUE DATE (not invoice date)
+Test: current = invoices where dueDate > today (not yet due)
+Test: days1to30 = invoices 0-30 days PAST DUE
+Test: days31to60 = invoices 31-60 days past due
+Test: days61to90 = invoices 61-90 days past due
+Test: days90Plus = invoices 90+ days past due
 Verify: Sum of buckets = total AR
 
-// Inventory Aging
-Test: fresh (<30d), moderate (30-60d), aging (60-90d), critical (>90d)
+// Inventory Aging (inventory.ts:43-68)
+// Based on RECEIVED DATE, NOT intake date
+Test: FRESH = batches received ≤7 days ago
+Test: MODERATE = batches received 8-14 days ago
+Test: AGING = batches received 15-30 days ago
+Test: CRITICAL = batches received >30 days ago
+
+// Stock Level Status (inventory.ts:30-41)
+Test: available = onHand - reserved
+Test: OUT_OF_STOCK = available ≤ 0
+Test: CRITICAL = available ≤ criticalThreshold (default 10)
+Test: LOW = available ≤ lowThreshold (default 50)
+Test: OPTIMAL = available > lowThreshold
 ```
 
-#### State Machines
+#### State Machines (VERIFIED FROM CODE)
+
 ```
-Order Status Flow:
-draft → pending → confirmed → picking → packed → shipped → delivered
-       ↓                                                    ↓
-     cancelled                                           returned
+Order Fulfillment Status (orderStateMachine.ts)
+══════════════════════════════════════════════════════════════
+DRAFT → CONFIRMED → PENDING → PACKED → SHIPPED → DELIVERED
+  ↓        ↓          ↓         ↓         ↓          ↓
+CANCELLED CANCELLED CANCELLED  PENDING  RETURNED  RETURNED
+                                           ↓
+                               RESTOCKED / RETURNED_TO_VENDOR
 
-Invoice Status Flow:
-draft → sent → viewed → partial_paid → paid → void
+Quote Status (orders table)
+══════════════════════════════════════════════════════════════
+DRAFT → SENT → VIEWED → ACCEPTED → CONVERTED
+  ↓              ↓         ↓
+         REJECTED    EXPIRED
 
-PO Status Flow:
-draft → submitted → approved → receiving → received → closed
+Sale/Payment Status (orders table)
+══════════════════════════════════════════════════════════════
+PENDING → PARTIAL → PAID
+    ↓        ↓
+ OVERDUE  OVERDUE → CANCELLED
+
+Invoice Status (invoices table)
+══════════════════════════════════════════════════════════════
+DRAFT → SENT → VIEWED → PARTIAL → PAID
+                           ↓        ↓
+                        OVERDUE   VOID
+
+Bill Status (bills table)
+══════════════════════════════════════════════════════════════
+DRAFT → PENDING → APPROVED → PARTIAL → PAID
+           ↓                     ↓
+         VOID                 OVERDUE
+
+PO Status (validators.ts:151-170)
+══════════════════════════════════════════════════════════════
+DRAFT → SENT → CONFIRMED → RECEIVING → RECEIVED
+  ↓       ↓        ↓           ↓
+CANCELLED CANCELLED CANCELLED CANCELLED
+
+Credit Status (schema.ts:3156-3159)
+══════════════════════════════════════════════════════════════
+ACTIVE → PARTIALLY_USED → FULLY_USED
+   ↓
+EXPIRED / CANCELLED
+
+Vendor Return Status (schema.ts:2761-2764)
+══════════════════════════════════════════════════════════════
+PENDING_VENDOR_CREDIT → CREDIT_RECEIVED
+         ↓
+     DISPUTED → CANCELLED
 ```
 
 ### 2.4 Security Audit Checklist
@@ -280,7 +341,7 @@ For each router tested, Claude produces:
 
 ### 3.1 Page-by-Page Testing
 
-Manus will test all 60 frontend pages with live browser interactions.
+Manus will test all 72 frontend pages with live browser interactions.
 
 #### Testing Protocol Per Page
 
@@ -424,15 +485,87 @@ Manus will execute complete user journeys:
 #### Flow 5: Calendar & Scheduling
 ```
 1. Login as sales rep
-2. Navigate to Calendar
+2. Navigate to Calendar (/calendar)
 3. Create new event
-4. Set recurrence
+4. Set recurrence (daily/weekly/monthly)
 5. Add participants
 6. Send invitations
 7. Check notifications received
-8. Navigate to Scheduling
+8. Navigate to Scheduling (/scheduling)
 9. View available slots
 10. Book appointment
+```
+
+#### Flow 6: Sample Request Cycle (ADDED)
+```
+1. Login as sales rep
+2. Navigate to Samples (/samples)
+3. Create sample request for a client
+4. Select batch(es) to sample
+5. Submit request
+6. Verify inventory reserved
+7. Login as warehouse manager
+8. Fulfill sample request
+9. Mark as shipped
+10. Verify inventory deducted
+11. Verify sample tracking updated
+```
+
+#### Flow 7: Return Processing (ADDED)
+```
+1. Login as sales rep
+2. Navigate to Returns (/returns)
+3. Create return for existing order
+4. Select items to return
+5. Specify return reason
+6. Submit return
+7. Login as warehouse manager
+8. Receive returned items
+9. Process: RESTOCKED or RETURNED_TO_VENDOR
+10. Verify inventory updated (if restocked)
+11. Verify client credit issued
+```
+
+#### Flow 8: Credit Management (ADDED)
+```
+1. Login as accountant
+2. Navigate to Credits (/credits)
+3. Issue credit to client
+4. Specify credit reason and amount
+5. Save credit (status = ACTIVE)
+6. Navigate to client profile
+7. Verify credit balance shown
+8. Create order for same client
+9. Apply credit to order
+10. Verify credit status = PARTIALLY_USED or FULLY_USED
+```
+
+#### Flow 9: Quote-to-Order Conversion (ADDED)
+```
+1. Login as sales rep
+2. Navigate to Quotes (/quotes)
+3. Create new quote
+4. Add line items
+5. Set valid until date
+6. Submit quote (status = DRAFT → SENT)
+7. Mark as VIEWED then ACCEPTED
+8. Convert quote to order
+9. Verify quote status = CONVERTED
+10. Verify order created with same line items
+```
+
+#### Flow 10: Employee Time Tracking (ADDED)
+```
+1. Login as employee
+2. Navigate to Time Clock (/time-clock)
+3. Clock in
+4. Verify timestamp recorded
+5. (Later) Clock out
+6. Verify hours calculated
+7. Login as manager
+8. Review timesheet entries
+9. Approve timesheet
+10. Verify payroll data accurate
 ```
 
 ### 3.4 Cross-Browser Testing Matrix
@@ -686,8 +819,8 @@ is to test all user-facing pages and execute E2E user flows.
 https://terp-app-b9s35.ondigitalocean.app
 
 ## Your Scope
-- 60 frontend pages
-- 5 critical E2E user flows
+- 72 frontend pages
+- 10 critical E2E user flows
 - Cross-browser compatibility
 - UI/UX verification
 
@@ -726,8 +859,8 @@ Start with: Navigate to login page and verify access
 
 ```
 [ ] All 121 routers tested (Claude)
-[ ] All 60 pages tested (Manus)
-[ ] All 5 E2E flows pass (Manus)
+[ ] All 72 pages tested (Manus)
+[ ] All 10 E2E flows pass (Manus)
 [ ] All P0/P1 issues fixed or documented
 [ ] Test coverage > 80% for Tier 1 modules
 [ ] Security audit complete with no critical findings
@@ -748,24 +881,125 @@ Start with: Navigate to login page and verify access
 
 ---
 
-## Appendix A: Router-to-Page Mapping
+## Appendix A: Complete Page URL Reference (VERIFIED)
 
-| Router | Frontend Page(s) |
-|--------|------------------|
-| `orders.ts` | Orders.tsx, OrderCreatorPage.tsx |
-| `inventory.ts` | Inventory.tsx |
-| `accounting.ts` | AccountingDashboard.tsx |
-| `invoices.ts` | Invoices.tsx |
-| `payments.ts` | Payments.tsx |
-| `clients.ts` | ClientsListPage.tsx, ClientProfilePage.tsx |
-| `calendar.ts` | CalendarPage.tsx |
-| `scheduling.ts` | SchedulingPage.tsx |
-| `vipPortal.ts` | VIPDashboard.tsx, VIPLogin.tsx |
-| `liveShopping.ts` | LiveShoppingPage.tsx |
-| `dashboard.ts` | DashboardV3.tsx |
-| `pricing.ts` | PricingRulesPage.tsx |
-| `purchaseOrders.ts` | PurchaseOrdersPage.tsx |
-| `products.ts` | ProductsPage.tsx |
+### Core Navigation (Protected Routes)
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Dashboard | `/` or `/dashboard` | `dashboard.ts`, `dashboardEnhanced.ts` |
+| Inventory | `/inventory` | `inventory.ts`, `inventoryMovements.ts` |
+| Products | `/products` | `productCatalogue.ts`, `products.ts` |
+| Orders | `/orders` | `orders.ts`, `orderEnhancements.ts` |
+| Order Creator | `/orders/create` | `orders.ts` |
+| Quotes | `/quotes` | `quotes.ts` |
+| Pick & Pack | `/pick-pack` | `pickPack.ts` |
+| Clients | `/clients` | `clients.ts` |
+| Client Profile | `/clients/:id` | `clients.ts`, `client360.ts` |
+| Client Ledger | `/clients/:clientId/ledger` | `clientLedger.ts` |
+| Vendors | `/vendors` | `vendors.ts` |
+| Vendor Supply | `/vendor-supply` | `vendorSupply.ts` |
+
+### Accounting Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Accounting Dashboard | `/accounting` or `/accounting/dashboard` | `accounting.ts` |
+| Chart of Accounts | `/accounting/chart-of-accounts` | `accounting.ts` |
+| General Ledger | `/accounting/general-ledger` | `accounting.ts` |
+| Fiscal Periods | `/accounting/fiscal-periods` | `accounting.ts` |
+| Invoices | `/accounting/invoices` | `invoices.ts` |
+| Bills | `/accounting/bills` | `accounting.ts` |
+| Payments | `/accounting/payments` | `payments.ts` |
+| Bank Accounts | `/accounting/bank-accounts` | `accounting.ts` |
+| Bank Transactions | `/accounting/bank-transactions` | `accounting.ts` |
+| Expenses | `/accounting/expenses` | `accounting.ts` |
+| Cash Locations | `/accounting/cash-locations` | `cashAudit.ts` |
+
+### Procurement & Intake Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Purchase Orders | `/purchase-orders` | `purchaseOrders.ts` |
+| Intake Receipts | `/intake-receipts` | `intakeReceipts.ts` |
+| Direct Intake | `/intake` | `productIntake.ts` |
+| Returns | `/returns` | `returns.ts` |
+| Samples | `/samples` | `samples.ts` |
+| Locations | `/locations` | `locations.ts` |
+
+### Pricing & Sales Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Pricing Rules | `/pricing/rules` | `pricing.ts` |
+| Pricing Profiles | `/pricing/profiles` | `pricingDefaults.ts` |
+| COGS Settings | `/settings/cogs` | `cogs.ts` |
+| Sales Sheets | `/sales-sheets` | `salesSheets.ts` |
+| Sales Portal | `/sales-portal` | `unifiedSalesPortal.ts` |
+| Live Shopping | `/live-shopping` | `liveShopping.ts` |
+
+### Client Features Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Credits | `/credits` | `credits.ts` |
+| Credit Settings | `/credit-settings` | `credit.ts` |
+| Needs Management | `/needs` | `clientNeedsEnhanced.ts` |
+| Interest List | `/interest-list` | `clientWants.ts` |
+| Matchmaking | `/matchmaking` | `matchingEnhanced.ts` |
+
+### Calendar & Scheduling Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Calendar | `/calendar` | `calendar.ts`, `calendarRecurrence.ts` |
+| Scheduling | `/scheduling` | `scheduling.ts` |
+| Time Clock | `/time-clock` | `hourTracking.ts` |
+
+### Communication & Productivity Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Todos | `/todos` or `/todo` | `todoLists.ts`, `todoTasks.ts` |
+| Inbox | `/inbox` | `inbox.ts` |
+| Notifications | `/notifications` | `notifications.ts` |
+| Workflow Queue | `/workflow-queue` | `workflowQueue.ts` |
+
+### Analytics & Admin Routes
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Analytics | `/analytics` | `analytics.ts` |
+| Leaderboard | `/leaderboard` | `leaderboard.ts`, `gamification.ts` |
+| Search Results | `/search` | `search.ts` |
+| Settings | `/settings` | `settings.ts` |
+| Feature Flags | `/settings/feature-flags` | `featureFlags.ts` |
+| Notification Preferences | `/settings/notifications` | `notifications.ts` |
+| Account | `/account` | `users.ts` |
+| Users | `/users` | `users.ts`, `rbac-users.ts` |
+| Admin Setup | `/admin-setup` | `adminSetup.ts` |
+| Photography | `/photography` | `photography.ts` |
+
+### VIP Portal Routes (Separate Auth Context)
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| VIP Login | `/vip-portal/login` | `vipPortal.ts` |
+| VIP Dashboard | `/vip-portal/dashboard` or `/vip-portal` | `vipPortal.ts` |
+| VIP Live Shopping | VIP-specific | `vipPortalLiveShopping.ts` |
+| Admin Impersonate | `/vip-portal/auth/impersonate` | `vipPortalAdmin.ts` |
+| Session Ended | `/vip-portal/session-ended` | - |
+| VIP Config | `/clients/:clientId/vip-portal-config` | `vipTiers.ts` |
+
+### Public Routes (No Auth Required)
+| Page | URL | Key Router(s) |
+|------|-----|---------------|
+| Login | `/login` | `auth.ts` |
+| Shared Sales Sheet | `/shared/sales-sheet/:token` | `salesSheets.ts` |
+| Farmer Verification | `/intake/verify/:token` | `intakeReceipts.ts` |
+
+### Legacy Redirects
+| Old URL | Redirects To |
+|---------|--------------|
+| `/invoices` | `/accounting/invoices` |
+| `/client-needs` | `/needs` |
+| `/ar-ap` | `/accounting` |
+| `/reports` | `/analytics` |
+| `/pricing-rules` | `/pricing/rules` |
+| `/system-settings` | `/settings` |
+| `/feature-flags` | `/settings/feature-flags` |
+| `/todo-lists` | `/todos` |
 
 ---
 

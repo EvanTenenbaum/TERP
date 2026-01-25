@@ -26,9 +26,30 @@ Ask Evan for test credentials for these roles:
 
 | Category | Count | Priority |
 |----------|-------|----------|
-| Frontend Pages | 60 | Test all |
-| E2E User Flows | 5 | Critical |
+| Frontend Pages | 72 | Test all |
+| E2E User Flows | 10 | Critical |
 | Cross-Browser | 4 browsers | After main testing |
+
+## Key Business Logic to Verify (FROM CODE)
+
+**Inventory Aging Colors:**
+- FRESH (green): Batch received ≤7 days ago
+- MODERATE (yellow): Batch received 8-14 days ago
+- AGING (orange): Batch received 15-30 days ago
+- CRITICAL (red): Batch received >30 days ago
+
+**AR Aging Buckets (AccountingDashboard):**
+- Current: Invoices not yet due
+- 1-30 days: 0-30 days past due date
+- 31-60 days: 31-60 days past due
+- 61-90 days: 61-90 days past due
+- 90+ days: Over 90 days past due
+
+**Stock Status Indicators:**
+- OUT_OF_STOCK: Available ≤ 0
+- CRITICAL: Available ≤ 10
+- LOW: Available ≤ 50
+- OPTIMAL: Available > 50
 
 ## Phase 1: Pre-Flight Checklist
 
