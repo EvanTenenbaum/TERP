@@ -10,14 +10,15 @@
 
 ## 🟢 Currently Working
 
-| Session ID                             | Task                                             | Branch                                             | Module        | Status      | Started    | ETA        |
-| -------------------------------------- | ------------------------------------------------ | -------------------------------------------------- | ------------- | ----------- | ---------- | ---------- |
-| Session-20260123-AUDIT-e345e7          | Roadmap extraction QA audit                      | -                                                  | Documentation | In Progress | 2026-01-23 | -          |
-| Session-20260115-DOCS-USERFLOWS-d5ea18 | DOCS-USERFLOWS                                   | -                                                  | Documentation | In Progress | 2026-01-15 | -          |
-| Session-20260114-QA-TERP-664c9b        | Deep QA Review                                   | main                                               | Repo-wide     | In Progress | 2026-01-14 | TBD        |
-| Session-20260109-QA-E2E-a63131         | QA-E2E full browser coverage                     | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
-| Session-20260109-QA-E2E-0c47cb         | QA-E2E credential provisioning + flow completion | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
-| Session-20260116-E2E-INFRA             | E2E-001, E2E-002, E2E-003 Infrastructure         | manus/e2e-infrastructure-implementation-2026-01-16 | tests-e2e/    | In Progress | 2026-01-16 | 2026-01-16 |
+| Session ID                               | Task                                             | Branch                                             | Module        | Status      | Started    | ETA        |
+| ---------------------------------------- | ------------------------------------------------ | -------------------------------------------------- | ------------- | ----------- | ---------- | ---------- |
+| Session-20260125-TEAM-A-STABILITY-9fc6d6 | Team A Core Stability Fixes                      | claude/execute-team-a-stability-fLgHH              | Test/Perf     | Complete    | 2026-01-25 | 2026-01-25 |
+| Session-20260123-AUDIT-e345e7            | Roadmap extraction QA audit                      | -                                                  | Documentation | In Progress | 2026-01-23 | -          |
+| Session-20260115-DOCS-USERFLOWS-d5ea18   | DOCS-USERFLOWS                                   | -                                                  | Documentation | In Progress | 2026-01-15 | -          |
+| Session-20260114-QA-TERP-664c9b          | Deep QA Review                                   | main                                               | Repo-wide     | In Progress | 2026-01-14 | TBD        |
+| Session-20260109-QA-E2E-a63131           | QA-E2E full browser coverage                     | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
+| Session-20260109-QA-E2E-0c47cb           | QA-E2E credential provisioning + flow completion | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
+| Session-20260116-E2E-INFRA               | E2E-001, E2E-002, E2E-003 Infrastructure         | manus/e2e-infrastructure-implementation-2026-01-16 | tests-e2e/    | In Progress | 2026-01-16 | 2026-01-16 |
 
 ## ⏸️ Paused / Waiting
 
