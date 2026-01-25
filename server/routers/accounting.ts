@@ -1265,7 +1265,7 @@ export const accountingRouter = router({
           if (!db) throw new Error("Database not available");
           
           const { clients, payments, clientTransactions } = await import("../../drizzle/schema");
-          const { eq, sql } = await import("drizzle-orm");
+          const { eq } = await import("drizzle-orm");
           
           // 1. Get current client balance
           const client = await db.select({
@@ -1343,8 +1343,8 @@ export const accountingRouter = router({
           const db = await import("../db").then(m => m.getDb());
           if (!db) throw new Error("Database not available");
           
-          const { clients, payments, bills } = await import("../../drizzle/schema");
-          const { eq, and, sql } = await import("drizzle-orm");
+          const { clients, payments } = await import("../../drizzle/schema");
+          const { eq, and } = await import("drizzle-orm");
           
           // 1. Get vendor (supplier) info
           const vendor = await db.select({
@@ -1400,8 +1400,8 @@ export const accountingRouter = router({
           const db = await import("../db").then(m => m.getDb());
           if (!db) throw new Error("Database not available");
           
-          const { clients, payments } = await import("../../drizzle/schema");
-          const { desc, eq, sql } = await import("drizzle-orm");
+          const { clients } = await import("../../drizzle/schema");
+          const { desc, eq } = await import("drizzle-orm");
           
           // Get clients with recent payment activity
           const recentClients = await db.select({
@@ -1608,10 +1608,53 @@ export const accountingRouter = router({
 
           const totalExpenses = expensesByCategory.reduce((sum, e) => sum + e.amount, 0);
 
-          // Calculate COGS from orders if available
-          const totalCOGS = 0;
-          // Note: COGS calculation would need access to order line items with COGS data
-          // For now, we'll estimate based on a typical gross margin if orders data is available
+          // BE-QA-008-FIX: Calculate COGS from confirmed/shipped order line items
+          const { orders, orderLineItems } = await import("../../drizzle/schema");
+          const { gte, lte, isNull } = await import("drizzle-orm");
+
+          // Get orders confirmed within the period
+          const periodOrders = await db
+            .select({
+              orderId: orders.id,
+              confirmedAt: orders.confirmedAt,
+            })
+            .from(orders)
+            .where(
+              and(
+                eq(orders.orderType, "SALE"),
+                eq(orders.isDraft, false),
+                gte(orders.confirmedAt, input.startDate),
+                lte(orders.confirmedAt, input.endDate),
+                isNull(orders.deletedAt)
+              )
+            );
+
+          let totalCOGS = 0;
+
+          if (periodOrders.length > 0) {
+            const orderIds = periodOrders.map(o => o.orderId);
+
+            // Get line items for these orders and calculate COGS
+            const lineItems = await db
+              .select({
+                quantity: orderLineItems.quantity,
+                cogsPerUnit: orderLineItems.cogsPerUnit,
+              })
+              .from(orderLineItems)
+              .where(inArray(orderLineItems.orderId, orderIds));
+
+            totalCOGS = lineItems.reduce((sum, item) => {
+              const qty = parseFloat(item.quantity || "0");
+              const cogs = parseFloat(item.cogsPerUnit || "0");
+              return sum + (qty * cogs);
+            }, 0);
+          }
+
+          logger.info({
+            msg: "[Accounting] COGS calculated for income statement",
+            periodOrders: periodOrders.length,
+            totalCOGS,
+          });
 
           const grossProfit = totalRevenue - totalCOGS;
           const netIncome = grossProfit - totalExpenses;

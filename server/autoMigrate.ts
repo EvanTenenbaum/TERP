@@ -1198,6 +1198,40 @@ export async function runAutoMigrations() {
           console.log("  ⚠️  notification_preferences table:", errMsg);
         }
       }
+
+      // TERP-0004-FIX: Add FK constraints for client_id on notifications tables
+      // Note: user_id FK is not added because users table is managed by Clerk (external auth)
+      try {
+        await db.execute(sql`
+          ALTER TABLE notifications
+          ADD CONSTRAINT fk_notifications_client
+          FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+        `);
+        console.log("  ✅ Added FK constraint fk_notifications_client");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+          console.log("  ℹ️  FK fk_notifications_client already exists");
+        } else {
+          console.log("  ⚠️  FK fk_notifications_client:", errMsg);
+        }
+      }
+
+      try {
+        await db.execute(sql`
+          ALTER TABLE notification_preferences
+          ADD CONSTRAINT fk_notification_prefs_client
+          FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+        `);
+        console.log("  ✅ Added FK constraint fk_notification_prefs_client");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+          console.log("  ℹ️  FK fk_notification_prefs_client already exists");
+        } else {
+          console.log("  ⚠️  FK fk_notification_prefs_client:", errMsg);
+        }
+      }
     }
 
     // ========================================================================

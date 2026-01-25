@@ -271,7 +271,7 @@ export const ordersRouter = router({
 
   /**
    * API-013: Simple confirm endpoint
-   * Confirms a draft order with minimal input - just validates and sets isDraft=false
+   * Confirms a draft order with minimal input - validates inventory and sets isDraft=false
    */
   confirm: protectedProcedure
     .use(requirePermission("orders:create"))
@@ -313,6 +313,53 @@ export const ordersRouter = router({
         });
       }
 
+      // API-013-FIX: Validate inventory availability before confirming
+      const batchIds = lineItems.map(item => item.batchId);
+      const batchRecords = await db
+        .select()
+        .from(batches)
+        .where(inArray(batches.id, batchIds));
+
+      const batchMap = new Map(batchRecords.map(b => [b.id, b]));
+
+      // Check each line item has sufficient inventory
+      for (const item of lineItems) {
+        const batch = batchMap.get(item.batchId);
+        if (!batch) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Batch ${item.batchId} not found`,
+          });
+        }
+
+        const onHand = parseFloat(batch.onHandQty || "0");
+        const reserved = parseFloat(batch.reservedQty || "0");
+        const quarantine = parseFloat(batch.quarantineQty || "0");
+        const hold = parseFloat(batch.holdQty || "0");
+        const availableQty = Math.max(0, onHand - reserved - quarantine - hold);
+        const requestedQty = parseFloat(item.quantity);
+
+        if (availableQty < requestedQty) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Requested: ${requestedQty}`,
+          });
+        }
+      }
+
+      // Reserve inventory for the order
+      for (const item of lineItems) {
+        const batch = batchMap.get(item.batchId);
+        if (batch) {
+          const currentReserved = parseFloat(batch.reservedQty || "0");
+          const newReserved = currentReserved + parseFloat(item.quantity);
+          await db
+            .update(batches)
+            .set({ reservedQty: newReserved.toString() })
+            .where(eq(batches.id, item.batchId));
+        }
+      }
+
       // Confirm the order
       await db
         .update(orders)
@@ -325,7 +372,8 @@ export const ordersRouter = router({
       logger.info({
         orderId: input.orderId,
         confirmedBy: userId,
-        msg: "Order confirmed via simple confirm endpoint",
+        lineItemCount: lineItems.length,
+        msg: "Order confirmed via simple confirm endpoint with inventory reservation",
       });
 
       return {

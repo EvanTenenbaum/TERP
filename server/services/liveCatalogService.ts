@@ -397,7 +397,15 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
         if (markupRules.length > 0) {
           const avgMarkup = markupRules.reduce((sum, r) => {
             const val = parseFloat(r.adjustmentValue?.toString() || "0");
-            return sum + (r.adjustmentType === "PERCENT_MARKUP" ? val / 100 : val / unitCogs);
+            // STUB-002-FIX: Safe division - for DOLLAR_MARKUP, convert to percentage
+            // but cap at 500% to prevent extreme values from tiny COGS
+            if (r.adjustmentType === "PERCENT_MARKUP") {
+              return sum + val / 100;
+            } else {
+              // DOLLAR_MARKUP: convert to percentage, capped at 5x (500%)
+              const dollarMarkupPercent = unitCogs > 0.01 ? val / unitCogs : 5;
+              return sum + Math.min(dollarMarkupPercent, 5);
+            }
           }, 0) / markupRules.length;
           estimatedRetailPrice = unitCogs * (1 + Math.max(avgMarkup, defaultMargin));
         } else {
