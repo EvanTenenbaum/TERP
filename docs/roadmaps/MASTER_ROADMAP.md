@@ -3870,6 +3870,130 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 | LINT-006 | Remove forbidden console.log statements (~50 instances) | LOW | ready | 2h | Server files |
 | LINT-007 | Fix non-null assertions (~30 instances) | LOW | ready | 2h | Client components |
 | LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions | MEDIUM | ready | 1h | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
+| LINT-009 | Fix usePerformanceMonitor.ts type safety (`as any` → proper types) | MEDIUM | complete | 1h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| LINT-010 | Fix budgets useMemo dependency in usePerformanceMonitor.ts | MEDIUM | complete | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| LINT-011 | Replace eslint-disable no-undef with proper global declaration | LOW | complete | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+
+---
+
+#### LINT-009: Fix usePerformanceMonitor.ts Type Safety
+
+**Status:** complete
+**Completed:** 2026-01-25
+**Key Commits:** See commit for branch claude/execute-team-a-stability-fLgHH
+**Priority:** MEDIUM
+**Estimate:** 1h
+**Module:** `client/src/hooks/work-surface/usePerformanceMonitor.ts`
+**Dependencies:** None
+
+**Problem:**
+Multiple `as any` type bypasses in Web Vitals observer options and entries:
+
+```typescript
+// Lines 375, 391, 411 - Observer options
+lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as any);
+
+// Line 387 - FID entry
+const firstEntry = entries[0] as any;
+
+// Line 403 - Layout shift entries
+for (const entry of list.getEntries() as any[]) {
+```
+
+**Solution:**
+Add proper type interfaces for PerformanceObserver options:
+
+```typescript
+interface PerformanceObserverInitExtended {
+  type?: string;
+  buffered?: boolean;
+  entryTypes?: string[];
+}
+
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+}
+```
+
+**Acceptance Criteria:**
+- [ ] All `as any` removed from useWebVitals hook
+- [ ] Proper type interfaces defined for Web Vitals entries
+- [ ] TypeScript compiles without errors
+
+---
+
+#### LINT-010: Fix budgets useMemo Dependency
+
+**Status:** complete
+**Completed:** 2026-01-25
+**Key Commits:** See commit for branch claude/execute-team-a-stability-fLgHH
+**Priority:** MEDIUM
+**Estimate:** 0.5h
+**Module:** `client/src/hooks/work-surface/usePerformanceMonitor.ts:129`
+**Dependencies:** None
+
+**Problem:**
+The `budgets` object in useCallback dependencies causes unnecessary re-renders:
+
+```typescript
+// Line 129-132 - Creates new object every render
+const budgets: PerformanceBudget = {
+  ...DEFAULT_BUDGETS,
+  ...customBudgets,
+};
+```
+
+**Solution:**
+Wrap budgets initialization in useMemo:
+
+```typescript
+const budgets = useMemo<PerformanceBudget>(() => ({
+  ...DEFAULT_BUDGETS,
+  ...customBudgets,
+}), [customBudgets]);
+```
+
+**Acceptance Criteria:**
+- [ ] budgets wrapped in useMemo
+- [ ] react-hooks/exhaustive-deps warning resolved
+- [ ] No unnecessary re-renders
+
+---
+
+#### LINT-011: Replace eslint-disable with Global Declaration
+
+**Status:** complete
+**Completed:** 2026-01-25
+**Key Commits:** See commit for branch claude/execute-team-a-stability-fLgHH
+**Priority:** LOW
+**Estimate:** 0.5h
+**Module:** `client/src/hooks/work-surface/usePerformanceMonitor.ts:15`
+**Dependencies:** None
+
+**Problem:**
+File-wide `eslint-disable no-undef` masks all undefined variable errors, not just browser globals:
+
+```typescript
+/* eslint-disable no-undef */
+// Browser globals: performance, PerformanceObserver, PerformanceEntry
+```
+
+**Solution:**
+Use specific global declaration:
+
+```typescript
+/* global performance, PerformanceObserver, PerformanceEntry */
+```
+
+**Acceptance Criteria:**
+- [ ] eslint-disable replaced with /* global */ directive
+- [ ] Only intended browser globals are exempted
+- [ ] Other no-undef errors would still be caught
 
 ---
 

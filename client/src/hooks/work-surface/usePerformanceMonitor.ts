@@ -12,10 +12,9 @@
  * @see ATOMIC_UX_STRATEGY.md for performance requirements
  */
 
-/* eslint-disable no-undef */
-// Browser globals: performance, PerformanceObserver, PerformanceEntry are available in browser runtime
+/* global performance, PerformanceObserver, PerformanceEntry */
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 
 // ============================================================================
 // Types
@@ -82,6 +81,27 @@ export interface UsePerformanceMonitorReturn {
 }
 
 // ============================================================================
+// Web Vitals Types (for PerformanceObserver entries)
+// ============================================================================
+
+/** Extended PerformanceObserver init options for Web Vitals */
+interface PerformanceObserverInitExtended extends PerformanceObserverInit {
+  type?: string;
+  buffered?: boolean;
+}
+
+/** First Input Delay entry with processingStart */
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+}
+
+/** Layout Shift entry with CLS-specific properties */
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+// ============================================================================
 // Constants
 // ============================================================================
 
@@ -129,10 +149,11 @@ export function usePerformanceMonitor(
     surfaceName = 'WorkSurface',
   } = options;
 
-  const budgets: PerformanceBudget = {
+  // Memoize budgets to prevent unnecessary re-renders (LINT-010)
+  const budgets = useMemo<PerformanceBudget>(() => ({
     ...DEFAULT_BUDGETS,
     ...customBudgets,
-  };
+  }), [customBudgets]);
 
   const marksRef = useRef<Map<string, PerformanceMark>>(new Map());
   const completedMarksRef = useRef<PerformanceMark[]>([]);
@@ -375,7 +396,7 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
         vitalsRef.current.lcp = lastEntry.startTime;
         onReport?.({ ...vitalsRef.current });
       });
-      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as any);
+      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as PerformanceObserverInitExtended);
       observers.push(lcpObserver);
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
@@ -387,11 +408,11 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
     try {
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const firstEntry = entries[0] as any;
+        const firstEntry = entries[0] as FirstInputEntry;
         vitalsRef.current.fid = firstEntry.processingStart - firstEntry.startTime;
         onReport?.({ ...vitalsRef.current });
       });
-      fidObserver.observe({ type: 'first-input', buffered: true } as any);
+      fidObserver.observe({ type: 'first-input', buffered: true } as PerformanceObserverInitExtended);
       observers.push(fidObserver);
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
@@ -403,7 +424,7 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
     try {
       let clsValue = 0;
       const clsObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as any[]) {
+        for (const entry of list.getEntries() as LayoutShiftEntry[]) {
           if (!entry.hadRecentInput) {
             clsValue += entry.value;
           }
@@ -411,7 +432,7 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
         vitalsRef.current.cls = clsValue;
         onReport?.({ ...vitalsRef.current });
       });
-      clsObserver.observe({ type: 'layout-shift', buffered: true } as any);
+      clsObserver.observe({ type: 'layout-shift', buffered: true } as PerformanceObserverInitExtended);
       observers.push(clsObserver);
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
