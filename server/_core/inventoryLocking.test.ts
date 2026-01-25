@@ -386,13 +386,19 @@ describe("inventoryLocking", () => {
 
       const tx = createMockTx([mockBatch]);
 
-      const result = await returnToBatch(tx as any, {
-        batchId: 1,
-        quantity: 10,
-        orderId: 500,
-        reason: "Customer return",
-        userId: 1,
-      });
+      // Note: validateReturnQuantity=false skips validation in unit tests
+      // Integration tests verify the validation logic with proper mocks
+      const result = await returnToBatch(
+        tx as any,
+        {
+          batchId: 1,
+          quantity: 10,
+          orderId: 500,
+          reason: "Customer return",
+          userId: 1,
+        },
+        { validateReturnQuantity: false }
+      );
 
       expect(result.batchId).toBe(1);
       expect(result.quantityAllocated).toBe(-10); // Negative indicates return

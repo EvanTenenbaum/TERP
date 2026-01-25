@@ -10,13 +10,73 @@
  * Uses MySQL's SELECT ... FOR UPDATE for row-level locks within transactions
  *
  * @see TRUTH_MODEL.md for inventory invariants that must be maintained
+ *
+ * ## PRODUCTION DEPLOYMENT WARNING
+ *
+ * ⚠️  This module uses in-memory state for some operations.
+ * ⚠️  In multi-instance deployments, ensure:
+ *     - Sticky sessions OR
+ *     - Redis-backed idempotency (see criticalMutation.ts)
+ *
+ * ## CALLER COMPOSITION GUIDE
+ *
+ * ### When to use each function:
+ *
+ * 1. **Simple single-batch allocation** (most common):
+ *    ```typescript
+ *    await allocateFromBatch(tx, { batchId, quantity, orderId, userId });
+ *    ```
+ *
+ * 2. **Multi-batch order fulfillment** (atomic):
+ *    ```typescript
+ *    await allocateFromMultipleBatches(tx, allocations, { orderId, userId });
+ *    ```
+ *
+ * 3. **Custom batch operations** (advanced):
+ *    ```typescript
+ *    await withBatchLock(tx, batchId, async (batch) => {
+ *      // Custom logic with locked batch
+ *    });
+ *    ```
+ *
+ * 4. **Returns processing**:
+ *    ```typescript
+ *    await returnToBatch(tx, { batchId, quantity, orderId, reason, userId });
+ *    ```
+ *
+ * ### Combining with criticalMutation:
+ *
+ * For critical operations that need retry + idempotency:
+ * ```typescript
+ * await criticalMutation(
+ *   async (tx) => {
+ *     return await allocateFromBatch(tx, { ... });
+ *   },
+ *   { idempotencyKey: `order-${orderId}-allocate` }
+ * );
+ * ```
+ *
+ * ### Lock timeouts:
+ * - Single batch: 10s default (sufficient for most operations)
+ * - Multi-batch: 30s default (allows for complex operations)
+ * - Custom: Pass { lockTimeout: N } in options
  */
 
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { batches, inventoryMovements } from "../../drizzle/schema";
 import { logger } from "./logger";
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Default lock timeout for single batch operations (seconds) */
+const DEFAULT_SINGLE_BATCH_LOCK_TIMEOUT = 10;
+
+/** Default lock timeout for multi-batch operations (seconds) - longer for complex ops */
+const DEFAULT_MULTI_BATCH_LOCK_TIMEOUT = 30;
 
 /**
  * Type for Drizzle transaction context
@@ -67,7 +127,7 @@ export interface AllocationResult {
 export interface LockOptions {
   /**
    * Timeout in seconds to wait for lock acquisition
-   * Default: 10 seconds
+   * Default: 10 seconds for single batch, 30 seconds for multi-batch
    */
   lockTimeout?: number;
 
@@ -76,6 +136,61 @@ export interface LockOptions {
    * Default: true
    */
   throwOnInsufficient?: boolean;
+
+  /**
+   * Whether to validate returns against original allocations
+   * When true, returns will fail if quantity exceeds what was allocated
+   * Default: true
+   */
+  validateReturnQuantity?: boolean;
+}
+
+// ============================================================================
+// INPUT VALIDATION
+// ============================================================================
+
+/**
+ * Validate that quantity is a positive number
+ * @throws TRPCError with BAD_REQUEST if invalid
+ */
+function validateQuantity(quantity: number, operation: string): void {
+  if (typeof quantity !== "number" || isNaN(quantity)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: quantity must be a valid number`,
+    });
+  }
+  if (quantity <= 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: quantity must be positive, got ${quantity}`,
+    });
+  }
+  if (!Number.isFinite(quantity)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: quantity must be finite`,
+    });
+  }
+}
+
+/**
+ * Validate that batchId is a positive integer
+ * @throws TRPCError with BAD_REQUEST if invalid
+ */
+function validateBatchId(batchId: number, operation: string): void {
+  if (typeof batchId !== "number" || isNaN(batchId)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: batchId must be a valid number`,
+    });
+  }
+  if (batchId <= 0 || !Number.isInteger(batchId)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: batchId must be a positive integer, got ${batchId}`,
+    });
+  }
 }
 
 // ============================================================================
@@ -102,8 +217,11 @@ export async function withBatchLock<T>(
   callback: (batch: LockedBatch) => Promise<T>,
   options: LockOptions = {}
 ): Promise<T> {
-  const { lockTimeout = 10 } = options;
+  const { lockTimeout = DEFAULT_SINGLE_BATCH_LOCK_TIMEOUT } = options;
   const db = tx;
+
+  // Input validation
+  validateBatchId(batchId, "withBatchLock");
 
   try {
     // Set lock timeout for this transaction
@@ -181,7 +299,8 @@ export async function withMultiBatchLock<T>(
   callback: (batches: Map<number, LockedBatch>) => Promise<T>,
   options: LockOptions = {}
 ): Promise<T> {
-  const { lockTimeout = 10 } = options;
+  // Use longer timeout for multi-batch operations
+  const { lockTimeout = DEFAULT_MULTI_BATCH_LOCK_TIMEOUT } = options;
   const db = tx;
 
   if (batchIds.length === 0) {
@@ -189,6 +308,11 @@ export async function withMultiBatchLock<T>(
       code: "BAD_REQUEST",
       message: "No batch IDs provided for locking",
     });
+  }
+
+  // Validate all batch IDs
+  for (const batchId of batchIds) {
+    validateBatchId(batchId, "withMultiBatchLock");
   }
 
   // Sort IDs to prevent deadlocks (always acquire locks in same order)
@@ -286,6 +410,9 @@ async function _allocateBatchDirect(
   const { throwOnInsufficient = true } = options;
   const db = tx;
   const batchId = batch.id;
+
+  // Input validation (batch already validated by caller, just validate quantity)
+  validateQuantity(quantity, "_allocateBatchDirect");
 
   // Validate available quantity
   const availableQty = batch.onHandQty - (batch.allocatedQty || 0);
@@ -387,6 +514,10 @@ export async function allocateFromBatch(
   const { throwOnInsufficient = true } = options;
   const db = tx;
 
+  // Input validation
+  validateBatchId(batchId, "allocateFromBatch");
+  validateQuantity(quantity, "allocateFromBatch");
+
   return await withBatchLock(
     tx,
     batchId,
@@ -467,6 +598,10 @@ export async function allocateFromBatch(
 
 /**
  * Return quantity to a batch with proper locking (for returns/restocks)
+ *
+ * @param options.validateReturnQuantity - When true (default), validates that
+ *   the return quantity doesn't exceed what was originally allocated from this batch.
+ *   This prevents returning more inventory than was ever taken.
  */
 export async function returnToBatch(
   tx: DrizzleTx,
@@ -476,12 +611,70 @@ export async function returnToBatch(
     orderId?: number;
     reason?: string;
     userId: number;
-  }
+  },
+  options: LockOptions = {}
 ): Promise<AllocationResult> {
   const { batchId, quantity, orderId, reason, userId } = request;
+  const { validateReturnQuantity = true } = options;
   const db = tx;
 
+  // Input validation
+  validateBatchId(batchId, "returnToBatch");
+  validateQuantity(quantity, "returnToBatch");
+
   return await withBatchLock(tx, batchId, async batch => {
+    // Validate return quantity against historical allocations
+    if (validateReturnQuantity) {
+      // Calculate total allocated from this batch (SALE movements with negative quantities)
+      const allocationResult = (await db
+        .select({
+          totalAllocated: sql<string>`COALESCE(SUM(ABS(CAST(quantity_change AS DECIMAL(20,4)))), 0)`,
+        })
+        .from(inventoryMovements)
+        .where(
+          and(
+            eq(inventoryMovements.batchId, batchId),
+            eq(inventoryMovements.inventoryMovementType, "SALE")
+          )
+        )) as { totalAllocated: string }[];
+
+      // Calculate total already returned to this batch
+      const returnResult = (await db
+        .select({
+          totalReturned: sql<string>`COALESCE(SUM(CAST(quantity_change AS DECIMAL(20,4))), 0)`,
+        })
+        .from(inventoryMovements)
+        .where(
+          and(
+            eq(inventoryMovements.batchId, batchId),
+            eq(inventoryMovements.inventoryMovementType, "RETURN")
+          )
+        )) as { totalReturned: string }[];
+
+      const totalAllocated = parseFloat(
+        allocationResult[0]?.totalAllocated || "0"
+      );
+      const totalReturned = parseFloat(returnResult[0]?.totalReturned || "0");
+      const maxReturnable = totalAllocated - totalReturned;
+
+      if (quantity > maxReturnable) {
+        logger.warn(
+          {
+            batchId,
+            requestedReturn: quantity,
+            totalAllocated,
+            totalReturned,
+            maxReturnable,
+          },
+          "REL-006: Return quantity exceeds available for return"
+        );
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Cannot return ${quantity} units to batch ${batchId}. Maximum returnable: ${maxReturnable} (allocated: ${totalAllocated}, already returned: ${totalReturned})`,
+        });
+      }
+    }
+
     // Calculate before/after quantities
     const quantityBefore = batch.onHandQty;
     const quantityAfter = batch.onHandQty + quantity;

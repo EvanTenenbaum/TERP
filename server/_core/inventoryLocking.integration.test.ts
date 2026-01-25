@@ -546,13 +546,18 @@ describe("inventoryLocking Integration Tests", () => {
       });
       const tx = createMockTransaction(testBatch);
 
-      const result = await returnToBatch(tx as any, {
-        batchId: 15,
-        quantity: 10,
-        orderId: 600,
-        reason: "Customer return - damaged in shipping",
-        userId: 2,
-      });
+      // Note: validateReturnQuantity=false in integration tests that don't mock select
+      const result = await returnToBatch(
+        tx as any,
+        {
+          batchId: 15,
+          quantity: 10,
+          orderId: 600,
+          reason: "Customer return - damaged in shipping",
+          userId: 2,
+        },
+        { validateReturnQuantity: false }
+      );
 
       expect(result.batchId).toBe(15);
       expect(result.quantityAllocated).toBe(-10); // Negative indicates return
@@ -571,11 +576,15 @@ describe("inventoryLocking Integration Tests", () => {
       });
       const tx = createMockTransaction(testBatch);
 
-      const result = await returnToBatch(tx as any, {
-        batchId: 1,
-        quantity: 25,
-        userId: 1,
-      });
+      const result = await returnToBatch(
+        tx as any,
+        {
+          batchId: 1,
+          quantity: 25,
+          userId: 1,
+        },
+        { validateReturnQuantity: false }
+      );
 
       expect(result.previousQty).toBe(30);
       expect(result.newQty).toBe(55); // 30 + 25
@@ -585,12 +594,16 @@ describe("inventoryLocking Integration Tests", () => {
       const testBatch = createTestBatch();
       const tx = createMockTransaction(testBatch);
 
-      await returnToBatch(tx as any, {
-        batchId: 1,
-        quantity: 5,
-        reason: "Quality control rejection",
-        userId: 1,
-      });
+      await returnToBatch(
+        tx as any,
+        {
+          batchId: 1,
+          quantity: 5,
+          reason: "Quality control rejection",
+          userId: 1,
+        },
+        { validateReturnQuantity: false }
+      );
 
       expect(tx.insert).toHaveBeenCalled();
     });
@@ -602,13 +615,17 @@ describe("inventoryLocking Integration Tests", () => {
       });
       const tx = createMockTransaction(testBatch);
 
-      await returnToBatch(tx as any, {
-        batchId: 20,
-        quantity: 15,
-        orderId: 789,
-        reason: "Overshipment",
-        userId: 4,
-      });
+      await returnToBatch(
+        tx as any,
+        {
+          batchId: 20,
+          quantity: 15,
+          orderId: 789,
+          reason: "Overshipment",
+          userId: 4,
+        },
+        { validateReturnQuantity: false }
+      );
 
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -871,6 +888,199 @@ describe("inventoryLocking Integration Tests", () => {
       await expect(
         withBatchLock(tx as any, 1, async () => ({}))
       ).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe("Input Validation", () => {
+    it("should reject negative quantity for allocation", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: -10,
+          userId: 1,
+        })
+      ).rejects.toThrow(/quantity must be positive/);
+    });
+
+    it("should reject zero quantity for allocation", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: 0,
+          userId: 1,
+        })
+      ).rejects.toThrow(/quantity must be positive/);
+    });
+
+    it("should reject negative batchId", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: -1,
+          quantity: 10,
+          userId: 1,
+        })
+      ).rejects.toThrow(/batchId must be a positive integer/);
+    });
+
+    it("should reject non-integer batchId", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1.5,
+          quantity: 10,
+          userId: 1,
+        })
+      ).rejects.toThrow(/batchId must be a positive integer/);
+    });
+
+    it("should reject negative quantity for return", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        returnToBatch(
+          tx as any,
+          {
+            batchId: 1,
+            quantity: -5,
+            userId: 1,
+          },
+          { validateReturnQuantity: false }
+        )
+      ).rejects.toThrow(/quantity must be positive/);
+    });
+
+    it("should reject Infinity quantity", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: Infinity,
+          userId: 1,
+        })
+      ).rejects.toThrow(/quantity must be finite/);
+    });
+
+    it("should reject NaN quantity", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: NaN,
+          userId: 1,
+        })
+      ).rejects.toThrow(/quantity must be a valid number/);
+    });
+  });
+
+  describe("Return Quantity Validation", () => {
+    it("should validate return quantity with validateReturnQuantity=true", async () => {
+      const testBatch = createTestBatch({
+        id: 1,
+        onHandQty: 50,
+      });
+
+      // Create a mock that also handles select queries for validation
+      let executeCallCount = 0;
+      const tx = {
+        execute: vi.fn().mockImplementation(() => {
+          executeCallCount++;
+          if (executeCallCount === 1) return Promise.resolve([]);
+          return Promise.resolve([testBatch]);
+        }),
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi
+              .fn()
+              .mockResolvedValue([
+                { totalAllocated: "100", totalReturned: "50" },
+              ]),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
+        }),
+      };
+
+      // Attempting to return 60 when only 50 is returnable (100 allocated - 50 already returned)
+      await expect(
+        returnToBatch(
+          tx as any,
+          {
+            batchId: 1,
+            quantity: 60,
+            userId: 1,
+          },
+          { validateReturnQuantity: true }
+        )
+      ).rejects.toThrow(/Cannot return 60 units/);
+    });
+
+    it("should allow valid return quantity within limits", async () => {
+      const testBatch = createTestBatch({
+        id: 1,
+        onHandQty: 50,
+      });
+
+      // Create mock that returns proper allocation/return data
+      let executeCallCount = 0;
+      const tx = {
+        execute: vi.fn().mockImplementation(() => {
+          executeCallCount++;
+          if (executeCallCount === 1) return Promise.resolve([]);
+          return Promise.resolve([testBatch]);
+        }),
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi
+              .fn()
+              .mockResolvedValue([
+                { totalAllocated: "100", totalReturned: "40" },
+              ]),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
+        }),
+      };
+
+      // Returning 50 when 60 is returnable (100 allocated - 40 already returned)
+      const result = await returnToBatch(
+        tx as any,
+        {
+          batchId: 1,
+          quantity: 50,
+          userId: 1,
+        },
+        { validateReturnQuantity: true }
+      );
+
+      expect(result.quantityAllocated).toBe(-50);
     });
   });
 });
