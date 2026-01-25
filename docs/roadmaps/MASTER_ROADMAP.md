@@ -220,6 +220,167 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 > The following tasks are still required for MVP.
 
+### 🚨 POST-MERGE: Sprint Integration Release (P0) - Added Jan 25, 2026
+
+> **CRITICAL**: These tasks MUST be completed immediately after merging the sprint integration branch to main.
+> **Integration Branch:** `claude/execute-integration-coordinator-yCuO7`
+> **Teams Merged:** D (Schema) → A (Stability) → C (Backend) → B (Frontend) → E (Integration)
+
+| Task        | Description                                        | Priority | Status      | Estimate | Dependencies |
+| ----------- | -------------------------------------------------- | -------- | ----------- | -------- | ------------ |
+| POST-001    | Run database seeders for new defaults              | P0       | NOT STARTED | 30m      | Merge to main |
+| POST-002    | Verify deployment health after merge               | P0       | NOT STARTED | 15m      | POST-001     |
+| POST-003    | Run full test suite and document failures          | P1       | NOT STARTED | 1h       | POST-002     |
+| POST-004    | Validate feature flags seeded correctly            | P1       | NOT STARTED | 15m      | POST-001     |
+| POST-005    | Test critical mutation wrapper in production       | P1       | NOT STARTED | 30m      | POST-002     |
+
+#### POST-001: Run Database Seeders for New Defaults
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 30 minutes
+**Module:** `server/db/seed/`
+**Dependencies:** Merge to main completed
+
+**Problem:**
+Team D added new seeder scripts that need to be run to populate default data:
+- Feature flags defaults
+- Gamification defaults
+- Scheduling defaults
+- Storage defaults
+
+**Action Required:**
+```bash
+# After merge to main, run the following in production:
+pnpm seed:all-defaults
+
+# Or run individually:
+pnpm seed:feature-flags
+pnpm seed:gamification-defaults
+pnpm seed:scheduling-defaults
+pnpm seed:storage-defaults
+```
+
+**Verification:**
+- [ ] Feature flags table has default entries
+- [ ] Gamification settings populated
+- [ ] Scheduling defaults in place
+- [ ] Storage defaults configured
+
+---
+
+#### POST-002: Verify Deployment Health After Merge
+
+**Status:** NOT STARTED
+**Priority:** CRITICAL (P0)
+**Estimate:** 15 minutes
+**Module:** Production environment
+**Dependencies:** POST-001 completed
+
+**Action Required:**
+```bash
+# 1. Monitor deployment
+./scripts/watch-deploy.sh
+
+# 2. Verify health endpoint
+curl https://terp-app-b9s35.ondigitalocean.app/health
+
+# 3. Check for errors in logs
+./scripts/terp-logs.sh run 100 | grep -i "error"
+
+# 4. Verify critical endpoints
+curl https://terp-app-b9s35.ondigitalocean.app/api/trpc/health
+```
+
+**Verification:**
+- [ ] Health endpoint returns 200 OK
+- [ ] No critical errors in logs
+- [ ] All API endpoints responding
+
+---
+
+#### POST-003: Run Full Test Suite and Document Failures
+
+**Status:** NOT STARTED
+**Priority:** HIGH (P1)
+**Estimate:** 1 hour
+**Module:** Test infrastructure
+**Dependencies:** POST-002 completed
+
+**Action Required:**
+```bash
+pnpm test --run 2>&1 | tee test-results.log
+```
+
+**Known Pre-Existing Failures (from integration QA):**
+- `comments.test.ts` - Requires database connection
+- `MatchmakingServicePage.test.tsx` - tRPC mock missing `useUtils`
+- `EventFormDialog.test.tsx` - Radix UI React 19 render loop
+
+**Verification:**
+- [ ] Test results documented
+- [ ] No NEW test failures introduced by merge
+- [ ] Pre-existing failures tracked in TEST-INFRA tasks
+
+---
+
+### Sprint Integration QA Findings (Pre-existing Issues) - Added Jan 25, 2026
+
+> Discovered during RedHat-grade QA audit of the sprint integration release.
+> **Audit Date:** Jan 25, 2026
+> **Pass Rate:** 99.6% (2273 passed, 9 failed)
+> **Report:** `docs/sprint-reports/2026-01-25-release.md`
+
+| Task          | Description                                              | Priority | Status      | Root Cause      | Est. Impact |
+| ------------- | -------------------------------------------------------- | -------- | ----------- | --------------- | ----------- |
+| TEST-INFRA-07 | Fix tRPC mock missing `useUtils` method                  | P2       | NOT STARTED | RC-TRPC-MOCK    | 4 tests     |
+| TEST-INFRA-08 | Fix Radix UI React 19 render loop in EventFormDialog     | P2       | NOT STARTED | RC-RADIX-REACT19| 5 tests     |
+| TEST-INFRA-09 | Fix comments.test.ts database connection requirement     | P2       | NOT STARTED | RC-DB-REQUIRED  | 1 test      |
+| TEST-020      | Fix Vitest mock hoisting for permissionMiddleware tests  | P2       | BLOCKED     | RC-MOCK-HOIST   | 8 tests     |
+| INFRA-015     | Migrate idempotency cache to Redis for multi-instance    | P3       | NOT STARTED | SINGLE-INSTANCE | N/A         |
+
+#### Root Cause Analysis
+
+**RC-TRPC-MOCK: Missing useUtils in tRPC Test Mock**
+
+- **Error:** `trpc.useUtils is not a function`
+- **File:** `client/src/pages/MatchmakingServicePage.test.tsx:77`
+- **Affected Tests:** 4 tests in MatchmakingServicePage.test.tsx
+- **Fix:** Add `useUtils: vi.fn().mockReturnValue({...})` to tRPC mock in test setup
+
+**RC-RADIX-REACT19: Radix UI Render Loop with React 19**
+
+- **Error:** `Maximum update depth exceeded`
+- **File:** `client/src/components/calendar/EventFormDialog.test.tsx`
+- **Affected Tests:** 5 tests in EventFormDialog.test.tsx
+- **Root Cause:** `@radix-ui/react-presence` incompatibility with React 19 ref handling
+- **Fix:** Update Radix UI packages to React 19 compatible versions or add workaround
+
+**RC-DB-REQUIRED: Database Connection Required for Unit Test**
+
+- **Error:** `connect ECONNREFUSED 127.0.0.1:3306`
+- **File:** `server/routers/comments.test.ts:27`
+- **Affected Tests:** 1 test suite (Comments System)
+- **Fix:** Mock database connection in test setup or skip test when DB unavailable
+
+**RC-MOCK-HOIST: Vitest Mock Factory Hoisting Issue**
+
+- **Error:** `Cannot access '__vi_import_2__' before initialization`
+- **File:** `server/_core/permissionMiddleware.test.ts`
+- **Affected Tests:** 8 tests (all skipped with `.skip`)
+- **Root Cause:** Module imports `../db` before `vi.mock` is hoisted
+- **Status:** Tests are skipped with documentation; integration tests provide coverage
+- **Fix:** Restructure imports or use dynamic imports in mock factory
+
+**SINGLE-INSTANCE: In-Memory Idempotency Cache Limitation**
+
+- **File:** `server/_core/criticalMutation.ts:18-24`
+- **Impact:** Idempotency cache only works for single-instance deployments
+- **Current Status:** Documented in code comments with migration path
+- **Fix:** Migrate to Redis-backed or database-backed idempotency when scaling
+
+---
+
 ### Critical Bugs (P0)
 
 | Task    | Description                                 | Priority | Status                                            |
