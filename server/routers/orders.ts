@@ -272,6 +272,14 @@ export const ordersRouter = router({
   /**
    * API-013: Simple confirm endpoint
    * Confirms a draft order with minimal input - validates inventory and sets isDraft=false
+   *
+   * BUG-301: Wrapped in transaction for atomicity
+   * BUG-302: Added ownership validation
+   * BUG-303: Automatic rollback on failure via transaction
+   * BUG-304: Fresh reads within transaction scope
+   * BUG-315: NaN validation for parseFloat results
+   * BUG-316: Database arithmetic for decimal precision
+   * BUG-317: Line item quantity validation
    */
   confirm: protectedProcedure
     .use(requirePermission("orders:create"))
@@ -282,105 +290,161 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get the order
-      const order = await db.query.orders.findFirst({
-        where: eq(orders.id, input.orderId),
-      });
+      // Import sql for database arithmetic (BUG-316)
+      const { sql } = await import("drizzle-orm");
 
-      if (!order) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `Order with ID ${input.orderId} not found`,
-        });
-      }
+      // BUG-301, BUG-303, BUG-304: Wrap entire confirm logic in a transaction
+      // Transaction automatically rolls back on any thrown error
+      return await withTransaction(async tx => {
+        // BUG-304: Fresh read of order within transaction
+        const [order] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.orderId))
+          .limit(1);
 
-      if (!order.isDraft) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Order is already confirmed",
-        });
-      }
-
-      // Validate the order has line items
-      const lineItems = await db.query.orderLineItems.findMany({
-        where: eq(orderLineItems.orderId, input.orderId),
-      });
-
-      if (lineItems.length === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cannot confirm order with no line items",
-        });
-      }
-
-      // API-013-FIX: Validate inventory availability before confirming
-      const batchIds = lineItems.map(item => item.batchId);
-      const batchRecords = await db
-        .select()
-        .from(batches)
-        .where(inArray(batches.id, batchIds));
-
-      const batchMap = new Map(batchRecords.map(b => [b.id, b]));
-
-      // Check each line item has sufficient inventory
-      for (const item of lineItems) {
-        const batch = batchMap.get(item.batchId);
-        if (!batch) {
+        if (!order) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: `Batch ${item.batchId} not found`,
+            message: `Order with ID ${input.orderId} not found`,
           });
         }
 
-        const onHand = parseFloat(batch.onHandQty || "0");
-        const reserved = parseFloat(batch.reservedQty || "0");
-        const quarantine = parseFloat(batch.quarantineQty || "0");
-        const hold = parseFloat(batch.holdQty || "0");
-        const availableQty = Math.max(0, onHand - reserved - quarantine - hold);
-        const requestedQty = parseFloat(item.quantity);
+        // BUG-302: Validate ownership - check order belongs to user or user has admin permission
+        const hasAdminPermission = ctx.user?.role === "admin";
+        if (order.createdBy !== userId && !hasAdminPermission) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Not authorized to confirm this order",
+          });
+        }
 
-        if (availableQty < requestedQty) {
+        if (!order.isDraft) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Requested: ${requestedQty}`,
+            message: "Order is already confirmed",
           });
         }
-      }
 
-      // Reserve inventory for the order
-      for (const item of lineItems) {
-        const batch = batchMap.get(item.batchId);
-        if (batch) {
-          const currentReserved = parseFloat(batch.reservedQty || "0");
-          const newReserved = currentReserved + parseFloat(item.quantity);
-          await db
-            .update(batches)
-            .set({ reservedQty: newReserved.toString() })
-            .where(eq(batches.id, item.batchId));
+        // BUG-304: Fresh read of line items within transaction
+        const lineItems = await tx
+          .select()
+          .from(orderLineItems)
+          .where(eq(orderLineItems.orderId, input.orderId));
+
+        if (lineItems.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot confirm order with no line items",
+          });
         }
-      }
 
-      // Confirm the order
-      await db
-        .update(orders)
-        .set({
-          isDraft: false,
-          confirmedAt: new Date(),
-        })
-        .where(eq(orders.id, input.orderId));
+        // BUG-317: Validate individual line item quantities
+        for (const item of lineItems) {
+          const qty = parseFloat(String(item.quantity));
+          if (Number.isNaN(qty) || qty <= 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid quantity for line item ${item.id}: quantity must be a positive number`,
+            });
+          }
+        }
 
-      logger.info({
-        orderId: input.orderId,
-        confirmedBy: userId,
-        lineItemCount: lineItems.length,
-        msg: "Order confirmed via simple confirm endpoint with inventory reservation",
+        // BUG-301, BUG-304: SELECT FOR UPDATE to lock batches and prevent race conditions
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const batchIds = lineItems.map((item: any) => item.batchId as number);
+        const batchRecords = await tx
+          .select()
+          .from(batches)
+          .where(inArray(batches.id, batchIds))
+          .for("update");
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const batchMap = new Map(batchRecords.map((b: any) => [b.id as number, b]));
+
+        // Check each line item has sufficient inventory
+        for (const item of lineItems) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const batch = batchMap.get(item.batchId) as any;
+          if (!batch) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Batch ${item.batchId} not found`,
+            });
+          }
+
+          // BUG-315: Handle NaN from parseFloat with explicit checks
+          const onHand = parseFloat(String(batch.onHandQty || "0"));
+          const reserved = parseFloat(String(batch.reservedQty || "0"));
+          const quarantine = parseFloat(String(batch.quarantineQty || "0"));
+          const hold = parseFloat(String(batch.holdQty || "0"));
+
+          if (
+            Number.isNaN(onHand) ||
+            Number.isNaN(reserved) ||
+            Number.isNaN(quarantine) ||
+            Number.isNaN(hold)
+          ) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Invalid inventory data for batch ${batch.sku || batch.id}`,
+            });
+          }
+
+          const availableQty = Math.max(
+            0,
+            onHand - reserved - quarantine - hold
+          );
+          const requestedQty = parseFloat(String(item.quantity));
+
+          // BUG-315: Check for NaN in requested quantity
+          if (Number.isNaN(requestedQty)) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid quantity for line item: ${item.quantity}`,
+            });
+          }
+
+          if (availableQty < requestedQty) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Requested: ${requestedQty}`,
+            });
+          }
+        }
+
+        // BUG-316: Use database arithmetic for inventory updates to avoid JS precision issues
+        for (const item of lineItems) {
+          const requestedQty = parseFloat(String(item.quantity));
+          await tx.execute(sql`
+            UPDATE batches
+            SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${requestedQty}
+            WHERE id = ${item.batchId}
+          `);
+        }
+
+        // BUG-303: Confirm the order (within transaction - will rollback if this fails)
+        await tx
+          .update(orders)
+          .set({
+            isDraft: false,
+            confirmedAt: new Date(),
+          })
+          .where(eq(orders.id, input.orderId));
+
+        logger.info({
+          orderId: input.orderId,
+          confirmedBy: userId,
+          lineItemCount: lineItems.length,
+          msg: "Order confirmed via simple confirm endpoint with inventory reservation",
+        });
+
+        return {
+          success: true,
+          orderId: input.orderId,
+          orderNumber: order.orderNumber,
+        };
       });
-
-      return {
-        success: true,
-        orderId: input.orderId,
-        orderNumber: order.orderNumber,
-      };
     }),
 
   /**

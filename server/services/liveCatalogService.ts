@@ -12,7 +12,7 @@ import { batches, products, productMedia, brands } from "../../drizzle/schema";
 import { vipPortalConfigurations, clientDraftInterests } from "../../drizzle/schema-vip-portal";
 import { eq, and, inArray, notInArray, sql, isNull } from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
-import { vipPortalLogger } from "../_core/logger";
+import { vipPortalLogger, logger } from "../_core/logger";
 
 // ============================================================================
 // TYPES
@@ -378,46 +378,102 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
   let minPrice = Infinity;
   let maxPrice = 0;
 
-  // Get client pricing rules for more accurate estimates
-  const pricingRules = await pricingEngine.getClientPricingRules(clientId);
+  // BUG-308: Add error handling for pricing rules fetch
+  let pricingRules: Awaited<ReturnType<typeof pricingEngine.getClientPricingRules>> = [];
+  try {
+    pricingRules = await pricingEngine.getClientPricingRules(clientId);
+  } catch (error) {
+    logger.warn(
+      { clientId, error: error instanceof Error ? error.message : String(error) },
+      "Failed to get pricing rules for filter calculation, using defaults"
+    );
+  }
+
   const defaultMargin = 0.30; // 30% default margin
+  // BUG-311: Use consistent COGS threshold
+  const COGS_THRESHOLD = 0.01;
+  // BUG-324: Track skipped batches
+  let skippedBatches = 0;
 
   for (const { batch } of batchesWithProducts) {
     const unitCogs = parseFloat(batch.unitCogs || "0");
-    if (unitCogs > 0) {
-      // Calculate estimated retail price
-      // If client has pricing rules, use average markup from rules, otherwise use default
-      let estimatedRetailPrice: number;
 
-      if (pricingRules.length > 0) {
-        // Get average markup from rules for estimate
-        const markupRules = pricingRules.filter(r =>
-          r.adjustmentType === "PERCENT_MARKUP" || r.adjustmentType === "DOLLAR_MARKUP"
-        );
-        if (markupRules.length > 0) {
-          const avgMarkup = markupRules.reduce((sum, r) => {
-            const val = parseFloat(r.adjustmentValue?.toString() || "0");
-            // STUB-002-FIX: Safe division - for DOLLAR_MARKUP, convert to percentage
-            // but cap at 500% to prevent extreme values from tiny COGS
-            if (r.adjustmentType === "PERCENT_MARKUP") {
-              return sum + val / 100;
-            } else {
-              // DOLLAR_MARKUP: convert to percentage, capped at 5x (500%)
-              const dollarMarkupPercent = unitCogs > 0.01 ? val / unitCogs : 5;
-              return sum + Math.min(dollarMarkupPercent, 5);
+    // BUG-311: Use consistent threshold check
+    if (Number.isNaN(unitCogs) || unitCogs < COGS_THRESHOLD) {
+      skippedBatches++;
+      continue;
+    }
+
+    // Calculate estimated retail price
+    // If client has pricing rules, use average markup from rules, otherwise use default
+    let estimatedRetailPrice: number;
+
+    if (pricingRules.length > 0) {
+      // Get average markup from rules for estimate
+      const markupRules = pricingRules.filter(r =>
+        r.adjustmentType === "PERCENT_MARKUP" || r.adjustmentType === "DOLLAR_MARKUP"
+      );
+      if (markupRules.length > 0) {
+        // BUG-309: Track valid rules for accurate average calculation
+        let validRuleCount = 0;
+        const totalMarkup = markupRules.reduce((sum, r) => {
+          const val = parseFloat(r.adjustmentValue?.toString() || "0");
+
+          // BUG-309: Skip rules with invalid adjustmentValue
+          if (Number.isNaN(val)) {
+            logger.debug(
+              { ruleId: r.id, adjustmentValue: r.adjustmentValue },
+              "Skipping pricing rule with invalid adjustmentValue in filter calculation"
+            );
+            return sum;
+          }
+          validRuleCount++;
+
+          if (r.adjustmentType === "PERCENT_MARKUP") {
+            return sum + val / 100;
+          } else {
+            // DOLLAR_MARKUP: convert to percentage, capped at 5x (500%)
+            const dollarMarkupPercent = val / unitCogs;
+            // BUG-310: Explicit NaN check before Math.min
+            if (Number.isNaN(dollarMarkupPercent)) {
+              logger.debug(
+                { unitCogs, val },
+                "Skipping DOLLAR_MARKUP rule due to NaN result"
+              );
+              validRuleCount--; // Don't count this rule
+              return sum;
             }
-          }, 0) / markupRules.length;
-          estimatedRetailPrice = unitCogs * (1 + Math.max(avgMarkup, defaultMargin));
-        } else {
-          estimatedRetailPrice = unitCogs * (1 + defaultMargin);
-        }
+            // BUG-322: Log when using fallback markup (500% cap)
+            if (dollarMarkupPercent > 5) {
+              logger.debug(
+                { unitCogs, val, originalMarkupPercent: dollarMarkupPercent },
+                "Capped extreme DOLLAR_MARKUP at 500% in filter calculation"
+              );
+            }
+            return sum + Math.min(dollarMarkupPercent, 5);
+          }
+        }, 0);
+
+        // BUG-309: Calculate average only from valid rules, fall back to default if none
+        const avgMarkup = validRuleCount > 0 ? totalMarkup / validRuleCount : defaultMargin;
+        estimatedRetailPrice = unitCogs * (1 + Math.max(avgMarkup, defaultMargin));
       } else {
         estimatedRetailPrice = unitCogs * (1 + defaultMargin);
       }
-
-      if (estimatedRetailPrice < minPrice) minPrice = estimatedRetailPrice;
-      if (estimatedRetailPrice > maxPrice) maxPrice = estimatedRetailPrice;
+    } else {
+      estimatedRetailPrice = unitCogs * (1 + defaultMargin);
     }
+
+    if (estimatedRetailPrice < minPrice) minPrice = estimatedRetailPrice;
+    if (estimatedRetailPrice > maxPrice) maxPrice = estimatedRetailPrice;
+  }
+
+  // BUG-324: Log skipped batches summary
+  if (skippedBatches > 0) {
+    logger.info(
+      { skippedBatches, clientId },
+      "Batches skipped due to invalid COGS in filter calculation"
+    );
   }
 
   // Handle case where no prices were found

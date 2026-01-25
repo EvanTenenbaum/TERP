@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
@@ -522,7 +522,7 @@ export const accountingRouter = router({
           if (!ctx.user) throw new Error("Unauthorized");
           return await accountingDb.createLedgerEntry({
             ...input,
-            createdBy: ctx.user.id,
+            createdBy: getAuthenticatedUserId(ctx),
           });
         }),
 
@@ -541,7 +541,7 @@ export const accountingRouter = router({
           if (!ctx.user) throw new Error("Unauthorized");
           return await accountingDb.postJournalEntry({
             ...input,
-            createdBy: ctx.user.id,
+            createdBy: getAuthenticatedUserId(ctx),
           });
         }),
 
@@ -592,7 +592,7 @@ export const accountingRouter = router({
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Unauthorized");
-          return await accountingDb.closeFiscalPeriod(input.id, ctx.user.id);
+          return await accountingDb.closeFiscalPeriod(input.id, getAuthenticatedUserId(ctx));
         }),
 
       lock: protectedProcedure.use(requirePermission("accounting:update"))
@@ -668,7 +668,7 @@ export const accountingRouter = router({
               ...invoiceData,
               amountPaid: "0.00",
               amountDue: totalAmount.toFixed(2),
-              createdBy: ctx.user.id
+              createdBy: getAuthenticatedUserId(ctx)
             },
             lineItems
           );
@@ -813,11 +813,11 @@ export const accountingRouter = router({
           // Calculate amountDue (initially equals totalAmount)
           const totalAmount = parseFloat(billData.totalAmount);
           return await arApDb.createBill(
-            { 
-              ...billData, 
+            {
+              ...billData,
               amountPaid: "0.00",
               amountDue: totalAmount.toFixed(2),
-              createdBy: ctx.user.id 
+              createdBy: getAuthenticatedUserId(ctx)
             },
             lineItems
           );
@@ -920,7 +920,7 @@ export const accountingRouter = router({
           if (!ctx.user) throw new Error("Unauthorized");
           return await arApDb.createPayment({
             ...input,
-            createdBy: ctx.user.id,
+            createdBy: getAuthenticatedUserId(ctx),
           });
         }),
 
@@ -1157,7 +1157,7 @@ export const accountingRouter = router({
           if (!ctx.user) throw new Error("Unauthorized");
           return await cashExpensesDb.createExpense({
             ...input,
-            createdBy: ctx.user.id,
+            createdBy: getAuthenticatedUserId(ctx),
           });
         }),
 
@@ -1291,7 +1291,7 @@ export const accountingRouter = router({
             paymentMethod: input.paymentMethod,
             customerId: input.clientId,
             notes: input.note || `Quick payment from ${client[0].name}`,
-            createdBy: ctx.user.id,
+            createdBy: getAuthenticatedUserId(ctx),
           });
           
           const paymentId = Number(paymentResult[0].insertId);
@@ -1371,7 +1371,7 @@ export const accountingRouter = router({
             vendorId: input.vendorId,
             billId: input.billId,
             notes: input.note || `Quick payment to ${vendor[0].name}`,
-            createdBy: ctx.user.id,
+            createdBy: getAuthenticatedUserId(ctx),
           });
           
           const paymentId = Number(paymentResult[0].insertId);
@@ -1609,10 +1609,17 @@ export const accountingRouter = router({
           const totalExpenses = expensesByCategory.reduce((sum, e) => sum + e.amount, 0);
 
           // BE-QA-008-FIX: Calculate COGS from confirmed/shipped order line items
+          // Fixed: BUG-305, BUG-306, BUG-318, BUG-319, BUG-320, BUG-321
           const { orders, orderLineItems } = await import("../../drizzle/schema");
-          const { gte, lte, isNull } = await import("drizzle-orm");
+          const { gte, lte, isNull, isNotNull, ne } = await import("drizzle-orm");
+
+          // BUG-305: Fix date boundary - include full end day
+          const endOfDay = new Date(input.endDate);
+          endOfDay.setHours(23, 59, 59, 999);
 
           // Get orders confirmed within the period
+          // BUG-320: Exclude cancelled orders
+          // BUG-321: Add explicit null check for confirmedAt
           const periodOrders = await db
             .select({
               orderId: orders.id,
@@ -1623,9 +1630,11 @@ export const accountingRouter = router({
               and(
                 eq(orders.orderType, "SALE"),
                 eq(orders.isDraft, false),
+                isNotNull(orders.confirmedAt), // BUG-321: Explicit null check
                 gte(orders.confirmedAt, input.startDate),
-                lte(orders.confirmedAt, input.endDate),
-                isNull(orders.deletedAt)
+                lte(orders.confirmedAt, endOfDay), // BUG-305: Include full end day
+                isNull(orders.deletedAt),
+                ne(orders.saleStatus, "CANCELLED") // BUG-320: Exclude cancelled orders
               )
             );
 
@@ -1635,19 +1644,47 @@ export const accountingRouter = router({
             const orderIds = periodOrders.map(o => o.orderId);
 
             // Get line items for these orders and calculate COGS
+            // BUG-319: orderLineItems does not have deletedAt column (no soft delete)
             const lineItems = await db
               .select({
+                orderId: orderLineItems.orderId,
                 quantity: orderLineItems.quantity,
                 cogsPerUnit: orderLineItems.cogsPerUnit,
               })
               .from(orderLineItems)
               .where(inArray(orderLineItems.orderId, orderIds));
 
-            totalCOGS = lineItems.reduce((sum, item) => {
+            // BUG-306: Use integer cents for precision
+            // BUG-318: Handle nulls properly (schema says notNull, but log warning if found)
+            let totalCOGSCents = 0;
+            for (const item of lineItems) {
               const qty = parseFloat(item.quantity || "0");
-              const cogs = parseFloat(item.cogsPerUnit || "0");
-              return sum + (qty * cogs);
-            }, 0);
+              const cogsCents = Math.round(parseFloat(item.cogsPerUnit || "0") * 100);
+
+              // BUG-318: Log warning if unexpected null values found
+              if (item.quantity === null || item.cogsPerUnit === null) {
+                logger.warn({
+                  msg: "[Accounting] Unexpected null COGS data found",
+                  orderId: item.orderId,
+                  quantity: item.quantity,
+                  cogsPerUnit: item.cogsPerUnit,
+                });
+                continue;
+              }
+
+              if (Number.isNaN(qty) || Number.isNaN(cogsCents)) {
+                logger.warn({
+                  msg: "[Accounting] Invalid COGS data found",
+                  orderId: item.orderId,
+                  quantity: item.quantity,
+                  cogsPerUnit: item.cogsPerUnit,
+                });
+                continue;
+              }
+
+              totalCOGSCents += Math.round(qty * cogsCents);
+            }
+            totalCOGS = totalCOGSCents / 100; // BUG-306: Convert back from cents
           }
 
           logger.info({
