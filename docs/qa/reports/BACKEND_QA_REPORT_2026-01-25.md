@@ -1068,10 +1068,265 @@ const confirmRateLimitMap = new Map<number, number[]>();
 
 ---
 
+---
+
+## EXTENDED DEEP DIVE (Phase 5) - Infrastructure & Quality
+
+### DD-39: Bundle/Build Size Analysis
+
+**Vite Configuration:** ✅ Well-optimized
+
+| Chunk Name    | Contents                    | Assessment |
+| ------------- | --------------------------- | ---------- |
+| react-vendor  | React, React-DOM, Scheduler | ✅ Good    |
+| trpc-vendor   | tRPC, React Query           | ✅ Good    |
+| ui-vendor     | Radix UI components         | ✅ Good    |
+| calendar      | Luxon, date-fns             | ✅ Good    |
+| forms-vendor  | React Hook Form, Zod        | ✅ Good    |
+| icons-vendor  | Lucide React                | ✅ Good    |
+| charts-vendor | Recharts, D3                | ✅ Good    |
+| vendor        | Remaining dependencies      | ✅ Good    |
+
+**Warning Limit:** 800KB (appropriate for production)
+
+**Potential Tree-Shaking Issues:**
+
+| Pattern       | Count | Risk   |
+| ------------- | ----- | ------ |
+| `import * as` | 351   | MEDIUM |
+
+**Recommendation:** Review `import * as` patterns for tree-shaking optimization.
+
+---
+
+### DD-40: Dead Code / TODO Detection
+
+**TODO/FIXME in Production Code:**
+
+| File                           | Count | Issue Type                     |
+| ------------------------------ | ----- | ------------------------------ |
+| `rbac-permissions.test.ts`     | 6     | Mock chain issues              |
+| `rbac-roles.test.ts`           | 4     | Mock chain issues              |
+| `calendarFinancials.test.ts`   | 2     | Complex DB mocking             |
+| `vendorSupply.ts`              | 1     | Missing permission checks      |
+| `scheduling.ts`                | 1     | Missing date range filtering   |
+| `sessionTimeoutService.ts`     | 1     | Extension count check          |
+| `permissionMiddleware.test.ts` | 1     | Mock hoisting issue (TEST-020) |
+
+**Statistics:**
+
+| Metric                         | Count |
+| ------------------------------ | ----- |
+| TODO comments in server code   | 19+   |
+| Exports in server files        | 799   |
+| Console calls in server        | 782   |
+| throw new Error statements     | 2,016 |
+| Deep import paths (`../../..`) | 162   |
+
+**Recommendation:** Create tracking task for TODO remediation.
+
+---
+
+### DD-41: Test Mock Quality Analysis
+
+**CRITICAL FINDING:** 55+ skipped tests (describe.skip, it.skip)
+
+| Test Category         | Skipped | Reason                         |
+| --------------------- | ------- | ------------------------------ |
+| Permission middleware | 15      | Mock hoisting issue (TEST-020) |
+| RBAC permissions      | 12      | Mock chain issues              |
+| RBAC roles            | 10      | Mock chain issues              |
+| Calendar financials   | 8       | Complex DB query mocking       |
+| Accounting            | 6       | DB mocking complexity          |
+| VIP Portal            | 2       | Live catalog mocking           |
+| Inventory             | 2       | Batch creation mocking         |
+
+**Test Infrastructure:**
+
+| Component           | Status         | Notes                       |
+| ------------------- | -------------- | --------------------------- |
+| tRPC Mock Proxy     | ✅ Implemented | Recursive proxy for hooks   |
+| ResizeObserver Mock | ✅ Implemented | Browser global simulation   |
+| localStorage Mock   | ✅ Implemented | Proper clear on afterEach   |
+| Console Mock        | ⚠️ Potentially | May hide real errors        |
+| Database Mock       | ❌ Incomplete  | Many tests skip due to this |
+
+**Risk:** ~55 tests not running reduces overall coverage confidence.
+
+---
+
+### DD-42: Migration File Integrity
+
+**CRITICAL FINDING:** No formal numbered migration directory
+
+| Aspect                       | Status       | Notes                             |
+| ---------------------------- | ------------ | --------------------------------- |
+| `server/db/migrations/*.sql` | ❌ EMPTY     | No SQL files in migrations folder |
+| Migration scripts            | ⚠️ SCATTERED | 11 separate script files          |
+| Drizzle migration approach   | ⚠️ MIXED     | Both `push` and `migrate` used    |
+| Version tracking             | ❌ NONE      | No numbered migration system      |
+
+**Migration Script Files:**
+
+- `add-deleted-at-migration.ts`
+- `apply-all-missing-migrations.ts`
+- `apply-ar-ap-deleted-at-migration.ts`
+- `apply-comments-migration.ts`
+- `apply-supplier-profiles-migration.ts`
+- `audit-migrations.ts`
+- `check-migrations.ts`
+- `rollback_draft_migration.ts`
+- `run-calendar-v32-migrations.ts`
+- `run-migration-0011.ts`
+- `run-migrations-railway.ts` (deprecated)
+
+**Risk:**
+
+- Migrations are ad-hoc TypeScript scripts, not versioned SQL
+- No rollback guarantee for production deployments
+- Difficult to track which migrations have been applied
+
+**Recommendation:** Adopt formal drizzle-kit generate + migrate workflow with numbered migrations.
+
+---
+
+### DD-43: API Versioning Strategy
+
+**FINDING:** No internal API versioning
+
+| Aspect             | Status        | Current State                      |
+| ------------------ | ------------- | ---------------------------------- |
+| Internal tRPC API  | ❌ NO VERSION | `/api/trpc/*` - unversioned        |
+| External APIs used | ✅ VERSIONED  | SendGrid v3, DigitalOcean v2       |
+| Breaking changes   | ⚠️ RISKY      | Could break clients without notice |
+
+**External API Versioning Found:**
+
+```
+- https://api.sendgrid.com/v3/mail/send
+- https://api.digitalocean.com/v2/apps/...
+```
+
+**Risk:** No API versioning means:
+
+- Breaking changes can affect VIP Portal clients
+- No graceful deprecation path for old endpoints
+- Difficult to maintain backwards compatibility
+
+**Recommendation:** Consider implementing API versioning (`/api/v1/trpc/*`) for future-proofing.
+
+---
+
+### DD-44: Import Structure Analysis
+
+**Deep Import Patterns:**
+
+| Depth       | Count | Assessment             |
+| ----------- | ----- | ---------------------- |
+| `../../`    | 162   | Acceptable but fragile |
+| `../../../` | Lower | Less common            |
+
+**Path Aliases Configured:**
+
+```typescript
+// vite.config.ts
+"@": "client/src"
+"@shared": "shared"
+"@assets": "attached_assets"
+```
+
+**Positive:** Path aliases help reduce deep imports in client code.
+
+---
+
+### DD-45: Dependency Analysis
+
+**Package.json Statistics:**
+
+| Category                | Count |
+| ----------------------- | ----- |
+| Production dependencies | 88    |
+| Dev dependencies        | 54    |
+| Total packages          | 142   |
+
+**Potentially Redundant:**
+
+| Package  | Version | Notes                              |
+| -------- | ------- | ---------------------------------- |
+| bcrypt   | ^6.0.0  | Both bcrypt AND bcryptjs installed |
+| bcryptjs | ^3.0.2  | Consider consolidating             |
+
+**Heavy Dependencies:**
+
+- `ag-grid-community` - Data grid
+- `recharts` - Charts
+- `@tiptap/*` - Rich text editor
+- `jspdf` + `html2canvas` - PDF generation
+
+---
+
+## FINAL UPDATED STATISTICS
+
+| Category                 | Count |
+| ------------------------ | ----- |
+| Router Files Analyzed    | 171   |
+| Service Files Analyzed   | 65    |
+| Test Files Analyzed      | 114   |
+| Migration Scripts        | 11    |
+| Skipped Tests            | 55+   |
+| TODO/FIXME in Production | 19+   |
+| Total Dependencies       | 142   |
+
+---
+
+## UPDATED COMPLETE FINDINGS SUMMARY
+
+### Critical Issues (2)
+
+1. **Floating Point Financial Calculations** (40+ instances)
+2. **Hardcoded User IDs in Production** (3 locations)
+
+### High Priority Issues (7)
+
+1. Hard Deletes (14 occurrences)
+2. Deprecated vendors Table (4 files)
+3. N+1 Query Patterns (81 files)
+4. Audit Trail Gap (4% coverage)
+5. Console Statements (30+ in production)
+6. Security Headers Missing (minimal Helmet/CSP)
+7. **Skipped Tests** (55+ not running - reduces coverage confidence)
+
+### Medium Priority Issues (8)
+
+1. `any` Type Usage (30+ occurrences)
+2. Low Transaction Coverage (15 routers)
+3. Unused strictLimiter
+4. Date/Timezone Inconsistency (504 operations)
+5. Promise.all Error Handling (34 occurrences)
+6. dangerouslySetInnerHTML (8 usages)
+7. **No Migration Versioning** (scattered ad-hoc scripts)
+8. **No API Versioning** (breaking change risk)
+
+### Low Priority Issues (10)
+
+1. Missing Lint Script
+2. API Response Inconsistency
+3. SQL Pattern in clientNeedsDb.ts
+4. SELECT \* Usage (10 occurrences)
+5. Deprecated Code (24 @deprecated)
+6. RegExp patterns (3 need review)
+7. localStorage without encryption (150 usages)
+8. Accessibility gaps in some components
+9. **Duplicate bcrypt packages** (bcrypt + bcryptjs)
+10. **Tree-shaking risks** (351 `import * as` patterns)
+
+---
+
 **Report Generated:** 2026-01-25
 **Extended Analysis Added:** 2026-01-25
 **10X Deep Dive Added:** 2026-01-25
 **Comprehensive Audit Added:** 2026-01-25
-**Total Findings:** 22 issues across 4 severity levels
+**Infrastructure & Quality Audit Added:** 2026-01-25
+**Total Findings:** 27 issues across 4 severity levels
 **Files Analyzed:** 500+ source files
 **Next Review:** On next feature deployment or security concern
