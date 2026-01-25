@@ -215,16 +215,27 @@ Test: LOW = available ≤ lowThreshold (default 50)
 Test: OPTIMAL = available > lowThreshold
 ```
 
-#### State Machines (VERIFIED FROM CODE)
+#### State Machines (VERIFIED FROM CODE - v1.2 CORRECTED)
 
 ```
-Order Fulfillment Status (orderStateMachine.ts)
+Order Fulfillment Status (orderStateMachine.ts:22-33)
 ══════════════════════════════════════════════════════════════
-DRAFT → CONFIRMED → PENDING → PACKED → SHIPPED → DELIVERED
-  ↓        ↓          ↓         ↓         ↓          ↓
-CANCELLED CANCELLED CANCELLED  PENDING  RETURNED  RETURNED
-                                           ↓
-                               RESTOCKED / RETURNED_TO_VENDOR
+                    CANCELLED ←─────────────┐
+                        ↑                   │
+DRAFT → CONFIRMED → PENDING → PACKED ⇄ PENDING (can unpack)
+    ↓        ↓          ↓         │
+CANCELLED CANCELLED CANCELLED     ↓
+                              SHIPPED ──→ DELIVERED
+                                  │           │
+                                  ↓           ↓
+                              RETURNED ←──────┘
+                             ↙        ↘
+                      RESTOCKED    RETURNED_TO_VENDOR
+                      (terminal)        (terminal)
+
+IMPORTANT: Once PACKED, can only go to SHIPPED or back to PENDING
+IMPORTANT: Once SHIPPED, cannot be CANCELLED (only DELIVERED or RETURNED)
+IMPORTANT: Once DELIVERED, cannot be CANCELLED (only RETURNED)
 
 Quote Status (orders table)
 ══════════════════════════════════════════════════════════════
@@ -261,6 +272,22 @@ Credit Status (schema.ts:3156-3159)
 ACTIVE → PARTIALLY_USED → FULLY_USED
    ↓
 EXPIRED / CANCELLED
+
+Return Status (returns.ts:67-74) - ADDED v1.2
+══════════════════════════════════════════════════════════════
+PENDING → APPROVED → RECEIVED → PROCESSED
+    ↓         ↓
+CANCELLED  REJECTED → CANCELLED
+
+IMPORTANT: Returns must be APPROVED before they can be RECEIVED
+
+Sample Status (samples.ts:41) - ADDED v1.2
+══════════════════════════════════════════════════════════════
+PENDING → FULFILLED → RETURN_REQUESTED → RETURNED
+    ↓
+CANCELLED
+
+Sample Locations: WAREHOUSE | WITH_CLIENT | WITH_SALES_REP | RETURNED | LOST
 
 Vendor Return Status (schema.ts:2761-2764)
 ══════════════════════════════════════════════════════════════
@@ -457,17 +484,20 @@ Manus will execute complete user journeys:
 9. Verify COGS calculated
 ```
 
-#### Flow 3: VIP Customer Experience
+#### Flow 3: VIP Customer Experience (CORRECTED v1.2)
 ```
-1. Login as VIP customer
-2. View VIP dashboard
-3. Browse catalog
-4. Add items to interest list
-5. Join live shopping session
-6. Add items to cart
-7. Complete purchase
-8. Check points earned
-9. View order history
+1. Navigate to /vip-portal/login (NOT /login - separate auth)
+2. Login with VIP credentials
+3. Verify VIP session token is different from regular auth
+4. View VIP dashboard (/vip-portal/dashboard)
+5. Browse catalog
+6. Add items to interest list
+7. Join live shopping session
+8. Add items to cart
+9. Complete purchase
+10. Check points earned (gamification)
+11. View order history
+12. Logout and verify session destroyed
 ```
 
 #### Flow 4: Accounting Reconciliation
@@ -496,34 +526,56 @@ Manus will execute complete user journeys:
 10. Book appointment
 ```
 
-#### Flow 6: Sample Request Cycle (ADDED)
+#### Flow 6: Sample Request Cycle (CORRECTED v1.2)
 ```
 1. Login as sales rep
 2. Navigate to Samples (/samples)
 3. Create sample request for a client
-4. Select batch(es) to sample
-5. Submit request
-6. Verify inventory reserved
+4. Select product(s) and quantities
+5. Submit request (status = PENDING)
+6. Verify sample request appears in list
 7. Login as warehouse manager
-8. Fulfill sample request
-9. Mark as shipped
-10. Verify inventory deducted
-11. Verify sample tracking updated
+8. View pending sample requests
+9. Fulfill sample request (status → FULFILLED)
+10. Verify sample location = "WITH_CLIENT" or "WITH_SALES_REP"
+11. Verify inventory reserved/deducted
+12. [LATER] Client requests sample return (status → RETURN_REQUESTED)
+13. Process return (status → RETURNED)
+14. Update sample location = "RETURNED" or "LOST"
+15. Verify inventory restored (if not lost/damaged)
 ```
 
-#### Flow 7: Return Processing (ADDED)
+#### Flow 7: Return Processing (CORRECTED v1.2)
 ```
 1. Login as sales rep
 2. Navigate to Returns (/returns)
 3. Create return for existing order
-4. Select items to return
-5. Specify return reason
-6. Submit return
-7. Login as warehouse manager
-8. Receive returned items
-9. Process: RESTOCKED or RETURNED_TO_VENDOR
-10. Verify inventory updated (if restocked)
-11. Verify client credit issued
+4. Select items to return (with batch IDs)
+5. Specify return reason (DEFECTIVE/WRONG_ITEM/NOT_AS_DESCRIBED/CUSTOMER_CHANGED_MIND/OTHER)
+6. Submit return (status = PENDING)
+7. Login as manager/approver
+8. Review pending return
+9a. APPROVE return (status → APPROVED) → Continue to step 10
+9b. REJECT return (status → REJECTED) → Verify client notified, END
+10. Login as warehouse manager
+11. Receive returned items (status → RECEIVED)
+12. Inspect condition (SELLABLE/DAMAGED/DESTROYED/QUARANTINE)
+13. Process return (status → PROCESSED):
+    - If SELLABLE: Add back to inventory (RESTOCKED)
+    - If DAMAGED/QUARANTINE: Hold for disposition
+    - If vendor issue: Create vendor return (RETURNED_TO_VENDOR)
+14. Verify inventory updated (if SELLABLE)
+15. Verify client credit issued (if applicable)
+```
+
+#### Flow 7b: Return Rejection Path (ADDED v1.2)
+```
+1. Continue from Flow 7, step 9b
+2. Verify return status = REJECTED
+3. Verify rejection reason recorded
+4. Verify no inventory changes
+5. Verify no credit issued
+6. Verify client notified of rejection
 ```
 
 #### Flow 8: Credit Management (ADDED)
@@ -568,7 +620,49 @@ Manus will execute complete user journeys:
 10. Verify payroll data accurate
 ```
 
-### 3.4 Cross-Browser Testing Matrix
+### 3.4 Edge Case & Error Scenario Tests (ADDED v1.2)
+
+**These tests verify system behavior in abnormal conditions:**
+
+#### Inventory Edge Cases
+| Scenario | Expected Behavior | Test Steps |
+|----------|-------------------|------------|
+| Order exceeds available inventory | Error shown, order not created | Try to order qty > available |
+| Concurrent orders for same batch | One succeeds, one fails gracefully | Two users order simultaneously |
+| Batch at 0 quantity | Cannot be selected for order | Verify batch not in dropdown |
+
+#### Financial Edge Cases
+| Scenario | Expected Behavior | Test Steps |
+|----------|-------------------|------------|
+| Client over credit limit | Warning shown, manager approval required | Order total > credit limit |
+| Apply credit > order total | Credit capped at order total | Apply $500 credit to $200 order |
+| Expired credit application | Error: credit expired | Try to apply expired credit |
+| Negative margin order | Warning shown, requires override | Set price < COGS |
+
+#### Status Edge Cases
+| Scenario | Expected Behavior | Test Steps |
+|----------|-------------------|------------|
+| Cancel SHIPPED order | Error: cannot cancel | Try to cancel shipped order |
+| Re-approve rejected return | Error: invalid transition | Try REJECTED → APPROVED |
+| Convert expired quote | Error: quote expired | Try to convert expired quote |
+| Clock in while already clocked in | Error: already clocked in | Double clock-in attempt |
+
+#### Concurrent Access Tests
+| Scenario | Expected Behavior | Test Steps |
+|----------|-------------------|------------|
+| Two users approve same return | One succeeds, one gets "already approved" | Parallel approval clicks |
+| Session timeout mid-order | Redirect to login, draft saved | Let session expire during order creation |
+| Network disconnect during save | Retry mechanism, data not lost | Disconnect network during save |
+
+#### Error State UI Tests
+| Scenario | Expected Behavior | Test Steps |
+|----------|-------------------|------------|
+| API 500 error | User-friendly error message | Trigger server error |
+| Network timeout | Loading indicator, retry option | Slow network simulation |
+| Empty data | "No results" message, not blank | Filter to 0 results |
+| Permission denied | Clear error, redirect if needed | Access page without permission |
+
+### 3.5 Cross-Browser Testing Matrix
 
 | Browser | Desktop | Mobile | Tablet |
 |---------|---------|--------|--------|
