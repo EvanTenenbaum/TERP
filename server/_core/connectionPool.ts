@@ -1,3 +1,5 @@
+/* global NodeJS */
+
 import mysql from "mysql2/promise";
 import { logger } from "./logger";
 
@@ -122,29 +124,39 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
 
   // CRITICAL: Health check - Force immediate connection to verify pool works
   // This will crash the app at startup if DB is unreachable, rather than failing silently
-  pool.getConnection()
-    .then(async (connection) => {
-      logger.info({ msg: "✅ Database health check: Connection successful" });
-      try {
-        const [rows] = await connection.query('SELECT 1 as health_check');
-        logger.info({ msg: "✅ Database health check: Query successful", result: rows });
-      } catch (queryErr) {
-        logger.error({ msg: "❌ Database health check: Query failed", error: queryErr });
-      } finally {
-        connection.release();
-        logger.info({ msg: "Health check connection released back to pool" });
-      }
-    })
-    .catch((err) => {
-      logger.error({
-        msg: "❌ CRITICAL: Database health check failed - Cannot establish connection",
-        error: err,
-        databaseUrl: cleanDatabaseUrl.replace(/:[^:@]+@/, ':****@'), // Mask password
-        sslEnabled: needsSSL,
+  // Skip health check in test environments (VITEST) to avoid CRITICAL error noise
+  const vitestValue = (process.env.VITEST || '').toLowerCase();
+  const isTestEnv = ['true', '1', 'yes'].includes(vitestValue)
+    || process.env.NODE_ENV === 'test'
+    || process.env.CI === 'true';
+
+  if (!isTestEnv) {
+    pool.getConnection()
+      .then(async (connection) => {
+        logger.info({ msg: "✅ Database health check: Connection successful" });
+        try {
+          const [rows] = await connection.query('SELECT 1 as health_check');
+          logger.info({ msg: "✅ Database health check: Query successful", result: rows });
+        } catch (queryErr) {
+          logger.error({ msg: "❌ Database health check: Query failed", error: queryErr });
+        } finally {
+          connection.release();
+          logger.info({ msg: "Health check connection released back to pool" });
+        }
+      })
+      .catch((err) => {
+        logger.error({
+          msg: "❌ CRITICAL: Database health check failed - Cannot establish connection",
+          error: err,
+          databaseUrl: cleanDatabaseUrl.replace(/:[^:@]+@/, ':****@'), // Mask password
+          sslEnabled: needsSSL,
+        });
+        // Don't throw here - let the app start but log the critical error
+        // The app will fail on first query attempt with better error context
       });
-      // Don't throw here - let the app start but log the critical error
-      // The app will fail on first query attempt with better error context
-    });
+  } else {
+    logger.debug({ msg: "Skipping database health check in test environment" });
+  }
 
   // Log pool statistics periodically (every 5 minutes)
   // REL-003: Store interval reference for cleanup on pool close

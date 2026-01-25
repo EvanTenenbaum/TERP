@@ -2,11 +2,53 @@
  * Shared utility functions for realistic data generation
  */
 
+// ============================================================================
+// Seeded Random Number Generator (Mulberry32)
+// ============================================================================
+
+let currentSeed = 12345;
+
+/**
+ * Initialize the seeded random number generator
+ * Call this before generating data to ensure reproducibility
+ * @throws Error if seed is NaN or Infinity
+ */
+export function setSeed(seed: number): void {
+  if (!Number.isFinite(seed)) {
+    throw new Error(`Invalid seed: ${seed}. Seed must be a finite number.`);
+  }
+  currentSeed = seed;
+}
+
+/**
+ * Get a seeded random number between 0 and 1 (like Math.random)
+ * Uses Mulberry32 algorithm for deterministic results
+ */
+export function seededRandom(): number {
+  // Mulberry32 PRNG
+  let t = currentSeed += 0x6D2B79F5;
+  t = Math.imul(t ^ t >>> 15, t | 1);
+  t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+
+/**
+ * Get random function - uses seeded random for reproducibility
+ * This replaces all random() calls in the generators
+ */
+export function random(): number {
+  return seededRandom();
+}
+
+// ============================================================================
+// Core Utility Functions
+// ============================================================================
+
 /**
  * Generate random number in range [min, max]
  */
 export function randomInRange(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(random() * (max - min + 1)) + min;
 }
 
 /**
@@ -14,7 +56,7 @@ export function randomInRange(min: number, max: number): number {
  */
 export function addVariance(value: number, variancePercent: number): number {
   const variance = value * variancePercent;
-  return value + (Math.random() * 2 - 1) * variance;
+  return value + (random() * 2 - 1) * variance;
 }
 
 /**
@@ -22,7 +64,7 @@ export function addVariance(value: number, variancePercent: number): number {
  */
 export function randomDate(start: Date, end: Date): Date {
   return new Date(
-    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+    start.getTime() + random() * (end.getTime() - start.getTime())
   );
 }
 
@@ -31,12 +73,12 @@ export function randomDate(start: Date, end: Date): Date {
  * weights should sum to 1.0
  */
 export function weightedRandom<T>(items: T[], weights: number[]): T {
-  const random = Math.random();
+  const rand = random();
   let sum = 0;
 
   for (let i = 0; i < items.length; i++) {
     sum += weights[i];
-    if (random <= sum) {
+    if (rand <= sum) {
       return items[i];
     }
   }
@@ -50,7 +92,7 @@ export function weightedRandom<T>(items: T[], weights: number[]): T {
 export function shuffle<T>(array: T[]): T[] {
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
@@ -125,8 +167,8 @@ export function generateCaliforniaAddress(): string {
     "First St",
     "Second St",
   ];
-  const street = streets[Math.floor(Math.random() * streets.length)];
-  const city = CA_CITIES[Math.floor(Math.random() * CA_CITIES.length)];
+  const street = streets[Math.floor(random() * streets.length)];
+  const city = CA_CITIES[Math.floor(random() * CA_CITIES.length)];
   const zipCode = randomInRange(90001, 95999);
 
   return `${streetNumber} ${street}, ${city}, CA ${zipCode}`;
@@ -245,7 +287,7 @@ export function toTitleCase(str: string): string {
  * Random choice from array
  */
 export function randomChoice<T>(array: T[]): T {
-  return array[Math.floor(Math.random() * array.length)];
+  return array[Math.floor(random() * array.length)];
 }
 
 /**
@@ -294,8 +336,8 @@ export function selectWeightedIndex(weights: number[]): number {
  */
 export function longTailRandom(min: number, max: number, skew = 2): number {
   // Generate exponentially distributed random number
-  const random = Math.random();
-  const exponential = Math.pow(random, skew);
+  const rand = random();
+  const exponential = Math.pow(rand, skew);
   const value = min + exponential * (max - min);
   return Math.round(value);
 }
@@ -317,7 +359,7 @@ export function generateWeightedQuantity(isFlower: boolean): number {
     const rangeIndex = weightedRandom([0, 1, 2, 3], weights);
     const [rangeMin, rangeMax] = ranges[rangeIndex];
     return parseFloat(
-      (rangeMin + Math.random() * (rangeMax - rangeMin)).toFixed(1)
+      (rangeMin + random() * (rangeMax - rangeMin)).toFixed(1)
     );
   } else {
     // Non-flower: 5 to 100 units, weighted toward 10-30 units
@@ -330,6 +372,6 @@ export function generateWeightedQuantity(isFlower: boolean): number {
     ];
     const rangeIndex = weightedRandom([0, 1, 2, 3], weights);
     const [rangeMin, rangeMax] = ranges[rangeIndex];
-    return Math.round(rangeMin + Math.random() * (rangeMax - rangeMin));
+    return Math.round(rangeMin + random() * (rangeMax - rangeMin));
   }
 }
