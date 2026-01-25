@@ -4077,7 +4077,7 @@ const handleChange = (value: PaymentMethod) => { ... }
 
 **Status:** complete
 **Completed:** 2026-01-25
-**Key Commits:** (pending commit)
+**Key Commits:** `7dc68ba`
 **Priority:** HIGH
 **Estimate:** 0.5h
 **Actual Time:** 0.25h
