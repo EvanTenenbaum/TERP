@@ -226,17 +226,18 @@ All 15 tasks from the Cooper Rd Working Session completed:
 > **Integration Branch:** `claude/execute-integration-coordinator-yCuO7`
 > **Teams Merged:** D (Schema) → A (Stability) → C (Backend) → B (Frontend) → E (Integration)
 
-| Task        | Description                                        | Priority | Status      | Estimate | Dependencies |
-| ----------- | -------------------------------------------------- | -------- | ----------- | -------- | ------------ |
-| POST-001    | Run database seeders for new defaults              | P0       | NOT STARTED | 30m      | Merge to main |
-| POST-002    | Verify deployment health after merge               | P0       | NOT STARTED | 15m      | POST-001     |
-| POST-003    | Run full test suite and document failures          | P1       | NOT STARTED | 1h       | POST-002     |
-| POST-004    | Validate feature flags seeded correctly            | P1       | NOT STARTED | 15m      | POST-001     |
-| POST-005    | Test critical mutation wrapper in production       | P1       | NOT STARTED | 30m      | POST-002     |
+| Task     | Description                                  | Priority | Status      | Estimate | Dependencies  |
+| -------- | -------------------------------------------- | -------- | ----------- | -------- | ------------- |
+| POST-001 | Run database seeders for new defaults        | P0       | ⚠️ PARTIAL  | 30m      | Merge to main |
+| POST-002 | Verify deployment health after merge         | P0       | ✅ COMPLETE | 15m      | POST-001      |
+| POST-003 | Run full test suite and document failures    | P1       | ✅ COMPLETE | 1h       | POST-002      |
+| POST-004 | Validate feature flags seeded correctly      | P1       | ⚠️ BLOCKED  | 15m      | POST-001      |
+| POST-005 | Test critical mutation wrapper in production | P1       | ⏳ PENDING  | 30m      | POST-002      |
 
 #### POST-001: Run Database Seeders for New Defaults
 
-**Status:** NOT STARTED
+**Status:** ⚠️ PARTIAL (Jan 25, 2026)
+**Notes:** Seeders attempt to run on deployment startup but fail due to schema mismatch (`unitTypeCategory` column not found in `unit_types` table). Non-fatal - server continues. Requires migration to add missing column.
 **Priority:** CRITICAL (P0)
 **Estimate:** 30 minutes
 **Module:** `server/db/seed/`
@@ -244,12 +245,14 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 **Problem:**
 Team D added new seeder scripts that need to be run to populate default data:
+
 - Feature flags defaults
 - Gamification defaults
 - Scheduling defaults
 - Storage defaults
 
 **Action Required:**
+
 ```bash
 # After merge to main, run the following in production:
 pnpm seed:all-defaults
@@ -262,6 +265,7 @@ pnpm seed:storage-defaults
 ```
 
 **Verification:**
+
 - [ ] Feature flags table has default entries
 - [ ] Gamification settings populated
 - [ ] Scheduling defaults in place
@@ -271,13 +275,15 @@ pnpm seed:storage-defaults
 
 #### POST-002: Verify Deployment Health After Merge
 
-**Status:** NOT STARTED
+**Status:** ✅ COMPLETE (Jan 25, 2026)
+**Notes:** Deployment successful. Health endpoint returns 200 OK. Database and transaction checks pass. Memory at 97% (pre-existing condition). Live endpoint operational.
 **Priority:** CRITICAL (P0)
 **Estimate:** 15 minutes
 **Module:** Production environment
 **Dependencies:** POST-001 completed
 
 **Action Required:**
+
 ```bash
 # 1. Monitor deployment
 ./scripts/watch-deploy.sh
@@ -293,6 +299,7 @@ curl https://terp-app-b9s35.ondigitalocean.app/api/trpc/health
 ```
 
 **Verification:**
+
 - [ ] Health endpoint returns 200 OK
 - [ ] No critical errors in logs
 - [ ] All API endpoints responding
@@ -301,23 +308,27 @@ curl https://terp-app-b9s35.ondigitalocean.app/api/trpc/health
 
 #### POST-003: Run Full Test Suite and Document Failures
 
-**Status:** NOT STARTED
+**Status:** ✅ COMPLETE (Jan 25, 2026)
+**Notes:** Test Results: 2273 passed, 9 failed (99.6% pass rate). All 9 failures are pre-existing known issues (TEST-INFRA-07, TEST-INFRA-08, TEST-INFRA-09). No new regressions detected.
 **Priority:** HIGH (P1)
 **Estimate:** 1 hour
 **Module:** Test infrastructure
 **Dependencies:** POST-002 completed
 
 **Action Required:**
+
 ```bash
 pnpm test --run 2>&1 | tee test-results.log
 ```
 
 **Known Pre-Existing Failures (from integration QA):**
+
 - `comments.test.ts` - Requires database connection
 - `MatchmakingServicePage.test.tsx` - tRPC mock missing `useUtils`
 - `EventFormDialog.test.tsx` - Radix UI React 19 render loop
 
 **Verification:**
+
 - [ ] Test results documented
 - [ ] No NEW test failures introduced by merge
 - [ ] Pre-existing failures tracked in TEST-INFRA tasks
@@ -331,13 +342,13 @@ pnpm test --run 2>&1 | tee test-results.log
 > **Pass Rate:** 99.6% (2273 passed, 9 failed)
 > **Report:** `docs/sprint-reports/2026-01-25-release.md`
 
-| Task          | Description                                              | Priority | Status      | Root Cause      | Est. Impact |
-| ------------- | -------------------------------------------------------- | -------- | ----------- | --------------- | ----------- |
-| TEST-INFRA-07 | Fix tRPC mock missing `useUtils` method                  | P2       | NOT STARTED | RC-TRPC-MOCK    | 4 tests     |
-| TEST-INFRA-08 | Fix Radix UI React 19 render loop in EventFormDialog     | P2       | NOT STARTED | RC-RADIX-REACT19| 5 tests     |
-| TEST-INFRA-09 | Fix comments.test.ts database connection requirement     | P2       | NOT STARTED | RC-DB-REQUIRED  | 1 test      |
-| TEST-020      | Fix Vitest mock hoisting for permissionMiddleware tests  | P2       | BLOCKED     | RC-MOCK-HOIST   | 8 tests     |
-| INFRA-015     | Migrate idempotency cache to Redis for multi-instance    | P3       | NOT STARTED | SINGLE-INSTANCE | N/A         |
+| Task          | Description                                             | Priority | Status      | Root Cause       | Est. Impact |
+| ------------- | ------------------------------------------------------- | -------- | ----------- | ---------------- | ----------- |
+| TEST-INFRA-07 | Fix tRPC mock missing `useUtils` method                 | P2       | NOT STARTED | RC-TRPC-MOCK     | 4 tests     |
+| TEST-INFRA-08 | Fix Radix UI React 19 render loop in EventFormDialog    | P2       | NOT STARTED | RC-RADIX-REACT19 | 5 tests     |
+| TEST-INFRA-09 | Fix comments.test.ts database connection requirement    | P2       | NOT STARTED | RC-DB-REQUIRED   | 1 test      |
+| TEST-020      | Fix Vitest mock hoisting for permissionMiddleware tests | P2       | BLOCKED     | RC-MOCK-HOIST    | 8 tests     |
+| INFRA-015     | Migrate idempotency cache to Redis for multi-instance   | P3       | NOT STARTED | SINGLE-INSTANCE  | N/A         |
 
 #### Root Cause Analysis
 
@@ -3519,23 +3530,23 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 > These issues can result in financial restatement, security breaches, or data corruption.
 > **Must fix before production use.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH | ready | 1h | `server/routers/adminSetup.ts` |
-| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema) | HIGH | ready | 1h | `server/routers/debug.ts` |
-| SEC-029 | Fix Default Permission Grants (new users get read all) | HIGH | ready | 2h | `server/services/permissionService.ts` |
-| SEC-030 | Fix VIP Portal Token Validation (UUID not validated) | HIGH | ready | 2h | `server/routers/vipPortal.ts` |
-| ACC-002 | Add GL Reversals for Invoice Void | HIGH | ready | 4h | `server/routers/invoices.ts` |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | ready | 4h | `server/routers/returns.ts` |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | ready | 4h | `server/services/orderAccountingService.ts` |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | ready | 2h | `server/accountingDb.ts` |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | ready | 4h | `server/routers/orders.ts` |
-| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | ready | 2h | `server/ordersDb.ts` |
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
-| ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
-| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
+| Task    | Description                                                          | Priority | Status | Estimate | Module                                           |
+| ------- | -------------------------------------------------------------------- | -------- | ------ | -------- | ------------------------------------------------ |
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready  | 1h       | `server/routers/adminSetup.ts`                   |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready  | 1h       | `server/routers/debug.ts`                        |
+| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts`           |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`                    |
+| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready  | 4h       | `server/routers/invoices.ts`                     |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready  | 4h       | `server/routers/returns.ts`                      |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready  | 4h       | `server/services/orderAccountingService.ts`      |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready  | 2h       | `server/accountingDb.ts`                         |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready  | 4h       | `server/routers/orders.ts`                       |
+| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready  | 2h       | `server/ordersDb.ts`                             |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready  | 2h       | `server/routers/orders.ts`                       |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready  | 4h       | `server/ordersDb.ts`                             |
+| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready  | 4h       | `server/ordersDb.ts`, `server/services/*`        |
+| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready  | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts` |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready  | 2h       | `server/arApDb.ts`                               |
 
 ---
 
@@ -3551,6 +3562,7 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 `listUsers`, `promoteToAdmin`, `promoteAllToAdmin` use `publicProcedure` with only weak setupKey protection. If setup key leaks, complete privilege escalation is possible.
 
 **Attack Vector:**
+
 ```
 1. Learn setup key (default/leaked/brute-force)
 2. Call adminSetup.promoteToAdmin with attacker email
@@ -3558,6 +3570,7 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All adminSetup endpoints use `protectedProcedure`
 - [ ] Require existing Super Admin role to call these endpoints
 - [ ] Remove or strengthen setupKey mechanism
@@ -3576,11 +3589,13 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 Six debug endpoints are completely public. They reveal all table names, schema structure, and data counts - everything needed to plan an attack.
 
 **Exposed Information:**
+
 - `checkDatabaseSchema`: All table names and columns
 - `getCounts`: Row counts for all tables (15,234 invoices, 523 clients, etc.)
 - `checkTableStructure`: Full schema details
 
 **Acceptance Criteria:**
+
 - [ ] Debug endpoints removed from production build, OR
 - [ ] Debug endpoints require Super Admin authentication
 - [ ] Rate limiting applied to prevent enumeration
@@ -3599,12 +3614,14 @@ Six debug endpoints are completely public. They reveal all table names, schema s
 Voiding an invoice only sets `status = "VOID"`. No reversing GL entries are created, even though `reverseGLEntries()` function exists at `accountingHooks.ts:478`.
 
 **Blast Radius:**
+
 - GL ledger becomes unbalanced
 - Voided invoices still appear in AR aging
 - Audit trail incomplete
 - Reconciliation impossible
 
 **Acceptance Criteria:**
+
 - [ ] `invoices.void()` calls `reverseGLEntries()` for original posting
 - [ ] Client `totalOwed` reduced by voided amount
 - [ ] Audit log records void reason and reversing entries
@@ -3623,11 +3640,13 @@ Voiding an invoice only sets `status = "VOID"`. No reversing GL entries are crea
 Returns restock inventory but don't create credit memos, reverse invoices, update `client.totalOwed`, or create reversing GL entries.
 
 **Blast Radius:**
+
 - Customers who return goods still show as owing money
 - AR overstated indefinitely
 - No audit trail of returns
 
 **Acceptance Criteria:**
+
 - [ ] Return creates credit memo
 - [ ] Credit memo creates reversing GL entries
 - [ ] Client `totalOwed` reduced
@@ -3647,6 +3666,7 @@ Returns restock inventory but don't create credit memos, reverse invoices, updat
 Revenue is posted to GL on sale, but Cost of Goods Sold is never created. This makes gross margin appear as 100% (impossible).
 
 **Expected Flow:**
+
 ```
 SALE creates:
 1. Debit AR, Credit Revenue (✅ exists)
@@ -3654,14 +3674,16 @@ SALE creates:
 ```
 
 **Blast Radius:**
+
 - Inventory asset account never decreases on sales
 - COGS expense shows $0
 - Gross margin = 100% (overstated)
 - P&L shows phantom profit
 
 **Acceptance Criteria:**
+
 - [ ] Sale creates COGS/Inventory GL entries
-- [ ] COGS amount = SUM(lineItem.unitCogs * quantity)
+- [ ] COGS amount = SUM(lineItem.unitCogs \* quantity)
 - [ ] Inventory asset reduced by COGS amount
 - [ ] GL balanced after every sale
 
@@ -3679,6 +3701,7 @@ SALE creates:
 `shipOrder()` and `deliverOrder()` update order status but NEVER deduct inventory. `onHandQty` never decreases, creating phantom inventory.
 
 **Current Flow:**
+
 ```
 1. Order created → items in JSON ✅
 2. allocateBatchesToLineItem() → reservedQty += allocation ✅
@@ -3688,6 +3711,7 @@ SALE creates:
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `shipOrder()` converts reservedQty to actual deduction
 - [ ] `batch.onHandQty -= shippedQuantity`
 - [ ] Inventory movement record created
@@ -3707,6 +3731,7 @@ SALE creates:
 `confirmDraftOrder()` checks inventory WITHOUT row-level locks. Concurrent confirmations can both succeed when combined they exceed available inventory.
 
 **Race Condition Timeline:**
+
 ```
 Request A: Read batch.onHandQty = 100 ✓
 Request B: Read batch.onHandQty = 100 ✓ (same value!)
@@ -3718,6 +3743,7 @@ Result: Sold 125 units, only had 100
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Use `SELECT ... FOR UPDATE` when checking inventory
 - [ ] Transaction wraps check + update
 - [ ] Second request fails with "insufficient inventory"
@@ -3744,12 +3770,14 @@ try {
 ```
 
 **Blast Radius:**
+
 - Order created but no invoice (silent failure)
 - Inventory reduced but GL not posted
 - Revenue leakage undetected
 - 6+ silent failure points per order
 
 **Acceptance Criteria:**
+
 - [ ] Rethrow errors in financial operations
 - [ ] Wrap in transaction that rolls back on any failure
 - [ ] Add monitoring/alerts for accounting failures
@@ -3768,6 +3796,7 @@ try {
 Multi-step operations execute without atomicity. If step 2 fails, step 1 is not rolled back.
 
 **Example - Order Cancellation:**
+
 ```
 Step 1: Update order status = CANCELLED → Transaction A ✅
 Step 2: Restore inventory → Transaction B (may fail)
@@ -3780,12 +3809,14 @@ If Step 2 fails:
 ```
 
 **Files Affected:**
+
 - `ordersDb.ts:724-787` (deleteOrder)
 - `ordersDb.ts:1137-1161` (confirmDraftOrder)
 - `orders.ts:1355-1428` (shipOrder)
 - `orders.ts:1434-1494` (deliverOrder)
 
 **Acceptance Criteria:**
+
 - [ ] All critical operations wrapped in single transaction
 - [ ] Rollback on any step failure
 - [ ] No partial state possible
@@ -3797,16 +3828,16 @@ If Step 2 fails:
 > These issues cause data inconsistency and incorrect business logic.
 > **Should fix in current release.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| ARCH-001 | Create OrderOrchestrator Service | HIGH | ready | 8h | `server/services/` (new) |
-| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
-| ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
-| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | ready | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
-| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+| Task      | Description                                      | Priority | Status | Estimate | Module                                                  |
+| --------- | ------------------------------------------------ | -------- | ------ | -------- | ------------------------------------------------------- |
+| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready  | 8h       | `server/services/` (new)                                |
+| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready  | 8h       | `server/services/`, `server/routers/`                   |
+| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready  | 4h       | `server/routers/orders.ts`                              |
+| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready  | 4h       | `server/arApDb.ts`                                      |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready  | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready  | 2h       | `drizzle/schema.ts`                                     |
+| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready  | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready  | 2h       | `server/routers/vendors.ts`                             |
 
 ---
 
@@ -3822,10 +3853,11 @@ If Step 2 fails:
 Order business logic is scattered across `ordersDb.ts` (1400+ lines), `orders.ts` router, and various services. This makes it impossible to ensure transactional integrity.
 
 **Proposed Architecture:**
+
 ```typescript
 class OrderOrchestrator {
   async createSaleOrder(input: CreateSaleInput): Promise<Order> {
-    return this.db.transaction(async (tx) => {
+    return this.db.transaction(async tx => {
       // 1. Create order
       // 2. Allocate inventory (with locks)
       // 3. Create invoice
@@ -3837,6 +3869,7 @@ class OrderOrchestrator {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] OrderOrchestrator handles create, confirm, ship, deliver, cancel
 - [ ] All operations atomic within single transaction
 - [ ] Clear separation of concerns from router
@@ -3853,6 +3886,7 @@ class OrderOrchestrator {
 
 **Problem:**
 Three independent systems track client balances:
+
 1. `invoices.amountDue` (per invoice)
 2. `clients.totalOwed` (denormalized, updated inconsistently)
 3. `clientTransactions` table (shadow ledger)
@@ -3860,6 +3894,7 @@ Three independent systems track client balances:
 They never sync, causing wrong balances.
 
 **Acceptance Criteria:**
+
 - [ ] `clients.totalOwed` derived from `SUM(invoices.amountDue)` or trigger-maintained
 - [ ] Remove manual updates to `totalOwed` scattered across codebase
 - [ ] Or convert `totalOwed` to computed view/materialized view
@@ -3878,6 +3913,7 @@ They never sync, causing wrong balances.
 State machine is correctly defined in `orderStateMachine.ts` but only used by `markAsReturned()`. All other transitions (ship, deliver, confirm, cancel) bypass it.
 
 **Current Usage:**
+
 - ✗ `confirmOrder()` - doesn't use it
 - ✗ `shipOrder()` - doesn't use it
 - ✗ `deliverOrder()` - doesn't use it
@@ -3885,6 +3921,7 @@ State machine is correctly defined in `orderStateMachine.ts` but only used by `m
 - ✗ `markCancelled()` - doesn't exist
 
 **Acceptance Criteria:**
+
 - [ ] All status transitions call `canTransition(from, to)`
 - [ ] Invalid transitions throw descriptive error
 - [ ] Side effects enforced per transition
@@ -3910,11 +3947,13 @@ export async function updateBillStatus(id, status) {
 ```
 
 **Invalid Transitions Allowed:**
+
 - PAID → DRAFT (undo payments!)
 - VOID → DRAFT (unvoid!)
 - DRAFT → PAID (skip approval)
 
 **Acceptance Criteria:**
+
 - [ ] Define valid bill status transitions
 - [ ] Validate before applying
 - [ ] Add version field for optimistic locking
@@ -3926,20 +3965,20 @@ export async function updateBillStatus(id, status) {
 > These issues affect correctness but have workarounds.
 > **Fix in next sprint.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| SM-001 | Implement Quote Status Transitions | MEDIUM | ready | 4h | `server/routers/quotes.ts` |
-| SM-002 | Implement Sale Status Transitions | MEDIUM | ready | 4h | `server/routers/orders.ts` |
-| SM-003 | Implement VendorReturn Status Transitions | MEDIUM | ready | 4h | `server/routers/returns.ts` |
-| ORD-002 | Validate Positive Prices in Orders | MEDIUM | ready | 2h | `server/ordersDb.ts`, `server/services/orderService.ts` |
-| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM | ready | 2h | `server/services/orderStateMachine.ts` |
-| ORD-004 | Add Credit Override Authorization | MEDIUM | ready | 2h | `server/services/orderPricingService.ts` |
-| INV-004 | Add Reservation Release on Order Cancellation | MEDIUM | ready | 2h | `server/routers/orders.ts` |
-| INV-005 | Create Batches on PO Goods Receipt | MEDIUM | ready | 4h | `server/routers/purchaseOrders.ts` |
-| NAV-017 | Add Missing /alerts Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
-| NAV-018 | Add Missing /reports/shrinkage Route | MEDIUM | ready | 1h | `client/src/App.tsx` |
-| API-019 | Fix PaymentMethod Type Mismatch (as any) | MEDIUM | ready | 2h | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
-| API-020 | Fix Pagination Response Inconsistency | MEDIUM | ready | 4h | Multiple routers |
+| Task    | Description                                          | Priority | Status | Estimate | Module                                                         |
+| ------- | ---------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------------------- |
+| SM-001  | Implement Quote Status Transitions                   | MEDIUM   | ready  | 4h       | `server/routers/quotes.ts`                                     |
+| SM-002  | Implement Sale Status Transitions                    | MEDIUM   | ready  | 4h       | `server/routers/orders.ts`                                     |
+| SM-003  | Implement VendorReturn Status Transitions            | MEDIUM   | ready  | 4h       | `server/routers/returns.ts`                                    |
+| ORD-002 | Validate Positive Prices in Orders                   | MEDIUM   | ready  | 2h       | `server/ordersDb.ts`, `server/services/orderService.ts`        |
+| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM   | ready  | 2h       | `server/services/orderStateMachine.ts`                         |
+| ORD-004 | Add Credit Override Authorization                    | MEDIUM   | ready  | 2h       | `server/services/orderPricingService.ts`                       |
+| INV-004 | Add Reservation Release on Order Cancellation        | MEDIUM   | ready  | 2h       | `server/routers/orders.ts`                                     |
+| INV-005 | Create Batches on PO Goods Receipt                   | MEDIUM   | ready  | 4h       | `server/routers/purchaseOrders.ts`                             |
+| NAV-017 | Add Missing /alerts Route                            | MEDIUM   | ready  | 1h       | `client/src/App.tsx`                                           |
+| NAV-018 | Add Missing /reports/shrinkage Route                 | MEDIUM   | ready  | 1h       | `client/src/App.tsx`                                           |
+| API-019 | Fix PaymentMethod Type Mismatch (as any)             | MEDIUM   | ready  | 2h       | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
+| API-020 | Fix Pagination Response Inconsistency                | MEDIUM   | ready  | 4h       | Multiple routers                                               |
 
 ---
 
@@ -3948,14 +3987,14 @@ export async function updateBillStatus(id, status) {
 > These issues affect debuggability and confidence.
 > **Fix as capacity allows.**
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| OBS-001 | Add GL Balance Verification Cron | LOW | ready | 4h | `server/cron/` |
-| OBS-002 | Add AR Reconciliation Check | LOW | ready | 4h | `server/cron/` |
-| OBS-003 | Add Inventory Audit Trail | LOW | ready | 4h | `server/routers/inventory.ts` |
-| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW | ready | 8h | `tests/integration/` |
-| TEST-011 | Add Concurrent Operation Tests | LOW | ready | 4h | `tests/integration/` |
-| TEST-012 | Update Batch Status Transition Test Map | LOW | ready | 2h | `server/routers/inventory.property.test.ts` |
+| Task     | Description                                     | Priority | Status | Estimate | Module                                      |
+| -------- | ----------------------------------------------- | -------- | ------ | -------- | ------------------------------------------- |
+| OBS-001  | Add GL Balance Verification Cron                | LOW      | ready  | 4h       | `server/cron/`                              |
+| OBS-002  | Add AR Reconciliation Check                     | LOW      | ready  | 4h       | `server/cron/`                              |
+| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready  | 4h       | `server/routers/inventory.ts`               |
+| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready  | 8h       | `tests/integration/`                        |
+| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready  | 4h       | `tests/integration/`                        |
+| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready  | 2h       | `server/routers/inventory.property.test.ts` |
 
 ---
 
@@ -3971,6 +4010,7 @@ export async function updateBillStatus(id, status) {
 GL imbalances from silent failures go undetected until month-end close (30+ days of corruption).
 
 **Acceptance Criteria:**
+
 - [ ] Daily cron checks SUM(debits) = SUM(credits)
 - [ ] Alert if imbalanced by > $0.01
 - [ ] Report which date ranges are affected
@@ -3980,6 +4020,7 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 ### QA Audit Summary
 
 **Root Causes Identified:**
+
 1. **Shadow Accounting** - 3 systems tracking client balances independently
 2. **Missing COGS GL** - Revenue posted but not cost of goods sold
 3. **Silent Errors** - Financial operations fail silently
@@ -3998,6 +4039,7 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 | AR mismatch | All 500+ customers |
 
 **Agent IDs for Follow-up Investigation:**
+
 - Transaction Atomicity: `aedff89`
 - State Machines: `a575676`
 - Financial Invariants: `ab8e705`
@@ -4021,19 +4063,19 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 > **Client:** 531 errors, 484 warnings (1,015 total)
 > **Server:** 417 errors, 1,157 warnings (1,574 total)
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps) | HIGH | ready | 4h | `client/src/components/accounting/*.tsx` |
-| LINT-002 | Fix 'React' is not defined errors (12 files) | HIGH | ready | 2h | Multiple client components |
-| LINT-003 | Fix unused variable errors (~100 instances) | MEDIUM | ready | 4h | Client + Server |
-| LINT-004 | Fix array index key violations (~40 instances) | MEDIUM | ready | 4h | Client components |
-| LINT-005 | Replace `any` types with proper types (~200 instances) | MEDIUM | ready | 8h | Client + Server |
-| LINT-006 | Remove forbidden console.log statements (~50 instances) | LOW | ready | 2h | Server files |
-| LINT-007 | Fix non-null assertions (~30 instances) | LOW | ready | 2h | Client components |
-| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions | MEDIUM | ready | 1h | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
-| LINT-009 | Fix usePerformanceMonitor.ts type safety (`as any` → proper types) | MEDIUM | complete | 1h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
-| LINT-010 | Fix budgets useMemo dependency in usePerformanceMonitor.ts | MEDIUM | complete | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
-| LINT-011 | Replace eslint-disable no-undef with proper global declaration | LOW | complete | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| Task     | Description                                                        | Priority | Status   | Estimate | Module                                                      |
+| -------- | ------------------------------------------------------------------ | -------- | -------- | -------- | ----------------------------------------------------------- |
+| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps)       | HIGH     | ready    | 4h       | `client/src/components/accounting/*.tsx`                    |
+| LINT-002 | Fix 'React' is not defined errors (12 files)                       | HIGH     | ready    | 2h       | Multiple client components                                  |
+| LINT-003 | Fix unused variable errors (~100 instances)                        | MEDIUM   | ready    | 4h       | Client + Server                                             |
+| LINT-004 | Fix array index key violations (~40 instances)                     | MEDIUM   | ready    | 4h       | Client components                                           |
+| LINT-005 | Replace `any` types with proper types (~200 instances)             | MEDIUM   | ready    | 8h       | Client + Server                                             |
+| LINT-006 | Remove forbidden console.log statements (~50 instances)            | LOW      | ready    | 2h       | Server files                                                |
+| LINT-007 | Fix non-null assertions (~30 instances)                            | LOW      | ready    | 2h       | Client components                                           |
+| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions                    | MEDIUM   | ready    | 1h       | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
+| LINT-009 | Fix usePerformanceMonitor.ts type safety (`as any` → proper types) | MEDIUM   | complete | 1h       | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
+| LINT-010 | Fix budgets useMemo dependency in usePerformanceMonitor.ts         | MEDIUM   | complete | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
+| LINT-011 | Replace eslint-disable no-undef with proper global declaration     | LOW      | complete | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
 
 ---
 
@@ -4055,6 +4097,7 @@ Multiple `as any` type bypasses in Web Vitals observer options and entries.
 Added proper type interfaces: `PerformanceObserverInitExtended`, `FirstInputEntry`, `LayoutShiftEntry`
 
 **Verification:**
+
 - TypeScript compiles without errors
 - All `as any` replaced with proper types in useWebVitals hook
 
@@ -4078,6 +4121,7 @@ The `budgets` object in useCallback dependencies causes unnecessary re-renders.
 Wrapped budgets initialization in useMemo with `[customBudgets]` dependency.
 
 **Verification:**
+
 - react-hooks/exhaustive-deps warning resolved
 - useMemo added to imports
 
@@ -4101,6 +4145,7 @@ File-wide `eslint-disable no-undef` masks all undefined variable errors.
 Replaced with `/* global performance, PerformanceObserver, PerformanceEntry, PerformanceObserverInit */`
 
 **Verification:**
+
 - Only browser globals exempted
 - Other no-undef errors still caught
 
@@ -4125,12 +4170,14 @@ if (condition) {
 ```
 
 **Files Affected:**
+
 - `AccountSelector.tsx:51,58` - useMemo called conditionally
 - `FiscalPeriodSelector.tsx:57` - useMemo called conditionally
 - `CalendarFilters.tsx:27` - useEffect missing dependencies
 - `AmountInput.tsx:58` - useEffect missing dependency
 
 **Acceptance Criteria:**
+
 - [ ] All hooks called unconditionally at component top level
 - [ ] All useEffect dependencies properly specified
 - [ ] ESLint react-hooks/rules-of-hooks passes
@@ -4149,6 +4196,7 @@ if (condition) {
 12 files use JSX but don't import React (required for older JSX transform):
 
 **Files Affected:**
+
 - `ErrorBoundary.tsx:41`
 - `WidgetContainer.tsx:14`
 - `AuditIcon.tsx:85`
@@ -4161,6 +4209,7 @@ if (condition) {
 - `VIPLogin.tsx:63`
 
 **Acceptance Criteria:**
+
 - [ ] Add `import React from 'react'` to all affected files, OR
 - [ ] Configure JSX transform to not require React import
 - [ ] ESLint no-undef errors for React resolved
@@ -4179,6 +4228,7 @@ if (condition) {
 ~200 instances of `any` type usage defeat TypeScript's type safety:
 
 **High-Frequency Files:**
+
 - `EventFormDialog.tsx` - 9 instances
 - `Settings.tsx` - 7 instances
 - `AccountingDashboard.tsx` - 9 instances
@@ -4187,6 +4237,7 @@ if (condition) {
 - `featureFlagMiddleware.ts` - 11 instances
 
 **Example Pattern:**
+
 ```typescript
 // Current - UNSAFE
 const handleChange = (value: any) => { ... }
@@ -4196,6 +4247,7 @@ const handleChange = (value: PaymentMethod) => { ... }
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All `any` types replaced with specific types
 - [ ] Type-only `any` (in generics) documented if unavoidable
 - [ ] ESLint @typescript-eslint/no-explicit-any passes
@@ -4206,16 +4258,16 @@ const handleChange = (value: PaymentMethod) => { ... }
 
 > Vitest mock hoisting and environment configuration issues
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| TEST-020 | Fix permissionMiddleware.test.ts mock hoisting | HIGH | ready | 2h | `server/_core/permissionMiddleware.test.ts` |
-| TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH | ready | 1h | `vitest.setup.ts` |
-| TEST-022 | Fix EventFormDialog test environment | MEDIUM | ready | 2h | `client/src/components/calendar/EventFormDialog.test.tsx` |
-| TEST-023 | Fix ResizeObserver mock missing constructor callback | HIGH | ready | 0.5h | `tests/setup.ts` |
-| TEST-024 | Add tRPC mock `isPending` property (React Query v5) | HIGH | ready | 1h | `tests/setup.ts` |
-| TEST-025 | Fix tRPC proxy memory leak - memoize proxy creation | MEDIUM | ready | 1h | `tests/setup.ts` |
-| TEST-026 | Add vi.clearAllMocks() to main test setup | MEDIUM | ready | 0.5h | `tests/setup.ts` |
-| TEST-027 | Use deterministic seed for data-anomalies tests | HIGH | complete | 2h | `server/tests/data-anomalies.test.ts`, `scripts/generators/*` |
+| Task     | Description                                                             | Priority | Status   | Estimate | Module                                                        |
+| -------- | ----------------------------------------------------------------------- | -------- | -------- | -------- | ------------------------------------------------------------- |
+| TEST-020 | Fix permissionMiddleware.test.ts mock hoisting                          | HIGH     | ready    | 2h       | `server/_core/permissionMiddleware.test.ts`                   |
+| TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH     | ready    | 1h       | `vitest.setup.ts`                                             |
+| TEST-022 | Fix EventFormDialog test environment                                    | MEDIUM   | ready    | 2h       | `client/src/components/calendar/EventFormDialog.test.tsx`     |
+| TEST-023 | Fix ResizeObserver mock missing constructor callback                    | HIGH     | ready    | 0.5h     | `tests/setup.ts`                                              |
+| TEST-024 | Add tRPC mock `isPending` property (React Query v5)                     | HIGH     | ready    | 1h       | `tests/setup.ts`                                              |
+| TEST-025 | Fix tRPC proxy memory leak - memoize proxy creation                     | MEDIUM   | ready    | 1h       | `tests/setup.ts`                                              |
+| TEST-026 | Add vi.clearAllMocks() to main test setup                               | MEDIUM   | ready    | 0.5h     | `tests/setup.ts`                                              |
+| TEST-027 | Use deterministic seed for data-anomalies tests                         | HIGH     | complete | 2h       | `server/tests/data-anomalies.test.ts`, `scripts/generators/*` |
 
 > **Note:** DATABASE_URL configuration for seed tests already tracked as TEST-INFRA-02.
 
@@ -4225,12 +4277,12 @@ const handleChange = (value: PaymentMethod) => { ... }
 
 > Critical runtime safety issues in `usePerformanceMonitor.ts` discovered during QA audit
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| PERF-002 | Fix undefined array access in LCP/FID/CLS observers | HIGH | complete | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
-| PERF-003 | Add mounted ref guard to prevent state updates after unmount | MEDIUM | ready | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
-| PERF-004 | Fix PerformanceObserver memory leak on observe() throw | MEDIUM | ready | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
-| PERF-005 | Fix useWebVitals returning mutable ref (should use state) | MEDIUM | ready | 1h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| Task     | Description                                                  | Priority | Status   | Estimate | Module                                                   |
+| -------- | ------------------------------------------------------------ | -------- | -------- | -------- | -------------------------------------------------------- |
+| PERF-002 | Fix undefined array access in LCP/FID/CLS observers          | HIGH     | complete | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| PERF-003 | Add mounted ref guard to prevent state updates after unmount | MEDIUM   | ready    | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| PERF-004 | Fix PerformanceObserver memory leak on observe() throw       | MEDIUM   | ready    | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| PERF-005 | Fix useWebVitals returning mutable ref (should use state)    | MEDIUM   | ready    | 1h       | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
 
 ---
 
@@ -4252,6 +4304,7 @@ LCP and FID observers access array elements without checking if array is empty.
 Added `if (entries.length === 0) return;` guard before array access in both LCP and FID observers.
 
 **Verification:**
+
 - No runtime crashes when PerformanceObserver fires with empty entries
 - TypeScript compiles without errors
 
@@ -4262,13 +4315,13 @@ Added `if (entries.length === 0) return;` guard before array access in both LCP 
 > Critical findings from deep blast radius analysis during Team A Stability sprint
 > **Session:** `Session-20260125-TEAM-A-STABILITY-9fc6d6`
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| DEAD-001 | Document usePerformanceMonitor as Sprint 7 feature (not dead code) | LOW | complete | 0.5h | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
-| TEST-028 | Revert threshold hack (7% → 8%) and investigate root cause | HIGH | complete | 2h | `server/tests/data-anomalies.test.ts` |
-| TEST-029 | Replace DATABASE_URL placeholder with proper test isolation | MEDIUM | complete | 2h | `tests/setup.ts` |
-| SEED-001 | Add input validation to setSeed() for NaN/Infinity | HIGH | complete | 0.5h | `scripts/generators/utils.ts` |
-| ENV-001 | Expand VITEST detection to include common patterns (1, yes) | LOW | complete | 0.5h | `server/_core/connectionPool.ts` |
+| Task     | Description                                                        | Priority | Status   | Estimate | Module                                                   |
+| -------- | ------------------------------------------------------------------ | -------- | -------- | -------- | -------------------------------------------------------- |
+| DEAD-001 | Document usePerformanceMonitor as Sprint 7 feature (not dead code) | LOW      | complete | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts` |
+| TEST-028 | Revert threshold hack (7% → 8%) and investigate root cause         | HIGH     | complete | 2h       | `server/tests/data-anomalies.test.ts`                    |
+| TEST-029 | Replace DATABASE_URL placeholder with proper test isolation        | MEDIUM   | complete | 2h       | `tests/setup.ts`                                         |
+| SEED-001 | Add input validation to setSeed() for NaN/Infinity                 | HIGH     | complete | 0.5h     | `scripts/generators/utils.ts`                            |
+| ENV-001  | Expand VITEST detection to include common patterns (1, yes)        | LOW      | complete | 0.5h     | `server/_core/connectionPool.ts`                         |
 
 #### DEAD-001: Document usePerformanceMonitor as Sprint 7 Feature
 
@@ -4282,12 +4335,14 @@ Added `if (entries.length === 0) return;` guard before array access in both LCP 
 
 **Finding:**
 Blast radius analysis revealed usePerformanceMonitor has ZERO current consumers. However, it is **planned for Sprint 7** per `docs/features/USER_FLOWS.md:1931`:
+
 > `usePerformanceMonitor | Performance tracking and alerts | Sprint 7`
 
 **Resolution:**
 NOT dead code - pre-written infrastructure for future Sprint 7 integration. The recent fixes (LINT-009, LINT-010, LINT-011, PERF-002) were valid improvements to code that will be used.
 
 **Action Items for Sprint 7:**
+
 - Integrate hooks into Work Surface components
 - Add tests when integration occurs
 - Document performance budgets in component usage
@@ -4312,6 +4367,7 @@ During Team A Stability sprint, the test threshold for "very small orders (<$200
 The generator used `Math.random()` without seeding, making results non-deterministic. Sometimes it generated 8%+ small orders, sometimes less.
 
 **Solution Applied:**
+
 1. Added Mulberry32 seeded PRNG to `utils.ts` (`setSeed()`, `random()`, `seededRandom()`)
 2. Replaced all `Math.random()` calls with seeded `random()` in utils.ts and orders.ts
 3. Updated `generateOrders()` to initialize seed from CONFIG
@@ -4319,6 +4375,7 @@ The generator used `Math.random()` without seeding, making results non-determini
 5. Reverted threshold to 8%
 
 **Verification:**
+
 - Tests pass consistently with 8% threshold
 - Ran 3x consecutively - all deterministic
 - Also fixes TEST-027 (deterministic seeding)
@@ -4338,26 +4395,31 @@ The generator used `Math.random()` without seeding, making results non-determini
 
 **Problem:**
 Test setup used a fake DATABASE_URL placeholder that caused:
+
 1. ECONNREFUSED errors logged as CRITICAL during test runs
 2. Noise in test output with repeated connection failure messages
 3. Health check attempts that always fail in unit tests
 
 **Solution Applied:**
+
 1. Added `process.env.VITEST = 'true'` in test setup
 2. Modified `connectionPool.ts` to skip health check in test environments
 3. Added clear documentation in setup.ts about expected behavior
 
 **Verification:**
+
 - Tests run without CRITICAL error noise
 - Database-dependent tests still fail gracefully (as expected)
 - Pure function tests unaffected
 
 **Proper Solution:**
+
 1. Use `vi.mock()` to mock the database module for unit tests
 2. Or use test containers for integration tests
 3. Or skip DB-dependent tests in unit test suite
 
 **Deliverables:**
+
 - [ ] Replace placeholder with proper test isolation strategy
 - [ ] Ensure seed tests either mock DB or skip gracefully
 - [ ] Document which tests need actual DB vs mock
@@ -4379,6 +4441,7 @@ Test setup used a fake DATABASE_URL placeholder that caused:
 Stress testing revealed that `setSeed(NaN)` and `setSeed(Infinity)` cause `random()` to always return 0. This silently breaks data generation if an invalid seed is passed.
 
 **Example:**
+
 ```typescript
 setSeed(NaN);
 random(); // Returns 0
@@ -4387,6 +4450,7 @@ random(); // Returns 0 - ALL ZEROS!
 ```
 
 **Fix Applied:**
+
 ```typescript
 export function setSeed(seed: number): void {
   if (!Number.isFinite(seed)) {
@@ -4397,6 +4461,7 @@ export function setSeed(seed: number): void {
 ```
 
 **Verification:**
+
 - `setSeed(NaN)` throws: "Invalid seed: NaN. Seed must be a finite number."
 - `setSeed(Infinity)` throws: "Invalid seed: Infinity. Seed must be a finite number."
 - `setSeed(-Infinity)` throws: "Invalid seed: -Infinity. Seed must be a finite number."
@@ -4405,6 +4470,7 @@ export function setSeed(seed: number): void {
 - `setSeed(-12345)` works correctly
 
 **Deliverables:**
+
 - [x] Add input validation for NaN and Infinity
 - [x] Throw descriptive error for invalid seeds
 - [x] Verified edge cases manually
@@ -4426,14 +4492,17 @@ export function setSeed(seed: number): void {
 Current code only recognizes `VITEST='true'` but many CI systems set boolean env vars as `1`, `yes`, or other truthy values.
 
 **Fix Applied:**
+
 ```typescript
-const vitestValue = (process.env.VITEST || '').toLowerCase();
-const isTestEnv = ['true', '1', 'yes'].includes(vitestValue)
-  || process.env.NODE_ENV === 'test'
-  || process.env.CI === 'true';
+const vitestValue = (process.env.VITEST || "").toLowerCase();
+const isTestEnv =
+  ["true", "1", "yes"].includes(vitestValue) ||
+  process.env.NODE_ENV === "test" ||
+  process.env.CI === "true";
 ```
 
 **Verification:**
+
 - `VITEST=true` detected correctly
 - `VITEST=1` detected correctly
 - `VITEST=yes` detected correctly
@@ -4441,6 +4510,7 @@ const isTestEnv = ['true', '1', 'yes'].includes(vitestValue)
 - `CI=true` detected correctly (for GitHub Actions, etc.)
 
 **Deliverables:**
+
 - [x] Expand VITEST detection to include common patterns
 - [x] Add CI environment detection
 - [x] Code is self-documenting with clear pattern list
@@ -4460,8 +4530,8 @@ Vitest mock hoisting causes `Cannot access '__vi_import_2__' before initializati
 
 ```typescript
 // Current - BROKEN (line 19)
-vi.mock('../db', () => ({
-  getDb: mockGetDb  // mockGetDb not yet initialized when hoisted!
+vi.mock("../db", () => ({
+  getDb: mockGetDb, // mockGetDb not yet initialized when hoisted!
 }));
 ```
 
@@ -4469,18 +4539,20 @@ vi.mock('../db', () => ({
 `simpleAuth.ts:4` imports `../db` which triggers the mock before variables are initialized.
 
 **Solution Pattern:**
+
 ```typescript
 // Use vi.hoisted() for mock variables
 const { mockGetDb } = vi.hoisted(() => ({
-  mockGetDb: vi.fn()
+  mockGetDb: vi.fn(),
 }));
 
-vi.mock('../db', () => ({
-  getDb: mockGetDb
+vi.mock("../db", () => ({
+  getDb: mockGetDb,
 }));
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Test runs without mock initialization errors
 - [ ] All assertions pass
 - [ ] Pattern documented for other tests
@@ -4503,6 +4575,7 @@ ReferenceError: ResizeObserver is not defined
 ```
 
 **Solution:**
+
 ```typescript
 // vitest.setup.ts
 global.ResizeObserver = class ResizeObserver {
@@ -4513,6 +4586,7 @@ global.ResizeObserver = class ResizeObserver {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] ResizeObserver polyfill added to vitest setup
 - [ ] EventFormDialog tests pass
 - [ ] Other jsdom tests unaffected
@@ -4521,11 +4595,11 @@ global.ResizeObserver = class ResizeObserver {
 
 ### Build & Configuration Issues
 
-| Task | Description | Priority | Status | Estimate | Module |
-|------|-------------|----------|--------|----------|--------|
-| BUILD-001 | Add missing VITE_APP_TITLE environment variable | LOW | ready | 0.5h | `.env.example`, `vite.config.ts` |
-| BUILD-002 | Fix chunk size warnings (code splitting) | LOW | ready | 4h | `vite.config.ts` |
-| BUILD-003 | Add `pnpm lint` script (currently missing) | LOW | ready | 0.5h | `package.json` |
+| Task      | Description                                     | Priority | Status | Estimate | Module                           |
+| --------- | ----------------------------------------------- | -------- | ------ | -------- | -------------------------------- |
+| BUILD-001 | Add missing VITE_APP_TITLE environment variable | LOW      | ready  | 0.5h     | `.env.example`, `vite.config.ts` |
+| BUILD-002 | Fix chunk size warnings (code splitting)        | LOW      | ready  | 4h       | `vite.config.ts`                 |
+| BUILD-003 | Add `pnpm lint` script (currently missing)      | LOW      | ready  | 0.5h     | `package.json`                   |
 
 ---
 
@@ -4541,6 +4615,7 @@ global.ResizeObserver = class ResizeObserver {
 `pnpm lint` command not found. Users must run `pnpm eslint` directly.
 
 **Solution:**
+
 ```json
 {
   "scripts": {
@@ -4551,6 +4626,7 @@ global.ResizeObserver = class ResizeObserver {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `pnpm lint` runs ESLint on client and server
 - [ ] `pnpm lint:fix` auto-fixes what it can
 - [ ] CI/CD can use `pnpm lint` for checks
@@ -4561,23 +4637,23 @@ global.ResizeObserver = class ResizeObserver {
 
 **ESLint Error Categories:**
 
-| Category | Count | Priority |
-|----------|-------|----------|
-| React Hooks violations | ~15 | HIGH |
-| 'React' not defined | 12 | HIGH |
-| Unused variables | ~100 | MEDIUM |
-| Array index keys | ~40 | MEDIUM |
-| `any` types | ~200 | MEDIUM |
-| Non-null assertions | ~30 | LOW |
-| console.log statements | ~50 | LOW |
+| Category               | Count | Priority |
+| ---------------------- | ----- | -------- |
+| React Hooks violations | ~15   | HIGH     |
+| 'React' not defined    | 12    | HIGH     |
+| Unused variables       | ~100  | MEDIUM   |
+| Array index keys       | ~40   | MEDIUM   |
+| `any` types            | ~200  | MEDIUM   |
+| Non-null assertions    | ~30   | LOW      |
+| console.log statements | ~50   | LOW      |
 
 **Test Failures:**
 
-| Test File | Issue | Priority | Task |
-|-----------|-------|----------|------|
-| permissionMiddleware.test.ts | Mock hoisting | HIGH | TEST-020 |
-| EventFormDialog.test.tsx | ResizeObserver | HIGH | TEST-021 |
-| 6 seed tests | DATABASE_URL missing | MEDIUM | TEST-INFRA-02 (existing) |
+| Test File                    | Issue                | Priority | Task                     |
+| ---------------------------- | -------------------- | -------- | ------------------------ |
+| permissionMiddleware.test.ts | Mock hoisting        | HIGH     | TEST-020                 |
+| EventFormDialog.test.tsx     | ResizeObserver       | HIGH     | TEST-021                 |
+| 6 seed tests                 | DATABASE_URL missing | MEDIUM   | TEST-INFRA-02 (existing) |
 
 **Total New Tasks:** 10 (1 duplicate removed - TEST-023 merged with TEST-INFRA-02)
 **Estimated Hours:** 35-50h
