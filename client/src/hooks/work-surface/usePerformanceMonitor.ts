@@ -12,6 +12,9 @@
  * @see ATOMIC_UX_STRATEGY.md for performance requirements
  */
 
+/* eslint-disable no-undef */
+// Browser globals: performance, PerformanceObserver, PerformanceEntry are available in browser runtime
+
 import { useCallback, useRef, useEffect } from 'react';
 
 // ============================================================================
@@ -374,8 +377,10 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as any);
       observers.push(lcpObserver);
-    } catch {
-      // LCP observer not supported in this browser - silently ignore
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[WebVitals] LCP observer not supported:', e);
+      }
     }
 
     // FID
@@ -388,8 +393,10 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       fidObserver.observe({ type: 'first-input', buffered: true } as any);
       observers.push(fidObserver);
-    } catch {
-      // FID observer not supported in this browser - silently ignore
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[WebVitals] FID observer not supported:', e);
+      }
     }
 
     // CLS
@@ -406,8 +413,10 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
       });
       clsObserver.observe({ type: 'layout-shift', buffered: true } as any);
       observers.push(clsObserver);
-    } catch {
-      // CLS observer not supported in this browser - silently ignore
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[WebVitals] CLS observer not supported:', e);
+      }
     }
 
     return () => {
