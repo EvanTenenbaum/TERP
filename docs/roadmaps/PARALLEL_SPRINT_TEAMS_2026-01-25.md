@@ -279,7 +279,7 @@ This document defines a parallel sprint execution strategy that enables **5 inde
 ```
 main
   │
-  ├── staging/integration-sprint-2026-01
+  ├── staging/integration-sprint-2026-01-25
   │     │
   │     ├── claude/sprint-team-a-stability
   │     ├── claude/sprint-team-b-frontend
@@ -365,8 +365,8 @@ git checkout main
 git pull origin main
 
 # 2. Create staging branch
-git checkout -b staging/integration-sprint-2026-01
-git push -u origin staging/integration-sprint-2026-01
+git checkout -b staging/integration-sprint-2026-01-25
+git push -u origin staging/integration-sprint-2026-01-25
 
 # 3. Verify branch exists
 git branch -r | grep staging
@@ -384,7 +384,7 @@ Each team creates PRs to the staging branch:
 # Team A
 git checkout -b claude/sprint-team-a-stability
 # ... work ...
-gh pr create --base staging/integration-sprint-2026-01 \
+gh pr create --base staging/integration-sprint-2026-01-25 \
   --title "Team A: Core Stability Fixes" \
   --body "$(cat <<'EOF'
 ## Summary
@@ -415,8 +415,8 @@ EOF
 **For each merge:**
 ```bash
 # Checkout staging
-git checkout staging/integration-sprint-2026-01
-git pull origin staging/integration-sprint-2026-01
+git checkout staging/integration-sprint-2026-01-25
+git pull origin staging/integration-sprint-2026-01-25
 
 # Merge team PR (via GitHub UI or CLI)
 gh pr merge <PR-NUMBER> --merge
@@ -436,8 +436,8 @@ After all team PRs are merged to staging:
 
 1. **Run full test suite:**
    ```bash
-   git checkout staging/integration-sprint-2026-01
-   git pull origin staging/integration-sprint-2026-01
+   git checkout staging/integration-sprint-2026-01-25
+   git pull origin staging/integration-sprint-2026-01-25
    pnpm install
    pnpm check && pnpm lint && pnpm test && pnpm build
    ```
@@ -461,7 +461,7 @@ After all team PRs are merged to staging:
 Create a single "Release PR" from staging to main:
 
 ```bash
-gh pr create --base main --head staging/integration-sprint-2026-01 \
+gh pr create --base main --head staging/integration-sprint-2026-01-25 \
   --title "Sprint Release: 2026-01-25" \
   --body "$(cat <<'EOF'
 ## Sprint Summary
@@ -579,8 +579,8 @@ Track in `docs/sprint-metrics/`:
 1. **Create staging branch:**
    ```bash
    git checkout main && git pull origin main
-   git checkout -b staging/integration-sprint-2026-01
-   git push -u origin staging/integration-sprint-2026-01
+   git checkout -b staging/integration-sprint-2026-01-25
+   git push -u origin staging/integration-sprint-2026-01-25
    ```
 2. **Give each team their prompt** from `docs/prompts/sprint-teams/`
 

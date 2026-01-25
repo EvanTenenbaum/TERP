@@ -2,7 +2,7 @@
 
 **Role:** Final integration and merge coordinator
 **When to Run:** After all 5 teams have created their PRs
-**Branch:** Works on `staging/integration-sprint-2026-01`
+**Branch:** Works on `staging/integration-sprint-2026-01-25`
 
 ---
 
@@ -17,7 +17,7 @@ You are the **Integration Coordinator**, responsible for merging all team PRs in
 Before starting, verify ALL 5 team PRs exist targeting staging:
 
 ```bash
-gh pr list --base staging/integration-sprint-2026-01
+gh pr list --base staging/integration-sprint-2026-01-25
 ```
 
 Expected:
@@ -47,11 +47,11 @@ Expected:
 
 ```bash
 # 1. Start fresh on staging
-git checkout staging/integration-sprint-2026-01
-git pull origin staging/integration-sprint-2026-01
+git checkout staging/integration-sprint-2026-01-25
+git pull origin staging/integration-sprint-2026-01-25
 
 # 2. Find the PR number
-gh pr list --base staging/integration-sprint-2026-01
+gh pr list --base staging/integration-sprint-2026-01-25
 
 # 3. Review the PR
 gh pr view <PR-NUMBER>
@@ -61,7 +61,7 @@ gh pr diff <PR-NUMBER>
 gh pr merge <PR-NUMBER> --merge --delete-branch
 
 # 5. Pull the merged changes
-git pull origin staging/integration-sprint-2026-01
+git pull origin staging/integration-sprint-2026-01-25
 
 # 6. Install dependencies (in case package.json changed)
 pnpm install
@@ -93,9 +93,9 @@ git add .
 git commit -m "fix: resolve merge conflict from Team X"
 
 # 5. Push to staging
-git checkout staging/integration-sprint-2026-01
+git checkout staging/integration-sprint-2026-01-25
 git merge fix/integration-conflict-teamX
-git push origin staging/integration-sprint-2026-01
+git push origin staging/integration-sprint-2026-01-25
 
 # 6. Close the original PR as merged
 gh pr close <PR-NUMBER> --comment "Merged manually after conflict resolution"
@@ -109,8 +109,8 @@ After ALL 5 team PRs are merged:
 
 ```bash
 # Ensure you have everything
-git checkout staging/integration-sprint-2026-01
-git pull origin staging/integration-sprint-2026-01
+git checkout staging/integration-sprint-2026-01-25
+git pull origin staging/integration-sprint-2026-01-25
 pnpm install
 
 # Run full verification suite
@@ -151,7 +151,7 @@ Once all tests pass:
 ```bash
 gh pr create \
   --base main \
-  --head staging/integration-sprint-2026-01 \
+  --head staging/integration-sprint-2026-01-25 \
   --title "Sprint Release: Parallel Teams 2026-01-25" \
   --body "$(cat <<'EOF'
 ## Sprint Summary

@@ -536,7 +536,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 ## Creating Your PR
 
 ```bash
-gh pr create --base staging/integration-sprint-2026-01 \
+gh pr create --base staging/integration-sprint-2026-01-25 \
   --title "Team D: Data, Schema & Seeding" \
   --body "$(cat <<'EOF'
 ## Summary

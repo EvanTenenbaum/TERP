@@ -11,8 +11,8 @@
 # Create the staging branch that all teams will target
 git checkout main
 git pull origin main
-git checkout -b staging/integration-sprint-2026-01
-git push -u origin staging/integration-sprint-2026-01
+git checkout -b staging/integration-sprint-2026-01-25
+git push -u origin staging/integration-sprint-2026-01-25
 ```
 
 ---
@@ -35,7 +35,7 @@ git push -u origin staging/integration-sprint-2026-01
 | **Team C** | Backend API | [TEAM_C_BACKEND_API.md](./TEAM_C_BACKEND_API.md) | `claude/sprint-team-c-backend` |
 | **Team D** | Data & Schema | [TEAM_D_DATA_SCHEMA.md](./TEAM_D_DATA_SCHEMA.md) | `claude/sprint-team-d-data` |
 | **Team E** | Integration | [TEAM_E_INTEGRATION.md](./TEAM_E_INTEGRATION.md) | `claude/sprint-team-e-integration` |
-| **Coordinator** | Final Merge | [INTEGRATION_COORDINATOR.md](./INTEGRATION_COORDINATOR.md) | `staging/integration-sprint-2026-01` |
+| **Coordinator** | Final Merge | [INTEGRATION_COORDINATOR.md](./INTEGRATION_COORDINATOR.md) | `staging/integration-sprint-2026-01-25` |
 
 ---
 
@@ -58,8 +58,8 @@ git push -u origin staging/integration-sprint-2026-01
 ┌────────────────────────────────────────────────────────────────┐
 │ STEP 0: Evan creates staging branch                            │
 │                                                                 │
-│   git checkout -b staging/integration-sprint-2026-01        │
-│   git push -u origin staging/integration-sprint-2026-01     │
+│   git checkout -b staging/integration-sprint-2026-01-25        │
+│   git push -u origin staging/integration-sprint-2026-01-25     │
 └────────────────────────────────────────────────────────────────┘
                               │
                               ▼
