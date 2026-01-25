@@ -39,6 +39,47 @@ import { withTransaction } from "../dbTransaction";
 import { logger } from "../_core/logger";
 
 // ============================================================================
+// BUG-502: In-memory rate limiting for confirm endpoint
+// Tracks timestamps of confirm calls per user to enforce 10 confirms/minute limit
+// ============================================================================
+const confirmRateLimitMap = new Map<number, number[]>();
+const CONFIRM_RATE_LIMIT = 10; // max confirms per minute
+const CONFIRM_RATE_WINDOW_MS = 60 * 1000; // 1 minute window
+const RATE_LIMIT_MAX_ENTRIES = 10000; // Max users to track (prevent memory leak)
+
+function checkConfirmRateLimit(userId: number): void {
+  const now = Date.now();
+  const userTimestamps = confirmRateLimitMap.get(userId) || [];
+
+  // Filter to only timestamps within the window
+  const recentTimestamps = userTimestamps.filter(
+    ts => now - ts < CONFIRM_RATE_WINDOW_MS
+  );
+
+  if (recentTimestamps.length >= CONFIRM_RATE_LIMIT) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: `Rate limit exceeded: maximum ${CONFIRM_RATE_LIMIT} order confirmations per minute`,
+    });
+  }
+
+  // Add current timestamp and update map
+  recentTimestamps.push(now);
+  confirmRateLimitMap.set(userId, recentTimestamps);
+
+  // P1-001 FIX: Periodic cleanup to prevent memory leak
+  // When map exceeds max size, remove entries with no recent activity
+  if (confirmRateLimitMap.size > RATE_LIMIT_MAX_ENTRIES) {
+    for (const [uid, timestamps] of confirmRateLimitMap) {
+      const recent = timestamps.filter(ts => now - ts < CONFIRM_RATE_WINDOW_MS);
+      if (recent.length === 0) {
+        confirmRateLimitMap.delete(uid);
+      }
+    }
+  }
+}
+
+// ============================================================================
 // INPUT SCHEMAS
 // ============================================================================
 
@@ -290,10 +331,15 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
+      // BUG-502: Rate limit check - 10 confirms per minute per user
+      checkConfirmRateLimit(userId);
+
       // Import sql for database arithmetic (BUG-316)
       const { sql } = await import("drizzle-orm");
 
       // BUG-301, BUG-303, BUG-304: Wrap entire confirm logic in a transaction
+      // BUG-507: Note - MySQL default isolation level is REPEATABLE READ which is adequate
+      // for this use case as it prevents dirty reads and non-repeatable reads within the transaction
       // Transaction automatically rolls back on any thrown error
       return await withTransaction(async tx => {
         // BUG-304: Fresh read of order within transaction
@@ -313,7 +359,9 @@ export const ordersRouter = router({
         // BUG-302: Validate ownership - check order belongs to user or user has admin permission
         // BUG-404: Use permission service instead of hardcoded role check
         const { isSuperAdmin } = await import("../services/permissionService");
-        const hasAdminPermission = ctx.user?.openId ? await isSuperAdmin(ctx.user.openId) : false;
+        const hasAdminPermission = ctx.user?.openId
+          ? await isSuperAdmin(ctx.user.openId)
+          : false;
         if (order.createdBy !== userId && !hasAdminPermission) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -328,11 +376,33 @@ export const ordersRouter = router({
           });
         }
 
-        // BUG-304: Fresh read of line items within transaction
+        // BUG-414: Validate order status allows confirmation
+        if (order.saleStatus === "CANCELLED") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot confirm a cancelled order",
+          });
+        }
+
+        // BUG-414: Check fulfillment status allows confirmation
+        const nonConfirmableStatuses = ["SHIPPED", "DELIVERED", "RETURNED"];
+        if (
+          order.fulfillmentStatus &&
+          nonConfirmableStatuses.includes(order.fulfillmentStatus)
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot confirm order with fulfillment status: ${order.fulfillmentStatus}`,
+          });
+        }
+
+        // BUG-304, BUG-402: Fresh read of line items within transaction with row lock
+        // SELECT FOR UPDATE prevents line items from being modified during confirm
         const lineItems = await tx
           .select()
           .from(orderLineItems)
-          .where(eq(orderLineItems.orderId, input.orderId));
+          .where(eq(orderLineItems.orderId, input.orderId))
+          .for("update");
 
         if (lineItems.length === 0) {
           throw new TRPCError({
@@ -362,13 +432,22 @@ export const ordersRouter = router({
           .for("update");
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const batchMap = new Map(batchRecords.map((b: any) => [b.id as number, b]));
+        const batchMap = new Map(
+          batchRecords.map((b: any) => [b.id as number, b])
+        );
 
         // Check each line item has sufficient inventory
         for (const item of lineItems) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const batch = batchMap.get(item.batchId) as any;
           if (!batch) {
+            // BUG-509: Log batch context for debugging
+            logger.error({
+              msg: "Batch not found during order confirmation",
+              batchId: item.batchId,
+              orderId: input.orderId,
+              lineItemId: item.id,
+            });
             throw new TRPCError({
               code: "NOT_FOUND",
               message: `Batch ${item.batchId} not found`,
@@ -380,23 +459,34 @@ export const ordersRouter = router({
           const reserved = parseFloat(String(batch.reservedQty || "0"));
           const quarantine = parseFloat(String(batch.quarantineQty || "0"));
           const hold = parseFloat(String(batch.holdQty || "0"));
+          // BUG-501: Parse sampleQty for sample order validation
+          const sampleQty = parseFloat(String(batch.sampleQty || "0"));
 
           if (
             Number.isNaN(onHand) ||
             Number.isNaN(reserved) ||
             Number.isNaN(quarantine) ||
-            Number.isNaN(hold)
+            Number.isNaN(hold) ||
+            Number.isNaN(sampleQty)
           ) {
+            // BUG-509: Log batch context for debugging
+            logger.error({
+              msg: "Invalid inventory data for batch",
+              batchId: batch.id,
+              sku: batch.sku,
+              productId: batch.productId,
+              onHand,
+              reserved,
+              quarantine,
+              hold,
+              sampleQty,
+            });
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
               message: `Invalid inventory data for batch ${batch.sku || batch.id}`,
             });
           }
 
-          const availableQty = Math.max(
-            0,
-            onHand - reserved - quarantine - hold
-          );
           const requestedQty = parseFloat(String(item.quantity));
 
           // BUG-315: Check for NaN in requested quantity
@@ -407,22 +497,75 @@ export const ordersRouter = router({
             });
           }
 
-          if (availableQty < requestedQty) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Requested: ${requestedQty}`,
-            });
+          // BUG-501: Check appropriate quantity based on isSample flag
+          if (item.isSample) {
+            // For sample orders, check sampleQty
+            if (sampleQty < requestedQty) {
+              // BUG-509: Log batch context for debugging
+              logger.warn({
+                msg: "Insufficient sample inventory",
+                batchId: batch.id,
+                sku: batch.sku,
+                productId: batch.productId,
+                sampleQty,
+                requestedQty,
+                orderId: input.orderId,
+              });
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Insufficient sample inventory for batch ${batch.sku || batch.id}. Available samples: ${sampleQty}, Requested: ${requestedQty}`,
+              });
+            }
+          } else {
+            // For regular orders, check available (non-sample) quantity
+            const availableQty = Math.max(
+              0,
+              onHand - reserved - quarantine - hold
+            );
+
+            if (availableQty < requestedQty) {
+              // BUG-509: Log batch context for debugging
+              logger.warn({
+                msg: "Insufficient inventory",
+                batchId: batch.id,
+                sku: batch.sku,
+                productId: batch.productId,
+                availableQty,
+                requestedQty,
+                onHand,
+                reserved,
+                quarantine,
+                hold,
+                orderId: input.orderId,
+              });
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Requested: ${requestedQty}`,
+              });
+            }
           }
         }
 
         // BUG-316: Use database arithmetic for inventory updates to avoid JS precision issues
+        // BUG-501: Decrement sampleQty for sample orders, reservedQty for regular orders
+        // BUG-403: Use parsed value consistently for both validation and update
         for (const item of lineItems) {
-          const requestedQty = parseFloat(String(item.quantity));
-          await tx.execute(sql`
-            UPDATE batches
-            SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${requestedQty}
-            WHERE id = ${item.batchId}
-          `);
+          const parsedQty = parseFloat(String(item.quantity));
+          if (item.isSample) {
+            // For sample orders, decrement sampleQty directly
+            await tx.execute(sql`
+              UPDATE batches
+              SET sampleQty = CAST(sampleQty AS DECIMAL(15,4)) - ${parsedQty}
+              WHERE id = ${item.batchId}
+            `);
+          } else {
+            // For regular orders, increment reservedQty
+            await tx.execute(sql`
+              UPDATE batches
+              SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${parsedQty}
+              WHERE id = ${item.batchId}
+            `);
+          }
         }
 
         // BUG-303: Confirm the order (within transaction - will rollback if this fails)
