@@ -63,7 +63,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { batches, inventoryMovements } from "../../drizzle/schema";
 import { logger } from "./logger";
@@ -77,6 +77,9 @@ const DEFAULT_SINGLE_BATCH_LOCK_TIMEOUT = 10;
 
 /** Default lock timeout for multi-batch operations (seconds) - longer for complex ops */
 const DEFAULT_MULTI_BATCH_LOCK_TIMEOUT = 30;
+
+/** Maximum allowed quantity for any single operation (prevents overflow) */
+const MAX_QUANTITY = 10_000_000;
 
 /**
  * Type for Drizzle transaction context
@@ -170,6 +173,31 @@ function validateQuantity(quantity: number, operation: string): void {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: `${operation}: quantity must be finite`,
+    });
+  }
+  if (quantity > MAX_QUANTITY) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: quantity exceeds maximum allowed (${MAX_QUANTITY}), got ${quantity}`,
+    });
+  }
+}
+
+/**
+ * Validate that userId is a positive integer
+ * @throws TRPCError with BAD_REQUEST if invalid
+ */
+function validateUserId(userId: number, operation: string): void {
+  if (typeof userId !== "number" || isNaN(userId)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: userId must be a valid number`,
+    });
+  }
+  if (userId <= 0 || !Number.isInteger(userId)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${operation}: userId must be a positive integer, got ${userId}`,
     });
   }
 }
@@ -411,8 +439,9 @@ async function _allocateBatchDirect(
   const db = tx;
   const batchId = batch.id;
 
-  // Input validation (batch already validated by caller, just validate quantity)
+  // Input validation (batch already validated by caller, just validate quantity and userId)
   validateQuantity(quantity, "_allocateBatchDirect");
+  validateUserId(userId, "_allocateBatchDirect");
 
   // Validate available quantity
   const availableQty = batch.onHandQty - (batch.allocatedQty || 0);
@@ -517,6 +546,7 @@ export async function allocateFromBatch(
   // Input validation
   validateBatchId(batchId, "allocateFromBatch");
   validateQuantity(quantity, "allocateFromBatch");
+  validateUserId(userId, "allocateFromBatch");
 
   return await withBatchLock(
     tx,
@@ -621,56 +651,51 @@ export async function returnToBatch(
   // Input validation
   validateBatchId(batchId, "returnToBatch");
   validateQuantity(quantity, "returnToBatch");
+  validateUserId(userId, "returnToBatch");
 
   return await withBatchLock(tx, batchId, async batch => {
     // Validate return quantity against historical allocations
     if (validateReturnQuantity) {
-      // Calculate total allocated from this batch (SALE movements with negative quantities)
-      const allocationResult = (await db
-        .select({
-          totalAllocated: sql<string>`COALESCE(SUM(ABS(CAST(quantity_change AS DECIMAL(20,4)))), 0)`,
-        })
-        .from(inventoryMovements)
-        .where(
-          and(
-            eq(inventoryMovements.batchId, batchId),
-            eq(inventoryMovements.inventoryMovementType, "SALE")
-          )
-        )) as { totalAllocated: string }[];
+      // Single atomic query to get both allocated and returned totals
+      // This prevents race conditions between separate queries
+      const movementTotals = (await db.execute(sql`
+        SELECT
+          COALESCE(SUM(CASE WHEN inventory_movement_type = 'SALE' THEN ABS(CAST(quantity_change AS DECIMAL(20,4))) ELSE 0 END), 0) as totalAllocated,
+          COALESCE(SUM(CASE WHEN inventory_movement_type = 'RETURN' THEN CAST(quantity_change AS DECIMAL(20,4)) ELSE 0 END), 0) as totalReturned
+        FROM inventory_movements
+        WHERE batch_id = ${batchId}
+        AND inventory_movement_type IN ('SALE', 'RETURN')
+      `)) as unknown as { totalAllocated: string; totalReturned: string }[];
 
-      // Calculate total already returned to this batch
-      const returnResult = (await db
-        .select({
-          totalReturned: sql<string>`COALESCE(SUM(CAST(quantity_change AS DECIMAL(20,4))), 0)`,
-        })
-        .from(inventoryMovements)
-        .where(
-          and(
-            eq(inventoryMovements.batchId, batchId),
-            eq(inventoryMovements.inventoryMovementType, "RETURN")
-          )
-        )) as { totalReturned: string }[];
+      // Use string comparison to avoid floating point precision issues
+      const totalAllocatedStr = movementTotals[0]?.totalAllocated || "0";
+      const totalReturnedStr = movementTotals[0]?.totalReturned || "0";
 
-      const totalAllocated = parseFloat(
-        allocationResult[0]?.totalAllocated || "0"
-      );
-      const totalReturned = parseFloat(returnResult[0]?.totalReturned || "0");
-      const maxReturnable = totalAllocated - totalReturned;
+      // Parse with high precision - multiply by 10000 to work with integers
+      const totalAllocated = Math.round(parseFloat(totalAllocatedStr) * 10000);
+      const totalReturned = Math.round(parseFloat(totalReturnedStr) * 10000);
+      const quantityScaled = Math.round(quantity * 10000);
+      const maxReturnableScaled = totalAllocated - totalReturned;
 
-      if (quantity > maxReturnable) {
+      if (quantityScaled > maxReturnableScaled) {
+        // Convert back to human-readable numbers for the error message
+        const maxReturnable = maxReturnableScaled / 10000;
+        const totalAllocatedDisplay = totalAllocated / 10000;
+        const totalReturnedDisplay = totalReturned / 10000;
+
         logger.warn(
           {
             batchId,
             requestedReturn: quantity,
-            totalAllocated,
-            totalReturned,
+            totalAllocated: totalAllocatedDisplay,
+            totalReturned: totalReturnedDisplay,
             maxReturnable,
           },
           "REL-006: Return quantity exceeds available for return"
         );
         throw new TRPCError({
           code: "CONFLICT",
-          message: `Cannot return ${quantity} units to batch ${batchId}. Maximum returnable: ${maxReturnable} (allocated: ${totalAllocated}, already returned: ${totalReturned})`,
+          message: `Cannot return ${quantity} units to batch ${batchId}. Maximum returnable: ${maxReturnable} (allocated: ${totalAllocatedDisplay}, already returned: ${totalReturnedDisplay})`,
         });
       }
     }
@@ -742,7 +767,32 @@ export async function allocateFromMultipleBatches(
     userId: number;
   }
 ): Promise<AllocationResult[]> {
+  // Validate inputs
+  validateUserId(context.userId, "allocateFromMultipleBatches");
+
+  if (allocations.length === 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "allocateFromMultipleBatches: allocations array cannot be empty",
+    });
+  }
+
+  // Check for duplicate batchIds - these would cause stale data issues
   const batchIds = allocations.map(a => a.batchId);
+  const uniqueBatchIds = new Set(batchIds);
+  if (uniqueBatchIds.size !== batchIds.length) {
+    const duplicates = batchIds.filter((id, i) => batchIds.indexOf(id) !== i);
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `allocateFromMultipleBatches: duplicate batchIds not allowed (found: ${[...new Set(duplicates)].join(", ")}). Combine quantities for the same batch.`,
+    });
+  }
+
+  // Validate each allocation
+  for (const alloc of allocations) {
+    validateBatchId(alloc.batchId, "allocateFromMultipleBatches");
+    validateQuantity(alloc.quantity, "allocateFromMultipleBatches");
+  }
 
   return await withMultiBatchLock(tx, batchIds, async batchMap => {
     const results: AllocationResult[] = [];

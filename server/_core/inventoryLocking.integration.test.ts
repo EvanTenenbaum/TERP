@@ -986,6 +986,107 @@ describe("inventoryLocking Integration Tests", () => {
         })
       ).rejects.toThrow(/quantity must be a valid number/);
     });
+
+    it("should reject quantity exceeding maximum", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: 10_000_001, // Exceeds MAX_QUANTITY of 10_000_000
+          userId: 1,
+        })
+      ).rejects.toThrow(/quantity exceeds maximum allowed/);
+    });
+
+    it("should reject invalid userId (zero)", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: 10,
+          userId: 0,
+        })
+      ).rejects.toThrow(/userId must be a positive integer/);
+    });
+
+    it("should reject invalid userId (negative)", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: 10,
+          userId: -1,
+        })
+      ).rejects.toThrow(/userId must be a positive integer/);
+    });
+
+    it("should reject invalid userId (non-integer)", async () => {
+      const testBatch = createTestBatch();
+      const tx = createMockTransaction(testBatch);
+
+      await expect(
+        allocateFromBatch(tx as any, {
+          batchId: 1,
+          quantity: 10,
+          userId: 1.5,
+        })
+      ).rejects.toThrow(/userId must be a positive integer/);
+    });
+  });
+
+  describe("Multi-batch Validation", () => {
+    it("should reject duplicate batchIds in allocateFromMultipleBatches", async () => {
+      const batches: LockedBatch[] = [
+        createTestBatch({ id: 1, onHandQty: 50 }),
+        createTestBatch({ id: 2, onHandQty: 100 }),
+      ];
+
+      let executeCallCount = 0;
+      const tx = {
+        execute: vi.fn().mockImplementation(() => {
+          executeCallCount++;
+          if (executeCallCount <= 2) {
+            if (executeCallCount === 1) return Promise.resolve([]);
+            return Promise.resolve(batches);
+          }
+          return Promise.resolve([]);
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
+        }),
+      };
+
+      // Try to allocate from batch 1 twice
+      await expect(
+        allocateFromMultipleBatches(
+          tx as any,
+          [
+            { batchId: 1, quantity: 10 },
+            { batchId: 1, quantity: 20 }, // Duplicate!
+          ],
+          { orderId: 100, userId: 1 }
+        )
+      ).rejects.toThrow(/duplicate batchIds not allowed/);
+    });
+
+    it("should reject empty allocations array", async () => {
+      const tx = createMockTransaction(null);
+
+      await expect(
+        allocateFromMultipleBatches(tx as any, [], { orderId: 100, userId: 1 })
+      ).rejects.toThrow(/allocations array cannot be empty/);
+    });
   });
 
   describe("Return Quantity Validation", () => {
@@ -995,22 +1096,18 @@ describe("inventoryLocking Integration Tests", () => {
         onHandQty: 50,
       });
 
-      // Create a mock that also handles select queries for validation
+      // Create mock that returns proper allocation/return data
+      // Execute calls: 1=SET TIMEOUT, 2=SELECT batch FOR UPDATE, 3=movement totals query
       let executeCallCount = 0;
       const tx = {
         execute: vi.fn().mockImplementation(() => {
           executeCallCount++;
-          if (executeCallCount === 1) return Promise.resolve([]);
-          return Promise.resolve([testBatch]);
-        }),
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi
-              .fn()
-              .mockResolvedValue([
-                { totalAllocated: "100", totalReturned: "50" },
-              ]),
-          }),
+          if (executeCallCount === 1) return Promise.resolve([]); // SET TIMEOUT
+          if (executeCallCount === 2) return Promise.resolve([testBatch]); // SELECT FOR UPDATE
+          // Movement totals query - returns 100 allocated, 50 returned (50 returnable)
+          return Promise.resolve([
+            { totalAllocated: "100", totalReturned: "50" },
+          ]);
         }),
         update: vi.fn().mockReturnValue({
           set: vi.fn().mockReturnValue({
@@ -1043,21 +1140,17 @@ describe("inventoryLocking Integration Tests", () => {
       });
 
       // Create mock that returns proper allocation/return data
+      // Execute calls: 1=SET TIMEOUT, 2=SELECT batch FOR UPDATE, 3=movement totals query
       let executeCallCount = 0;
       const tx = {
         execute: vi.fn().mockImplementation(() => {
           executeCallCount++;
-          if (executeCallCount === 1) return Promise.resolve([]);
-          return Promise.resolve([testBatch]);
-        }),
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi
-              .fn()
-              .mockResolvedValue([
-                { totalAllocated: "100", totalReturned: "40" },
-              ]),
-          }),
+          if (executeCallCount === 1) return Promise.resolve([]); // SET TIMEOUT
+          if (executeCallCount === 2) return Promise.resolve([testBatch]); // SELECT FOR UPDATE
+          // Movement totals query - returns 100 allocated, 40 returned (60 returnable)
+          return Promise.resolve([
+            { totalAllocated: "100", totalReturned: "40" },
+          ]);
         }),
         update: vi.fn().mockReturnValue({
           set: vi.fn().mockReturnValue({
