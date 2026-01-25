@@ -250,12 +250,40 @@ export async function getVendorSupplyWithMatches(filters?: {
   try {
     const supplies = await getVendorSupply(filters);
 
-    // For now, return supplies with buyerCount = 0
-    // This will be enhanced when matching engine is implemented
-    return supplies.map(supply => ({
-      ...supply,
-      buyerCount: 0,
-    }));
+    // FE-QA-FIX: Calculate actual buyer counts using matching engine
+    const { findBuyersForVendorSupply } =
+      await import("./matchingEngineEnhanced");
+
+    const suppliesWithCounts = await Promise.all(
+      supplies.map(async supply => {
+        try {
+          // Only calculate matches for available items
+          if (supply.status === "AVAILABLE") {
+            const buyers = await findBuyersForVendorSupply(supply.id);
+            return {
+              ...supply,
+              buyerCount: buyers.length,
+            };
+          }
+          return {
+            ...supply,
+            buyerCount: 0,
+          };
+        } catch (matchError) {
+          // Log but don't fail - return 0 if matching fails for one item
+          logger.warn(
+            { supplyId: supply.id, error: matchError },
+            "Failed to find buyers for supply item"
+          );
+          return {
+            ...supply,
+            buyerCount: 0,
+          };
+        }
+      })
+    );
+
+    return suppliesWithCounts;
   } catch (error) {
     logger.error({ error }, "Error fetching vendor supply with matches");
     throw new Error(
