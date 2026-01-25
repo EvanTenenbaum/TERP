@@ -285,7 +285,7 @@ pnpm build        # Build succeeds
 When ready, create PR to staging:
 
 ```bash
-gh pr create --base staging/integration-sprint-2026-01-25 \
+gh pr create --base staging/integration-sprint-2026-01 \
   --title "Team A: Core Stability Fixes" \
   --body "$(cat <<'EOF'
 ## Summary

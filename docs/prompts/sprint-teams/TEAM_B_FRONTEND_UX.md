@@ -406,7 +406,7 @@ pnpm build        # Build succeeds
 ## Creating Your PR
 
 ```bash
-gh pr create --base staging/integration-sprint-2026-01-25 \
+gh pr create --base staging/integration-sprint-2026-01 \
   --title "Team B: Frontend UX & Navigation" \
   --body "$(cat <<'EOF'
 ## Summary

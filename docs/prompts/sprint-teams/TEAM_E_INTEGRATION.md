@@ -718,7 +718,7 @@ pnpm test:golden-flows
 ## Creating Your PR
 
 ```bash
-gh pr create --base staging/integration-sprint-2026-01-25 \
+gh pr create --base staging/integration-sprint-2026-01 \
   --title "Team E: Integration & Work Surfaces" \
   --body "$(cat <<'EOF'
 ## Summary

@@ -48,7 +48,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 ## Definition of Done
 
 All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
-`staging/integration-sprint-2026-01-25` (NOT main)
+`staging/integration-sprint-2026-01` (NOT main)
 
 ## Start Now
 
@@ -104,7 +104,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 ## Definition of Done
 
 All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
-`staging/integration-sprint-2026-01-25` (NOT main)
+`staging/integration-sprint-2026-01` (NOT main)
 
 ## Start Now
 
@@ -161,7 +161,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 ## Definition of Done
 
 All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
-`staging/integration-sprint-2026-01-25` (NOT main)
+`staging/integration-sprint-2026-01` (NOT main)
 
 ## Start Now
 
@@ -222,7 +222,7 @@ pnpm validate:schema
 ## Definition of Done
 
 All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
-`staging/integration-sprint-2026-01-25` (NOT main)
+`staging/integration-sprint-2026-01` (NOT main)
 
 ## Start Now
 
@@ -285,7 +285,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 ## Definition of Done
 
 All 8 criteria from CLAUDE.md must pass. When complete, create PR to:
-`staging/integration-sprint-2026-01-25` (NOT main)
+`staging/integration-sprint-2026-01` (NOT main)
 
 ## Start Now
 
@@ -316,7 +316,7 @@ Merge all team PRs to staging, run integration tests, create release PR to main.
 
 Before starting, verify all 5 PRs exist:
 ```bash
-gh pr list --base staging/integration-sprint-2026-01-25
+gh pr list --base staging/integration-sprint-2026-01
 ```
 
 Expected PRs:
@@ -394,5 +394,5 @@ clients table = Single source of truth
 
 ### PR Target
 
-All PRs go to: `staging/integration-sprint-2026-01-25`
+All PRs go to: `staging/integration-sprint-2026-01`
 NOT to `main` directly.
