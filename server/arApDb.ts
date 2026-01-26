@@ -466,15 +466,31 @@ export async function updateBill(id: number, data: Partial<InsertBill>) {
 
 /**
  * Update bill status
+ * ARCH-004: Now validates status transitions using state machine
  */
 export async function updateBillStatus(
   id: number,
-  status: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
+  newStatus: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(bills).set({ status }).where(eq(bills.id, id));
+  // Get current bill to validate transition
+  const [bill] = await db
+    .select({ status: bills.status })
+    .from(bills)
+    .where(eq(bills.id, id))
+    .limit(1);
+
+  if (!bill) {
+    throw new Error(`Bill #${id} not found`);
+  }
+
+  // ARCH-004: Validate status transition
+  const { validateTransition } = await import("./services/billStateMachine");
+  validateTransition(bill.status, newStatus, id);
+
+  await db.update(bills).set({ status: newStatus }).where(eq(bills.id, id));
 }
 
 /**
