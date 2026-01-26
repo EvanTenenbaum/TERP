@@ -17,7 +17,7 @@
 | C    | `claude/terp-team-c-setup-VolPg`           | Inventory & Orders       | ✅ VERIFIED | #308 | [x]      | [ ]    |
 | F    | `claude/review-terp-instructions-hIUWu`    | UI/UX & Features         | ✅ VERIFIED | #310 | [x]      | [ ]    |
 | A    | `claude/review-security-critical-feoXR`    | Security Critical (P0)   | ✅ VERIFIED | #309 | [x]      | [ ]    |
-| B    | `claude/team-b-accounting-gl-EBDIr`        | Accounting & GL          | 🔓 UNLOCKED | -    | [ ]      | [ ]    |
+| B    | `claude/team-b-accounting-gl-EBDIr`        | Accounting & GL          | ✅ VERIFIED | #313 | [x]      | [ ]    |
 
 ---
 
@@ -280,6 +280,44 @@ Build:       ✅ PASS
 - ✅ Proper audit logging
 
 **🔓 SIGNAL: ARCH-001 COMPLETE - Team B UNLOCKED**
+
+**Verdict:** ✅ **APPROVED FOR MERGE**
+
+### 2026-01-26 - Team B PR #313 Verified (RED Mode)
+
+**Mode:** 🔴 RED (Accounting Critical)
+
+**Verification Results:**
+
+```
+TypeScript:  ✅ PASS (0 errors)
+Tests:       ✅ PASS (2284/2293 - 99.6%)
+             - Improved from baseline (+11 tests)
+             - Pre-existing Radix UI failures only
+Build:       ✅ PASS
+```
+
+**Changes Reviewed (Accounting Critical):**
+
+- 36 files changed (+6421/-369 lines)
+- **ARCH-002: Client Balance Service** - Single source of truth
+- **ARCH-003: Order Status State Machine UI** - Transition controls
+- **ARCH-004: Bill Status State Machine** - AP workflow
+- **TERP-0012: Accounting UI** - GL entries, balance sheet, reports
+
+**Financial Integrity Review (RED Mode):**
+
+- ✅ Client balance computed from invoices (no shadow accounting)
+- ✅ Excludes PAID/VOID invoices from balance
+- ✅ Uses DECIMAL(15,2) for money precision
+- ✅ Bill state machine has proper terminal states
+- ✅ No hard deletes in financial operations
+
+**State Machine Review:**
+
+- ✅ Bill transitions: DRAFT→PENDING→APPROVED→PAID/VOID
+- ✅ Terminal states enforced (PAID, VOID cannot transition)
+- ✅ Overdue handling allows continued payments
 
 **Verdict:** ✅ **APPROVED FOR MERGE**
 
