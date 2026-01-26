@@ -280,18 +280,18 @@ grep -B5 -A5 "saveSalesSheet(" server/services/live-shopping/sessionOrderService
 | `vendors` table still used     | Deprecated system debt               | Party model migration (Q2 2026)       |
 | mysqlEnum not enforced         | Runtime errors possible              | Documentation + review                |
 
-### 6.3 Pre-existing Violations (Grandfathered)
+### 6.3 Pre-existing Violations (FIXED)
 
-These exist in production code and are NOT blocked by CI (only new/changed code is checked):
+**✅ RESOLVED:** All 11 violations were fixed in commit `97ebcd8` (ST-052).
 
-| File                            | Count  | Pattern                                       |
-| ------------------------------- | ------ | --------------------------------------------- |
-| `server/routers/inventory.ts`   | 8      | `ctx.user?.id \|\| 0` for actorId/performedBy |
-| `server/routers/catalog.ts`     | 2      | `ctx.user?.id \|\| 0` for publish operations  |
-| `server/routers/poReceiving.ts` | 1      | `ctx.user?.id \|\| 0` for performedBy         |
-| **Total**                       | **11** |                                               |
+| File                            | Count  | Status       |
+| ------------------------------- | ------ | ------------ |
+| `server/routers/inventory.ts`   | 8      | ✅ Fixed     |
+| `server/routers/catalog.ts`     | 2      | ✅ Fixed     |
+| `server/routers/poReceiving.ts` | 1      | ✅ Fixed     |
+| **Total**                       | **11** | ✅ All Fixed |
 
-**Recommended cleanup:** Create ST-XXX task to fix these in dedicated sprint.
+All instances now use `getAuthenticatedUserId(ctx)` which throws UNAUTHORIZED if not authenticated.
 
 ### 6.2 What Could Still Go Wrong
 
