@@ -221,7 +221,8 @@ export const purchaseOrdersRouter = router({
       return createSafeUnifiedResponse(pos, -1, limit, offset);
     }),
 
-  // Get purchase order by ID with items
+  // Get purchase order by ID with items and supplier details
+  // PARTY-001: Include supplierClientId with supplier details from clients table
   getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
@@ -235,12 +236,47 @@ export const purchaseOrdersRouter = router({
       throw new Error("Purchase order not found");
     }
 
-    const items = await db
-      .select()
+    // Get items with product details
+    const itemsResult = await db
+      .select({
+        id: purchaseOrderItems.id,
+        purchaseOrderId: purchaseOrderItems.purchaseOrderId,
+        productId: purchaseOrderItems.productId,
+        productName: products.nameCanonical,
+        category: products.category,
+        quantityOrdered: purchaseOrderItems.quantityOrdered,
+        quantityReceived: purchaseOrderItems.quantityReceived,
+        unitCost: purchaseOrderItems.unitCost,
+        totalCost: purchaseOrderItems.totalCost,
+        notes: purchaseOrderItems.notes,
+      })
       .from(purchaseOrderItems)
+      .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
       .where(eq(purchaseOrderItems.purchaseOrderId, input.id));
 
-    return { ...po, items };
+    // PARTY-001: Get supplier details from clients table if supplierClientId exists
+    let supplier = null;
+    if (po.supplierClientId) {
+      const [supplierResult] = await db
+        .select({
+          id: clients.id,
+          name: clients.name,
+          teriCode: clients.teriCode,
+          email: clients.email,
+          phone: clients.phone,
+        })
+        .from(clients)
+        .where(eq(clients.id, po.supplierClientId))
+        .limit(1);
+
+      supplier = supplierResult || null;
+    }
+
+    return {
+      ...po,
+      items: itemsResult,
+      supplier, // PARTY-001: Include supplier details
+    };
   }),
 
   // Update purchase order
