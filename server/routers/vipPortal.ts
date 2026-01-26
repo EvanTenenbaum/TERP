@@ -406,6 +406,7 @@ export const vipPortalRouter = router({
       }),
 
     // Verify session token
+    // SEC-030: Now properly validates impersonation tokens against the database
     verifySession: protectedProcedure
       .input(z.object({
         sessionToken: z.string(),
@@ -413,49 +414,61 @@ export const vipPortalRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
+
+        // SEC-030: Validate UUID format to prevent token forgery
+        const isValidUUID = (str: string): boolean => {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(str);
+        };
+
         // Check if this is an impersonation token
         if (input.sessionToken.startsWith("imp_")) {
-          // Parse impersonation token: imp_{clientId}_{timestamp}_{uuid}
-          const parts = input.sessionToken.split("_");
-          if (parts.length >= 3) {
-            const clientId = parseInt(parts[1], 10);
-            const timestamp = parseInt(parts[2], 10);
-            const expiresAt = timestamp + (2 * 60 * 60 * 1000); // 2 hours from creation
-            
-            if (Date.now() > expiresAt) {
-              throw new TRPCError({
-                code: "UNAUTHORIZED",
-                message: "Impersonation session expired",
-              });
-            }
-            
-            // Get client info
-            const client = await db.query.clients.findFirst({
-              where: eq(clients.id, clientId),
+          // SEC-030: Use the proper validation service for impersonation tokens
+          const { validateImpersonationSession } = await import("../services/vipPortalAdminService");
+          const validation = await validateImpersonationSession(input.sessionToken);
+
+          if (!validation.valid || validation.clientId === undefined) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: validation.reason || "Invalid impersonation session",
             });
-            
-            if (!client || !client.vipPortalEnabled) {
-              throw new TRPCError({
-                code: "UNAUTHORIZED",
-                message: "Invalid impersonation session",
-              });
-            }
-            
-            // Get auth record for email
-            const authRecord = await db.query.vipPortalAuth.findFirst({
-              where: eq(vipPortalAuth.clientId, clientId),
-            });
-            
-            return {
-              clientId,
-              clientName: client.name,
-              email: authRecord?.email || "impersonation@admin",
-              isImpersonation: true,
-            };
           }
+
+          const validatedClientId = validation.clientId;
+
+          // Get client info for the validated session
+          const client = await db.query.clients.findFirst({
+            where: eq(clients.id, validatedClientId),
+          });
+
+          if (!client || !client.vipPortalEnabled) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Client not found or VIP Portal not enabled",
+            });
+          }
+
+          // Get auth record for email
+          const authRecord = await db.query.vipPortalAuth.findFirst({
+            where: eq(vipPortalAuth.clientId, validatedClientId),
+          });
+
+          return {
+            clientId: validatedClientId,
+            clientName: client.name,
+            email: authRecord?.email || "impersonation@admin",
+            isImpersonation: true,
+          };
         }
-        
+
+        // SEC-030: Validate regular session token is a valid UUID format
+        if (!isValidUUID(input.sessionToken)) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid session token format",
+          });
+        }
+
         // Regular session token verification
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: and(

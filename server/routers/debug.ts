@@ -1,22 +1,70 @@
 /**
  * Debug router - for checking database state
- * REMOVE THIS IN PRODUCTION
+ * SEC-028: Protected with admin authentication, disabled in production by default
  */
 
-import { z } from 'zod';
 import { sql, isNull, eq } from 'drizzle-orm';
-import { publicProcedure, protectedProcedure, router } from '../_core/trpc.js';
+import { adminProcedure, protectedProcedure, router } from '../_core/trpc.js';
 import { getDb } from '../db.js';
 import { getConnectionPool } from '../_core/connectionPool.js';
 import { vendors, clients, products, batches, orders, invoices, payments, sampleRequests } from '../../drizzle/schema.js';
+import { TRPCError } from '@trpc/server';
+import { env } from '../_core/env.js';
+
+// SEC-028: Debug endpoints are disabled in production unless explicitly enabled
+const isDebugEnabled = !env.isProduction || process.env.ENABLE_DEBUG_ENDPOINTS === 'true';
+
+/**
+ * SEC-028: Check if debug operations are allowed
+ * Debug endpoints expose sensitive database schema information and are disabled in production
+ */
+function assertDebugAllowed(): void {
+  if (!isDebugEnabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Debug endpoints are disabled in production. Set ENABLE_DEBUG_ENDPOINTS=true to enable (not recommended).',
+    });
+  }
+}
+
+// Type definitions for debug results
+interface TestResult {
+  success?: boolean;
+  data?: unknown;
+  error?: string;
+  code?: string;
+  errno?: number;
+  cause?: unknown;
+  rowCount?: number;
+  sampleKeys?: string[];
+  method?: string;
+  columns?: unknown[];
+  exists?: boolean;
+}
+
+interface DebugResults {
+  timestamp: string;
+  tests: Record<string, TestResult>;
+  success?: boolean;
+  connectionReleased?: boolean;
+  poolError?: string;
+  allTables?: string[];
+  tableCount?: number;
+  hasMigrationsTable?: boolean;
+  appliedMigrations?: unknown;
+  keyTableStatus?: Record<string, boolean>;
+  error?: string;
+}
 
 export const debugRouter = router({
   /**
    * DIAG-002: Raw MySQL query diagnostic - bypasses Drizzle ORM
    * Tests if the issue is with Drizzle or mysql2/connection
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  rawMysqlTest: publicProcedure.query(async () => {
-    const results: Record<string, any> = {
+  rawMysqlTest: adminProcedure.query(async () => {
+    assertDebugAllowed();
+    const results: DebugResults = {
       timestamp: new Date().toISOString(),
       tests: {},
     };
@@ -129,14 +177,16 @@ export const debugRouter = router({
   /**
    * DIAG-003: Test Drizzle ORM queries specifically
    * Compares queries with and without ENUM columns
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  drizzleTest: publicProcedure.query(async () => {
+  drizzleTest: adminProcedure.query(async () => {
+    assertDebugAllowed();
     const db = await getDb();
     if (!db) {
       return { success: false, error: 'Database not available' };
     }
 
-    const results: Record<string, any> = {
+    const results: DebugResults = {
       timestamp: new Date().toISOString(),
       tests: {},
     };
@@ -216,9 +266,11 @@ export const debugRouter = router({
 
   /**
    * DIAG-005: Check leaderboard_weight_configs table structure
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  leaderboardTableCheck: publicProcedure.query(async () => {
-    const results: Record<string, any> = {
+  leaderboardTableCheck: adminProcedure.query(async () => {
+    assertDebugAllowed();
+    const results: DebugResults = {
       timestamp: new Date().toISOString(),
       tests: {},
     };
@@ -232,7 +284,7 @@ export const debugRouter = router({
         const [describeRows] = await connection.query('DESCRIBE leaderboard_weight_configs');
         results.tests.tableStructure = {
           success: true,
-          columns: describeRows,
+          columns: describeRows as unknown[],
         };
       } catch (err: any) {
         results.tests.tableStructure = {
@@ -283,10 +335,13 @@ export const debugRouter = router({
   /**
    * DIAG-007: Comprehensive database schema check
    * Lists all tables and checks for migration tracking
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  checkDatabaseSchema: publicProcedure.query(async () => {
-    const results: Record<string, any> = {
+  checkDatabaseSchema: adminProcedure.query(async () => {
+    assertDebugAllowed();
+    const results: DebugResults = {
       timestamp: new Date().toISOString(),
+      tests: {},
     };
 
     try {
@@ -294,13 +349,14 @@ export const debugRouter = router({
       const connection = await pool.getConnection();
 
       // Get all tables in the database
-      const [allTables] = await connection.query('SHOW TABLES');
-      results.allTables = (allTables as any[]).map((row: any) => Object.values(row)[0]);
-      results.tableCount = results.allTables.length;
+      const [allTablesRows] = await connection.query('SHOW TABLES');
+      const tableNames = (allTablesRows as Array<Record<string, unknown>>).map((row) => String(Object.values(row)[0]));
+      results.allTables = tableNames;
+      results.tableCount = tableNames.length;
 
       // Check for drizzle migrations table
       const [migrationsTable] = await connection.query("SHOW TABLES LIKE '__drizzle_migrations'");
-      results.hasMigrationsTable = (migrationsTable as any[]).length > 0;
+      results.hasMigrationsTable = (migrationsTable as unknown[]).length > 0;
 
       if (results.hasMigrationsTable) {
         const [migrations] = await connection.query('SELECT * FROM __drizzle_migrations ORDER BY id');
@@ -317,7 +373,7 @@ export const debugRouter = router({
 
       results.keyTableStatus = {};
       for (const table of keyTables) {
-        results.keyTableStatus[table] = results.allTables.includes(table);
+        results.keyTableStatus[table] = tableNames.includes(table);
       }
 
       connection.release();
@@ -332,9 +388,11 @@ export const debugRouter = router({
 
   /**
    * DIAG-006: Check if leaderboard tables exist
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  checkLeaderboardTables: publicProcedure.query(async () => {
-    const results: Record<string, any> = {
+  checkLeaderboardTables: adminProcedure.query(async () => {
+    assertDebugAllowed();
+    const results: DebugResults = {
       timestamp: new Date().toISOString(),
       tests: {},
     };
@@ -472,8 +530,10 @@ export const debugRouter = router({
 
   /**
    * Get counts of all seeded tables (using COUNT instead of SELECT *)
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  getCounts: publicProcedure.query(async () => {
+  getCounts: adminProcedure.query(async () => {
+    assertDebugAllowed();
     try {
       const db = await getDb();
       if (!db) throw new Error('Database not available');

@@ -185,16 +185,16 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
         return allPermissions;
       }
 
-      // FIX-002: Grant default read permissions to authenticated users with no roles
-      // This ensures basic app functionality works before full RBAC setup
-      // QA-001 FIX: Made configurable via environment variable for security
-      const enableDefaultPermissions = process.env.ENABLE_DEFAULT_READ_PERMISSIONS !== 'false';
-      
+      // SEC-029: Default permissions are now DISABLED by default for security
+      // This follows the principle of least privilege - users must have explicit RBAC roles
+      // Set ENABLE_DEFAULT_READ_PERMISSIONS=true to enable fallback (not recommended for production)
+      const enableDefaultPermissions = process.env.ENABLE_DEFAULT_READ_PERMISSIONS === 'true';
+
       if (!enableDefaultPermissions) {
         logger.warn({
-          msg: "FIX-002: User has no RBAC roles and default permissions are disabled",
+          msg: "SEC-029: User has no RBAC roles - denying access (secure default)",
           userId,
-          hint: "Set ENABLE_DEFAULT_READ_PERMISSIONS=true to enable fallback permissions",
+          hint: "Assign RBAC roles to the user or set ENABLE_DEFAULT_READ_PERMISSIONS=true (not recommended)",
         });
         const emptySet = new Set<string>();
         permissionCache.set(userId, {
@@ -203,27 +203,19 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
         });
         return emptySet;
       }
-      logger.info({
-        msg: "FIX-002: Granting default read permissions to user with no RBAC roles",
+
+      // Only reach here if ENABLE_DEFAULT_READ_PERMISSIONS is explicitly set to 'true'
+      logger.warn({
+        msg: "SEC-029: Granting default read permissions (ENABLE_DEFAULT_READ_PERMISSIONS=true)",
         userId,
+        warning: "This is not recommended for production - assign proper RBAC roles instead",
       });
 
       const defaultReadPermissions = new Set<string>([
-        // Basic read permissions for core modules
-        "clients:read",
-        "orders:read",
-        "inventory:read",
-        "accounting:read",
+        // Minimal read permissions for basic functionality
+        // SEC-029: Reduced scope - only essential reads, no sensitive modules
         "dashboard:read",
         "calendar:read",
-        "scheduling:read", // M-02 FIX: Allows time clock access
-        "users:read",
-        "settings:read",
-        "quotes:read",
-        "invoices:read",
-        "products:read",
-        "vendors:read",
-        "reports:read",
       ]);
 
       permissionCache.set(userId, {
@@ -232,7 +224,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       });
 
       logger.info({
-        msg: "User granted default read permissions (fallback)",
+        msg: "User granted minimal default read permissions (fallback)",
         userId,
         permissionCount: defaultReadPermissions.size,
       });

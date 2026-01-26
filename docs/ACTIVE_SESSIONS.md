@@ -23,6 +23,7 @@
 | Session-20260116-E2E-INFRA               | E2E-001, E2E-002, E2E-003 Infrastructure         | manus/e2e-infrastructure-implementation-2026-01-16 | tests-e2e/    | In Progress | 2026-01-16 | 2026-01-16 |
 | Session-20260126-TEAM-E-INFRA-RNtE3      | Team E Infrastructure & Schema                   | claude/setup-team-e-infrastructure-RNtE3           | drizzle/, server/ | In Progress | 2026-01-26 | 2026-01-26 |
 | Session-20260126-TEAM-C-INVENTORY-VolPg  | Team C: Inventory & Orders (14 tasks)            | claude/terp-team-c-setup-VolPg                     | Inventory/Orders | In Progress | 2026-01-26 | 2026-01-27 |
+| Session-20260126-TEAM-A-SECURITY-feoXR   | Team A Security Critical                         | claude/review-security-critical-feoXR              | Security      | In Progress | 2026-01-26 | 2026-01-26 |
 
 ## ⏸️ Paused / Waiting
 
