@@ -58,11 +58,11 @@ jobs:
           fi
 
           # Pattern 1: Fallback user ID (BUG-PATTERN: POST-002)
-          # Matches: ctx.user?.id || 1, ctx.user?.id ?? 1, etc.
+          # Matches: ctx.user?.id || 1, ctx.user.id || 1, ctx.user?.id ?? 1, etc.
           FALLBACK_MATCHES=""
           for file in $CHANGED_FILES; do
             if [ -f "$file" ]; then
-              MATCH=$(grep -n -E "ctx\.user\?\.(id|userId)\s*(\|\||\?\?)\s*[0-9]" "$file" 2>/dev/null || true)
+              MATCH=$(grep -n -E "ctx\.user\??\.(id|userId)\s*(\|\||\?\?)\s*[0-9]" "$file" 2>/dev/null || true)
               if [ -n "$MATCH" ]; then
                 FALLBACK_MATCHES="${FALLBACK_MATCHES}${file}:${MATCH}\n"
               fi

@@ -3589,25 +3589,25 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 > These issues can result in financial restatement, security breaches, or data corruption.
 > **Must fix before production use.**
 
-| Task    | Description                                                          | Priority | Status | Estimate | Module                                                        |
-| ------- | -------------------------------------------------------------------- | -------- | ------ | -------- | ------------------------------------------------------------- |
-| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready  | 1h       | `server/routers/adminSetup.ts`                                |
-| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready  | 1h       | `server/routers/debug.ts`                                     |
-| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts`                        |
-| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`                                 |
-| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready  | 4h       | `server/routers/invoices.ts`                                  |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready  | 4h       | `server/routers/returns.ts`                                   |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready  | 4h       | `server/services/orderAccountingService.ts`                   |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready  | 2h       | `server/accountingDb.ts`                                      |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready  | 4h       | `server/routers/orders.ts`                                    |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready  | 2h       | `server/ordersDb.ts`                                          |
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready  | 2h       | `server/routers/orders.ts`                                    |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready  | 4h       | `server/ordersDb.ts`                                          |
-| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready  | 4h       | `server/ordersDb.ts`, `server/services/*`                     |
-| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready  | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts`              |
-| ST-052  | Fix Fallback User ID Violations (11 instances)                       | HIGH     | ready  | 2h       | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
-| ST-053  | Eliminate `any` Types in Codebase (515 instances)                    | MEDIUM   | ready  | 16h      | Multiple files - see task details                             |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready  | 2h       | `server/arApDb.ts`                                            |
+| Task    | Description                                                          | Priority | Status   | Estimate | Module                                                        |
+| ------- | -------------------------------------------------------------------- | -------- | -------- | -------- | ------------------------------------------------------------- |
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready    | 1h       | `server/routers/adminSetup.ts`                                |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready    | 1h       | `server/routers/debug.ts`                                     |
+| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready    | 2h       | `server/services/permissionService.ts`                        |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready    | 2h       | `server/routers/vipPortal.ts`                                 |
+| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready    | 4h       | `server/routers/invoices.ts`                                  |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready    | 4h       | `server/routers/returns.ts`                                   |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready    | 4h       | `server/services/orderAccountingService.ts`                   |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready    | 2h       | `server/accountingDb.ts`                                      |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready    | 4h       | `server/routers/orders.ts`                                    |
+| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready    | 2h       | `server/ordersDb.ts`                                          |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready    | 2h       | `server/routers/orders.ts`                                    |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready    | 4h       | `server/ordersDb.ts`                                          |
+| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready    | 4h       | `server/ordersDb.ts`, `server/services/*`                     |
+| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready    | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts`              |
+| ST-052  | Fix Fallback User ID Violations (11 instances)                       | HIGH     | complete | 2h       | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
+| ST-053  | Eliminate `any` Types in Codebase (515 instances)                    | MEDIUM   | ready    | 16h      | Multiple files - see task details                             |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready    | 2h       | `server/arApDb.ts`                                            |
 
 ---
 
@@ -3886,37 +3886,25 @@ If Step 2 fails:
 
 #### ST-052: Fix Fallback User ID Violations
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 2h
+**Completed:** 2026-01-26
+**Key Commits:** `97ebcd8`
 **Module:** `server/routers/inventory.ts`, `server/routers/catalog.ts`, `server/routers/poReceiving.ts`
 **Dependencies:** None
 
 **Problem:**
-11 instances of `ctx.user?.id || 0` pattern exist in production code. These are security violations that attribute actions to user ID 0 instead of requiring authentication.
+11 instances of `ctx.user?.id || 0` pattern existed in production code. These were security violations that attributed actions to user ID 0 instead of requiring authentication.
 
-**Locations:**
-| File | Count | Pattern |
-|------|-------|---------|
-| `server/routers/inventory.ts` | 8 | `actorId: ctx.user?.id || 0`, `performedBy: ctx.user?.id || 0` |
-| `server/routers/catalog.ts` | 2 | `ctx.user?.id || 0` in publish operations |
-| `server/routers/poReceiving.ts` | 1 | `performedBy: ctx.user?.id || 0` |
-
-**Fix Pattern:**
-
-```typescript
-// BEFORE
-actorId: ctx.user?.id || 0,
-
-// AFTER
-import { getAuthenticatedUserId } from "../_core/trpc";
-actorId: getAuthenticatedUserId(ctx),
-```
+**Resolution:**
+All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTHORIZED if user is not authenticated.
 
 **Acceptance Criteria:**
 
-- [ ] All 11 instances replaced with `getAuthenticatedUserId(ctx)`
-- [ ] No fallback user ID patterns remain in routers
+- [x] All 11 instances replaced with `getAuthenticatedUserId(ctx)`
+- [x] No fallback user ID patterns remain in routers
+- [x] CI passes with no security violations
 - [ ] CI passes with no security violations
 
 ---
