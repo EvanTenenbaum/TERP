@@ -2684,7 +2684,7 @@ Navigation groups do not align with operational workflows, hiding critical route
 
 **Type:** Schema
 **Source:** PR #280 - migration fixes
-**Status:** in-progress
+**Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 4-8h
 **Module:** `drizzle/0053_fix_dashboard_preferences_index.sql`, `drizzle/0054_fix_long_constraint_names.sql`
@@ -2709,17 +2709,9 @@ Databases may contain legacy long constraint names and dashboard preference inde
 - Add 0054 migration to rename long FK constraints if present.
 - Update Drizzle meta snapshots if required.
 
-**Progress (2026-01-26):**
-
-- ✅ Migration 0053 written - drops legacy dashboard preference indexes
-- ✅ Migration 0054 written - documents constraint naming convention (no-op verification)
-- ⏳ Pending: Run migrations on fresh database
-- ⏳ Pending: Run migrations on existing database with data
-- ⏳ Pending: Verify idempotency (run twice without errors)
-
 **Acceptance Criteria:**
 
-- [x] 0053 and 0054 migrations exist and run idempotently.
+- [ ] 0053 and 0054 migrations exist and run idempotently.
 - [ ] Migration logs show no constraint-name length errors.
 - [ ] Dashboard preferences table retains expected indexes after migration.
 
@@ -2738,7 +2730,10 @@ Databases may contain legacy long constraint names and dashboard preference inde
 
 **Type:** Bug
 **Source:** PR #287 - INV-010
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-26
+**Key Commits:** `647c0cf`
+**Actual Time:** 4h
 **Priority:** MEDIUM
 **Estimate:** 4-8h
 **Module:** `client/src/components/sales-sheet/*`, `client/src/pages/orders/*`
@@ -2758,15 +2753,15 @@ Sales inventory shows non-sellable batches (QUARANTINED, ON_HOLD, AWAITING_INTAK
 **Implementation Notes:**
 
 - Display status badges for non-sellable items.
-- Block “Add to Order” or warn when status is non-sellable.
+- Block "Add to Order" or warn when status is non-sellable.
 - Validate batch status before order submission.
 
 **Acceptance Criteria:**
 
-- [ ] Sales inventory displays status for all batches.
-- [ ] Non-sellable statuses are visually distinct.
-- [ ] Non-sellable batches cannot be added to orders without warning/block.
-- [ ] Order creation rejects non-sellable batches server-side.
+- [x] Sales inventory displays status for all batches.
+- [x] Non-sellable statuses are visually distinct.
+- [x] Non-sellable batches cannot be added to orders without warning/block.
+- [ ] Order creation rejects non-sellable batches server-side. (UI warning implemented; server-side validation deferred)
 
 **Validation Steps:**
 
@@ -2783,7 +2778,10 @@ Sales inventory shows non-sellable batches (QUARANTINED, ON_HOLD, AWAITING_INTAK
 
 **Type:** Refactor
 **Source:** PR #287 - INV-011
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-26
+**Key Commits:** `2ad93b0`
+**Actual Time:** 4h
 **Priority:** MEDIUM
 **Estimate:** 8-16h
 **Module:** `server/constants/batchStatuses.ts` and consumers
@@ -2808,10 +2806,10 @@ Hardcoded batch status strings are duplicated across dozens of files, causing in
 
 **Acceptance Criteria:**
 
-- [ ] All hardcoded batch status strings are replaced with constants.
-- [ ] TypeScript types enforce valid statuses.
-- [ ] No regression in sellable/active filters.
-- [ ] Tests updated to reference constants.
+- [x] All hardcoded batch status strings are replaced with constants.
+- [x] TypeScript types enforce valid statuses.
+- [x] No regression in sellable/active filters.
+- [ ] Tests updated to reference constants. (Constants created; full test migration deferred)
 
 **Validation Steps:**
 
@@ -3649,8 +3647,8 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 | ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready    | 4h       | `server/routers/returns.ts`                                   |
 | ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready    | 4h       | `server/services/orderAccountingService.ts`                   |
 | ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready    | 2h       | `server/accountingDb.ts`                                      |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready    | 4h       | `server/routers/orders.ts`                                    |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready    | 2h       | `server/ordersDb.ts`                                          |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | complete | 4h       | `server/routers/orders.ts`                                    |
+| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | complete | 2h       | `server/ordersDb.ts`                                          |
 | INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready    | 2h       | `server/routers/orders.ts`                                    |
 | ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready    | 4h       | `server/ordersDb.ts`                                          |
 | ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready    | 4h       | `server/ordersDb.ts`, `server/services/*`                     |
@@ -3802,7 +3800,10 @@ SALE creates:
 
 #### INV-001: Add Inventory Deduction on Ship/Fulfill
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-26
+**Key Commits:** `b83420e`
+**Actual Time:** 4h
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `server/routers/orders.ts:1355-1428, 1434-1494`
@@ -3823,16 +3824,19 @@ SALE creates:
 
 **Acceptance Criteria:**
 
-- [ ] `shipOrder()` converts reservedQty to actual deduction
-- [ ] `batch.onHandQty -= shippedQuantity`
-- [ ] Inventory movement record created
-- [ ] `reservedQty` released after ship
+- [x] `shipOrder()` converts reservedQty to actual deduction
+- [x] `batch.onHandQty -= shippedQuantity`
+- [x] Inventory movement record created
+- [x] `reservedQty` released after ship
 
 ---
 
 #### INV-002: Fix Race Condition in Draft Order Confirmation
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-26
+**Key Commits:** `529babd`
+**Actual Time:** 2h
 **Priority:** HIGH
 **Estimate:** 2h
 **Module:** `server/ordersDb.ts:1137-1161`
@@ -3855,9 +3859,9 @@ Result: Sold 125 units, only had 100
 
 **Acceptance Criteria:**
 
-- [ ] Use `SELECT ... FOR UPDATE` when checking inventory
-- [ ] Transaction wraps check + update
-- [ ] Second request fails with "insufficient inventory"
+- [x] Use `SELECT ... FOR UPDATE` when checking inventory
+- [x] Transaction wraps check + update
+- [x] Second request fails with "insufficient inventory"
 
 ---
 
@@ -3991,123 +3995,16 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 > These issues cause data inconsistency and incorrect business logic.
 > **Should fix in current release.**
 
-| Task      | Description                                      | Priority | Status      | Estimate | Module                                                  |
-| --------- | ------------------------------------------------ | -------- | ----------- | -------- | ------------------------------------------------------- |
-| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready       | 8h       | `server/services/` (new)                                |
-| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready       | 8h       | `server/services/`, `server/routers/`                   |
-| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready       | 4h       | `server/routers/orders.ts`                              |
-| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready       | 4h       | `server/arApDb.ts`                                      |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready       | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | in-progress | 2h       | `drizzle/0055_add_bills_fk_constraints.sql`             |
-| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | in-progress | 8h       | `drizzle/0056_migrate_lots_supplier_client_id.sql`      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready       | 2h       | `server/routers/vendors.ts`                             |
-| MIG-001   | Execute Migrations on Fresh Database             | HIGH     | ready       | 2h       | `drizzle/0053-0056`                                     |
-| MIG-002   | Execute Migrations on Existing Database          | HIGH     | ready       | 4h       | `drizzle/0053-0056`                                     |
-| MIG-003   | Verify Migration Idempotency                     | MEDIUM   | ready       | 1h       | `drizzle/0053-0056`                                     |
-
----
-
-#### MIG-001: Execute Migrations on Fresh Database
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2h
-**Module:** `drizzle/0053_fix_dashboard_preferences_index.sql`, `drizzle/0054_fix_long_constraint_names.sql`, `drizzle/0055_add_bills_fk_constraints.sql`, `drizzle/0056_migrate_lots_supplier_client_id.sql`
-**Dependencies:** TERP-0006, PARTY-002, PARTY-003
-
-**Problem / Goal:**
-Verify migrations 0053-0056 execute successfully on a fresh database with no pre-existing data.
-
-**Execution Steps:**
-
-1. Create fresh test database: `mysql -e "DROP DATABASE IF EXISTS terp_fresh; CREATE DATABASE terp_fresh;"`
-2. Run all migrations: `pnpm drizzle-kit push --config=drizzle.config.ts`
-3. Verify constraints exist in `information_schema.TABLE_CONSTRAINTS`
-4. Verify indexes exist in `information_schema.STATISTICS`
-5. Seed test data: `pnpm seed:all-defaults`
-6. Verify FK constraints enforce referential integrity
-
-**Acceptance Criteria:**
-
-- [ ] All 4 migrations complete without errors
-- [ ] FK constraints on bills and billLineItems tables verified
-- [ ] Indexes created for performance
-- [ ] Seeding works with new constraints in place
-
----
-
-#### MIG-002: Execute Migrations on Existing Database
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4h
-**Module:** `drizzle/0053-0056`
-**Dependencies:** MIG-001 (verify fresh DB first)
-
-**Problem / Goal:**
-Verify migrations handle existing data correctly - orphaned records, soft-deleted data, and existing constraints.
-
-**Pre-Execution Checklist:**
-
-- [ ] Backup existing database: `mysqldump terp_prod > backup_$(date +%Y%m%d).sql`
-- [ ] Run PRE-CHECK query from 0056 to review name matches
-- [ ] Document current record counts for bills, billLineItems, lots
-
-**Execution Steps:**
-
-1. Run migrations: `pnpm drizzle-kit push`
-2. Monitor for orphan cleanup (soft-deleted records)
-3. Verify record counts (bills, billLineItems should be same or less)
-4. Verify supplier_client_id populated in lots table
-5. Test application CRUD operations on bills
-
-**Acceptance Criteria:**
-
-- [ ] No data loss for active records
-- [ ] Orphaned soft-deleted records cleaned up
-- [ ] FK constraints active and enforced
-- [ ] Application functions correctly post-migration
-
-**Rollback Plan:**
-
-```sql
--- If FK constraints cause issues:
-ALTER TABLE billLineItems DROP FOREIGN KEY fk_bill_line_items_lot_id;
-ALTER TABLE billLineItems DROP FOREIGN KEY fk_bill_line_items_product_id;
-ALTER TABLE billLineItems DROP FOREIGN KEY fk_bill_line_items_bill_id;
-ALTER TABLE bills DROP FOREIGN KEY fk_bills_created_by;
-ALTER TABLE bills DROP FOREIGN KEY fk_bills_vendor_id;
-
--- Full rollback:
-mysql terp_prod < backup_YYYYMMDD.sql
-```
-
----
-
-#### MIG-003: Verify Migration Idempotency
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 1h
-**Module:** `drizzle/0053-0056`
-**Dependencies:** MIG-001 or MIG-002
-
-**Problem / Goal:**
-Verify migrations can be run multiple times without errors (safe for re-runs after failures).
-
-**Execution Steps:**
-
-1. Run migrations on existing database: `pnpm drizzle-kit push`
-2. Run migrations again (should not error): `pnpm drizzle-kit push`
-3. Verify no duplicate constraints created
-4. Verify no duplicate indexes created
-
-**Acceptance Criteria:**
-
-- [ ] Second run completes without errors
-- [ ] No duplicate constraints in information_schema
-- [ ] No duplicate indexes in information_schema
-- [ ] Application still functions correctly
+| Task      | Description                                      | Priority | Status   | Estimate | Module                                                  |
+| --------- | ------------------------------------------------ | -------- | -------- | -------- | ------------------------------------------------------- |
+| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready    | 8h       | `server/services/` (new)                                |
+| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready    | 8h       | `server/services/`, `server/routers/`                   |
+| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready    | 4h       | `server/routers/orders.ts`                              |
+| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready    | 4h       | `server/arApDb.ts`                                      |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | complete | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready    | 2h       | `drizzle/schema.ts`                                     |
+| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | complete | 2h       | `server/routers/vendors.ts`                             |
 
 ---
 
@@ -4235,20 +4132,20 @@ export async function updateBillStatus(id, status) {
 > These issues affect correctness but have workarounds.
 > **Fix in next sprint.**
 
-| Task    | Description                                          | Priority | Status | Estimate | Module                                                         |
-| ------- | ---------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------------------- |
-| SM-001  | Implement Quote Status Transitions                   | MEDIUM   | ready  | 4h       | `server/routers/quotes.ts`                                     |
-| SM-002  | Implement Sale Status Transitions                    | MEDIUM   | ready  | 4h       | `server/routers/orders.ts`                                     |
-| SM-003  | Implement VendorReturn Status Transitions            | MEDIUM   | ready  | 4h       | `server/routers/returns.ts`                                    |
-| ORD-002 | Validate Positive Prices in Orders                   | MEDIUM   | ready  | 2h       | `server/ordersDb.ts`, `server/services/orderService.ts`        |
-| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM   | ready  | 2h       | `server/services/orderStateMachine.ts`                         |
-| ORD-004 | Add Credit Override Authorization                    | MEDIUM   | ready  | 2h       | `server/services/orderPricingService.ts`                       |
-| INV-004 | Add Reservation Release on Order Cancellation        | MEDIUM   | ready  | 2h       | `server/routers/orders.ts`                                     |
-| INV-005 | Create Batches on PO Goods Receipt                   | MEDIUM   | ready  | 4h       | `server/routers/purchaseOrders.ts`                             |
-| NAV-017 | Add Missing /alerts Route                            | MEDIUM   | ready  | 1h       | `client/src/App.tsx`                                           |
-| NAV-018 | Add Missing /reports/shrinkage Route                 | MEDIUM   | ready  | 1h       | `client/src/App.tsx`                                           |
-| API-019 | Fix PaymentMethod Type Mismatch (as any)             | MEDIUM   | ready  | 2h       | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
-| API-020 | Fix Pagination Response Inconsistency                | MEDIUM   | ready  | 4h       | Multiple routers                                               |
+| Task    | Description                                          | Priority | Status   | Estimate | Module                                                         |
+| ------- | ---------------------------------------------------- | -------- | -------- | -------- | -------------------------------------------------------------- |
+| SM-001  | Implement Quote Status Transitions                   | MEDIUM   | complete | 4h       | `server/routers/quotes.ts`                                     |
+| SM-002  | Implement Sale Status Transitions                    | MEDIUM   | complete | 4h       | `server/routers/orders.ts`                                     |
+| SM-003  | Implement VendorReturn Status Transitions            | MEDIUM   | complete | 4h       | `server/routers/returns.ts`                                    |
+| ORD-002 | Validate Positive Prices in Orders                   | MEDIUM   | complete | 2h       | `server/ordersDb.ts`, `server/services/orderService.ts`        |
+| ORD-003 | Fix Invalid Order State Transitions (PACKED→PENDING) | MEDIUM   | complete | 2h       | `server/services/orderStateMachine.ts`                         |
+| ORD-004 | Add Credit Override Authorization                    | MEDIUM   | complete | 2h       | `server/services/orderPricingService.ts`                       |
+| INV-004 | Add Reservation Release on Order Cancellation        | MEDIUM   | complete | 2h       | `server/routers/orders.ts`                                     |
+| INV-005 | Create Batches on PO Goods Receipt                   | MEDIUM   | complete | 4h       | `server/routers/purchaseOrders.ts`                             |
+| NAV-017 | Add Missing /alerts Route                            | MEDIUM   | ready    | 1h       | `client/src/App.tsx`                                           |
+| NAV-018 | Add Missing /reports/shrinkage Route                 | MEDIUM   | ready    | 1h       | `client/src/App.tsx`                                           |
+| API-019 | Fix PaymentMethod Type Mismatch (as any)             | MEDIUM   | ready    | 2h       | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` |
+| API-020 | Fix Pagination Response Inconsistency                | MEDIUM   | ready    | 4h       | Multiple routers                                               |
 
 ---
 
@@ -4257,14 +4154,14 @@ export async function updateBillStatus(id, status) {
 > These issues affect debuggability and confidence.
 > **Fix as capacity allows.**
 
-| Task     | Description                                     | Priority | Status      | Estimate | Module                                      |
-| -------- | ----------------------------------------------- | -------- | ----------- | -------- | ------------------------------------------- |
-| OBS-001  | Add GL Balance Verification Cron                | LOW      | in-progress | 4h       | `server/cron/glBalanceCheck.ts`             |
-| OBS-002  | Add AR Reconciliation Check                     | LOW      | in-progress | 4h       | `server/cron/arReconciliationCheck.ts`      |
-| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready       | 4h       | `server/routers/inventory.ts`               |
-| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready       | 8h       | `tests/integration/`                        |
-| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready       | 4h       | `tests/integration/`                        |
-| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready       | 2h       | `server/routers/inventory.property.test.ts` |
+| Task     | Description                                     | Priority | Status | Estimate | Module                                      |
+| -------- | ----------------------------------------------- | -------- | ------ | -------- | ------------------------------------------- |
+| OBS-001  | Add GL Balance Verification Cron                | LOW      | ready  | 4h       | `server/cron/`                              |
+| OBS-002  | Add AR Reconciliation Check                     | LOW      | ready  | 4h       | `server/cron/`                              |
+| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready  | 4h       | `server/routers/inventory.ts`               |
+| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready  | 8h       | `tests/integration/`                        |
+| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready  | 4h       | `tests/integration/`                        |
+| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready  | 2h       | `server/routers/inventory.property.test.ts` |
 
 ---
 
@@ -4333,19 +4230,19 @@ GL imbalances from silent failures go undetected until month-end close (30+ days
 > **Client:** 531 errors, 484 warnings (1,015 total)
 > **Server:** 417 errors, 1,157 warnings (1,574 total)
 
-| Task     | Description                                                        | Priority | Status      | Estimate | Module                                                      |
-| -------- | ------------------------------------------------------------------ | -------- | ----------- | -------- | ----------------------------------------------------------- |
-| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps)       | HIGH     | ready       | 4h       | `client/src/components/accounting/*.tsx`                    |
-| LINT-002 | Fix 'React' is not defined errors (12 files)                       | HIGH     | ready       | 2h       | Multiple client components                                  |
-| LINT-003 | Fix unused variable errors (~100 instances)                        | MEDIUM   | ready       | 4h       | Client + Server                                             |
-| LINT-004 | Fix array index key violations (~40 instances)                     | MEDIUM   | ready       | 4h       | Client components                                           |
-| LINT-005 | Replace `any` types with proper types (~200 instances)             | MEDIUM   | in-progress | 8h       | Client + Server (critical paths done, ~800+ remaining)      |
-| LINT-006 | Remove forbidden console.log statements (~50 instances)            | LOW      | in-progress | 2h       | Server routers done, scripts/seeds deferred                 |
-| LINT-007 | Fix non-null assertions (~30 instances)                            | LOW      | complete    | 2h       | No issues found in server critical paths                    |
-| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions                    | MEDIUM   | ready       | 1h       | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
-| LINT-009 | Fix usePerformanceMonitor.ts type safety (`as any` → proper types) | MEDIUM   | complete    | 1h       | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
-| LINT-010 | Fix budgets useMemo dependency in usePerformanceMonitor.ts         | MEDIUM   | complete    | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
-| LINT-011 | Replace eslint-disable no-undef with proper global declaration     | LOW      | complete    | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
+| Task     | Description                                                        | Priority | Status   | Estimate | Module                                                      |
+| -------- | ------------------------------------------------------------------ | -------- | -------- | -------- | ----------------------------------------------------------- |
+| LINT-001 | Fix React Hooks violations (rules-of-hooks, exhaustive-deps)       | HIGH     | ready    | 4h       | `client/src/components/accounting/*.tsx`                    |
+| LINT-002 | Fix 'React' is not defined errors (12 files)                       | HIGH     | ready    | 2h       | Multiple client components                                  |
+| LINT-003 | Fix unused variable errors (~100 instances)                        | MEDIUM   | ready    | 4h       | Client + Server                                             |
+| LINT-004 | Fix array index key violations (~40 instances)                     | MEDIUM   | ready    | 4h       | Client components                                           |
+| LINT-005 | Replace `any` types with proper types (~200 instances)             | MEDIUM   | ready    | 8h       | Client + Server                                             |
+| LINT-006 | Remove forbidden console.log statements (~50 instances)            | LOW      | ready    | 2h       | Server files                                                |
+| LINT-007 | Fix non-null assertions (~30 instances)                            | LOW      | ready    | 2h       | Client components                                           |
+| LINT-008 | Fix NodeJS/HTMLTextAreaElement type definitions                    | MEDIUM   | ready    | 1h       | `server/_core/*.ts`, `client/src/components/comments/*.tsx` |
+| LINT-009 | Fix usePerformanceMonitor.ts type safety (`as any` → proper types) | MEDIUM   | complete | 1h       | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
+| LINT-010 | Fix budgets useMemo dependency in usePerformanceMonitor.ts         | MEDIUM   | complete | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
+| LINT-011 | Replace eslint-disable no-undef with proper global declaration     | LOW      | complete | 0.5h     | `client/src/hooks/work-surface/usePerformanceMonitor.ts`    |
 
 ---
 
@@ -4488,18 +4385,11 @@ if (condition) {
 
 #### LINT-005: Replace `any` Types with Proper Types
 
-**Status:** in-progress
+**Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 8h
 **Module:** Client + Server
 **Dependencies:** None
-
-**Progress (2026-01-26):**
-
-- ✅ Critical server paths (accounting, orders, inventory routers) - All `any` types properly suppressed with eslint-disable and justifications
-- ✅ Dashboard widgets (8 files) - Replaced with proper interfaces
-- ✅ Order modals (3 files) - Replaced `error: any` with `error: unknown`
-- ⏳ Remaining: ~800+ instances in non-critical UI components and test files
 
 **Problem:**
 ~200 instances of `any` type usage defeat TypeScript's type safety:
@@ -4531,78 +4421,6 @@ const handleChange = (value: PaymentMethod) => { ... }
 
 ---
 
-#### LINT-006: Remove Forbidden console.log Statements
-
-**Status:** in-progress
-**Priority:** LOW
-**Estimate:** 2h
-**Module:** Server routers
-**Dependencies:** None
-
-**Progress (2026-01-26):**
-
-- ✅ Server routers (3 files, 12 statements) - Converted to proper logging
-  - `admin.ts`: 10 `console.log` → `logger.info` (file already imports logger)
-  - `adminImport.ts`: 1 `console.log` → `console.warn`
-  - `pickPack.ts`: 1 `console.log` → `console.warn`
-- ⏳ Deferred: 418 console.log in scripts/seeds (non-production code)
-
-**Rationale for Deferral:**
-Scripts and seeds are development/maintenance tools that run outside production context. Console output in these files aids debugging and doesn't affect production reliability.
-
----
-
-#### LINT-007: Fix Non-Null Assertions
-
-**Status:** complete
-**Completed:** 2026-01-26
-**Priority:** LOW
-**Estimate:** 2h
-**Actual Time:** 0.5h
-**Module:** Server critical paths
-**Dependencies:** None
-
-**Investigation Results:**
-Searched all server critical paths per CLAUDE.md (accounting, orders, inventory routers, services):
-
-- `server/routers/accounting.ts` - 0 non-null assertions
-- `server/routers/orders.ts` - 0 non-null assertions
-- `server/routers/inventory.ts` - 0 non-null assertions
-- `server/services/matching/*.ts` - 0 non-null assertions
-- `server/services/pricing/*.ts` - 0 non-null assertions
-
-**Conclusion:** No non-null assertions found in critical server paths. All code uses proper null checks with optional chaining (`?.`) and nullish coalescing (`??`).
-
----
-
-#### TEST-022: Fix EventFormDialog Test Environment
-
-**Status:** blocked
-**Priority:** MEDIUM
-**Estimate:** 2h
-**Module:** `client/src/components/calendar/EventFormDialog.test.tsx`
-**Blocked By:** Radix UI + jsdom incompatibility (upstream issue)
-
-**Problem:**
-Radix UI's `@radix-ui/react-presence` and `@radix-ui/react-compose-refs` cause infinite loops ("Maximum update depth exceeded") when running in jsdom environment.
-
-**Actions Taken (2026-01-26):**
-
-- Added comprehensive mocks for all Radix primitives (Dialog, Checkbox, Select, etc.)
-- Added mocks for Input, Textarea, Label, Button with proper forwardRef patterns
-- Tests still trigger infinite loops from deep Radix internals
-- Skipped test suite with `describe.skip()` and added clear documentation
-
-**Resolution Options (Future):**
-
-1. Use Playwright/Cypress for E2E testing of this component
-2. Wait for Radix UI to fix jsdom compatibility (issue #1822)
-3. Create comprehensive mock of all Radix primitives
-
-**Note:** The component works correctly in the browser - only the test environment is affected.
-
----
-
 ### Test Infrastructure Issues
 
 > Vitest mock hoisting and environment configuration issues
@@ -4611,7 +4429,7 @@ Radix UI's `@radix-ui/react-presence` and `@radix-ui/react-compose-refs` cause i
 | -------- | ----------------------------------------------------------------------- | -------- | -------- | -------- | ------------------------------------------------------------- |
 | TEST-020 | Fix permissionMiddleware.test.ts mock hoisting                          | HIGH     | ready    | 2h       | `server/_core/permissionMiddleware.test.ts`                   |
 | TEST-021 | Add ResizeObserver polyfill for jsdom tests (supplements TEST-INFRA-01) | HIGH     | ready    | 1h       | `vitest.setup.ts`                                             |
-| TEST-022 | Fix EventFormDialog test environment                                    | MEDIUM   | blocked  | 2h       | `client/src/components/calendar/EventFormDialog.test.tsx`     |
+| TEST-022 | Fix EventFormDialog test environment                                    | MEDIUM   | ready    | 2h       | `client/src/components/calendar/EventFormDialog.test.tsx`     |
 | TEST-023 | Fix ResizeObserver mock missing constructor callback                    | HIGH     | ready    | 0.5h     | `tests/setup.ts`                                              |
 | TEST-024 | Add tRPC mock `isPending` property (React Query v5)                     | HIGH     | ready    | 1h       | `tests/setup.ts`                                              |
 | TEST-025 | Fix tRPC proxy memory leak - memoize proxy creation                     | MEDIUM   | ready    | 1h       | `tests/setup.ts`                                              |
