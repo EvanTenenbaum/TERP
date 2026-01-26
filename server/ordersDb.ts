@@ -892,6 +892,15 @@ export async function convertQuoteToSale(
       throw new Error(`Order ${input.quoteId} is not a quote`);
     }
 
+    // SM-001: Validate quote status allows conversion
+    const currentStatus = quote.quoteStatus || "DRAFT";
+    if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
+      throw new Error(
+        `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +
+        `Only ACCEPTED quotes can be converted. Current status: ${currentStatus}`
+      );
+    }
+
     // Check if quote has expired
     if (quote.validUntil) {
       const expirationDate = new Date(quote.validUntil);

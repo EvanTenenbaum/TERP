@@ -21,6 +21,7 @@ import { eq, desc, and, sql, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import * as ordersDb from "../ordersDb";
+import { isValidStatusTransition } from "../ordersDb";
 import {
   sendEmail,
   isEmailEnabled,
@@ -294,10 +295,12 @@ export const quotesRouter = router({
       const quote = result.orders;
       const client = result.clients;
 
-      if (quote.quoteStatus === "CONVERTED") {
+      // SM-001: Validate quote status transition using state machine
+      const currentStatus = quote.quoteStatus || "DRAFT";
+      if (!isValidStatusTransition("quote", currentStatus, "SENT")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Cannot send a converted quote",
+          message: `Cannot send quote: invalid transition from ${currentStatus} to SENT. Quote may have already been sent, accepted, rejected, or converted.`,
         });
       }
 
@@ -471,10 +474,12 @@ export const quotesRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Quote not found" });
       }
 
-      if (quote.quoteStatus === "CONVERTED") {
+      // SM-001: Validate quote status transition using state machine
+      const currentStatus = quote.quoteStatus || "DRAFT";
+      if (!isValidStatusTransition("quote", currentStatus, "ACCEPTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Quote already converted to order",
+          message: `Cannot accept quote: invalid transition from ${currentStatus} to ACCEPTED. Quote may have already been accepted, rejected, converted, or expired.`,
         });
       }
 
@@ -524,10 +529,12 @@ export const quotesRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Quote not found" });
       }
 
-      if (quote.quoteStatus === "CONVERTED") {
+      // SM-001: Validate quote status transition using state machine
+      const currentStatus = quote.quoteStatus || "DRAFT";
+      if (!isValidStatusTransition("quote", currentStatus, "REJECTED")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Cannot reject a converted quote",
+          message: `Cannot reject quote: invalid transition from ${currentStatus} to REJECTED. Quote may have already been rejected, converted, or expired.`,
         });
       }
 
