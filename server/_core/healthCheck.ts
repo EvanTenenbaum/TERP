@@ -1,7 +1,8 @@
 import { getDb } from "../db";
 import { logger } from "./logger";
 import { getPoolStats } from "./connectionPool";
-import { spawn } from 'child_process';
+import { spawn } from "child_process";
+import { getMemoryStats } from "../utils/memoryOptimizer";
 
 // SECURITY: Public-facing health status (minimal info)
 export interface PublicHealthStatus {
@@ -124,10 +125,12 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
         status: dbCheck.status,
         latencyMs: dbCheck.latencyMs,
       },
-      transaction: transactionCheck ? {
-        status: transactionCheck.status,
-        latencyMs: transactionCheck.latencyMs,
-      } : undefined,
+      transaction: transactionCheck
+        ? {
+            status: transactionCheck.status,
+            latencyMs: transactionCheck.latencyMs,
+          }
+        : undefined,
       memory: {
         status: memoryCheck.status,
         percentage: memoryCheck.percentage,
@@ -193,7 +196,7 @@ export async function checkDatabase(): Promise<{
       })();
 
       return await Promise.race([dbCheckPromise, timeoutPromise]);
-    } catch (error) {
+    } catch (_error) {
       logger.warn({
         msg: `Database health check failed (attempt ${retryCount + 1}/${maxRetries})`,
       });
@@ -248,15 +251,16 @@ async function checkTransaction(): Promise<{
 
 /**
  * Check memory usage - returns minimal info
+ * Uses memoryOptimizer which respects NODE_MEMORY_LIMIT for accurate reporting
  */
 function checkMemory(): {
   status: "ok" | "warning" | "critical";
   percentage: number;
 } {
-  const usage = process.memoryUsage();
-  const totalMemory = usage.heapTotal;
-  const usedMemory = usage.heapUsed;
-  const percentage = Math.round((usedMemory / totalMemory) * 100);
+  // Use memoryOptimizer which properly uses NODE_MEMORY_LIMIT
+  // This gives accurate percentages based on configured memory limit
+  const stats = getMemoryStats();
+  const percentage = Math.round(stats.percentage);
 
   let status: "ok" | "warning" | "critical" = "ok";
 
@@ -293,23 +297,23 @@ async function checkDiskAsync(): Promise<{
   status: "ok" | "warning" | "critical";
   usedPercent: number;
 } | null> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     // Set a timeout to prevent hanging
     const timeout = setTimeout(() => {
       resolve(null);
     }, 2000);
 
     try {
-      const dfProcess = spawn('df', ['-BM', '/'], {
-        stdio: ['ignore', 'pipe', 'ignore'],
+      const dfProcess = spawn("df", ["-BM", "/"], {
+        stdio: ["ignore", "pipe", "ignore"],
       });
 
-      let output = '';
-      dfProcess.stdout.on('data', (data) => {
+      let output = "";
+      dfProcess.stdout.on("data", data => {
         output += data.toString();
       });
 
-      dfProcess.on('close', (code) => {
+      dfProcess.on("close", code => {
         clearTimeout(timeout);
 
         if (code !== 0) {
@@ -318,7 +322,7 @@ async function checkDiskAsync(): Promise<{
         }
 
         try {
-          const lines = output.trim().split('\n');
+          const lines = output.trim().split("\n");
           if (lines.length < 2) {
             resolve(null);
             return;
@@ -326,7 +330,7 @@ async function checkDiskAsync(): Promise<{
 
           const parts = lines[1].split(/\s+/);
           const percentStr = parts[4];
-          const usedPercent = parseInt(percentStr.replace('%', ''));
+          const usedPercent = parseInt(percentStr.replace("%", ""));
 
           let status: "ok" | "warning" | "critical" = "ok";
           if (usedPercent > 90) {
@@ -341,7 +345,7 @@ async function checkDiskAsync(): Promise<{
         }
       });
 
-      dfProcess.on('error', () => {
+      dfProcess.on("error", () => {
         clearTimeout(timeout);
         resolve(null);
       });
@@ -365,7 +369,9 @@ function checkConnectionPool(): {
     return null;
   }
 
-  const freePercentage = Math.round((stats.freeConnections / stats.totalConnections) * 100);
+  const freePercentage = Math.round(
+    (stats.freeConnections / stats.totalConnections) * 100
+  );
   let status: "ok" | "warning" = "ok";
 
   if (freePercentage < 20 || stats.queuedRequests > 0) {
@@ -405,10 +411,9 @@ export async function readinessCheck(): Promise<{
 
     await Promise.race([db.execute("SELECT 1"), timeoutPromise]);
 
-    // Check memory isn't critical
-    const memUsage = process.memoryUsage();
-    const memPct = (memUsage.heapUsed / memUsage.heapTotal) * 100;
-    if (memPct > 95) {
+    // Check memory isn't critical (uses NODE_MEMORY_LIMIT for accurate reporting)
+    const memStats = getMemoryStats();
+    if (memStats.percentage > 95) {
       return { status: "not_ready", timestamp };
     }
 
@@ -429,7 +434,7 @@ export function getHealthMetrics(): {
     heapTotalMb: number;
     rssMb: number;
   };
-  cpu: NodeJS.CpuUsage;
+  cpu: ReturnType<typeof process.cpuUsage>;
 } {
   const memUsage = process.memoryUsage();
   return {
