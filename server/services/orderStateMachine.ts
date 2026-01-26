@@ -18,14 +18,16 @@ export type FulfillmentStatus =
 /**
  * Valid status transitions map
  * Each key is a current status, value is array of valid next statuses
+ *
+ * ARCH-003: Updated to match actual business rules:
+ * - PENDING -> SHIPPED allowed for flexibility (skip PACKED step)
+ * - CONFIRMED -> SHIPPED allowed for direct shipping
  */
 export const ORDER_STATUS_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStatus[]> = {
-  DRAFT: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["PENDING", "CANCELLED"],
-  PENDING: ["PACKED", "CANCELLED"],
-  // ORD-003: Removed PENDING from valid transitions - packed orders should not revert
-  // If unpacking is needed, create a separate "UNPACKED" status or use CANCELLED
-  PACKED: ["SHIPPED", "CANCELLED"],
+  DRAFT: ["CONFIRMED", "PENDING", "CANCELLED"],
+  CONFIRMED: ["PENDING", "PACKED", "SHIPPED", "CANCELLED"], // Can skip to PACKED or SHIPPED
+  PENDING: ["PACKED", "SHIPPED", "CANCELLED"], // Can skip PACKED step
+  PACKED: ["SHIPPED", "PENDING", "CANCELLED"], // Can go back to PENDING if unpacked
   SHIPPED: ["DELIVERED", "RETURNED"],
   DELIVERED: ["RETURNED"],
   RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
@@ -41,6 +43,34 @@ export function canTransition(from: string, to: string): boolean {
   const validNext = ORDER_STATUS_TRANSITIONS[from as FulfillmentStatus];
   if (!validNext) return false;
   return validNext.includes(to as FulfillmentStatus);
+}
+
+/**
+ * ARCH-003: Validate and enforce status transition
+ * Throws descriptive error if transition is invalid
+ *
+ * @param currentStatus - Current order status
+ * @param newStatus - Desired new status
+ * @param orderId - Order ID for error messages
+ * @throws Error if transition is invalid
+ */
+export function validateTransition(
+  currentStatus: string | null,
+  newStatus: string,
+  orderId?: number
+): void {
+  const from = currentStatus || "PENDING";
+
+  if (!canTransition(from, newStatus)) {
+    const validNext = getNextStatuses(from);
+    const validOptions = validNext.length > 0 ? validNext.join(", ") : "none (terminal state)";
+    const orderRef = orderId ? ` for order #${orderId}` : "";
+
+    throw new Error(
+      `Invalid status transition${orderRef}: ${from} → ${newStatus}. ` +
+        `Valid transitions from ${from}: ${validOptions}`
+    );
+  }
 }
 
 /**
