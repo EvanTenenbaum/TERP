@@ -41,17 +41,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  DollarSign,
-  CreditCard,
-  AlertTriangle,
-  CheckCircle,
-  Loader2,
-  FileText,
-  User,
-} from "lucide-react";
+import { DollarSign, CheckCircle, Loader2, FileText, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface InvoiceAllocation {
@@ -117,9 +108,10 @@ export function MultiInvoicePaymentForm({
     );
 
   // Fetch outstanding invoices for selected client
+  // LINT-007: Avoid non-null assertion by using -1 as fallback (query is disabled when clientId is null)
   const { data: outstandingInvoices, isLoading: loadingInvoices } =
     trpc.payments.getClientOutstandingInvoices.useQuery(
-      { clientId: clientId! },
+      { clientId: clientId ?? -1 },
       { enabled: open && clientId !== null && step === "allocate" }
     );
 
@@ -127,7 +119,7 @@ export function MultiInvoicePaymentForm({
   useEffect(() => {
     if (outstandingInvoices) {
       setAllocations(
-        outstandingInvoices.map((inv) => ({
+        outstandingInvoices.map(inv => ({
           invoiceId: inv.id,
           invoiceNumber: inv.invoiceNumber,
           totalAmount: inv.totalAmount,
@@ -142,7 +134,7 @@ export function MultiInvoicePaymentForm({
 
   // Record multi-invoice payment mutation
   const recordPayment = trpc.payments.recordMultiInvoicePayment.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       toast({
         title: "Payment recorded successfully",
         description: `Payment ${result.paymentNumber} for ${formatCurrency(
@@ -162,7 +154,7 @@ export function MultiInvoicePaymentForm({
       });
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         variant: "destructive",
         title: "Failed to record payment",
@@ -174,22 +166,22 @@ export function MultiInvoicePaymentForm({
   // Calculated values
   const totalAllocated = useMemo(() => {
     return allocations
-      .filter((a) => a.selected)
+      .filter(a => a.selected)
       .reduce((sum, a) => sum + a.allocatedAmount, 0);
   }, [allocations]);
 
   const totalDue = useMemo(() => {
     return allocations
-      .filter((a) => a.selected)
+      .filter(a => a.selected)
       .reduce((sum, a) => sum + a.amountDue, 0);
   }, [allocations]);
 
-  const selectedInvoiceCount = allocations.filter((a) => a.selected).length;
+  const selectedInvoiceCount = allocations.filter(a => a.selected).length;
 
   // Handlers
   const handleSelectAll = (selected: boolean) => {
-    setAllocations((prev) =>
-      prev.map((a) => ({
+    setAllocations(prev =>
+      prev.map(a => ({
         ...a,
         selected,
         allocatedAmount: selected ? a.amountDue : 0,
@@ -198,8 +190,8 @@ export function MultiInvoicePaymentForm({
   };
 
   const handleToggleInvoice = (invoiceId: number, selected: boolean) => {
-    setAllocations((prev) =>
-      prev.map((a) =>
+    setAllocations(prev =>
+      prev.map(a =>
         a.invoiceId === invoiceId
           ? { ...a, selected, allocatedAmount: selected ? a.amountDue : 0 }
           : a
@@ -209,8 +201,8 @@ export function MultiInvoicePaymentForm({
 
   const handleAllocationChange = (invoiceId: number, amount: string) => {
     const numAmount = parseFloat(amount) || 0;
-    setAllocations((prev) =>
-      prev.map((a) =>
+    setAllocations(prev =>
+      prev.map(a =>
         a.invoiceId === invoiceId
           ? {
               ...a,
@@ -223,10 +215,8 @@ export function MultiInvoicePaymentForm({
   };
 
   const handlePayFullAmount = () => {
-    setAllocations((prev) =>
-      prev.map((a) =>
-        a.selected ? { ...a, allocatedAmount: a.amountDue } : a
-      )
+    setAllocations(prev =>
+      prev.map(a => (a.selected ? { ...a, allocatedAmount: a.amountDue } : a))
     );
   };
 
@@ -234,8 +224,8 @@ export function MultiInvoicePaymentForm({
     if (!clientId) return;
 
     const selectedAllocations = allocations
-      .filter((a) => a.selected && a.allocatedAmount > 0)
-      .map((a) => ({
+      .filter(a => a.selected && a.allocatedAmount > 0)
+      .map(a => ({
         invoiceId: a.invoiceId,
         amount: a.allocatedAmount,
       }));
@@ -249,11 +239,19 @@ export function MultiInvoicePaymentForm({
       return;
     }
 
+    // LINT-005: Use specific payment method type instead of any
+    type PaymentMethodType =
+      | "CASH"
+      | "CHECK"
+      | "ACH"
+      | "WIRE"
+      | "CREDIT_CARD"
+      | "OTHER";
     await recordPayment.mutateAsync({
       clientId,
       totalAmount: totalAllocated,
       allocations: selectedAllocations,
-      paymentMethod: paymentMethod as any,
+      paymentMethod: paymentMethod as PaymentMethodType,
       referenceNumber: referenceNumber || undefined,
       notes: notes || undefined,
     });
@@ -266,7 +264,7 @@ export function MultiInvoicePaymentForm({
     }).format(amount);
   };
 
-  const selectedClient = clients?.items?.find((c) => c.id === clientId);
+  const selectedClient = clients?.items?.find(c => c.id === clientId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -291,7 +289,7 @@ export function MultiInvoicePaymentForm({
               </div>
             ) : (
               <div className="grid gap-2 max-h-[400px] overflow-y-auto">
-                {clients?.items?.map((client) => (
+                {clients?.items?.map(client => (
                   <div
                     key={client.id}
                     className={cn(
@@ -306,7 +304,8 @@ export function MultiInvoicePaymentForm({
                         <span className="font-medium">{client.name}</span>
                       </div>
                       <Badge variant="outline">
-                        Owes: {formatCurrency(parseFloat(client.totalOwed || "0"))}
+                        Owes:{" "}
+                        {formatCurrency(parseFloat(client.totalOwed || "0"))}
                       </Badge>
                     </div>
                   </div>
@@ -318,10 +317,7 @@ export function MultiInvoicePaymentForm({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => setStep("allocate")}
-                disabled={!clientId}
-              >
+              <Button onClick={() => setStep("allocate")} disabled={!clientId}>
                 Next
               </Button>
             </div>
@@ -370,7 +366,7 @@ export function MultiInvoicePaymentForm({
                 <Label>Reference Number (Optional)</Label>
                 <Input
                   value={referenceNumber}
-                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  onChange={e => setReferenceNumber(e.target.value)}
                   placeholder="Check #, Wire ID, etc."
                 />
               </div>
@@ -417,9 +413,9 @@ export function MultiInvoicePaymentForm({
                         <Checkbox
                           checked={
                             allocations.length > 0 &&
-                            allocations.every((a) => a.selected)
+                            allocations.every(a => a.selected)
                           }
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             handleSelectAll(!!checked)
                           }
                         />
@@ -433,7 +429,7 @@ export function MultiInvoicePaymentForm({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allocations.map((allocation) => (
+                    {allocations.map(allocation => (
                       <TableRow
                         key={allocation.invoiceId}
                         className={cn(
@@ -443,7 +439,7 @@ export function MultiInvoicePaymentForm({
                         <TableCell>
                           <Checkbox
                             checked={allocation.selected}
-                            onCheckedChange={(checked) =>
+                            onCheckedChange={checked =>
                               handleToggleInvoice(
                                 allocation.invoiceId,
                                 !!checked
@@ -477,7 +473,7 @@ export function MultiInvoicePaymentForm({
                               min="0"
                               max={allocation.amountDue}
                               value={allocation.allocatedAmount || ""}
-                              onChange={(e) =>
+                              onChange={e =>
                                 handleAllocationChange(
                                   allocation.invoiceId,
                                   e.target.value
@@ -500,7 +496,7 @@ export function MultiInvoicePaymentForm({
               <Label>Notes (Optional)</Label>
               <Textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 placeholder="Add any notes about this payment..."
                 rows={2}
               />
@@ -597,8 +593,8 @@ export function MultiInvoicePaymentForm({
                     </TableHeader>
                     <TableBody>
                       {allocations
-                        .filter((a) => a.selected && a.allocatedAmount > 0)
-                        .map((a) => (
+                        .filter(a => a.selected && a.allocatedAmount > 0)
+                        .map(a => (
                           <TableRow key={a.invoiceId}>
                             <TableCell>{a.invoiceNumber}</TableCell>
                             <TableCell className="text-right">
@@ -631,10 +627,7 @@ export function MultiInvoicePaymentForm({
               <Button variant="outline" onClick={() => setStep("allocate")}>
                 Back
               </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={recordPayment.isPending}
-              >
+              <Button onClick={handleSubmit} disabled={recordPayment.isPending}>
                 {recordPayment.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

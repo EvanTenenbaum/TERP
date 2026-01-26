@@ -138,16 +138,17 @@ export function AuditIcon({
 
 // Audit Trail Modal Component
 // LINT-005: Define type for audit log entries to avoid 'any'
+// Using a more flexible type that matches the tRPC API response
 interface AuditLogEntry {
-  id?: number;
-  action?: string;
-  activityType?: string;
-  createdAt?: Date | string;
-  timestamp?: Date | string;
-  userName?: string;
+  id: number;
+  action: string;
+  activityType: string;
+  createdAt: Date | null;
+  timestamp?: Date | string | null;
+  userName?: string | null;
   oldValue?: string | number | null;
   newValue?: string | number | null;
-  details?: string | Record<string, unknown>;
+  details: string;
 }
 
 interface AuditTrailModalProps {
@@ -170,7 +171,8 @@ function AuditTrailModal({
     { enabled: open }
   );
 
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return "Unknown";
     return new Date(date).toLocaleString();
   };
 

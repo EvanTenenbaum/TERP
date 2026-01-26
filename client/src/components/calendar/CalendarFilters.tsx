@@ -1,12 +1,21 @@
-import { useState, useEffect } from "react";
-import { Filter, X, Calendar } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Filter, Calendar } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+
+// LINT-005: Define type for calendar entries
+interface CalendarEntry {
+  id: number;
+  name: string;
+  color: string;
+}
 
 interface CalendarFiltersProps {
   onCalendarFilterChange?: (calendarIds: number[]) => void;
 }
 
-export default function CalendarFilters({ onCalendarFilterChange }: CalendarFiltersProps) {
+export default function CalendarFilters({
+  onCalendarFilterChange,
+}: CalendarFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
@@ -17,19 +26,27 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
   // Fetch available calendars
   const { data: calendarsData } = trpc.calendarsManagement.list.useQuery({});
 
+  // LINT-001: Memoize callback to satisfy exhaustive-deps
+  const handleCalendarFilterChange = useCallback(
+    (calendarIds: number[]) => {
+      onCalendarFilterChange?.(calendarIds);
+    },
+    [onCalendarFilterChange]
+  );
+
   // Initialize with all calendars selected
   useEffect(() => {
     if (calendarsData && selectedCalendars.length === 0) {
-      const allCalendarIds = calendarsData.map((c: any) => c.id);
+      const allCalendarIds = calendarsData.map((c: CalendarEntry) => c.id);
       setSelectedCalendars(allCalendarIds);
-      onCalendarFilterChange?.(allCalendarIds);
+      handleCalendarFilterChange(allCalendarIds);
     }
-  }, [calendarsData]);
+  }, [calendarsData, selectedCalendars.length, handleCalendarFilterChange]);
 
   const toggleCalendarFilter = (calendarId: number) => {
     let newSelection: number[];
     if (selectedCalendars.includes(calendarId)) {
-      newSelection = selectedCalendars.filter((id) => id !== calendarId);
+      newSelection = selectedCalendars.filter(id => id !== calendarId);
     } else {
       newSelection = [...selectedCalendars, calendarId];
     }
@@ -67,9 +84,13 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
 
   const priorities = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
-  const toggleFilter = (value: string, list: string[], setter: (list: string[]) => void) => {
+  const toggleFilter = (
+    value: string,
+    list: string[],
+    setter: (list: string[]) => void
+  ) => {
     if (list.includes(value)) {
-      setter(list.filter((item) => item !== value));
+      setter(list.filter(item => item !== value));
     } else {
       setter([...list, value]);
     }
@@ -82,9 +103,9 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
     setSelectedPriorities([]);
     // Reset calendars to all selected
     if (calendarsData) {
-      const allCalendarIds = calendarsData.map((c: any) => c.id);
+      const allCalendarIds = calendarsData.map((c: CalendarEntry) => c.id);
       setSelectedCalendars(allCalendarIds);
-      onCalendarFilterChange?.(allCalendarIds);
+      handleCalendarFilterChange(allCalendarIds);
     }
   };
 
@@ -113,7 +134,7 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
         </div>
         {activeFilterCount > 0 && (
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               clearAllFilters();
             }}
@@ -132,7 +153,7 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
               <Calendar className="h-3 w-3" />
               Calendars
             </span>
-            {calendarsData.map((calendar: any) => (
+            {calendarsData.map((calendar: CalendarEntry) => (
               <label
                 key={calendar.id}
                 className="flex items-center gap-2 cursor-pointer hover:opacity-80"
@@ -149,7 +170,10 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                       ? "opacity-100"
                       : "opacity-40"
                   }`}
-                  style={{ backgroundColor: calendar.color + "20", color: calendar.color }}
+                  style={{
+                    backgroundColor: calendar.color + "20",
+                    color: calendar.color,
+                  }}
                 >
                   <div
                     className="w-2.5 h-2.5 rounded-full"
@@ -173,7 +197,7 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                 Modules
               </div>
               <div className="space-y-1">
-                {modules.map((module) => (
+                {modules.map(module => (
                   <label
                     key={module}
                     className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900"
@@ -182,7 +206,11 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                       type="checkbox"
                       checked={selectedModules.includes(module)}
                       onChange={() =>
-                        toggleFilter(module, selectedModules, setSelectedModules)
+                        toggleFilter(
+                          module,
+                          selectedModules,
+                          setSelectedModules
+                        )
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -198,7 +226,7 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                 Event Types
               </div>
               <div className="max-h-48 space-y-1 overflow-y-auto">
-                {eventTypes.map((type) => (
+                {eventTypes.map(type => (
                   <label
                     key={type}
                     className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900"
@@ -207,7 +235,11 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                       type="checkbox"
                       checked={selectedEventTypes.includes(type)}
                       onChange={() =>
-                        toggleFilter(type, selectedEventTypes, setSelectedEventTypes)
+                        toggleFilter(
+                          type,
+                          selectedEventTypes,
+                          setSelectedEventTypes
+                        )
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -223,7 +255,7 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                 Status
               </div>
               <div className="space-y-1">
-                {statuses.map((status) => (
+                {statuses.map(status => (
                   <label
                     key={status}
                     className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900"
@@ -232,7 +264,11 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                       type="checkbox"
                       checked={selectedStatuses.includes(status)}
                       onChange={() =>
-                        toggleFilter(status, selectedStatuses, setSelectedStatuses)
+                        toggleFilter(
+                          status,
+                          selectedStatuses,
+                          setSelectedStatuses
+                        )
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -248,7 +284,7 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                 Priority
               </div>
               <div className="space-y-1">
-                {priorities.map((priority) => (
+                {priorities.map(priority => (
                   <label
                     key={priority}
                     className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900"
@@ -257,7 +293,11 @@ export default function CalendarFilters({ onCalendarFilterChange }: CalendarFilt
                       type="checkbox"
                       checked={selectedPriorities.includes(priority)}
                       onChange={() =>
-                        toggleFilter(priority, selectedPriorities, setSelectedPriorities)
+                        toggleFilter(
+                          priority,
+                          selectedPriorities,
+                          setSelectedPriorities
+                        )
                       }
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />

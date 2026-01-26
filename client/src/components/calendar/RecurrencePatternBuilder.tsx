@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Repeat, Calendar, Hash } from "lucide-react";
+import { Repeat } from "lucide-react";
 
 interface RecurrencePattern {
   frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
@@ -29,8 +29,18 @@ const DAYS_OF_WEEK = [
 ];
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export default function RecurrencePatternBuilder({
@@ -55,7 +65,7 @@ export default function RecurrencePatternBuilder({
     let newDays: number[];
 
     if (currentDays.includes(day)) {
-      newDays = currentDays.filter((d) => d !== day);
+      newDays = currentDays.filter(d => d !== day);
     } else {
       newDays = [...currentDays, day].sort((a, b) => a - b);
     }
@@ -85,9 +95,12 @@ export default function RecurrencePatternBuilder({
       summary += `every ${localPattern.interval} ${getFrequencyLabel()}`;
     }
 
-    if (localPattern.frequency === "WEEKLY" && localPattern.daysOfWeek?.length) {
+    if (
+      localPattern.frequency === "WEEKLY" &&
+      localPattern.daysOfWeek?.length
+    ) {
       const dayNames = localPattern.daysOfWeek.map(
-        (d) => DAYS_OF_WEEK.find((day) => day.value === d)?.fullLabel
+        d => DAYS_OF_WEEK.find(day => day.value === d)?.fullLabel
       );
       summary += ` on ${dayNames.join(", ")}`;
     }
@@ -110,7 +123,7 @@ export default function RecurrencePatternBuilder({
 
       {/* Frequency Selection */}
       <div className="grid grid-cols-4 gap-2">
-        {(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as const).map((freq) => (
+        {(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as const).map(freq => (
           <button
             key={freq}
             type="button"
@@ -134,8 +147,10 @@ export default function RecurrencePatternBuilder({
           min="1"
           max="99"
           value={localPattern.interval}
-          onChange={(e) =>
-            updatePattern({ interval: Math.max(1, parseInt(e.target.value) || 1) })
+          onChange={e =>
+            updatePattern({
+              interval: Math.max(1, parseInt(e.target.value) || 1),
+            })
           }
           className="w-16 rounded-md border border-gray-300 px-2 py-1 text-center text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
@@ -147,7 +162,7 @@ export default function RecurrencePatternBuilder({
         <div className="space-y-2">
           <span className="text-sm text-gray-600">Repeat on</span>
           <div className="flex gap-1">
-            {DAYS_OF_WEEK.map((day) => (
+            {DAYS_OF_WEEK.map(day => (
               <button
                 key={day.value}
                 type="button"
@@ -174,10 +189,16 @@ export default function RecurrencePatternBuilder({
             type="number"
             min="1"
             max="31"
-            value={localPattern.dayOfMonth || new Date(startDate || Date.now()).getDate()}
-            onChange={(e) =>
+            value={
+              localPattern.dayOfMonth ||
+              new Date(startDate || Date.now()).getDate()
+            }
+            onChange={e =>
               updatePattern({
-                dayOfMonth: Math.min(31, Math.max(1, parseInt(e.target.value) || 1)),
+                dayOfMonth: Math.min(
+                  31,
+                  Math.max(1, parseInt(e.target.value) || 1)
+                ),
               })
             }
             className="w-16 rounded-md border border-gray-300 px-2 py-1 text-center text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -191,8 +212,11 @@ export default function RecurrencePatternBuilder({
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-gray-600">Every</span>
           <select
-            value={localPattern.monthOfYear || new Date(startDate || Date.now()).getMonth() + 1}
-            onChange={(e) =>
+            value={
+              localPattern.monthOfYear ||
+              new Date(startDate || Date.now()).getMonth() + 1
+            }
+            onChange={e =>
               updatePattern({ monthOfYear: parseInt(e.target.value) })
             }
             className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -207,10 +231,16 @@ export default function RecurrencePatternBuilder({
             type="number"
             min="1"
             max="31"
-            value={localPattern.dayOfMonth || new Date(startDate || Date.now()).getDate()}
-            onChange={(e) =>
+            value={
+              localPattern.dayOfMonth ||
+              new Date(startDate || Date.now()).getDate()
+            }
+            onChange={e =>
               updatePattern({
-                dayOfMonth: Math.min(31, Math.max(1, parseInt(e.target.value) || 1)),
+                dayOfMonth: Math.min(
+                  31,
+                  Math.max(1, parseInt(e.target.value) || 1)
+                ),
               })
             }
             className="w-16 rounded-md border border-gray-300 px-2 py-1 text-center text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -226,7 +256,13 @@ export default function RecurrencePatternBuilder({
             <input
               type="radio"
               checked={localPattern.endType === "never"}
-              onChange={() => updatePattern({ endType: "never", endDate: undefined, endCount: undefined })}
+              onChange={() =>
+                updatePattern({
+                  endType: "never",
+                  endDate: undefined,
+                  endCount: undefined,
+                })
+              }
               className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">Never</span>
@@ -236,7 +272,9 @@ export default function RecurrencePatternBuilder({
             <input
               type="radio"
               checked={localPattern.endType === "date"}
-              onChange={() => updatePattern({ endType: "date", endCount: undefined })}
+              onChange={() =>
+                updatePattern({ endType: "date", endCount: undefined })
+              }
               className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">On date</span>
@@ -244,7 +282,7 @@ export default function RecurrencePatternBuilder({
               <input
                 type="date"
                 value={localPattern.endDate || ""}
-                onChange={(e) => updatePattern({ endDate: e.target.value })}
+                onChange={e => updatePattern({ endDate: e.target.value })}
                 min={startDate || new Date().toISOString().split("T")[0]}
                 className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -255,7 +293,9 @@ export default function RecurrencePatternBuilder({
             <input
               type="radio"
               checked={localPattern.endType === "count"}
-              onChange={() => updatePattern({ endType: "count", endDate: undefined })}
+              onChange={() =>
+                updatePattern({ endType: "count", endDate: undefined })
+              }
               className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">After</span>
@@ -266,7 +306,7 @@ export default function RecurrencePatternBuilder({
                   min="1"
                   max="999"
                   value={localPattern.endCount || 10}
-                  onChange={(e) =>
+                  onChange={e =>
                     updatePattern({
                       endCount: Math.max(1, parseInt(e.target.value) || 1),
                     })
@@ -289,7 +329,9 @@ export default function RecurrencePatternBuilder({
 }
 
 // Default pattern for new recurring events
-export const getDefaultRecurrencePattern = (startDate?: string): RecurrencePattern => {
+export const getDefaultRecurrencePattern = (
+  startDate?: string
+): RecurrencePattern => {
   const date = startDate ? new Date(startDate) : new Date();
   return {
     frequency: "WEEKLY",

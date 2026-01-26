@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, Calendar, User, CreditCard } from "lucide-react";
+import { DollarSign, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 
 interface InvoicePaymentHistoryProps {
@@ -128,7 +128,7 @@ export function InvoicePaymentHistory({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => (
+            {payments.map(payment => (
               <TableRow key={payment.allocationId}>
                 <TableCell className="font-medium">
                   {payment.paymentNumber || "-"}
@@ -159,15 +159,18 @@ export function InvoicePaymentHistory({
         </Table>
 
         {/* Notes section if any payment has notes */}
-        {payments.some((p) => p.notes) && (
+        {payments.some(p => p.notes) && (
           <div className="mt-4 border-t pt-3">
             <p className="text-xs font-medium text-muted-foreground mb-2">
               Notes:
             </p>
             {payments
-              .filter((p) => p.notes)
-              .map((p) => (
-                <p key={p.allocationId} className="text-sm text-muted-foreground">
+              .filter(p => p.notes)
+              .map(p => (
+                <p
+                  key={p.allocationId}
+                  className="text-sm text-muted-foreground"
+                >
                   {p.paymentNumber}: {p.notes}
                 </p>
               ))}

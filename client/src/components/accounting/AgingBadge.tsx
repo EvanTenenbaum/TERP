@@ -12,14 +12,19 @@ interface AgingBadgeProps {
 
 /**
  * AgingBadge - Colored badge for displaying AR/AP aging buckets
- * 
+ *
  * Features:
  * - Color-coded based on aging severity
  * - Shows aging bucket label (Current, 30 days, 60 days, etc.)
  * - Optional amount display
  * - Consistent with TERP design system
  */
-export function AgingBadge({ bucket, amount, currency = "$", className }: AgingBadgeProps) {
+export function AgingBadge({
+  bucket,
+  amount,
+  currency: _currency = "$",
+  className,
+}: AgingBadgeProps) {
   const getAgingConfig = () => {
     const lowerBucket = bucket.toLowerCase();
 
@@ -72,11 +77,8 @@ export function AgingBadge({ bucket, amount, currency = "$", className }: AgingB
     <Badge variant="outline" className={cn(config.className, className)}>
       {config.label}
       {amount !== undefined && amount > 0 && (
-        <span className="ml-1 font-semibold">
-          {formatAmount(amount)}
-        </span>
+        <span className="ml-1 font-semibold">{formatAmount(amount)}</span>
       )}
     </Badge>
   );
 }
-
