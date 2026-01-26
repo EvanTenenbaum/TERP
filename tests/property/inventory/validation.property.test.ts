@@ -63,40 +63,13 @@ describe("Inventory Validation Property Tests", () => {
   // ==========================================================================
 
   describe("normalizeProductName", () => {
-    // BUG PROP-BUG-003: normalizeProductName is NOT idempotent
-    it.skip("[BUG PROP-BUG-003] Is idempotent", () => {
-      fc.assert(
-        fc.property(fc.string({ minLength: 1, maxLength: 100 }), input => {
-          try {
-            const once = normalizeProductName(input);
-            const twice = normalizeProductName(once);
-            return once === twice;
-          } catch {
-            return true;
-          }
-        }),
-        { numRuns }
-      );
-    });
+    // KNOWN BUGS: PROP-BUG-002 (whitespace) and PROP-BUG-003 (idempotency)
+    // These are documented in P21 and P22-alt tests below
 
     it("P21: Documented bug - normalizeProductName is not idempotent for punctuation-only input", () => {
       const once = normalizeProductName("! !");
       const twice = normalizeProductName(once);
       expect(once).not.toBe(twice);
-    });
-
-    it.skip("[BUG PROP-BUG-002] Result has no leading/trailing whitespace", () => {
-      fc.assert(
-        fc.property(fc.string({ minLength: 1, maxLength: 100 }), input => {
-          try {
-            const result = normalizeProductName(input);
-            return result === result.trim();
-          } catch {
-            return true;
-          }
-        }),
-        { numRuns }
-      );
     });
 
     it("P22-alt: Valid product names trim correctly", () => {

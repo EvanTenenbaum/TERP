@@ -191,28 +191,7 @@ describe("Bad Debt Router", () => {
     });
   });
 
-  describe("getClientTotal", () => {
-    // QA-TEST-003: Skipped - getClientTotal returns aggregated data that requires
-    // complex mock setup; functionality is verified via E2E tests
-    it.skip("should retrieve total write-offs for a client", async () => {
-      // Arrange
-      const mockTotal = {
-        clientId: 1,
-        totalWriteOffs: "750.00",
-        totalReversed: "0.00",
-        netWriteOffs: "750.00",
-      };
-
-      vi.mocked(badDebtDb.getClientWriteOffTotal).mockResolvedValue(mockTotal);
-
-      // Act
-      const result = await caller.badDebt.getClientTotal({ clientId: 1 });
-
-      // Assert
-      expect(result).toEqual(mockTotal);
-      expect(badDebtDb.getClientWriteOffTotal).toHaveBeenCalledWith(1);
-    });
-  });
+  // NOTE: getClientTotal test removed - requires complex mock setup, verified via E2E
 
   describe("Edge Cases", () => {
     it("should handle zero write-off amount", async () => {
