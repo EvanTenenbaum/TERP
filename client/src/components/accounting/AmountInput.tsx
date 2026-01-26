@@ -2,7 +2,10 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-interface AmountInputProps extends Omit<React.ComponentProps<typeof Input>, "onChange" | "value"> {
+interface AmountInputProps extends Omit<
+  React.ComponentProps<typeof Input>,
+  "onChange" | "value"
+> {
   value?: number | string;
   onChange?: (value: number) => void;
   currency?: string;
@@ -11,7 +14,7 @@ interface AmountInputProps extends Omit<React.ComponentProps<typeof Input>, "onC
 
 /**
  * AmountInput - Currency input component with automatic formatting
- * 
+ *
  * Features:
  * - Formats numbers as currency (e.g., 1234.56 → $1,234.56)
  * - Handles decimal precision (2 decimal places)
@@ -29,17 +32,21 @@ export function AmountInput({
   const [displayValue, setDisplayValue] = React.useState<string>("");
   const [isFocused, setIsFocused] = React.useState(false);
 
+  // LINT-001: Use useCallback to memoize formatCurrency for exhaustive-deps compliance
   // Format number to currency display
-  const formatCurrency = (num: number): string => {
-    const absNum = Math.abs(num);
-    const formatted = new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(absNum);
-    
-    const sign = num < 0 ? "-" : "";
-    return `${sign}${currency}${formatted}`;
-  };
+  const formatCurrency = React.useCallback(
+    (num: number): string => {
+      const absNum = Math.abs(num);
+      const formatted = new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(absNum);
+
+      const sign = num < 0 ? "-" : "";
+      return `${sign}${currency}${formatted}`;
+    },
+    [currency]
+  );
 
   // Parse currency string to number
   const parseCurrency = (str: string): number => {
@@ -55,7 +62,7 @@ export function AmountInput({
       const numValue = typeof value === "string" ? parseFloat(value) : value;
       setDisplayValue(formatCurrency(numValue || 0));
     }
-  }, [value, isFocused, currency]);
+  }, [value, isFocused, formatCurrency]);
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(true);
@@ -68,20 +75,20 @@ export function AmountInput({
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(false);
     const numValue = parseCurrency(e.target.value);
-    
+
     // Validate negative values
     const finalValue = !allowNegative && numValue < 0 ? 0 : numValue;
-    
+
     setDisplayValue(formatCurrency(finalValue));
     onChange?.(finalValue);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    
+
     // Allow only numbers, decimal point, and optional negative sign
     const regex = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/;
-    
+
     if (regex.test(inputValue) || inputValue === "" || inputValue === "-") {
       setDisplayValue(inputValue);
     }
@@ -130,4 +137,3 @@ export function AmountInput({
     />
   );
 }
-

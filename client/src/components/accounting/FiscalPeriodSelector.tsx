@@ -26,7 +26,7 @@ interface FiscalPeriodSelectorProps {
 
 /**
  * FiscalPeriodSelector - Dropdown for selecting fiscal periods
- * 
+ *
  * Features:
  * - Fetches fiscal periods from API
  * - Optional filtering by status (OPEN, CLOSED, LOCKED)
@@ -43,16 +43,15 @@ export function FiscalPeriodSelector({
   className,
   showStatus = true,
 }: FiscalPeriodSelectorProps) {
-  const { data: periods, isLoading } = trpc.accounting.fiscalPeriods.list.useQuery({
-    status,
-  });
+  const { data: periods, isLoading } =
+    trpc.accounting.fiscalPeriods.list.useQuery({
+      status,
+    });
 
-  const { data: currentPeriod } = trpc.accounting.fiscalPeriods.getCurrent.useQuery();
+  const { data: currentPeriod } =
+    trpc.accounting.fiscalPeriods.getCurrent.useQuery();
 
-  if (isLoading) {
-    return <Skeleton className="h-10 w-full" />;
-  }
-
+  // LINT-001: Move hooks before any conditional returns to avoid rules-of-hooks violation
   // Sort periods by start date (most recent first)
   const sortedPeriods = React.useMemo(() => {
     if (!periods) return [];
@@ -63,23 +62,48 @@ export function FiscalPeriodSelector({
     });
   }, [periods]);
 
-  const selectedPeriod = sortedPeriods.find((period) => period.id === value);
+  if (isLoading) {
+    return <Skeleton className="h-10 w-full" />;
+  }
+
+  const selectedPeriod = sortedPeriods.find(period => period.id === value);
 
   const getStatusBadge = (periodStatus: FiscalPeriodStatus) => {
     switch (periodStatus) {
       case "OPEN":
-        return <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-200">Open</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="ml-2 bg-green-100 text-green-700 border-green-200"
+          >
+            Open
+          </Badge>
+        );
       case "CLOSED":
-        return <Badge variant="outline" className="ml-2 bg-gray-100 text-gray-700 border-gray-200">Closed</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="ml-2 bg-gray-100 text-gray-700 border-gray-200"
+          >
+            Closed
+          </Badge>
+        );
       case "LOCKED":
-        return <Badge variant="outline" className="ml-2 bg-red-100 text-red-700 border-red-200">Locked</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="ml-2 bg-red-100 text-red-700 border-red-200"
+          >
+            Locked
+          </Badge>
+        );
     }
   };
 
   return (
     <Select
       value={value?.toString()}
-      onValueChange={(val) => onChange?.(parseInt(val, 10))}
+      onValueChange={val => onChange?.(parseInt(val, 10))}
       disabled={disabled || !sortedPeriods || sortedPeriods.length === 0}
     >
       <SelectTrigger className={className}>
@@ -89,7 +113,12 @@ export function FiscalPeriodSelector({
               <span>
                 {selectedPeriod.periodName}
                 <span className="text-muted-foreground text-xs ml-2">
-                  ({formatDateRange(selectedPeriod.startDate, selectedPeriod.endDate)})
+                  (
+                  {formatDateRange(
+                    selectedPeriod.startDate,
+                    selectedPeriod.endDate
+                  )}
+                  )
                 </span>
               </span>
               {showStatus && getStatusBadge(selectedPeriod.status)}
@@ -98,12 +127,12 @@ export function FiscalPeriodSelector({
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="max-h-[300px]">
-        {sortedPeriods.map((period) => {
+        {sortedPeriods.map(period => {
           const isCurrent = currentPeriod?.id === period.id;
-          
+
           return (
-            <SelectItem 
-              key={period.id} 
+            <SelectItem
+              key={period.id}
               value={period.id.toString()}
               className={cn(isCurrent && "bg-blue-50 font-medium")}
             >
@@ -112,7 +141,10 @@ export function FiscalPeriodSelector({
                   <span className="flex items-center gap-2">
                     {period.periodName}
                     {isCurrent && (
-                      <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="bg-blue-100 text-blue-700 border-blue-200 text-xs"
+                      >
                         Current
                       </Badge>
                     )}
@@ -135,4 +167,3 @@ export function FiscalPeriodSelector({
     </Select>
   );
 }
-

@@ -1,13 +1,14 @@
 /**
  * WS-005: Audit Icon Component
  * Subtle "ℹ️" button that opens the audit modal for any calculated field or entity
- * 
+ *
  * Supports two usage patterns:
  * 1. onClick mode: Pass an onClick handler for custom behavior
  * 2. Entity mode: Pass type, entityId, and optional fieldName to open audit modal
  */
 
-import { useState } from "react";
+// LINT-002: Import React for React.MouseEvent type usage
+import React, { useState } from "react";
 import { Info, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +62,7 @@ export function AuditIcon({
   size = "sm",
 }: AuditIconProps) {
   const [showModal, setShowModal] = useState(false);
-  
+
   // Resolve entity type (support both 'type' and 'entityType' props)
   const resolvedEntityType = entityType || type;
 
@@ -78,9 +79,11 @@ export function AuditIcon({
   };
 
   // Determine tooltip text
-  const tooltipText = tooltip || (fieldName 
-    ? `View ${fieldName} calculation breakdown` 
-    : "View audit trail");
+  const tooltipText =
+    tooltip ||
+    (fieldName
+      ? `View ${fieldName} calculation breakdown`
+      : "View audit trail");
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -134,6 +137,19 @@ export function AuditIcon({
 }
 
 // Audit Trail Modal Component
+// LINT-005: Define type for audit log entries to avoid 'any'
+interface AuditLogEntry {
+  id?: number;
+  action?: string;
+  activityType?: string;
+  createdAt?: Date | string;
+  timestamp?: Date | string;
+  userName?: string;
+  oldValue?: string | number | null;
+  newValue?: string | number | null;
+  details?: string | Record<string, unknown>;
+}
+
 interface AuditTrailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -167,7 +183,7 @@ function AuditTrailModal({
             Audit Trail
           </DialogTitle>
           <DialogDescription>
-            {fieldName 
+            {fieldName
               ? `History for ${fieldName} on ${entityType} #${entityId}`
               : `History for ${entityType} #${entityId}`}
           </DialogDescription>
@@ -184,7 +200,7 @@ function AuditTrailModal({
               <p>No audit history found</p>
             </div>
           ) : (
-            auditLogs.map((log: any, index: number) => (
+            auditLogs.map((log: AuditLogEntry, index: number) => (
               <div
                 key={log.id || index}
                 className="border rounded-lg p-3 bg-gray-50"
@@ -204,14 +220,18 @@ function AuditTrailModal({
                 )}
                 {log.oldValue !== undefined && log.newValue !== undefined && (
                   <div className="mt-2 text-sm">
-                    <span className="text-red-600 line-through">{log.oldValue}</span>
+                    <span className="text-red-600 line-through">
+                      {log.oldValue}
+                    </span>
                     {" → "}
                     <span className="text-green-600">{log.newValue}</span>
                   </div>
                 )}
                 {log.details && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
+                    {typeof log.details === "string"
+                      ? log.details
+                      : JSON.stringify(log.details)}
                   </p>
                 )}
               </div>

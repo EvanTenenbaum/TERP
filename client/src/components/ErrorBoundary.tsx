@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { Component, ReactNode } from "react";
+// LINT-002: Import React for React.ErrorInfo type usage
+import React, { Component, ReactNode } from "react";
 import * as Sentry from "@sentry/react";
 
 // Helper to check if Sentry is available and initialized
 function isSentryAvailable(): boolean {
   try {
-    return typeof Sentry?.captureException === 'function';
+    return typeof Sentry?.captureException === "function";
   } catch {
     return false;
   }
@@ -43,7 +44,7 @@ class ErrorBoundary extends Component<Props, State> {
     // CRITICAL: Check Sentry availability first to prevent crashes
     if (isSentryAvailable()) {
       try {
-        Sentry.withScope((scope) => {
+        Sentry.withScope(scope => {
           scope.setContext("errorInfo", {
             componentStack: errorInfo.componentStack,
             componentName: this.props.name,
