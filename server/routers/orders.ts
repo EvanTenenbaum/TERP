@@ -23,6 +23,9 @@ import {
   orderLineItemAllocations,
   batches,
   products,
+  inventoryMovements,
+  orderStatusHistory,
+  type Batch,
 } from "../../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -431,15 +434,13 @@ export const ordersRouter = router({
           .where(inArray(batches.id, batchIds))
           .for("update");
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const batchMap = new Map(
-          batchRecords.map((b: any) => [b.id as number, b])
+        const batchMap = new Map<number, Batch>(
+          batchRecords.map((b: Batch) => [b.id, b])
         );
 
         // Check each line item has sufficient inventory
         for (const item of lineItems) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const batch = batchMap.get(item.batchId) as any;
+          const batch = batchMap.get(item.batchId);
           if (!batch) {
             // BUG-509: Log batch context for debugging
             logger.error({
@@ -1674,6 +1675,7 @@ export const ordersRouter = router({
   /**
    * Ship an order
    * Records shipping details and updates status to SHIPPED
+   * INV-001: Releases reserved inventory and creates inventory movement records
    */
   shipOrder: protectedProcedure
     .use(requirePermission("orders:update"))
@@ -1686,68 +1688,178 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get the order
-      const [order] = await db
-        .select()
-        .from(orders)
-        .where(eq(orders.id, input.id))
-        .limit(1);
+      return await withTransaction(async tx => {
+        // Get the order with FOR UPDATE lock
+        const [order] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.id))
+          .for("update")
+          .limit(1);
 
-      if (!order) {
-        throw new Error("Order not found");
-      }
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
 
-      if (order.fulfillmentStatus === "SHIPPED") {
-        throw new Error("Order is already shipped");
-      }
+        if (order.fulfillmentStatus === "SHIPPED") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Order is already shipped",
+          });
+        }
 
-      // Should be PACKED before shipping (but allow PENDING for flexibility)
-      if (!["PENDING", "PACKED"].includes(order.fulfillmentStatus || "")) {
-        throw new Error(
-          `Order cannot be shipped. Current status: ${order.fulfillmentStatus}`
-        );
-      }
+        // Should be PACKED before shipping (but allow PENDING for flexibility)
+        if (!["PENDING", "PACKED"].includes(order.fulfillmentStatus || "")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Order cannot be shipped. Current status: ${order.fulfillmentStatus}`,
+          });
+        }
 
-      // Build shipping notes
-      let shippingNotes = "";
-      if (input.carrier) shippingNotes += `Carrier: ${input.carrier}\n`;
-      if (input.trackingNumber)
-        shippingNotes += `Tracking: ${input.trackingNumber}\n`;
-      if (input.notes) shippingNotes += input.notes;
+        // INV-001: Get all line items for this order
+        const lineItems = await tx
+          .select({ id: orderLineItems.id })
+          .from(orderLineItems)
+          .where(eq(orderLineItems.orderId, input.id));
 
-      await db
-        .update(orders)
-        .set({
+        // INV-001: Get all allocations for this order's line items
+        const lineItemIds = lineItems.map((li: { id: number }) => li.id);
+        let allocations: Array<{
+          id: number;
+          orderLineItemId: number;
+          batchId: number;
+          quantityAllocated: string;
+        }> = [];
+
+        if (lineItemIds.length > 0) {
+          allocations = await tx
+            .select({
+              id: orderLineItemAllocations.id,
+              orderLineItemId: orderLineItemAllocations.orderLineItemId,
+              batchId: orderLineItemAllocations.batchId,
+              quantityAllocated: orderLineItemAllocations.quantityAllocated,
+            })
+            .from(orderLineItemAllocations)
+            .where(
+              inArray(orderLineItemAllocations.orderLineItemId, lineItemIds)
+            );
+        }
+
+        // INV-001: Release reserved quantities and create inventory movement records
+        const inventoryMovementRecords: Array<{
+          batchId: number;
+          quantity: number;
+          batchSku: string | null;
+        }> = [];
+
+        for (const allocation of allocations) {
+          const allocatedQty = parseFloat(allocation.quantityAllocated || "0");
+          if (allocatedQty <= 0) continue;
+
+          // Lock the batch row for update
+          const [batch] = await tx
+            .select()
+            .from(batches)
+            .where(eq(batches.id, allocation.batchId))
+            .for("update")
+            .limit(1);
+
+          if (!batch) {
+            logger.warn({
+              msg: "Batch not found during ship - skipping",
+              batchId: allocation.batchId,
+              orderId: input.id,
+            });
+            continue;
+          }
+
+          const currentReserved = parseFloat(batch.reservedQty || "0");
+          const currentOnHand = parseFloat(batch.onHandQty || "0");
+
+          // INV-001: Release reserved quantity
+          const newReserved = Math.max(0, currentReserved - allocatedQty);
+
+          // INV-001: Update batch - release reservation
+          // Note: onHandQty was already deducted at order confirmation for most flows
+          // We only release the reservation here to fix the "reserved forever" issue
+          await tx
+            .update(batches)
+            .set({
+              reservedQty: newReserved.toString(),
+            })
+            .where(eq(batches.id, allocation.batchId));
+
+          // INV-001: Create inventory movement record for the shipment
+          await tx.insert(inventoryMovements).values({
+            batchId: allocation.batchId,
+            inventoryMovementType: "SALE",
+            quantityChange: `-${allocatedQty}`,
+            quantityBefore: currentOnHand.toString(),
+            quantityAfter: currentOnHand.toString(), // onHand unchanged here, just recording shipment
+            referenceType: "ORDER_SHIPMENT",
+            referenceId: input.id,
+            notes: `Order shipped - reservation released. Reserved: ${currentReserved} → ${newReserved}`,
+            performedBy: userId,
+          });
+
+          inventoryMovementRecords.push({
+            batchId: allocation.batchId,
+            quantity: allocatedQty,
+            batchSku: batch.sku,
+          });
+        }
+
+        // Build shipping notes
+        let shippingNotes = "";
+        if (input.carrier) shippingNotes += `Carrier: ${input.carrier}\n`;
+        if (input.trackingNumber)
+          shippingNotes += `Tracking: ${input.trackingNumber}\n`;
+        if (input.notes) shippingNotes += input.notes;
+
+        // Update order status to SHIPPED
+        await tx
+          .update(orders)
+          .set({
+            fulfillmentStatus: "SHIPPED",
+            shippedAt: new Date(),
+            shippedBy: userId,
+            notes: shippingNotes
+              ? `${order.notes || ""}\n[Shipped]: ${shippingNotes}`.trim()
+              : order.notes,
+          })
+          .where(eq(orders.id, input.id));
+
+        // Log to status history
+        await tx.insert(orderStatusHistory).values({
+          orderId: input.id,
           fulfillmentStatus: "SHIPPED",
-          shippedAt: new Date(),
-          shippedBy: userId,
+          changedBy: userId,
           notes: shippingNotes
-            ? `${order.notes || ""}\n[Shipped]: ${shippingNotes}`.trim()
-            : order.notes,
-        })
-        .where(eq(orders.id, input.id));
+            ? `${shippingNotes}\nINV-001: Released ${allocations.length} batch reservations`
+            : `INV-001: Released ${allocations.length} batch reservations`,
+        });
 
-      // Log to status history
-      const { orderStatusHistory } = await import("../../drizzle/schema");
-      await db.insert(orderStatusHistory).values({
-        orderId: input.id,
-        fulfillmentStatus: "SHIPPED",
-        changedBy: userId,
-        notes: shippingNotes || undefined,
+        logger.info({
+          msg: "INV-001: Order shipped with inventory release",
+          orderId: input.id,
+          allocationsReleased: allocations.length,
+          inventoryMovements: inventoryMovementRecords.length,
+        });
+
+        return {
+          success: true,
+          orderId: input.id,
+          status: "SHIPPED",
+          trackingNumber: input.trackingNumber,
+          carrier: input.carrier,
+          inventoryReleased: inventoryMovementRecords,
+        };
       });
-
-      return {
-        success: true,
-        orderId: input.id,
-        status: "SHIPPED",
-        trackingNumber: input.trackingNumber,
-        carrier: input.carrier,
-      };
     }),
 
   /**
