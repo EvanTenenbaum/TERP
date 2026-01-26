@@ -12,15 +12,10 @@ vi.mock("../services/permissionService", () => setupPermissionMock());
 
 // Mock the accounting modules
 vi.mock("../accountingDb");
-vi.mock("../arApDb");
-vi.mock("../cashExpensesDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db as _db } from "../db";
 import * as accountingDb from "../accountingDb";
-import * as arApDb from "../arApDb";
-import * as cashExpensesDb from "../cashExpensesDb";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -236,130 +231,8 @@ describe("Accounting Router", () => {
     });
   });
 
-  describe("AR/AP", () => {
-    describe("arAp.getArSummary", () => {
-      it.skip("should retrieve AR summary", async () => {
-        const mockArSummary = {
-          totalAr: 50000,
-          current: 30000,
-          days30: 10000,
-          days60: 5000,
-          days90: 3000,
-          days90Plus: 2000,
-        };
-
-        vi.mocked(arApDb.getArSummary).mockResolvedValue(mockArSummary);
-
-        const _result = await caller.accounting.arAp.getArSummary();
-
-        expect(_result).toEqual(mockArSummary);
-      });
-    });
-
-    describe("arAp.getApSummary", () => {
-      it.skip("should retrieve AP summary", async () => {
-        const mockApSummary = {
-          totalAp: 25000,
-          current: 20000,
-          days30: 3000,
-          days60: 1000,
-          days90: 500,
-          days90Plus: 500,
-        };
-
-        vi.mocked(arApDb.getApSummary).mockResolvedValue(mockApSummary);
-
-        const _result = await caller.accounting.arAp.getApSummary();
-
-        expect(_result).toEqual(mockApSummary);
-      });
-    });
-  });
-
-  describe("Cash & Expenses", () => {
-    describe("cashExpenses.listExpenses", () => {
-      it.skip("should list expenses", async () => {
-        const mockExpenses = [
-          { id: 1, description: "Rent", amount: 2000, date: new Date() },
-          { id: 2, description: "Utilities", amount: 500, date: new Date() },
-        ];
-
-        vi.mocked(cashExpensesDb.getExpenses).mockResolvedValue(mockExpenses);
-
-        const result = await caller.accounting.cashExpenses.listExpenses({});
-
-        expect(result).toEqual(mockExpenses);
-      });
-    });
-
-    describe("cashExpenses.createExpense", () => {
-      it.skip("should create a new expense", async () => {
-        const input = {
-          description: "Office Supplies",
-          amount: 150.5,
-          date: new Date("2025-01-15"),
-          categoryId: 1,
-        };
-
-        const mockCreatedExpense = {
-          id: 3,
-          ...input,
-        };
-
-        vi.mocked(cashExpensesDb.createExpense).mockResolvedValue(
-          mockCreatedExpense
-        );
-
-        const result =
-          await caller.accounting.cashExpenses.createExpense(input);
-
-        expect(result).toEqual(mockCreatedExpense);
-      });
-    });
-  });
-
-  describe("Financial Reports", () => {
-    describe("reports.balanceSheet", () => {
-      it.skip("should generate balance sheet", async () => {
-        const mockBalanceSheet = {
-          assets: { total: 100000, current: 50000, fixed: 50000 },
-          liabilities: { total: 40000, current: 20000, longTerm: 20000 },
-          equity: { total: 60000 },
-        };
-
-        vi.mocked(accountingDb.generateBalanceSheet).mockResolvedValue(
-          mockBalanceSheet
-        );
-
-        const result = await caller.accounting.reports.balanceSheet({
-          asOfDate: new Date("2025-01-31"),
-        });
-
-        expect(result).toEqual(mockBalanceSheet);
-      });
-    });
-
-    describe("reports.incomeStatement", () => {
-      it.skip("should generate income statement", async () => {
-        const mockIncomeStatement = {
-          revenue: 150000,
-          expenses: 100000,
-          netIncome: 50000,
-        };
-
-        vi.mocked(accountingDb.generateIncomeStatement).mockResolvedValue(
-          mockIncomeStatement
-        );
-
-        const result = await caller.accounting.reports.incomeStatement({
-          startDate: new Date("2025-01-01"),
-          endDate: new Date("2025-01-31"),
-        });
-
-        expect(result).toEqual(mockIncomeStatement);
-      });
-    });
-  });
+  // NOTE: AR/AP, Cash Expenses, and Financial Reports tests removed
+  // These endpoints are not yet implemented. Add tests when implemented.
 
   describe("Property 2: Invoice Status Schema Completeness", () => {
     const DATABASE_INVOICE_STATUSES = [
