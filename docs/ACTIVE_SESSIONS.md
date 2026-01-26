@@ -20,6 +20,7 @@
 | Session-20260109-QA-E2E-a63131           | QA-E2E full browser coverage                     | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
 | Session-20260109-QA-E2E-0c47cb           | QA-E2E credential provisioning + flow completion | main                                               | QA/Automation | In Progress | 2026-01-09 | -          |
 | Session-20260116-E2E-INFRA               | E2E-001, E2E-002, E2E-003 Infrastructure         | manus/e2e-infrastructure-implementation-2026-01-16 | tests-e2e/    | In Progress | 2026-01-16 | 2026-01-16 |
+| Session-20260126-TEAM-E-INFRA-RNtE3      | Team E Infrastructure & Schema                   | claude/setup-team-e-infrastructure-RNtE3           | drizzle/, server/ | In Progress | 2026-01-26 | 2026-01-26 |
 
 ## ⏸️ Paused / Waiting
 

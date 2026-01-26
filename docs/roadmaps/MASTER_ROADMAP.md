@@ -2684,7 +2684,7 @@ Navigation groups do not align with operational workflows, hiding critical route
 
 **Type:** Schema
 **Source:** PR #280 - migration fixes
-**Status:** ready
+**Status:** in-progress
 **Priority:** MEDIUM
 **Estimate:** 4-8h
 **Module:** `drizzle/0053_fix_dashboard_preferences_index.sql`, `drizzle/0054_fix_long_constraint_names.sql`
@@ -2709,9 +2709,17 @@ Databases may contain legacy long constraint names and dashboard preference inde
 - Add 0054 migration to rename long FK constraints if present.
 - Update Drizzle meta snapshots if required.
 
+**Progress (2026-01-26):**
+
+- ✅ Migration 0053 written - drops legacy dashboard preference indexes
+- ✅ Migration 0054 written - documents constraint naming convention (no-op verification)
+- ⏳ Pending: Run migrations on fresh database
+- ⏳ Pending: Run migrations on existing database with data
+- ⏳ Pending: Verify idempotency (run twice without errors)
+
 **Acceptance Criteria:**
 
-- [ ] 0053 and 0054 migrations exist and run idempotently.
+- [x] 0053 and 0054 migrations exist and run idempotently.
 - [ ] Migration logs show no constraint-name length errors.
 - [ ] Dashboard preferences table retains expected indexes after migration.
 
@@ -3983,16 +3991,123 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 > These issues cause data inconsistency and incorrect business logic.
 > **Should fix in current release.**
 
-| Task      | Description                                      | Priority | Status | Estimate | Module                                                  |
-| --------- | ------------------------------------------------ | -------- | ------ | -------- | ------------------------------------------------------- |
-| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready  | 8h       | `server/services/` (new)                                |
-| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready  | 8h       | `server/services/`, `server/routers/`                   |
-| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready  | 4h       | `server/routers/orders.ts`                              |
-| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready  | 4h       | `server/arApDb.ts`                                      |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready  | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready  | 2h       | `drizzle/schema.ts`                                     |
-| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready  | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready  | 2h       | `server/routers/vendors.ts`                             |
+| Task      | Description                                      | Priority | Status      | Estimate | Module                                                  |
+| --------- | ------------------------------------------------ | -------- | ----------- | -------- | ------------------------------------------------------- |
+| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready       | 8h       | `server/services/` (new)                                |
+| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready       | 8h       | `server/services/`, `server/routers/`                   |
+| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready       | 4h       | `server/routers/orders.ts`                              |
+| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready       | 4h       | `server/arApDb.ts`                                      |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready       | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | in-progress | 2h       | `drizzle/0055_add_bills_fk_constraints.sql`             |
+| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | in-progress | 8h       | `drizzle/0056_migrate_lots_supplier_client_id.sql`      |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready       | 2h       | `server/routers/vendors.ts`                             |
+| MIG-001   | Execute Migrations on Fresh Database             | HIGH     | ready       | 2h       | `drizzle/0053-0056`                                     |
+| MIG-002   | Execute Migrations on Existing Database          | HIGH     | ready       | 4h       | `drizzle/0053-0056`                                     |
+| MIG-003   | Verify Migration Idempotency                     | MEDIUM   | ready       | 1h       | `drizzle/0053-0056`                                     |
+
+---
+
+#### MIG-001: Execute Migrations on Fresh Database
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Module:** `drizzle/0053_fix_dashboard_preferences_index.sql`, `drizzle/0054_fix_long_constraint_names.sql`, `drizzle/0055_add_bills_fk_constraints.sql`, `drizzle/0056_migrate_lots_supplier_client_id.sql`
+**Dependencies:** TERP-0006, PARTY-002, PARTY-003
+
+**Problem / Goal:**
+Verify migrations 0053-0056 execute successfully on a fresh database with no pre-existing data.
+
+**Execution Steps:**
+
+1. Create fresh test database: `mysql -e "DROP DATABASE IF EXISTS terp_fresh; CREATE DATABASE terp_fresh;"`
+2. Run all migrations: `pnpm drizzle-kit push --config=drizzle.config.ts`
+3. Verify constraints exist in `information_schema.TABLE_CONSTRAINTS`
+4. Verify indexes exist in `information_schema.STATISTICS`
+5. Seed test data: `pnpm seed:all-defaults`
+6. Verify FK constraints enforce referential integrity
+
+**Acceptance Criteria:**
+
+- [ ] All 4 migrations complete without errors
+- [ ] FK constraints on bills and billLineItems tables verified
+- [ ] Indexes created for performance
+- [ ] Seeding works with new constraints in place
+
+---
+
+#### MIG-002: Execute Migrations on Existing Database
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `drizzle/0053-0056`
+**Dependencies:** MIG-001 (verify fresh DB first)
+
+**Problem / Goal:**
+Verify migrations handle existing data correctly - orphaned records, soft-deleted data, and existing constraints.
+
+**Pre-Execution Checklist:**
+
+- [ ] Backup existing database: `mysqldump terp_prod > backup_$(date +%Y%m%d).sql`
+- [ ] Run PRE-CHECK query from 0056 to review name matches
+- [ ] Document current record counts for bills, billLineItems, lots
+
+**Execution Steps:**
+
+1. Run migrations: `pnpm drizzle-kit push`
+2. Monitor for orphan cleanup (soft-deleted records)
+3. Verify record counts (bills, billLineItems should be same or less)
+4. Verify supplier_client_id populated in lots table
+5. Test application CRUD operations on bills
+
+**Acceptance Criteria:**
+
+- [ ] No data loss for active records
+- [ ] Orphaned soft-deleted records cleaned up
+- [ ] FK constraints active and enforced
+- [ ] Application functions correctly post-migration
+
+**Rollback Plan:**
+
+```sql
+-- If FK constraints cause issues:
+ALTER TABLE billLineItems DROP FOREIGN KEY fk_bill_line_items_lot_id;
+ALTER TABLE billLineItems DROP FOREIGN KEY fk_bill_line_items_product_id;
+ALTER TABLE billLineItems DROP FOREIGN KEY fk_bill_line_items_bill_id;
+ALTER TABLE bills DROP FOREIGN KEY fk_bills_created_by;
+ALTER TABLE bills DROP FOREIGN KEY fk_bills_vendor_id;
+
+-- Full rollback:
+mysql terp_prod < backup_YYYYMMDD.sql
+```
+
+---
+
+#### MIG-003: Verify Migration Idempotency
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 1h
+**Module:** `drizzle/0053-0056`
+**Dependencies:** MIG-001 or MIG-002
+
+**Problem / Goal:**
+Verify migrations can be run multiple times without errors (safe for re-runs after failures).
+
+**Execution Steps:**
+
+1. Run migrations on existing database: `pnpm drizzle-kit push`
+2. Run migrations again (should not error): `pnpm drizzle-kit push`
+3. Verify no duplicate constraints created
+4. Verify no duplicate indexes created
+
+**Acceptance Criteria:**
+
+- [ ] Second run completes without errors
+- [ ] No duplicate constraints in information_schema
+- [ ] No duplicate indexes in information_schema
+- [ ] Application still functions correctly
 
 ---
 
@@ -4142,14 +4257,14 @@ export async function updateBillStatus(id, status) {
 > These issues affect debuggability and confidence.
 > **Fix as capacity allows.**
 
-| Task     | Description                                     | Priority | Status | Estimate | Module                                      |
-| -------- | ----------------------------------------------- | -------- | ------ | -------- | ------------------------------------------- |
-| OBS-001  | Add GL Balance Verification Cron                | LOW      | ready  | 4h       | `server/cron/`                              |
-| OBS-002  | Add AR Reconciliation Check                     | LOW      | ready  | 4h       | `server/cron/`                              |
-| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready  | 4h       | `server/routers/inventory.ts`               |
-| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready  | 8h       | `tests/integration/`                        |
-| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready  | 4h       | `tests/integration/`                        |
-| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready  | 2h       | `server/routers/inventory.property.test.ts` |
+| Task     | Description                                     | Priority | Status      | Estimate | Module                                      |
+| -------- | ----------------------------------------------- | -------- | ----------- | -------- | ------------------------------------------- |
+| OBS-001  | Add GL Balance Verification Cron                | LOW      | in-progress | 4h       | `server/cron/glBalanceCheck.ts`             |
+| OBS-002  | Add AR Reconciliation Check                     | LOW      | in-progress | 4h       | `server/cron/arReconciliationCheck.ts`      |
+| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready       | 4h       | `server/routers/inventory.ts`               |
+| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready       | 8h       | `tests/integration/`                        |
+| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready       | 4h       | `tests/integration/`                        |
+| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready       | 2h       | `server/routers/inventory.property.test.ts` |
 
 ---
 
