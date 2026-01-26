@@ -16,6 +16,10 @@ export { RecordPaymentDialog } from "./RecordPaymentDialog"; // FEAT-007
 export { MultiInvoicePaymentForm } from "./MultiInvoicePaymentForm"; // FEAT-007
 export { InvoicePaymentHistory } from "./InvoicePaymentHistory"; // FEAT-007
 export { BillStatusActions, BillStatusTimeline } from "./BillStatusActions"; // ARCH-004
+export {
+  ClientBalanceCard,
+  ClientBalanceDiscrepancyAlert,
+} from "./ClientBalanceCard"; // ARCH-002
 
 // Re-export types
 export type {
