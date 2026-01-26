@@ -3,7 +3,7 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   orders,
@@ -1134,15 +1134,24 @@ export async function confirmDraftOrder(input: {
     // 2. Parse draft items
     const draftItems = JSON.parse(draft.items as string) as OrderItem[];
 
-    // 3. Check inventory availability
+    // INV-002: Get unique batch IDs and lock all batches upfront to prevent race conditions
+    const batchIds = [...new Set(draftItems.map(item => item.batchId))];
+
+    // INV-002: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
+    // This ensures that if two confirmations happen simultaneously, one will wait for the other
+    const lockedBatches = await tx
+      .select()
+      .from(batches)
+      .where(inArray(batches.id, batchIds))
+      .for("update");
+
+    // Create a map for quick lookup
+    const batchMap = new Map(lockedBatches.map(b => [b.id, b]));
+
+    // 3. Check inventory availability with locked rows
     // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
     for (const item of draftItems) {
-      const batch = await tx
-        .select()
-        .from(batches)
-        .where(eq(batches.id, item.batchId))
-        .limit(1)
-        .then(rows => rows[0]);
+      const batch = batchMap.get(item.batchId);
 
       if (!batch) {
         throw new Error(`Batch ${item.batchId} not found`);
