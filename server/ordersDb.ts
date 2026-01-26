@@ -757,6 +757,15 @@ export async function deleteOrder(
 
   // If it's a SALE, mark as cancelled instead of deleting
   if (order.orderType === "SALE") {
+    // SM-002: Validate sale status allows cancellation
+    const currentSaleStatus = order.saleStatus || "PENDING";
+    if (!isValidStatusTransition("sale", currentSaleStatus, "CANCELLED")) {
+      throw new Error(
+        `Cannot cancel order: invalid transition from ${currentSaleStatus} to CANCELLED. ` +
+        `Orders with status ${currentSaleStatus} cannot be cancelled.`
+      );
+    }
+
     await db
       .update(orders)
       .set({ saleStatus: "CANCELLED" })
@@ -1684,6 +1693,14 @@ function getTransitionError(
   return `Invalid ${statusType} status transition: ${currentStatus} -> ${newStatus}. Valid transitions from ${currentStatus}: ${allowedTransitions.join(", ")}`;
 }
 
+/**
+ * Get valid transitions for a sale status
+ * SM-002: Helper for error messages and UI display
+ */
+export function getValidSaleStatusTransitions(currentStatus: string): string[] {
+  return SALE_STATUS_TRANSITIONS[currentStatus] || [];
+}
+
 // ============================================================================
 // FULFILLMENT STATUS MANAGEMENT
 // ============================================================================
@@ -1838,6 +1855,61 @@ export async function getOrderStatusHistory(orderId: number) {
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(orderStatusHistory.changedAt);
 }
+
+// ============================================================================
+// SM-002: SALE STATUS MANAGEMENT
+// ============================================================================
+
+/**
+ * Update order sale status with state machine validation
+ * SM-002: Ensures only valid transitions are allowed
+ */
+export async function updateSaleStatus(input: {
+  orderId: number;
+  newStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED";
+  notes?: string;
+  userId: number;
+}): Promise<{ success: boolean; newStatus: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get current order
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, input.orderId));
+
+  if (!order) {
+    throw new Error(`Order ${input.orderId} not found`);
+  }
+
+  if (order.orderType !== "SALE") {
+    throw new Error("Only SALE orders have sale status");
+  }
+
+  const currentStatus = order.saleStatus || "PENDING";
+
+  // Validate transition using state machine
+  if (!isValidStatusTransition("sale", currentStatus, input.newStatus)) {
+    const validTransitions = getValidSaleStatusTransitions(currentStatus);
+    throw new Error(
+      `Invalid sale status transition: ${currentStatus} -> ${input.newStatus}. ` +
+      `Valid transitions from ${currentStatus}: ${validTransitions.join(", ") || "none"}`
+    );
+  }
+
+  // Update status
+  await db
+    .update(orders)
+    .set({ saleStatus: input.newStatus })
+    .where(eq(orders.id, input.orderId));
+
+  return { success: true, newStatus: input.newStatus };
+}
+
+// ============================================================================
+// INVENTORY HELPERS
+// ============================================================================
 
 /**
  * Decrement inventory for order items when shipped
