@@ -250,7 +250,7 @@ export function UserManagement() {
 
   // BUG-046: Differentiated error state for auth vs other errors
   if (error) {
-    const errorCode = getErrorCode(error);
+    const _errorCode = getErrorCode(error);
 
     // Handle auth errors with specific UI
     if (isAuthError(error)) {
@@ -260,7 +260,8 @@ export function UserManagement() {
         <Card className="max-w-lg mx-auto mt-8">
           <CardHeader>
             <div className="flex items-center gap-2">
-              {authError.type === "NOT_LOGGED_IN" || authError.type === "SESSION_EXPIRED" ? (
+              {authError.type === "NOT_LOGGED_IN" ||
+              authError.type === "SESSION_EXPIRED" ? (
                 <LogIn className="h-5 w-5 text-yellow-600" />
               ) : (
                 <Lock className="h-5 w-5 text-destructive" />
@@ -269,12 +270,19 @@ export function UserManagement() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert variant={authError.type === "PERMISSION_DENIED" ? "destructive" : "default"}>
+            <Alert
+              variant={
+                authError.type === "PERMISSION_DENIED"
+                  ? "destructive"
+                  : "default"
+              }
+            >
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>
                 {authError.type === "NOT_LOGGED_IN" && "Login Required"}
                 {authError.type === "SESSION_EXPIRED" && "Session Expired"}
-                {authError.type === "DEMO_USER_RESTRICTED" && "Demo Mode Restriction"}
+                {authError.type === "DEMO_USER_RESTRICTED" &&
+                  "Demo Mode Restriction"}
                 {authError.type === "PERMISSION_DENIED" && "Access Denied"}
               </AlertTitle>
               <AlertDescription>{authError.message}</AlertDescription>
@@ -285,7 +293,8 @@ export function UserManagement() {
                 {authError.action.href ? (
                   <Link href={authError.action.href}>
                     <Button>
-                      {authError.type === "NOT_LOGGED_IN" || authError.type === "SESSION_EXPIRED" ? (
+                      {authError.type === "NOT_LOGGED_IN" ||
+                      authError.type === "SESSION_EXPIRED" ? (
                         <LogIn className="h-4 w-4 mr-2" />
                       ) : null}
                       {authError.action.label}

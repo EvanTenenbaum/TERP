@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { Calendar, MapPin, Clock } from "lucide-react";
 
 interface Event {
   id: number;
@@ -22,12 +22,16 @@ interface AgendaViewProps {
   onEventClick: (eventId: number) => void;
 }
 
-export default function AgendaView({ currentDate, events, onEventClick }: AgendaViewProps) {
+export default function AgendaView({
+  currentDate: _currentDate,
+  events,
+  onEventClick,
+}: AgendaViewProps) {
   // Group events by date
   const groupedEvents = useMemo(() => {
     const groups: { [key: string]: Event[] } = {};
 
-    events.forEach((event) => {
+    events.forEach(event => {
       const dateKey = event.startDate;
       if (!groups[dateKey]) {
         groups[dateKey] = [];
@@ -36,7 +40,7 @@ export default function AgendaView({ currentDate, events, onEventClick }: Agenda
     });
 
     // Sort each group by time
-    Object.keys(groups).forEach((dateKey) => {
+    Object.keys(groups).forEach(dateKey => {
       groups[dateKey].sort((a, b) => {
         if (!a.startTime && !b.startTime) return 0;
         if (!a.startTime) return -1;
@@ -48,7 +52,7 @@ export default function AgendaView({ currentDate, events, onEventClick }: Agenda
     // Sort dates
     const sortedDates = Object.keys(groups).sort();
 
-    return sortedDates.map((date) => ({
+    return sortedDates.map(date => ({
       date,
       events: groups[date],
     }));
@@ -67,8 +71,11 @@ export default function AgendaView({ currentDate, events, onEventClick }: Agenda
 
   return (
     <div className="space-y-6">
-      {groupedEvents.map((group) => (
-        <div key={group.date} className="rounded-lg border border-gray-200 bg-white shadow-sm">
+      {groupedEvents.map(group => (
+        <div
+          key={group.date}
+          className="rounded-lg border border-gray-200 bg-white shadow-sm"
+        >
           {/* Date Header */}
           <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
             <div className="text-sm font-semibold text-gray-900">
@@ -78,7 +85,7 @@ export default function AgendaView({ currentDate, events, onEventClick }: Agenda
 
           {/* Events List */}
           <div className="divide-y divide-gray-200">
-            {group.events.map((event) => (
+            {group.events.map(event => (
               <button
                 key={event.id}
                 onClick={() => onEventClick(event.id)}
@@ -184,9 +191,15 @@ function formatDateHeader(dateStr: string): string {
     date.getFullYear() === tomorrow.getFullYear();
 
   if (isToday) {
-    return "Today, " + date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+    return (
+      "Today, " +
+      date.toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    );
   } else if (isTomorrow) {
-    return "Tomorrow, " + date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+    return (
+      "Tomorrow, " +
+      date.toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    );
   } else {
     return date.toLocaleDateString("en-US", {
       weekday: "long",

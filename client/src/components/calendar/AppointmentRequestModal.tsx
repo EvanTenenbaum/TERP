@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Check, Calendar, Clock, User, Phone, Mail, FileText } from "lucide-react";
+import { X, Check, Calendar, User, Phone, Mail, FileText } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import { toast } from "sonner";
 
@@ -19,10 +19,12 @@ export default function AppointmentRequestModal({
   const [responseNotes, setResponseNotes] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
-  const { data: request, isLoading } = trpc.appointmentRequests.getById.useQuery(
-    { id: requestId! },
-    { enabled: isOpen && !!requestId }
-  );
+  // LINT-007: Avoid non-null assertion by using -1 as fallback (query is disabled when requestId is null)
+  const { data: request, isLoading } =
+    trpc.appointmentRequests.getById.useQuery(
+      { id: requestId ?? -1 },
+      { enabled: isOpen && !!requestId }
+    );
 
   const approveMutation = trpc.appointmentRequests.approve.useMutation({
     onSuccess: () => {
@@ -78,7 +80,9 @@ export default function AppointmentRequestModal({
       cancelled: "bg-gray-100 text-gray-800 border-gray-200",
     };
     return (
-      <span className={`inline-flex items-center rounded-md border px-3 py-1 text-sm font-medium ${styles[status] || styles.pending}`}>
+      <span
+        className={`inline-flex items-center rounded-md border px-3 py-1 text-sm font-medium ${styles[status] || styles.pending}`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -123,7 +127,9 @@ export default function AppointmentRequestModal({
               <div className="flex items-center gap-3">
                 <div
                   className="h-12 w-1 rounded-full"
-                  style={{ backgroundColor: request.appointmentTypeColor || "#3B82F6" }}
+                  style={{
+                    backgroundColor: request.appointmentTypeColor || "#3B82F6",
+                  }}
                 />
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">
@@ -194,7 +200,9 @@ export default function AppointmentRequestModal({
             {/* Response Notes (if already responded) */}
             {request.responseNotes && (
               <div className="mb-6">
-                <h4 className="mb-2 font-medium text-gray-900">Response Notes</h4>
+                <h4 className="mb-2 font-medium text-gray-900">
+                  Response Notes
+                </h4>
                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <p className="text-gray-600">{request.responseNotes}</p>
                 </div>
@@ -213,7 +221,7 @@ export default function AppointmentRequestModal({
                       </label>
                       <textarea
                         value={responseNotes}
-                        onChange={(e) => setResponseNotes(e.target.value)}
+                        onChange={e => setResponseNotes(e.target.value)}
                         rows={3}
                         required
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
@@ -229,10 +237,14 @@ export default function AppointmentRequestModal({
                       </button>
                       <button
                         onClick={handleReject}
-                        disabled={rejectMutation.isPending || !responseNotes.trim()}
+                        disabled={
+                          rejectMutation.isPending || !responseNotes.trim()
+                        }
                         className="flex-1 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                       >
-                        {rejectMutation.isPending ? "Rejecting..." : "Confirm Rejection"}
+                        {rejectMutation.isPending
+                          ? "Rejecting..."
+                          : "Confirm Rejection"}
                       </button>
                     </div>
                   </>
@@ -244,7 +256,7 @@ export default function AppointmentRequestModal({
                       </label>
                       <textarea
                         value={responseNotes}
-                        onChange={(e) => setResponseNotes(e.target.value)}
+                        onChange={e => setResponseNotes(e.target.value)}
                         rows={2}
                         className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Add any notes for the client..."
@@ -285,9 +297,7 @@ export default function AppointmentRequestModal({
             )}
           </div>
         ) : (
-          <div className="p-8 text-center text-gray-500">
-            Request not found
-          </div>
+          <div className="p-8 text-center text-gray-500">Request not found</div>
         )}
       </div>
     </div>

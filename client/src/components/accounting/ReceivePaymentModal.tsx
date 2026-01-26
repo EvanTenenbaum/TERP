@@ -1,11 +1,11 @@
 /**
  * WS-001: Quick Action - Receive Client Payment Modal
- * 
+ *
  * A streamlined 3-click flow for recording client cash drop-offs:
  * 1. Select Client
  * 2. Enter Amount
  * 3. Confirm & Generate Receipt
- * 
+ *
  * WS-006: Integrated ReceiptPreview for post-payment receipt viewing
  */
 
@@ -31,14 +31,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  DollarSign, 
-  User, 
-  CreditCard, 
+import {
+  DollarSign,
+  User,
+  CreditCard,
   FileText,
   AlertTriangle,
   CheckCircle,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReceiptPreview } from "@/components/receipts/ReceiptPreview";
@@ -66,9 +66,13 @@ export function ReceivePaymentModal({
   const utils = trpc.useUtils();
 
   // Form state
-  const [clientId, setClientId] = useState<number | null>(preselectedClientId || null);
+  const [clientId, setClientId] = useState<number | null>(
+    preselectedClientId || null
+  );
   const [amount, setAmount] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CHECK" | "WIRE" | "ACH" | "OTHER">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "CASH" | "CHECK" | "WIRE" | "ACH" | "OTHER"
+  >("CASH");
   const [note, setNote] = useState<string>("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -92,47 +96,51 @@ export function ReceivePaymentModal({
   }, [open, preselectedClientId]);
 
   // Fetch recent clients for quick selection
-  const { data: recentClients, isLoading: loadingClients } = trpc.accounting.quickActions.getRecentClients.useQuery(
-    { limit: 10 },
-    { enabled: open && step === 1 }
-  );
+  const { data: recentClients, isLoading: loadingClients } =
+    trpc.accounting.quickActions.getRecentClients.useQuery(
+      { limit: 10 },
+      { enabled: open && step === 1 }
+    );
 
   // Preview balance calculation
-  const { data: balancePreview, isLoading: loadingPreview } = trpc.accounting.quickActions.previewPaymentBalance.useQuery(
-    { clientId: clientId!, amount: parseFloat(amount) || 0 },
-    { enabled: !!clientId && parseFloat(amount) > 0 && step >= 2 }
-  );
+  // LINT-007: Avoid non-null assertion by using -1 as fallback (query is disabled when clientId is null)
+  const { data: balancePreview, isLoading: _loadingPreview } =
+    trpc.accounting.quickActions.previewPaymentBalance.useQuery(
+      { clientId: clientId ?? -1, amount: parseFloat(amount) || 0 },
+      { enabled: !!clientId && parseFloat(amount) > 0 && step >= 2 }
+    );
 
   // Submit mutation
-  const receivePayment = trpc.accounting.quickActions.receiveClientPayment.useMutation({
-    onSuccess: (result) => {
-      toast({
-        title: "Payment Recorded",
-        description: `${result.paymentNumber}: $${result.paymentAmount.toLocaleString()} received from ${result.clientName}`,
-      });
-      utils.accounting.payments.list.invalidate();
-      utils.accounting.quickActions.getRecentClients.invalidate();
-      
-      // Show receipt preview if receipt was generated (WS-006)
-      // Note: receiptUrl indicates receipt was generated, use paymentId as receiptId
-      if (result.receiptUrl) {
-        setReceiptId(result.paymentId);
-        setClientEmail(undefined);
-        setClientPhone(undefined);
-        setShowReceiptPreview(true);
-      } else {
-        onSuccess?.(result);
-        onOpenChange(false);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const receivePayment =
+    trpc.accounting.quickActions.receiveClientPayment.useMutation({
+      onSuccess: result => {
+        toast({
+          title: "Payment Recorded",
+          description: `${result.paymentNumber}: $${result.paymentAmount.toLocaleString()} received from ${result.clientName}`,
+        });
+        utils.accounting.payments.list.invalidate();
+        utils.accounting.quickActions.getRecentClients.invalidate();
+
+        // Show receipt preview if receipt was generated (WS-006)
+        // Note: receiptUrl indicates receipt was generated, use paymentId as receiptId
+        if (result.receiptUrl) {
+          setReceiptId(result.paymentId);
+          setClientEmail(undefined);
+          setClientPhone(undefined);
+          setShowReceiptPreview(true);
+        } else {
+          onSuccess?.(result);
+          onOpenChange(false);
+        }
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   const handleSubmit = () => {
     if (!clientId || !amount || parseFloat(amount) <= 0) {
@@ -213,7 +221,7 @@ export function ReceivePaymentModal({
             ) : (
               <Select
                 value={clientId?.toString() || ""}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   setClientId(parseInt(value));
                   if (step === 1) setStep(2);
                 }}
@@ -222,7 +230,7 @@ export function ReceivePaymentModal({
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {recentClients?.map((client) => (
+                  {recentClients?.map(client => (
                     <SelectItem key={client.id} value={client.id.toString()}>
                       <div className="flex items-center justify-between w-full">
                         <span>{client.name}</span>
@@ -258,9 +266,10 @@ export function ReceivePaymentModal({
                   placeholder="0.00"
                   className="pl-7 text-lg font-mono"
                   value={amount}
-                  onChange={(e) => {
+                  onChange={e => {
                     setAmount(e.target.value);
-                    if (step === 2 && parseFloat(e.target.value) > 0) setStep(3);
+                    if (step === 2 && parseFloat(e.target.value) > 0)
+                      setStep(3);
                   }}
                   autoFocus={step === 2}
                 />
@@ -273,24 +282,32 @@ export function ReceivePaymentModal({
             <div className="rounded-lg border p-4 space-y-2 bg-muted/50">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Current Balance:</span>
-                <span className="font-mono">{formatCurrency(balancePreview.currentBalance)}</span>
+                <span className="font-mono">
+                  {formatCurrency(balancePreview.currentBalance)}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Payment Amount:</span>
-                <span className="font-mono text-green-600">- {formatCurrency(balancePreview.paymentAmount)}</span>
+                <span className="font-mono text-green-600">
+                  - {formatCurrency(balancePreview.paymentAmount)}
+                </span>
               </div>
               <div className="border-t pt-2 flex justify-between font-medium">
                 <span>New Balance:</span>
-                <span className={`font-mono ${balancePreview.projectedBalance < 0 ? "text-blue-600" : ""}`}>
+                <span
+                  className={`font-mono ${balancePreview.projectedBalance < 0 ? "text-blue-600" : ""}`}
+                >
                   {formatCurrency(balancePreview.projectedBalance)}
                 </span>
               </div>
-              
+
               {balancePreview.willCreateCredit && (
                 <Alert className="mt-2">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
-                    This payment exceeds the current balance. The client will have a credit of {formatCurrency(Math.abs(balancePreview.projectedBalance))}.
+                    This payment exceeds the current balance. The client will
+                    have a credit of{" "}
+                    {formatCurrency(Math.abs(balancePreview.projectedBalance))}.
                   </AlertDescription>
                 </Alert>
               )}
@@ -300,13 +317,18 @@ export function ReceivePaymentModal({
           {/* Payment Method */}
           {parseFloat(amount) > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="paymentMethod" className="flex items-center gap-2">
+              <Label
+                htmlFor="paymentMethod"
+                className="flex items-center gap-2"
+              >
                 <CreditCard className="h-4 w-4" />
                 Payment Method
               </Label>
               <Select
                 value={paymentMethod}
-                onValueChange={(value) => setPaymentMethod(value as typeof paymentMethod)}
+                onValueChange={value =>
+                  setPaymentMethod(value as typeof paymentMethod)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -333,7 +355,7 @@ export function ReceivePaymentModal({
                 id="note"
                 placeholder="Add a note about this payment..."
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={e => setNote(e.target.value)}
                 rows={2}
               />
             </div>
@@ -346,7 +368,12 @@ export function ReceivePaymentModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!clientId || !amount || parseFloat(amount) <= 0 || receivePayment.isPending}
+            disabled={
+              !clientId ||
+              !amount ||
+              parseFloat(amount) <= 0 ||
+              receivePayment.isPending
+            }
             className="gap-2"
           >
             {receivePayment.isPending ? (

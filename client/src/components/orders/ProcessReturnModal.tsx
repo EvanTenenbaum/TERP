@@ -1,13 +1,25 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
-import { PackageX } from 'lucide-react';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import { PackageX } from "lucide-react";
 
 interface ProcessReturnModalProps {
   orderId: number;
@@ -17,16 +29,18 @@ interface ProcessReturnModalProps {
   onSuccess: () => void;
 }
 
-export function ProcessReturnModal({ 
-  orderId, 
+export function ProcessReturnModal({
+  orderId,
   orderItems,
-  open, 
-  onClose, 
-  onSuccess 
+  open,
+  onClose,
+  onSuccess,
 }: ProcessReturnModalProps) {
-  const [selectedItems, setSelectedItems] = useState<Record<number, number>>({});
-  const [reason, setReason] = useState<string>('');
-  const [notes, setNotes] = useState('');
+  const [selectedItems, setSelectedItems] = useState<Record<number, number>>(
+    {}
+  );
+  const [reason, setReason] = useState<string>("");
+  const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const processReturn = trpc.orders.processReturn.useMutation();
@@ -47,36 +61,45 @@ export function ProcessReturnModal({
 
   const handleSubmit = async () => {
     if (Object.keys(selectedItems).length === 0) {
-      toast.error('Please select at least one item to return');
+      toast.error("Please select at least one item to return");
       return;
     }
     if (!reason) {
-      toast.error('Please select a return reason');
+      toast.error("Please select a return reason");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const items = Object.entries(selectedItems).map(([batchId, quantity]) => ({
-        batchId: parseInt(batchId),
-        quantity,
-      }));
+      const items = Object.entries(selectedItems).map(
+        ([batchId, quantity]) => ({
+          batchId: parseInt(batchId),
+          quantity,
+        })
+      );
 
       await processReturn.mutateAsync({
         orderId,
         items,
-        reason: reason as any,
+        reason: reason as
+          | "DEFECTIVE"
+          | "WRONG_ITEM"
+          | "NOT_AS_DESCRIBED"
+          | "CUSTOMER_CHANGED_MIND"
+          | "OTHER",
         notes: notes || undefined,
       });
 
-      toast.success('Return processed successfully');
+      toast.success("Return processed successfully");
       setSelectedItems({});
-      setReason('');
-      setNotes('');
+      setReason("");
+      setNotes("");
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to process return');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to process return";
+      toast.error(message);
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -97,11 +120,16 @@ export function ProcessReturnModal({
           <div>
             <Label>Select Items to Return</Label>
             <div className="mt-2 space-y-2 border rounded-lg p-3 max-h-60 overflow-y-auto">
-              {orderItems.map((item) => (
-                <div key={item.batchId} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded">
+              {orderItems.map(item => (
+                <div
+                  key={item.batchId}
+                  className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded"
+                >
                   <Checkbox
                     checked={!!selectedItems[item.batchId]}
-                    onCheckedChange={() => handleItemToggle(item.batchId, item.quantity)}
+                    onCheckedChange={() =>
+                      handleItemToggle(item.batchId, item.quantity)
+                    }
                   />
                   <div className="flex-1">
                     <div className="font-medium">{item.displayName}</div>
@@ -115,7 +143,12 @@ export function ProcessReturnModal({
                       min="1"
                       max={item.quantity}
                       value={selectedItems[item.batchId]}
-                      onChange={(e) => handleQuantityChange(item.batchId, parseInt(e.target.value) || 1)}
+                      onChange={e =>
+                        handleQuantityChange(
+                          item.batchId,
+                          parseInt(e.target.value) || 1
+                        )
+                      }
                       className="w-20 px-2 py-1 border rounded text-center"
                     />
                   )}
@@ -134,8 +167,12 @@ export function ProcessReturnModal({
               <SelectContent>
                 <SelectItem value="DEFECTIVE">Defective</SelectItem>
                 <SelectItem value="WRONG_ITEM">Wrong Item</SelectItem>
-                <SelectItem value="NOT_AS_DESCRIBED">Not as Described</SelectItem>
-                <SelectItem value="CUSTOMER_CHANGED_MIND">Customer Changed Mind</SelectItem>
+                <SelectItem value="NOT_AS_DESCRIBED">
+                  Not as Described
+                </SelectItem>
+                <SelectItem value="CUSTOMER_CHANGED_MIND">
+                  Customer Changed Mind
+                </SelectItem>
                 <SelectItem value="OTHER">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -147,7 +184,7 @@ export function ProcessReturnModal({
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Add any additional notes about this return..."
               rows={3}
               className="mt-1"
@@ -169,11 +206,10 @@ export function ProcessReturnModal({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Processing...' : 'Process Return'}
+            {isSubmitting ? "Processing..." : "Process Return"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

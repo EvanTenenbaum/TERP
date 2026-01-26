@@ -6,9 +6,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { InboxItem } from "./InboxItem";
 
+// LINT-005: Define type for tab values
+type InboxTabValue = "all" | "unread" | "archived";
 
 export function InboxPanel() {
-  const [selectedTab, setSelectedTab] = useState<"all" | "unread" | "archived">("all");
+  const [selectedTab, setSelectedTab] = useState<"all" | "unread" | "archived">(
+    "all"
+  );
 
   const utils = trpc.useContext();
 
@@ -16,13 +20,15 @@ export function InboxPanel() {
   const { data: allItemsData, isLoading } = trpc.inbox.getMyItems.useQuery({
     includeArchived: selectedTab === "archived",
   });
-  
+
   // Extract items from paginated response
   const allItems = allItemsData?.items ?? [];
 
   // Handle paginated response from inbox.getUnread
   const { data: unreadItemsData } = trpc.inbox.getUnread.useQuery();
-  const unreadItems = Array.isArray(unreadItemsData) ? unreadItemsData : (unreadItemsData?.items ?? []);
+  const unreadItems = Array.isArray(unreadItemsData)
+    ? unreadItemsData
+    : (unreadItemsData?.items ?? []);
 
   const { data: stats } = trpc.inbox.getStats.useQuery();
 
@@ -36,7 +42,8 @@ export function InboxPanel() {
   });
 
   const handleMarkAllAsSeen = () => {
-    const unreadIds = unreadItems.map((item: any) => item.id);
+    // LINT-005: Let TypeScript infer type from API response
+    const unreadIds = unreadItems.map(item => item.id);
     if (unreadIds.length > 0) {
       bulkMarkAsSeen.mutate({ itemIds: unreadIds });
     }
@@ -46,8 +53,8 @@ export function InboxPanel() {
     selectedTab === "unread"
       ? unreadItems
       : selectedTab === "archived"
-        ? allItems.filter((item) => item.isArchived)
-        : allItems.filter((item) => !item.isArchived);
+        ? allItems.filter(item => item.isArchived)
+        : allItems.filter(item => !item.isArchived);
 
   return (
     <div className="flex flex-col h-full">
@@ -76,7 +83,11 @@ export function InboxPanel() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
+        {/* LINT-005: Use proper type for tab value */}
+        <Tabs
+          value={selectedTab}
+          onValueChange={v => setSelectedTab(v as InboxTabValue)}
+        >
           <TabsList className="w-full">
             <TabsTrigger value="all" className="flex-1">
               All
@@ -119,7 +130,7 @@ export function InboxPanel() {
           </div>
         ) : (
           <div className="divide-y">
-            {displayItems.map((item) => (
+            {displayItems.map(item => (
               <InboxItem key={item.id} item={item} />
             ))}
           </div>

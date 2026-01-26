@@ -19,16 +19,17 @@ import {
   List,
   ListOrdered,
   CheckSquare,
-  Save,
   Loader2,
   Maximize2,
   Minimize2,
   Check,
 } from "lucide-react";
+import type { JSONContent } from "@tiptap/react";
 
 interface FreeformNoteWidgetProps {
   noteId?: number;
-  onNoteDeleted?: () => void;
+  // LINT-003: Prefix unused prop with underscore
+  _onNoteDeleted?: () => void;
 }
 
 type WidgetSize = "compact" | "standard" | "expanded";
@@ -39,8 +40,13 @@ const SIZE_HEIGHTS: Record<WidgetSize, string> = {
   expanded: "h-[600px]",
 };
 
-export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidgetProps) {
-  const [currentNoteId, setCurrentNoteId] = useState<number | null>(noteId || null);
+export const FreeformNoteWidget = memo(function FreeformNoteWidget({
+  noteId,
+  _onNoteDeleted,
+}: FreeformNoteWidgetProps) {
+  const [currentNoteId, setCurrentNoteId] = useState<number | null>(
+    noteId || null
+  );
   const [title, setTitle] = useState("Quick Notes");
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -52,13 +58,15 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
   const updateNoteMutation = trpc.freeformNotes.update.useMutation();
 
   // Load existing note if noteId provided
-  const { data: existingNote, isLoading: isLoadingNote } = trpc.freeformNotes.getById.useQuery(
-    { noteId: currentNoteId! },
-    { 
-      enabled: !!currentNoteId,
-      refetchInterval: false, // Don't auto-refetch, only on manual actions
-    }
-  );
+  // LINT-007: Use fallback for null case (query is disabled when currentNoteId is null)
+  const { data: existingNote, isLoading: isLoadingNote } =
+    trpc.freeformNotes.getById.useQuery(
+      { noteId: currentNoteId ?? -1 },
+      {
+        enabled: !!currentNoteId,
+        refetchInterval: false, // Don't auto-refetch, only on manual actions
+      }
+    );
 
   const editor = useEditor({
     extensions: [
@@ -82,7 +90,8 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
     content: "",
     editorProps: {
       attributes: {
-        class: "prose prose-sm max-w-none focus:outline-none p-4 tiptap-editor overflow-y-auto",
+        class:
+          "prose prose-sm max-w-none focus:outline-none p-4 tiptap-editor overflow-y-auto",
       },
       handleKeyDown: (view, event) => {
         if (event.key === "Tab" && !event.shiftKey) {
@@ -113,7 +122,8 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
   useEffect(() => {
     if (existingNote && editor && !isInitialized) {
       setTitle(existingNote.title);
-      editor.commands.setContent(existingNote.content as any);
+      // LINT-005: Cast to JSONContent for TipTap editor
+      editor.commands.setContent(existingNote.content as JSONContent);
       setLastSaved(new Date(existingNote.updatedAt));
       setIsInitialized(true);
     } else if (!existingNote && editor && !isInitialized) {
@@ -123,12 +133,13 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
   }, [existingNote, editor, isInitialized]);
 
   // Auto-save with debounce
-  const handleContentChange = (content: any) => {
+  // LINT-005: Use JSONContent type for TipTap content
+  const handleContentChange = (content: JSONContent) => {
     // Don't save during initialization
     if (!isInitialized) {
       return;
     }
-    
+
     if (!currentNoteId) {
       // Create new note
       createNoteMutation.mutate(
@@ -137,7 +148,7 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
           content,
         },
         {
-          onSuccess: (data) => {
+          onSuccess: data => {
             setCurrentNoteId(data as number);
             setLastSaved(new Date());
           },
@@ -149,11 +160,14 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
     }
   };
 
-  const debouncedSave = useDebounceCallback((content: any) => {
+  // LINT-005: Use JSONContent type
+  const debouncedSave = useDebounceCallback((content: JSONContent) => {
     setIsSaving(true);
+    // LINT-007: Guard against null noteId
+    if (!currentNoteId) return;
     updateNoteMutation.mutate(
       {
-        noteId: currentNoteId!,
+        noteId: currentNoteId,
         title,
         content,
       },
@@ -207,7 +221,7 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onN
         <div className="flex items-center justify-between gap-2">
           <Input
             value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
+            onChange={e => handleTitleChange(e.target.value)}
             className="text-lg font-semibold border-none shadow-none p-0 h-auto focus-visible:ring-0"
             placeholder="Note title..."
           />

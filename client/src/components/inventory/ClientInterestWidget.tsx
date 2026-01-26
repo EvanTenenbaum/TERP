@@ -4,7 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchBadge } from "../needs/MatchBadge";
-import { Users, TrendingUp, Loader2, MessageSquare, FileText } from "lucide-react";
+import {
+  Users,
+  TrendingUp,
+  Loader2,
+  MessageSquare,
+  FileText,
+} from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -16,25 +22,33 @@ interface ClientInterestWidgetProps {
   batchId: number;
 }
 
+// LINT-005: Define badge variant type
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
 export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
   const [creatingQuote, setCreatingQuote] = useState<number | null>(null);
   const { user } = useAuth();
 
   // Fetch matches for this batch
-  const { data: matchesData, isLoading } = trpc.matching.findMatchesForBatch.useQuery({
-    batchId,
-  });
+  const { data: matchesData, isLoading } =
+    trpc.matching.findMatchesForBatch.useQuery({
+      batchId,
+    });
 
   // Create quote mutation
-  const createQuoteMutation = trpc.clientNeeds.createQuoteFromMatch.useMutation({
-    onSuccess: () => {
-      setCreatingQuote(null);
-    },
-  });
+  const createQuoteMutation = trpc.clientNeeds.createQuoteFromMatch.useMutation(
+    {
+      onSuccess: () => {
+        setCreatingQuote(null);
+      },
+    }
+  );
 
   const matches = matchesData?.data || [];
 
-  const handleCreateQuote = async (match: any) => {
+  // LINT-005: Use inferred match type from API
+  type MatchResult = (typeof matches)[number];
+  const handleCreateQuote = async (match: MatchResult) => {
     setCreatingQuote(match.clientId);
     try {
       await createQuoteMutation.mutateAsync({
@@ -84,13 +98,18 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
   }
 
   const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, any> = {
+    // LINT-005: Use proper Badge variant type
+    const variants: Record<string, BadgeVariant> = {
       URGENT: "destructive",
       HIGH: "default",
       MEDIUM: "secondary",
       LOW: "outline",
     };
-    return <Badge variant={variants[priority] || "outline"} className="text-xs">{priority}</Badge>;
+    return (
+      <Badge variant={variants[priority] || "outline"} className="text-xs">
+        {priority}
+      </Badge>
+    );
   };
 
   return (
@@ -104,14 +123,17 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
       </div>
 
       <div className="space-y-3">
-        {matches.map((match: any) => (
+        {/* LINT-005: Let TypeScript infer match type from API response */}
+        {matches.map(match => (
           <Card key={match.clientNeedId} className="p-4">
             <div className="space-y-3">
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{match.clientName || `Client #${match.clientId}`}</p>
+                    <p className="font-medium">
+                      {match.clientName || `Client #${match.clientId}`}
+                    </p>
                     {match.priority && getPriorityBadge(match.priority)}
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -119,7 +141,9 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                   </p>
                 </div>
                 <MatchBadge
-                  matchType={match.matchType}
+                  matchType={
+                    match.matchType as "EXACT" | "CLOSE" | "HISTORICAL"
+                  }
                   confidence={match.confidence}
                   size="sm"
                   showIcon={false}
@@ -143,13 +167,17 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                 {match.neededBy && (
                   <div>
                     <p className="text-muted-foreground">Needed By</p>
-                    <p className="font-medium">{new Date(match.neededBy).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(match.neededBy).toLocaleDateString()}
+                    </p>
                   </div>
                 )}
                 {match.daysSinceCreated !== undefined && (
                   <div>
                     <p className="text-muted-foreground">Created</p>
-                    <p className="font-medium">{match.daysSinceCreated} days ago</p>
+                    <p className="font-medium">
+                      {match.daysSinceCreated} days ago
+                    </p>
                   </div>
                 )}
               </div>
@@ -159,8 +187,12 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                 <div className="text-xs text-muted-foreground">
                   <p className="font-medium mb-1">Match reasons:</p>
                   <ul className="space-y-0.5">
-                    {match.reasons.slice(0, 3).map((reason: string, idx: number) => (
-                      <li key={`reason-${idx}-${reason.substring(0, 20)}`} className="flex items-start gap-1">
+                    {/* LINT-004: Use reason content as key instead of array index */}
+                    {match.reasons.slice(0, 3).map((reason: string) => (
+                      <li
+                        key={`reason-${reason.substring(0, 40)}`}
+                        className="flex items-start gap-1"
+                      >
                         <span className="text-green-500">✓</span>
                         <span>{reason}</span>
                       </li>
@@ -214,11 +246,15 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
               <span className="text-muted-foreground">Potential Revenue:</span>
             </div>
             <span className="font-medium">
-              ${matches.reduce((sum: number, m: any) => {
-                const qty = parseFloat(m.quantityNeeded || "0");
-                const price = parseFloat(m.calculatedPrice || "0");
-                return sum + (qty * price);
-              }, 0).toFixed(2)}
+              {/* LINT-005: Use maxPrice since calculatedPrice doesn't exist in API */}
+              $
+              {matches
+                .reduce((sum, m) => {
+                  const qty = parseFloat(String(m.quantityNeeded ?? "0"));
+                  const price = parseFloat(String(m.maxPrice ?? "0"));
+                  return sum + qty * price;
+                }, 0)
+                .toFixed(2)}
             </span>
           </div>
         </Card>
@@ -226,4 +262,3 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
     </div>
   );
 }
-

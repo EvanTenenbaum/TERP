@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { useVersionCheck } from "@/hooks/use-version-check";
 
 export function VersionChecker() {
-  const { hasUpdate, resetUpdateStatus } = useVersionCheck();
+  const { hasUpdate, resetUpdateStatus: _resetUpdateStatus } =
+    useVersionCheck();
   const toastIdRef = useRef<string | number | null>(null);
 
   useEffect(() => {
@@ -33,4 +34,3 @@ export function VersionChecker() {
   // This component doesn't render anything
   return null;
 }
-

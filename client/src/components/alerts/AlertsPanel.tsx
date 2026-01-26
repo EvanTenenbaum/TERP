@@ -59,13 +59,22 @@ const SEVERITY_CONFIG = {
   },
 };
 
-const TYPE_CONFIG: Record<string, { icon: typeof AlertCircle; label: string }> = {
-  LOW_STOCK: { icon: Package, label: "Low Stock" },
-  OUT_OF_STOCK: { icon: AlertCircle, label: "Out of Stock" },
-  CLIENT_NEED: { icon: Users, label: "Client Need" },
-  VENDOR_HARVEST: { icon: Package, label: "Vendor Harvest" },
-  PENDING_VALUATION: { icon: AlertTriangle, label: "Pending Valuation" },
-};
+// LINT-005: Define alert type for type-safe filtering
+type AlertType =
+  | "LOW_STOCK"
+  | "OUT_OF_STOCK"
+  | "CLIENT_NEED"
+  | "VENDOR_HARVEST"
+  | "PENDING_VALUATION";
+
+const TYPE_CONFIG: Record<string, { icon: typeof AlertCircle; label: string }> =
+  {
+    LOW_STOCK: { icon: Package, label: "Low Stock" },
+    OUT_OF_STOCK: { icon: AlertCircle, label: "Out of Stock" },
+    CLIENT_NEED: { icon: Users, label: "Client Need" },
+    VENDOR_HARVEST: { icon: Package, label: "Vendor Harvest" },
+    PENDING_VALUATION: { icon: AlertTriangle, label: "Pending Valuation" },
+  };
 
 interface AlertsPanelProps {
   variant?: "full" | "dropdown" | "compact";
@@ -79,9 +88,13 @@ export const AlertsPanel = memo(function AlertsPanel({
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("all");
 
-  const { data: alerts, isLoading, refetch } = trpc.alerts.getAll.useQuery(
+  const {
+    data: alerts,
+    isLoading,
+    refetch,
+  } = trpc.alerts.getAll.useQuery(
     {
-      type: activeTab !== "all" ? (activeTab as any) : undefined,
+      type: activeTab !== "all" ? (activeTab as AlertType) : undefined,
       limit: 50,
     },
     { refetchInterval: 30000 }
@@ -146,7 +159,7 @@ export const AlertsPanel = memo(function AlertsPanel({
               </div>
             ) : (
               <div className="divide-y">
-                {alerts?.slice(0, 10).map((alert) => {
+                {alerts?.slice(0, 10).map(alert => {
                   const severity = SEVERITY_CONFIG[alert.severity];
                   const type = TYPE_CONFIG[alert.type] || TYPE_CONFIG.LOW_STOCK;
                   const Icon = type.icon;
@@ -154,7 +167,9 @@ export const AlertsPanel = memo(function AlertsPanel({
                   return (
                     <button
                       key={alert.id}
-                      onClick={() => navigateToEntity(alert.entityType, alert.entityId)}
+                      onClick={() =>
+                        navigateToEntity(alert.entityType, alert.entityId)
+                      }
                       className="w-full p-3 text-left hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-start gap-3">
@@ -162,12 +177,16 @@ export const AlertsPanel = memo(function AlertsPanel({
                           <Icon className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{alert.title}</p>
+                          <p className="text-sm font-medium truncate">
+                            {alert.title}
+                          </p>
                           <p className="text-xs text-muted-foreground truncate">
                             {alert.description}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(alert.createdAt), {
+                              addSuffix: true,
+                            })}
                           </p>
                         </div>
                       </div>
@@ -203,7 +222,9 @@ export const AlertsPanel = memo(function AlertsPanel({
               Active Alerts
             </span>
             {stats && (
-              <Badge variant={stats.totalAlerts > 0 ? "destructive" : "outline"}>
+              <Badge
+                variant={stats.totalAlerts > 0 ? "destructive" : "outline"}
+              >
                 {stats.totalAlerts}
               </Badge>
             )}
@@ -244,13 +265,21 @@ export const AlertsPanel = memo(function AlertsPanel({
           </span>
           {stats && (
             <div className="flex items-center gap-2 text-sm font-normal">
-              <Badge variant={stats.outOfStockCount > 0 ? "destructive" : "outline"}>
+              <Badge
+                variant={stats.outOfStockCount > 0 ? "destructive" : "outline"}
+              >
                 {stats.outOfStockCount} Out of Stock
               </Badge>
-              <Badge variant={stats.criticalStockCount > 0 ? "destructive" : "secondary"}>
+              <Badge
+                variant={
+                  stats.criticalStockCount > 0 ? "destructive" : "secondary"
+                }
+              >
                 {stats.criticalStockCount} Critical
               </Badge>
-              <Badge variant={stats.lowStockCount > 0 ? "secondary" : "outline"}>
+              <Badge
+                variant={stats.lowStockCount > 0 ? "secondary" : "outline"}
+              >
                 {stats.lowStockCount} Low
               </Badge>
             </div>
@@ -281,10 +310,11 @@ export const AlertsPanel = memo(function AlertsPanel({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {alerts?.map((alert) => {
+                  {alerts?.map(alert => {
                     const severity = SEVERITY_CONFIG[alert.severity];
-                    const type = TYPE_CONFIG[alert.type] || TYPE_CONFIG.LOW_STOCK;
-                    const SeverityIcon = severity.icon;
+                    const type =
+                      TYPE_CONFIG[alert.type] || TYPE_CONFIG.LOW_STOCK;
+                    const _SeverityIcon = severity.icon;
                     const TypeIcon = type.icon;
 
                     return (
@@ -297,7 +327,9 @@ export const AlertsPanel = memo(function AlertsPanel({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium truncate">{alert.title}</p>
+                            <p className="font-medium truncate">
+                              {alert.title}
+                            </p>
                             <Badge variant="outline" className="text-xs">
                               {type.label}
                             </Badge>
@@ -306,14 +338,18 @@ export const AlertsPanel = memo(function AlertsPanel({
                             {alert.description}
                           </p>
                           <p className="text-xs opacity-60 mt-1">
-                            {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(alert.createdAt), {
+                              addSuffix: true,
+                            })}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigateToEntity(alert.entityType, alert.entityId)}
+                            onClick={() =>
+                              navigateToEntity(alert.entityType, alert.entityId)
+                            }
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
