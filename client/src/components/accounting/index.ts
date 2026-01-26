@@ -27,6 +27,11 @@ export {
   ReturnGLStatus,
 } from "./GLReversalStatus"; // TERP-0012 Phase 2
 
+// Financial Reports (TERP-0012 Phase 3)
+export { TrialBalanceReport } from "./TrialBalanceReport";
+export { BalanceSheetReport } from "./BalanceSheetReport";
+export { IncomeStatementReport } from "./IncomeStatementReport";
+
 // Re-export types
 export type {
   InvoiceStatus,
