@@ -41,6 +41,8 @@ import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
 import { startNotificationQueueCron } from "../cron/notificationQueueCron.js";
 import { startDebtAgingCron } from "../cron/debtAgingCron.js";
+import { startGLBalanceVerificationCron } from "../cron/glBalanceVerificationCron.js";
+import { startARReconciliationCron } from "../cron/arReconciliationCron.js";
 import { startLeaderElection, stopLeaderElection } from "../utils/cronLeaderElection";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
@@ -544,6 +546,24 @@ async function startServer() {
         logger.info("✅ Debt aging notification cron job started");
       } catch (error) {
         logger.error({ msg: "Failed to start debt aging cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start GL balance verification cron job (OBS-001)
+      try {
+        startGLBalanceVerificationCron();
+        logger.info("✅ GL balance verification cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start GL balance verification cron", error });
+        // Server continues - cron is non-critical
+      }
+
+      // Start AR reconciliation cron job (OBS-002)
+      try {
+        startARReconciliationCron();
+        logger.info("✅ AR reconciliation cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start AR reconciliation cron", error });
         // Server continues - cron is non-critical
       }
     });

@@ -1171,44 +1171,82 @@ export type InsertInvoiceLineItem = typeof invoiceLineItems.$inferInsert;
  * Bills (Accounts Payable)
  * Vendor bills for purchases
  */
-export const bills = mysqlTable("bills", {
-  id: int("id").autoincrement().primaryKey(),
-  billNumber: varchar("billNumber", { length: 50 }).notNull().unique(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  vendorId: int("vendorId").notNull(),
-  billDate: date("billDate").notNull(),
-  dueDate: date("dueDate").notNull(),
-  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
-  taxAmount: decimal("taxAmount", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
-  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
-  status: mysqlEnum("status", [
-    "DRAFT",
-    "PENDING",
-    "APPROVED",
-    "PARTIAL",
-    "PAID",
-    "OVERDUE",
-    "VOID",
-  ])
-    .default("DRAFT")
-    .notNull(),
-  paymentTerms: varchar("paymentTerms", { length: 100 }),
-  notes: text("notes"),
-  referenceType: varchar("referenceType", { length: 50 }), // LOT, PURCHASE_ORDER, SERVICE
-  referenceId: int("referenceId"),
-  createdBy: int("createdBy").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+// FK constraints added as part of PARTY-002 (Team E Infrastructure)
+export const bills = mysqlTable(
+  "bills",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    billNumber: varchar("billNumber", { length: 50 }).notNull().unique(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+
+    // Supplier relationship (canonical - uses clients table)
+    supplierClientId: int("supplier_client_id").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+
+    // Vendor relationship (DEPRECATED - use supplierClientId instead)
+    // Kept for backward compatibility during migration
+    vendorId: int("vendorId")
+      .notNull()
+      .references(() => vendors.id, { onDelete: "restrict" }),
+
+    billDate: date("billDate").notNull(),
+    dueDate: date("dueDate").notNull(),
+    subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+    taxAmount: decimal("taxAmount", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    discountAmount: decimal("discountAmount", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+    amountPaid: decimal("amountPaid", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", [
+      "DRAFT",
+      "PENDING",
+      "APPROVED",
+      "PARTIAL",
+      "PAID",
+      "OVERDUE",
+      "VOID",
+    ])
+      .default("DRAFT")
+      .notNull(),
+    paymentTerms: varchar("paymentTerms", { length: 100 }),
+    notes: text("notes"),
+    referenceType: varchar("referenceType", { length: 50 }), // LOT, PURCHASE_ORDER, SERVICE
+    referenceId: int("referenceId"),
+    // FK added: createdBy → users.id (PARTY-002)
+    createdBy: int("createdBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    supplierClientIdIdx: index("idx_bills_supplier_client_id").on(
+      table.supplierClientId
+    ),
+    vendorIdIdx: index("idx_bills_vendor_id").on(table.vendorId),
+    createdByIdx: index("idx_bills_created_by").on(table.createdBy),
+    // Composite indexes for common query patterns
+    statusDueDateIdx: index("idx_bills_status_due_date").on(
+      table.status,
+      table.dueDate
+    ),
+    vendorStatusIdx: index("idx_bills_vendor_status").on(
+      table.vendorId,
+      table.status
+    ),
+    supplierStatusIdx: index("idx_bills_supplier_status").on(
+      table.supplierClientId,
+      table.status
+    ),
+  })
+);
 
 export type Bill = typeof bills.$inferSelect;
 export type InsertBill = typeof bills.$inferInsert;
@@ -1217,24 +1255,39 @@ export type InsertBill = typeof bills.$inferInsert;
  * Bill Line Items
  * Individual items on a bill
  */
-export const billLineItems = mysqlTable("billLineItems", {
-  id: int("id").autoincrement().primaryKey(),
-  billId: int("billId").notNull(),
-  productId: int("productId"),
-  lotId: int("lotId"),
-  description: text("description").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013),
-  unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
-  taxRate: decimal("taxRate", { precision: 5, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+// FK constraints added as part of PARTY-002 (Team E Infrastructure)
+export const billLineItems = mysqlTable(
+  "billLineItems",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    billId: int("billId")
+      .notNull()
+      .references(() => bills.id, { onDelete: "cascade" }),
+    productId: int("productId").references(() => products.id, {
+      onDelete: "restrict",
+    }),
+    lotId: int("lotId").references(() => lots.id, {
+      onDelete: "restrict",
+    }),
+    description: text("description").notNull(),
+    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013),
+    unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+    taxRate: decimal("taxRate", { precision: 5, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    discountPercent: decimal("discountPercent", { precision: 5, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    billIdIdx: index("idx_bill_line_items_bill_id").on(table.billId),
+    productIdIdx: index("idx_bill_line_items_product_id").on(table.productId),
+    lotIdIdx: index("idx_bill_line_items_lot_id").on(table.lotId),
+  })
+);
 
 export type BillLineItem = typeof billLineItems.$inferSelect;
 export type InsertBillLineItem = typeof billLineItems.$inferInsert;
@@ -7508,6 +7561,12 @@ export const invoiceLineItemsRelations = relations(
 
 // Relations for bills
 export const billsRelations = relations(bills, ({ one, many }) => ({
+  // Canonical supplier reference (Party Model)
+  supplierClient: one(clients, {
+    fields: [bills.supplierClientId],
+    references: [clients.id],
+  }),
+  // DEPRECATED: Use supplierClient instead
   vendor: one(vendors, {
     fields: [bills.vendorId],
     references: [vendors.id],
@@ -7524,6 +7583,14 @@ export const billLineItemsRelations = relations(billLineItems, ({ one }) => ({
   bill: one(bills, {
     fields: [billLineItems.billId],
     references: [bills.id],
+  }),
+  product: one(products, {
+    fields: [billLineItems.productId],
+    references: [products.id],
+  }),
+  lot: one(lots, {
+    fields: [billLineItems.lotId],
+    references: [lots.id],
   }),
 }));
 

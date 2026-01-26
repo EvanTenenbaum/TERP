@@ -12,6 +12,7 @@
 
 | Session ID                               | Task                                             | Branch                                             | Module        | Status      | Started    | ETA        |
 | ---------------------------------------- | ------------------------------------------------ | -------------------------------------------------- | ------------- | ----------- | ---------- | ---------- |
+| Session-20260126-TEAM-E-INFRA-Pmltm      | Team E Infrastructure & Schema                   | claude/setup-team-e-infrastructure-Pmltm           | Infrastructure| In Progress | 2026-01-26 | 2026-01-26 |
 | Session-20260125-TEAM-A-STABILITY-9fc6d6 | Team A Core Stability Fixes                      | claude/execute-team-a-stability-fLgHH              | Test/Perf     | Complete    | 2026-01-25 | 2026-01-25 |
 | Session-20260123-AUDIT-e345e7            | Roadmap extraction QA audit                      | -                                                  | Documentation | In Progress | 2026-01-23 | -          |
 | Session-20260115-DOCS-USERFLOWS-d5ea18   | DOCS-USERFLOWS                                   | -                                                  | Documentation | In Progress | 2026-01-15 | -          |

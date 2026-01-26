@@ -13,6 +13,8 @@
     "check": "tsc --noEmit",
     "check:dashboard": "tsx scripts/check-dashboard-data.ts",
     "format": "prettier --write .",
+    "lint": "eslint client/src server --max-warnings 0",
+    "lint:fix": "eslint client/src server --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
