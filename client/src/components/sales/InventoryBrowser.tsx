@@ -10,16 +10,90 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, CheckSquare, Square } from "lucide-react";
+import { Search, Plus, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
+import type {
+  PricedInventoryItem,
+  BatchStatus,
+  NonSellableStatus,
+} from "./types";
+import { NON_SELLABLE_STATUSES } from "./types";
+
+// TERP-0007: Non-sellable batch status UI configuration
+const BATCH_STATUS_CONFIG: Record<
+  BatchStatus,
+  { label: string; color: string; warning: string }
+> = {
+  AWAITING_INTAKE: {
+    label: "Awaiting Intake",
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    warning: "Not yet available for sale",
+  },
+  ON_HOLD: {
+    label: "On Hold",
+    color: "bg-orange-100 text-orange-800 border-orange-200",
+    warning: "Temporarily unavailable",
+  },
+  QUARANTINED: {
+    label: "Quarantined",
+    color: "bg-red-100 text-red-800 border-red-200",
+    warning: "Quality hold - do not sell",
+  },
+  LIVE: {
+    label: "Live",
+    color: "bg-green-100 text-green-800 border-green-200",
+    warning: "",
+  },
+  PHOTOGRAPHY_COMPLETE: {
+    label: "Ready",
+    color: "bg-blue-100 text-blue-800 border-blue-200",
+    warning: "",
+  },
+  SOLD_OUT: {
+    label: "Sold Out",
+    color: "bg-gray-100 text-gray-600 border-gray-200",
+    warning: "No inventory available",
+  },
+  CLOSED: {
+    label: "Closed",
+    color: "bg-gray-200 text-gray-500 border-gray-300",
+    warning: "Batch closed",
+  },
+};
+
+/**
+ * Type guard to check if a status is non-sellable
+ * Returns true for AWAITING_INTAKE, ON_HOLD, or QUARANTINED statuses
+ */
+function isNonSellableStatus(status?: string): status is NonSellableStatus {
+  if (!status) return false;
+  return (NON_SELLABLE_STATUSES as readonly string[]).includes(status);
+}
+
+// Extended inventory item type for internal use (includes orderQuantity when added)
+interface InventoryItemWithQuantity extends PricedInventoryItem {
+  orderQuantity?: number;
+}
+
+// Minimal type for checking if an item is already selected (only id is needed)
+interface SelectedItemRef {
+  id: number;
+}
 
 interface InventoryBrowserProps {
-  inventory: any[];
+  inventory: PricedInventoryItem[];
   isLoading: boolean;
-  onAddItems: (items: any[]) => void;
-  selectedItems: any[];
+  onAddItems: (items: InventoryItemWithQuantity[]) => void;
+  /** Items already in the sheet - only id is needed for duplicate detection */
+  selectedItems: SelectedItemRef[];
 }
 
 export function InventoryBrowser({
@@ -31,10 +105,12 @@ export function InventoryBrowser({
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   // FEAT-003: Quick add quantity state - tracks quantity for each item
-  const [quickQuantities, setQuickQuantities] = useState<Record<number, string>>({});
+  const [quickQuantities, setQuickQuantities] = useState<
+    Record<number, string>
+  >({});
 
   // Filter inventory by search, ensuring items have valid data
-  const filteredInventory = inventory.filter((item) => {
+  const filteredInventory = inventory.filter(item => {
     // Skip items without valid id or name
     if (!item || item.id === undefined || item.id === null || !item.name) {
       return false;
@@ -48,7 +124,7 @@ export function InventoryBrowser({
 
   // Check if item is already in sheet
   const isInSheet = (itemId: number) => {
-    return selectedItems.some((item) => item.id === itemId);
+    return selectedItems.some(item => item.id === itemId);
   };
 
   // Toggle item selection
@@ -64,7 +140,7 @@ export function InventoryBrowser({
 
   // Select all visible items
   const selectAll = () => {
-    const allIds = new Set(filteredInventory.map((item) => item.id));
+    const allIds = new Set(filteredInventory.map(item => item.id));
     setSelectedIds(allIds);
   };
 
@@ -75,13 +151,16 @@ export function InventoryBrowser({
 
   // Add selected items to sheet
   const addSelectedToSheet = () => {
-    const itemsToAdd = inventory.filter((item) => selectedIds.has(item.id));
+    const itemsToAdd = inventory.filter(item => selectedIds.has(item.id));
     onAddItems(itemsToAdd);
     setSelectedIds(new Set());
   };
 
   // FEAT-003: Add single item with optional quick quantity
-  const addSingleItem = (item: any, customQuantity?: number) => {
+  const addSingleItem = (
+    item: PricedInventoryItem,
+    customQuantity?: number
+  ) => {
     const qty = customQuantity || parseFloat(quickQuantities[item.id]) || 1;
 
     // FEAT-003: Validate quantity doesn't exceed available stock
@@ -91,7 +170,7 @@ export function InventoryBrowser({
     const itemWithQuantity = { ...item, orderQuantity: finalQty };
     onAddItems([itemWithQuantity]);
     // Clear the quick quantity input after adding
-    setQuickQuantities((prev) => {
+    setQuickQuantities(prev => {
       const updated = { ...prev };
       delete updated[item.id];
       return updated;
@@ -100,7 +179,7 @@ export function InventoryBrowser({
 
   // FEAT-003: Update quick quantity for an item
   const updateQuickQuantity = (itemId: number, value: string) => {
-    setQuickQuantities((prev) => ({ ...prev, [itemId]: value }));
+    setQuickQuantities(prev => ({ ...prev, [itemId]: value }));
   };
 
   // Calculate markup percentage
@@ -149,7 +228,7 @@ export function InventoryBrowser({
             <Input
               placeholder="Search inventory..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -181,18 +260,27 @@ export function InventoryBrowser({
             <TableBody>
               {filteredInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={9}
+                    className="text-center text-muted-foreground"
+                  >
                     No inventory items found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredInventory.map((item) => {
-                  const markup = calculateMarkup(item.basePrice, item.retailPrice);
+                filteredInventory.map(item => {
+                  const markup = calculateMarkup(
+                    item.basePrice,
+                    item.retailPrice
+                  );
                   const alreadyInSheet = isInSheet(item.id);
                   const quickQty = quickQuantities[item.id] || "";
 
                   return (
-                    <TableRow key={item.id} className={alreadyInSheet ? "opacity-50" : ""}>
+                    <TableRow
+                      key={item.id}
+                      className={alreadyInSheet ? "opacity-50" : ""}
+                    >
                       <TableCell>
                         <Checkbox
                           checked={selectedIds.has(item.id)}
@@ -209,17 +297,43 @@ export function InventoryBrowser({
                                 In Sheet
                               </Badge>
                             )}
+                            {/* TERP-0007: Show batch status indicator for non-sellable items */}
+                            {item.status &&
+                              isNonSellableStatus(item.status) && (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${BATCH_STATUS_CONFIG[item.status]?.color || ""}`}
+                                  title={
+                                    BATCH_STATUS_CONFIG[item.status]?.warning
+                                  }
+                                >
+                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                  {BATCH_STATUS_CONFIG[item.status]?.label ||
+                                    item.status}
+                                </Badge>
+                              )}
                           </div>
                           {item.strainId && (
                             <StrainFamilyIndicator strainId={item.strainId} />
                           )}
-                          {item.quantity <= 0 && item.strainId && (
-                            <span className="text-xs text-destructive">Out of stock</span>
+                          {/* TERP-0007: Warning for non-sellable status */}
+                          {item.status && isNonSellableStatus(item.status) && (
+                            <span className="text-xs text-orange-600">
+                              {BATCH_STATUS_CONFIG[item.status]?.warning}
+                            </span>
                           )}
+                          {item.quantity <= 0 &&
+                            !isNonSellableStatus(item.status) && (
+                              <span className="text-xs text-destructive">
+                                Out of stock
+                              </span>
+                            )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{item.category || "N/A"}</Badge>
+                        <Badge variant="outline">
+                          {item.category || "N/A"}
+                        </Badge>
                       </TableCell>
                       <TableCell>{item.quantity.toFixed(2)}</TableCell>
                       <TableCell>${item.basePrice.toFixed(2)}</TableCell>
@@ -228,7 +342,8 @@ export function InventoryBrowser({
                       </TableCell>
                       <TableCell>
                         <Badge variant={markup > 0 ? "default" : "secondary"}>
-                          {markup > 0 ? "+" : ""}{markup.toFixed(1)}%
+                          {markup > 0 ? "+" : ""}
+                          {markup.toFixed(1)}%
                         </Badge>
                       </TableCell>
                       {/* FEAT-003: Quick Add Quantity Field */}
@@ -241,16 +356,22 @@ export function InventoryBrowser({
                             step="0.01"
                             placeholder="1"
                             value={quickQty}
-                            onChange={(e) => updateQuickQuantity(item.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !alreadyInSheet) {
+                            onChange={e =>
+                              updateQuickQuantity(item.id, e.target.value)
+                            }
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && !alreadyInSheet) {
                                 e.preventDefault();
                                 addSingleItem(item);
                                 // Focus next row's quantity input for quick entry
-                                const currentRow = (e.target as HTMLElement).closest('tr');
+                                const currentRow = (
+                                  e.target as HTMLElement
+                                ).closest("tr");
                                 const nextRow = currentRow?.nextElementSibling;
                                 if (nextRow) {
-                                  const nextInput = nextRow.querySelector('input[type="number"]') as HTMLInputElement;
+                                  const nextInput = nextRow.querySelector(
+                                    'input[type="number"]'
+                                  ) as HTMLInputElement;
                                   nextInput?.focus();
                                 }
                               }
@@ -273,7 +394,9 @@ export function InventoryBrowser({
                           title={quickQty ? `Add ${quickQty}` : "Add 1"}
                         >
                           <Plus className="h-4 w-4" />
-                          {quickQty && <span className="ml-1 text-xs">{quickQty}</span>}
+                          {quickQty && (
+                            <span className="ml-1 text-xs">{quickQty}</span>
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -291,4 +414,3 @@ export function InventoryBrowser({
     </Card>
   );
 }
-

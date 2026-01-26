@@ -73,6 +73,66 @@ const returnStatusEnum = z.enum([
   "CANCELLED",
 ]);
 
+// SM-003: Return status state machine
+// Defines valid transitions for return status workflow
+// Exported for unit testing
+export const RETURN_STATUS_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["APPROVED", "REJECTED", "CANCELLED"],
+  APPROVED: ["RECEIVED", "CANCELLED"],
+  REJECTED: [], // Terminal state
+  RECEIVED: ["PROCESSED", "CANCELLED"],
+  PROCESSED: [], // Terminal state
+  CANCELLED: [], // Terminal state
+};
+
+/**
+ * SM-003: Extract current status from return notes
+ * Since the schema doesn't have a status field, we track it in notes
+ * Exported for unit testing
+ */
+export function extractReturnStatus(notes: string | null): string {
+  if (!notes) return "PENDING";
+
+  // Check for status markers - terminal states first, then reverse workflow order
+  // Terminal states (CANCELLED, REJECTED, PROCESSED) take precedence since they're final
+  if (notes.includes("[CANCELLED")) return "CANCELLED";
+  if (notes.includes("[PROCESSED")) return "PROCESSED";
+  if (notes.includes("[REJECTED")) return "REJECTED";
+  // Non-terminal states in reverse workflow order
+  if (notes.includes("[RECEIVED")) return "RECEIVED";
+  if (notes.includes("[APPROVED")) return "APPROVED";
+
+  return "PENDING";
+}
+
+/**
+ * SM-003: Validate return status transition
+ * Exported for unit testing
+ */
+export function isValidReturnStatusTransition(
+  currentStatus: string,
+  newStatus: string
+): boolean {
+  const validTransitions = RETURN_STATUS_TRANSITIONS[currentStatus];
+  if (!validTransitions) return false;
+  return validTransitions.includes(newStatus);
+}
+
+/**
+ * SM-003: Get error message for invalid transition
+ * Exported for unit testing
+ */
+export function getReturnTransitionError(
+  currentStatus: string,
+  newStatus: string
+): string {
+  const validTransitions = RETURN_STATUS_TRANSITIONS[currentStatus] || [];
+  if (validTransitions.length === 0) {
+    return `Cannot change return status from ${currentStatus} - this is a terminal state`;
+  }
+  return `Invalid return status transition: ${currentStatus} -> ${newStatus}. Valid transitions: ${validTransitions.join(", ")}`;
+}
+
 // Return item schema for creating returns
 const returnItemSchema = z.object({
   batchId: z.number(),
@@ -97,7 +157,11 @@ export const returnsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       logger.info({ msg: "[Returns] Listing returns", filters: input });
 
@@ -160,7 +224,11 @@ export const returnsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
@@ -185,7 +253,11 @@ export const returnsRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [returnRecord] = await db
         .select()
@@ -241,7 +313,11 @@ export const returnsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       logger.info({
         msg: "[Returns] Creating return",
@@ -338,7 +414,11 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -355,6 +435,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "APPROVED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "APPROVED"));
       }
 
       // Update notes with approval info
@@ -389,7 +475,11 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -406,6 +496,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "REJECTED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "REJECTED"));
       }
 
       // Update notes with rejection info
@@ -445,7 +541,11 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -465,6 +565,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "RECEIVED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "RECEIVED"));
       }
 
       // Process each received item
@@ -526,7 +632,9 @@ export const returnsRouter = router({
                   onHandQty: newOnHand.toString(),
                   quarantineQty: newQuarantine.toString(),
                   // If all inventory is now quarantined, update status
-                  ...(newOnHand === 0 && newQuarantine > 0 ? { batchStatus: "QUARANTINED" } : {})
+                  ...(newOnHand === 0 && newQuarantine > 0
+                    ? { batchStatus: "QUARANTINED" }
+                    : {}),
                 })
                 .where(eq(batches.id, item.batchId));
 
@@ -634,7 +742,11 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -655,6 +767,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "PROCESSED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "PROCESSED"));
       }
 
       // Get order to find client
@@ -757,7 +875,11 @@ export const returnsRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       return await db
         .select()
@@ -770,67 +892,79 @@ export const returnsRouter = router({
   getStats: protectedProcedure
     .use(requirePermission("orders:read"))
     .query(async () => {
-    const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-    const stats = await db
-      .select({
-        totalReturns: sql<number>`COUNT(*)`,
-        defectiveCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'DEFECTIVE' THEN 1 ELSE 0 END)`,
-        wrongItemCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'WRONG_ITEM' THEN 1 ELSE 0 END)`,
-        notAsDescribedCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'NOT_AS_DESCRIBED' THEN 1 ELSE 0 END)`,
-        customerChangedMindCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'CUSTOMER_CHANGED_MIND' THEN 1 ELSE 0 END)`,
-        damagedInTransitCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'DAMAGED_IN_TRANSIT' THEN 1 ELSE 0 END)`,
-        qualityIssueCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'QUALITY_ISSUE' THEN 1 ELSE 0 END)`,
-        otherCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'OTHER' THEN 1 ELSE 0 END)`,
-      })
-      .from(returns);
+      const stats = await db
+        .select({
+          totalReturns: sql<number>`COUNT(*)`,
+          defectiveCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'DEFECTIVE' THEN 1 ELSE 0 END)`,
+          wrongItemCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'WRONG_ITEM' THEN 1 ELSE 0 END)`,
+          notAsDescribedCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'NOT_AS_DESCRIBED' THEN 1 ELSE 0 END)`,
+          customerChangedMindCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'CUSTOMER_CHANGED_MIND' THEN 1 ELSE 0 END)`,
+          damagedInTransitCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'DAMAGED_IN_TRANSIT' THEN 1 ELSE 0 END)`,
+          qualityIssueCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'QUALITY_ISSUE' THEN 1 ELSE 0 END)`,
+          otherCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'OTHER' THEN 1 ELSE 0 END)`,
+        })
+        .from(returns);
 
-    // Get returns by month (last 6 months)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      // Get returns by month (last 6 months)
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const monthlyStats = await db
-      .select({
-        month: sql<string>`DATE_FORMAT(${returns.processedAt}, '%Y-%m')`,
-        count: sql<number>`COUNT(*)`,
-      })
-      .from(returns)
-      .where(sql`${returns.processedAt} >= ${sixMonthsAgo}`)
-      .groupBy(sql`DATE_FORMAT(${returns.processedAt}, '%Y-%m')`)
-      .orderBy(sql`DATE_FORMAT(${returns.processedAt}, '%Y-%m')`);
+      const monthlyStats = await db
+        .select({
+          month: sql<string>`DATE_FORMAT(${returns.processedAt}, '%Y-%m')`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(returns)
+        .where(sql`${returns.processedAt} >= ${sixMonthsAgo}`)
+        .groupBy(sql`DATE_FORMAT(${returns.processedAt}, '%Y-%m')`)
+        .orderBy(sql`DATE_FORMAT(${returns.processedAt}, '%Y-%m')`);
 
-    return {
-      totalReturns: Number(stats[0]?.totalReturns || 0),
-      defectiveCount: Number(stats[0]?.defectiveCount || 0),
-      wrongItemCount: Number(stats[0]?.wrongItemCount || 0),
-      notAsDescribedCount: Number(stats[0]?.notAsDescribedCount || 0),
-      customerChangedMindCount: Number(stats[0]?.customerChangedMindCount || 0),
-      damagedInTransitCount: Number(stats[0]?.damagedInTransitCount || 0),
-      qualityIssueCount: Number(stats[0]?.qualityIssueCount || 0),
-      otherCount: Number(stats[0]?.otherCount || 0),
-      byReason: {
-        DEFECTIVE: Number(stats[0]?.defectiveCount || 0),
-        WRONG_ITEM: Number(stats[0]?.wrongItemCount || 0),
-        NOT_AS_DESCRIBED: Number(stats[0]?.notAsDescribedCount || 0),
-        CUSTOMER_CHANGED_MIND: Number(stats[0]?.customerChangedMindCount || 0),
-        DAMAGED_IN_TRANSIT: Number(stats[0]?.damagedInTransitCount || 0),
-        QUALITY_ISSUE: Number(stats[0]?.qualityIssueCount || 0),
-        OTHER: Number(stats[0]?.otherCount || 0),
-      },
-      monthly: monthlyStats.map(m => ({
-        month: m.month,
-        count: Number(m.count),
-      })),
-    };
-  }),
+      return {
+        totalReturns: Number(stats[0]?.totalReturns || 0),
+        defectiveCount: Number(stats[0]?.defectiveCount || 0),
+        wrongItemCount: Number(stats[0]?.wrongItemCount || 0),
+        notAsDescribedCount: Number(stats[0]?.notAsDescribedCount || 0),
+        customerChangedMindCount: Number(
+          stats[0]?.customerChangedMindCount || 0
+        ),
+        damagedInTransitCount: Number(stats[0]?.damagedInTransitCount || 0),
+        qualityIssueCount: Number(stats[0]?.qualityIssueCount || 0),
+        otherCount: Number(stats[0]?.otherCount || 0),
+        byReason: {
+          DEFECTIVE: Number(stats[0]?.defectiveCount || 0),
+          WRONG_ITEM: Number(stats[0]?.wrongItemCount || 0),
+          NOT_AS_DESCRIBED: Number(stats[0]?.notAsDescribedCount || 0),
+          CUSTOMER_CHANGED_MIND: Number(
+            stats[0]?.customerChangedMindCount || 0
+          ),
+          DAMAGED_IN_TRANSIT: Number(stats[0]?.damagedInTransitCount || 0),
+          QUALITY_ISSUE: Number(stats[0]?.qualityIssueCount || 0),
+          OTHER: Number(stats[0]?.otherCount || 0),
+        },
+        monthly: monthlyStats.map(m => ({
+          month: m.month,
+          count: Number(m.count),
+        })),
+      };
+    }),
 
   // Get returns summary for dashboard
   getSummary: protectedProcedure
     .use(requirePermission("orders:read"))
     .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       logger.info({ msg: "[Returns] Getting returns summary" });
 

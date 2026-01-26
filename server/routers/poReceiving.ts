@@ -103,18 +103,46 @@ export const poReceivingRouter = router({
           if (!batchId && item.newBatchData) {
             const batchCode = `B-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const batchSku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const receivedQty = parseFloat(item.receivedQuantity);
+
             const [newBatch] = await tx.insert(batches).values({
               code: batchCode,
               sku: batchSku,
               productId: item.newBatchData.productId,
-              lotId: 1, // Default lot ID
+              lotId: 1, // Default lot ID - will be updated with proper lot in enhanced flow
               onHandQty: item.receivedQuantity.toString(),
+              reservedQty: "0",
+              quarantineQty: "0",
+              holdQty: "0",
+              defectiveQty: "0",
+              sampleQty: "0",
               unitCogs: item.newBatchData.costPerUnit?.toString() || "0",
               cogsMode: "FIXED",
               paymentTerms: "NET_30",
-              batchStatus: "LIVE",
+              batchStatus: "AWAITING_INTAKE",
             });
             batchId = newBatch.insertId;
+
+            // INV-005: Record inventory movement for new batch creation
+            await tx.insert(inventoryMovements).values({
+              batchId,
+              inventoryMovementType: "INTAKE",
+              quantityChange: `+${receivedQty}`,
+              quantityBefore: "0",
+              quantityAfter: receivedQty.toString(),
+              referenceType: "PO_RECEIPT",
+              referenceId: input.poId,
+              notes: `New batch created from PO #${po.poNumber}`,
+              performedBy: input.receivedBy,
+            });
+
+            logger.info({
+              msg: "INV-005: Created new batch on goods receipt",
+              batchId,
+              batchCode,
+              quantity: receivedQty,
+              poId: input.poId,
+            });
           } else if (batchId) {
             // Update existing batch quantity
             const [batch] = await tx
@@ -510,6 +538,19 @@ export const poReceivingRouter = router({
           });
 
           const batchId = newBatch.insertId;
+
+          // INV-005: Record inventory movement for new batch creation
+          await tx.insert(inventoryMovements).values({
+            batchId,
+            inventoryMovementType: "INTAKE",
+            quantityChange: `+${item.quantity}`,
+            quantityBefore: "0",
+            quantityAfter: item.quantity.toString(),
+            referenceType: "PO_RECEIPT",
+            referenceId: input.purchaseOrderId,
+            notes: `New batch from PO #${po.poNumber}, lot ${lotCode}`,
+            performedBy: getAuthenticatedUserId({ user: ctx.user }),
+          });
 
           // Create batch location if provided
           if (item.locationId || item.locationData) {

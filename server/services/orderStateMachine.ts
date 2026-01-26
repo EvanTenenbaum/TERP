@@ -23,7 +23,9 @@ export const ORDER_STATUS_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStat
   DRAFT: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["PENDING", "CANCELLED"],
   PENDING: ["PACKED", "CANCELLED"],
-  PACKED: ["SHIPPED", "PENDING"], // Can go back to PENDING if unpacked
+  // ORD-003: Removed PENDING from valid transitions - packed orders should not revert
+  // If unpacking is needed, create a separate "UNPACKED" status or use CANCELLED
+  PACKED: ["SHIPPED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "RETURNED"],
   DELIVERED: ["RETURNED"],
   RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],

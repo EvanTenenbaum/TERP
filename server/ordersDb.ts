@@ -3,13 +3,15 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   orders,
   batches,
   clients,
   sampleInventoryLog,
+  orderLineItems,
+  orderLineItemAllocations,
   type Order,
 } from "../drizzle/schema";
 import { calculateCogs, calculateDueDate } from "./cogsCalculator";
@@ -110,6 +112,26 @@ export interface ConvertQuoteToSaleInput {
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ORD-002: Validate positive quantities and non-negative prices
+  for (const item of input.items) {
+    if (item.quantity <= 0) {
+      throw new Error(`Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`);
+    }
+    if (item.unitPrice < 0) {
+      throw new Error(`Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`);
+    }
+    // Non-sample items should have a positive price (samples can be free)
+    if (!item.isSample && item.unitPrice === 0) {
+      throw new Error(`Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`);
+    }
+    if (item.overridePrice !== undefined && item.overridePrice < 0) {
+      throw new Error(`Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`);
+    }
+    if (item.overrideCogs !== undefined && item.overrideCogs < 0) {
+      throw new Error(`Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`);
+    }
+  }
 
   return await db.transaction(async tx => {
     // 1. Get client for COGS calculation
@@ -735,6 +757,15 @@ export async function deleteOrder(
 
   // If it's a SALE, mark as cancelled instead of deleting
   if (order.orderType === "SALE") {
+    // SM-002: Validate sale status allows cancellation
+    const currentSaleStatus = order.saleStatus || "PENDING";
+    if (!isValidStatusTransition("sale", currentSaleStatus, "CANCELLED")) {
+      throw new Error(
+        `Cannot cancel order: invalid transition from ${currentSaleStatus} to CANCELLED. ` +
+        `Orders with status ${currentSaleStatus} cannot be cancelled.`
+      );
+    }
+
     await db
       .update(orders)
       .set({ saleStatus: "CANCELLED" })
@@ -756,6 +787,60 @@ export async function deleteOrder(
           inventoryError
         );
       }
+    }
+
+    // INV-004: Release any reserved quantities from allocations
+    try {
+      // Get all line items for this order
+      const lineItems = await db
+        .select({ id: orderLineItems.id })
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, id));
+
+      if (lineItems.length > 0) {
+        const lineItemIds = lineItems.map((li: { id: number }) => li.id);
+
+        // Get all allocations for the order's line items
+        const allocations = await db
+          .select({
+            batchId: orderLineItemAllocations.batchId,
+            quantityAllocated: orderLineItemAllocations.quantityAllocated,
+          })
+          .from(orderLineItemAllocations)
+          .where(inArray(orderLineItemAllocations.orderLineItemId, lineItemIds));
+
+        // Release reserved quantities for each allocation
+        for (const allocation of allocations) {
+          const allocatedQty = parseFloat(allocation.quantityAllocated || "0");
+          if (allocatedQty > 0) {
+            // Get current reserved qty and release
+            const [batch] = await db
+              .select({ reservedQty: batches.reservedQty })
+              .from(batches)
+              .where(eq(batches.id, allocation.batchId))
+              .limit(1);
+
+            if (batch) {
+              const currentReserved = parseFloat(batch.reservedQty || "0");
+              const newReserved = Math.max(0, currentReserved - allocatedQty);
+
+              await db
+                .update(batches)
+                .set({ reservedQty: newReserved.toString() })
+                .where(eq(batches.id, allocation.batchId));
+            }
+          }
+        }
+
+        console.log(
+          `[INV-004] Released ${allocations.length} batch reservations for cancelled order ${id}`
+        );
+      }
+    } catch (reservationError) {
+      console.error(
+        "Failed to release reservations (non-fatal):",
+        reservationError
+      );
     }
 
     // Reverse accounting entries if invoice exists
@@ -814,6 +899,15 @@ export async function convertQuoteToSale(
 
     if (quote.orderType !== "QUOTE") {
       throw new Error(`Order ${input.quoteId} is not a quote`);
+    }
+
+    // SM-001: Validate quote status allows conversion
+    const currentStatus = quote.quoteStatus || "DRAFT";
+    if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
+      throw new Error(
+        `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +
+        `Only ACCEPTED quotes can be converted. Current status: ${currentStatus}`
+      );
     }
 
     // Check if quote has expired
@@ -1134,15 +1228,24 @@ export async function confirmDraftOrder(input: {
     // 2. Parse draft items
     const draftItems = JSON.parse(draft.items as string) as OrderItem[];
 
-    // 3. Check inventory availability
+    // INV-002: Get unique batch IDs and lock all batches upfront to prevent race conditions
+    const batchIds = [...new Set(draftItems.map(item => item.batchId))];
+
+    // INV-002: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
+    // This ensures that if two confirmations happen simultaneously, one will wait for the other
+    const lockedBatches = await tx
+      .select()
+      .from(batches)
+      .where(inArray(batches.id, batchIds))
+      .for("update");
+
+    // Create a map for quick lookup
+    const batchMap = new Map(lockedBatches.map(b => [b.id, b]));
+
+    // 3. Check inventory availability with locked rows
     // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
     for (const item of draftItems) {
-      const batch = await tx
-        .select()
-        .from(batches)
-        .where(eq(batches.id, item.batchId))
-        .limit(1)
-        .then(rows => rows[0]);
+      const batch = batchMap.get(item.batchId);
 
       if (!batch) {
         throw new Error(`Batch ${item.batchId} not found`);
@@ -1265,6 +1368,28 @@ export async function updateDraftOrder(input: {
 }): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ORD-002: Validate positive quantities and non-negative prices
+  if (input.items) {
+    for (const item of input.items) {
+      if (item.quantity <= 0) {
+        throw new Error(`Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`);
+      }
+      if (item.unitPrice < 0) {
+        throw new Error(`Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`);
+      }
+      // Non-sample items should have a positive price (samples can be free)
+      if (!item.isSample && item.unitPrice === 0) {
+        throw new Error(`Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`);
+      }
+      if (item.overridePrice !== undefined && item.overridePrice < 0) {
+        throw new Error(`Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`);
+      }
+      if (item.overrideCogs !== undefined && item.overrideCogs < 0) {
+        throw new Error(`Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`);
+      }
+    }
+  }
 
   return await db.transaction(async tx => {
     // 1. Get the draft order
@@ -1484,10 +1609,12 @@ export async function deleteDraftOrder(input: {
  * Valid status transitions for fulfillment status
  * TERP-0016: Business logic guardrails for orders
  */
+// ORD-003: Consistent fulfillment status transitions
 const FULFILLMENT_STATUS_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ["PACKED", "SHIPPED"], // Can pack or ship directly
-  PACKED: ["SHIPPED"], // Can only ship from packed
+  PENDING: ["PACKED", "SHIPPED", "CANCELLED"], // Can pack, ship directly, or cancel
+  PACKED: ["SHIPPED", "CANCELLED"], // Can ship or cancel (ORD-003: removed PENDING - no reverting)
   SHIPPED: [], // Terminal state - no further transitions allowed
+  CANCELLED: [], // Terminal state
 };
 
 /**
@@ -1566,6 +1693,14 @@ function getTransitionError(
   return `Invalid ${statusType} status transition: ${currentStatus} -> ${newStatus}. Valid transitions from ${currentStatus}: ${allowedTransitions.join(", ")}`;
 }
 
+/**
+ * Get valid transitions for a sale status
+ * SM-002: Helper for error messages and UI display
+ */
+export function getValidSaleStatusTransitions(currentStatus: string): string[] {
+  return SALE_STATUS_TRANSITIONS[currentStatus] || [];
+}
+
 // ============================================================================
 // FULFILLMENT STATUS MANAGEMENT
 // ============================================================================
@@ -1576,7 +1711,8 @@ function getTransitionError(
  */
 export async function updateOrderStatus(input: {
   orderId: number;
-  newStatus: "PENDING" | "PACKED" | "SHIPPED";
+  // ORD-003: Added CANCELLED as valid status for order cancellation before shipping
+  newStatus: "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED";
   notes?: string;
   userId: number;
   expectedVersion?: number; // DATA-005: Optimistic locking support
@@ -1719,6 +1855,61 @@ export async function getOrderStatusHistory(orderId: number) {
     .where(eq(orderStatusHistory.orderId, orderId))
     .orderBy(orderStatusHistory.changedAt);
 }
+
+// ============================================================================
+// SM-002: SALE STATUS MANAGEMENT
+// ============================================================================
+
+/**
+ * Update order sale status with state machine validation
+ * SM-002: Ensures only valid transitions are allowed
+ */
+export async function updateSaleStatus(input: {
+  orderId: number;
+  newStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED";
+  notes?: string;
+  userId: number;
+}): Promise<{ success: boolean; newStatus: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get current order
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, input.orderId));
+
+  if (!order) {
+    throw new Error(`Order ${input.orderId} not found`);
+  }
+
+  if (order.orderType !== "SALE") {
+    throw new Error("Only SALE orders have sale status");
+  }
+
+  const currentStatus = order.saleStatus || "PENDING";
+
+  // Validate transition using state machine
+  if (!isValidStatusTransition("sale", currentStatus, input.newStatus)) {
+    const validTransitions = getValidSaleStatusTransitions(currentStatus);
+    throw new Error(
+      `Invalid sale status transition: ${currentStatus} -> ${input.newStatus}. ` +
+      `Valid transitions from ${currentStatus}: ${validTransitions.join(", ") || "none"}`
+    );
+  }
+
+  // Update status
+  await db
+    .update(orders)
+    .set({ saleStatus: input.newStatus })
+    .where(eq(orders.id, input.orderId));
+
+  return { success: true, newStatus: input.newStatus };
+}
+
+// ============================================================================
+// INVENTORY HELPERS
+// ============================================================================
 
 /**
  * Decrement inventory for order items when shipped
