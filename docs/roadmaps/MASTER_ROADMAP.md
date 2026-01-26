@@ -506,6 +506,15 @@ pnpm test --run 2>&1 | tee test-results.log
 | Task    | Description                                              | Priority | Status      | Estimate | Prompt                    |
 | ------- | -------------------------------------------------------- | -------- | ----------- | -------- | ------------------------- |
 | BUG-103 | QA Role Switcher exposes password hint in production     | HIGH     | ready       | 2h       | `docs/prompts/BUG-103.md` |
+| BUG-107 | Fallback user ID in salesSheetsDb.ts                     | HIGH     | ready       | 1h       | See details below         |
+
+**BUG-107 Details:**
+- **Location:** `server/salesSheetsDb.ts:255`
+- **Issue:** `createdBy: data.createdBy || 1` - Falls back to user ID 1 if not provided
+- **Impact:** Security vulnerability - actions attributed to wrong user, audit trail corruption
+- **Pattern:** Forbidden `|| 1` fallback pattern (see CLAUDE.md Section 3)
+- **Fix:** Require `createdBy` in function signature, throw error if not provided
+- **Discovered:** QA Bug Pattern Analysis (Jan 26, 2026)
 
 **BUG-103 Details:**
 - **Location:** `/login` page
