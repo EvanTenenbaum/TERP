@@ -1,8 +1,23 @@
 import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+
+// LINT-005: Define interface for client debt data
+interface ClientDebtData {
+  customerId: number;
+  customerName: string;
+  currentDebt: number;
+  oldestDebt: number;
+}
 
 export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
   const { data: response, isLoading } = trpc.dashboard.getClientDebt.useQuery(
@@ -13,7 +28,7 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
   const data = response?.data || [];
 
   const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const formatAgingDays = (days: number) => {
@@ -44,10 +59,14 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((client: any, index: number) => (
+              {data.map((client: ClientDebtData, index: number) => (
                 <TableRow key={client.customerId}>
-                  <TableCell className="text-muted-foreground font-medium">{index + 1}</TableCell>
-                  <TableCell className="font-medium">{client.customerName}</TableCell>
+                  <TableCell className="text-muted-foreground font-medium">
+                    {index + 1}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {client.customerName}
+                  </TableCell>
                   <TableCell className="text-right font-mono text-red-600">
                     {formatCurrency(client.currentDebt)}
                   </TableCell>
@@ -67,4 +86,3 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
     </Card>
   );
 });
-

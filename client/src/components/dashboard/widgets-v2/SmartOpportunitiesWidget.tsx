@@ -1,6 +1,12 @@
 import { memo } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchBadge } from "@/components/needs/MatchBadge";
@@ -16,7 +22,12 @@ interface SmartOpportunitiesWidgetProps {
   limit?: number;
 }
 
-export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({ limit = 5 }: SmartOpportunitiesWidgetProps) {
+// LINT-005: Define badge variant type
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
+  limit = 5,
+}: SmartOpportunitiesWidgetProps) {
   const [, setLocation] = useLocation();
 
   const { data, isLoading } = trpc.clientNeeds.getSmartOpportunities.useQuery({
@@ -35,7 +46,9 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
               <CardTitle>Smart Opportunities</CardTitle>
             </div>
           </div>
-          <CardDescription>Top matching opportunities for your clients</CardDescription>
+          <CardDescription>
+            Top matching opportunities for your clients
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
@@ -56,12 +69,16 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
               <CardTitle>Smart Opportunities</CardTitle>
             </div>
           </div>
-          <CardDescription>Top matching opportunities for your clients</CardDescription>
+          <CardDescription>
+            Top matching opportunities for your clients
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Lightbulb className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p className="text-sm text-muted-foreground">No opportunities found</p>
+            <p className="text-sm text-muted-foreground">
+              No opportunities found
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               Create client needs to see matching opportunities
             </p>
@@ -72,13 +89,18 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
   }
 
   const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, any> = {
+    // LINT-005: Use proper Badge variant type
+    const variants: Record<string, BadgeVariant> = {
       URGENT: "destructive",
       HIGH: "default",
       MEDIUM: "secondary",
       LOW: "outline",
     };
-    return <Badge variant={variants[priority] || "outline"} className="text-xs">{priority}</Badge>;
+    return (
+      <Badge variant={variants[priority] || "outline"} className="text-xs">
+        {priority}
+      </Badge>
+    );
   };
 
   return (
@@ -98,13 +120,17 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
-        <CardDescription>Top matching opportunities for your clients</CardDescription>
+        <CardDescription>
+          Top matching opportunities for your clients
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {opportunities.map((opp: any, idx: number) => (
+          {/* LINT-005: Let TypeScript infer types from API response */}
+          {/* LINT-004: Use unique clientId instead of array index */}
+          {opportunities.map(opp => (
             <div
-              key={`item-${idx}`}
+              key={`opp-${opp.clientId}`}
               className="flex items-start justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
               onClick={() => setLocation(`/clients/${opp.clientId}?tab=needs`)}
             >
@@ -119,10 +145,11 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
                   {opp.needDescription || "Looking for products"}
                 </p>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {opp.matchCount > 0 && (
+                  {(opp.matchCount ?? 0) > 0 && (
                     <span className="flex items-center gap-1">
                       <TrendingUp className="h-3 w-3" />
-                      {opp.matchCount} {opp.matchCount === 1 ? "match" : "matches"}
+                      {opp.matchCount}{" "}
+                      {opp.matchCount === 1 ? "match" : "matches"}
                     </span>
                   )}
                   {opp.bestConfidence && (
@@ -133,7 +160,9 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
               <div className="flex flex-col items-end gap-2">
                 {opp.bestMatchType && opp.bestConfidence && (
                   <MatchBadge
-                    matchType={opp.bestMatchType}
+                    matchType={
+                      opp.bestMatchType as "EXACT" | "CLOSE" | "HISTORICAL"
+                    }
                     confidence={opp.bestConfidence}
                     size="sm"
                     showIcon={false}

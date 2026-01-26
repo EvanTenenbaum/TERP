@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Loader2 } from "lucide-react";
@@ -64,8 +70,9 @@ export const TopStrainFamiliesWidget = memo(function TopStrainFamiliesWidget() {
     );
   }
 
-  // Calculate max revenue for progress bars
-  const maxRevenue = Math.max(...topFamilies.map((f: any) => Number(f.total_revenue)));
+  // Calculate max sales for progress bars
+  // LINT-005: Use correct camelCase property names from TopStrainFamily type
+  const maxSales = Math.max(...topFamilies.map(f => Number(f.totalSales)));
 
   return (
     <Card>
@@ -74,30 +81,34 @@ export const TopStrainFamiliesWidget = memo(function TopStrainFamiliesWidget() {
           <TrendingUp className="h-5 w-5" />
           Top Strain Families
         </CardTitle>
-        <CardDescription>Best-selling strain families by revenue</CardDescription>
+        <CardDescription>Best-selling strain families by sales</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {topFamilies.map((family: any, index: number) => {
-          const revenue = Number(family.total_revenue);
-          const percentage = (revenue / maxRevenue) * 100;
-          
+        {/* LINT-005: Let TypeScript infer type from hook return */}
+        {topFamilies.map((family, index) => {
+          const sales = Number(family.totalSales);
+          const percentage = (sales / maxSales) * 100;
+
           return (
-            <div key={family.family_id} className="space-y-2">
+            <div key={family.familyId} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">
                     #{index + 1}
                   </Badge>
-                  <span className="font-medium">{family.family_name}</span>
+                  <span className="font-medium">{family.familyName}</span>
                 </div>
                 <span className="text-sm font-semibold">
-                  ${revenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  $
+                  {sales.toLocaleString("en-US", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
                 </span>
               </div>
               <Progress value={percentage} className="h-2" />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{family.sale_count} sales</span>
-                <span>{Number(family.total_quantity).toFixed(0)} units</span>
+                <span>{family.orderCount} orders</span>
               </div>
             </div>
           );
