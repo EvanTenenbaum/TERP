@@ -4,7 +4,11 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { getDb } from "../db";
 import {
   purchaseOrders,
@@ -559,7 +563,7 @@ export const poReceivingRouter = router({
             referenceType: "PO_RECEIPT",
             referenceId: input.purchaseOrderId,
             notes: `Received from PO #${po.poNumber}`,
-            performedBy: ctx.user?.id || 0,
+            performedBy: getAuthenticatedUserId(ctx),
           });
 
           createdBatches.push({
