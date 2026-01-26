@@ -18,25 +18,36 @@ export function sanitizeText(input: string): string {
 }
 
 /**
- * Recursively sanitize user input (strings, arrays, objects)
+ * Sanitized user input type - preserves structure but marks strings as sanitized
  */
-export function sanitizeUserInput(input: any): any {
+export type SanitizedInput<T> = T extends string
+  ? string
+  : T extends Array<infer U>
+    ? SanitizedInput<U>[]
+    : T extends object
+      ? { [K in keyof T]: SanitizedInput<T[K]> }
+      : T;
+
+/**
+ * Recursively sanitize user input (strings, arrays, objects)
+ * Removes HTML tags from all string values to prevent XSS
+ */
+export function sanitizeUserInput<T>(input: T): SanitizedInput<T> {
   if (typeof input === "string") {
-    return sanitizeText(input);
+    return sanitizeText(input) as SanitizedInput<T>;
   }
 
   if (Array.isArray(input)) {
-    return input.map(sanitizeUserInput);
+    return input.map(sanitizeUserInput) as SanitizedInput<T>;
   }
 
   if (typeof input === "object" && input !== null) {
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(input)) {
       sanitized[key] = sanitizeUserInput(value);
     }
-    return sanitized;
+    return sanitized as SanitizedInput<T>;
   }
 
-  return input;
+  return input as SanitizedInput<T>;
 }
-
