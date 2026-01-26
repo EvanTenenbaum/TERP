@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, asc, sql, or, like, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, like, inArray } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   invoices,
@@ -7,15 +7,10 @@ import {
   billLineItems,
   payments,
   InsertInvoice,
-  Invoice,
   InsertInvoiceLineItem,
-  InvoiceLineItem,
   InsertBill,
-  Bill,
   InsertBillLineItem,
-  BillLineItem,
   InsertPayment,
-  Payment,
 } from "../drizzle/schema";
 
 // ============================================================================
@@ -335,7 +330,7 @@ export async function generateInvoiceNumber(): Promise<string> {
  */
 export async function getBills(filters?: {
   vendorId?: number;
-  status?: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
+  status?: "DRAFT" | "PENDING" | "APPROVED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
   startDate?: Date;
   endDate?: Date;
   limit?: number;
@@ -466,15 +461,31 @@ export async function updateBill(id: number, data: Partial<InsertBill>) {
 
 /**
  * Update bill status
+ * ARCH-004: Now validates status transitions using state machine
  */
 export async function updateBillStatus(
   id: number,
-  status: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
+  newStatus: "DRAFT" | "PENDING" | "APPROVED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(bills).set({ status }).where(eq(bills.id, id));
+  // Get current bill to validate transition
+  const [bill] = await db
+    .select({ status: bills.status })
+    .from(bills)
+    .where(eq(bills.id, id))
+    .limit(1);
+
+  if (!bill) {
+    throw new Error(`Bill #${id} not found`);
+  }
+
+  // ARCH-004: Validate status transition
+  const { validateTransition } = await import("./services/billStateMachine");
+  validateTransition(bill.status, newStatus, id);
+
+  await db.update(bills).set({ status: newStatus }).where(eq(bills.id, id));
 }
 
 /**

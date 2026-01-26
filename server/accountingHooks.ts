@@ -13,7 +13,7 @@ import { getDb } from "./db";
 import { ledgerEntries, accounts } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "./_core/logger";
-import { getFiscalPeriodIdOrDefault } from "./_core/fiscalPeriod";
+import { getFiscalPeriodIdOrDefault, isFiscalPeriodLocked } from "./_core/fiscalPeriod";
 
 /**
  * Custom error class for GL posting failures
@@ -141,6 +141,16 @@ export async function createJournalEntry(entryData: {
         `Invalid amount for journal entry: ${entryData.amount}`,
         "INVALID_AMOUNT",
         { amount: entryData.amount, entryNumber: entryData.entryNumber }
+      );
+    }
+
+    // ACC-005: Validate fiscal period is open for posting
+    const isLocked = await isFiscalPeriodLocked(fiscalPeriodId);
+    if (isLocked) {
+      throw new GLPostingError(
+        `Cannot post to fiscal period ${fiscalPeriodId}. The period is locked or closed.`,
+        "PERIOD_LOCKED",
+        { fiscalPeriodId, entryNumber: entryData.entryNumber }
       );
     }
 
@@ -504,8 +514,19 @@ export async function reverseGLEntries(
         { referenceType: originalReferenceType, referenceId: originalReferenceId }
       );
     }
-    
+
     const fiscalPeriodId = await getCurrentFiscalPeriodId();
+
+    // ACC-005: Validate fiscal period is open for posting reversals
+    const isLocked = await isFiscalPeriodLocked(fiscalPeriodId);
+    if (isLocked) {
+      throw new GLPostingError(
+        `Cannot post reversal to fiscal period ${fiscalPeriodId}. The period is locked or closed.`,
+        "PERIOD_LOCKED",
+        { fiscalPeriodId, referenceType: originalReferenceType, referenceId: originalReferenceId }
+      );
+    }
+
     const reversalNumber = await generateEntryNumber("REV");
     
     // Create reversing entries (swap debit and credit)

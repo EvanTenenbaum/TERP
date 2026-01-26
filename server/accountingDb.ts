@@ -11,6 +11,7 @@ import {
   InsertFiscalPeriod,
   FiscalPeriod,
 } from "../drizzle/schema";
+import { isFiscalPeriodLocked } from "./_core/fiscalPeriod";
 
 // ============================================================================
 // CHART OF ACCOUNTS
@@ -262,10 +263,21 @@ export async function getLedgerEntryById(id: number) {
 
 /**
  * Create ledger entry
+ * ACC-005: Validates fiscal period is OPEN before posting
  */
 export async function createLedgerEntry(data: InsertLedgerEntry) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ACC-005: Validate fiscal period is open for posting
+  if (data.fiscalPeriodId) {
+    const isLocked = await isFiscalPeriodLocked(data.fiscalPeriodId);
+    if (isLocked) {
+      throw new Error(
+        `Cannot post to fiscal period ${data.fiscalPeriodId}. The period is locked or closed.`
+      );
+    }
+  }
 
   const result = await db.insert(ledgerEntries).values(data);
   return result;
@@ -274,6 +286,7 @@ export async function createLedgerEntry(data: InsertLedgerEntry) {
 /**
  * Post journal entry (double-entry transaction)
  * Creates two ledger entries: one debit and one credit
+ * ACC-005: Validates fiscal period is OPEN before posting
  */
 export async function postJournalEntry(params: {
   entryDate: Date;
@@ -288,6 +301,14 @@ export async function postJournalEntry(params: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ACC-005: Validate fiscal period is open for posting
+  const isLocked = await isFiscalPeriodLocked(params.fiscalPeriodId);
+  if (isLocked) {
+    throw new Error(
+      `Cannot post to fiscal period ${params.fiscalPeriodId}. The period is locked or closed.`
+    );
+  }
 
   // Use transaction to ensure debit and credit are created atomically
   return await db.transaction(async (tx) => {

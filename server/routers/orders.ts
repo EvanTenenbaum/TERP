@@ -1589,8 +1589,18 @@ export const ordersRouter = router({
         throw new Error("Order not found");
       }
 
-      if (order.fulfillmentStatus === "SHIPPED") {
-        throw new Error("Cannot fulfill a shipped order");
+      // ARCH-003: Check if order is in a terminal state or not pickable
+      const { isTerminalStatus } = await import("../services/orderStateMachine");
+      if (isTerminalStatus(order.fulfillmentStatus || "PENDING")) {
+        throw new Error(
+          `Cannot pick items for order in ${order.fulfillmentStatus} status (terminal state)`
+        );
+      }
+
+      if (order.fulfillmentStatus === "SHIPPED" || order.fulfillmentStatus === "DELIVERED") {
+        throw new Error(
+          `Cannot pick items for order that is already ${order.fulfillmentStatus}`
+        );
       }
 
       // Parse order items
@@ -1650,6 +1660,16 @@ export const ordersRouter = router({
 
       // Update order with picked items info
       const newStatus = allFullyPicked ? "PACKED" : "PENDING";
+
+      // ARCH-003: Validate status transition using state machine
+      const { validateTransition, canTransition } = await import(
+        "../services/orderStateMachine"
+      );
+      // Only validate if status is actually changing
+      if (order.fulfillmentStatus !== newStatus && !canTransition(order.fulfillmentStatus || "PENDING", newStatus)) {
+        validateTransition(order.fulfillmentStatus, newStatus, input.id);
+      }
+
       const updatedItems = orderItems.map((item: { batchId: number }) => {
         const picked = pickedItems.find(
           (p: { batchId: number }) => p.batchId === item.batchId
@@ -1710,20 +1730,12 @@ export const ordersRouter = router({
           });
         }
 
-        if (order.fulfillmentStatus === "SHIPPED") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Order is already shipped",
-          });
-        }
+// ARCH-003: Use state machine for transition validation
+      const { validateTransition } = await import(
+        "../services/orderStateMachine"
+      );
+      validateTransition(order.fulfillmentStatus, "SHIPPED", input.id);
 
-        // Should be PACKED before shipping (but allow PENDING for flexibility)
-        if (!["PENDING", "PACKED"].includes(order.fulfillmentStatus || "")) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Order cannot be shipped. Current status: ${order.fulfillmentStatus}`,
-          });
-        }
 
         // INV-001: Get all line items for this order
         const lineItems = await tx
@@ -1897,9 +1909,11 @@ export const ordersRouter = router({
         throw new Error("Order not found");
       }
 
-      if (order.fulfillmentStatus !== "SHIPPED") {
-        throw new Error("Order must be shipped before marking as delivered");
-      }
+      // ARCH-003: Use state machine for transition validation
+      const { validateTransition } = await import(
+        "../services/orderStateMachine"
+      );
+      validateTransition(order.fulfillmentStatus, "DELIVERED", input.id);
 
       // Build delivery notes
       let deliveryNotes = `Delivered: ${input.deliveredAt || new Date().toISOString()}\n`;
@@ -1947,9 +1961,6 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // Import state machine
-      const { canTransition } = await import("../services/orderStateMachine");
-
       // Get order
       const [order] = await db
         .select()
@@ -1964,11 +1975,16 @@ export const ordersRouter = router({
         });
       }
 
-      // Validate transition
-      if (!canTransition(order.fulfillmentStatus || "PENDING", "RETURNED")) {
+      // ARCH-003: Use state machine for transition validation
+      const { validateTransition } = await import(
+        "../services/orderStateMachine"
+      );
+      try {
+        validateTransition(order.fulfillmentStatus, "RETURNED", input.orderId);
+      } catch (err) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Cannot mark order as returned from ${order.fulfillmentStatus} status. Order must be SHIPPED or DELIVERED.`,
+          message: err instanceof Error ? err.message : "Invalid transition",
         });
       }
 

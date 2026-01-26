@@ -28,6 +28,7 @@ import { eq, desc, and, sql, isNull, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { createInvoiceFromOrder } from "../services/orderAccountingService";
+import { reverseGLEntries, GLPostingError } from "../accountingHooks";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -288,7 +289,9 @@ export const invoicesRouter = router({
       let orderItems;
       try {
         orderItems =
-          typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+          typeof order.items === "string"
+            ? JSON.parse(order.items)
+            : order.items;
       } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -408,7 +411,10 @@ export const invoicesRouter = router({
         updatePayload.version = sql`version + 1`;
       }
 
-      await db.update(invoices).set(updatePayload).where(eq(invoices.id, input.id));
+      await db
+        .update(invoices)
+        .set(updatePayload)
+        .where(eq(invoices.id, input.id));
 
       logger.info({
         msg: "[Invoices] Invoice status updated",
@@ -444,7 +450,11 @@ export const invoicesRouter = router({
     }),
 
   /**
-   * Void an invoice
+   * Void an invoice (ACC-002: Add GL Reversals for Invoice Void)
+   * This mutation:
+   * 1. Creates reversing GL entries for the original invoice posting
+   * 2. Updates client.totalOwed (AR balance)
+   * 3. Marks the invoice as VOID
    */
   void: protectedProcedure
     .use(requirePermission("accounting:delete"))
@@ -454,7 +464,9 @@ export const invoicesRouter = router({
         reason: z.string().min(1, "Reason is required"),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Get authenticated user ID from context
+      const actorId = getAuthenticatedUserId(ctx);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -478,6 +490,49 @@ export const invoicesRouter = router({
         });
       }
 
+      // ACC-002: Create reversing GL entries
+      try {
+        await reverseGLEntries("INVOICE", input.id, input.reason, actorId);
+        logger.info({
+          msg: "[Invoices] GL entries reversed for voided invoice",
+          invoiceId: input.id,
+          reason: input.reason,
+        });
+      } catch (error) {
+        // If no GL entries exist (e.g., draft invoice never posted), that's OK
+        if (
+          error instanceof GLPostingError &&
+          error.code === "NO_ENTRIES_TO_REVERSE"
+        ) {
+          logger.warn({
+            msg: "[Invoices] No GL entries to reverse for invoice (may have been draft)",
+            invoiceId: input.id,
+          });
+        } else {
+          // Re-throw other errors
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Failed to reverse GL entries: ${error instanceof Error ? error.message : "Unknown error"}`,
+          });
+        }
+      }
+
+      // ACC-002: Update client totalOwed (reduce AR balance)
+      const amountDue = parseFloat(invoice.amountDue ?? "0");
+      if (invoice.customerId && amountDue > 0) {
+        await db.execute(sql`
+          UPDATE clients
+          SET totalOwed = GREATEST(0, CAST(totalOwed AS DECIMAL(15,2)) - ${amountDue})
+          WHERE id = ${invoice.customerId}
+        `);
+        logger.info({
+          msg: "[Invoices] Client AR balance reduced",
+          clientId: invoice.customerId,
+          amountReduced: amountDue,
+        });
+      }
+
+      // Update invoice status to VOID
       await db
         .update(invoices)
         .set({
@@ -491,6 +546,8 @@ export const invoicesRouter = router({
         msg: "[Invoices] Invoice voided",
         invoiceId: input.id,
         reason: input.reason,
+        glEntriesReversed: true,
+        clientArUpdated: amountDue > 0,
       });
 
       return { success: true, invoiceId: input.id };

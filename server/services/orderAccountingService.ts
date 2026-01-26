@@ -68,16 +68,26 @@ export async function createInvoiceFromOrder(
   // Generate invoice number and dates outside transaction
   const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
   const invoiceDate = new Date();
-  const dueDateValue = dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30
+  const dueDateValue =
+    dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30
 
   // Pre-fetch account IDs and fiscal period (these are lookups, not mutations)
-  const arAccountId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
-  const revenueAccountId = await getAccountIdByName(ACCOUNT_NAMES.SALES_REVENUE);
+  const arAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+  );
+  const revenueAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.SALES_REVENUE
+  );
+  // ACC-004: Get COGS and Inventory account IDs for proper GL entries
+  const cogsAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.COST_OF_GOODS_SOLD
+  );
+  const inventoryAccountId = await getAccountIdByName(ACCOUNT_NAMES.INVENTORY);
   const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
   try {
     // Wrap all mutations in a transaction for atomicity
-    const invoiceId = await db.transaction(async (tx) => {
+    const invoiceId = await db.transaction(async tx => {
       // 1. Create invoice
       const result = await tx.insert(invoices).values({
         invoiceNumber,
@@ -100,8 +110,8 @@ export async function createInvoiceFromOrder(
 
       // 2. Create line items
       const lineItemsData = items
-        .filter((item) => !item.isSample) // Don't invoice samples
-        .map((item) => ({
+        .filter(item => !item.isSample) // Don't invoice samples
+        .map(item => ({
           invoiceId: newInvoiceId,
           description: item.displayName,
           quantity: item.quantity.toFixed(2),
@@ -149,6 +159,50 @@ export async function createInvoiceFromOrder(
         createdBy,
       });
 
+      // ACC-004: Create COGS GL entries (Debit COGS, Credit Inventory)
+      // Calculate total COGS from non-sample items
+      const totalCogs = items
+        .filter(item => !item.isSample)
+        .reduce((sum, item) => sum + (item.lineCogs || 0), 0);
+
+      if (totalCogs > 0) {
+        // Debit COGS Expense
+        await tx.insert(ledgerEntries).values({
+          entryNumber: `${entryNumber}-COGS-DR`,
+          entryDate: new Date(),
+          accountId: cogsAccountId,
+          debit: totalCogs.toFixed(2),
+          credit: "0.00",
+          description: `COGS - Invoice ${invoiceNumber}`,
+          referenceType: "INVOICE",
+          referenceId: newInvoiceId,
+          fiscalPeriodId,
+          isManual: false,
+          createdBy,
+        });
+
+        // Credit Inventory Asset
+        await tx.insert(ledgerEntries).values({
+          entryNumber: `${entryNumber}-INV-CR`,
+          entryDate: new Date(),
+          accountId: inventoryAccountId,
+          debit: "0.00",
+          credit: totalCogs.toFixed(2),
+          description: `Inventory reduction - Invoice ${invoiceNumber}`,
+          referenceType: "INVOICE",
+          referenceId: newInvoiceId,
+          fiscalPeriodId,
+          isManual: false,
+          createdBy,
+        });
+
+        logger.info({
+          msg: "COGS GL entries created",
+          invoiceId: newInvoiceId,
+          totalCogs,
+        });
+      }
+
       return newInvoiceId;
     });
 
@@ -189,12 +243,14 @@ export async function recordOrderCashPayment(input: {
 
   // Pre-fetch account IDs and fiscal period (these are lookups, not mutations)
   const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
-  const arAccountId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
+  const arAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+  );
   const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
   try {
     // Wrap all mutations in a transaction for atomicity
-    const paymentId = await db.transaction(async (tx) => {
+    const paymentId = await db.transaction(async tx => {
       // 1. Get invoice details
       const invoice = await tx.query.invoices.findFirst({
         where: eq(invoices.id, invoiceId),
@@ -407,7 +463,7 @@ export async function reverseOrderAccountingEntries(input: {
 
   try {
     // Wrap all mutations in a transaction for atomicity
-    await db.transaction(async (tx) => {
+    await db.transaction(async tx => {
       // 1. Get original ledger entries for this invoice (filter by both referenceType and referenceId)
       const originalEntries = await tx.query.ledgerEntries.findMany({
         where: and(

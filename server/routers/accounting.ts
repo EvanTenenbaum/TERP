@@ -24,7 +24,6 @@ import {
   onInvoiceCreated,
   onPaymentReceived,
 } from "../services/notificationTriggers";
-import { withTransaction } from "../_core/dbTransaction";
 
 export const accountingRouter = router({
   // ============================================================================
@@ -935,7 +934,15 @@ export const accountingRouter = router({
         z.object({
           vendorId: z.number().optional(),
           status: z
-            .enum(["DRAFT", "PENDING", "PARTIAL", "PAID", "OVERDUE", "VOID"])
+            .enum([
+              "DRAFT",
+              "PENDING",
+              "APPROVED",
+              "PARTIAL",
+              "PAID",
+              "OVERDUE",
+              "VOID",
+            ])
             .optional(),
           startDate: z.date().optional(),
           endDate: z.date().optional(),
@@ -1037,6 +1044,7 @@ export const accountingRouter = router({
           status: z.enum([
             "DRAFT",
             "PENDING",
+            "APPROVED",
             "PARTIAL",
             "PAID",
             "OVERDUE",
@@ -1598,7 +1606,6 @@ export const accountingRouter = router({
       }),
 
     // WS-001: Receive client payment (cash drop-off)
-    // ST-051: Wrapped in transaction to ensure payment, transaction, and balance update are atomic
     receiveClientPayment: protectedProcedure
       .use(requirePermission("accounting:create"))
       .input(
@@ -1620,7 +1627,7 @@ export const accountingRouter = router({
           await import("../../drizzle/schema");
         const { eq } = await import("drizzle-orm");
 
-        // 1. Get current client balance (outside transaction for read)
+        // 1. Get current client balance
         const client = await db
           .select({
             id: clients.id,
@@ -1634,60 +1641,50 @@ export const accountingRouter = router({
         if (!client[0]) throw new Error("Client not found");
 
         const previousBalance = Number(client[0].totalOwed || 0);
-        const newBalance = previousBalance - input.amount;
+        const _newBalance = previousBalance - input.amount;
 
-        // 2. Generate payment number (before transaction)
+        // 2. Generate payment number
         const paymentNumber = await arApDb.generatePaymentNumber("RECEIVED");
-        const userId = getAuthenticatedUserId(ctx);
-        const clientName = client[0].name;
 
-        // ST-051: Wrap all writes in a transaction for atomicity
-        const paymentId = await withTransaction(async (tx) => {
-          // 3. Create payment record
-          const paymentResult = await tx.insert(payments).values({
-            paymentNumber,
-            paymentType: "RECEIVED",
-            paymentDate: new Date(),
-            amount: input.amount.toFixed(2),
-            paymentMethod: input.paymentMethod,
-            customerId: input.clientId,
-            notes: input.note || `Quick payment from ${clientName}`,
-            createdBy: userId,
-          });
-
-          const pId = Number(paymentResult[0].insertId);
-
-          // 4. Create client transaction record for audit trail
-          await tx.insert(clientTransactions).values({
-            clientId: input.clientId,
-            transactionType: "PAYMENT",
-            transactionDate: new Date(),
-            amount: input.amount.toFixed(2),
-            paymentStatus: "PAID",
-            notes: input.note || `Quick payment - ${input.paymentMethod}`,
-            metadata: {
-              referenceType: "PAYMENT",
-              referenceId: pId,
-            },
-          });
-
-          // 5. Update client totalOwed
-          await tx
-            .update(clients)
-            .set({
-              totalOwed: newBalance.toFixed(2),
-            })
-            .where(eq(clients.id, input.clientId));
-
-          return pId;
+        // 3. Create payment record
+        const paymentResult = await db.insert(payments).values({
+          paymentNumber,
+          paymentType: "RECEIVED",
+          paymentDate: new Date(),
+          amount: input.amount.toFixed(2),
+          paymentMethod: input.paymentMethod,
+          customerId: input.clientId,
+          notes: input.note || `Quick payment from ${client[0].name}`,
+          createdBy: getAuthenticatedUserId(ctx),
         });
+
+        const paymentId = Number(paymentResult[0].insertId);
+
+        // 4. Create client transaction record for audit trail
+        await db.insert(clientTransactions).values({
+          clientId: input.clientId,
+          transactionType: "PAYMENT",
+          transactionDate: new Date(),
+          amount: input.amount.toFixed(2),
+          paymentStatus: "PAID",
+          notes: input.note || `Quick payment - ${input.paymentMethod}`,
+          metadata: {
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+          },
+        });
+
+        // 5. ARCH-002: Sync client balance from invoices (canonical calculation)
+        const { syncClientBalance } =
+          await import("../services/clientBalanceService");
+        const actualNewBalance = await syncClientBalance(input.clientId);
 
         // 6. Return result
         return {
           paymentId,
           paymentNumber,
           previousBalance,
-          newBalance,
+          newBalance: actualNewBalance,
           paymentAmount: input.amount,
           clientName: client[0].name,
           timestamp: new Date().toISOString(),
@@ -2275,6 +2272,75 @@ export const accountingRouter = router({
           expenses: Number(totalExpenses) || 0,
           netIncome: totalRevenue - (Number(totalExpenses) || 0),
         };
+      }),
+  }),
+
+  // ============================================================================
+  // CLIENT BALANCE MANAGEMENT (ARCH-002: Eliminate Shadow Accounting)
+  // ============================================================================
+  clientBalances: router({
+    /**
+     * Get detailed balance information for a client
+     * Shows computed balance from invoices vs stored balance
+     */
+    getClientBalance: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .input(z.object({ clientId: z.number() }))
+      .query(async ({ input }) => {
+        const { getClientBalanceDetails } =
+          await import("../services/clientBalanceService");
+        return getClientBalanceDetails(input.clientId);
+      }),
+
+    /**
+     * Synchronize a client's balance with the canonical calculation
+     * ARCH-002: This is the proper way to update client balance
+     */
+    syncClientBalance: protectedProcedure
+      .use(requirePermission("accounting:write"))
+      .input(z.object({ clientId: z.number() }))
+      .mutation(async ({ input }) => {
+        const { syncClientBalance } =
+          await import("../services/clientBalanceService");
+        const newBalance = await syncClientBalance(input.clientId);
+        return { clientId: input.clientId, newBalance };
+      }),
+
+    /**
+     * Find all clients with balance discrepancies
+     * Useful for auditing shadow accounting issues
+     */
+    findDiscrepancies: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .query(async () => {
+        const { findBalanceDiscrepancies } =
+          await import("../services/clientBalanceService");
+        return findBalanceDiscrepancies();
+      }),
+
+    /**
+     * Synchronize all client balances (admin operation)
+     * Fixes all shadow accounting discrepancies
+     */
+    syncAllBalances: protectedProcedure
+      .use(requirePermission("accounting:admin"))
+      .mutation(async () => {
+        const { syncAllClientBalances } =
+          await import("../services/clientBalanceService");
+        return syncAllClientBalances();
+      }),
+
+    /**
+     * Verify GL balance matches client balance
+     * Ensures financial integrity between AR ledger and client balances
+     */
+    verifyGLBalance: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .input(z.object({ clientId: z.number() }))
+      .query(async ({ input }) => {
+        const { verifyClientGLBalance } =
+          await import("../services/clientBalanceService");
+        return verifyClientGLBalance(input.clientId);
       }),
   }),
 });

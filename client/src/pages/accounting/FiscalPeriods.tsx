@@ -1,8 +1,14 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -34,8 +40,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Plus, Calendar as CalendarIcon, Lock, Unlock, XCircle } from "lucide-react";
+import {
+  Plus,
+  Calendar as CalendarIcon,
+  Lock,
+  Unlock,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -51,16 +74,37 @@ type FiscalPeriod = {
   createdAt: Date | string;
 };
 
+type CreatePeriodInput = {
+  periodName: string;
+  fiscalYear: number;
+  startDate: Date;
+  endDate: Date;
+};
+
 export default function FiscalPeriods() {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
+  // ACC-005: Confirmation dialog state for period status changes
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "close" | "lock" | "reopen";
+    period: FiscalPeriod;
+  } | null>(null);
+
   // Fetch fiscal periods
-  const { data: periods, isLoading, refetch } = trpc.accounting.fiscalPeriods.list.useQuery({
-    status: selectedStatus !== "ALL" ? (selectedStatus as "OPEN" | "CLOSED" | "LOCKED") : undefined,
+  const {
+    data: periods,
+    isLoading,
+    refetch,
+  } = trpc.accounting.fiscalPeriods.list.useQuery({
+    status:
+      selectedStatus !== "ALL"
+        ? (selectedStatus as "OPEN" | "CLOSED" | "LOCKED")
+        : undefined,
   });
 
-  const { data: currentPeriod } = trpc.accounting.fiscalPeriods.getCurrent.useQuery();
+  const { data: currentPeriod } =
+    trpc.accounting.fiscalPeriods.getCurrent.useQuery();
 
   // Create period mutation
   const createPeriod = trpc.accounting.fiscalPeriods.create.useMutation({
@@ -69,7 +113,7 @@ export default function FiscalPeriods() {
       setShowCreateDialog(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to create fiscal period: ${error.message}`);
     },
   });
@@ -80,7 +124,7 @@ export default function FiscalPeriods() {
       toast.success("Fiscal period closed successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to close fiscal period: ${error.message}`);
     },
   });
@@ -91,7 +135,7 @@ export default function FiscalPeriods() {
       toast.success("Fiscal period locked successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to lock fiscal period: ${error.message}`);
     },
   });
@@ -102,7 +146,7 @@ export default function FiscalPeriods() {
       toast.success("Fiscal period reopened successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to reopen fiscal period: ${error.message}`);
     },
   });
@@ -111,13 +155,34 @@ export default function FiscalPeriods() {
     let badge;
     switch (status) {
       case "OPEN":
-        badge = <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Open</Badge>;
+        badge = (
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-700 border-green-200"
+          >
+            Open
+          </Badge>
+        );
         break;
       case "CLOSED":
-        badge = <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">Closed</Badge>;
+        badge = (
+          <Badge
+            variant="outline"
+            className="bg-gray-100 text-gray-700 border-gray-200"
+          >
+            Closed
+          </Badge>
+        );
         break;
       case "LOCKED":
-        badge = <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">Locked</Badge>;
+        badge = (
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-700 border-red-200"
+          >
+            Locked
+          </Badge>
+        );
         break;
       default:
         badge = <Badge variant="outline">{status}</Badge>;
@@ -127,12 +192,34 @@ export default function FiscalPeriods() {
       <div className="flex items-center gap-2">
         {badge}
         {isCurrent && (
-          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-700 border-blue-200"
+          >
             Current
           </Badge>
         )}
       </div>
     );
+  };
+
+  // ACC-005: Handle confirmation dialog actions
+  const handleConfirmAction = () => {
+    if (!confirmAction) return;
+
+    const { type, period } = confirmAction;
+    switch (type) {
+      case "close":
+        closePeriod.mutate({ id: period.id });
+        break;
+      case "lock":
+        lockPeriod.mutate({ id: period.id });
+        break;
+      case "reopen":
+        reopenPeriod.mutate({ id: period.id });
+        break;
+    }
+    setConfirmAction(null);
   };
 
   const getActionButtons = (period: FiscalPeriod) => {
@@ -142,7 +229,7 @@ export default function FiscalPeriods() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => closePeriod.mutate({ id: period.id })}
+            onClick={() => setConfirmAction({ type: "close", period })}
             disabled={closePeriod.isPending}
           >
             <XCircle className="mr-2 h-4 w-4" />
@@ -155,7 +242,7 @@ export default function FiscalPeriods() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => lockPeriod.mutate({ id: period.id })}
+              onClick={() => setConfirmAction({ type: "lock", period })}
               disabled={lockPeriod.isPending}
             >
               <Lock className="mr-2 h-4 w-4" />
@@ -164,7 +251,7 @@ export default function FiscalPeriods() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => reopenPeriod.mutate({ id: period.id })}
+              onClick={() => setConfirmAction({ type: "reopen", period })}
               disabled={reopenPeriod.isPending}
             >
               <Unlock className="mr-2 h-4 w-4" />
@@ -177,7 +264,7 @@ export default function FiscalPeriods() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => reopenPeriod.mutate({ id: period.id })}
+            onClick={() => setConfirmAction({ type: "reopen", period })}
             disabled={reopenPeriod.isPending}
           >
             <Unlock className="mr-2 h-4 w-4" />
@@ -188,9 +275,9 @@ export default function FiscalPeriods() {
   };
 
   const totalPeriods = periods?.length || 0;
-  const openPeriods = periods?.filter((p) => p.status === "OPEN").length || 0;
-  const closedPeriods = periods?.filter((p) => p.status === "CLOSED").length || 0;
-  const lockedPeriods = periods?.filter((p) => p.status === "LOCKED").length || 0;
+  const openPeriods = periods?.filter(p => p.status === "OPEN").length || 0;
+  const closedPeriods = periods?.filter(p => p.status === "CLOSED").length || 0;
+  const lockedPeriods = periods?.filter(p => p.status === "LOCKED").length || 0;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -198,7 +285,9 @@ export default function FiscalPeriods() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Fiscal Periods</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Fiscal Periods
+          </h1>
           <p className="text-muted-foreground mt-1">
             Manage accounting periods and their status
           </p>
@@ -279,7 +368,9 @@ export default function FiscalPeriods() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading periods...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading periods...
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -295,7 +386,10 @@ export default function FiscalPeriods() {
               <TableBody>
                 {!periods || periods.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No fiscal periods found
                     </TableCell>
                   </TableRow>
@@ -303,12 +397,23 @@ export default function FiscalPeriods() {
                   periods.map((period: FiscalPeriod) => {
                     const isCurrent = currentPeriod?.id === period.id;
                     return (
-                      <TableRow key={period.id} className={cn(isCurrent && "bg-blue-50")}>
-                        <TableCell className="font-medium">{period.periodName}</TableCell>
+                      <TableRow
+                        key={period.id}
+                        className={cn(isCurrent && "bg-blue-50")}
+                      >
+                        <TableCell className="font-medium">
+                          {period.periodName}
+                        </TableCell>
                         <TableCell>{period.fiscalYear}</TableCell>
-                        <TableCell>{formatDateUtil(period.startDate, "long")}</TableCell>
-                        <TableCell>{formatDateUtil(period.endDate, "long")}</TableCell>
-                        <TableCell>{getStatusBadge(period.status, isCurrent)}</TableCell>
+                        <TableCell>
+                          {formatDateUtil(period.startDate, "long")}
+                        </TableCell>
+                        <TableCell>
+                          {formatDateUtil(period.endDate, "long")}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(period.status, isCurrent)}
+                        </TableCell>
                         <TableCell className="text-right">
                           {getActionButtons(period)}
                         </TableCell>
@@ -326,9 +431,93 @@ export default function FiscalPeriods() {
       <CreatePeriodDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSubmit={(data) => createPeriod.mutate(data)}
+        onSubmit={data => createPeriod.mutate(data)}
         isSubmitting={createPeriod.isPending}
       />
+
+      {/* ACC-005: Period Status Change Confirmation Dialog */}
+      <AlertDialog
+        open={!!confirmAction}
+        onOpenChange={() => setConfirmAction(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {confirmAction?.type === "lock" && (
+                <Lock className="h-5 w-5 text-red-500" />
+              )}
+              {confirmAction?.type === "close" && (
+                <XCircle className="h-5 w-5 text-amber-500" />
+              )}
+              {confirmAction?.type === "reopen" && (
+                <Unlock className="h-5 w-5 text-green-500" />
+              )}
+              {confirmAction?.type === "close" && "Close Fiscal Period?"}
+              {confirmAction?.type === "lock" && "Lock Fiscal Period?"}
+              {confirmAction?.type === "reopen" && "Reopen Fiscal Period?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              {confirmAction?.type === "close" && (
+                <>
+                  <p>
+                    You are about to close{" "}
+                    <strong>{confirmAction.period.periodName}</strong>.
+                  </p>
+                  <p className="text-amber-600 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Closing a period will prevent new transactions from being
+                    posted to it.
+                  </p>
+                </>
+              )}
+              {confirmAction?.type === "lock" && (
+                <>
+                  <p>
+                    You are about to lock{" "}
+                    <strong>{confirmAction.period.periodName}</strong>.
+                  </p>
+                  <p className="text-red-600 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Locking a period permanently prevents any modifications.
+                    This action should only be taken after reconciliation is
+                    complete.
+                  </p>
+                </>
+              )}
+              {confirmAction?.type === "reopen" && (
+                <>
+                  <p>
+                    You are about to reopen{" "}
+                    <strong>{confirmAction.period.periodName}</strong>.
+                  </p>
+                  <p className="text-amber-600 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Reopening a period will allow transactions to be posted to
+                    it again.
+                  </p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className={cn(
+                confirmAction?.type === "lock" && "bg-red-600 hover:bg-red-700",
+                confirmAction?.type === "close" &&
+                  "bg-amber-600 hover:bg-amber-700",
+                confirmAction?.type === "reopen" &&
+                  "bg-green-600 hover:bg-green-700"
+              )}
+            >
+              {confirmAction?.type === "close" && "Close Period"}
+              {confirmAction?.type === "lock" && "Lock Period"}
+              {confirmAction?.type === "reopen" && "Reopen Period"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -342,7 +531,7 @@ function CreatePeriodDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreatePeriodInput) => void;
   isSubmitting: boolean;
 }) {
   const [formData, setFormData] = useState({
@@ -354,7 +543,7 @@ function CreatePeriodDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.startDate || !formData.endDate) {
       toast.error("Please select both start and end dates");
       return;
@@ -384,7 +573,9 @@ function CreatePeriodDialog({
               <Input
                 id="periodName"
                 value={formData.periodName}
-                onChange={(e) => setFormData({ ...formData, periodName: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, periodName: e.target.value })
+                }
                 placeholder="e.g., Q1 2024"
                 required
               />
@@ -395,7 +586,12 @@ function CreatePeriodDialog({
                 id="fiscalYear"
                 type="number"
                 value={formData.fiscalYear}
-                onChange={(e) => setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    fiscalYear: parseInt(e.target.value),
+                  })
+                }
                 required
               />
             </div>
@@ -411,14 +607,18 @@ function CreatePeriodDialog({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(formData.startDate, "PPP") : "Pick a date"}
+                    {formData.startDate
+                      ? format(formData.startDate, "PPP")
+                      : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.startDate}
-                    onSelect={(date) => setFormData({ ...formData, startDate: date })}
+                    onSelect={date =>
+                      setFormData({ ...formData, startDate: date })
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -436,15 +636,21 @@ function CreatePeriodDialog({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? format(formData.endDate, "PPP") : "Pick a date"}
+                    {formData.endDate
+                      ? format(formData.endDate, "PPP")
+                      : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.endDate}
-                    onSelect={(date) => setFormData({ ...formData, endDate: date })}
-                    disabled={(date) => formData.startDate ? date < formData.startDate : false}
+                    onSelect={date =>
+                      setFormData({ ...formData, endDate: date })
+                    }
+                    disabled={date =>
+                      formData.startDate ? date < formData.startDate : false
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -452,7 +658,11 @@ function CreatePeriodDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -464,4 +674,3 @@ function CreatePeriodDialog({
     </Dialog>
   );
 }
-
