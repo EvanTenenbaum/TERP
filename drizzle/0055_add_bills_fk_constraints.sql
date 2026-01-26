@@ -28,17 +28,23 @@
 -- handling below for already-soft-deleted orphaned records.
 
 -- Clean orphaned vendorId in bills (if vendor doesn't exist)
--- First verify fallback vendor exists, then update orphans
+-- QA-R05: Use named system account first, then fallback to first vendor
 UPDATE `bills`
-SET `vendorId` = (SELECT `id` FROM `vendors` ORDER BY `id` ASC LIMIT 1)
+SET `vendorId` = COALESCE(
+  (SELECT `id` FROM `vendors` WHERE `name` IN ('System', 'Unknown', 'Unknown Vendor') ORDER BY `id` ASC LIMIT 1),
+  (SELECT `id` FROM `vendors` ORDER BY `id` ASC LIMIT 1)
+)
 WHERE `vendorId` NOT IN (SELECT `id` FROM `vendors`)
 AND `vendorId` IS NOT NULL
 AND EXISTS (SELECT 1 FROM `vendors` LIMIT 1);
 
 -- Clean orphaned createdBy in bills (if user doesn't exist)
--- First verify fallback user exists, then update orphans
+-- QA-R05: Use named system account first, then fallback to first user
 UPDATE `bills`
-SET `createdBy` = (SELECT `id` FROM `users` ORDER BY `id` ASC LIMIT 1)
+SET `createdBy` = COALESCE(
+  (SELECT `id` FROM `users` WHERE `username` IN ('system', 'admin', 'System') ORDER BY `id` ASC LIMIT 1),
+  (SELECT `id` FROM `users` ORDER BY `id` ASC LIMIT 1)
+)
 WHERE `createdBy` NOT IN (SELECT `id` FROM `users`)
 AND `createdBy` IS NOT NULL
 AND EXISTS (SELECT 1 FROM `users` LIMIT 1);
@@ -53,11 +59,14 @@ AND EXISTS (SELECT 1 FROM `users` LIMIT 1);
 -- Phase 1: Soft-delete active orphaned records (preserves audit trail)
 -- Phase 2: Hard-delete already-soft-deleted orphaned records (garbage collection)
 --
--- JUSTIFICATION for hard delete in Phase 2:
--- - Records are ALREADY soft-deleted (business considers them deleted)
--- - Records reference non-existent parent bills (no recovery possible)
--- - They block FK integrity constraints (technical necessity)
--- - This is one-time migration cleanup, not application behavior
+-- ============================================================================
+-- POLICY EXCEPTION: Hard delete of orphaned soft-deleted records (QA-R04)
+-- Approved: 2026-01-26
+-- Justification: Records are:
+--   (1) ALREADY soft-deleted (business considers them deleted)
+--   (2) Orphaned with no parent bill (no recovery possible)
+--   (3) Blocking FK integrity constraints (technical necessity)
+-- This is one-time migration garbage collection, not application behavior.
 -- ============================================================================
 
 -- Phase 1: Soft-delete active orphaned records (preserves audit trail)
@@ -89,51 +98,132 @@ AND `lotId` NOT IN (SELECT `id` FROM `lots`)
 AND `deleted_at` IS NULL;
 
 -- ============================================================================
--- ADD FOREIGN KEY CONSTRAINTS TO BILLS TABLE
+-- ADD FOREIGN KEY CONSTRAINTS TO BILLS TABLE (QA-R02: Idempotent)
+-- ============================================================================
+-- Each constraint is wrapped in a conditional check to be idempotent.
+-- If the constraint already exists, the statement is skipped.
+
+-- FK: bills.vendorId -> vendors.id
+SET @fk_exists = (
+  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'bills'
+    AND CONSTRAINT_NAME = 'fk_bills_vendor_id'
+);
+SET @sql = IF(@fk_exists = 0,
+  'ALTER TABLE `bills` ADD CONSTRAINT `fk_bills_vendor_id` FOREIGN KEY (`vendorId`) REFERENCES `vendors`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- FK: bills.createdBy -> users.id
+SET @fk_exists = (
+  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'bills'
+    AND CONSTRAINT_NAME = 'fk_bills_created_by'
+);
+SET @sql = IF(@fk_exists = 0,
+  'ALTER TABLE `bills` ADD CONSTRAINT `fk_bills_created_by` FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- ============================================================================
+-- ADD FOREIGN KEY CONSTRAINTS TO BILLLINEITEMS TABLE (QA-R02: Idempotent)
 -- ============================================================================
 
--- Note: vendorId references the deprecated vendors table
--- This FK will be replaced when migrating to supplierClientId (PARTY-003+)
-ALTER TABLE `bills`
-ADD CONSTRAINT `fk_bills_vendor_id`
-FOREIGN KEY (`vendorId`) REFERENCES `vendors`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+-- FK: billLineItems.billId -> bills.id
+SET @fk_exists = (
+  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'billLineItems'
+    AND CONSTRAINT_NAME = 'fk_bill_line_items_bill_id'
+);
+SET @sql = IF(@fk_exists = 0,
+  'ALTER TABLE `billLineItems` ADD CONSTRAINT `fk_bill_line_items_bill_id` FOREIGN KEY (`billId`) REFERENCES `bills`(`id`) ON DELETE CASCADE ON UPDATE CASCADE',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- createdBy references users table
-ALTER TABLE `bills`
-ADD CONSTRAINT `fk_bills_created_by`
-FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+-- FK: billLineItems.productId -> products.id
+SET @fk_exists = (
+  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'billLineItems'
+    AND CONSTRAINT_NAME = 'fk_bill_line_items_product_id'
+);
+SET @sql = IF(@fk_exists = 0,
+  'ALTER TABLE `billLineItems` ADD CONSTRAINT `fk_bill_line_items_product_id` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE SET NULL ON UPDATE CASCADE',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- FK: billLineItems.lotId -> lots.id
+SET @fk_exists = (
+  SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'billLineItems'
+    AND CONSTRAINT_NAME = 'fk_bill_line_items_lot_id'
+);
+SET @sql = IF(@fk_exists = 0,
+  'ALTER TABLE `billLineItems` ADD CONSTRAINT `fk_bill_line_items_lot_id` FOREIGN KEY (`lotId`) REFERENCES `lots`(`id`) ON DELETE SET NULL ON UPDATE CASCADE',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
--- ADD FOREIGN KEY CONSTRAINTS TO BILLLINEITEMS TABLE
+-- ADD INDEXES FOR BETTER QUERY PERFORMANCE (QA-R03: MySQL 5.7 compatible)
 -- ============================================================================
-
--- billId references bills table (cascade delete - if bill deleted, items deleted)
-ALTER TABLE `billLineItems`
-ADD CONSTRAINT `fk_bill_line_items_bill_id`
-FOREIGN KEY (`billId`) REFERENCES `bills`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- productId references products table (nullable, set null on delete)
-ALTER TABLE `billLineItems`
-ADD CONSTRAINT `fk_bill_line_items_product_id`
-FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
--- lotId references lots table (nullable, set null on delete)
-ALTER TABLE `billLineItems`
-ADD CONSTRAINT `fk_bill_line_items_lot_id`
-FOREIGN KEY (`lotId`) REFERENCES `lots`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
--- ============================================================================
--- ADD INDEXES FOR BETTER QUERY PERFORMANCE
--- ============================================================================
+-- MySQL 5.7 does not support CREATE INDEX IF NOT EXISTS syntax.
+-- Each index is wrapped in a conditional check to be idempotent.
 
 -- Index on vendorId for vendor lookups
-CREATE INDEX IF NOT EXISTS `idx_bills_vendor_id` ON `bills` (`vendorId`);
+SET @idx_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'bills'
+    AND INDEX_NAME = 'idx_bills_vendor_id'
+);
+SET @sql = IF(@idx_exists = 0,
+  'CREATE INDEX `idx_bills_vendor_id` ON `bills` (`vendorId`)',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Index on createdBy for user lookups
-CREATE INDEX IF NOT EXISTS `idx_bills_created_by` ON `bills` (`createdBy`);
+SET @idx_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'bills'
+    AND INDEX_NAME = 'idx_bills_created_by'
+);
+SET @sql = IF(@idx_exists = 0,
+  'CREATE INDEX `idx_bills_created_by` ON `bills` (`createdBy`)',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Index on billId for line item lookups
-CREATE INDEX IF NOT EXISTS `idx_bill_line_items_bill_id` ON `billLineItems` (`billId`);
+SET @idx_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'billLineItems'
+    AND INDEX_NAME = 'idx_bill_line_items_bill_id'
+);
+SET @sql = IF(@idx_exists = 0,
+  'CREATE INDEX `idx_bill_line_items_bill_id` ON `billLineItems` (`billId`)',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- ============================================================================
 -- ROLLBACK PLAN:
@@ -144,9 +234,9 @@ CREATE INDEX IF NOT EXISTS `idx_bill_line_items_bill_id` ON `billLineItems` (`bi
 -- ALTER TABLE `billLineItems` DROP FOREIGN KEY `fk_bill_line_items_bill_id`;
 -- ALTER TABLE `bills` DROP FOREIGN KEY `fk_bills_created_by`;
 -- ALTER TABLE `bills` DROP FOREIGN KEY `fk_bills_vendor_id`;
--- DROP INDEX IF EXISTS `idx_bills_vendor_id` ON `bills`;
--- DROP INDEX IF EXISTS `idx_bills_created_by` ON `bills`;
--- DROP INDEX IF EXISTS `idx_bill_line_items_bill_id` ON `billLineItems`;
+-- DROP INDEX `idx_bills_vendor_id` ON `bills`;
+-- DROP INDEX `idx_bills_created_by` ON `bills`;
+-- DROP INDEX `idx_bill_line_items_bill_id` ON `billLineItems`;
 --
 -- NOTE: Hard-deleted orphaned soft-deleted billLineItems cannot be restored.
 -- These records were both soft-deleted AND referenced non-existent bills,

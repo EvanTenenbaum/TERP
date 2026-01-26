@@ -32,15 +32,31 @@ WHERE (l.supplier_client_id IS NULL OR l.supplier_client_id = 0)
   AND l.deleted_at IS NULL;
 
 -- ============================================================================
--- STEP 2: Handle lots without supplier_profiles mapping
+-- STEP 2: Handle lots without supplier_profiles mapping (QA-R06)
 -- ============================================================================
 -- Fallback: For lots where no supplier_profiles mapping exists, try to find
 -- a matching client by EXACT name match (case-insensitive for safety).
 -- This handles edge cases from legacy data imports.
 --
--- NOTE: Name matching is inherently fragile. Unmapped lots after this step
--- should be manually reviewed or handled by application code that falls back
--- to vendorId queries.
+-- WARNING: Name matching is inherently fragile and may produce false positives.
+-- Run the PRE-CHECK query below manually before migration to verify matches.
+-- ============================================================================
+
+-- PRE-CHECK: Review lots that will be matched by name (run manually BEFORE migration)
+-- This helps identify potential false positives from name matching.
+-- SELECT
+--   l.id AS lot_id,
+--   l.vendorId,
+--   v.name AS vendor_name,
+--   c.id AS matched_client_id,
+--   c.name AS client_name,
+--   CASE WHEN v.name = c.name THEN 'EXACT' ELSE 'CASE-INSENSITIVE' END AS match_type
+-- FROM lots l
+-- INNER JOIN vendors v ON v.id = l.vendorId AND v.deleted_at IS NULL
+-- INNER JOIN clients c ON LOWER(TRIM(c.name)) = LOWER(TRIM(v.name))
+--   AND c.is_seller = 1 AND c.deleted_at IS NULL
+-- WHERE (l.supplier_client_id IS NULL OR l.supplier_client_id = 0)
+--   AND l.deleted_at IS NULL;
 
 UPDATE `lots` l
 INNER JOIN `vendors` v ON v.id = l.vendorId AND v.deleted_at IS NULL
@@ -52,7 +68,7 @@ WHERE (l.supplier_client_id IS NULL OR l.supplier_client_id = 0)
   AND l.deleted_at IS NULL;
 
 -- ============================================================================
--- STEP 5: Verification query (run manually to check status)
+-- STEP 3: Verification query (run manually to check status)
 -- ============================================================================
 -- SELECT
 --   COUNT(*) as total_lots,
