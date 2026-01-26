@@ -13,12 +13,12 @@ This document captures the complete analysis and implementation plan for improvi
 
 ### Key Metrics
 
-| Metric | Before | After | Target |
-|--------|--------|-------|--------|
-| Rule Enforcement Rate | 23% | ~50% | 75%+ |
-| Skipped Tests | ~43 | ~11 | 0 |
-| Active Workflows | 31 | 5 | 5 |
-| Root-level Docs | ~245 | ~60 | <100 |
+| Metric                | Before | After | Target |
+| --------------------- | ------ | ----- | ------ |
+| Rule Enforcement Rate | 23%    | ~50%  | 75%+   |
+| Skipped Tests         | ~43    | ~11   | 0      |
+| Active Workflows      | 31     | 5     | 5      |
+| Root-level Docs       | ~245   | ~60   | <100   |
 
 ---
 
@@ -26,38 +26,38 @@ This document captures the complete analysis and implementation plan for improvi
 
 ### 1.1 Why Bugs Keep Happening (Root Causes)
 
-| Root Cause | Description | Evidence |
-|------------|-------------|----------|
-| **Documentation without enforcement** | Rules exist in docs but nothing blocks violations | Only 23% of documented rules had any enforcement mechanism |
-| **Fallback patterns** | Unsafe defaults like `\|\| 1` for user IDs | Found in `salesSheetsDb.ts:255` and documented in QA findings |
-| **Deprecated systems still in use** | `vendors` table still actively queried | 10+ files still reference deprecated table |
-| **Any types everywhere** | 515 `any` types in codebase | Allows type errors to slip through |
-| **Skipped tests accumulate** | Tests marked `.skip()` never get fixed | 43 skipped tests before cleanup |
+| Root Cause                            | Description                                       | Evidence                                                      |
+| ------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------- |
+| **Documentation without enforcement** | Rules exist in docs but nothing blocks violations | Only 23% of documented rules had any enforcement mechanism    |
+| **Fallback patterns**                 | Unsafe defaults like `\|\| 1` for user IDs        | Found in `salesSheetsDb.ts:255` and documented in QA findings |
+| **Deprecated systems still in use**   | `vendors` table still actively queried            | 10+ files still reference deprecated table                    |
+| **Any types everywhere**              | 515 `any` types in codebase                       | Allows type errors to slip through                            |
+| **Skipped tests accumulate**          | Tests marked `.skip()` never get fixed            | 43 skipped tests before cleanup                               |
 
 ### 1.2 Bug Patterns Identified
 
-| Pattern ID | Pattern | Severity | Occurrences Found |
-|------------|---------|----------|-------------------|
-| POST-001 | mysqlEnum first arg doesn't match DB column | HIGH | Multiple in schema |
-| POST-002 | Fallback user ID (`ctx.user?.id \|\| 1`) | HIGH | 1 confirmed (salesSheetsDb.ts) |
-| POST-003 | Actor from input (`input.createdBy`) | HIGH | 0 in production code |
-| POST-004 | Hard deletes instead of soft deletes | MEDIUM | Multiple (legacy code) |
-| POST-005 | Vendors table usage | MEDIUM | 10+ files |
+| Pattern ID | Pattern                                     | Severity | Occurrences Found              |
+| ---------- | ------------------------------------------- | -------- | ------------------------------ |
+| POST-001   | mysqlEnum first arg doesn't match DB column | HIGH     | Multiple in schema             |
+| POST-002   | Fallback user ID (`ctx.user?.id \|\| 1`)    | HIGH     | 1 confirmed (salesSheetsDb.ts) |
+| POST-003   | Actor from input (`input.createdBy`)        | HIGH     | 0 in production code           |
+| POST-004   | Hard deletes instead of soft deletes        | MEDIUM   | Multiple (legacy code)         |
+| POST-005   | Vendors table usage                         | MEDIUM   | 10+ files                      |
 
 ### 1.3 Enforcement Audit Results
 
 **What was documented vs enforced:**
 
-| Rule | Documented In | Enforced By | Status |
-|------|---------------|-------------|--------|
-| No `any` types | CLAUDE.md, ESLint | ESLint (warn only) | ⚠️ Warning only |
-| No fallback user ID | CLAUDE.md | Nothing | ❌ Not enforced |
-| No actor from input | CLAUDE.md | pre-merge.yml grep | ✅ Now enforced |
-| Soft deletes only | CLAUDE.md | pre-merge.yml grep | ⚠️ Warning only |
-| No vendors table | CLAUDE.md | Nothing | ❌ Not enforced |
-| mysqlEnum naming | CLAUDE.md | Nothing | ❌ Not enforced |
-| Roadmap validation | Protocol docs | pnpm roadmap:validate | ✅ Enforced |
-| TypeScript strict | tsconfig.json | pnpm check | ✅ Enforced |
+| Rule                | Documented In     | Enforced By           | Status          |
+| ------------------- | ----------------- | --------------------- | --------------- |
+| No `any` types      | CLAUDE.md, ESLint | ESLint (warn only)    | ⚠️ Warning only |
+| No fallback user ID | CLAUDE.md         | Nothing               | ❌ Not enforced |
+| No actor from input | CLAUDE.md         | pre-merge.yml grep    | ✅ Now enforced |
+| Soft deletes only   | CLAUDE.md         | pre-merge.yml grep    | ⚠️ Warning only |
+| No vendors table    | CLAUDE.md         | Nothing               | ❌ Not enforced |
+| mysqlEnum naming    | CLAUDE.md         | Nothing               | ❌ Not enforced |
+| Roadmap validation  | Protocol docs     | pnpm roadmap:validate | ✅ Enforced     |
+| TypeScript strict   | tsconfig.json     | pnpm check            | ✅ Enforced     |
 
 **Result: 23% enforcement rate (3 of 13 rules actually blocked violations)**
 
@@ -70,11 +70,13 @@ This document captures the complete analysis and implementation plan for improvi
 **File:** `.github/workflows/pre-merge.yml`
 
 **Added security pattern checks that:**
+
 1. Scan for `ctx.user?.id || 1` and `ctx.user?.id ?? 1` patterns
 2. Scan for `createdBy: input.createdBy` patterns
 3. Warn on `.delete()` calls without soft delete
 
 **Behavior:**
+
 - PRs with violations get a comment listing all issues
 - Security violations (patterns 1 & 2) **block the PR**
 - Hard delete warnings are advisory only
@@ -82,6 +84,7 @@ This document captures the complete analysis and implementation plan for improvi
 
 **Implementation Note:**
 The grep patterns use extended regex (`-E` flag) for proper pattern matching. They may miss:
+
 - Multi-line patterns
 - Patterns with different spacing
 - Code in comments (false positives)
@@ -91,6 +94,7 @@ The grep patterns use extended regex (`-E` flag) for proper pattern matching. Th
 **File:** `CLAUDE.md`
 
 **Changes:**
+
 1. Updated "Forbidden Code Patterns" section to reference CI enforcement
 2. Added "Creating Execution Roadmaps" subsection with template
 3. Referenced `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md`
@@ -101,6 +105,7 @@ The grep patterns use extended regex (`-E` flag) for proper pattern matching. Th
 **File:** `server/salesSheetsDb.ts`
 
 **Before:**
+
 ```typescript
 export async function saveSalesSheet(data: {
   // ...
@@ -112,6 +117,7 @@ export async function saveSalesSheet(data: {
 ```
 
 **After:**
+
 ```typescript
 export async function saveSalesSheet(data: {
   // ...
@@ -127,11 +133,11 @@ export async function saveSalesSheet(data: {
 
 ### 2.4 Cleanup (Previous Session)
 
-| Category | Before | After | Details |
-|----------|--------|-------|---------|
-| Skipped tests | ~43 | ~11 | Deleted entirely-skipped files, removed individual skipped tests |
-| GitHub workflows | 31 | 5 | Archived 26 to `.github/workflows/archived/` |
-| Root docs | ~245 | ~60 | Organized into `docs/archive/` subdirectories |
+| Category         | Before | After | Details                                                          |
+| ---------------- | ------ | ----- | ---------------------------------------------------------------- |
+| Skipped tests    | ~43    | ~11   | Deleted entirely-skipped files, removed individual skipped tests |
+| GitHub workflows | 31     | 5     | Archived 26 to `.github/workflows/archived/`                     |
+| Root docs        | ~245   | ~60   | Organized into `docs/archive/` subdirectories                    |
 
 ---
 
@@ -153,6 +159,7 @@ export async function saveSalesSheet(data: {
 ### 3.2 mysqlEnum Enforcement
 
 **Why not automated:**
+
 - Requires knowing actual DB column names
 - Would need custom ESLint plugin with schema awareness
 - Complexity doesn't justify benefit
@@ -165,30 +172,30 @@ export async function saveSalesSheet(data: {
 
 ### 4.1 What Blocks PRs
 
-| Check | Location | Blocks? |
-|-------|----------|---------|
-| TypeScript errors | `typescript-check.yml` | ✅ Yes |
-| ESLint errors | `typescript-check.yml` | ✅ Yes |
-| Fallback user ID pattern | `pre-merge.yml` | ✅ Yes |
-| Actor from input pattern | `pre-merge.yml` | ✅ Yes |
-| Test failures | `merge.yml` | ✅ Yes |
-| Build failures | `merge.yml` | ✅ Yes |
+| Check                    | Location               | Blocks? |
+| ------------------------ | ---------------------- | ------- |
+| TypeScript errors        | `typescript-check.yml` | ✅ Yes  |
+| ESLint errors            | `typescript-check.yml` | ✅ Yes  |
+| Fallback user ID pattern | `pre-merge.yml`        | ✅ Yes  |
+| Actor from input pattern | `pre-merge.yml`        | ✅ Yes  |
+| Test failures            | `merge.yml`            | ✅ Yes  |
+| Build failures           | `merge.yml`            | ✅ Yes  |
 
 ### 4.2 What Warns Only
 
-| Check | Location | Why Not Blocking |
-|-------|----------|------------------|
-| Hard delete patterns | `pre-merge.yml` | Sometimes legitimate (test cleanup) |
-| `any` types | ESLint | 515 existing violations |
-| Roadmap tracking | `pre-merge.yml` | Advisory - doesn't affect code quality |
+| Check                | Location        | Why Not Blocking                       |
+| -------------------- | --------------- | -------------------------------------- |
+| Hard delete patterns | `pre-merge.yml` | Sometimes legitimate (test cleanup)    |
+| `any` types          | ESLint          | 515 existing violations                |
+| Roadmap tracking     | `pre-merge.yml` | Advisory - doesn't affect code quality |
 
 ### 4.3 What's Not Checked
 
-| Pattern | Why Not |
-|---------|---------|
+| Pattern               | Why Not                       |
+| --------------------- | ----------------------------- |
 | `vendors` table usage | Would break build (10+ files) |
-| mysqlEnum naming | No automated way to verify |
-| Soft delete presence | Would require schema analysis |
+| mysqlEnum naming      | No automated way to verify    |
+| Soft delete presence  | Would require schema analysis |
 
 ---
 
@@ -197,6 +204,7 @@ export async function saveSalesSheet(data: {
 ### 5.1 Test the CI Enforcement
 
 **Test Case 1: Fallback User ID Should Block**
+
 ```bash
 # Create a test file with the pattern
 echo 'const userId = ctx.user?.id || 1;' > /tmp/test.ts
@@ -207,6 +215,7 @@ grep -n "ctx\.user\?\.\(id\|userId\)\s*\(||\|??\)\s*[0-9]" /tmp/test.ts
 ```
 
 **Test Case 2: Legitimate || 1 Should NOT Match**
+
 ```bash
 # These should NOT be caught by the pattern
 echo 'const limit = input.limit || 100;' > /tmp/test2.ts
@@ -217,6 +226,7 @@ grep -n "ctx\.user\?\.\(id\|userId\)\s*\(||\|??\)\s*[0-9]" /tmp/test2.ts /tmp/te
 ```
 
 **Test Case 3: Actor From Input Should Block**
+
 ```bash
 echo 'createdBy: input.createdBy,' > /tmp/test4.ts
 
@@ -247,12 +257,12 @@ grep -B5 -A5 "saveSalesSheet(" server/services/live-shopping/sessionOrderService
 
 ### 5.4 Edge Cases to Test
 
-| Test | Expected Result |
-|------|-----------------|
-| PR with `[HOTFIX]` in title | Should bypass all checks |
-| PR with violation + hotfix bypass | Should pass (bypass works) |
-| Existing code with `|| 1` (not ctx.user) | Should NOT be flagged |
-| Multi-line violation | May NOT be caught (known limitation) |
+| Test                              | Expected Result                      |
+| --------------------------------- | ------------------------------------ | ----------------- | --------------------- |
+| PR with `[HOTFIX]` in title       | Should bypass all checks             |
+| PR with violation + hotfix bypass | Should pass (bypass works)           |
+| Existing code with `              |                                      | 1` (not ctx.user) | Should NOT be flagged |
+| Multi-line violation              | May NOT be caught (known limitation) |
 
 ---
 
@@ -260,12 +270,28 @@ grep -B5 -A5 "saveSalesSheet(" server/services/live-shopping/sessionOrderService
 
 ### 6.1 Known Limitations
 
-| Limitation | Risk | Mitigation |
-|------------|------|------------|
-| Grep patterns not AST-aware | May miss edge cases | Document in CLAUDE.md, rely on review |
-| 515 `any` types exist | Type safety holes | Future cleanup sprint |
-| `vendors` table still used | Deprecated system debt | Party model migration (Q2 2026) |
-| mysqlEnum not enforced | Runtime errors possible | Documentation + review |
+| Limitation                     | Risk                                 | Mitigation                            |
+| ------------------------------ | ------------------------------------ | ------------------------------------- |
+| Grep patterns not AST-aware    | May miss edge cases                  | Document in CLAUDE.md, rely on review |
+| Multi-line patterns not caught | Code split across lines evades check | Rare in practice, code review backup  |
+| Comment false positives        | Pattern matches code in comments     | Human can dismiss during review       |
+| 11 pre-existing violations     | Grandfathered in 3 files             | Cleanup task needed (see 6.3)         |
+| 515 `any` types exist          | Type safety holes                    | Future cleanup sprint                 |
+| `vendors` table still used     | Deprecated system debt               | Party model migration (Q2 2026)       |
+| mysqlEnum not enforced         | Runtime errors possible              | Documentation + review                |
+
+### 6.3 Pre-existing Violations (Grandfathered)
+
+These exist in production code and are NOT blocked by CI (only new/changed code is checked):
+
+| File                            | Count  | Pattern                                       |
+| ------------------------------- | ------ | --------------------------------------------- |
+| `server/routers/inventory.ts`   | 8      | `ctx.user?.id \|\| 0` for actorId/performedBy |
+| `server/routers/catalog.ts`     | 2      | `ctx.user?.id \|\| 0` for publish operations  |
+| `server/routers/poReceiving.ts` | 1      | `ctx.user?.id \|\| 0` for performedBy         |
+| **Total**                       | **11** |                                               |
+
+**Recommended cleanup:** Create ST-XXX task to fix these in dedicated sprint.
 
 ### 6.2 What Could Still Go Wrong
 
@@ -279,17 +305,20 @@ grep -B5 -A5 "saveSalesSheet(" server/services/live-shopping/sessionOrderService
 ## Part 7: Recommendations
 
 ### Immediate (This PR)
+
 - [x] Add BUG-107 to roadmap
 - [x] Fix salesSheetsDb.ts
 - [x] Keep CI grep checks (they work for common cases)
 - [x] Document limitations
 
 ### Short-term (Next Sprint)
+
 - [ ] Add test for pre-merge.yml grep patterns
 - [ ] Monitor for grep pattern bypasses
 - [ ] Consider ESLint custom rule for ctx.user fallback specifically
 
 ### Long-term (Q2 2026)
+
 - [ ] Complete Party Model migration (eliminates vendors table)
 - [ ] Dedicated sprint to eliminate `any` types
 - [ ] Consider AST-based enforcement (ts-morph or custom ESLint plugin)
@@ -298,12 +327,12 @@ grep -B5 -A5 "saveSalesSheet(" server/services/live-shopping/sessionOrderService
 
 ## Appendix A: File Changes
 
-| File | Change Type | Lines Changed |
-|------|-------------|---------------|
-| `.github/workflows/pre-merge.yml` | Modified | +42 |
-| `CLAUDE.md` | Modified | +50, -10 |
-| `server/salesSheetsDb.ts` | Modified | +5, -2 |
-| `docs/roadmaps/MASTER_ROADMAP.md` | Modified | +12 |
+| File                              | Change Type | Lines Changed |
+| --------------------------------- | ----------- | ------------- |
+| `.github/workflows/pre-merge.yml` | Modified    | +42           |
+| `CLAUDE.md`                       | Modified    | +50, -10      |
+| `server/salesSheetsDb.ts`         | Modified    | +5, -2        |
+| `docs/roadmaps/MASTER_ROADMAP.md` | Modified    | +12           |
 
 ## Appendix B: Commands Reference
 
