@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.8
-**Last Updated:** 2026-01-21 (Merged security audit + DATA-021 + FEAT-SIGNAL-001)
+**Version:** 6.9
+**Last Updated:** 2026-01-26 (Added QA Security-Critical Audit findings: BUG-108, BUG-109, ST-054)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -668,6 +668,50 @@ pnpm test --run 2>&1 | tee test-results.log
 | UX-001 | Implement Form Dirty State Protection | MEDIUM   | ✅ COMPLETE | -      |
 | UX-003 | Fix Mobile Kanban Overflow            | MEDIUM   | ✅ COMPLETE | -      |
 | UX-006 | Add Error Recovery UI with Retry      | MEDIUM   | ✅ COMPLETE | -      |
+
+---
+
+### QA Security-Critical Audit Findings (Jan 26, 2026)
+
+> Discovered during comprehensive QA audit of security-critical code changes.
+> See: QA Protocol v3.0 Five-Lens Analysis
+
+#### Test Failures (P2)
+
+| Task    | Description                                    | Priority | Status | Estimate | Location                                                  |
+| ------- | ---------------------------------------------- | -------- | ------ | -------- | --------------------------------------------------------- |
+| BUG-108 | MatchmakingServicePage tests failing (4 tests) | MEDIUM   | ready  | 4h       | `client/src/pages/MatchmakingServicePage.test.tsx`        |
+| BUG-109 | EventFormDialog tests failing (5 tests)        | MEDIUM   | ready  | 4h       | `client/src/components/calendar/EventFormDialog.test.tsx` |
+
+**BUG-108 Details:**
+
+- **Error:** `TypeError: trpc.useUtils is not a function`
+- **Root Cause:** tRPC mock in test setup doesn't properly mock `useUtils`
+- **Impact:** 4 test failures in MatchmakingServicePage test suite
+- **Fix:** Update test mock to properly stub `trpc.useUtils()` return value
+
+**BUG-109 Details:**
+
+- **Error:** `Maximum update depth exceeded`
+- **Root Cause:** Radix UI `react-presence` component triggering infinite update loop in test environment
+- **Impact:** 5 test failures in EventFormDialog test suite
+- **Fix:** Update Radix component usage or add test-specific handling for presence animations
+
+#### Stability Issues (P2)
+
+| Task   | Description                                  | Priority | Status | Estimate | Files                                                                              |
+| ------ | -------------------------------------------- | -------- | ------ | -------- | ---------------------------------------------------------------------------------- |
+| ST-054 | Remaining `any` types in core infrastructure | MEDIUM   | ready  | 4h       | `featureFlagMiddleware.ts`, `monitoring.ts`, `connectionPool.ts`, `rateLimiter.ts` |
+
+**ST-054 Details:**
+
+- **Locations:**
+  - `server/_core/featureFlagMiddleware.ts` - Multiple `any` types in middleware functions
+  - `server/_core/monitoring.ts:134` - `app: any` parameter
+  - `server/_core/connectionPool.ts:96` - `any` in typeCast function
+  - `server/_core/rateLimiter.ts` - `as any` casts on rate limiter configs
+- **Impact:** Type safety gaps in infrastructure code
+- **Fix:** Replace with proper typed interfaces
 
 ---
 

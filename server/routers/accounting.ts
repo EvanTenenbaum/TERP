@@ -24,6 +24,7 @@ import {
   onInvoiceCreated,
   onPaymentReceived,
 } from "../services/notificationTriggers";
+import { withTransaction } from "../_core/dbTransaction";
 
 export const accountingRouter = router({
   // ============================================================================
@@ -1597,6 +1598,7 @@ export const accountingRouter = router({
       }),
 
     // WS-001: Receive client payment (cash drop-off)
+    // ST-051: Wrapped in transaction to ensure payment, transaction, and balance update are atomic
     receiveClientPayment: protectedProcedure
       .use(requirePermission("accounting:create"))
       .input(
@@ -1618,7 +1620,7 @@ export const accountingRouter = router({
           await import("../../drizzle/schema");
         const { eq } = await import("drizzle-orm");
 
-        // 1. Get current client balance
+        // 1. Get current client balance (outside transaction for read)
         const client = await db
           .select({
             id: clients.id,
@@ -1634,44 +1636,51 @@ export const accountingRouter = router({
         const previousBalance = Number(client[0].totalOwed || 0);
         const newBalance = previousBalance - input.amount;
 
-        // 2. Generate payment number
+        // 2. Generate payment number (before transaction)
         const paymentNumber = await arApDb.generatePaymentNumber("RECEIVED");
+        const userId = getAuthenticatedUserId(ctx);
+        const clientName = client[0].name;
 
-        // 3. Create payment record
-        const paymentResult = await db.insert(payments).values({
-          paymentNumber,
-          paymentType: "RECEIVED",
-          paymentDate: new Date(),
-          amount: input.amount.toFixed(2),
-          paymentMethod: input.paymentMethod,
-          customerId: input.clientId,
-          notes: input.note || `Quick payment from ${client[0].name}`,
-          createdBy: getAuthenticatedUserId(ctx),
+        // ST-051: Wrap all writes in a transaction for atomicity
+        const paymentId = await withTransaction(async (tx) => {
+          // 3. Create payment record
+          const paymentResult = await tx.insert(payments).values({
+            paymentNumber,
+            paymentType: "RECEIVED",
+            paymentDate: new Date(),
+            amount: input.amount.toFixed(2),
+            paymentMethod: input.paymentMethod,
+            customerId: input.clientId,
+            notes: input.note || `Quick payment from ${clientName}`,
+            createdBy: userId,
+          });
+
+          const pId = Number(paymentResult[0].insertId);
+
+          // 4. Create client transaction record for audit trail
+          await tx.insert(clientTransactions).values({
+            clientId: input.clientId,
+            transactionType: "PAYMENT",
+            transactionDate: new Date(),
+            amount: input.amount.toFixed(2),
+            paymentStatus: "PAID",
+            notes: input.note || `Quick payment - ${input.paymentMethod}`,
+            metadata: {
+              referenceType: "PAYMENT",
+              referenceId: pId,
+            },
+          });
+
+          // 5. Update client totalOwed
+          await tx
+            .update(clients)
+            .set({
+              totalOwed: newBalance.toFixed(2),
+            })
+            .where(eq(clients.id, input.clientId));
+
+          return pId;
         });
-
-        const paymentId = Number(paymentResult[0].insertId);
-
-        // 4. Create client transaction record for audit trail
-        await db.insert(clientTransactions).values({
-          clientId: input.clientId,
-          transactionType: "PAYMENT",
-          transactionDate: new Date(),
-          amount: input.amount.toFixed(2),
-          paymentStatus: "PAID",
-          notes: input.note || `Quick payment - ${input.paymentMethod}`,
-          metadata: {
-            referenceType: "PAYMENT",
-            referenceId: paymentId,
-          },
-        });
-
-        // 5. Update client totalOwed
-        await db
-          .update(clients)
-          .set({
-            totalOwed: newBalance.toFixed(2),
-          })
-          .where(eq(clients.id, input.clientId));
 
         // 6. Return result
         return {

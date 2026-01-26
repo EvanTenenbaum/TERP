@@ -33,6 +33,83 @@ vi.mock("@/lib/displayHelpers", () => ({
     item.productName || "Unknown Product",
 }));
 
+// Mock sonner toast
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// BUG-108: Mock tRPC with all required hooks including useUtils
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    useUtils: () => ({
+      clientNeeds: {
+        getAllWithMatches: { invalidate: vi.fn() },
+      },
+      vendorSupply: {
+        getAllWithMatches: { invalidate: vi.fn() },
+      },
+      matching: {
+        getAllActiveNeedsWithMatches: { invalidate: vi.fn() },
+      },
+    }),
+    clientNeeds: {
+      getAllWithMatches: {
+        useQuery: () => ({
+          data: { needs: [], totalCount: 0 },
+          isLoading: false,
+          error: null,
+        }),
+      },
+    },
+    vendorSupply: {
+      getAllWithMatches: {
+        useQuery: () => ({
+          data: { items: [], totalCount: 0 },
+          isLoading: false,
+          error: null,
+        }),
+      },
+      reserve: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
+    matching: {
+      getAllActiveNeedsWithMatches: {
+        useQuery: () => ({
+          data: [],
+          isLoading: false,
+          error: null,
+        }),
+      },
+      findMatchesForVendorSupply: {
+        useQuery: () => ({
+          data: { matches: [] },
+          isLoading: false,
+          error: null,
+        }),
+      },
+      reserveVendorSupply: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+      dismissMatch: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
+  },
+}));
+
 describe("MatchmakingServicePage - Button Navigation", () => {
   beforeEach(() => {
     mockSetLocation.mockClear();

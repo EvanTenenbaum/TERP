@@ -6,6 +6,7 @@
 import { eq, and, or, like, desc, sql, inArray } from "drizzle-orm";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
+import { logSilentCatch, safeJsonParse } from "./_core/logger";
 import { generateStrainULID } from "./ulid";
 import {
   vendors,
@@ -1842,26 +1843,25 @@ export async function calculateBatchProfitability(batchId: number) {
   for (const order of allOrders) {
     if (!order.items) continue;
 
-    try {
-      const items = JSON.parse(order.items as string) as Array<{
-        batchId: number;
-        quantity: number;
-        unitPrice?: number;
-        isSample?: boolean;
-      }>;
+    // ST-050: Use safeJsonParse with logging instead of silent catch
+    const items = safeJsonParse<Array<{
+      batchId: number;
+      quantity: number;
+      unitPrice?: number;
+      isSample?: boolean;
+    }>>(order.items as string, [], {
+      operation: "getBatchProfitability",
+      identifier: order.id,
+    });
 
-      for (const item of items) {
-        if (item.batchId === batchId && !item.isSample) {
-          const qty = item.quantity;
-          const price = item.unitPrice || 0;
-          totalRevenue += qty * price;
-          totalCost += qty * unitCogs;
-          unitsSold += qty;
-        }
+    for (const item of items) {
+      if (item.batchId === batchId && !item.isSample) {
+        const qty = item.quantity;
+        const price = item.unitPrice || 0;
+        totalRevenue += qty * price;
+        totalCost += qty * unitCogs;
+        unitsSold += qty;
       }
-    } catch {
-      // Skip orders with invalid JSON
-      continue;
     }
   }
 
@@ -1948,45 +1948,44 @@ export async function getProfitabilitySummary() {
   for (const order of allOrders) {
     if (!order.items) continue;
 
-    try {
-      const items = JSON.parse(order.items as string) as Array<{
-        batchId: number;
-        quantity: number;
-        unitPrice?: number;
-        isSample?: boolean;
-      }>;
+    // ST-050: Use safeJsonParse with logging instead of silent catch
+    const items = safeJsonParse<Array<{
+      batchId: number;
+      quantity: number;
+      unitPrice?: number;
+      isSample?: boolean;
+    }>>(order.items as string, [], {
+      operation: "getOverallProfitability",
+      identifier: order.id,
+    });
 
-      for (const item of items) {
-        if (item.isSample) continue;
+    for (const item of items) {
+      if (item.isSample) continue;
 
-        batchIds.add(item.batchId);
-        const qty = item.quantity;
-        const price = item.unitPrice || 0;
-        totalRevenue += qty * price;
-        totalUnits += qty;
+      batchIds.add(item.batchId);
+      const qty = item.quantity;
+      const price = item.unitPrice || 0;
+      totalRevenue += qty * price;
+      totalUnits += qty;
 
-        // Get batch cost (with caching)
-        if (!batchCache.has(item.batchId)) {
-          const [batch] = await db
-            .select({
-              unitCogs: batches.unitCogs,
-              onHandQty: batches.onHandQty,
-            })
-            .from(batches)
-            .where(eq(batches.id, item.batchId));
-          if (batch) {
-            batchCache.set(item.batchId, batch);
-          }
-        }
-
-        const batch = batchCache.get(item.batchId);
+      // Get batch cost (with caching)
+      if (!batchCache.has(item.batchId)) {
+        const [batch] = await db
+          .select({
+            unitCogs: batches.unitCogs,
+            onHandQty: batches.onHandQty,
+          })
+          .from(batches)
+          .where(eq(batches.id, item.batchId));
         if (batch) {
-          totalCost += qty * parseFloat(batch.unitCogs || "0");
+          batchCache.set(item.batchId, batch);
         }
       }
-    } catch {
-      // Skip orders with invalid JSON
-      continue;
+
+      const batch = batchCache.get(item.batchId);
+      if (batch) {
+        totalCost += qty * parseFloat(batch.unitCogs || "0");
+      }
     }
   }
 

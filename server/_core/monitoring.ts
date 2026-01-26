@@ -6,6 +6,8 @@
  * Sentry is only enabled when SENTRY_DSN is explicitly set.
  */
 
+import type { Application } from "express";
+
 let Sentry: typeof import("@sentry/node") | null = null;
 let sentryInitialized = false;
 
@@ -18,13 +20,14 @@ const hasSentryDSN = !!process.env.SENTRY_DSN;
  */
 export function initMonitoring() {
   if (!hasSentryDSN) {
-    console.log("ℹ️  Sentry monitoring disabled (no SENTRY_DSN configured)");
+    console.info("ℹ️  Sentry monitoring disabled (no SENTRY_DSN configured)");
     return;
   }
 
   try {
     // Dynamically import to avoid any issues if Sentry package has problems
-    const SentryModule = require("@sentry/node") as typeof import("@sentry/node");
+    const SentryModule =
+      require("@sentry/node") as typeof import("@sentry/node");
     Sentry = SentryModule;
 
     SentryModule.init({
@@ -52,10 +55,16 @@ export function initMonitoring() {
         }
 
         // Filter sensitive query params (only if it's a string)
-        if (event.request?.query_string && typeof event.request.query_string === "string") {
+        if (
+          event.request?.query_string &&
+          typeof event.request.query_string === "string"
+        ) {
           const sanitized = event.request.query_string
             .split("&")
-            .filter((param: string) => !param.startsWith("token=") && !param.startsWith("key="))
+            .filter(
+              (param: string) =>
+                !param.startsWith("token=") && !param.startsWith("key=")
+            )
             .join("&");
           event.request.query_string = sanitized;
         }
@@ -64,19 +73,14 @@ export function initMonitoring() {
       },
 
       // Ignore transient network errors
-      ignoreErrors: [
-        "ECONNRESET",
-        "ENOTFOUND",
-        "ETIMEDOUT",
-        "socket hang up",
-      ],
+      ignoreErrors: ["ECONNRESET", "ENOTFOUND", "ETIMEDOUT", "socket hang up"],
     });
 
     sentryInitialized = true;
-    console.log("✅ Sentry monitoring initialized");
+    console.info("✅ Sentry monitoring initialized");
   } catch (error) {
     console.warn("⚠️  Failed to initialize Sentry monitoring:", error);
-    console.log("   Continuing without error tracking...");
+    console.info("   Continuing without error tracking...");
     // Non-fatal - app continues without Sentry
   }
 }
@@ -85,7 +89,10 @@ export function initMonitoring() {
  * Capture exception with context
  * Non-blocking: will log to console if Sentry unavailable
  */
-export function captureException(error: Error, context?: Record<string, any>) {
+export function captureException(
+  error: Error,
+  context?: Record<string, unknown>
+) {
   // Always log to console for visibility
   console.error("Exception:", error.message);
   if (context) {
@@ -95,7 +102,7 @@ export function captureException(error: Error, context?: Record<string, any>) {
   if (sentryInitialized && Sentry) {
     try {
       const SentryRef = Sentry; // Capture reference for closure
-      SentryRef.withScope((scope) => {
+      SentryRef.withScope(scope => {
         if (context) {
           scope.setContext("additional", context);
         }
@@ -116,7 +123,7 @@ export function captureMessage(
   message: string,
   level: "info" | "warning" | "error" = "info"
 ) {
-  console.log(`[${level.toUpperCase()}]`, message);
+  console.info(`[${level.toUpperCase()}]`, message);
 
   if (sentryInitialized && Sentry) {
     try {
@@ -131,15 +138,17 @@ export function captureMessage(
  * Setup Express error handler
  * Non-blocking: will skip if Sentry unavailable
  */
-export function setupErrorHandler(app: any) {
+export function setupErrorHandler(app: Application) {
   if (!sentryInitialized || !Sentry) {
-    console.log("ℹ️  Sentry error handler not configured (Sentry not initialized)");
+    console.info(
+      "ℹ️  Sentry error handler not configured (Sentry not initialized)"
+    );
     return;
   }
 
   try {
     Sentry.setupExpressErrorHandler(app);
-    console.log("✅ Sentry Express error handler configured");
+    console.info("✅ Sentry Express error handler configured");
   } catch (error) {
     console.warn("⚠️  Failed to setup Sentry error handler:", error);
     // Non-fatal - app continues without Sentry error handler

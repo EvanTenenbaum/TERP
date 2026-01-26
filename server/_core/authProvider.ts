@@ -14,6 +14,10 @@
 import type { Request } from "express";
 import type { User } from "../../drizzle/schema";
 import { simpleAuth } from "./simpleAuth";
+import {
+  isTokenInvalidated,
+  isUserTokensInvalidated,
+} from "./tokenInvalidation";
 
 /**
  * Session payload containing user identification
@@ -21,6 +25,15 @@ import { simpleAuth } from "./simpleAuth";
 export interface SessionPayload {
   userId: string;
   email: string;
+}
+
+/**
+ * Extended session payload with JWT standard claims
+ * JWT automatically adds iat (issued at) and exp (expiration)
+ */
+interface JWTSessionPayload extends SessionPayload {
+  iat?: number;
+  exp?: number;
 }
 
 /**
@@ -40,6 +53,7 @@ export interface AuthFailure {
     | "NO_TOKEN"
     | "INVALID_TOKEN"
     | "TOKEN_EXPIRED"
+    | "TOKEN_REVOKED"
     | "USER_NOT_FOUND"
     | "UNKNOWN";
   message: string;
@@ -127,12 +141,23 @@ class SimpleAuthProvider implements AuthProvider {
       }
 
       // Verify token
-      const payload = simpleAuth.verifySessionToken(token);
-      if (!payload) {
+      const basePayload = simpleAuth.verifySessionToken(token);
+      if (!basePayload) {
         return {
           success: false,
           error: "INVALID_TOKEN",
           message: "Invalid or malformed authentication token",
+        };
+      }
+      // Cast to include JWT standard claims (iat, exp)
+      const payload = basePayload as JWTSessionPayload;
+
+      // TERP-0014: Check if token has been invalidated (blacklisted)
+      if (isTokenInvalidated(token)) {
+        return {
+          success: false,
+          error: "TOKEN_REVOKED",
+          message: "Authentication token has been revoked",
         };
       }
 
@@ -146,6 +171,20 @@ class SimpleAuthProvider implements AuthProvider {
           error: "USER_NOT_FOUND",
           message: "User associated with token not found",
         };
+      }
+
+      // TERP-0014: Check if user's tokens have been bulk-invalidated
+      // This happens on password change, admin revocation, etc.
+      // QA-002: Use explicit undefined check to avoid bypassing on iat=0
+      if (payload.iat !== undefined) {
+        const tokenIssuedAt = new Date(payload.iat * 1000);
+        if (isUserTokensInvalidated(user.id, tokenIssuedAt)) {
+          return {
+            success: false,
+            error: "TOKEN_REVOKED",
+            message: "All sessions for this user have been invalidated",
+          };
+        }
       }
 
       return {

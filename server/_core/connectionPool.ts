@@ -4,8 +4,28 @@ import mysql from "mysql2/promise";
 import { logger } from "./logger";
 
 /**
+ * Type for mysql2 TypeCast field parameter
+ * mysql2's Field type for typeCast callback
+ */
+interface TypeCastFieldParam {
+  type: string | number;
+  name: string;
+  string: () => string | null;
+}
+
+/**
+ * Internal pool properties interface for statistics
+ * These are undocumented mysql2 internal properties for pool monitoring
+ */
+interface PoolInternals {
+  _allConnections?: { length: number };
+  _freeConnections?: { length: number };
+  _connectionQueue?: { length: number };
+}
+
+/**
  * MySQL Connection Pool Configuration
- * 
+ *
  * Provides connection pooling for better performance and scalability.
  * Reuses database connections instead of creating new ones for each query.
  */
@@ -33,23 +53,25 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
   // Only check DATABASE_URL when creating a NEW pool
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    const errorMsg = "DATABASE_URL environment variable is required to create connection pool";
+    const errorMsg =
+      "DATABASE_URL environment variable is required to create connection pool";
     logger.error({ msg: errorMsg });
     throw new Error(errorMsg);
   }
 
   // Validate DATABASE_URL format
-  if (!databaseUrl.startsWith('mysql://')) {
+  if (!databaseUrl.startsWith("mysql://")) {
     const errorMsg = `Invalid DATABASE_URL format. Expected mysql://, got: ${databaseUrl.substring(0, 10)}...`;
     logger.error({ msg: errorMsg });
     throw new Error(errorMsg);
   }
 
-  logger.info({ 
-    msg: "DATABASE_URL found", 
+  logger.info({
+    msg: "DATABASE_URL found",
     length: databaseUrl.length,
-    protocol: databaseUrl.split('://')[0],
-    hasSSLParam: databaseUrl.includes('ssl-mode') || databaseUrl.includes('sslmode'),
+    protocol: databaseUrl.split("://")[0],
+    hasSSLParam:
+      databaseUrl.includes("ssl-mode") || databaseUrl.includes("sslmode"),
   });
 
   // REL-004: Increased pool size for production load
@@ -65,18 +87,23 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
 
   // Parse SSL configuration from DATABASE_URL
   // mysql2 doesn't recognize 'ssl-mode=REQUIRED', needs explicit ssl object
-  const needsSSL = databaseUrl.includes('ssl-mode=REQUIRED') || 
-                   databaseUrl.includes('sslmode=require') || 
-                   databaseUrl.includes('ssl=true');
-  
+  const needsSSL =
+    databaseUrl.includes("ssl-mode=REQUIRED") ||
+    databaseUrl.includes("sslmode=require") ||
+    databaseUrl.includes("ssl=true");
+
   // Remove ssl-mode parameter from URL as mysql2 doesn't recognize it
-  const cleanDatabaseUrl = databaseUrl.replace(/[?&]ssl-mode=[^&]*/gi, '').replace(/[?&]sslmode=[^&]*/gi, '');
-  
-  const sslConfig = needsSSL ? {
-    ssl: {
-      rejectUnauthorized: false // DigitalOcean managed DB uses valid certs
-    }
-  } : {};
+  const cleanDatabaseUrl = databaseUrl
+    .replace(/[?&]ssl-mode=[^&]*/gi, "")
+    .replace(/[?&]sslmode=[^&]*/gi, "");
+
+  const sslConfig = needsSSL
+    ? {
+        ssl: {
+          rejectUnauthorized: false, // DigitalOcean managed DB uses valid certs
+        },
+      }
+    : {};
 
   logger.info({
     msg: "Creating MySQL connection pool",
@@ -93,28 +120,39 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
     // This causes "Unknown type '247'" errors in mysql2 driver.
     // The typeCast function intercepts ENUM fields and returns them as strings.
     // See: https://github.com/pingcap/tidb/issues/6910
-    typeCast: function (field: any, next: () => any) {
+    typeCast: function (
+      field: TypeCastFieldParam,
+      next: () => unknown
+    ): unknown {
       // FIX-006: TiDB ENUM compatibility fix with diagnostic logging
       // ENUM type code is 247 (0xf7) in TiDB binary protocol
-      if (field.type === 'ENUM' || field.type === 247) {
-        logger.debug({ msg: "[TYPECAST] Processing ENUM field", fieldName: field.name, fieldType: field.type });
+      if (field.type === "ENUM" || field.type === 247) {
+        logger.debug({
+          msg: "[TYPECAST] Processing ENUM field",
+          fieldName: field.name,
+          fieldType: field.type,
+        });
         const value = field.string();
         return value;
       }
       // SET type also has similar issues (type code 248)
-      if (field.type === 'SET' || field.type === 248) {
-        logger.debug({ msg: "[TYPECAST] Processing SET field", fieldName: field.name, fieldType: field.type });
+      if (field.type === "SET" || field.type === 248) {
+        logger.debug({
+          msg: "[TYPECAST] Processing SET field",
+          fieldName: field.name,
+          fieldType: field.type,
+        });
         const value = field.string();
         return value;
       }
       return next();
-    },
+    } as mysql.TypeCast,
   });
 
   // Handle pool errors
-  pool.on("connection", (connection) => {
+  pool.on("connection", connection => {
     logger.info({ msg: "New MySQL connection established" });
-    connection.on("error", (err) => {
+    connection.on("error", err => {
       logger.error({
         msg: "MySQL connection error",
         error: err,
@@ -125,30 +163,38 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
   // CRITICAL: Health check - Force immediate connection to verify pool works
   // This will crash the app at startup if DB is unreachable, rather than failing silently
   // Skip health check in test environments (VITEST) to avoid CRITICAL error noise
-  const vitestValue = (process.env.VITEST || '').toLowerCase();
-  const isTestEnv = ['true', '1', 'yes'].includes(vitestValue)
-    || process.env.NODE_ENV === 'test'
-    || process.env.CI === 'true';
+  const vitestValue = (process.env.VITEST || "").toLowerCase();
+  const isTestEnv =
+    ["true", "1", "yes"].includes(vitestValue) ||
+    process.env.NODE_ENV === "test" ||
+    process.env.CI === "true";
 
   if (!isTestEnv) {
-    pool.getConnection()
-      .then(async (connection) => {
+    pool
+      .getConnection()
+      .then(async connection => {
         logger.info({ msg: "✅ Database health check: Connection successful" });
         try {
-          const [rows] = await connection.query('SELECT 1 as health_check');
-          logger.info({ msg: "✅ Database health check: Query successful", result: rows });
+          const [rows] = await connection.query("SELECT 1 as health_check");
+          logger.info({
+            msg: "✅ Database health check: Query successful",
+            result: rows,
+          });
         } catch (queryErr) {
-          logger.error({ msg: "❌ Database health check: Query failed", error: queryErr });
+          logger.error({
+            msg: "❌ Database health check: Query failed",
+            error: queryErr,
+          });
         } finally {
           connection.release();
           logger.info({ msg: "Health check connection released back to pool" });
         }
       })
-      .catch((err) => {
+      .catch(err => {
         logger.error({
           msg: "❌ CRITICAL: Database health check failed - Cannot establish connection",
           error: err,
-          databaseUrl: cleanDatabaseUrl.replace(/:[^:@]+@/, ':****@'), // Mask password
+          databaseUrl: cleanDatabaseUrl.replace(/:[^:@]+@/, ":****@"), // Mask password
           sslEnabled: needsSSL,
         });
         // Don't throw here - let the app start but log the critical error
@@ -160,18 +206,22 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
 
   // Log pool statistics periodically (every 5 minutes)
   // REL-003: Store interval reference for cleanup on pool close
-  statsInterval = setInterval(() => {
-    if (pool) {
-      logger.info({
-        msg: "Connection pool statistics",
-        stats: {
-          totalConnections: (pool as any)._allConnections?.length || 0,
-          freeConnections: (pool as any)._freeConnections?.length || 0,
-          queuedRequests: (pool as any)._connectionQueue?.length || 0,
-        },
-      });
-    }
-  }, 5 * 60 * 1000);
+  statsInterval = setInterval(
+    () => {
+      if (pool) {
+        const poolInternals = pool as unknown as PoolInternals;
+        logger.info({
+          msg: "Connection pool statistics",
+          stats: {
+            totalConnections: poolInternals._allConnections?.length || 0,
+            freeConnections: poolInternals._freeConnections?.length || 0,
+            queuedRequests: poolInternals._connectionQueue?.length || 0,
+          },
+        });
+      }
+    },
+    5 * 60 * 1000
+  );
 
   return pool;
 }
@@ -203,10 +253,10 @@ export function getPoolStats() {
     return null;
   }
 
+  const poolInternals = pool as unknown as PoolInternals;
   return {
-    totalConnections: (pool as any)._allConnections?.length || 0,
-    freeConnections: (pool as any)._freeConnections?.length || 0,
-    queuedRequests: (pool as any)._connectionQueue?.length || 0,
+    totalConnections: poolInternals._allConnections?.length || 0,
+    freeConnections: poolInternals._freeConnections?.length || 0,
+    queuedRequests: poolInternals._connectionQueue?.length || 0,
   };
 }
-

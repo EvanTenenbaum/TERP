@@ -13,11 +13,20 @@ import * as db from "../db";
 import { logAuditEvent, AuditEventType } from "../auditLogger";
 import { logger } from "../_core/logger";
 import { env } from "../_core/env";
+import { invalidateUserTokens, invalidateToken } from "../_core/tokenInvalidation";
 
 export const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
 
   logout: publicProcedure.mutation(({ ctx }) => {
+    // TERP-0014: Invalidate the token on logout
+    const token = ctx.req.cookies?.[COOKIE_NAME];
+    if (token) {
+      invalidateToken({
+        tokenId: token,
+        reason: "LOGOUT",
+      });
+    }
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
     return {
@@ -142,6 +151,9 @@ export const authRouter = router({
         ...user,
         loginMethod: newPasswordHash,
       });
+
+      // TERP-0014: Invalidate all tokens for this user on password change
+      invalidateUserTokens(user.id, "PASSWORD_CHANGE");
 
       // Log audit event
       await logAuditEvent({

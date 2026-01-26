@@ -1,4 +1,10 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { type Options } from "express-rate-limit";
+
+/**
+ * Base rate limit options shared across limiters
+ * Using Partial<Options> to allow type-safe configuration
+ */
+type RateLimitConfig = Partial<Options>;
 
 /**
  * General API rate limiter
@@ -9,14 +15,15 @@ import rateLimit from "express-rate-limit";
  * - Reduced from 1000 to improve security posture
  * - High enough for typical user workflows but catches obvious abuse
  */
-export const apiLimiter = rateLimit({
+const apiLimiterConfig: RateLimitConfig = {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500, // Reduced from 1000 for better security
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
   // Trust proxy headers from DigitalOcean App Platform
-} as any);
+};
+export const apiLimiter = rateLimit(apiLimiterConfig);
 
 /**
  * Authentication endpoint rate limiter
@@ -28,14 +35,15 @@ export const apiLimiter = rateLimit({
  * - skipSuccessfulRequests=true means successful logins don't count
  * - Still strict enough to prevent brute force attacks
  */
-export const authLimiter = rateLimit({
+const authLimiterConfig: RateLimitConfig = {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Increased from 5 to reduce user friction
   message: "Too many login attempts, please try again later.",
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-} as any);
+};
+export const authLimiter = rateLimit(authLimiterConfig);
 
 /**
  * Strict rate limiter for sensitive operations
@@ -47,11 +55,11 @@ export const authLimiter = rateLimit({
  * - Suitable for legitimate batch imports while preventing abuse
  * - Apply to: create, update, delete operations on sensitive data
  */
-export const strictLimiter = rateLimit({
+const strictLimiterConfig: RateLimitConfig = {
   windowMs: 60 * 1000, // 1 minute
   max: 30, // Reduced from 100, balanced approach
   message: "Rate limit exceeded. Please slow down.",
   standardHeaders: true,
   legacyHeaders: false,
-} as any);
-
+};
+export const strictLimiter = rateLimit(strictLimiterConfig);

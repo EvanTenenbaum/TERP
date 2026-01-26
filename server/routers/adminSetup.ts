@@ -11,12 +11,30 @@
  */
 
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../_core/db";
 import { users, auditLogs } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
+import { env } from "../_core/env";
+
+// SEC-027: Admin setup is disabled in production for security
+const isProductionEnvironment = env.isProduction;
+
+/**
+ * SEC-027: Check if admin setup operations are allowed
+ * Admin setup endpoints are disabled in production to prevent privilege escalation attacks
+ */
+function assertAdminSetupAllowed(): void {
+  if (isProductionEnvironment && !process.env.ADMIN_SETUP_KEY) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "Admin setup operations are disabled in production. Use RBAC management instead.",
+    });
+  }
+}
 
 // SEC-012: In-memory rate limiter for admin setup endpoints
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -98,23 +116,26 @@ function getAdminSetupKey(): string {
 export const adminSetupRouter = router({
   /**
    * List all users (for finding the user to promote)
-   * Requires the setup key for security
+   * SEC-027: Requires admin authentication + setup key for security
    * SEC-012: Rate limited and audit logged
    */
-  listUsers: publicProcedure
+  listUsers: adminProcedure
     .input(
       z.object({
         setupKey: z.string(),
       })
     )
     .query(async ({ input, ctx }) => {
+      // SEC-027: Block in production unless explicitly enabled
+      assertAdminSetupAllowed();
+
       const ip = getClientIp(ctx);
 
       // SEC-012: Check rate limit
       if (!checkRateLimit(ip)) {
         await logAdminSetupAction(
           "LIST_USERS",
-          { reason: "rate_limited" },
+          { reason: "rate_limited", adminUserId: ctx.user?.id },
           false,
           ip
         );
@@ -127,7 +148,7 @@ export const adminSetupRouter = router({
       if (input.setupKey !== getAdminSetupKey()) {
         await logAdminSetupAction(
           "LIST_USERS",
-          { reason: "invalid_key" },
+          { reason: "invalid_key", adminUserId: ctx.user?.id },
           false,
           ip
         );
@@ -158,7 +179,7 @@ export const adminSetupRouter = router({
 
       await logAdminSetupAction(
         "LIST_USERS",
-        { userCount: allUsers.length },
+        { userCount: allUsers.length, adminUserId: ctx.user?.id },
         true,
         ip
       );
@@ -167,10 +188,10 @@ export const adminSetupRouter = router({
 
   /**
    * Promote a user to admin role
-   * Requires the setup key for security
+   * SEC-027: Requires admin authentication + setup key for security
    * SEC-012: Rate limited and audit logged
    */
-  promoteToAdmin: publicProcedure
+  promoteToAdmin: adminProcedure
     .input(
       z.object({
         setupKey: z.string(),
@@ -180,13 +201,16 @@ export const adminSetupRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // SEC-027: Block in production unless explicitly enabled
+      assertAdminSetupAllowed();
+
       const ip = getClientIp(ctx);
 
       // SEC-012: Check rate limit
       if (!checkRateLimit(ip)) {
         await logAdminSetupAction(
           "PROMOTE_USER",
-          { reason: "rate_limited" },
+          { reason: "rate_limited", adminUserId: ctx.user?.id },
           false,
           ip
         );
@@ -202,6 +226,7 @@ export const adminSetupRouter = router({
           {
             reason: "invalid_key",
             target: input.userId || input.email || input.openId,
+            adminUserId: ctx.user?.id,
           },
           false,
           ip
@@ -247,7 +272,12 @@ export const adminSetupRouter = router({
 
       await logAdminSetupAction(
         "PROMOTE_USER",
-        { userId: input.userId, email: input.email, openId: input.openId },
+        {
+          userId: input.userId,
+          email: input.email,
+          openId: input.openId,
+          adminUserId: ctx.user?.id,
+        },
         true,
         ip
       );
@@ -260,10 +290,10 @@ export const adminSetupRouter = router({
 
   /**
    * Promote ALL users to admin (use with caution!)
-   * Requires the setup key for security
+   * SEC-027: Requires admin authentication + setup key for security
    * SEC-012: Rate limited and audit logged
    */
-  promoteAllToAdmin: publicProcedure
+  promoteAllToAdmin: adminProcedure
     .input(
       z.object({
         setupKey: z.string(),
@@ -271,13 +301,16 @@ export const adminSetupRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // SEC-027: Block in production unless explicitly enabled
+      assertAdminSetupAllowed();
+
       const ip = getClientIp(ctx);
 
       // SEC-012: Check rate limit
       if (!checkRateLimit(ip)) {
         await logAdminSetupAction(
           "PROMOTE_ALL",
-          { reason: "rate_limited" },
+          { reason: "rate_limited", adminUserId: ctx.user?.id },
           false,
           ip
         );
@@ -290,7 +323,7 @@ export const adminSetupRouter = router({
       if (input.setupKey !== getAdminSetupKey()) {
         await logAdminSetupAction(
           "PROMOTE_ALL",
-          { reason: "invalid_key" },
+          { reason: "invalid_key", adminUserId: ctx.user?.id },
           false,
           ip
         );
@@ -303,7 +336,7 @@ export const adminSetupRouter = router({
       if (input.confirmPhrase !== "I understand this promotes all users") {
         await logAdminSetupAction(
           "PROMOTE_ALL",
-          { reason: "invalid_confirmation" },
+          { reason: "invalid_confirmation", adminUserId: ctx.user?.id },
           false,
           ip
         );
@@ -326,7 +359,7 @@ export const adminSetupRouter = router({
 
       await logAdminSetupAction(
         "PROMOTE_ALL",
-        { action: "all_users_promoted" },
+        { action: "all_users_promoted", adminUserId: ctx.user?.id },
         true,
         ip
       );
