@@ -10,6 +10,8 @@ import {
   batches,
   clients,
   sampleInventoryLog,
+  orderLineItems,
+  orderLineItemAllocations,
   type Order,
 } from "../drizzle/schema";
 import { calculateCogs, calculateDueDate } from "./cogsCalculator";
@@ -756,6 +758,60 @@ export async function deleteOrder(
           inventoryError
         );
       }
+    }
+
+    // INV-004: Release any reserved quantities from allocations
+    try {
+      // Get all line items for this order
+      const lineItems = await db
+        .select({ id: orderLineItems.id })
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, id));
+
+      if (lineItems.length > 0) {
+        const lineItemIds = lineItems.map((li: { id: number }) => li.id);
+
+        // Get all allocations for the order's line items
+        const allocations = await db
+          .select({
+            batchId: orderLineItemAllocations.batchId,
+            quantityAllocated: orderLineItemAllocations.quantityAllocated,
+          })
+          .from(orderLineItemAllocations)
+          .where(inArray(orderLineItemAllocations.orderLineItemId, lineItemIds));
+
+        // Release reserved quantities for each allocation
+        for (const allocation of allocations) {
+          const allocatedQty = parseFloat(allocation.quantityAllocated || "0");
+          if (allocatedQty > 0) {
+            // Get current reserved qty and release
+            const [batch] = await db
+              .select({ reservedQty: batches.reservedQty })
+              .from(batches)
+              .where(eq(batches.id, allocation.batchId))
+              .limit(1);
+
+            if (batch) {
+              const currentReserved = parseFloat(batch.reservedQty || "0");
+              const newReserved = Math.max(0, currentReserved - allocatedQty);
+
+              await db
+                .update(batches)
+                .set({ reservedQty: newReserved.toString() })
+                .where(eq(batches.id, allocation.batchId));
+            }
+          }
+        }
+
+        console.log(
+          `[INV-004] Released ${allocations.length} batch reservations for cancelled order ${id}`
+        );
+      }
+    } catch (reservationError) {
+      console.error(
+        "Failed to release reservations (non-fatal):",
+        reservationError
+      );
     }
 
     // Reverse accounting entries if invoice exists
