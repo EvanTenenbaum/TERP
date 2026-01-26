@@ -115,49 +115,46 @@ export function hasAvailableQty(batch: Batch, requestedQty: number): boolean {
 
 // ============================================================================
 // STATUS TRANSITION VALIDATION
+// TERP-0008: Re-export from centralized constants for backward compatibility
 // ============================================================================
 
-export type BatchStatus =
-  | "AWAITING_INTAKE"
-  | "LIVE"
-  | "PHOTOGRAPHY_COMPLETE"
-  | "ON_HOLD"
-  | "QUARANTINED"
-  | "SOLD_OUT"
-  | "CLOSED";
+// Import and re-export from centralized constants for backward compatibility
+import {
+  type BatchStatus as BatchStatusType,
+  BATCH_STATUSES,
+  SELLABLE_BATCH_STATUSES,
+  ACTIVE_BATCH_STATUSES,
+  NON_SELLABLE_BATCH_STATUSES,
+  TERMINAL_BATCH_STATUSES,
+  BATCH_STATUS_TRANSITIONS,
+  isSellableStatus,
+  isActiveStatus,
+  isTerminalStatus,
+  isValidStatusTransition,
+  getAllowedNextStatuses,
+  isValidBatchStatus,
+  BATCH_STATUS_LABELS,
+  BATCH_STATUS_COLORS,
+} from "./constants/batchStatuses";
 
-/**
- * Valid status transitions map
- */
-const VALID_TRANSITIONS: Record<BatchStatus, BatchStatus[]> = {
-  AWAITING_INTAKE: ["LIVE", "QUARANTINED"],
-  LIVE: ["PHOTOGRAPHY_COMPLETE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
-  PHOTOGRAPHY_COMPLETE: ["LIVE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
-  ON_HOLD: ["LIVE", "QUARANTINED"],
-  QUARANTINED: ["LIVE", "ON_HOLD", "CLOSED"],
-  SOLD_OUT: ["CLOSED"],
-  CLOSED: [],
+// Re-export for backward compatibility
+export type BatchStatus = BatchStatusType;
+export {
+  BATCH_STATUSES,
+  SELLABLE_BATCH_STATUSES,
+  ACTIVE_BATCH_STATUSES,
+  NON_SELLABLE_BATCH_STATUSES,
+  TERMINAL_BATCH_STATUSES,
+  BATCH_STATUS_TRANSITIONS,
+  isSellableStatus,
+  isActiveStatus,
+  isTerminalStatus,
+  isValidStatusTransition,
+  getAllowedNextStatuses,
+  isValidBatchStatus,
+  BATCH_STATUS_LABELS,
+  BATCH_STATUS_COLORS,
 };
-
-/**
- * Validate if a status transition is allowed
- */
-export function isValidStatusTransition(
-  currentStatus: BatchStatus,
-  newStatus: BatchStatus
-): boolean {
-  if (currentStatus === newStatus) return true;
-  return VALID_TRANSITIONS[currentStatus]?.includes(newStatus) ?? false;
-}
-
-/**
- * Get allowed next statuses for a batch
- */
-export function getAllowedNextStatuses(
-  currentStatus: BatchStatus
-): BatchStatus[] {
-  return VALID_TRANSITIONS[currentStatus] || [];
-}
 
 // ============================================================================
 // SKU & CODE GENERATION
