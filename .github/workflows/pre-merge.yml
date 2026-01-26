@@ -111,5 +111,9 @@ jobs:
               body: body
             });
 
-            // Note: We are no longer failing the build (core.setFailed) to avoid blocking merges.
-            // The warnings above serve as the quality gate feedback.
+            // Note: Roadmap tracking is advisory only.
+            // Actual code quality enforcement happens via:
+            // - Pre-commit hook (security patterns)
+            // - ESLint (code quality)
+            // - TypeScript check workflow (type errors)
+            // - Main branch CI (test failures)

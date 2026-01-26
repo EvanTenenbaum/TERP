@@ -68,25 +68,25 @@ export default [
     },
     rules: {
       // ============================================================
-      // TypeScript Rules - Stricter for new code (Phase 1 mitigation)
+      // TypeScript Rules
       // ============================================================
-      
-      // No 'any' type - warn for now, will be error in Phase 2
-      '@typescript-eslint/no-explicit-any': 'warn',
-      
-      // No unused variables - error to prevent new issues
+
+      // No 'any' type - error to enforce type safety
+      '@typescript-eslint/no-explicit-any': 'error',
+
+      // No unused variables - error to prevent dead code
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_',
       }],
-      
-      // Explicit return types - off for now, enable in Phase 2
+
+      // Explicit return types - off (TypeScript infers well)
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      
-      // No non-null assertions - warn to encourage proper null checks
-      '@typescript-eslint/no-non-null-assertion': 'warn',
-      
+
+      // No non-null assertions - error to enforce proper null handling
+      '@typescript-eslint/no-non-null-assertion': 'error',
+
       // ============================================================
       // React Rules
       // ============================================================
@@ -95,19 +95,28 @@ export default [
       'react/prop-types': 'off', // Using TypeScript for prop validation
       'react/no-array-index-key': 'error', // Prevent key={index} anti-pattern
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-      
+      'react-hooks/exhaustive-deps': 'error', // Enforce complete deps
+
       // ============================================================
-      // General Rules - Stricter for code quality
+      // General Rules
       // ============================================================
-      
+
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
-      'no-debugger': 'error', // Upgraded from warn
+      'no-debugger': 'error',
       'no-unused-vars': 'off', // Use TypeScript version instead
-      'prefer-const': 'error', // Upgraded from warn
+      'prefer-const': 'error',
       'no-var': 'error',
       'eqeqeq': ['error', 'always'], // Require strict equality
       'no-eval': 'error', // Security: no eval
+
+      // ============================================================
+      // SECURITY PATTERNS - Not catchable by ESLint, enforced in pre-commit
+      // See .husky/pre-commit for enforcement of:
+      // - || 1 fallback patterns (use getAuthenticatedUserId instead)
+      // - input.createdBy usage (actor must come from ctx, not input)
+      // - vendors table usage (use clients with isSeller=true)
+      // - Hard deletes (use soft deletes with deletedAt)
+      // ============================================================
     },
     settings: {
       react: {
