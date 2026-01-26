@@ -1296,7 +1296,8 @@ export const ordersRouter = router({
     .input(
       z.object({
         orderId: z.number(),
-        newStatus: z.enum(["PENDING", "PACKED", "SHIPPED"]),
+        // ORD-003: Added CANCELLED for order cancellation before shipping
+        newStatus: z.enum(["PENDING", "PACKED", "SHIPPED", "CANCELLED"]),
         notes: z.string().optional(),
       })
     )

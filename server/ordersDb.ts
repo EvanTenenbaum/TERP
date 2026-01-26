@@ -1591,10 +1591,12 @@ export async function deleteDraftOrder(input: {
  * Valid status transitions for fulfillment status
  * TERP-0016: Business logic guardrails for orders
  */
+// ORD-003: Consistent fulfillment status transitions
 const FULFILLMENT_STATUS_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ["PACKED", "SHIPPED"], // Can pack or ship directly
-  PACKED: ["SHIPPED"], // Can only ship from packed
+  PENDING: ["PACKED", "SHIPPED", "CANCELLED"], // Can pack, ship directly, or cancel
+  PACKED: ["SHIPPED", "CANCELLED"], // Can ship or cancel (ORD-003: removed PENDING - no reverting)
   SHIPPED: [], // Terminal state - no further transitions allowed
+  CANCELLED: [], // Terminal state
 };
 
 /**
@@ -1683,7 +1685,8 @@ function getTransitionError(
  */
 export async function updateOrderStatus(input: {
   orderId: number;
-  newStatus: "PENDING" | "PACKED" | "SHIPPED";
+  // ORD-003: Added CANCELLED as valid status for order cancellation before shipping
+  newStatus: "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED";
   notes?: string;
   userId: number;
   expectedVersion?: number; // DATA-005: Optimistic locking support
