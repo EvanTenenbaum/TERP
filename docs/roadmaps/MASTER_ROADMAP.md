@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.9
-**Last Updated:** 2026-01-26 (Added QA Security-Critical Audit findings: BUG-108, BUG-109, ST-054)
+**Version:** 7.0
+**Last Updated:** 2026-01-26 (Added INFRA-017, INFRA-018 for memory health check fixes)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -762,12 +762,32 @@ pnpm test --run 2>&1 | tee test-results.log
 
 ### Infrastructure Tasks (P2)
 
-| Task        | Description                                 | Priority | Status                                                 | Prompt |
-| ----------- | ------------------------------------------- | -------- | ------------------------------------------------------ | ------ |
-| INFRA-004   | Implement Deployment Monitoring Enforcement | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-007   | Update Swarm Manager                        | LOW      | ✅ COMPLETE (audit verified)                           | -      |
-| INFRA-012   | Deploy TERP Commander Slack Bot             | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
-| CLEANUP-001 | Remove LLM/AI from Codebase                 | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| Task        | Description                                      | Priority | Status                                                 | Prompt |
+| ----------- | ------------------------------------------------ | -------- | ------------------------------------------------------ | ------ |
+| INFRA-004   | Implement Deployment Monitoring Enforcement      | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-007   | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
+| INFRA-012   | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
+| CLEANUP-001 | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-017   | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ready                                                  | -      |
+| INFRA-018   | Sync .do/app.yaml with Production Config         | MEDIUM   | ready                                                  | -      |
+
+> **INFRA-017 Details (Memory Health Check False Positive):**
+>
+> - **Issue:** Health endpoint reports 93-97% memory usage (critical) while platform shows 11%
+> - **Root Cause:** `server/utils/memoryOptimizer.ts` hardcodes `102682624` (~98MB) as total memory for production
+> - **Impact:** Health check always shows critical memory, masking real issues
+> - **Fix:** Replace hardcoded value with `process.env.NODE_MEMORY_LIMIT` or actual `heapTotal`
+> - **Risk Level:** LOW (read-only change, no business logic impact)
+> - **Estimate:** 4h
+>
+> **INFRA-018 Details (Configuration Drift):**
+>
+> - **Issue:** `.do/app.yaml` shows `basic-xs` (512MB) but production uses `apps-d-1vcpu-2gb` (2GB)
+> - **Root Cause:** Instance was upgraded via DigitalOcean console, not reflected in repo
+> - **Impact:** Configuration drift between repo and production
+> - **Fix:** Update `.do/app.yaml` to match actual production configuration
+> - **Risk Level:** LOW (documentation/config sync only)
+> - **Estimate:** 4h
 
 ---
 
@@ -3700,34 +3720,36 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 > These issues can result in financial restatement, security breaches, or data corruption.
 > **Must fix before production use.**
 
-| Task    | Description                                                          | Priority | Status   | Estimate | Module                                                        |
-| ------- | -------------------------------------------------------------------- | -------- | -------- | -------- | ------------------------------------------------------------- |
-| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready    | 1h       | `server/routers/adminSetup.ts`                                |
-| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready    | 1h       | `server/routers/debug.ts`                                     |
-| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready    | 2h       | `server/services/permissionService.ts`                        |
-| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready    | 2h       | `server/routers/vipPortal.ts`                                 |
+| Task    | Description                                                          | Priority | Status | Estimate | Module                                 |
+| ------- | -------------------------------------------------------------------- | -------- | ------ | -------- | -------------------------------------- |
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready  | 1h       | `server/routers/adminSetup.ts`         |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready  | 1h       | `server/routers/debug.ts`              |
+| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts` |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`          |
+
 <<<<<<< HEAD
-| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready    | 4h       | `server/routers/invoices.ts`                                  |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready    | 4h       | `server/routers/returns.ts`                                   |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready    | 4h       | `server/services/orderAccountingService.ts`                   |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready    | 2h       | `server/accountingDb.ts`                                      |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | complete | 4h       | `server/routers/orders.ts`                                    |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | complete | 2h       | `server/ordersDb.ts`                                          |
+| ACC-002 | Add GL Reversals for Invoice Void | HIGH | ready | 4h | `server/routers/invoices.ts` |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | ready | 4h | `server/routers/returns.ts` |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | ready | 4h | `server/services/orderAccountingService.ts` |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | ready | 2h | `server/accountingDb.ts` |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | complete | 4h | `server/routers/orders.ts` |
+| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | complete | 2h | `server/ordersDb.ts` |
 =======
-| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | complete | 4h       | `server/routers/invoices.ts`                                  |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | complete | 4h       | `server/routers/returns.ts`                                   |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | complete | 4h       | `server/services/orderAccountingService.ts`                   |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | complete | 2h       | `server/accountingDb.ts`                                      |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready    | 4h       | `server/routers/orders.ts`                                    |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready    | 2h       | `server/ordersDb.ts`                                          |
->>>>>>> dbd81f83 (docs: update roadmap with completed Team B backend tasks)
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready    | 2h       | `server/routers/orders.ts`                                    |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready    | 4h       | `server/ordersDb.ts`                                          |
-| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready    | 4h       | `server/ordersDb.ts`, `server/services/*`                     |
-| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready    | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts`              |
-| ST-052  | Fix Fallback User ID Violations (11 instances)                       | HIGH     | complete | 2h       | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
-| ST-053  | Eliminate `any` Types in Codebase (515 instances)                    | MEDIUM   | ready    | 16h      | Multiple files - see task details                             |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready    | 2h       | `server/arApDb.ts`                                            |
+| ACC-002 | Add GL Reversals for Invoice Void | HIGH | complete | 4h | `server/routers/invoices.ts` |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | complete | 4h | `server/routers/returns.ts` |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | complete | 4h | `server/services/orderAccountingService.ts` |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | complete | 2h | `server/accountingDb.ts` |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | ready | 4h | `server/routers/orders.ts` |
+| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | ready | 2h | `server/ordersDb.ts` |
+
+> > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
+> > > > > > > | INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
+> > > > > > > | ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
+> > > > > > > | ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
+> > > > > > > | ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
+> > > > > > > | ST-052 | Fix Fallback User ID Violations (11 instances) | HIGH | complete | 2h | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
+> > > > > > > | ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | ready | 16h | Multiple files - see task details |
+> > > > > > > | FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
 
 ---
 
@@ -4084,26 +4106,28 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 > These issues cause data inconsistency and incorrect business logic.
 > **Should fix in current release.**
 
-| Task      | Description                                      | Priority | Status   | Estimate | Module                                                  |
-| --------- | ------------------------------------------------ | -------- | -------- | -------- | ------------------------------------------------------- |
-| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready    | 8h       | `server/services/` (new)                                |
+| Task     | Description                      | Priority | Status | Estimate | Module                   |
+| -------- | -------------------------------- | -------- | ------ | -------- | ------------------------ |
+| ARCH-001 | Create OrderOrchestrator Service | HIGH     | ready  | 8h       | `server/services/` (new) |
+
 <<<<<<< HEAD
-| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready    | 8h       | `server/services/`, `server/routers/`                   |
-| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready    | 4h       | `server/routers/orders.ts`                              |
-| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready    | 4h       | `server/arApDb.ts`                                      |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | complete | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready    | 2h       | `drizzle/schema.ts`                                     |
-| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | complete | 2h       | `server/routers/vendors.ts`                             |
+| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
+| ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
+| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | complete | 2h | `server/routers/vendors.ts` |
 =======
-| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | complete | 8h       | `server/services/`, `server/routers/`                   |
-| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | complete | 4h       | `server/routers/orders.ts`                              |
-| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | complete | 4h       | `server/arApDb.ts`                                      |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready    | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready    | 2h       | `drizzle/schema.ts`                                     |
-| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready    | 2h       | `server/routers/vendors.ts`                             |
->>>>>>> dbd81f83 (docs: update roadmap with completed Team B backend tasks)
+| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
+| ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
+| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | ready | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+
+> > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
 
 ---
 
