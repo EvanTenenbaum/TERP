@@ -68,6 +68,8 @@ import Help from "@/pages/Help";
 import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
 import VIPLogin from "@/pages/vip-portal/VIPLogin";
 import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
+import AlertsPage from "@/pages/AlertsPage"; // NAV-017: Alerts page
+import ShrinkageReportPage from "@/pages/ShrinkageReportPage"; // NAV-018: Shrinkage report page
 import ImpersonatePage from "@/pages/vip-portal/auth/ImpersonatePage";
 import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
 import AccountPage from "@/pages/AccountPage";
@@ -112,7 +114,7 @@ const withErrorBoundary = (Component: FC<any>) => () => (
 const RedirectWithSearch = (to: string) => {
   const RedirectComponent: FC = () => {
     const search = useSearch();
-    return <Redirect to={`${to}${search || ''}`} />;
+    return <Redirect to={`${to}${search || ""}`} />;
   };
   return RedirectComponent;
 };
@@ -502,6 +504,16 @@ function Router() {
                   path="/analytics"
                   component={withErrorBoundary(AnalyticsPage)}
                 />
+                {/* NAV-017: Alerts page */}
+                <Route
+                  path="/alerts"
+                  component={withErrorBoundary(AlertsPage)}
+                />
+                {/* NAV-018: Shrinkage report page */}
+                <Route
+                  path="/reports/shrinkage"
+                  component={withErrorBoundary(ShrinkageReportPage)}
+                />
                 <Route
                   path="/search"
                   component={withErrorBoundary(SearchResultsPage)}
@@ -520,14 +532,38 @@ function Router() {
 
                 {/* E2E-FIX: Legacy route redirects for backward compatibility */}
                 {/* QA-003 FIX: Preserve query parameters during redirect */}
-                <Route path="/invoices" component={RedirectWithSearch("/accounting/invoices")} />
-                <Route path="/client-needs" component={RedirectWithSearch("/needs")} />
-                <Route path="/ar-ap" component={RedirectWithSearch("/accounting")} />
-                <Route path="/reports" component={RedirectWithSearch("/analytics")} />
-                <Route path="/pricing-rules" component={RedirectWithSearch("/pricing/rules")} />
-                <Route path="/system-settings" component={RedirectWithSearch("/settings")} />
-                <Route path="/feature-flags" component={RedirectWithSearch("/settings/feature-flags")} />
-                <Route path="/todo-lists" component={RedirectWithSearch("/todos")} />
+                <Route
+                  path="/invoices"
+                  component={RedirectWithSearch("/accounting/invoices")}
+                />
+                <Route
+                  path="/client-needs"
+                  component={RedirectWithSearch("/needs")}
+                />
+                <Route
+                  path="/ar-ap"
+                  component={RedirectWithSearch("/accounting")}
+                />
+                <Route
+                  path="/reports"
+                  component={RedirectWithSearch("/analytics")}
+                />
+                <Route
+                  path="/pricing-rules"
+                  component={RedirectWithSearch("/pricing/rules")}
+                />
+                <Route
+                  path="/system-settings"
+                  component={RedirectWithSearch("/settings")}
+                />
+                <Route
+                  path="/feature-flags"
+                  component={RedirectWithSearch("/settings/feature-flags")}
+                />
+                <Route
+                  path="/todo-lists"
+                  component={RedirectWithSearch("/todos")}
+                />
 
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
                 {/* Final fallback route */}
