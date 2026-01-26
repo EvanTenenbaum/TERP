@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.0
-**Last Updated:** 2026-01-26 (Added INFRA-017, INFRA-018 for memory health check fixes)
+**Version:** 7.1
+**Last Updated:** 2026-01-26 (Completed INFRA-017, INFRA-018 - memory health check fixes)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -768,26 +768,23 @@ pnpm test --run 2>&1 | tee test-results.log
 | INFRA-007   | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
 | INFRA-012   | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
 | CLEANUP-001 | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-017   | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ready                                                  | -      |
-| INFRA-018   | Sync .do/app.yaml with Production Config         | MEDIUM   | ready                                                  | -      |
+| INFRA-017   | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
+| INFRA-018   | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
 
 > **INFRA-017 Details (Memory Health Check False Positive):**
 >
 > - **Issue:** Health endpoint reports 93-97% memory usage (critical) while platform shows 11%
-> - **Root Cause:** `server/utils/memoryOptimizer.ts` hardcodes `102682624` (~98MB) as total memory for production
-> - **Impact:** Health check always shows critical memory, masking real issues
-> - **Fix:** Replace hardcoded value with `process.env.NODE_MEMORY_LIMIT` or actual `heapTotal`
-> - **Risk Level:** LOW (read-only change, no business logic impact)
-> - **Estimate:** 4h
+> - **Root Cause:** `server/_core/healthCheck.ts` used `heapUsed/heapTotal` which is always near 100%
+> - **Solution:** Updated `healthCheck.ts` to use `getMemoryStats()` from `memoryOptimizer.ts`
+> - **Commit:** `9cb33376` - fix(health): Use memoryOptimizer for accurate memory reporting
+> - **Completion Date:** Jan 26, 2026
 >
 > **INFRA-018 Details (Configuration Drift):**
 >
-> - **Issue:** `.do/app.yaml` shows `basic-xs` (512MB) but production uses `apps-d-1vcpu-2gb` (2GB)
-> - **Root Cause:** Instance was upgraded via DigitalOcean console, not reflected in repo
-> - **Impact:** Configuration drift between repo and production
-> - **Fix:** Update `.do/app.yaml` to match actual production configuration
-> - **Risk Level:** LOW (documentation/config sync only)
-> - **Estimate:** 4h
+> - **Issue:** `.do/app.yaml` showed `basic-xs` (512MB) but production uses `apps-d-1vcpu-2gb` (2GB)
+> - **Solution:** Updated `.do/app.yaml` with correct instance size, autoscaling config, and NODE_MEMORY_LIMIT
+> - **Commit:** `6dc8bdfd` - fix(infra): Sync .do/app.yaml with production config
+> - **Completion Date:** Jan 26, 2026
 
 ---
 
