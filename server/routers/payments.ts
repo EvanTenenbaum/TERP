@@ -297,7 +297,7 @@ export const paymentsRouter = router({
       const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
       // Use transaction for atomicity
-      return await db.transaction(async tx => {
+      const txResult = await db.transaction(async tx => {
         // Generate payment number
         const paymentNumber = await generatePaymentNumber();
 
@@ -382,7 +382,9 @@ export const paymentsRouter = router({
           createdBy: userId,
         });
 
-        // Update client totalOwed (reduce outstanding)
+        // ARCH-002: Update client totalOwed within transaction for atomicity
+        // Note: This is kept for transactional consistency.
+        // After the transaction, we sync from invoices to ensure accuracy.
         await tx
           .update(clients)
           .set({
@@ -404,11 +406,21 @@ export const paymentsRouter = router({
           paymentId,
           paymentNumber,
           invoiceId: input.invoiceId,
+          customerId: invoice.customerId,
           amount: effectiveAmount,
           invoiceStatus: newStatus,
           amountDue: newDue,
         };
       });
+
+      // ARCH-002: Sync client balance after transaction to ensure consistency
+      // This derives totalOwed from SUM(invoices.amountDue)
+      const { syncClientBalance } = await import(
+        "../services/clientBalanceService"
+      );
+      await syncClientBalance(txResult.customerId);
+
+      return txResult;
     }),
 
   /**
@@ -677,7 +689,7 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
-      return await db.transaction(async tx => {
+      const txResult = await db.transaction(async tx => {
         // Generate payment number
         const paymentNumber = await generatePaymentNumber();
 
@@ -802,7 +814,7 @@ export const paymentsRouter = router({
           createdBy: userId,
         });
 
-        // Update client totalOwed
+        // ARCH-002: Update client totalOwed within transaction for atomicity
         await tx
           .update(clients)
           .set({
@@ -822,10 +834,19 @@ export const paymentsRouter = router({
         return {
           paymentId,
           paymentNumber,
+          clientId: input.clientId,
           totalAmount: input.totalAmount,
           invoiceAllocations,
         };
       });
+
+      // ARCH-002: Sync client balance after transaction
+      const { syncClientBalance } = await import(
+        "../services/clientBalanceService"
+      );
+      await syncClientBalance(txResult.clientId);
+
+      return txResult;
     }),
 
   /**
@@ -868,7 +889,7 @@ export const paymentsRouter = router({
 
       const paymentAmount = parseFloat(payment.amount || "0");
 
-      return await db.transaction(async tx => {
+      const txResult = await db.transaction(async tx => {
         // Soft delete the payment
         await tx
           .update(payments)
@@ -956,7 +977,7 @@ export const paymentsRouter = router({
           }
         }
 
-        // Restore client totalOwed
+        // ARCH-002: Update client totalOwed within transaction for atomicity
         if (payment.customerId) {
           await tx
             .update(clients)
@@ -1012,7 +1033,17 @@ export const paymentsRouter = router({
           allocationsReversed: allocations.length,
         });
 
-        return { success: true, paymentId: input.id };
+        return { success: true, paymentId: input.id, customerId: payment.customerId };
       });
+
+      // ARCH-002: Sync client balance after transaction
+      if (txResult.customerId) {
+        const { syncClientBalance } = await import(
+          "../services/clientBalanceService"
+        );
+        await syncClientBalance(txResult.customerId);
+      }
+
+      return txResult;
     }),
 });
