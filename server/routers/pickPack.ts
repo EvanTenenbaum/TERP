@@ -1,6 +1,6 @@
 /**
  * WS-003: Pick & Pack Module Router
- * 
+ *
  * Provides endpoints for warehouse picking and packing operations:
  * - Real-time pick list queue
  * - Multi-select item packing
@@ -34,12 +34,18 @@ export const pickPackRouter = router({
         offset: z.number().min(0).default(0),
       })
     )
-    .query(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    .query(async ({ input, ctx: _ctx }) => {
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      const { orders, clients, orderBags, orderItemBags } = await import("../../drizzle/schema");
-      const { eq, and, gte, lte, sql, isNull, count, desc } = await import("drizzle-orm");
+      const { orders, clients, orderBags, orderItemBags } =
+        await import("../../drizzle/schema");
+      const { eq, and, gte, lte, sql, isNull, count, desc } =
+        await import("drizzle-orm");
 
       // Build conditions
       const conditions = [
@@ -52,7 +58,9 @@ export const pickPackRouter = router({
         conditions.push(eq(orders.pickPackStatus, input.filters.status));
       } else {
         // Default: show all non-shipped orders
-        conditions.push(sql`${orders.pickPackStatus} != 'READY' OR ${orders.pickPackStatus} IS NULL`);
+        conditions.push(
+          sql`${orders.pickPackStatus} != 'READY' OR ${orders.pickPackStatus} IS NULL`
+        );
       }
 
       if (input.filters?.customerId) {
@@ -60,7 +68,9 @@ export const pickPackRouter = router({
       }
 
       if (input.filters?.dateFrom) {
-        conditions.push(gte(orders.createdAt, new Date(input.filters.dateFrom)));
+        conditions.push(
+          gte(orders.createdAt, new Date(input.filters.dateFrom))
+        );
       }
 
       if (input.filters?.dateTo) {
@@ -89,10 +99,13 @@ export const pickPackRouter = router({
         .offset(input.offset);
 
       // Get bag counts for each order
-      const orderIds = pickListOrders.map((o) => o.orderId);
-      
-      let bagCounts: Record<number, { bagCount: number; packedItemCount: number }> = {};
-      
+      const orderIds = pickListOrders.map(o => o.orderId);
+
+      const bagCounts: Record<
+        number,
+        { bagCount: number; packedItemCount: number }
+      > = {};
+
       if (orderIds.length > 0) {
         const bagStats = await db
           .select({
@@ -100,11 +113,19 @@ export const pickPackRouter = router({
             bagCount: count(orderBags.id),
           })
           .from(orderBags)
-          .where(sql`${orderBags.orderId} IN (${sql.join(orderIds.map(id => sql`${id}`), sql`, `)})`)
+          .where(
+            sql`${orderBags.orderId} IN (${sql.join(
+              orderIds.map(id => sql`${id}`),
+              sql`, `
+            )})`
+          )
           .groupBy(orderBags.orderId);
 
         for (const stat of bagStats) {
-          bagCounts[stat.orderId] = { bagCount: Number(stat.bagCount), packedItemCount: 0 };
+          bagCounts[stat.orderId] = {
+            bagCount: Number(stat.bagCount),
+            packedItemCount: 0,
+          };
         }
 
         // Get packed item counts
@@ -115,7 +136,12 @@ export const pickPackRouter = router({
           })
           .from(orderItemBags)
           .innerJoin(orderBags, eq(orderItemBags.bagId, orderBags.id))
-          .where(sql`${orderBags.orderId} IN (${sql.join(orderIds.map(id => sql`${id}`), sql`, `)})`)
+          .where(
+            sql`${orderBags.orderId} IN (${sql.join(
+              orderIds.map(id => sql`${id}`),
+              sql`, `
+            )})`
+          )
           .groupBy(orderBags.orderId);
 
         for (const stat of packedCounts) {
@@ -126,10 +152,17 @@ export const pickPackRouter = router({
       }
 
       // Format response
-      return pickListOrders.map((order) => {
-        const items = order.items as Array<{ id?: number; quantity?: number }> || [];
-        const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        const stats = bagCounts[order.orderId] || { bagCount: 0, packedItemCount: 0 };
+      return pickListOrders.map(order => {
+        const items =
+          (order.items as Array<{ id?: number; quantity?: number }>) || [];
+        const itemCount = items.reduce(
+          (sum, item) => sum + (item.quantity || 1),
+          0
+        );
+        const stats = bagCounts[order.orderId] || {
+          bagCount: 0,
+          packedItemCount: 0,
+        };
 
         return {
           orderId: order.orderId,
@@ -153,11 +186,16 @@ export const pickPackRouter = router({
    */
   getOrderDetails: adminProcedure
     .input(z.object({ orderId: z.number() }))
-    .query(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    .query(async ({ input, ctx: _ctx }) => {
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      const { orders, clients, orderBags, orderItemBags, users } = await import("../../drizzle/schema");
+      const { orders, clients, orderBags, orderItemBags } =
+        await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
 
       // Get order with client
@@ -209,9 +247,12 @@ export const pickPackRouter = router({
         .where(eq(orderBags.orderId, input.orderId));
 
       // Create a map of item assignments
-      const itemAssignments = new Map<number, { bagId: number; bagIdentifier: string; packedAt: Date | null }>();
+      const itemAssignments = new Map<
+        number,
+        { bagId: number; bagIdentifier: string; packedAt: Date | null }
+      >();
       for (const assignment of itemBagAssignments) {
-        const bag = bags.find((b) => b.id === assignment.bagId);
+        const bag = bags.find(b => b.id === assignment.bagId);
         if (bag) {
           itemAssignments.set(assignment.orderItemId, {
             bagId: assignment.bagId,
@@ -222,15 +263,16 @@ export const pickPackRouter = router({
       }
 
       // Format items with pack status
-      const items = (order.items as Array<{
-        id?: number;
-        productId?: number;
-        productName?: string;
-        strainName?: string;
-        quantity?: number;
-        unitPrice?: number;
-        location?: string;
-      }>) || [];
+      const items =
+        (order.items as Array<{
+          id?: number;
+          productId?: number;
+          productName?: string;
+          strainName?: string;
+          quantity?: number;
+          unitPrice?: number;
+          location?: string;
+        }>) || [];
 
       const formattedItems = items.map((item, index) => {
         const itemId = item.id || index;
@@ -239,7 +281,8 @@ export const pickPackRouter = router({
         return {
           id: itemId,
           productId: item.productId,
-          productName: item.productName || item.strainName || `Item ${index + 1}`,
+          productName:
+            item.productName || item.strainName || `Item ${index + 1}`,
           quantity: item.quantity || 1,
           unitPrice: item.unitPrice,
           location: item.location || "N/A",
@@ -251,11 +294,11 @@ export const pickPackRouter = router({
       });
 
       // Format bags with item counts
-      const formattedBags = bags.map((bag) => ({
+      const formattedBags = bags.map(bag => ({
         id: bag.id,
         identifier: bag.identifier,
         notes: bag.notes,
-        itemCount: itemBagAssignments.filter((a) => a.bagId === bag.id).length,
+        itemCount: itemBagAssignments.filter(a => a.bagId === bag.id).length,
         createdAt: bag.createdAt,
       }));
 
@@ -274,8 +317,13 @@ export const pickPackRouter = router({
         items: formattedItems,
         bags: formattedBags,
         summary: {
-          totalItems: formattedItems.reduce((sum, item) => sum + item.quantity, 0),
-          packedItems: formattedItems.filter((item) => item.isPacked).reduce((sum, item) => sum + item.quantity, 0),
+          totalItems: formattedItems.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          ),
+          packedItems: formattedItems
+            .filter(item => item.isPacked)
+            .reduce((sum, item) => sum + item.quantity, 0),
           bagCount: formattedBags.length,
         },
       };
@@ -294,10 +342,15 @@ export const pickPackRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      const { orders, orderBags, orderItemBags } = await import("../../drizzle/schema");
+      const { orders, orderBags, orderItemBags } =
+        await import("../../drizzle/schema");
       const { eq, and, sql } = await import("drizzle-orm");
 
       // Verify order exists
@@ -319,7 +372,7 @@ export const pickPackRouter = router({
           .select({ count: sql<number>`COUNT(*)` })
           .from(orderBags)
           .where(eq(orderBags.orderId, input.orderId));
-        
+
         const nextBagNum = (bagCount?.count || 0) + 1;
         bagIdentifier = `BAG-${String(nextBagNum).padStart(3, "0")}`;
       }
@@ -361,7 +414,7 @@ export const pickPackRouter = router({
           packedCount++;
         } catch (err) {
           // Item might already be packed - skip
-          console.log(`Item ${itemId} already packed or error:`, err);
+          console.warn(`Item ${itemId} already packed or error:`, err);
         }
       }
 
@@ -392,11 +445,16 @@ export const pickPackRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      const { orderBags, orderItemBags, auditLogs, orders } = await import("../../drizzle/schema");
-      const { eq, and, inArray, sql } = await import("drizzle-orm");
+      const { orderBags, orderItemBags, auditLogs, orders } =
+        await import("../../drizzle/schema");
+      const { eq, and, sql } = await import("drizzle-orm");
 
       // Get bag IDs for this order
       const orderBagIds = await db
@@ -405,20 +463,27 @@ export const pickPackRouter = router({
         .where(eq(orderBags.orderId, input.orderId));
 
       if (orderBagIds.length === 0) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No bags found for this order" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No bags found for this order",
+        });
       }
 
-      const bagIds = orderBagIds.map((b) => b.id);
+      const bagIds = orderBagIds.map(b => b.id);
 
       // Delete item-bag assignments
-      await db
-        .delete(orderItemBags)
-        .where(
-          and(
-            sql`${orderItemBags.orderItemId} IN (${sql.join(input.itemIds.map(id => sql`${id}`), sql`, `)})`,
-            sql`${orderItemBags.bagId} IN (${sql.join(bagIds.map(id => sql`${id}`), sql`, `)})`
-          )
-        );
+      await db.delete(orderItemBags).where(
+        and(
+          sql`${orderItemBags.orderItemId} IN (${sql.join(
+            input.itemIds.map(id => sql`${id}`),
+            sql`, `
+          )})`,
+          sql`${orderItemBags.bagId} IN (${sql.join(
+            bagIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        )
+      );
 
       // Log the unpack action with reason to audit log (WS-005)
       // Get order number for better audit trail
@@ -464,11 +529,16 @@ export const pickPackRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      const { orders, orderBags, orderItemBags } = await import("../../drizzle/schema");
-      const { eq, sql } = await import("drizzle-orm");
+      const { orders, orderBags, orderItemBags } =
+        await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
 
       // Get order items
       const [order] = await db
@@ -502,7 +572,7 @@ export const pickPackRouter = router({
             packedBy: ctx.user?.id,
           });
           packedCount++;
-        } catch (err) {
+        } catch (_err) {
           // Skip already packed items
         }
       }
@@ -526,10 +596,15 @@ export const pickPackRouter = router({
   markOrderReady: adminProcedure
     .input(z.object({ orderId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
-      const { orders, orderBags, orderItemBags } = await import("../../drizzle/schema");
+      const { orders, orderBags, orderItemBags } =
+        await import("../../drizzle/schema");
       const { eq, sql } = await import("drizzle-orm");
 
       // Get order with items
@@ -548,7 +623,9 @@ export const pickPackRouter = router({
 
       // Count packed items
       const [packedCount] = await db
-        .select({ count: sql<number>`COUNT(DISTINCT ${orderItemBags.orderItemId})` })
+        .select({
+          count: sql<number>`COUNT(DISTINCT ${orderItemBags.orderItemId})`,
+        })
         .from(orderItemBags)
         .innerJoin(orderBags, eq(orderItemBags.bagId, orderBags.id))
         .where(eq(orderBags.orderId, input.orderId));
@@ -583,9 +660,13 @@ export const pickPackRouter = router({
         status: pickPackStatusSchema,
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const db = await import("../db").then((m) => m.getDb());
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    .mutation(async ({ input, ctx: _ctx }) => {
+      const db = await import("../db").then(m => m.getDb());
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const { orders } = await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
@@ -601,9 +682,13 @@ export const pickPackRouter = router({
   /**
    * Get stats for the pick/pack dashboard
    */
-  getStats: adminProcedure.query(async ({ ctx }) => {
-    const db = await import("../db").then((m) => m.getDb());
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  getStats: adminProcedure.query(async ({ ctx: _ctx }) => {
+    const db = await import("../db").then(m => m.getDb());
+    if (!db)
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Database not available",
+      });
 
     const { orders } = await import("../../drizzle/schema");
     const { eq, and, isNull, sql } = await import("drizzle-orm");
@@ -633,7 +718,9 @@ export const pickPackRouter = router({
 
     for (const stat of stats) {
       if (stat.status && stat.status in statusCounts) {
-        statusCounts[stat.status as keyof typeof statusCounts] = Number(stat.count);
+        statusCounts[stat.status as keyof typeof statusCounts] = Number(
+          stat.count
+        );
       } else {
         // NULL status counts as PENDING
         statusCounts.PENDING += Number(stat.count);

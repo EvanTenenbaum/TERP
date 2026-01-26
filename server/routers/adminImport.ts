@@ -20,19 +20,21 @@ interface OpenTHCStrain {
   type: string | null;
 }
 
-function normalizeCategory(openthcType: string | null): "indica" | "sativa" | "hybrid" | null {
-  if (!openthcType || openthcType === '-unknown-') {
+function normalizeCategory(
+  openthcType: string | null
+): "indica" | "sativa" | "hybrid" | null {
+  if (!openthcType || openthcType === "-unknown-") {
     return null;
   }
-  
+
   const type = openthcType.toLowerCase();
-  
-  if (type === 'indica') return 'indica';
-  if (type === 'sativa') return 'sativa';
-  if (type === 'hybrid') return 'hybrid';
-  if (type.includes('indica') && type.includes('sativa')) return 'hybrid';
-  if (type === 'cbd') return 'hybrid';
-  
+
+  if (type === "indica") return "indica";
+  if (type === "sativa") return "sativa";
+  if (type === "hybrid") return "hybrid";
+  if (type.includes("indica") && type.includes("sativa")) return "hybrid";
+  if (type === "cbd") return "hybrid";
+
   return null;
 }
 
@@ -40,15 +42,15 @@ function standardizeName(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**
  * Admin Import Router
- * 
+ *
  * Handles background imports that can take a long time
  */
 export const adminImportRouter = router({
@@ -56,14 +58,17 @@ export const adminImportRouter = router({
    * Import strains in batches
    * Returns immediately with status, continues in background
    */
-  importStrainsBatch: protectedProcedure.use(requirePermission("system:manage"))
-    .input(z.object({
-      batchSize: z.number().default(500),
-      offset: z.number().default(0),
-    }))
+  importStrainsBatch: protectedProcedure
+    .use(requirePermission("system:manage"))
+    .input(
+      z.object({
+        batchSize: z.number().default(500),
+        offset: z.number().default(0),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
@@ -74,7 +79,7 @@ export const adminImportRouter = router({
         path.join(process.cwd(), "openthc_strains.json"),
         "/app/openthc_strains.json",
       ];
-      
+
       let jsonPath = null;
       for (const p of possiblePaths) {
         if (fs.existsSync(p)) {
@@ -82,7 +87,7 @@ export const adminImportRouter = router({
           break;
         }
       }
-      
+
       if (!jsonPath) {
         throw new Error("OpenTHC strains JSON file not found");
       }
@@ -90,10 +95,13 @@ export const adminImportRouter = router({
       // Read and parse JSON
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const allStrains: OpenTHCStrain[] = JSON.parse(jsonContent);
-      
+
       // Get the batch to import
-      const batch = allStrains.slice(input.offset, input.offset + input.batchSize);
-      
+      const batch = allStrains.slice(
+        input.offset,
+        input.offset + input.batchSize
+      );
+
       if (batch.length === 0) {
         return {
           imported: 0,
@@ -121,7 +129,7 @@ export const adminImportRouter = router({
       for (const strain of batch) {
         try {
           const name = strain.name.trim();
-          
+
           if (!name) {
             skipped++;
             continue;
@@ -151,14 +159,14 @@ export const adminImportRouter = router({
         try {
           await db.insert(strains).values(strainsToInsert);
           imported = strainsToInsert.length;
-        } catch (error) {
+        } catch (_error) {
           // If bulk insert fails due to duplicates, insert one by one
-          console.log('Bulk insert failed, trying individual inserts...');
+          console.warn("Bulk insert failed, trying individual inserts...");
           for (const strain of strainsToInsert) {
             try {
               await db.insert(strains).values([strain]);
               imported++;
-            } catch (e) {
+            } catch (_e) {
               // Likely a duplicate, skip it
               skipped++;
             }
@@ -175,8 +183,8 @@ export const adminImportRouter = router({
         offset: nextOffset,
         total: allStrains.length,
         completed,
-        message: completed 
-          ? `Import complete! Imported ${imported} strains` 
+        message: completed
+          ? `Import complete! Imported ${imported} strains`
           : `Batch complete. Progress: ${nextOffset}/${allStrains.length}`,
       };
     }),
@@ -184,25 +192,29 @@ export const adminImportRouter = router({
   /**
    * Get import progress
    */
-  getImportProgress: protectedProcedure.use(requirePermission("system:manage"))
+  getImportProgress: protectedProcedure
+    .use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
 
-      const totalStrains = await db.select({ count: sql<number>`COUNT(*)` }).from(strains);
+      const totalStrains = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(strains);
       const openthcStrains = await db.execute(sql`
         SELECT COUNT(*) as count FROM strains WHERE openthcId IS NOT NULL
       `);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MySQL raw query result lacks type info
+      const openthcCount = (openthcStrains as any)[0]?.count || 0;
       return {
         totalStrains: totalStrains[0]?.count || 0,
-        openthcStrains: (openthcStrains as any)[0]?.count || 0,
+        openthcStrains: openthcCount,
         targetStrains: 12804,
-        percentComplete: Math.round(((openthcStrains as any)[0]?.count || 0) / 12804 * 100),
+        percentComplete: Math.round((openthcCount / 12804) * 100),
       };
     }),
 });
-
