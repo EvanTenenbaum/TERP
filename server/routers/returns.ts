@@ -73,6 +73,54 @@ const returnStatusEnum = z.enum([
   "CANCELLED",
 ]);
 
+// SM-003: Return status state machine
+// Defines valid transitions for return status workflow
+const RETURN_STATUS_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["APPROVED", "REJECTED", "CANCELLED"],
+  APPROVED: ["RECEIVED", "CANCELLED"],
+  REJECTED: [], // Terminal state
+  RECEIVED: ["PROCESSED", "CANCELLED"],
+  PROCESSED: [], // Terminal state
+  CANCELLED: [], // Terminal state
+};
+
+/**
+ * SM-003: Extract current status from return notes
+ * Since the schema doesn't have a status field, we track it in notes
+ */
+function extractReturnStatus(notes: string | null): string {
+  if (!notes) return "PENDING";
+
+  // Check for status markers in reverse order of workflow
+  if (notes.includes("[PROCESSED")) return "PROCESSED";
+  if (notes.includes("[RECEIVED")) return "RECEIVED";
+  if (notes.includes("[REJECTED")) return "REJECTED";
+  if (notes.includes("[APPROVED")) return "APPROVED";
+  if (notes.includes("[CANCELLED")) return "CANCELLED";
+
+  return "PENDING";
+}
+
+/**
+ * SM-003: Validate return status transition
+ */
+function isValidReturnStatusTransition(currentStatus: string, newStatus: string): boolean {
+  const validTransitions = RETURN_STATUS_TRANSITIONS[currentStatus];
+  if (!validTransitions) return false;
+  return validTransitions.includes(newStatus);
+}
+
+/**
+ * SM-003: Get error message for invalid transition
+ */
+function getReturnTransitionError(currentStatus: string, newStatus: string): string {
+  const validTransitions = RETURN_STATUS_TRANSITIONS[currentStatus] || [];
+  if (validTransitions.length === 0) {
+    return `Cannot change return status from ${currentStatus} - this is a terminal state`;
+  }
+  return `Invalid return status transition: ${currentStatus} -> ${newStatus}. Valid transitions: ${validTransitions.join(", ")}`;
+}
+
 // Return item schema for creating returns
 const returnItemSchema = z.object({
   batchId: z.number(),
@@ -357,6 +405,12 @@ export const returnsRouter = router({
         throw new Error("Return not found");
       }
 
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "APPROVED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "APPROVED"));
+      }
+
       // Update notes with approval info
       const updatedNotes = [
         returnRecord.notes,
@@ -406,6 +460,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "REJECTED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "REJECTED"));
       }
 
       // Update notes with rejection info
@@ -465,6 +525,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "RECEIVED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "RECEIVED"));
       }
 
       // Process each received item
@@ -655,6 +721,12 @@ export const returnsRouter = router({
 
       if (!returnRecord) {
         throw new Error("Return not found");
+      }
+
+      // SM-003: Validate status transition
+      const currentStatus = extractReturnStatus(returnRecord.notes);
+      if (!isValidReturnStatusTransition(currentStatus, "PROCESSED")) {
+        throw new Error(getReturnTransitionError(currentStatus, "PROCESSED"));
       }
 
       // Get order to find client
