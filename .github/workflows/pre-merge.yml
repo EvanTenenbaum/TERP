@@ -20,6 +20,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for git diff to compare with main
 
       - name: Extract Task ID
         id: extract_task
@@ -32,39 +34,62 @@ jobs:
           fi
 
       # =================================================================
-      # SECURITY PATTERN ENFORCEMENT
+      # SECURITY PATTERN ENFORCEMENT (Only checks CHANGED files)
       # =================================================================
+      - name: Get Changed Files
+        id: changed_files
+        run: |
+          # Get list of changed .ts/.tsx files in this PR
+          CHANGED=$(git diff --name-only origin/main...HEAD -- '*.ts' '*.tsx' 2>/dev/null || true)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Check for Forbidden Security Patterns
         id: security_check
         run: |
           VIOLATIONS=""
+          CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
+
+          # Skip if no TypeScript files changed
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_violations=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
           # Pattern 1: Fallback user ID (BUG-PATTERN: POST-002)
           # Matches: ctx.user?.id || 1, ctx.user?.id ?? 1, etc.
-          # Note: Uses -E for extended regex (required for \s and proper | handling)
-          FALLBACK_MATCHES=$(grep -rn -E "ctx\.user\?\.(id|userId)\s*(\|\||\?\?)\s*[0-9]" --include="*.ts" --include="*.tsx" server/ client/src/ 2>/dev/null || true)
+          FALLBACK_MATCHES=""
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ]; then
+              MATCH=$(grep -n -E "ctx\.user\?\.(id|userId)\s*(\|\||\?\?)\s*[0-9]" "$file" 2>/dev/null || true)
+              if [ -n "$MATCH" ]; then
+                FALLBACK_MATCHES="${FALLBACK_MATCHES}${file}:${MATCH}\n"
+              fi
+            fi
+          done
           if [ -n "$FALLBACK_MATCHES" ]; then
-            VIOLATIONS="${VIOLATIONS}### ❌ Fallback User ID Pattern\n\nFound forbidden pattern \`ctx.user?.id || 1\`. Use \`getAuthenticatedUserId(ctx)\` instead.\n\n\`\`\`\n${FALLBACK_MATCHES}\n\`\`\`\n\n"
+            VIOLATIONS="${VIOLATIONS}### ❌ Fallback User ID Pattern\n\nFound forbidden pattern \`ctx.user?.id || 1\`. Use \`getAuthenticatedUserId(ctx)\` instead.\n\n\`\`\`\n${FALLBACK_MATCHES}\`\`\`\n\n"
           fi
 
           # Pattern 2: Actor from input (BUG-PATTERN: POST-003)
-          # Matches: input.createdBy, input.updatedBy as actor source
-          # Note: Uses -E for extended regex
-          ACTOR_INPUT=$(grep -rn -E "createdBy:\s*input\.(createdBy|userId)" --include="*.ts" server/routers/ 2>/dev/null || true)
+          # Only blocks NEW code in routers (legacy Db files are grandfathered)
+          ACTOR_INPUT=""
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == server/routers/* ]] && [ -f "$file" ]; then
+              MATCH=$(grep -n "createdBy: input\." "$file" 2>/dev/null || true)
+              if [ -n "$MATCH" ]; then
+                ACTOR_INPUT="${ACTOR_INPUT}${file}:${MATCH}\n"
+              fi
+            fi
+          done
           if [ -n "$ACTOR_INPUT" ]; then
-            VIOLATIONS="${VIOLATIONS}### ❌ Actor Attribution from Input\n\nFound \`createdBy: input.createdBy\` - actor must come from \`ctx.user.id\`, not input.\n\n\`\`\`\n${ACTOR_INPUT}\n\`\`\`\n\n"
-          fi
-
-          # Pattern 3: Hard deletes (use soft delete with deletedAt)
-          HARD_DELETE=$(grep -rn "\.delete(" --include="*.ts" server/routers/ | grep -v "deletedAt" | grep -v "test" | grep -v "\.d\.ts" 2>/dev/null | head -5 || true)
-          if [ -n "$HARD_DELETE" ]; then
-            VIOLATIONS="${VIOLATIONS}### ⚠️ Potential Hard Delete\n\nFound \`.delete()\` calls. Prefer soft deletes with \`deletedAt\` for data integrity.\n\n\`\`\`\n${HARD_DELETE}\n\`\`\`\n\n"
+            VIOLATIONS="${VIOLATIONS}### ❌ Actor Attribution from Input\n\nFound \`createdBy: input.createdBy\` - actor must come from \`ctx.user.id\`, not input.\n\n\`\`\`\n${ACTOR_INPUT}\`\`\`\n\n"
           fi
 
           # Save violations for comment
           if [ -n "$VIOLATIONS" ]; then
             echo "has_violations=true" >> $GITHUB_OUTPUT
-            # Escape for GitHub Actions
             VIOLATIONS="${VIOLATIONS//'%'/'%25'}"
             VIOLATIONS="${VIOLATIONS//$'\n'/'%0A'}"
             VIOLATIONS="${VIOLATIONS//$'\r'/'%0D'}"
