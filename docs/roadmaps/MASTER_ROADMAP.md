@@ -5024,3 +5024,189 @@ global.ResizeObserver = class ResizeObserver {
 **Estimated Hours:** 35-50h
 
 ---
+
+
+---
+
+## 🐞 January 26 QA Audit - New Bug Reports
+
+> The following tasks were generated from the Golden Flows QA audit on Jan 26, 2026. They represent critical, blocking issues.
+
+### BUG-110: Critical SQL Error on Inventory Load
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-04, FINDING-10)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `server/routers/orders.ts`, `server/inventoryDb.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+When creating a Sales Order, the system fails to load available inventory and displays a raw SQL query error to the user. This is a system-wide blocker for all transactional flows.
+
+**Context / Evidence:**
+- See `jan-26-checkpoint/findings/all_findings.json` for the full error message.
+- The query joins `batches`, `products`, `lots`, `vendors`, and `strains` and appears to be malformed or timing out.
+
+**Acceptance Criteria:**
+- [ ] The inventory query in the order creation flow executes successfully without errors.
+- [ ] Available inventory batches are displayed to the user.
+- [ ] Raw SQL errors are never exposed to the frontend.
+
+---
+
+### BUG-111: Sales Rep Cannot View Clients (RBAC Failure)
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-01, FINDING-03)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/clients.ts`, `server/_core/rbac.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Users with the `QA Sales Rep` role cannot view the client list, receiving a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
+
+**Context / Evidence:**
+- The Sales Rep role is blocked from its primary function of selecting clients for orders.
+
+**Acceptance Criteria:**
+- [ ] Users with the Sales Rep role can view the client list at `/clients`.
+- [ ] The API at `/api/trpc/clients.list` returns a successful response for users with appropriate permissions.
+
+---
+
+### BUG-112: Direct Intake Form Not Rendering
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-05)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `client/src/pages/intake/index.tsx`
+**Dependencies:** None
+
+**Problem / Goal:**
+The Direct Intake page does not render any form fields, making it impossible to add new inventory into the system. Clicking "Add Row" increments a counter but no inputs appear.
+
+**Context / Evidence:**
+- The UI is broken, preventing the entire GF-001 (Direct Intake) flow.
+
+**Acceptance Criteria:**
+- [ ] The Direct Intake page renders form fields for adding new inventory batches.
+- [ ] Clicking "Add Row" adds a new, visible set of input fields to the form.
+
+---
+
+### BUG-113: Invoice PDF Generation Timeout
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-07)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `server/services/pdfGenerationService.ts` (or similar)
+**Dependencies:** None
+
+**Problem / Goal:**
+Attempting to download a PDF of an invoice causes the browser to hang and eventually time out after ~3 minutes. This suggests a server-side issue with the PDF generation service.
+
+**Context / Evidence:**
+- This prevents users from getting PDF copies of invoices, a critical accounting function.
+
+**Acceptance Criteria:**
+- [ ] Clicking "Download PDF" on an invoice generates and downloads a PDF file within a reasonable time (< 10 seconds).
+- [ ] The server-side PDF generation process is investigated for performance bottlenecks or infinite loops.
+
+---
+
+### BUG-114: Purchase Order Product Dropdown Empty
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-08)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `client/src/components/po/CreatePO.tsx`
+**Dependencies:** BUG-110
+
+**Problem / Goal:**
+When creating a Purchase Order, the "Select product" dropdown is empty, even though 150 products exist in the system. This blocks the Procure-to-Pay (GF-002) flow.
+
+**Context / Evidence:**
+- The Products page correctly lists 150 products, but the PO creation form does not.
+- This may be related to the inventory query failure (BUG-110) if the dropdown is attempting to show products with available inventory.
+
+**Acceptance Criteria:**
+- [ ] The "Select product" dropdown in the PO creation form lists all available products from the catalog.
+
+---
+
+### BUG-115: Sample Request Form Product Selector Broken
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-13)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `client/src/components/samples/CreateSampleRequest.tsx`
+**Dependencies:** None
+
+**Problem / Goal:**
+The "Create Sample Request" form has a plain text input for the product, not a proper searchable selector. This leads to validation errors and prevents the creation of sample requests.
+
+**Context / Evidence:**
+- The form is unusable as users cannot correctly select a product to sample.
+
+**Acceptance Criteria:**
+- [ ] The product field on the Sample Request form is replaced with a searchable, selectable dropdown component.
+- [ ] Selecting a product from the component correctly populates the form state.
+
+---
+
+### DATA-026: Investigate and Fix Dashboard/Inventory Data Mismatch
+
+**Type:** Data
+**Source:** Jan 26 QA Audit (FINDING-06)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/routers/dashboard.ts`, `server/routers/inventory.ts`
+**Dependencies:** BUG-110
+
+**Problem / Goal:**
+There is a severe data integrity issue. The main dashboard displays an inventory value of ~$13M, but the dedicated Inventory page shows 0 batches and a value of $0.00.
+
+**Context / Evidence:**
+- This is likely a symptom of the critical SQL error (BUG-110), with the dashboard showing stale or cached data while the live inventory query fails.
+
+**Acceptance Criteria:**
+- [ ] The root cause of the data mismatch is identified and fixed.
+- [ ] The dashboard inventory value is consistent with the data shown on the Inventory page.
+- [ ] If caching is used, a clear strategy for cache invalidation is implemented and documented.
+
+---
+
+### BUG-116: AR/AP Dashboard Data Inconsistencies
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-12)
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `server/routers/accounting.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Vendors Owed" shows "Unknown Vendor" for all entries.
+
+**Context / Evidence:**
+- The queries for these specific dashboard widgets are likely failing to join or resolve related entity names (clients, vendors).
+
+**Acceptance Criteria:**
+- [ ] The "Top Debtors" widget correctly lists clients with the highest outstanding balances.
+- [ ] The "Top Vendors Owed" widget correctly lists vendor names.
+
+
