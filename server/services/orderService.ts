@@ -46,6 +46,16 @@ export async function createOrderFromInterestList(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // ORD-002: Validate positive quantities and non-negative prices
+  for (const item of input.items) {
+    if (item.quantity !== undefined && item.quantity <= 0) {
+      throw new Error(`Invalid quantity ${item.quantity} for item ${item.id}. Quantity must be greater than 0.`);
+    }
+    if (item.price !== undefined && item.price < 0) {
+      throw new Error(`Invalid price ${item.price} for item ${item.id}. Price cannot be negative.`);
+    }
+  }
+
   // Generate order number
   const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
@@ -94,6 +104,16 @@ export async function addItemsToOrder(input: AddItemsToOrderInput): Promise<void
   if (!db) throw new Error("Database not available");
 
   if (input.items.length === 0) return;
+
+  // ORD-002: Validate positive quantities and non-negative prices
+  for (const item of input.items) {
+    if (item.quantity !== undefined && item.quantity <= 0) {
+      throw new Error(`Invalid quantity ${item.quantity} for item ${item.id}. Quantity must be greater than 0.`);
+    }
+    if (item.price !== undefined && item.price < 0) {
+      throw new Error(`Invalid price ${item.price} for item ${item.id}. Price cannot be negative.`);
+    }
+  }
 
   // Get existing order
   const existingOrder = await db.query.orders.findFirst({

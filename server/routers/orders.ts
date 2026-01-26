@@ -89,9 +89,10 @@ function checkConfirmRateLimit(userId: number): void {
 const lineItemInputSchema = z.object({
   batchId: z.number(),
   productDisplayName: z.string().optional(),
-  quantity: z.number().positive(),
+  quantity: z.number().positive("Quantity must be greater than 0"),
   isSample: z.boolean().default(false),
-  cogsPerUnit: z.number(),
+  // ORD-002: COGS must be non-negative
+  cogsPerUnit: z.number().nonnegative("COGS per unit cannot be negative"),
   marginPercent: z.number().optional(),
   marginDollar: z.number().optional(),
   isCogsOverridden: z.boolean().default(false),
@@ -145,11 +146,12 @@ export const ordersRouter = router({
           z.object({
             batchId: z.number(),
             displayName: z.string().optional(),
-            quantity: z.number(),
-            unitPrice: z.number(),
+            // ORD-002: Quantity and prices must be positive/non-negative
+            quantity: z.number().positive("Quantity must be greater than 0"),
+            unitPrice: z.number().nonnegative("Unit price cannot be negative"),
             isSample: z.boolean(),
-            overridePrice: z.number().optional(),
-            overrideCogs: z.number().optional(),
+            overridePrice: z.number().nonnegative("Override price cannot be negative").optional(),
+            overrideCogs: z.number().nonnegative("Override COGS cannot be negative").optional(),
           })
         ),
         validUntil: z.string().optional(),
@@ -634,11 +636,12 @@ export const ordersRouter = router({
             z.object({
               batchId: z.number(),
               displayName: z.string().optional(),
-              quantity: z.number(),
-              unitPrice: z.number(),
+              // ORD-002: Quantity and prices must be positive/non-negative
+              quantity: z.number().positive("Quantity must be greater than 0"),
+              unitPrice: z.number().nonnegative("Unit price cannot be negative"),
               isSample: z.boolean(),
-              overridePrice: z.number().optional(),
-              overrideCogs: z.number().optional(),
+              overridePrice: z.number().nonnegative("Override price cannot be negative").optional(),
+              overrideCogs: z.number().nonnegative("Override COGS cannot be negative").optional(),
             })
           )
           .optional(),

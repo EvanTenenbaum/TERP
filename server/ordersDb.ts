@@ -113,6 +113,26 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // ORD-002: Validate positive quantities and non-negative prices
+  for (const item of input.items) {
+    if (item.quantity <= 0) {
+      throw new Error(`Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`);
+    }
+    if (item.unitPrice < 0) {
+      throw new Error(`Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`);
+    }
+    // Non-sample items should have a positive price (samples can be free)
+    if (!item.isSample && item.unitPrice === 0) {
+      throw new Error(`Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`);
+    }
+    if (item.overridePrice !== undefined && item.overridePrice < 0) {
+      throw new Error(`Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`);
+    }
+    if (item.overrideCogs !== undefined && item.overrideCogs < 0) {
+      throw new Error(`Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`);
+    }
+  }
+
   return await db.transaction(async tx => {
     // 1. Get client for COGS calculation
     const client = await tx
@@ -1330,6 +1350,28 @@ export async function updateDraftOrder(input: {
 }): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ORD-002: Validate positive quantities and non-negative prices
+  if (input.items) {
+    for (const item of input.items) {
+      if (item.quantity <= 0) {
+        throw new Error(`Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`);
+      }
+      if (item.unitPrice < 0) {
+        throw new Error(`Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`);
+      }
+      // Non-sample items should have a positive price (samples can be free)
+      if (!item.isSample && item.unitPrice === 0) {
+        throw new Error(`Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`);
+      }
+      if (item.overridePrice !== undefined && item.overridePrice < 0) {
+        throw new Error(`Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`);
+      }
+      if (item.overrideCogs !== undefined && item.overrideCogs < 0) {
+        throw new Error(`Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`);
+      }
+    }
+  }
 
   return await db.transaction(async tx => {
     // 1. Get the draft order
