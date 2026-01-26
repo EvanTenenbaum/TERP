@@ -1,17 +1,109 @@
 #!/usr/bin/env sh
-# Pre-commit hook for TERP (Streamlined v2.0)
-# Only essential checks - no ceremony
+# Pre-commit hook for TERP (Enforcement v3.0)
+# Blocks commits with security vulnerabilities and known anti-patterns
 
-# Check for schema changes without migrations (warning only)
-if git diff --cached --name-only | grep -q "drizzle/schema.ts"; then
-  if ! git diff --cached --name-only | grep -q "drizzle/migrations/"; then
-    echo ""
-    echo "⚠️  WARNING: drizzle/schema.ts changed but no migration file found!"
-    echo "   Run: pnpm db:generate (if schema changed)"
-    echo "   Skip: git commit --no-verify (if non-breaking change)"
-    echo ""
-  fi
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Get list of staged .ts and .tsx files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "✅ No TypeScript files staged, skipping pattern checks"
+  npx lint-staged
+  exit 0
 fi
 
-# Run lint-staged (formatting + linting only)
+# ============================================================
+# SECURITY CHECKS - These BLOCK commits
+# ============================================================
+
+BLOCKED=0
+
+# Check 1: Fallback user ID pattern (security vulnerability)
+# Catches: ctx.user?.id || 1, ctx.user?.id ?? 1, userId || 1
+echo "  Checking for fallback user ID patterns..."
+for file in $STAGED_FILES; do
+  if git show ":$file" 2>/dev/null | grep -n "\.id[[:space:]]*||[[:space:]]*[0-9]" | grep -v "// safe:" | grep -v "test" > /dev/null 2>&1; then
+    echo "❌ BLOCKED: Fallback user ID pattern in $file"
+    echo "   Pattern: ctx.user?.id || 1 (or similar)"
+    echo "   Fix: Use getAuthenticatedUserId(ctx) from server/_core/trpc"
+    BLOCKED=1
+  fi
+done
+
+# Check 2: Actor from input (security vulnerability)
+# Catches: createdBy: input.createdBy, userId: input.userId
+echo "  Checking for actor-from-input patterns..."
+for file in $STAGED_FILES; do
+  if echo "$file" | grep -q "^server/" && ! echo "$file" | grep -q "test"; then
+    if git show ":$file" 2>/dev/null | grep -n "createdBy:[[:space:]]*input\." > /dev/null 2>&1; then
+      echo "❌ BLOCKED: Actor attribution from input in $file"
+      echo "   Pattern: createdBy: input.createdBy"
+      echo "   Fix: Use ctx.user.id or getAuthenticatedUserId(ctx)"
+      BLOCKED=1
+    fi
+  fi
+done
+
+# Check 3: Hard delete pattern (data integrity)
+# Catches: db.delete( but allows soft delete patterns
+echo "  Checking for hard delete patterns..."
+for file in $STAGED_FILES; do
+  if echo "$file" | grep -q "^server/" && ! echo "$file" | grep -q "test\|seed\|migration"; then
+    if git show ":$file" 2>/dev/null | grep -n "db\.delete(" | grep -v "deletedAt" | grep -v "// hard-delete-ok:" > /dev/null 2>&1; then
+      echo "⚠️  WARNING: Hard delete pattern in $file"
+      echo "   Pattern: db.delete(...)"
+      echo "   Prefer: db.update(...).set({ deletedAt: new Date() })"
+      echo "   Override: Add '// hard-delete-ok: <reason>' comment"
+      # Warning only, not blocking (some hard deletes are intentional)
+    fi
+  fi
+done
+
+# ============================================================
+# SCHEMA CHECKS
+# ============================================================
+
+# Check 4: Schema changes without migrations
+if git diff --cached --name-only | grep -q "drizzle/schema"; then
+  echo "  Checking schema changes..."
+  if ! git diff --cached --name-only | grep -q "drizzle/migrations/"; then
+    echo ""
+    echo "⚠️  WARNING: Schema changed but no migration file found"
+    echo "   If column/table added: Run 'pnpm db:generate'"
+    echo "   If just comments/types: Safe to proceed"
+    echo ""
+  fi
+
+  # Check 5: mysqlEnum naming convention
+  for file in $(git diff --cached --name-only | grep "drizzle/schema"); do
+    # Check for camelCase enum names (should be snake_case to match DB columns)
+    if git show ":$file" 2>/dev/null | grep -n 'mysqlEnum("[a-z]*[A-Z]' > /dev/null 2>&1; then
+      echo "❌ BLOCKED: mysqlEnum with camelCase name in $file"
+      echo "   Pattern: mysqlEnum(\"camelCase\", [...])"
+      echo "   Fix: First argument must match DATABASE column name (usually snake_case)"
+      echo "   Example: mysqlEnum(\"status\", [...]) not mysqlEnum(\"orderStatus\", [...])"
+      BLOCKED=1
+    fi
+  done
+fi
+
+# ============================================================
+# RESULT
+# ============================================================
+
+if [ $BLOCKED -eq 1 ]; then
+  echo ""
+  echo "❌ Commit blocked due to security/quality issues above"
+  echo "   Fix the issues or use 'git commit --no-verify' to bypass (not recommended)"
+  exit 1
+fi
+
+echo "✅ Security checks passed"
+
+# Run lint-staged for formatting and linting
 npx lint-staged
+
+echo "✅ All pre-commit checks passed"

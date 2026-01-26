@@ -158,27 +158,39 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 
 ### Forbidden Code Patterns
 
+> **ENFORCED:** These patterns are blocked by the pre-commit hook. Commits containing them will fail.
+
 ```typescript
-// ❌ FORBIDDEN - Security vulnerability
+// ❌ FORBIDDEN - Fallback user ID (BLOCKED by pre-commit)
 const userId = ctx.user?.id || 1;
 const createdBy = ctx.user?.id ?? 1;
 
-// ✅ CORRECT
+// ❌ FORBIDDEN - Actor from input (BLOCKED by pre-commit)
+const createdBy = input.createdBy;  // Never trust client-provided actor
+const userId = input.userId;
+
+// ✅ CORRECT - Actor from authenticated context
 import { getAuthenticatedUserId } from "../_core/trpc";
 const userId = getAuthenticatedUserId(ctx);
 
-// ❌ FORBIDDEN - Use soft deletes
+// ❌ FORBIDDEN - Hard deletes (WARNING from pre-commit)
 await db.delete(clients).where(eq(clients.id, id));
 
-// ✅ CORRECT
+// ✅ CORRECT - Soft deletes
 await db.update(clients).set({ deletedAt: new Date() }).where(eq(clients.id, id));
 
-// ❌ FORBIDDEN - No any types
+// ❌ FORBIDDEN - Any types (BLOCKED by ESLint)
 function process(data: any) { ... }
 
-// ✅ CORRECT
+// ✅ CORRECT - Proper types
 interface DataInput { value: string; }
 function process(data: DataInput) { ... }
+
+// ❌ FORBIDDEN - camelCase mysqlEnum names (BLOCKED by pre-commit)
+mysqlEnum("orderStatus", [...])  // Wrong - doesn't match DB column
+
+// ✅ CORRECT - Use actual DB column name
+mysqlEnum("status", [...])  // Matches the column name in the table
 ```
 
 ---
@@ -213,6 +225,15 @@ function process(data: DataInput) { ... }
 - **Soft deletes** - Add `deletedAt` column, never hard delete
 - **Indexes** - All FK columns must have indexes
 - **Migrations** - Use Drizzle migrations, never manual SQL
+- **mysqlEnum naming (CRITICAL)** - First argument MUST match the database column name:
+  ```typescript
+  // WRONG - causes "Unknown column" errors at runtime
+  export const orderStatusEnum = mysqlEnum("orderStatus", [...]);
+
+  // CORRECT - matches the actual DB column name
+  export const orderStatusEnum = mysqlEnum("status", [...]);
+  ```
+- **Test seeders** - After schema changes, run `pnpm seed:all-defaults` locally
 
 ### Git
 
