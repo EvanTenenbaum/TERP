@@ -21,6 +21,11 @@ export {
   ClientBalanceDiscrepancyAlert,
 } from "./ClientBalanceCard"; // ARCH-002
 export { GLEntriesViewer } from "./GLEntriesViewer"; // TERP-0012
+export {
+  GLReversalStatus,
+  InvoiceGLStatus,
+  ReturnGLStatus,
+} from "./GLReversalStatus"; // TERP-0012 Phase 2
 
 // Re-export types
 export type {
