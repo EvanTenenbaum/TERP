@@ -934,7 +934,15 @@ export const accountingRouter = router({
         z.object({
           vendorId: z.number().optional(),
           status: z
-            .enum(["DRAFT", "PENDING", "PARTIAL", "PAID", "OVERDUE", "VOID"])
+            .enum([
+              "DRAFT",
+              "PENDING",
+              "APPROVED",
+              "PARTIAL",
+              "PAID",
+              "OVERDUE",
+              "VOID",
+            ])
             .optional(),
           startDate: z.date().optional(),
           endDate: z.date().optional(),
@@ -1036,6 +1044,7 @@ export const accountingRouter = router({
           status: z.enum([
             "DRAFT",
             "PENDING",
+            "APPROVED",
             "PARTIAL",
             "PAID",
             "OVERDUE",
@@ -1632,7 +1641,7 @@ export const accountingRouter = router({
         if (!client[0]) throw new Error("Client not found");
 
         const previousBalance = Number(client[0].totalOwed || 0);
-        const newBalance = previousBalance - input.amount;
+        const _newBalance = previousBalance - input.amount;
 
         // 2. Generate payment number
         const paymentNumber = await arApDb.generatePaymentNumber("RECEIVED");
@@ -1666,9 +1675,8 @@ export const accountingRouter = router({
         });
 
         // 5. ARCH-002: Sync client balance from invoices (canonical calculation)
-        const { syncClientBalance } = await import(
-          "../services/clientBalanceService"
-        );
+        const { syncClientBalance } =
+          await import("../services/clientBalanceService");
         const actualNewBalance = await syncClientBalance(input.clientId);
 
         // 6. Return result
@@ -2279,9 +2287,8 @@ export const accountingRouter = router({
       .use(requirePermission("accounting:read"))
       .input(z.object({ clientId: z.number() }))
       .query(async ({ input }) => {
-        const { getClientBalanceDetails } = await import(
-          "../services/clientBalanceService"
-        );
+        const { getClientBalanceDetails } =
+          await import("../services/clientBalanceService");
         return getClientBalanceDetails(input.clientId);
       }),
 
@@ -2293,9 +2300,8 @@ export const accountingRouter = router({
       .use(requirePermission("accounting:write"))
       .input(z.object({ clientId: z.number() }))
       .mutation(async ({ input }) => {
-        const { syncClientBalance } = await import(
-          "../services/clientBalanceService"
-        );
+        const { syncClientBalance } =
+          await import("../services/clientBalanceService");
         const newBalance = await syncClientBalance(input.clientId);
         return { clientId: input.clientId, newBalance };
       }),
@@ -2307,9 +2313,8 @@ export const accountingRouter = router({
     findDiscrepancies: protectedProcedure
       .use(requirePermission("accounting:read"))
       .query(async () => {
-        const { findBalanceDiscrepancies } = await import(
-          "../services/clientBalanceService"
-        );
+        const { findBalanceDiscrepancies } =
+          await import("../services/clientBalanceService");
         return findBalanceDiscrepancies();
       }),
 
@@ -2320,9 +2325,8 @@ export const accountingRouter = router({
     syncAllBalances: protectedProcedure
       .use(requirePermission("accounting:admin"))
       .mutation(async () => {
-        const { syncAllClientBalances } = await import(
-          "../services/clientBalanceService"
-        );
+        const { syncAllClientBalances } =
+          await import("../services/clientBalanceService");
         return syncAllClientBalances();
       }),
 
@@ -2334,9 +2338,8 @@ export const accountingRouter = router({
       .use(requirePermission("accounting:read"))
       .input(z.object({ clientId: z.number() }))
       .query(async ({ input }) => {
-        const { verifyClientGLBalance } = await import(
-          "../services/clientBalanceService"
-        );
+        const { verifyClientGLBalance } =
+          await import("../services/clientBalanceService");
         return verifyClientGLBalance(input.clientId);
       }),
   }),

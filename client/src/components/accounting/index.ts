@@ -1,6 +1,6 @@
 /**
  * Accounting Module Components
- * 
+ *
  * Reusable UI components for the accounting module
  */
 
@@ -15,10 +15,15 @@ export { PayVendorModal } from "./PayVendorModal";
 export { RecordPaymentDialog } from "./RecordPaymentDialog"; // FEAT-007
 export { MultiInvoicePaymentForm } from "./MultiInvoicePaymentForm"; // FEAT-007
 export { InvoicePaymentHistory } from "./InvoicePaymentHistory"; // FEAT-007
+export { BillStatusActions, BillStatusTimeline } from "./BillStatusActions"; // ARCH-004
 
 // Re-export types
-export type { InvoiceStatus, BillStatus, PaymentType, PaymentMethod } from "./StatusBadge";
+export type {
+  InvoiceStatus,
+  BillStatus,
+  PaymentType,
+  PaymentMethod,
+} from "./StatusBadge";
 export type { AgingBucket } from "./AgingBadge";
 export type { AccountType } from "./AccountSelector";
 export type { FiscalPeriodStatus } from "./FiscalPeriodSelector";
-

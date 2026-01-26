@@ -6,6 +6,7 @@
 export type BillStatus =
   | "DRAFT"
   | "PENDING"
+  | "APPROVED"
   | "PARTIAL"
   | "PAID"
   | "OVERDUE"
@@ -16,15 +17,17 @@ export type BillStatus =
  *
  * Workflow:
  * - DRAFT: Initial state, can be submitted for approval
- * - PENDING: Awaiting payment
+ * - PENDING: Awaiting approval
+ * - APPROVED: Approved and ready for payment
  * - PARTIAL: Partially paid
  * - PAID: Fully paid (terminal for payment)
  * - OVERDUE: Past due date (can still be paid)
  * - VOID: Cancelled/voided (terminal)
  */
 export const BILL_STATUS_TRANSITIONS: Record<BillStatus, BillStatus[]> = {
-  DRAFT: ["PENDING", "VOID"], // Submit for payment or cancel
-  PENDING: ["PARTIAL", "PAID", "OVERDUE", "VOID"], // Make payment or mark overdue
+  DRAFT: ["PENDING", "VOID"], // Submit for approval or cancel
+  PENDING: ["APPROVED", "PARTIAL", "PAID", "OVERDUE", "VOID"], // Approve, pay directly, or mark overdue
+  APPROVED: ["PARTIAL", "PAID", "OVERDUE", "VOID"], // Make payment or mark overdue
   PARTIAL: ["PAID", "OVERDUE", "VOID"], // Complete payment or mark overdue
   OVERDUE: ["PARTIAL", "PAID", "VOID"], // Can still receive payments
   PAID: [], // Terminal state (can't unpay)
@@ -89,7 +92,8 @@ export function validateTransition(
  */
 export const STATUS_LABELS: Record<BillStatus, string> = {
   DRAFT: "Draft",
-  PENDING: "Pending",
+  PENDING: "Pending Approval",
+  APPROVED: "Approved",
   PARTIAL: "Partial Payment",
   PAID: "Paid",
   OVERDUE: "Overdue",
