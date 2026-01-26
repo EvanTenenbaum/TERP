@@ -117,6 +117,19 @@ export const DISCOUNT_LIMITS: Record<string, number> = {
   admin: 100,
 };
 
+// ORD-004: Roles that can approve credit overrides
+export const CREDIT_OVERRIDE_ROLES: string[] = ["admin", "manager", "finance"];
+
+// ORD-004: Shortfall thresholds for tiered authorization
+// Different shortfall amounts require different authority levels
+export const CREDIT_OVERRIDE_THRESHOLDS: Record<string, number> = {
+  rep: 0, // Reps cannot approve any override
+  sales_rep: 0, // Sales reps cannot approve any override
+  manager: 5000, // Managers can approve up to $5,000 shortfall
+  finance: 25000, // Finance can approve up to $25,000
+  admin: Infinity, // Admins can approve any amount
+};
+
 // ============================================================================
 // CLIENT PRICING CONTEXT
 // ============================================================================
@@ -206,7 +219,8 @@ export async function getClientPricingContext(
 
   const userRole = userResult[0]?.role || "user";
   const userMaxDiscount = DISCOUNT_LIMITS[userRole] || 15;
-  const canOverrideCredit = userRole === "admin";
+  // ORD-004: Check if user role can approve credit overrides
+  const canOverrideCredit = CREDIT_OVERRIDE_ROLES.includes(userRole);
 
   // Calculate available credit
   const creditLimit = parseFloat(client.creditLimit?.toString() || "0");
@@ -735,7 +749,50 @@ export async function requestCreditOverride(params: {
 }
 
 /**
+ * ORD-004: Check if a user can approve credit override for a given shortfall
+ */
+export async function canApproveCreditOverride(
+  userId: number,
+  shortfallAmount: number
+): Promise<{ canApprove: boolean; reason?: string; maxShortfall: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get user role
+  const userResult = await db
+    .select({ role: users.role, name: users.name })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  const userRole = userResult[0]?.role || "user";
+
+  // Check if role can approve credit overrides at all
+  if (!CREDIT_OVERRIDE_ROLES.includes(userRole)) {
+    return {
+      canApprove: false,
+      reason: `Role '${userRole}' is not authorized to approve credit overrides. Required roles: ${CREDIT_OVERRIDE_ROLES.join(", ")}`,
+      maxShortfall: 0,
+    };
+  }
+
+  // Check shortfall threshold for this role
+  const maxShortfall = CREDIT_OVERRIDE_THRESHOLDS[userRole] || 0;
+
+  if (shortfallAmount > maxShortfall) {
+    return {
+      canApprove: false,
+      reason: `Shortfall of $${shortfallAmount.toFixed(2)} exceeds your authority limit of $${maxShortfall.toFixed(2)}. Please escalate to a higher authority.`,
+      maxShortfall,
+    };
+  }
+
+  return { canApprove: true, maxShortfall };
+}
+
+/**
  * Approve or reject a credit override request
+ * ORD-004: Enhanced with proper authorization checks
  */
 export async function approveCreditOverride(params: {
   orderId: number;
@@ -760,6 +817,20 @@ export async function approveCreditOverride(params: {
 
   if (!requestResult[0]) {
     throw new Error(`No pending credit override request for order ${params.orderId}`);
+  }
+
+  const overrideRequest = requestResult[0];
+
+  // ORD-004: Check if user has authority to approve this override
+  if (params.approved) {
+    const shortfall = parseFloat(overrideRequest.shortfall?.toString() || "0");
+    const authCheck = await canApproveCreditOverride(params.userId, shortfall);
+
+    if (!authCheck.canApprove) {
+      throw new Error(
+        `Credit override authorization failed: ${authCheck.reason}`
+      );
+    }
   }
 
   // Update request status
