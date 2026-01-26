@@ -2,6 +2,66 @@ import pino from "pino";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
+// ST-050: Silent error handling utilities
+// These utilities provide consistent error handling with logging for catch blocks
+// that might otherwise silently fail
+
+/**
+ * Safely parse JSON with optional logging
+ * ST-050: Replaces silent JSON.parse() catches with logged fallbacks
+ * @param input - String to parse as JSON
+ * @param fallback - Value to return if parsing fails
+ * @param context - Context for logging (if not provided, parsing is silent)
+ */
+export function safeJsonParse<T>(
+  input: string | null | undefined,
+  fallback: T,
+  context?: { operation: string; identifier?: string | number }
+): T {
+  if (input === null || input === undefined || input === "") {
+    return fallback;
+  }
+  try {
+    return JSON.parse(input) as T;
+  } catch (err) {
+    if (context) {
+      logger.warn(
+        {
+          operation: context.operation,
+          identifier: context.identifier,
+          error: err instanceof Error ? err.message : String(err),
+          inputPreview: input.slice(0, 100),
+        },
+        `JSON parse failed in ${context.operation}`
+      );
+    }
+    return fallback;
+  }
+}
+
+/**
+ * Log a caught error that would otherwise be silent
+ * ST-050: For catch blocks that intentionally swallow errors but should log them
+ * @param operation - Name of the operation that failed
+ * @param error - The caught error
+ * @param context - Additional context
+ */
+export function logSilentCatch(
+  operation: string,
+  error: unknown,
+  context?: Record<string, unknown>
+): void {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  logger.debug(
+    {
+      operation,
+      error: errorMessage,
+      ...context,
+    },
+    `Caught error in ${operation} (handled silently)`
+  );
+}
+
 export const logger = pino({
   level: isDevelopment ? "debug" : "info",
   transport: isDevelopment
