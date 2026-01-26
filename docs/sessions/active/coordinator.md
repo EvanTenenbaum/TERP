@@ -111,6 +111,33 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 ---
 
+## QA Protocol for PR Reviews
+
+When reviewing team PRs before merge, apply **Third-Party QA Protocol v3.0**:
+
+**Five Mandatory Lenses:**
+
+1. **Static Pattern Scan** - CI-blocked patterns, incomplete code, TERP violations
+2. **Execution Path Tracing** - All entry points, branch coverage, error paths
+3. **Data Flow Analysis** - Input→output tracing, state mutations, invariants
+4. **Adversarial Scenarios** - Input fuzzing, state attacks, business logic attacks
+5. **Integration & Blast Radius** - Contract verification, side effects, downstream impact
+
+**Autonomy Mode Selection:**
+
+- 🟢 SAFE: Team D (code quality) - isolated, easily testable
+- 🟡 STRICT: Teams C, E, F - business logic, state transitions
+- 🔴 RED: Teams A, B - auth, security, accounting, financial
+
+**Minimum Requirements:**
+
+- All 5 lenses completed
+- 20+ adversarial scenarios per PR
+- All execution paths traced
+- All error handling verified
+
+---
+
 ## Conflict Resolution Log
 
 _(No conflicts yet)_
