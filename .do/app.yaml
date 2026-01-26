@@ -14,27 +14,37 @@ services:
       branch: main
       deploy_on_push: true
     dockerfile_path: Dockerfile
-    instance_count: 1
-    instance_size_slug: basic-xs
-    
+
+    # Instance configuration (synced with production - Jan 26, 2026)
+    # Using apps-d-1vcpu-2gb with autoscaling (2-4 instances)
+    instance_size_slug: apps-d-1vcpu-2gb
+
+    # Autoscaling configuration
+    autoscaling:
+      min_instance_count: 2
+      max_instance_count: 4
+      metrics:
+        cpu:
+          percent: 70
+
     # Health check (optimized for deployment speed - 2024-12-19)
     # Uses /health/live for liveness (no DB dependency, prevents premature restarts)
     # Server startup takes ~55s including migrations, so 60s delay is safe with margin
     health_check:
       http_path: /health/live
-      initial_delay_seconds: 60   # Reduced from 180s - server ready in ~55s
-      period_seconds: 15          # Reduced probe frequency to minimize noise
+      initial_delay_seconds: 60 # Reduced from 180s - server ready in ~55s
+      period_seconds: 15 # Reduced probe frequency to minimize noise
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 5
-    
+
     # HTTP configuration
     http_port: 3000
-    
+
     # Routes
     routes:
       - path: /
-    
+
     # Environment variables (sensitive values should be set in DO control panel)
     envs:
       - key: NODE_ENV
@@ -47,64 +57,63 @@ services:
         value: "true"
       - key: UPLOAD_DIR
         value: /tmp/uploads
-      
+
       # Memory limit for the application (in bytes)
-      # basic-xs (512MB): 384000000 (384MB)
-      # basic-s (1GB): 768000000 (768MB)
-      # basic-m (2GB): 1536000000 (1.5GB)
+      # apps-d-1vcpu-2gb (2GB): 1536000000 (1.5GB)
+      # This value is used by memoryOptimizer.ts for accurate health reporting
       - key: NODE_MEMORY_LIMIT
-        value: "384000000"
-      
+        value: "1536000000"
+
       # Vite frontend environment variables (required for build)
       - key: VITE_APP_TITLE
         value: TERP
         scope: RUN_AND_BUILD_TIME
-      
+
       - key: VITE_APP_LOGO
         value: /logo.png
         scope: RUN_AND_BUILD_TIME
-      
+
       - key: VITE_APP_ID
         value: terp-app
         scope: RUN_AND_BUILD_TIME
-      
+
       # Clerk authentication (using test keys - update to production keys in DO control panel)
       - key: VITE_CLERK_PUBLISHABLE_KEY
         value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
         scope: RUN_AND_BUILD_TIME
-      
+
       - key: CLERK_SECRET_KEY
         value: sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD
         scope: RUN_TIME
-      
+
       # Database connection (automatically injected from linked database)
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
         value: ${terp-mysql-db.DATABASE_URL}
-      
+
       # Auth secrets (JWT_SECRET is required, NEXTAUTH_SECRET kept for backward compatibility)
       - key: JWT_SECRET
         scope: RUN_AND_BUILD_TIME
         type: SECRET
-      
+
       - key: NEXTAUTH_SECRET
         scope: RUN_TIME
         type: SECRET
-      
+
       - key: NEXTAUTH_URL
         scope: RUN_TIME
         type: SECRET
-      
+
       # Sentry (optional - set in DO control panel if using)
       - key: SENTRY_DSN
         scope: RUN_TIME
         type: SECRET
-      
+
       # Cron secret (set in DO control panel)
       - key: CRON_SECRET
         scope: RUN_TIME
         type: SECRET
-      
+
       # Papertrail endpoint (set in DO control panel)
       # Format: logs.papertrailapp.com:XXXXX
       - key: PAPERTRAIL_ENDPOINT
@@ -121,7 +130,7 @@ jobs:
       branch: main
     dockerfile_path: Dockerfile
     instance_count: 1
-    instance_size_slug: basic-xs
+    instance_size_slug: apps-d-1vcpu-0.5gb
     run_command: |
       pnpm install &&
       pnpm tsx scripts/fix-temporal-coherence.ts &&
@@ -137,7 +146,7 @@ jobs:
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${terp-mysql-db.DATABASE_URL}
-      
+
       # VITE vars needed for Dockerfile build (even though job doesn't use frontend)
       - key: VITE_APP_TITLE
         value: TERP
