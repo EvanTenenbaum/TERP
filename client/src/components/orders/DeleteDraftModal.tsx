@@ -1,9 +1,16 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import { Trash2, AlertTriangle } from "lucide-react";
 
 interface DeleteDraftModalProps {
   orderId: number;
@@ -13,12 +20,12 @@ interface DeleteDraftModalProps {
   onSuccess: () => void;
 }
 
-export function DeleteDraftModal({ 
-  orderId, 
+export function DeleteDraftModal({
+  orderId,
   orderNumber,
-  open, 
-  onClose, 
-  onSuccess 
+  open,
+  onClose,
+  onSuccess,
 }: DeleteDraftModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -32,12 +39,14 @@ export function DeleteDraftModal({
       });
 
       toast.success(`Draft order ${orderNumber} deleted successfully`);
-      
+
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error('Failed to delete draft order', {
-        description: error.message || 'Please try again',
+    } catch (error: unknown) {
+      const description =
+        error instanceof Error ? error.message : "Please try again";
+      toast.error("Failed to delete draft order", {
+        description,
       });
     } finally {
       setIsDeleting(false);
@@ -53,7 +62,8 @@ export function DeleteDraftModal({
             Delete Draft Order
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this draft order? This action cannot be undone.
+            Are you sure you want to delete this draft order? This action cannot
+            be undone.
           </DialogDescription>
         </DialogHeader>
 
@@ -82,8 +92,12 @@ export function DeleteDraftModal({
           <Button variant="outline" onClick={onClose} disabled={isDeleting}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? 'Deleting...' : 'Delete Draft'}
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete Draft"}
           </Button>
         </DialogFooter>
       </DialogContent>
