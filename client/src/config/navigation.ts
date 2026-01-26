@@ -35,6 +35,8 @@ import {
   Inbox, // TERP-0005: Inbox navigation
   Download, // TERP-0005: Direct Intake
   MapPin, // TERP-0005: Locations
+  Bell, // NAV-017: Alerts
+  TrendingDown, // NAV-018: Shrinkage Report
   type LucideIcon,
 } from "lucide-react";
 
@@ -211,6 +213,14 @@ export const navigationItems: NavigationItem[] = [
     group: "inventory",
     ariaLabel: "Direct intake of inventory items",
   },
+  // NAV-017: Alerts for stock and system notifications
+  {
+    name: "Alerts",
+    path: "/alerts",
+    icon: Bell,
+    group: "inventory",
+    ariaLabel: "Stock alerts and system notifications",
+  },
 
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
   {
@@ -230,6 +240,14 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Issue and manage customer credits",
   },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
+  // NAV-018: Shrinkage Report for inventory loss tracking
+  {
+    name: "Shrinkage Report",
+    path: "/reports/shrinkage",
+    icon: TrendingDown,
+    group: "finance",
+    ariaLabel: "Track and analyze inventory shrinkage",
+  },
   // NAV-012: Pricing Rules for managing pricing strategies
   // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules to match App.tsx route
   {
