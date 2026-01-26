@@ -923,23 +923,27 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 > **Spec:** `docs/specs/NAV_ACCESSIBILITY_ENHANCEMENT_SPEC.md`
 > **Effort:** ~1.5 hours (2 file changes, configuration only)
 
-| Task    | Description                                    | Priority | Status | Estimate | Module             |
-| ------- | ---------------------------------------------- | -------- | ------ | -------- | ------------------ |
-| NAV-006 | Add Leaderboard to Sales nav (after Dashboard) | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-007 | Add Client Needs to Sales nav                  | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-008 | Add Matchmaking to Sales nav                   | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-009 | Add Quotes to Sales nav                        | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-010 | Add Returns to Sales nav                       | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-011 | Add Vendor Supply to Inventory nav             | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-012 | Add Pricing Rules to Finance nav               | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-013 | Add Workflow Queue to Admin nav                | MEDIUM   | ready  | 5 min    | navigation.ts      |
-| NAV-014 | Add all 8 routes to Command Palette            | MEDIUM   | ready  | 15 min   | CommandPalette.tsx |
-| NAV-015 | Verify TypeScript compilation                  | LOW      | ready  | 5 min    | -                  |
-| NAV-016 | Manual QA verification of all new nav items    | LOW      | ready  | 15 min   | -                  |
+| Task    | Description                                    | Priority | Status       | Estimate | Module             |
+| ------- | ---------------------------------------------- | -------- | ------------ | -------- | ------------------ |
+| NAV-006 | Add Leaderboard to Sales nav (after Dashboard) | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-007 | Add Client Needs to Sales nav                  | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-008 | Add Matchmaking to Sales nav                   | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-009 | Add Quotes to Sales nav                        | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-010 | Add Returns to Sales nav                       | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-011 | Add Vendor Supply to Inventory nav             | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-012 | Add Pricing Rules to Finance nav               | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-013 | Add Workflow Queue to Admin nav                | MEDIUM   | **complete** | 5 min    | navigation.ts      |
+| NAV-014 | Add all 8 routes to Command Palette            | MEDIUM   | **complete** | 15 min   | CommandPalette.tsx |
+| NAV-015 | Verify TypeScript compilation                  | LOW      | **complete** | 5 min    | -                  |
+| NAV-016 | Manual QA verification of all new nav items    | LOW      | **complete** | 15 min   | -                  |
+
+> **Completed:** 2026-01-21 in commit `88a2dc0` - All navigation items added in single commit.
 
 #### NAV-006: Add Leaderboard to Sales Navigation
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `88a2dc0`
 **Priority:** MEDIUM
 **Estimate:** 5 min
 **Module:** `client/src/config/navigation.ts`
@@ -978,7 +982,9 @@ Each task adds one navigation item to `navigation.ts`:
 
 #### NAV-014: Add Routes to Command Palette
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `88a2dc0`
 **Priority:** MEDIUM
 **Estimate:** 15 min
 **Module:** `client/src/components/CommandPalette.tsx`
@@ -1019,13 +1025,15 @@ Add 8 new navigation commands to the Navigation group in CommandPalette.tsx, usi
 
 #### P1 - High Priority (Data Seeding)
 
-| Task     | Description                               | Priority | Status      | Estimate | Prompt                     |
-| -------- | ----------------------------------------- | -------- | ----------- | -------- | -------------------------- |
-| DATA-012 | Seed work surface feature flags (17+)     | HIGH     | NOT STARTED | 4h       | -                          |
-| DATA-013 | Seed gamification module defaults         | HIGH     | NOT STARTED | 4-8h     | -                          |
-| DATA-014 | Seed scheduling module defaults           | HIGH     | NOT STARTED | 4h       | -                          |
-| DATA-015 | Seed storage sites and zones              | HIGH     | NOT STARTED | 2-4h     | -                          |
-| DATA-021 | Seed mock product images for live catalog | HIGH     | NOT STARTED | 6h       | `docs/prompts/DATA-021.md` |
+| Task     | Description                               | Priority | Status       | Estimate | Prompt                     |
+| -------- | ----------------------------------------- | -------- | ------------ | -------- | -------------------------- |
+| DATA-012 | Seed work surface feature flags (17+)     | HIGH     | **complete** | 4h       | -                          |
+| DATA-013 | Seed gamification module defaults         | HIGH     | **complete** | 4-8h     | -                          |
+| DATA-014 | Seed scheduling module defaults           | HIGH     | **complete** | 4h       | -                          |
+| DATA-015 | Seed storage sites and zones              | HIGH     | **complete** | 2-4h     | -                          |
+| DATA-021 | Seed mock product images for live catalog | HIGH     | **complete** | 6h       | `docs/prompts/DATA-021.md` |
+
+> **Completed:** 2026-01-21 - All DATA seeding tasks completed in commits `e8f2bc4`, `b8ec60d`
 
 ##### DATA-021: Seed Mock Product Images for Live Catalog Testing
 
@@ -1113,12 +1121,12 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 
 #### P0 - Critical (Work Surface Ship Blockers)
 
-| Task     | Description                                     | Priority | Status      | Estimate | Module                             |
-| -------- | ----------------------------------------------- | -------- | ----------- | -------- | ---------------------------------- |
-| WSQA-001 | Fix InvoicesWorkSurface Payment Recording Stub  | CRITICAL | NOT STARTED | 4h       | InvoicesWorkSurface.tsx:717-724    |
-| WSQA-002 | Implement Flexible Lot Selection                | CRITICAL | NOT STARTED | 8h       | InventoryWorkSurface.tsx           |
-| WSQA-003 | Add RETURNED Order Status with Processing Paths | CRITICAL | NOT STARTED | 8h       | schema.ts, ordersDb.ts:1564        |
-| ACC-001  | Fix Silent GL Posting Failures                  | CRITICAL | NOT STARTED | 8h       | accountingHooks.ts:173,224,274,323 |
+| Task     | Description                                     | Priority | Status       | Estimate | Module                             |
+| -------- | ----------------------------------------------- | -------- | ------------ | -------- | ---------------------------------- |
+| WSQA-001 | Fix InvoicesWorkSurface Payment Recording Stub  | CRITICAL | **COMPLETE** | 4h       | InvoicesWorkSurface.tsx:717-724    |
+| WSQA-002 | Implement Flexible Lot Selection                | CRITICAL | **COMPLETE** | 8h       | InventoryWorkSurface.tsx           |
+| WSQA-003 | Add RETURNED Order Status with Processing Paths | CRITICAL | **COMPLETE** | 8h       | schema.ts, ordersDb.ts:1564        |
+| ACC-001  | Fix Silent GL Posting Failures                  | CRITICAL | **COMPLETE** | 8h       | accountingHooks.ts:173,224,274,323 |
 
 ##### WSQA-001: Fix InvoicesWorkSurface Payment Recording Stub
 
@@ -1200,9 +1208,12 @@ Order status machine is incomplete - missing RETURNED status with required proce
 
 ##### ACC-001: Fix Silent GL Posting Failures
 
-**Status:** NOT STARTED
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `9da49be`, `ae3ef50`, `95acdd1`
 **Priority:** CRITICAL (P0)
 **Estimate:** 8h
+**Actual Time:** 4h
 **Module:** `server/accountingHooks.ts`
 **Lines:** 173, 224, 274, 323
 
@@ -2064,7 +2075,8 @@ App.tsx routes to legacy pages. WorkSurfaceGate component exists (line 301-318 i
 
 #### DEPLOY-002: Add Gate Scripts to package.json
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-20
 **Priority:** HIGH
 **Estimate:** 1h
 **Module:** `package.json`, `scripts/qa/`
@@ -2091,7 +2103,8 @@ Gate scripts exist in `scripts/qa/` but are not registered as npm commands.
 
 #### DEPLOY-003: Seed Missing RBAC Permissions
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-20
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `server/services/rbacDefinitions.ts`, seed scripts
@@ -2118,7 +2131,8 @@ USER_FLOW_MATRIX.csv identifies 40+ accounting permissions not present in RBAC s
 
 #### DEPLOY-004: Capture Baseline Metrics
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-20
 **Priority:** MEDIUM
 **Estimate:** 2h
 **Module:** Observability stack
@@ -2144,7 +2158,8 @@ Need baseline metrics before rollout to detect regressions.
 
 #### DEPLOY-005: Execute Stage 0 (Internal QA)
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-20
 **Priority:** HIGH
 **Estimate:** 8h
 **Module:** All Work Surfaces
@@ -2171,7 +2186,8 @@ Work Surfaces need internal validation before any user exposure.
 
 #### DEPLOY-006: Execute Stage 1 (10% Rollout)
 
-**Status:** ready
+**Status:** skipped
+**Note:** Skipped per Accelerated AI Validation Protocol - direct to 100% with feature flag safety net
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** Feature flag configuration
@@ -2198,7 +2214,8 @@ First external user exposure requires careful monitoring.
 
 #### DEPLOY-007: Execute Stage 2 (50% Rollout)
 
-**Status:** ready
+**Status:** skipped
+**Note:** Skipped per Accelerated AI Validation Protocol - direct to 100% with feature flag safety net
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** Feature flag configuration
@@ -2222,7 +2239,8 @@ First external user exposure requires careful monitoring.
 
 #### DEPLOY-008: Execute Stage 3 (100% Rollout)
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-20
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** Feature flag configuration
@@ -2254,9 +2272,12 @@ These P0 blockers were identified during comprehensive QA testing of the 9 Work 
 
 ### WSQA-001: Wire Payment Recording Mutation
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `3da9220`, `95acdd1`
 **Priority:** HIGH
 **Estimate:** 4h
+**Actual Time:** 2h
 **Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
 **Dependencies:** None
 **Prompt:** `docs/prompts/WSQA-001.md`
@@ -2283,9 +2304,12 @@ The InvoicesWorkSurface payment handler (lines 717-724) is a stub that shows suc
 
 ### WSQA-002: Implement Flexible Lot Selection
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `0d85592`, `95acdd1`
 **Priority:** HIGH
 **Estimate:** 2d
+**Actual Time:** 1d
 **Module:** `server/db/schema.ts`, `client/src/components/order/BatchSelectionDialog.tsx`
 **Dependencies:** None
 **Prompt:** `docs/prompts/WSQA-002.md`
@@ -2315,9 +2339,12 @@ Users need to select specific batches/lots when fulfilling orders based on custo
 
 ### WSQA-003: Add RETURNED Order Status with Restock/Vendor-Return Paths
 
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `6b23996`, `95acdd1`
 **Priority:** HIGH
 **Estimate:** 2d
+**Actual Time:** 1d
 **Module:** `server/db/schema.ts`, `server/services/orderStateMachine.ts`, `server/services/returnProcessing.ts`
 **Dependencies:** WSQA-002 (allocations table for restock)
 **Prompt:** `docs/prompts/WSQA-003.md`
@@ -2422,9 +2449,12 @@ Contact the project maintainer or open an issue in the repository.
 
 **Type:** Bug
 **Source:** PR #289 - Dashboard widgets comprehensive fixes
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `680e270`
 **Priority:** HIGH
 **Estimate:** 8-16h
+**Actual Time:** 8h
 **Module:** `server/routers/dashboard.ts`, `server/dashboardHelpers.ts`, `server/routers/analytics.ts`
 **Dependencies:** None
 
@@ -2968,9 +2998,12 @@ Accounting users lack UI access to 43/52 accounting flows, forcing API-only usag
 
 **Type:** Security
 **Source:** PR #284 - RedHat QA audit
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `72f13f5`, `f7894cf`, `78510bf`
 **Priority:** HIGH
 **Estimate:** 6-10h
+**Actual Time:** 6h
 **Module:** `server/routers/rbac-roles.ts`, `server/_core/simpleAuth.ts`, `server/routers/calendar.ts`, `server/routers/productIntake.ts`, `server/routers/debug.ts`
 **Dependencies:** None
 
@@ -3063,9 +3096,12 @@ Logout clears cookies but does not invalidate tokens; auth endpoints lack rate l
 
 **Type:** Hardening
 **Source:** PR #284 - RedHat QA audit
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `680e270`
 **Priority:** HIGH
 **Estimate:** 6-10h
+**Actual Time:** 4h
 **Module:** `server/creditsDb.ts`, `server/_core/fiscalPeriod.ts`, `server/routers/refunds.ts`
 **Dependencies:** None
 
@@ -3110,9 +3146,12 @@ Financial operations allow race conditions and invalid postings to closed period
 
 **Type:** Hardening
 **Source:** PR #284 - RedHat QA audit
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `680e270`
 **Priority:** HIGH
 **Estimate:** 12-20h
+**Actual Time:** 8h
 **Module:** `server/ordersDb.ts`, `server/services/cogsChangeIntegrationService.ts`, `server/services/marginCalculationService.ts`, `server/routers/payments.ts`
 **Dependencies:** None
 
@@ -3205,9 +3244,12 @@ Several routers are still exposed via `publicProcedure`, allowing unauthenticate
 
 **Type:** Hardening
 **Source:** PR #284 - RedHat QA audit
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-21
+**Key Commits:** `4c544d3`
 **Priority:** MEDIUM
 **Estimate:** 8-16h
+**Actual Time:** 6h
 **Module:** Multiple files
 **Dependencies:** None
 
