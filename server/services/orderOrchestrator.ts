@@ -15,7 +15,10 @@ import { getDb } from "../db";
 import { orders, invoices, clients } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { withRetryableTransaction } from "../_core/dbTransaction";
+import {
+  withRetryableTransaction,
+  type DbTransaction,
+} from "../_core/dbTransaction";
 import { logger } from "../_core/logger";
 import {
   canTransition,
@@ -68,7 +71,7 @@ export async function transitionOrderStatus(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const { orderId, toStatus, userId, notes } = input;
+  const { orderId, toStatus, userId, notes: _notes } = input;
 
   // 1. Get current order state
   const order = await db.query.orders.findFirst({
@@ -117,7 +120,7 @@ export async function transitionOrderStatus(
   }
 
   // 4. Execute the transition with side effects in a transaction
-  const result = await withRetryableTransaction(async (tx) => {
+  const result = await withRetryableTransaction(async tx => {
     const warnings: string[] = [];
     let invoiceCreated = false;
     let invoiceId: number | undefined;
@@ -152,14 +155,17 @@ export async function transitionOrderStatus(
     }
 
     // Log the transition
-    logger.info({
-      orderId,
-      previousStatus,
-      newStatus: toStatus,
-      userId,
-      invoiceCreated,
-      invoiceId,
-    }, `Order ${orderId} transitioned from ${previousStatus} to ${toStatus}`);
+    logger.info(
+      {
+        orderId,
+        previousStatus,
+        newStatus: toStatus,
+        userId,
+        invoiceCreated,
+        invoiceId,
+      },
+      `Order ${orderId} transitioned from ${previousStatus} to ${toStatus}`
+    );
 
     return {
       success: true,
@@ -204,21 +210,31 @@ interface CreateInvoiceResult {
  * Invoices should only be created when an order is CONFIRMED, not before.
  */
 async function createInvoiceForOrderInTx(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
+  tx: DbTransaction,
   input: CreateInvoiceInput
 ): Promise<CreateInvoiceResult> {
-  const { orderId, orderNumber, clientId, total, subtotal, items, clientTotalOwed, userId } = input;
+  const {
+    orderId,
+    orderNumber,
+    clientId,
+    total,
+    subtotal,
+    items: _items,
+    clientTotalOwed,
+    userId,
+  } = input;
 
   try {
     // Check if invoice already exists for this order using referenceId pattern
     const existingInvoice = await tx
       .select({ id: invoices.id, invoiceNumber: invoices.invoiceNumber })
       .from(invoices)
-      .where(and(
-        eq(invoices.referenceType, "ORDER"),
-        eq(invoices.referenceId, orderId)
-      ))
+      .where(
+        and(
+          eq(invoices.referenceType, "ORDER"),
+          eq(invoices.referenceId, orderId)
+        )
+      )
       .limit(1);
 
     if (existingInvoice.length > 0) {
@@ -272,15 +288,18 @@ async function createInvoiceForOrderInTx(
       })
       .where(eq(clients.id, clientId));
 
-    logger.info({
-      invoiceId,
-      invoiceNumber,
-      orderId,
-      total: totalAmount,
-      clientId,
-      previousOwed: currentOwed,
-      newTotalOwed,
-    }, `Invoice ${invoiceNumber} created for order ${orderId}`);
+    logger.info(
+      {
+        invoiceId,
+        invoiceNumber,
+        orderId,
+        total: totalAmount,
+        clientId,
+        previousOwed: currentOwed,
+        newTotalOwed,
+      },
+      `Invoice ${invoiceNumber} created for order ${orderId}`
+    );
 
     return {
       success: true,
@@ -288,10 +307,13 @@ async function createInvoiceForOrderInTx(
       invoiceNumber,
     };
   } catch (error) {
-    logger.error({
-      orderId,
-      error: error instanceof Error ? error.message : String(error),
-    }, "Failed to create invoice for order");
+    logger.error(
+      {
+        orderId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Failed to create invoice for order"
+    );
     throw error;
   }
 }
@@ -329,7 +351,7 @@ export async function getAvailableTransitions(
   const { STATUS_LABELS } = await import("./orderStateMachine");
   const nextStatuses = getNextStatuses(currentStatus);
 
-  return nextStatuses.map((status) => ({
+  return nextStatuses.map(status => ({
     status,
     label: STATUS_LABELS[status],
   }));
@@ -370,14 +392,19 @@ export async function canCreateInvoice(orderId: number): Promise<{
   const existingInvoice = await db
     .select({ id: invoices.id })
     .from(invoices)
-    .where(and(
-      eq(invoices.referenceType, "ORDER"),
-      eq(invoices.referenceId, orderId)
-    ))
+    .where(
+      and(
+        eq(invoices.referenceType, "ORDER"),
+        eq(invoices.referenceId, orderId)
+      )
+    )
     .limit(1);
 
   if (existingInvoice.length > 0) {
-    return { canCreate: false, reason: "Invoice already exists for this order" };
+    return {
+      canCreate: false,
+      reason: "Invoice already exists for this order",
+    };
   }
 
   return { canCreate: true };
@@ -438,10 +465,12 @@ export async function getOrderLifecycleStatus(orderId: number): Promise<{
       status: invoices.status,
     })
     .from(invoices)
-    .where(and(
-      eq(invoices.referenceType, "ORDER"),
-      eq(invoices.referenceId, orderId)
-    ))
+    .where(
+      and(
+        eq(invoices.referenceType, "ORDER"),
+        eq(invoices.referenceId, orderId)
+      )
+    )
     .limit(1);
 
   return {
@@ -451,14 +480,15 @@ export async function getOrderLifecycleStatus(orderId: number): Promise<{
       isTerminal: isTerminalStatus(status),
       availableTransitions: getNextStatuses(status),
     },
-    invoice: invoice.length > 0
-      ? {
-          exists: true,
-          id: invoice[0].id,
-          number: invoice[0].invoiceNumber || undefined,
-          status: invoice[0].status || undefined,
-        }
-      : { exists: false },
+    invoice:
+      invoice.length > 0
+        ? {
+            exists: true,
+            id: invoice[0].id,
+            number: invoice[0].invoiceNumber || undefined,
+            status: invoice[0].status || undefined,
+          }
+        : { exists: false },
     client: order.client
       ? {
           id: order.client.id,

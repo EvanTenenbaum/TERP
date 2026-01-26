@@ -63,6 +63,12 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 // Default token TTL if not provided (24 hours)
 const DEFAULT_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
+// QA-003: Maximum allowed token length to prevent memory DoS
+const MAX_TOKEN_LENGTH = 2000;
+
+// QA-005: Maximum token expiry (30 days) to prevent memory leaks
+const MAX_TOKEN_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
+
 // ============================================================================
 // CORE FUNCTIONS
 // ============================================================================
@@ -80,10 +86,24 @@ export function invalidateToken(input: InvalidateTokenInput): void {
     invalidatedBy,
   } = input;
 
+  // QA-003/QA-004: Validate tokenId to prevent memory DoS and empty tokens
+  if (!tokenId || tokenId.length > MAX_TOKEN_LENGTH) {
+    logger.warn(
+      { tokenIdLength: tokenId?.length, reason },
+      "Invalid token ID - rejected"
+    );
+    return;
+  }
+
+  // QA-005: Cap expiry to prevent far-future tokens from leaking memory
+  const maxExpiry = new Date(Date.now() + MAX_TOKEN_EXPIRY_MS);
+  const cappedExpiresAt =
+    tokenExpiresAt > maxExpiry ? maxExpiry : tokenExpiresAt;
+
   const entry: InvalidatedToken = {
     tokenId,
     invalidatedAt: new Date(),
-    expiresAt: tokenExpiresAt,
+    expiresAt: cappedExpiresAt,
     reason,
     invalidatedBy,
   };
@@ -145,10 +165,7 @@ export function invalidateUserTokens(
 
   invalidatedTokens.set(markerKey, entry);
 
-  logger.info(
-    { userId, reason },
-    "All tokens invalidated for user"
-  );
+  logger.info({ userId, reason }, "All tokens invalidated for user");
 }
 
 /**
@@ -232,7 +249,9 @@ export function invalidateImpersonationToken(
  * @param impersonationToken - The impersonation token to check
  * @returns true if the token is invalidated
  */
-export function isImpersonationTokenInvalidated(impersonationToken: string): boolean {
+export function isImpersonationTokenInvalidated(
+  impersonationToken: string
+): boolean {
   return isTokenInvalidated(`imp:${impersonationToken}`);
 }
 

@@ -14,7 +14,10 @@
 import type { Request } from "express";
 import type { User } from "../../drizzle/schema";
 import { simpleAuth } from "./simpleAuth";
-import { isTokenInvalidated, isUserTokensInvalidated } from "./tokenInvalidation";
+import {
+  isTokenInvalidated,
+  isUserTokensInvalidated,
+} from "./tokenInvalidation";
 
 /**
  * Session payload containing user identification
@@ -172,7 +175,8 @@ class SimpleAuthProvider implements AuthProvider {
 
       // TERP-0014: Check if user's tokens have been bulk-invalidated
       // This happens on password change, admin revocation, etc.
-      if (payload.iat) {
+      // QA-002: Use explicit undefined check to avoid bypassing on iat=0
+      if (payload.iat !== undefined) {
         const tokenIssuedAt = new Date(payload.iat * 1000);
         if (isUserTokensInvalidated(user.id, tokenIssuedAt)) {
           return {
