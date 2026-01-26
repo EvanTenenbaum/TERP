@@ -22,6 +22,8 @@ import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { TRPCError } from "@trpc/server";
 import * as creditsDb from "../creditsDb";
+import { reverseGLEntries, GLPostingError } from "../accountingHooks";
+import { invoices } from "../../drizzle/schema";
 
 // Extended return reason enum for API input (includes values that map to database values)
 const returnReasonInputEnum = z.enum([
@@ -392,12 +394,124 @@ export const returnsRouter = router({
           }
         }
 
+        // ACC-003: Calculate return value from order items
+        // Parse order items to get unit prices
+        let orderItems: Array<{
+          batchId: number;
+          unitPrice: number;
+          quantity: number;
+        }> = [];
+        try {
+          orderItems =
+            typeof order.items === "string"
+              ? JSON.parse(order.items)
+              : (order.items as typeof orderItems) || [];
+        } catch {
+          logger.warn({
+            msg: "[Returns] Could not parse order items",
+            orderId: input.orderId,
+          });
+        }
+
+        // Map batch IDs to unit prices from original order
+        const batchPriceMap = new Map<number, number>();
+        for (const item of orderItems) {
+          batchPriceMap.set(item.batchId, item.unitPrice || 0);
+        }
+
+        // Calculate return value using original order prices
+        const returnValue = input.items.reduce((total, item) => {
+          const unitPrice = batchPriceMap.get(item.batchId) || 0;
+          return total + parseFloat(item.quantity) * unitPrice;
+        }, 0);
+
+        // ACC-003: Find the invoice associated with this order
+        const [orderInvoice] = await tx
+          .select()
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.referenceType, "ORDER"),
+              eq(invoices.referenceId, input.orderId)
+            )
+          )
+          .limit(1);
+
+        let creditId: number | undefined;
+
+        // ACC-003: Create credit memo if there was an invoice and return has value
+        if (orderInvoice && returnValue > 0) {
+          const creditNumber = await creditsDb.generateCreditNumber("CR-RTN");
+          const creditAmount = returnValue.toFixed(2);
+          const credit = await creditsDb.createCredit({
+            creditNumber,
+            clientId: order.clientId,
+            creditAmount,
+            amountRemaining: creditAmount, // Will be set to creditAmount by createCredit
+            creditReason: "RETURN",
+            transactionId: orderInvoice.id,
+            notes: `Return for order #${order.orderNumber || order.id}: ${input.notes || input.reason}`,
+            createdBy: userId,
+          });
+          creditId = credit.id;
+
+          logger.info({
+            msg: "[Returns] Credit memo created for return",
+            creditId,
+            creditNumber,
+            amount: returnValue,
+            returnId: returnRecord.insertId,
+          });
+
+          // ACC-003: Create reversing GL entries
+          try {
+            await reverseGLEntries(
+              "INVOICE",
+              orderInvoice.id,
+              `Return: ${input.reason}`,
+              userId
+            );
+            logger.info({
+              msg: "[Returns] GL entries reversed for return",
+              invoiceId: orderInvoice.id,
+              returnId: returnRecord.insertId,
+            });
+          } catch (error) {
+            if (
+              error instanceof GLPostingError &&
+              error.code === "NO_ENTRIES_TO_REVERSE"
+            ) {
+              logger.warn({
+                msg: "[Returns] No GL entries to reverse (may be draft invoice)",
+                invoiceId: orderInvoice.id,
+              });
+            } else {
+              throw error;
+            }
+          }
+
+          // ACC-003: Update client totalOwed (reduce AR balance)
+          await tx.execute(sql`
+            UPDATE clients
+            SET totalOwed = GREATEST(0, CAST(totalOwed AS DECIMAL(15,2)) - ${returnValue})
+            WHERE id = ${order.clientId}
+          `);
+
+          logger.info({
+            msg: "[Returns] Client AR balance reduced for return",
+            clientId: order.clientId,
+            amountReduced: returnValue,
+          });
+        }
+
         logger.info({
           msg: "[Returns] Return created",
           returnId: returnRecord.insertId,
+          creditId,
+          glEntriesReversed: !!orderInvoice,
         });
 
-        return { id: returnRecord.insertId };
+        return { id: returnRecord.insertId, creditId };
       });
 
       return result;
