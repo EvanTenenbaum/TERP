@@ -7,7 +7,15 @@
 
 import { eq, and, type SQL } from "drizzle-orm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
-import type { MySqlTable } from "drizzle-orm/mysql-core";
+import type { MySqlTable, AnyMySqlColumn } from "drizzle-orm/mysql-core";
+
+/**
+ * Type for tables that have an id column
+ * Used for generic database operations that need to access the id column
+ */
+interface TableWithIdColumn {
+  id: AnyMySqlColumn;
+}
 
 /**
  * Generic findOrCreate pattern for database entities
@@ -29,12 +37,12 @@ import type { MySqlTable } from "drizzle-orm/mysql-core";
  */
 export async function findOrCreate<
   TTable extends MySqlTable,
-  TSelect = TTable['$inferSelect']
+  TSelect = TTable["$inferSelect"],
 >(
   tx: MySql2Database<Record<string, unknown>>,
   table: TTable,
   whereConditions: SQL[],
-  createValues: TTable['$inferInsert']
+  createValues: TTable["$inferInsert"]
 ): Promise<TSelect> {
   // Find existing entity
   const whereClause =
@@ -50,8 +58,8 @@ export async function findOrCreate<
   const [created] = await tx.insert(table).values(createValues).$returningId();
 
   // Fetch the created entity using the created id
-  // Cast to any to avoid TypeScript issues with dynamic table access
-  const tableWithId = table as TTable & { id: any };
+  // Cast to TableWithIdColumn to access the id column in a type-safe manner
+  const tableWithId = table as TTable & TableWithIdColumn;
   const [newEntity] = await tx
     .select()
     .from(table)
@@ -72,11 +80,11 @@ export async function findOrCreate<
  */
 export async function batchFindOrCreate<
   TTable extends MySqlTable,
-  TSelect = TTable['$inferSelect']
+  TSelect = TTable["$inferSelect"],
 >(
   tx: MySql2Database<Record<string, unknown>>,
   table: TTable,
-  items: Array<{ whereConditions: SQL[]; createValues: TTable['$inferInsert'] }>
+  items: Array<{ whereConditions: SQL[]; createValues: TTable["$inferInsert"] }>
 ): Promise<TSelect[]> {
   const results: TSelect[] = [];
 
@@ -108,7 +116,7 @@ export async function withTransaction<T>(
   operationName: string
 ): Promise<T> {
   try {
-    return await db.transaction(async (tx) => {
+    return await db.transaction(async tx => {
       return await operation(tx as MySql2Database<Record<string, unknown>>);
     });
   } catch (error) {
