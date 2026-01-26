@@ -25,6 +25,9 @@ export interface PricedInventoryItem {
     ruleName: string;
     adjustment: string;
   }>;
+  // TERP-0007: Batch status for non-sellable inventory indicators
+  // Note: Server returns as 'status', but we use batchStatus for clarity
+  status?: 'AWAITING_INTAKE' | 'LIVE' | 'PHOTOGRAPHY_COMPLETE' | 'ON_HOLD' | 'QUARANTINED' | 'SOLD_OUT' | 'CLOSED';
 }
 
 // ============================================================================

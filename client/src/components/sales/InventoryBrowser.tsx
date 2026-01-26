@@ -12,8 +12,24 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, CheckSquare, Square } from "lucide-react";
+import { Search, Plus, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
+
+// TERP-0007: Non-sellable batch status indicators
+const NON_SELLABLE_STATUSES = ['AWAITING_INTAKE', 'ON_HOLD', 'QUARANTINED'] as const;
+const BATCH_STATUS_CONFIG: Record<string, { label: string; color: string; warning: string }> = {
+  AWAITING_INTAKE: { label: 'Awaiting Intake', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', warning: 'Not yet available for sale' },
+  ON_HOLD: { label: 'On Hold', color: 'bg-orange-100 text-orange-800 border-orange-200', warning: 'Temporarily unavailable' },
+  QUARANTINED: { label: 'Quarantined', color: 'bg-red-100 text-red-800 border-red-200', warning: 'Quality hold - do not sell' },
+  LIVE: { label: 'Live', color: 'bg-green-100 text-green-800 border-green-200', warning: '' },
+  PHOTOGRAPHY_COMPLETE: { label: 'Ready', color: 'bg-blue-100 text-blue-800 border-blue-200', warning: '' },
+  SOLD_OUT: { label: 'Sold Out', color: 'bg-gray-100 text-gray-600 border-gray-200', warning: 'No inventory available' },
+  CLOSED: { label: 'Closed', color: 'bg-gray-200 text-gray-500 border-gray-300', warning: 'Batch closed' },
+};
+
+function isNonSellableStatus(status?: string): boolean {
+  return NON_SELLABLE_STATUSES.includes(status as any);
+}
 
 interface InventoryBrowserProps {
   inventory: any[];
@@ -209,11 +225,28 @@ export function InventoryBrowser({
                                 In Sheet
                               </Badge>
                             )}
+                            {/* TERP-0007: Show batch status indicator for non-sellable items */}
+                            {item.status && isNonSellableStatus(item.status) && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${BATCH_STATUS_CONFIG[item.status]?.color || ''}`}
+                                title={BATCH_STATUS_CONFIG[item.status]?.warning}
+                              >
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                {BATCH_STATUS_CONFIG[item.status]?.label || item.status}
+                              </Badge>
+                            )}
                           </div>
                           {item.strainId && (
                             <StrainFamilyIndicator strainId={item.strainId} />
                           )}
-                          {item.quantity <= 0 && item.strainId && (
+                          {/* TERP-0007: Warning for non-sellable status */}
+                          {item.status && isNonSellableStatus(item.status) && (
+                            <span className="text-xs text-orange-600">
+                              {BATCH_STATUS_CONFIG[item.status]?.warning}
+                            </span>
+                          )}
+                          {item.quantity <= 0 && !isNonSellableStatus(item.status) && (
                             <span className="text-xs text-destructive">Out of stock</span>
                           )}
                         </div>
