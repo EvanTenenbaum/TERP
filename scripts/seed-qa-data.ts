@@ -269,20 +269,23 @@ async function seedQAData(): Promise<void> {
     process.exit(1);
   }
 
-  const connection = await mysql.createConnection(databaseUrl);
-  const db = drizzle(connection, { schema, mode: "default" });
-
-  const registry = loadRegistry();
-
-  const stats = {
-    locations: { created: 0, skipped: 0 },
-    customers: { created: 0, skipped: 0 },
-    suppliers: { created: 0, skipped: 0 },
-    brands: { created: 0, skipped: 0 },
-    products: { created: 0, skipped: 0 },
-  };
+  let connection: Awaited<ReturnType<typeof mysql.createConnection>> | null =
+    null;
 
   try {
+    connection = await mysql.createConnection(databaseUrl);
+    const db = drizzle(connection, { schema, mode: "default" });
+
+    const registry = loadRegistry();
+
+    const stats = {
+      locations: { created: 0, skipped: 0 },
+      customers: { created: 0, skipped: 0 },
+      suppliers: { created: 0, skipped: 0 },
+      brands: { created: 0, skipped: 0 },
+      products: { created: 0, skipped: 0 },
+    };
+
     // ======================================================================
     // SEED LOCATIONS
     // ======================================================================
@@ -601,7 +604,9 @@ async function seedQAData(): Promise<void> {
     );
     process.exit(1);
   } finally {
-    await connection.end();
+    if (connection) {
+      await connection.end();
+    }
   }
 }
 
