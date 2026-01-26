@@ -24,22 +24,29 @@
 -- CLEANUP ORPHANED DATA
 -- ============================================================================
 -- Before adding FK constraints, clean up any orphaned references
+-- NOTE: All cleanup uses soft deletes or safe fallbacks per TERP policy
 
 -- Clean orphaned vendorId in bills (if vendor doesn't exist)
+-- First verify fallback vendor exists, then update orphans
 UPDATE `bills`
-SET `vendorId` = 1  -- Set to default vendor or handle appropriately
+SET `vendorId` = (SELECT `id` FROM `vendors` ORDER BY `id` ASC LIMIT 1)
 WHERE `vendorId` NOT IN (SELECT `id` FROM `vendors`)
-AND `vendorId` IS NOT NULL;
+AND `vendorId` IS NOT NULL
+AND EXISTS (SELECT 1 FROM `vendors` LIMIT 1);
 
 -- Clean orphaned createdBy in bills (if user doesn't exist)
+-- First verify fallback user exists, then update orphans
 UPDATE `bills`
-SET `createdBy` = 1  -- Set to default admin user
+SET `createdBy` = (SELECT `id` FROM `users` ORDER BY `id` ASC LIMIT 1)
 WHERE `createdBy` NOT IN (SELECT `id` FROM `users`)
-AND `createdBy` IS NOT NULL;
+AND `createdBy` IS NOT NULL
+AND EXISTS (SELECT 1 FROM `users` LIMIT 1);
 
--- Delete orphaned billLineItems where bill doesn't exist
-DELETE FROM `billLineItems`
-WHERE `billId` NOT IN (SELECT `id` FROM `bills`);
+-- SOFT DELETE orphaned billLineItems where bill doesn't exist (ST-013 compliance)
+UPDATE `billLineItems`
+SET `deleted_at` = CURRENT_TIMESTAMP
+WHERE `billId` NOT IN (SELECT `id` FROM `bills`)
+AND `deleted_at` IS NULL;
 
 -- Clean orphaned productId in billLineItems (set to NULL if product doesn't exist)
 UPDATE `billLineItems`
