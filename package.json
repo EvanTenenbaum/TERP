@@ -57,6 +57,7 @@
     "seed:rbac": "tsx scripts/seed-rbac.ts",
     "seed:test-accounts": "tsx server/db/seed/testAccounts.ts",
     "seed:qa-accounts": "tsx server/db/seed/qaAccounts.ts",
+    "seed:qa-data": "tsx scripts/seed-qa-data.ts",
     "seed:pricing": "tsx scripts/seed-pricing.ts",
     "seed:comprehensive": "tsx scripts/seed-comprehensive.ts",
     "seed:comprehensive:light": "tsx scripts/seed-comprehensive.ts --light",

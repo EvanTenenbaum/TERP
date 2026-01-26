@@ -358,7 +358,9 @@ export function MultiInvoicePaymentForm({
                     <SelectItem value="WIRE">Wire Transfer</SelectItem>
                     <SelectItem value="ACH">ACH</SelectItem>
                     <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                    <SelectItem value="DEBIT_CARD">Debit Card</SelectItem>
                     <SelectItem value="CRYPTO">Crypto</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
