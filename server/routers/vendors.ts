@@ -11,13 +11,13 @@ import { TRPCError } from "@trpc/server";
 
 /**
  * Vendors Router - FACADE over clients table
- * 
+ *
  * ⚠️ DEPRECATED: This router now acts as a facade over the canonical clients table.
  * All vendor operations are translated to client operations with isSeller=true.
- * 
+ *
  * For new code, use the clients router with clientTypes=['seller'] filter instead.
  * This facade exists for backward compatibility during migration.
- * 
+ *
  * Feature: MF-015 Vendor Payment Terms (and vendor management foundation)
  */
 export const vendorsRouter = router({
@@ -26,10 +26,12 @@ export const vendorsRouter = router({
    * @deprecated Use clients.list with clientTypes=['seller'] instead
    */
   getAll: protectedProcedure.query(async () => {
-    console.warn('[DEPRECATED] vendors.getAll - use clients.list with clientTypes=[\'seller\'] instead');
+    console.warn(
+      "[DEPRECATED] vendors.getAll - use clients.list with clientTypes=['seller'] instead"
+    );
     try {
       const suppliers = await inventoryDb.getAllSuppliers();
-      
+
       // Transform to legacy vendor format for backward compatibility
       const vendorData = suppliers.map(s => ({
         id: s.supplierProfile?.legacyVendorId ?? s.id,
@@ -44,7 +46,7 @@ export const vendorsRouter = router({
         // Include clientId for migration - allows frontend to transition
         _clientId: s.id,
       }));
-      
+
       // BUG-034: Standardized pagination response
       return {
         success: true,
@@ -68,16 +70,18 @@ export const vendorsRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      console.warn('[DEPRECATED] vendors.getById - use clients.getById instead');
+      console.warn(
+        "[DEPRECATED] vendors.getById - use clients.getById instead"
+      );
       try {
         // First try to find by legacy vendor ID
         let supplier = await inventoryDb.getSupplierByLegacyVendorId(input.id);
-        
+
         // If not found, try as client ID
         if (!supplier) {
           supplier = await inventoryDb.getSupplierByClientId(input.id);
         }
-        
+
         // Fall back to deprecated vendor table for truly legacy data
         if (!supplier) {
           const legacyVendor = await inventoryDb.getVendorById(input.id);
@@ -130,10 +134,12 @@ export const vendorsRouter = router({
   search: protectedProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
-      console.warn('[DEPRECATED] vendors.search - use clients.list with search and clientTypes=[\'seller\'] instead');
+      console.warn(
+        "[DEPRECATED] vendors.search - use clients.list with search and clientTypes=['seller'] instead"
+      );
       try {
         const suppliers = await inventoryDb.searchSuppliers(input.query);
-        
+
         // Transform to legacy format
         const vendorData = suppliers.map(s => ({
           id: s.supplierProfile?.legacyVendorId ?? s.id,
@@ -147,7 +153,7 @@ export const vendorsRouter = router({
           updatedAt: s.updatedAt,
           _clientId: s.id,
         }));
-        
+
         return {
           success: true,
           data: vendorData,
@@ -178,7 +184,9 @@ export const vendorsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      console.warn('[DEPRECATED] vendors.create - use clients.create with isSeller=true instead');
+      console.warn(
+        "[DEPRECATED] vendors.create - use clients.create with isSeller=true instead"
+      );
       try {
         // Create supplier using canonical method
         const { clientId } = await inventoryDb.createSupplier({
@@ -240,20 +248,20 @@ export const vendorsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      console.warn('[DEPRECATED] vendors.update - use clients.update instead');
+      console.warn("[DEPRECATED] vendors.update - use clients.update instead");
       try {
         const { id, ...updates } = input;
 
         // First try to find by legacy vendor ID
         let supplier = await inventoryDb.getSupplierByLegacyVendorId(id);
         let clientId = supplier?.id;
-        
+
         // If not found, try as client ID
         if (!supplier) {
           supplier = await inventoryDb.getSupplierByClientId(id);
           clientId = supplier?.id;
         }
-        
+
         // If still not found, fall back to legacy vendor table update
         if (!supplier || !clientId) {
           // Legacy fallback - update vendors table directly
@@ -288,22 +296,31 @@ export const vendorsRouter = router({
         });
 
         // Fetch updated supplier
-        const updatedSupplier = await inventoryDb.getSupplierByClientId(clientId);
+        const updatedSupplier =
+          await inventoryDb.getSupplierByClientId(clientId);
 
         return {
           success: true,
-          data: updatedSupplier ? {
-            id: updatedSupplier.supplierProfile?.legacyVendorId ?? updatedSupplier.id,
-            name: updatedSupplier.name,
-            contactName: updatedSupplier.supplierProfile?.contactName ?? null,
-            contactEmail: updatedSupplier.supplierProfile?.contactEmail ?? null,
-            contactPhone: updatedSupplier.supplierProfile?.contactPhone ?? null,
-            paymentTerms: updatedSupplier.supplierProfile?.paymentTerms ?? null,
-            notes: updatedSupplier.supplierProfile?.supplierNotes ?? null,
-            createdAt: updatedSupplier.createdAt,
-            updatedAt: updatedSupplier.updatedAt,
-            _clientId: updatedSupplier.id,
-          } : null,
+          data: updatedSupplier
+            ? {
+                id:
+                  updatedSupplier.supplierProfile?.legacyVendorId ??
+                  updatedSupplier.id,
+                name: updatedSupplier.name,
+                contactName:
+                  updatedSupplier.supplierProfile?.contactName ?? null,
+                contactEmail:
+                  updatedSupplier.supplierProfile?.contactEmail ?? null,
+                contactPhone:
+                  updatedSupplier.supplierProfile?.contactPhone ?? null,
+                paymentTerms:
+                  updatedSupplier.supplierProfile?.paymentTerms ?? null,
+                notes: updatedSupplier.supplierProfile?.supplierNotes ?? null,
+                createdAt: updatedSupplier.createdAt,
+                updatedAt: updatedSupplier.updatedAt,
+                _clientId: updatedSupplier.id,
+              }
+            : null,
         };
       } catch (error) {
         console.error("Error updating vendor:", error);
@@ -322,32 +339,36 @@ export const vendorsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      console.warn('[DEPRECATED] vendors.delete - use clients.delete instead');
+      console.warn("[DEPRECATED] vendors.delete - use clients.delete instead");
       try {
         // First try to find by legacy vendor ID
         let supplier = await inventoryDb.getSupplierByLegacyVendorId(input.id);
         let clientId = supplier?.id;
-        
+
         // If not found, try as client ID
         if (!supplier) {
           supplier = await inventoryDb.getSupplierByClientId(input.id);
           clientId = supplier?.id;
         }
-        
+
         // If found in canonical system, soft delete
         if (supplier && clientId) {
           await inventoryDb.deleteSupplier(clientId);
           return { success: true };
         }
-        
-        // Fall back to legacy vendor table delete
+
+        // PARTY-004: Fall back to legacy vendor table soft delete
         const db = await import("../db").then(m => m.getDb());
         if (!db) throw new Error("Database not available");
 
         const { vendors } = await import("../../drizzle/schema");
         const { eq } = await import("drizzle-orm");
 
-        await db.delete(vendors).where(eq(vendors.id, input.id));
+        // Use soft delete instead of hard delete
+        await db
+          .update(vendors)
+          .set({ deletedAt: new Date() })
+          .where(eq(vendors.id, input.id));
 
         const cache = (await import("../_core/cache")).default;
         const { CacheKeys } = await import("../_core/cache");
@@ -528,13 +549,17 @@ export const vendorsRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        await db.delete(vendorNotes).where(eq(vendorNotes.id, input.id));
+        // PARTY-004: Use soft delete instead of hard delete
+        await db
+          .update(vendorNotes)
+          .set({ deletedAt: new Date() })
+          .where(eq(vendorNotes.id, input.id));
 
         return {
           success: true,
         };
       } catch (error) {
-        console.error("Error deleting vendor note:", error);
+        console.error("Error soft-deleting vendor note:", error);
         return {
           success: false,
           error:
@@ -703,9 +728,7 @@ export const vendorsRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message:
-            error instanceof Error
-              ? error.message
-              : "Failed to search vendors",
+            error instanceof Error ? error.message : "Failed to search vendors",
         });
       }
     }),
