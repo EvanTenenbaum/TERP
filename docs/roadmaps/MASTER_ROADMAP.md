@@ -4154,14 +4154,70 @@ export async function updateBillStatus(id, status) {
 > These issues affect debuggability and confidence.
 > **Fix as capacity allows.**
 
-| Task     | Description                                     | Priority | Status | Estimate | Module                                      |
-| -------- | ----------------------------------------------- | -------- | ------ | -------- | ------------------------------------------- |
-| OBS-001  | Add GL Balance Verification Cron                | LOW      | ready  | 4h       | `server/cron/`                              |
-| OBS-002  | Add AR Reconciliation Check                     | LOW      | ready  | 4h       | `server/cron/`                              |
-| OBS-003  | Add Inventory Audit Trail                       | LOW      | ready  | 4h       | `server/routers/inventory.ts`               |
-| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow | LOW      | ready  | 8h       | `tests/integration/`                        |
-| TEST-011 | Add Concurrent Operation Tests                  | LOW      | ready  | 4h       | `tests/integration/`                        |
-| TEST-012 | Update Batch Status Transition Test Map         | LOW      | ready  | 2h       | `server/routers/inventory.property.test.ts` |
+| Task     | Description                                       | Priority | Status | Estimate | Module                                           |
+| -------- | ------------------------------------------------- | -------- | ------ | -------- | ------------------------------------------------ |
+| SM-003-F | Add status column to returns schema               | LOW      | ready  | 4h       | `drizzle/schema.ts`, `server/routers/returns.ts` |
+| TERP-07F | Add server-side batch status validation on orders | LOW      | ready  | 2h       | `server/ordersDb.ts`                             |
+| OBS-001  | Add GL Balance Verification Cron                  | LOW      | ready  | 4h       | `server/cron/`                                   |
+| OBS-002  | Add AR Reconciliation Check                       | LOW      | ready  | 4h       | `server/cron/`                                   |
+| OBS-003  | Add Inventory Audit Trail                         | LOW      | ready  | 4h       | `server/routers/inventory.ts`                    |
+| TEST-010 | Add Integration Tests for Order→Invoice→GL Flow   | LOW      | ready  | 8h       | `tests/integration/`                             |
+| TEST-011 | Add Concurrent Operation Tests                    | LOW      | ready  | 4h       | `tests/integration/`                             |
+| TEST-012 | Update Batch Status Transition Test Map           | LOW      | ready  | 2h       | `server/routers/inventory.property.test.ts`      |
+
+---
+
+#### SM-003-F: Add Status Column to Returns Schema
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `drizzle/schema.ts`, `server/routers/returns.ts`
+**Dependencies:** SM-003 (complete)
+
+**Problem:**
+SM-003 implemented return status transitions using a notes-based workaround because the `returns` table lacks a dedicated `status` column. Status is currently extracted by parsing notes for markers like `[APPROVED]`, `[RECEIVED]`, etc. This is fragile and should be replaced with a proper schema column.
+
+**Current Workaround:**
+
+```typescript
+function extractReturnStatus(notes: string | null): string {
+  if (notes.includes("[CANCELLED")) return "CANCELLED";
+  // ... parsing notes for status markers
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Add `status` column to returns table with enum type
+- [ ] Create migration to backfill status from existing notes
+- [ ] Update returns router to use status column directly
+- [ ] Remove notes-based status extraction workaround
+- [ ] Update tests to use new status column
+
+**Risk:** RED mode - requires database migration
+
+---
+
+#### TERP-07F: Add Server-Side Batch Status Validation on Orders
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2h
+**Module:** `server/ordersDb.ts`
+**Dependencies:** TERP-0007 (complete)
+
+**Problem:**
+TERP-0007 added UI indicators for non-sellable batch statuses (AWAITING_INTAKE, ON_HOLD, QUARANTINED), but server-side validation is not implemented. Users can still create orders with non-sellable batches via API calls.
+
+**Acceptance Criteria:**
+
+- [ ] Add batch status check in `createOrder()` and `updateDraftOrder()`
+- [ ] Reject orders containing non-sellable batches
+- [ ] Return clear error message listing affected batches
+- [ ] Add unit tests for validation
+
+**Risk:** STRICT mode - affects order creation flow
 
 ---
 

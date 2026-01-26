@@ -26,9 +26,25 @@ export interface PricedInventoryItem {
     adjustment: string;
   }>;
   // TERP-0007: Batch status for non-sellable inventory indicators
-  // Note: Server returns as 'status', but we use batchStatus for clarity
-  status?: 'AWAITING_INTAKE' | 'LIVE' | 'PHOTOGRAPHY_COMPLETE' | 'ON_HOLD' | 'QUARANTINED' | 'SOLD_OUT' | 'CLOSED';
+  // Server returns status as string; UI components should use type guards for validation
+  status?: string;
 }
+
+// TERP-0007: Known batch status values (for type safety in UI components)
+export type BatchStatus =
+  | "AWAITING_INTAKE"
+  | "LIVE"
+  | "PHOTOGRAPHY_COMPLETE"
+  | "ON_HOLD"
+  | "QUARANTINED"
+  | "SOLD_OUT"
+  | "CLOSED";
+export type NonSellableStatus = "AWAITING_INTAKE" | "ON_HOLD" | "QUARANTINED";
+export const NON_SELLABLE_STATUSES: readonly NonSellableStatus[] = [
+  "AWAITING_INTAKE",
+  "ON_HOLD",
+  "QUARANTINED",
+] as const;
 
 // ============================================================================
 // FILTER & SORT TYPES
@@ -46,8 +62,14 @@ export interface InventoryFilters {
 }
 
 export interface InventorySortConfig {
-  field: 'name' | 'category' | 'retailPrice' | 'quantity' | 'basePrice' | 'grade';
-  direction: 'asc' | 'desc';
+  field:
+    | "name"
+    | "category"
+    | "retailPrice"
+    | "quantity"
+    | "basePrice"
+    | "grade";
+  direction: "asc" | "desc";
 }
 
 export interface ColumnVisibility {
@@ -62,7 +84,7 @@ export interface ColumnVisibility {
 }
 
 export const DEFAULT_FILTERS: InventoryFilters = {
-  search: '',
+  search: "",
   categories: [],
   grades: [],
   priceMin: null,
@@ -73,8 +95,8 @@ export const DEFAULT_FILTERS: InventoryFilters = {
 };
 
 export const DEFAULT_SORT: InventorySortConfig = {
-  field: 'name',
-  direction: 'asc',
+  field: "name",
+  direction: "asc",
 };
 
 export const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
