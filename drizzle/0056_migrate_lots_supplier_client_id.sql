@@ -19,60 +19,37 @@
 -- ============================================================================
 
 -- ============================================================================
--- STEP 1: Ensure supplier_client_id column exists (idempotent)
+-- STEP 1: Update lots with supplierClientId via supplier_profiles mapping
 -- ============================================================================
--- Note: Column should already exist from schema.ts definition
--- This is a safety check
+-- Primary mapping: Use supplier_profiles.legacy_vendor_id to find the
+-- canonical client ID for each vendor.
+-- Only updates active (non-soft-deleted) lots.
 
-SET @col_exists = (
-  SELECT COUNT(*)
-  FROM INFORMATION_SCHEMA.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'lots'
-    AND COLUMN_NAME = 'supplier_client_id'
-);
-
--- If column doesn't exist, this will be a no-op since schema should have it
-
--- ============================================================================
--- STEP 2: Create mapping from vendor_id to client_id via supplier_profiles
--- ============================================================================
--- This uses the supplier_profiles table which tracks:
--- - client_id: The canonical client ID (with isSeller=true)
--- - legacy_vendor_id: The original vendor ID from the deprecated vendors table
-
--- ============================================================================
--- STEP 3: Update lots with supplierClientId based on mapping
--- ============================================================================
-
--- Update lots where we have a mapping in supplier_profiles
 UPDATE `lots` l
 INNER JOIN `supplier_profiles` sp ON sp.legacy_vendor_id = l.vendorId
 SET l.supplier_client_id = sp.client_id
-WHERE l.supplier_client_id IS NULL
-  OR l.supplier_client_id = 0;
+WHERE (l.supplier_client_id IS NULL OR l.supplier_client_id = 0)
+  AND l.deleted_at IS NULL;
 
 -- ============================================================================
--- STEP 4: Handle lots without supplier_profiles mapping
+-- STEP 2: Handle lots without supplier_profiles mapping
 -- ============================================================================
--- For lots where no supplier_profiles mapping exists, try to find or create
--- a client record. This handles edge cases from data imports.
+-- Fallback: For lots where no supplier_profiles mapping exists, try to find
+-- a matching client by EXACT name match (case-insensitive for safety).
+-- This handles edge cases from legacy data imports.
+--
+-- NOTE: Name matching is inherently fragile. Unmapped lots after this step
+-- should be manually reviewed or handled by application code that falls back
+-- to vendorId queries.
 
--- First, identify unmapped lots (for logging purposes)
--- SELECT l.id, l.vendorId, v.name
--- FROM lots l
--- LEFT JOIN vendors v ON v.id = l.vendorId
--- LEFT JOIN supplier_profiles sp ON sp.legacy_vendor_id = l.vendorId
--- WHERE sp.client_id IS NULL AND l.supplier_client_id IS NULL;
-
--- Create a temporary mapping for any vendors not in supplier_profiles
--- by finding clients with matching names (case-insensitive)
 UPDATE `lots` l
-INNER JOIN `vendors` v ON v.id = l.vendorId
-INNER JOIN `clients` c ON LOWER(c.name) = LOWER(v.name) AND c.is_seller = 1
+INNER JOIN `vendors` v ON v.id = l.vendorId AND v.deleted_at IS NULL
+INNER JOIN `clients` c ON LOWER(TRIM(c.name)) = LOWER(TRIM(v.name))
+  AND c.is_seller = 1
+  AND c.deleted_at IS NULL
 SET l.supplier_client_id = c.id
-WHERE l.supplier_client_id IS NULL
-  OR l.supplier_client_id = 0;
+WHERE (l.supplier_client_id IS NULL OR l.supplier_client_id = 0)
+  AND l.deleted_at IS NULL;
 
 -- ============================================================================
 -- STEP 5: Verification query (run manually to check status)

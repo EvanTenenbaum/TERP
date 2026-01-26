@@ -24,7 +24,8 @@
 -- CLEANUP ORPHANED DATA
 -- ============================================================================
 -- Before adding FK constraints, clean up any orphaned references
--- NOTE: All cleanup uses soft deletes or safe fallbacks per TERP policy
+-- NOTE: Uses safe fallbacks per TERP policy. For billLineItems, see special
+-- handling below for already-soft-deleted orphaned records.
 
 -- Clean orphaned vendorId in bills (if vendor doesn't exist)
 -- First verify fallback vendor exists, then update orphans
@@ -42,23 +43,50 @@ WHERE `createdBy` NOT IN (SELECT `id` FROM `users`)
 AND `createdBy` IS NOT NULL
 AND EXISTS (SELECT 1 FROM `users` LIMIT 1);
 
--- SOFT DELETE orphaned billLineItems where bill doesn't exist (ST-013 compliance)
+-- ============================================================================
+-- SPECIAL HANDLING: Orphaned billLineItems
+-- ============================================================================
+-- PROBLEM: MySQL FK constraints apply to ALL rows, including soft-deleted ones.
+-- Records with invalid billId will cause FK creation to fail.
+--
+-- SOLUTION: Two-phase cleanup:
+-- Phase 1: Soft-delete active orphaned records (preserves audit trail)
+-- Phase 2: Hard-delete already-soft-deleted orphaned records (garbage collection)
+--
+-- JUSTIFICATION for hard delete in Phase 2:
+-- - Records are ALREADY soft-deleted (business considers them deleted)
+-- - Records reference non-existent parent bills (no recovery possible)
+-- - They block FK integrity constraints (technical necessity)
+-- - This is one-time migration cleanup, not application behavior
+-- ============================================================================
+
+-- Phase 1: Soft-delete active orphaned records (preserves audit trail)
 UPDATE `billLineItems`
 SET `deleted_at` = CURRENT_TIMESTAMP
 WHERE `billId` NOT IN (SELECT `id` FROM `bills`)
 AND `deleted_at` IS NULL;
 
+-- Phase 2: Remove soft-deleted records with invalid billId (garbage collection)
+-- These records are double-dead: soft-deleted AND orphaned
+DELETE FROM `billLineItems`
+WHERE `billId` NOT IN (SELECT `id` FROM `bills`)
+AND `deleted_at` IS NOT NULL;
+
 -- Clean orphaned productId in billLineItems (set to NULL if product doesn't exist)
+-- Only clean active records - soft-deleted records will be excluded by app queries
 UPDATE `billLineItems`
 SET `productId` = NULL
 WHERE `productId` IS NOT NULL
-AND `productId` NOT IN (SELECT `id` FROM `products`);
+AND `productId` NOT IN (SELECT `id` FROM `products`)
+AND `deleted_at` IS NULL;
 
 -- Clean orphaned lotId in billLineItems (set to NULL if lot doesn't exist)
+-- Only clean active records - soft-deleted records will be excluded by app queries
 UPDATE `billLineItems`
 SET `lotId` = NULL
 WHERE `lotId` IS NOT NULL
-AND `lotId` NOT IN (SELECT `id` FROM `lots`);
+AND `lotId` NOT IN (SELECT `id` FROM `lots`)
+AND `deleted_at` IS NULL;
 
 -- ============================================================================
 -- ADD FOREIGN KEY CONSTRAINTS TO BILLS TABLE
@@ -119,4 +147,8 @@ CREATE INDEX IF NOT EXISTS `idx_bill_line_items_bill_id` ON `billLineItems` (`bi
 -- DROP INDEX IF EXISTS `idx_bills_vendor_id` ON `bills`;
 -- DROP INDEX IF EXISTS `idx_bills_created_by` ON `bills`;
 -- DROP INDEX IF EXISTS `idx_bill_line_items_bill_id` ON `billLineItems`;
+--
+-- NOTE: Hard-deleted orphaned soft-deleted billLineItems cannot be restored.
+-- These records were both soft-deleted AND referenced non-existent bills,
+-- meaning they had no business value and could not be recovered anyway.
 -- ============================================================================
