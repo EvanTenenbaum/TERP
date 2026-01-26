@@ -10,14 +10,14 @@
 
 ## Team Status Tracking
 
-| Team | Branch Pattern                     | Focus                    | Status  | PR # | Verified | Merged |
-| ---- | ---------------------------------- | ------------------------ | ------- | ---- | -------- | ------ |
-| A    | claude/team-a-security-critical-\* | Security Critical (P0)   | pending | -    | [ ]      | [ ]    |
-| B    | claude/team-b-accounting-gl-\*     | Accounting & GL          | BLOCKED | -    | [ ]      | [ ]    |
-| C    | claude/team-c-inventory-orders-\*  | Inventory & Orders       | pending | -    | [ ]      | [ ]    |
-| D    | claude/team-d-code-quality-\*      | Code Quality (Lint/Test) | pending | -    | [ ]      | [ ]    |
-| E    | claude/team-e-infrastructure-\*    | Infrastructure & Schema  | pending | -    | [ ]      | [ ]    |
-| F    | claude/team-f-ui-features-\*       | UI/UX & Features         | pending | -    | [ ]      | [ ]    |
+| Team | Branch                                     | Focus                    | Status      | PR # | Verified | Merged |
+| ---- | ------------------------------------------ | ------------------------ | ----------- | ---- | -------- | ------ |
+| D    | `claude/team-d-code-quality-9V7zW`         | Code Quality (Lint/Test) | PR READY    | #312 | [ ]      | [ ]    |
+| E    | `claude/setup-team-e-infrastructure-RNtE3` | Infrastructure & Schema  | PR READY    | #311 | [ ]      | [ ]    |
+| C    | `claude/terp-team-c-setup-VolPg`           | Inventory & Orders       | PR READY    | #308 | [ ]      | [ ]    |
+| F    | `claude/review-terp-instructions-hIUWu`    | UI/UX & Features         | PR READY    | #310 | [ ]      | [ ]    |
+| A    | `claude/review-security-critical-feoXR`    | Security Critical (P0)   | PR READY    | #309 | [ ]      | [ ]    |
+| B    | `claude/team-b-accounting-gl-EBDIr`        | Accounting & GL          | **BLOCKED** | -    | [ ]      | [ ]    |
 
 ---
 
@@ -88,6 +88,30 @@ Build:       PASS (with chunk size warnings - BUILD-002 task)
 1. Monitor for team branch creation
 2. Watch for PR submissions
 3. Begin merges when PRs are ready (order: D → E → C → F → A → B)
+
+### 2026-01-26 - PRs Discovered
+
+**Time:** PR scan completed
+
+**Discovered Team PRs:**
+
+| PR   | Team | Title                                                 | Status | Mergeable |
+| ---- | ---- | ----------------------------------------------------- | ------ | --------- |
+| #312 | D    | chore: register Team D Code Quality session           | open   | ✅ Yes    |
+| #311 | E    | Add Team E infrastructure: FK constraints, migrations | open   | ✅ Yes    |
+| #310 | F    | feat: Add alerts and shrinkage report pages           | open   | ✅ Yes    |
+| #309 | A    | fix: resolve test failures and token invalidation     | open   | ✅ Yes    |
+| #308 | C    | TERP-0007/0008: Batch status UI + constants refactor  | open   | ✅ Yes    |
+
+**ARCH-001 Status:** Still `ready` (not complete in Team A's branch)
+
+**Team B Status:** Remains BLOCKED - waiting for ARCH-001
+
+**Next Actions:**
+
+1. Begin merge process: D → E → C → F → A
+2. Run full verification after each merge
+3. Watch for ARCH-001 completion to unblock Team B
 
 ---
 
