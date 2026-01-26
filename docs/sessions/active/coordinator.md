@@ -14,7 +14,7 @@
 | ---- | ------------------------------------------ | ------------------------ | ----------- | ---- | -------- | ------ |
 | D    | `claude/team-d-code-quality-9V7zW`         | Code Quality (Lint/Test) | ✅ VERIFIED | #312 | [x]      | [ ]    |
 | E    | `claude/setup-team-e-infrastructure-RNtE3` | Infrastructure & Schema  | ✅ VERIFIED | #311 | [x]      | [ ]    |
-| C    | `claude/terp-team-c-setup-VolPg`           | Inventory & Orders       | PR READY    | #308 | [ ]      | [ ]    |
+| C    | `claude/terp-team-c-setup-VolPg`           | Inventory & Orders       | ✅ VERIFIED | #308 | [x]      | [ ]    |
 | F    | `claude/review-terp-instructions-hIUWu`    | UI/UX & Features         | PR READY    | #310 | [ ]      | [ ]    |
 | A    | `claude/review-security-critical-feoXR`    | Security Critical (P0)   | PR READY    | #309 | [ ]      | [ ]    |
 | B    | `claude/team-b-accounting-gl-EBDIr`        | Accounting & GL          | **BLOCKED** | -    | [ ]      | [ ]    |
@@ -176,6 +176,41 @@ Build:       ✅ PASS
 
 - ✅ GL balance check: Proper decimal handling, soft-delete filter
 - ✅ AR reconciliation: Client-level balance verification
+
+**Verdict:** ✅ **APPROVED FOR MERGE**
+
+### 2026-01-26 - Team C PR #308 Verified
+
+**Mode:** 🟡 STRICT
+
+**Verification Results:**
+
+```
+TypeScript:  ✅ PASS (0 errors)
+Tests:       ✅ PASS (2377/2390 - 99.5%)
+             - Added ~100 new tests (baseline was 2273)
+             - Pre-existing Radix UI failures only
+Build:       ✅ PASS
+```
+
+**Changes Reviewed:**
+
+- 22 files changed (+2073/-330 lines)
+- New batch status constants (server/constants/batchStatuses.ts)
+- State machine implementations for quotes, sales, returns
+- Credit override authorization (ORD-004)
+- Non-sellable batch status UI (TERP-0007)
+
+**State Machine Tests Added:**
+
+- ✅ ordersDb.stateMachine.test.ts (262 lines)
+- ✅ returns.stateMachine.test.ts (236 lines)
+- ✅ orderStateMachine.test.ts (174 lines)
+
+**Static Pattern Scan:**
+
+- ✅ No CI-blocked patterns introduced
+- ✅ Proper soft-delete handling in vendors.ts
 
 **Verdict:** ✅ **APPROVED FOR MERGE**
 
