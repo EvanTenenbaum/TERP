@@ -1,11 +1,12 @@
 import { ForbiddenError } from "@shared/_core/errors";
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request, Response } from "express";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "./env";
 import { logger } from "./logger";
+import { invalidateToken } from "./tokenInvalidation";
 
 // JWT_SECRET is accessed lazily to prevent startup crashes
 // This allows the server to start even if JWT_SECRET validation fails
@@ -211,6 +212,14 @@ export function registerSimpleAuthRoutes(app: Express) {
 
   // Logout endpoint
   app.post("/api/auth/logout", (req: Request, res: Response) => {
+    // TERP-0014: Invalidate the token so it can't be reused
+    const token = req.cookies?.[COOKIE_NAME];
+    if (token) {
+      invalidateToken({
+        tokenId: token,
+        reason: "LOGOUT",
+      });
+    }
     res.clearCookie(COOKIE_NAME);
     res.json({ success: true });
   });
