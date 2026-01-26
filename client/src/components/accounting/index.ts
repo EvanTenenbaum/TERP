@@ -20,6 +20,7 @@ export {
   ClientBalanceCard,
   ClientBalanceDiscrepancyAlert,
 } from "./ClientBalanceCard"; // ARCH-002
+export { GLEntriesViewer } from "./GLEntriesViewer"; // TERP-0012
 
 // Re-export types
 export type {
