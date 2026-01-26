@@ -41,14 +41,16 @@ jobs:
 
           # Pattern 1: Fallback user ID (BUG-PATTERN: POST-002)
           # Matches: ctx.user?.id || 1, ctx.user?.id ?? 1, etc.
-          FALLBACK_MATCHES=$(grep -rn "ctx\.user\?\.\(id\|userId\)\s*\(||\|??\)\s*[0-9]" --include="*.ts" --include="*.tsx" server/ client/src/ 2>/dev/null || true)
+          # Note: Uses -E for extended regex (required for \s and proper | handling)
+          FALLBACK_MATCHES=$(grep -rn -E "ctx\.user\?\.(id|userId)\s*(\|\||\?\?)\s*[0-9]" --include="*.ts" --include="*.tsx" server/ client/src/ 2>/dev/null || true)
           if [ -n "$FALLBACK_MATCHES" ]; then
             VIOLATIONS="${VIOLATIONS}### ❌ Fallback User ID Pattern\n\nFound forbidden pattern \`ctx.user?.id || 1\`. Use \`getAuthenticatedUserId(ctx)\` instead.\n\n\`\`\`\n${FALLBACK_MATCHES}\n\`\`\`\n\n"
           fi
 
           # Pattern 2: Actor from input (BUG-PATTERN: POST-003)
           # Matches: input.createdBy, input.updatedBy as actor source
-          ACTOR_INPUT=$(grep -rn "createdBy:\s*input\.\(createdBy\|userId\)" --include="*.ts" server/routers/ 2>/dev/null || true)
+          # Note: Uses -E for extended regex
+          ACTOR_INPUT=$(grep -rn -E "createdBy:\s*input\.(createdBy|userId)" --include="*.ts" server/routers/ 2>/dev/null || true)
           if [ -n "$ACTOR_INPUT" ]; then
             VIOLATIONS="${VIOLATIONS}### ❌ Actor Attribution from Input\n\nFound \`createdBy: input.createdBy\` - actor must come from \`ctx.user.id\`, not input.\n\n\`\`\`\n${ACTOR_INPUT}\n\`\`\`\n\n"
           fi

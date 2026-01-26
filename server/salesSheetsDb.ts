@@ -242,17 +242,21 @@ export async function saveSalesSheet(data: {
   clientId: number;
   items: unknown[];
   totalValue: number;
-  createdBy?: number;
+  createdBy: number; // Required - no fallback allowed (BUG-107)
 }): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  if (!data.createdBy || data.createdBy <= 0) {
+    throw new Error("createdBy is required and must be a valid user ID");
+  }
 
   const result = await db.insert(salesSheetHistory).values({
     clientId: data.clientId,
     items: data.items,
     totalValue: data.totalValue.toString(),
     itemCount: data.items.length,
-    createdBy: data.createdBy || 1, // Default to user ID 1 if not provided
+    createdBy: data.createdBy,
   });
 
   return Number(result[0].insertId);
@@ -788,10 +792,15 @@ export async function convertToLiveSession(
     for (const item of items) {
       const batch = batchMap.get(item.id);
       if (batch) {
+        // Validate required fields before inserting
+        if (!batch.productId) {
+          skippedItems.push(`${item.name || `Item #${item.id}`} (missing productId)`);
+          continue;
+        }
         await db.insert(sessionCartItems).values({
           sessionId,
           batchId: item.id,
-          productId: batch.productId || 1,
+          productId: batch.productId,
           quantity: item.quantity?.toString() || "1",
           unitPrice: (item.finalPrice || item.retailPrice || item.basePrice)?.toString() || "0",
           addedByRole: "HOST",
