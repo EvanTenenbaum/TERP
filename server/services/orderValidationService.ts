@@ -27,6 +27,82 @@ export interface OrderValidation {
   overallMarginPercent: number;
 }
 
+/**
+ * Validate order for status transition
+ * ARCH-001: Called by OrderOrchestrator before state transitions
+ */
+export interface TransitionValidationInput {
+  orderId: number;
+  fromStatus: string;
+  toStatus: string;
+}
+
+export async function validateOrderForTransition(
+  input: TransitionValidationInput
+): Promise<ValidationResult> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Import db lazily to avoid circular dependencies
+  const { getDb } = await import("../db");
+  const { orders } = await import("../../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const db = await getDb();
+  if (!db) {
+    return { isValid: false, errors: ["Database not available"], warnings: [] };
+  }
+
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, input.orderId),
+  });
+
+  if (!order) {
+    return { isValid: false, errors: ["Order not found"], warnings: [] };
+  }
+
+  // Validate based on target status
+  switch (input.toStatus) {
+    case "CONFIRMED":
+      // Order must have items to be confirmed
+      if (!order.items || (Array.isArray(order.items) && order.items.length === 0)) {
+        errors.push("Order must have at least one item to be confirmed");
+      }
+      // Order must have a client
+      if (!order.clientId) {
+        errors.push("Order must have a client to be confirmed");
+      }
+      break;
+
+    case "PACKED":
+      // Order should have items selected for packing
+      // This is a basic check - more detailed validation would check inventory
+      if (!order.items) {
+        errors.push("Order must have items to be packed");
+      }
+      break;
+
+    case "SHIPPED":
+      // Verify order has been packed (status check is done by state machine)
+      break;
+
+    case "DELIVERED":
+      // Verify tracking info exists (if applicable)
+      break;
+
+    case "CANCELLED":
+      // Check if order can be cancelled (no invoice, etc.)
+      // This would require additional business logic
+      break;
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
 export const orderValidationService = {
   /**
    * Validate line item data
