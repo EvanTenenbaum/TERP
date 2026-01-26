@@ -47,3 +47,5 @@
 - Session-20260116-QA-RBAC-AUDIT-d6a424: QA-RBAC-AUDIT - [Platform: External] [Files: docs/sessions/active/Session-20260116-QA-RBAC-AUDIT-d6a424.md, docs/ACTIVE_SESSIONS.md]
 
 - Session-20260116-QA-DRIFT-2da4e7: QA-DRIFT - [Platform: External] [Files: docs/reference/USER_FLOW_MATRIX.csv, docs/reference/FLOW_GUIDE.md, docs/qa/QA_PLAYBOOK.md]
+- Session-20260121-QA-PLAN-ed7813: QA-PLAN - [Platform: External] [Files: docs/sessions/active/Session-20260121-QA-PLAN-ed7813.md, docs/ACTIVE_SESSIONS.md]
+- Session-20260121-QA-FIX-GIT-449bdd: QA-FIX-GIT - [Platform: External] [Files: docs/sessions/active/Session-20260121-QA-FIX-GIT-449bdd.md, docs/ACTIVE_SESSIONS.md]

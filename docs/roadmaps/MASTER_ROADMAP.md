@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.5
-**Last Updated:** 2026-01-20 (Added 22 tasks from Deep Audit - git commit analysis of 484 commits)
+**Version:** 6.6
+**Last Updated:** 2026-01-21 (Added FEAT-SIGNAL-001 Signal Messaging Integration to Post-Beta Backlog)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -1688,11 +1688,12 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone | Completed | Open   | Total   | Progress |
-| --------- | --------- | ------ | ------- | -------- |
-| MVP       | 185       | 0      | 187     | 100%     |
-| Beta      | 0         | 30     | 30      | 0%       |
-| **TOTAL** | **185**   | **30** | **217** | ~85%     |
+| Milestone       | Completed | Open   | Total   | Progress |
+| --------------- | --------- | ------ | ------- | -------- |
+| MVP             | 185       | 0      | 187     | 100%     |
+| Beta            | 0         | 30     | 30      | 0%       |
+| Post-Beta       | 0         | 1      | 1       | 0%       |
+| **TOTAL**       | **185**   | **31** | **218** | ~85%     |
 
 > **Note**: Beta now includes:
 >
@@ -1702,6 +1703,35 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 > - 3 Work Surfaces QA Blockers (WSQA-001..003) - Added 2026-01-20
 >
 > Additional UX Work Surface tasks (36 total) are categorized as P0-P2 and will be tracked in `ATOMIC_ROADMAP.md`.
+>
+> **Post-Beta Backlog** (Added 2026-01-21):
+>
+> - FEAT-SIGNAL-001: Signal Messaging Integration (HIGH priority, 6 weeks)
+
+---
+
+# 📋 POST-BETA BACKLOG
+
+> Features that are fully specified and ready for implementation after Beta milestone.
+
+---
+
+## 📱 Communications & Client Messaging
+
+| Task ID         | Description                   | Priority | Status       | Effort   | Specification                                                       |
+| --------------- | ----------------------------- | -------- | ------------ | -------- | ------------------------------------------------------------------- |
+| FEAT-SIGNAL-001 | Signal Messaging Integration  | HIGH     | 📋 SPEC READY | 6 weeks  | [`FEAT-SIGNAL-001-SPEC.md`](../specs/FEAT-SIGNAL-001-SPEC.md)       |
+
+> **FEAT-SIGNAL-001 Details:**
+>
+> - Two-way Signal messaging embedded in client records
+> - Per-role Signal numbers (Sales, Account Management, Operations, Support, Admin)
+> - Message templates with variable substitution
+> - Real-time delivery via WebSocket integration
+> - Full audit trail for cannabis compliance
+> - Technical Stack: signal-cli-rest-api (Docker), BullMQ/Redis, tRPC, Drizzle schema
+> - RBAC: signal:view, signal:send, signal:template:*, signal:admin
+> - 6-phase implementation plan included in spec
 
 ---
 
