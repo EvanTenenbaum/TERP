@@ -503,11 +503,22 @@ pnpm test --run 2>&1 | tee test-results.log
 
 #### Security Issues (P0)
 
-| Task    | Description                                              | Priority | Status      | Estimate | Prompt                    |
-| ------- | -------------------------------------------------------- | -------- | ----------- | -------- | ------------------------- |
-| BUG-103 | QA Role Switcher exposes password hint in production     | HIGH     | ready       | 2h       | `docs/prompts/BUG-103.md` |
+| Task    | Description                                          | Priority | Status | Estimate | Prompt                    |
+| ------- | ---------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| BUG-103 | QA Role Switcher exposes password hint in production | HIGH     | ready  | 2h       | `docs/prompts/BUG-103.md` |
+| BUG-107 | Fallback user ID in salesSheetsDb.ts                 | HIGH     | ready  | 1h       | See details below         |
+
+**BUG-107 Details:**
+
+- **Location:** `server/salesSheetsDb.ts:255`
+- **Issue:** `createdBy: data.createdBy || 1` - Falls back to user ID 1 if not provided
+- **Impact:** Security vulnerability - actions attributed to wrong user, audit trail corruption
+- **Pattern:** Forbidden `|| 1` fallback pattern (see CLAUDE.md Section 3)
+- **Fix:** Require `createdBy` in function signature, throw error if not provided
+- **Discovered:** QA Bug Pattern Analysis (Jan 26, 2026)
 
 **BUG-103 Details:**
+
 - **Location:** `/login` page
 - **Issue:** The "QA Role Switcher" panel displays a visible password hint "TerpQA2026!" to anyone viewing the login page
 - **Impact:** Security vulnerability - test credentials exposed publicly
@@ -515,25 +526,28 @@ pnpm test --run 2>&1 | tee test-results.log
 
 #### Navigation/Routing Issues (P2)
 
-| Task    | Description                                              | Priority | Status      | Estimate | Prompt                    |
-| ------- | -------------------------------------------------------- | -------- | ----------- | -------- | ------------------------- |
-| BUG-104 | Client detail page shows "Client not found" error        | MEDIUM   | ready       | 4h       | `docs/prompts/BUG-104.md` |
-| BUG-105 | Reports page returns 404 error                           | MEDIUM   | ready       | 4h       | `docs/prompts/BUG-105.md` |
-| BUG-106 | AR/AP page returns 404 error                             | MEDIUM   | ready       | 4h       | `docs/prompts/BUG-106.md` |
+| Task    | Description                                       | Priority | Status | Estimate | Prompt                    |
+| ------- | ------------------------------------------------- | -------- | ------ | -------- | ------------------------- |
+| BUG-104 | Client detail page shows "Client not found" error | MEDIUM   | ready  | 4h       | `docs/prompts/BUG-104.md` |
+| BUG-105 | Reports page returns 404 error                    | MEDIUM   | ready  | 4h       | `docs/prompts/BUG-105.md` |
+| BUG-106 | AR/AP page returns 404 error                      | MEDIUM   | ready  | 4h       | `docs/prompts/BUG-106.md` |
 
 **BUG-104 Details:**
+
 - **Location:** `/clients/:id`
 - **Issue:** Navigating directly to a client detail page by ID shows "Client not found" error even though clients exist
 - **Impact:** Users cannot access client details via direct URL
 - **Fix:** Fix routing or data fetching for client detail page
 
 **BUG-105 Details:**
+
 - **Location:** `/accounting/reports`
 - **Issue:** Reports link in Finance navigation leads to 404 page
 - **Impact:** Users cannot access financial reports
 - **Fix:** Implement Reports page or fix route configuration
 
 **BUG-106 Details:**
+
 - **Location:** `/accounting/arap`
 - **Issue:** AR/AP link in Finance navigation leads to 404 page
 - **Impact:** Users cannot access accounts receivable/payable management
@@ -3575,23 +3589,25 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 > These issues can result in financial restatement, security breaches, or data corruption.
 > **Must fix before production use.**
 
-| Task    | Description                                                          | Priority | Status | Estimate | Module                                           |
-| ------- | -------------------------------------------------------------------- | -------- | ------ | -------- | ------------------------------------------------ |
-| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready  | 1h       | `server/routers/adminSetup.ts`                   |
-| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready  | 1h       | `server/routers/debug.ts`                        |
-| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts`           |
-| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`                    |
-| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready  | 4h       | `server/routers/invoices.ts`                     |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready  | 4h       | `server/routers/returns.ts`                      |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready  | 4h       | `server/services/orderAccountingService.ts`      |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready  | 2h       | `server/accountingDb.ts`                         |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready  | 4h       | `server/routers/orders.ts`                       |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready  | 2h       | `server/ordersDb.ts`                             |
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready  | 2h       | `server/routers/orders.ts`                       |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready  | 4h       | `server/ordersDb.ts`                             |
-| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready  | 4h       | `server/ordersDb.ts`, `server/services/*`        |
-| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready  | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts` |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready  | 2h       | `server/arApDb.ts`                               |
+| Task    | Description                                                          | Priority | Status   | Estimate | Module                                                        |
+| ------- | -------------------------------------------------------------------- | -------- | -------- | -------- | ------------------------------------------------------------- |
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready    | 1h       | `server/routers/adminSetup.ts`                                |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready    | 1h       | `server/routers/debug.ts`                                     |
+| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready    | 2h       | `server/services/permissionService.ts`                        |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready    | 2h       | `server/routers/vipPortal.ts`                                 |
+| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready    | 4h       | `server/routers/invoices.ts`                                  |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready    | 4h       | `server/routers/returns.ts`                                   |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready    | 4h       | `server/services/orderAccountingService.ts`                   |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready    | 2h       | `server/accountingDb.ts`                                      |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready    | 4h       | `server/routers/orders.ts`                                    |
+| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready    | 2h       | `server/ordersDb.ts`                                          |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready    | 2h       | `server/routers/orders.ts`                                    |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready    | 4h       | `server/ordersDb.ts`                                          |
+| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready    | 4h       | `server/ordersDb.ts`, `server/services/*`                     |
+| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready    | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts`              |
+| ST-052  | Fix Fallback User ID Violations (11 instances)                       | HIGH     | complete | 2h       | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
+| ST-053  | Eliminate `any` Types in Codebase (515 instances)                    | MEDIUM   | ready    | 16h      | Multiple files - see task details                             |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready    | 2h       | `server/arApDb.ts`                                            |
 
 ---
 
@@ -3865,6 +3881,58 @@ If Step 2 fails:
 - [ ] All critical operations wrapped in single transaction
 - [ ] Rollback on any step failure
 - [ ] No partial state possible
+
+---
+
+#### ST-052: Fix Fallback User ID Violations
+
+**Status:** complete
+**Priority:** HIGH
+**Estimate:** 2h
+**Completed:** 2026-01-26
+**Key Commits:** `97ebcd8`
+**Module:** `server/routers/inventory.ts`, `server/routers/catalog.ts`, `server/routers/poReceiving.ts`
+**Dependencies:** None
+
+**Problem:**
+11 instances of `ctx.user?.id || 0` pattern existed in production code. These were security violations that attributed actions to user ID 0 instead of requiring authentication.
+
+**Resolution:**
+All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTHORIZED if user is not authenticated.
+
+**Acceptance Criteria:**
+
+- [x] All 11 instances replaced with `getAuthenticatedUserId(ctx)`
+- [x] No fallback user ID patterns remain in routers
+- [x] CI passes with no security violations
+- [ ] CI passes with no security violations
+
+---
+
+#### ST-053: Eliminate `any` Types in Codebase
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 16h (can be split across multiple sessions)
+**Module:** Multiple files across `server/` and `client/src/`
+**Dependencies:** None
+
+**Problem:**
+515 instances of `any` type exist in the codebase. This bypasses TypeScript's type safety and allows bugs to slip through.
+
+**Approach:**
+
+1. Run `grep -rn ": any" --include="*.ts" server/ client/src/ | wc -l` to get current count
+2. Prioritize files in critical paths first (orders, inventory, accounting)
+3. Replace with proper types, `unknown` with type guards, or generic parameters
+4. Track progress by reducing count in batches of ~50
+
+**Acceptance Criteria:**
+
+- [ ] `any` count reduced from 515 to <100
+- [ ] No `any` in critical paths (orders, inventory, accounting)
+- [ ] TypeScript check passes
+- [ ] Document remaining justified `any` uses
 
 ---
 

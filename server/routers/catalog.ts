@@ -4,7 +4,11 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import {
   publishBatchToCatalog,
   unpublishBatchFromCatalog,
@@ -31,12 +35,19 @@ export const catalogRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      logger.info({ batchId: input.batchId, userId: ctx.user?.id }, "[Catalog Router] Publishing batch");
+      logger.info(
+        { batchId: input.batchId, userId: ctx.user?.id },
+        "[Catalog Router] Publishing batch"
+      );
 
-      const result = await publishBatchToCatalog(input.batchId, ctx.user?.id || 0, {
-        publishB2b: input.publishB2b,
-        publishEcom: input.publishEcom,
-      });
+      const result = await publishBatchToCatalog(
+        input.batchId,
+        getAuthenticatedUserId(ctx),
+        {
+          publishB2b: input.publishB2b,
+          publishEcom: input.publishEcom,
+        }
+      );
 
       return result;
     }),
@@ -48,7 +59,10 @@ export const catalogRouter = router({
     .use(requirePermission("inventory:update"))
     .input(z.object({ batchId: z.number() }))
     .mutation(async ({ input }) => {
-      logger.info({ batchId: input.batchId }, "[Catalog Router] Unpublishing batch");
+      logger.info(
+        { batchId: input.batchId },
+        "[Catalog Router] Unpublishing batch"
+      );
 
       const result = await unpublishBatchFromCatalog(input.batchId);
 
@@ -102,7 +116,10 @@ export const catalogRouter = router({
 
       const result = await syncCatalogQuantities();
 
-      logger.info({ synced: result.synced, unpublished: result.unpublished }, "[Catalog Router] Sync complete");
+      logger.info(
+        { synced: result.synced, unpublished: result.unpublished },
+        "[Catalog Router] Sync complete"
+      );
 
       return result;
     }),
@@ -125,10 +142,14 @@ export const catalogRouter = router({
         "[Catalog Router] Bulk publishing batches"
       );
 
-      const result = await bulkPublishBatches(input.batchIds, ctx.user?.id || 0, {
-        publishB2b: input.publishB2b,
-        publishEcom: input.publishEcom,
-      });
+      const result = await bulkPublishBatches(
+        input.batchIds,
+        getAuthenticatedUserId(ctx),
+        {
+          publishB2b: input.publishB2b,
+          publishEcom: input.publishEcom,
+        }
+      );
 
       return result;
     }),
@@ -145,17 +166,19 @@ export const catalogRouter = router({
   /**
    * Get catalog item by batch ID
    */
-  getByBatchId: protectedProcedure.input(z.object({ batchId: z.number() })).query(async ({ input }) => {
-    const result = await getPublishedCatalog({
-      limit: 1,
-    });
+  getByBatchId: protectedProcedure
+    .input(z.object({ batchId: z.number() }))
+    .query(async ({ input }) => {
+      const result = await getPublishedCatalog({
+        limit: 1,
+      });
 
-    const item = result.items.find(i => i.batchId === input.batchId);
+      const item = result.items.find(i => i.batchId === input.batchId);
 
-    if (!item) {
-      return null;
-    }
+      if (!item) {
+        return null;
+      }
 
-    return item;
-  }),
+      return item;
+    }),
 });

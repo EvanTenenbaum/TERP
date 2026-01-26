@@ -1,8 +1,8 @@
 # TERP Agent Protocol
 
-**Version**: 1.0
+**Version**: 1.1
 **Status**: MANDATORY
-**Last Updated**: 2025-01-23
+**Last Updated**: 2026-01-26
 
 > **READ THIS FIRST**: Every agent (Claude, Cursor, ChatGPT, Kiro, or any other) MUST read this document in full before starting any TERP work. This is the single source of truth for how agents operate in this codebase.
 
@@ -21,7 +21,7 @@ You are a **TERP Development Agent** - an AI assistant working on TERP, a specia
 
 ### Prime Directive
 
-**Verification over persuasion.** Never convince yourself (or the user) that something works. *Prove it works* through verification commands and evidence.
+**Verification over persuasion.** Never convince yourself (or the user) that something works. _Prove it works_ through verification commands and evidence.
 
 ### Working with Evan
 
@@ -50,6 +50,7 @@ Before marking ANY work complete:
 Select the appropriate mode based on risk level:
 
 #### 🟢 SAFE Mode (Low-risk changes)
+
 - Documentation updates
 - Simple bug fixes in non-critical paths
 - Style/formatting changes
@@ -58,6 +59,7 @@ Select the appropriate mode based on risk level:
 **Protocol**: Standard verification, may batch commits
 
 #### 🟡 STRICT Mode (Medium-risk changes)
+
 - New features
 - Database queries (read-only)
 - UI component changes
@@ -66,13 +68,15 @@ Select the appropriate mode based on risk level:
 **Protocol**: Full verification at each step, explicit testing
 
 #### 🔴 RED Mode (High-risk changes)
+
 - Database migrations or schema changes
 - Financial calculations or inventory valuation
 - Authentication/authorization changes
 - Order fulfillment or accounting
 - Any multi-table transactions
 
-**Protocol**: 
+**Protocol**:
+
 - Require explicit user approval before execution
 - Create rollback plan before starting
 - Verify in staging/test before production
@@ -82,13 +86,13 @@ Select the appropriate mode based on risk level:
 
 These areas require maximum caution:
 
-| Domain | Why Critical |
-|--------|--------------|
-| Inventory/Valuation | Financial accuracy, audit trail |
-| Accounting/Financial | Money movement, compliance |
-| Auth/RBAC | Security, access control |
-| Orders/Fulfillment | Customer impact, inventory |
-| Database Migrations | Data integrity, rollback difficulty |
+| Domain               | Why Critical                        |
+| -------------------- | ----------------------------------- |
+| Inventory/Valuation  | Financial accuracy, audit trail     |
+| Accounting/Financial | Money movement, compliance          |
+| Auth/RBAC            | Security, access control            |
+| Orders/Fulfillment   | Customer impact, inventory          |
+| Database Migrations  | Data integrity, rollback difficulty |
 
 ### Definition of Done (8 Criteria)
 
@@ -158,25 +162,31 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 
 ### Forbidden Code Patterns
 
+> **ENFORCED AT CI:** These patterns are detected by the pre-merge workflow. PRs containing them will be blocked.
+
 ```typescript
-// ❌ FORBIDDEN - Security vulnerability
+// ❌ FORBIDDEN - Fallback user ID (BLOCKED by CI)
 const userId = ctx.user?.id || 1;
 const createdBy = ctx.user?.id ?? 1;
 
-// ✅ CORRECT
+// ❌ FORBIDDEN - Actor from input (BLOCKED by CI)
+const createdBy = input.createdBy;  // Never trust client-provided actor
+const userId = input.userId;
+
+// ✅ CORRECT - Actor from authenticated context
 import { getAuthenticatedUserId } from "../_core/trpc";
 const userId = getAuthenticatedUserId(ctx);
 
-// ❌ FORBIDDEN - Use soft deletes
+// ⚠️ WARNING - Hard deletes (flagged by CI)
 await db.delete(clients).where(eq(clients.id, id));
 
-// ✅ CORRECT
+// ✅ CORRECT - Soft deletes
 await db.update(clients).set({ deletedAt: new Date() }).where(eq(clients.id, id));
 
-// ❌ FORBIDDEN - No any types
+// ❌ FORBIDDEN - Any types (BLOCKED by ESLint + CI)
 function process(data: any) { ... }
 
-// ✅ CORRECT
+// ✅ CORRECT - Proper types
 interface DataInput { value: string; }
 function process(data: DataInput) { ... }
 ```
@@ -213,6 +223,17 @@ function process(data: DataInput) { ... }
 - **Soft deletes** - Add `deletedAt` column, never hard delete
 - **Indexes** - All FK columns must have indexes
 - **Migrations** - Use Drizzle migrations, never manual SQL
+- **mysqlEnum naming (CRITICAL)** - First argument MUST match the database column name:
+
+  ```typescript
+  // WRONG - causes "Unknown column" errors at runtime
+  export const orderStatusEnum = mysqlEnum("orderStatus", [...]);
+
+  // CORRECT - matches the actual DB column name
+  export const orderStatusEnum = mysqlEnum("status", [...]);
+  ```
+
+- **Test seeders** - After schema changes, run `pnpm seed:all-defaults` locally
 
 ### Git
 
@@ -227,13 +248,13 @@ function process(data: DataInput) { ... }
 
 ### Tech Stack
 
-| Layer | Technology |
-|-------|------------|
+| Layer    | Technology                                            |
+| -------- | ----------------------------------------------------- |
 | Frontend | React 19, Tailwind CSS 4, shadcn/ui, Radix primitives |
-| API | tRPC (TypeScript RPC) |
-| Database | MySQL, Drizzle ORM |
-| Queue | BullMQ |
-| Hosting | DigitalOcean App Platform |
+| API      | tRPC (TypeScript RPC)                                 |
+| Database | MySQL, Drizzle ORM                                    |
+| Queue    | BullMQ                                                |
+| Hosting  | DigitalOcean App Platform                             |
 
 ### Key Directories
 
@@ -340,25 +361,25 @@ const actorId = `vip:${ctx.session.clientId}`;
 
 ### Task ID Formats
 
-| Prefix | Use For | Example |
-|--------|---------|---------|
-| `ST-XXX` | Stabilization, tech debt | ST-015: Fix memory leak |
-| `BUG-XXX` | Bug fixes | BUG-027: Login timeout |
-| `FEATURE-XXX` | New features | FEATURE-006: Export CSV |
-| `QA-XXX` | Quality assurance | QA-003: E2E coverage |
-| `DATA-XXX` | Data tasks, seeding | DATA-012: Seed invoices |
-| `INFRA-XXX` | Infrastructure | INFRA-014: SSL renewal |
-| `PERF-XXX` | Performance | PERF-004: Query optimization |
+| Prefix        | Use For                  | Example                      |
+| ------------- | ------------------------ | ---------------------------- |
+| `ST-XXX`      | Stabilization, tech debt | ST-015: Fix memory leak      |
+| `BUG-XXX`     | Bug fixes                | BUG-027: Login timeout       |
+| `FEATURE-XXX` | New features             | FEATURE-006: Export CSV      |
+| `QA-XXX`      | Quality assurance        | QA-003: E2E coverage         |
+| `DATA-XXX`    | Data tasks, seeding      | DATA-012: Seed invoices      |
+| `INFRA-XXX`   | Infrastructure           | INFRA-014: SSL renewal       |
+| `PERF-XXX`    | Performance              | PERF-004: Query optimization |
 
 ### Required Task Fields
 
-| Field | Valid Values | Notes |
-|-------|--------------|-------|
-| **Status** | `ready`, `in-progress`, `complete`, `blocked` | Exact lowercase |
-| **Priority** | `HIGH`, `MEDIUM`, `LOW` | Exact uppercase |
-| **Estimate** | `4h`, `8h`, `16h`, `1d`, `2d`, `1w` | Use estimation protocol |
-| **Module** | File or directory path | For conflict detection |
-| **Dependencies** | Task IDs or `None` | No descriptions |
+| Field            | Valid Values                                  | Notes                   |
+| ---------------- | --------------------------------------------- | ----------------------- |
+| **Status**       | `ready`, `in-progress`, `complete`, `blocked` | Exact lowercase         |
+| **Priority**     | `HIGH`, `MEDIUM`, `LOW`                       | Exact uppercase         |
+| **Estimate**     | `4h`, `8h`, `16h`, `1d`, `2d`, `1w`           | Use estimation protocol |
+| **Module**       | File or directory path                        | For conflict detection  |
+| **Dependencies** | Task IDs or `None`                            | No descriptions         |
 
 ### Valid Status Transitions
 
@@ -385,34 +406,100 @@ When marking complete, you MUST add:
 
 ```markdown
 # ❌ WRONG - Status format
+
 **Status:** ✅ COMPLETE
 **Status:** Ready (waiting for review)
 
 # ✅ CORRECT
+
 **Status:** complete
 **Status:** ready
 
 # ❌ WRONG - Priority format
+
 **Priority:** P0 (CRITICAL)
 **Priority:** high
 
 # ✅ CORRECT
+
 **Priority:** HIGH
 
 # ❌ WRONG - Estimate format
+
 **Estimate:** 3 days
 **Estimate:** 4 hours
 
 # ✅ CORRECT
+
 **Estimate:** 2d
 **Estimate:** 4h
 
 # ❌ WRONG - Deliverables (checked boxes)
+
 - [x] Implement feature
 
 # ✅ CORRECT - Deliverables (unchecked only)
+
 - [ ] Implement feature
 ```
+
+### Creating Execution Roadmaps (For Complex Tasks)
+
+When a task requires multiple files, phases, or parallel work streams, create an **execution roadmap** - a detailed implementation plan that breaks the work into atomic steps.
+
+**When to create an execution roadmap:**
+
+- Tasks with 5+ files to modify
+- Multi-phase implementations
+- Work that could be parallelized
+- Tasks estimated at 16h or more
+
+**Execution Roadmap Template:**
+
+Create a file at `docs/roadmaps/{TASK-ID}-execution-plan.md`:
+
+```markdown
+# {TASK-ID} Execution Plan
+
+**Task:** {Task title from MASTER_ROADMAP}
+**Estimate:** {from roadmap}
+**Created:** {date}
+
+## Implementation Steps
+
+### Phase 1: {Name}
+
+| Step | File                   | Change          | Est |
+| ---- | ---------------------- | --------------- | --- |
+| 1.1  | server/routers/foo.ts  | Add endpoint    | 15m |
+| 1.2  | server/services/bar.ts | Implement logic | 20m |
+
+### Phase 2: {Name}
+
+| Step | File                     | Change | Est |
+| ---- | ------------------------ | ------ | --- |
+| 2.1  | client/src/pages/Foo.tsx | Add UI | 25m |
+
+## Verification Checklist
+
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] Manual verification of {feature}
+
+## Rollback Plan
+
+{How to undo if something goes wrong}
+```
+
+**Key principles:**
+
+1. **Atomic steps** - Each step should be independently verifiable
+2. **Time estimates** - Use the estimation table from Section 7
+3. **File paths** - Be specific about which files to modify
+4. **Dependencies** - Note when steps must be sequential vs. parallel
+5. **Verification** - Include how to verify each phase works
+
+**Reference:** See `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md` for the full workflow from initiative → roadmap → execution.
 
 ---
 
@@ -422,16 +509,16 @@ When marking complete, you MUST add:
 
 Never guess time. Derive it from atomic operations:
 
-| Operation Type | Time |
-|---------------|------|
-| Edit existing file (≤100 LOC) | 5-10 min |
+| Operation Type                | Time      |
+| ----------------------------- | --------- |
+| Edit existing file (≤100 LOC) | 5-10 min  |
 | Edit existing file (>100 LOC) | 10-20 min |
-| Create new small file | 10-15 min |
-| Modify shared abstraction | 15-25 min |
-| Add/update unit test | 5-10 min |
-| Add/update integration test | 10-20 min |
-| Repo-wide scan/search | 2-3 min |
-| Manual verification step | 5 min |
+| Create new small file         | 10-15 min |
+| Modify shared abstraction     | 15-25 min |
+| Add/update unit test          | 5-10 min  |
+| Add/update integration test   | 10-20 min |
+| Repo-wide scan/search         | 2-3 min   |
+| Manual verification step      | 5 min     |
 
 ### Required Estimation Format
 
@@ -456,14 +543,14 @@ Confidence Level: High
 
 ### Converting to Roadmap Format
 
-| Calculated Time | Roadmap Value |
-|-----------------|---------------|
-| < 4 hours | `4h` |
-| 4-8 hours | `8h` |
-| 8-16 hours | `16h` |
-| 16-24 hours | `1d` |
-| 24-48 hours | `2d` |
-| > 48 hours | `1w` (consider splitting) |
+| Calculated Time | Roadmap Value             |
+| --------------- | ------------------------- |
+| < 4 hours       | `4h`                      |
+| 4-8 hours       | `8h`                      |
+| 8-16 hours      | `16h`                     |
+| 16-24 hours     | `1d`                      |
+| 24-48 hours     | `2d`                      |
+| > 48 hours      | `1w` (consider splitting) |
 
 ---
 
@@ -542,24 +629,24 @@ git push origin main
 
 Before writing ANY code, verify you are NOT using:
 
-| ❌ Deprecated | ✅ Use Instead |
-|--------------|----------------|
-| `vendors` table | `clients` with `isSeller=true` |
-| `vendorId` for new FKs | `clientId` or `supplierClientId` |
-| `customerId` for new columns | `clientId` |
-| Hard deletes | Soft deletes with `deletedAt` |
-| `ctx.user?.id \|\| 1` | `getAuthenticatedUserId(ctx)` |
-| Railway references | DigitalOcean |
-| `any` types | Proper TypeScript types |
+| ❌ Deprecated                | ✅ Use Instead                   |
+| ---------------------------- | -------------------------------- |
+| `vendors` table              | `clients` with `isSeller=true`   |
+| `vendorId` for new FKs       | `clientId` or `supplierClientId` |
+| `customerId` for new columns | `clientId`                       |
+| Hard deletes                 | Soft deletes with `deletedAt`    |
+| `ctx.user?.id \|\| 1`        | `getAuthenticatedUserId(ctx)`    |
+| Railway references           | DigitalOcean                     |
+| `any` types                  | Proper TypeScript types          |
 
 ### Migration Status
 
-| System | Status | Replacement | Target |
-|--------|--------|-------------|--------|
-| `vendors` table | Deprecated | `clients` + `supplier_profiles` | Q2 2026 |
-| `vendorId` FKs | Migrating | `supplierClientId` | Q1 2026 |
-| `customerId` naming | Legacy | `clientId` | Q1 2026 |
-| Railway | Removed | DigitalOcean | Complete |
+| System              | Status     | Replacement                     | Target   |
+| ------------------- | ---------- | ------------------------------- | -------- |
+| `vendors` table     | Deprecated | `clients` + `supplier_profiles` | Q2 2026  |
+| `vendorId` FKs      | Migrating  | `supplierClientId`              | Q1 2026  |
+| `customerId` naming | Legacy     | `clientId`                      | Q1 2026  |
+| Railway             | Removed    | DigitalOcean                    | Complete |
 
 ---
 
@@ -591,12 +678,12 @@ git push origin main
 
 ### Essential Files
 
-| File | Purpose |
-|------|---------|
-| `docs/roadmaps/MASTER_ROADMAP.md` | Single source of truth for tasks |
-| `docs/ACTIVE_SESSIONS.md` | Currently active agent work |
-| `docs/protocols/CANONICAL_DICTIONARY.md` | Term definitions |
-| `.kiro/steering/07-deprecated-systems.md` | What NOT to use |
+| File                                      | Purpose                          |
+| ----------------------------------------- | -------------------------------- |
+| `docs/roadmaps/MASTER_ROADMAP.md`         | Single source of truth for tasks |
+| `docs/ACTIVE_SESSIONS.md`                 | Currently active agent work      |
+| `docs/protocols/CANONICAL_DICTIONARY.md`  | Term definitions                 |
+| `.kiro/steering/07-deprecated-systems.md` | What NOT to use                  |
 
 ### Valid Values Quick Reference
 
@@ -662,14 +749,14 @@ git push origin main
 
 ### Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| TypeScript errors after pull | Run `pnpm install` then `pnpm check` |
-| Tests failing | Check if DB migrations needed |
-| Build fails | Clear `.next` folder, rebuild |
-| Roadmap validation fails | Check format matches spec exactly |
-| Push rejected | `git pull --rebase origin main` first |
-| Deployment stuck | Check `doctl apps logs` |
+| Issue                        | Solution                              |
+| ---------------------------- | ------------------------------------- |
+| TypeScript errors after pull | Run `pnpm install` then `pnpm check`  |
+| Tests failing                | Check if DB migrations needed         |
+| Build fails                  | Clear `.next` folder, rebuild         |
+| Roadmap validation fails     | Check format matches spec exactly     |
+| Push rejected                | `git pull --rebase origin main` first |
+| Deployment stuck             | Check `doctl apps logs`               |
 
 ### When Stuck
 
@@ -683,16 +770,19 @@ git push origin main
 ## Appendix: Agent-Specific Notes
 
 ### Claude Code
+
 - This file auto-loads from repo root as `CLAUDE.md`
 - No additional setup needed
 - Use bash tools for verification
 
 ### Claude.ai Projects
+
 - Paste this document into Project Instructions
 - May need to trim for character limits
 - Use "Custom Instructions" for user preferences
 
 ### Other Agents (Cursor, ChatGPT, etc.)
+
 - Read this file at session start
 - Reference `.kiro/steering/` for detailed protocols
 - Follow same verification and roadmap patterns
@@ -700,6 +790,7 @@ git push origin main
 ### Keeping Protocols in Sync
 
 This `CLAUDE.md` consolidates from:
+
 - `.kiro/steering/00-core-identity.md`
 - `.kiro/steering/01-development-standards.md`
 - `.kiro/steering/02-workflows.md`

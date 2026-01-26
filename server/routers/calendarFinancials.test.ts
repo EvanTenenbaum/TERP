@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll, vi, beforeEach } from "vitest";
-import { setupDbMock, createMockDb } from "../test-utils/testDb";
+import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
 
 // Mock the database module (MUST be before other imports)
@@ -65,91 +65,8 @@ describe("Calendar Financials Router", () => {
     }
   });
 
-  // TODO: These tests require more complex db query mocking
-  // The router uses db.query.invoices.findMany which needs proper mock setup
-  describe("getMeetingFinancialContext", () => {
-    it.skip("should retrieve financial context for a client meeting", async () => {
-      // Arrange
-      const input = { clientId: 1 };
-
-      // Act
-      const result =
-        await caller.calendarFinancials.getMeetingFinancialContext(input);
-
-      // Assert
-      expect(result).toHaveProperty("clientId", 1);
-      expect(result).toHaveProperty("outstandingAR");
-      expect(result).toHaveProperty("overdueAmount");
-      expect(result).toHaveProperty("creditLimit");
-      expect(result).toHaveProperty("recentPayments");
-      expect(result).toHaveProperty("recentInvoices");
-    });
-
-    it.skip("should return zero values for client with no financial data", async () => {
-      // Arrange
-      const input = { clientId: 999 };
-
-      // Act
-      const result =
-        await caller.calendarFinancials.getMeetingFinancialContext(input);
-
-      // Assert
-      expect(result.outstandingAR).toBe(0);
-      expect(result.overdueAmount).toBe(0);
-      expect(result.creditUsed).toBe(0);
-      expect(result.recentPayments).toEqual([]);
-    });
-  });
-
-  // TODO: getCollectionsQueue tests require complex db.query mocking
-  describe("getCollectionsQueue", () => {
-    it.skip("should retrieve collections queue with default filters", async () => {
-      // Arrange
-      const input = {};
-
-      // Act
-      const result = await caller.calendarFinancials.getCollectionsQueue(input);
-
-      // Assert
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it.skip("should filter by minimum overdue amount", async () => {
-      // Arrange
-      const input = { minOverdueAmount: 1000 };
-
-      // Act
-      const result = await caller.calendarFinancials.getCollectionsQueue(input);
-
-      // Assert
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it.skip("should filter by minimum days past due", async () => {
-      // Arrange
-      const input = { minDaysPastDue: 30 };
-
-      // Act
-      const result = await caller.calendarFinancials.getCollectionsQueue(input);
-
-      // Assert
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it.skip("should filter by both amount and days", async () => {
-      // Arrange
-      const input = {
-        minOverdueAmount: 500,
-        minDaysPastDue: 15,
-      };
-
-      // Act
-      const result = await caller.calendarFinancials.getCollectionsQueue(input);
-
-      // Assert
-      expect(Array.isArray(result)).toBe(true);
-    });
-  });
+  // NOTE: getMeetingFinancialContext and getCollectionsQueue tests removed
+  // These require complex db.query mocking. Add when mock infrastructure improved.
 
   describe("Edge Cases", () => {
     it("should handle database unavailable error", async () => {
@@ -160,32 +77,6 @@ describe("Calendar Financials Router", () => {
       await expect(
         caller.calendarFinancials.getMeetingFinancialContext({ clientId: 1 })
       ).rejects.toThrow("Database not available");
-    });
-
-    it.skip("should handle zero client ID", async () => {
-      // Arrange
-      const input = { clientId: 0 };
-
-      // Act
-      const result =
-        await caller.calendarFinancials.getMeetingFinancialContext(input);
-
-      // Assert
-      expect(result.clientId).toBe(0);
-    });
-
-    it.skip("should handle negative filter values", async () => {
-      // Arrange
-      const input = {
-        minOverdueAmount: -100,
-        minDaysPastDue: -10,
-      };
-
-      // Act
-      const result = await caller.calendarFinancials.getCollectionsQueue(input);
-
-      // Assert
-      expect(Array.isArray(result)).toBe(true);
     });
   });
 });

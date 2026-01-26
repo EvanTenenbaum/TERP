@@ -20,6 +20,8 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for git diff to compare with main
 
       - name: Extract Task ID
         id: extract_task
@@ -29,6 +31,71 @@ jobs:
             echo "task_id=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
           else
             echo "task_id=" >> $GITHUB_OUTPUT
+          fi
+
+      # =================================================================
+      # SECURITY PATTERN ENFORCEMENT (Only checks CHANGED files)
+      # =================================================================
+      - name: Get Changed Files
+        id: changed_files
+        run: |
+          # Get list of changed .ts/.tsx files in this PR
+          CHANGED=$(git diff --name-only origin/main...HEAD -- '*.ts' '*.tsx' 2>/dev/null || true)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check for Forbidden Security Patterns
+        id: security_check
+        run: |
+          VIOLATIONS=""
+          CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
+
+          # Skip if no TypeScript files changed
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_violations=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Pattern 1: Fallback user ID (BUG-PATTERN: POST-002)
+          # Matches: ctx.user?.id || 1, ctx.user.id || 1, ctx.user?.id ?? 1, etc.
+          FALLBACK_MATCHES=""
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ]; then
+              MATCH=$(grep -n -E "ctx\.user\??\.(id|userId)\s*(\|\||\?\?)\s*[0-9]" "$file" 2>/dev/null || true)
+              if [ -n "$MATCH" ]; then
+                FALLBACK_MATCHES="${FALLBACK_MATCHES}${file}:${MATCH}\n"
+              fi
+            fi
+          done
+          if [ -n "$FALLBACK_MATCHES" ]; then
+            VIOLATIONS="${VIOLATIONS}### ❌ Fallback User ID Pattern\n\nFound forbidden pattern \`ctx.user?.id || 1\`. Use \`getAuthenticatedUserId(ctx)\` instead.\n\n\`\`\`\n${FALLBACK_MATCHES}\`\`\`\n\n"
+          fi
+
+          # Pattern 2: Actor from input (BUG-PATTERN: POST-003)
+          # Only blocks NEW code in routers (legacy Db files are grandfathered)
+          ACTOR_INPUT=""
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == server/routers/* ]] && [ -f "$file" ]; then
+              MATCH=$(grep -n "createdBy: input\." "$file" 2>/dev/null || true)
+              if [ -n "$MATCH" ]; then
+                ACTOR_INPUT="${ACTOR_INPUT}${file}:${MATCH}\n"
+              fi
+            fi
+          done
+          if [ -n "$ACTOR_INPUT" ]; then
+            VIOLATIONS="${VIOLATIONS}### ❌ Actor Attribution from Input\n\nFound \`createdBy: input.createdBy\` - actor must come from \`ctx.user.id\`, not input.\n\n\`\`\`\n${ACTOR_INPUT}\`\`\`\n\n"
+          fi
+
+          # Save violations for comment
+          if [ -n "$VIOLATIONS" ]; then
+            echo "has_violations=true" >> $GITHUB_OUTPUT
+            VIOLATIONS="${VIOLATIONS//'%'/'%25'}"
+            VIOLATIONS="${VIOLATIONS//$'\n'/'%0A'}"
+            VIOLATIONS="${VIOLATIONS//$'\r'/'%0D'}"
+            echo "violations=${VIOLATIONS}" >> $GITHUB_OUTPUT
+          else
+            echo "has_violations=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Check for Hotfix Bypass
@@ -73,36 +140,39 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const {
-              is_hotfix
-            } = ${{ steps.check_hotfix.outputs }};
-            const {
-              status
-            } = ${{ steps.check_status.outputs }};
-            const {
-              task_id
-            } = ${{ steps.extract_task.outputs }};
+            const isHotfix = '${{ steps.check_hotfix.outputs.is_hotfix }}' === 'true';
+            const status = '${{ steps.check_status.outputs.status }}';
+            const taskId = '${{ steps.extract_task.outputs.task_id }}';
+            const hasViolations = '${{ steps.security_check.outputs.has_violations }}' === 'true';
+            const violations = decodeURIComponent('${{ steps.security_check.outputs.violations }}' || '');
 
-            let summary = "";
+            let sections = [];
 
-            if (is_hotfix === 'true') {
-              summary = "✅ **Hotfix Bypass:** Quality gate checks are bypassed.";
-            } else if (status === 'fully_tested' || status === 'testing_task') {
-              summary = "✅ **PASS:** Feature is fully tested or is a testing task.";
+            // Security section (BLOCKING if violations found)
+            if (hasViolations) {
+              sections.push(`## ❌ Security Pattern Violations\n\n${violations}\n\n**This PR will be blocked until these patterns are fixed.**`);
             } else {
-              // Softened restrictions: Warnings instead of blockers
-              if (status === 'untested') {
-                summary = "⚠️ **WARNING:** Feature is untested. Please ensure adequate testing before merging.";
-              } else if (status === 'no_task_id') {
-                summary = "⚠️ **WARNING:** Could not extract Task ID from branch name. Roadmap tracking skipped.";
-              } else if (status === 'not_found') {
-                summary = `⚠️ **WARNING:** Task ${task_id} not found in any roadmap. Please ensure it is tracked.`;
-              } else {
-                summary = `⚠️ **WARNING:** Test status is not '✅ Fully Tested'. Proceed with caution.`;
-              }
+              sections.push(`## ✅ Security Patterns\n\nNo forbidden security patterns detected.`);
             }
 
-            const body = `## Pre-Merge Quality Gate\n\n${summary}`;
+            // Roadmap section (advisory)
+            let roadmapSummary = "";
+            if (isHotfix) {
+              roadmapSummary = "✅ **Hotfix Bypass:** Roadmap checks bypassed.";
+            } else if (status === 'fully_tested' || status === 'testing_task') {
+              roadmapSummary = "✅ **PASS:** Feature is fully tested or is a testing task.";
+            } else if (status === 'untested') {
+              roadmapSummary = "⚠️ **WARNING:** Feature is untested. Consider adding tests.";
+            } else if (status === 'no_task_id') {
+              roadmapSummary = "⚠️ **INFO:** Could not extract Task ID from branch name.";
+            } else if (status === 'not_found') {
+              roadmapSummary = `⚠️ **INFO:** Task ${taskId} not found in roadmap.`;
+            } else {
+              roadmapSummary = `⚠️ **INFO:** Test status unknown. Proceed with review.`;
+            }
+            sections.push(`## Roadmap Status\n\n${roadmapSummary}`);
+
+            const body = `# Pre-Merge Quality Gate\n\n${sections.join('\n\n---\n\n')}`;
 
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -111,5 +181,10 @@ jobs:
               body: body
             });
 
-            // Note: We are no longer failing the build (core.setFailed) to avoid blocking merges.
-            // The warnings above serve as the quality gate feedback.
+      # Block merge if security violations found
+      - name: Block on Security Violations
+        if: steps.security_check.outputs.has_violations == 'true' && steps.check_hotfix.outputs.is_hotfix != 'true'
+        run: |
+          echo "❌ Security pattern violations detected. PR blocked."
+          echo "Fix the patterns listed in the PR comment before merging."
+          exit 1
