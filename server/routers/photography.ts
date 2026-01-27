@@ -25,38 +25,71 @@ import { TRPCError } from "@trpc/server";
  * BUG-112: Enhanced to handle MySQL2 driver errors that may not be Error instances
  */
 function isSchemaError(error: unknown): boolean {
-  // Extract error message from various error formats
+  // Extract error message and code from various error formats
   let msg = "";
+  let errorCode: string | number | undefined;
+  let errno: number | undefined;
 
+  // Case 1: Error instance
   if (error instanceof Error) {
     msg = error.message;
-  } else if (
-    error &&
-    typeof error === "object" &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  ) {
-    // Handle plain objects with message property (MySQL2 driver may return these)
-    msg = (error as { message: string }).message;
-  } else if (typeof error === "string") {
+    // Check if Error has additional properties (MySQL2 format)
+    if ('code' in error) errorCode = (error as any).code;
+    if ('errno' in error) errno = (error as any).errno;
+    // Check for nested cause
+    if ('cause' in error && error.cause) {
+      return isSchemaError(error.cause);
+    }
+  }
+  // Case 2: Plain object with message property
+  else if (error && typeof error === "object") {
+    if ("message" in error && typeof (error as any).message === "string") {
+      msg = (error as any).message;
+    }
+    if ("sqlMessage" in error && typeof (error as any).sqlMessage === "string") {
+      msg = (error as any).sqlMessage;
+    }
+    if ("code" in error) errorCode = (error as any).code;
+    if ("errno" in error) errno = (error as any).errno;
+    // Check for nested cause or originalError
+    if ("cause" in error && (error as any).cause) {
+      return isSchemaError((error as any).cause);
+    }
+    if ("originalError" in error && (error as any).originalError) {
+      return isSchemaError((error as any).originalError);
+    }
+  }
+  // Case 3: String error
+  else if (typeof error === "string") {
     msg = error;
   }
 
-  if (!msg) {
-    // Log unexpected error format for debugging
+  // If no message extracted, log and return false
+  if (!msg && !errorCode && !errno) {
     logger.warn(
-      { errorType: typeof error, error },
-      "isSchemaError: Unexpected error format"
+      {
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorKeys: error && typeof error === "object" ? Object.keys(error) : [],
+      },
+      "isSchemaError: Could not extract error information"
     );
     return false;
   }
 
+  // Check MySQL error codes (most reliable)
+  if (errno === 1054) return true; // ER_BAD_FIELD_ERROR
+  if (errorCode === "ER_BAD_FIELD_ERROR") return true;
+  if (errorCode === 1054) return true;
+
+  // Check error message patterns
   const msgLower = msg.toLowerCase();
   return (
     msgLower.includes("unknown column") ||
     msgLower.includes("no such column") ||
-    msgLower.includes("er_bad_field_error") || // MySQL error code
-    (msgLower.includes("column") && msgLower.includes("does not exist"))
+    msgLower.includes("er_bad_field_error") ||
+    (msgLower.includes("column") && msgLower.includes("does not exist")) ||
+    (msgLower.includes("column") && msgLower.includes("on clause"))
   );
 }
 
@@ -225,15 +258,34 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
+        logger.error(
+          {
+            error: queryError,
+            errorType: typeof queryError,
+            errorConstructor: queryError?.constructor?.name,
+            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
+            errorMessage: queryError instanceof Error ? queryError.message : undefined,
+            errorCode: (queryError as any)?.code,
+            errorErrno: (queryError as any)?.errno,
+            errorSqlMessage: (queryError as any)?.sqlMessage,
+          },
+          "getBatchesNeedingPhotos: Query with strains join failed - analyzing error format"
+        );
+
         // QA-003: Only fallback for schema-related errors
         if (!isSchemaError(queryError)) {
+          logger.error(
+            { error: queryError },
+            "Not a schema error, re-throwing to caller"
+          );
           throw queryError;
         }
 
-        // Log the actual error for debugging
+        // Log the fallback
         logger.warn(
           { error: queryError },
-          "getBatchesNeedingPhotos query with strains failed, falling back to simpler query"
+          "Schema error detected, falling back to query without strains join"
         );
 
         // Fallback query without strains join
@@ -460,15 +512,34 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(100);
       } catch (queryError) {
+        // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
+        logger.error(
+          {
+            error: queryError,
+            errorType: typeof queryError,
+            errorConstructor: queryError?.constructor?.name,
+            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
+            errorMessage: queryError instanceof Error ? queryError.message : undefined,
+            errorCode: (queryError as any)?.code,
+            errorErrno: (queryError as any)?.errno,
+            errorSqlMessage: (queryError as any)?.sqlMessage,
+          },
+          "Photography queue query with strains failed - analyzing error format"
+        );
+
         // QA-003: Only fallback for schema-related errors
         if (!isSchemaError(queryError)) {
+          logger.error(
+            { error: queryError },
+            "Not a schema error, re-throwing to caller"
+          );
           throw queryError;
         }
 
-        // Log the actual error for debugging
+        // Log the fallback
         logger.warn(
           { error: queryError },
-          "Photography queue query with strains failed, falling back to simpler query"
+          "Schema error detected, falling back to query without strains join"
         );
 
         // Fallback query without strains join (in case strainId column doesn't exist)
@@ -903,15 +974,34 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
+        logger.error(
+          {
+            error: queryError,
+            errorType: typeof queryError,
+            errorConstructor: queryError?.constructor?.name,
+            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
+            errorMessage: queryError instanceof Error ? queryError.message : undefined,
+            errorCode: (queryError as any)?.code,
+            errorErrno: (queryError as any)?.errno,
+            errorSqlMessage: (queryError as any)?.sqlMessage,
+          },
+          "getAwaitingPhotography: Query with strains join failed - analyzing error format"
+        );
+
         // QA-003: Only fallback for schema-related errors
         if (!isSchemaError(queryError)) {
+          logger.error(
+            { error: queryError },
+            "Not a schema error, re-throwing to caller"
+          );
           throw queryError;
         }
 
         // Fallback: Query without strains join if strainId column doesn't exist
         logger.warn(
           { error: queryError },
-          "getAwaitingPhotography: Query with strains join failed, falling back to simpler query"
+          "Schema error detected, falling back to query without strains join"
         );
         batchesAwaitingPhotos = await database
           .select({
