@@ -1,6 +1,6 @@
 # GF-001: Direct Intake Specification
 
-**Version:** 2.0
+**Version:** 3.0
 **Status:** Draft
 **Last Updated:** 2026-01-27
 **Author:** Claude Agent (GF-PHASE0A-001)
@@ -573,6 +573,148 @@ batches (1) ───────┬── batchLocations (many)
 
 ---
 
+## Adversarial Test Scenarios
+
+> Per QA Protocol v3.0: Every specification must include adversarial test scenarios that probe the system's defenses using 5 lenses: Input Fuzzing, State-Based Attacks, Business Logic Attacks, Concurrency, and Authorization.
+
+### Input Fuzzing Tests
+
+| ID     | Target Field    | Attack Vector                            | Expected Behavior                         | Business Rule |
+| ------ | --------------- | ---------------------------------------- | ----------------------------------------- | ------------- |
+| AT-001 | `vendorName`    | Empty string `""`                        | Validation error: "Vendor name required"  | BR-001        |
+| AT-002 | `vendorName`    | Null value                               | Validation error: "Vendor name required"  | BR-001        |
+| AT-003 | `vendorName`    | 256+ characters                          | Validation error: "Max 255 characters"    | BR-001        |
+| AT-004 | `vendorName`    | SQL injection `'; DROP TABLE batches;--` | Sanitized, no SQL execution               | N/A           |
+| AT-005 | `vendorName`    | XSS `<script>alert('xss')</script>`      | HTML escaped in output                    | N/A           |
+| AT-006 | `vendorName`    | Unicode RTL override `\u202E`            | Sanitized or rejected                     | N/A           |
+| AT-007 | `quantity`      | Zero `0`                                 | Validation error: "Must be positive"      | BR-005        |
+| AT-008 | `quantity`      | Negative `-100`                          | Validation error: "Must be positive"      | BR-005        |
+| AT-009 | `quantity`      | Non-numeric `"abc"`                      | Type error, rejected                      | BR-005        |
+| AT-010 | `quantity`      | Extremely large `999999999999`           | Validation error or overflow handling     | BR-005        |
+| AT-011 | `quantity`      | More than 2 decimals `100.999`           | Truncated or rejected per BR-006          | BR-006        |
+| AT-012 | `unitCogs`      | Negative `-50.00`                        | Validation error: "Must be >= 0"          | BR-010        |
+| AT-013 | `unitCogs`      | Over max `1000001`                       | Validation error: "Max 1,000,000"         | BR-010        |
+| AT-014 | `unitCogsMin`   | Greater than `unitCogsMax`               | Validation error: "Min must be < Max"     | BR-009        |
+| AT-015 | `unitCogsMin`   | Equal to `unitCogsMax`                   | Validation error: "Min must be < Max"     | BR-009        |
+| AT-016 | `category`      | Non-existent category `"InvalidCat"`     | Validation error or graceful handling     | BR-004        |
+| AT-017 | `strainId`      | Non-existent ID `999999`                 | Validation error: "Strain not found"      | BR-014        |
+| AT-018 | `strainId`      | Negative ID `-1`                         | Validation error: "Invalid strain ID"     | BR-014        |
+| AT-019 | `location.site` | Lowercase `"warehouse1"`                 | Validation error or auto-uppercase        | BR-012        |
+| AT-020 | `location.site` | Special chars `"WARE@HOUSE!"`            | Validation error: "Alphanumeric only"     | BR-012        |
+| AT-021 | `paymentTerms`  | Invalid enum `"NET_999"`                 | Validation error: "Invalid payment terms" | N/A           |
+| AT-022 | `mediaUrls`     | Malicious URL `javascript:alert(1)`      | Rejected or sanitized                     | N/A           |
+| AT-023 | `metadata`      | Deeply nested object (100+ levels)       | Rejected or depth-limited                 | N/A           |
+| AT-024 | `metadata`      | Oversized JSON (10MB+)                   | Rejected: payload too large               | N/A           |
+
+### State-Based Attack Tests
+
+| ID     | Attack Vector                                  | Expected Behavior                                     | Invariant |
+| ------ | ---------------------------------------------- | ----------------------------------------------------- | --------- |
+| AT-025 | Submit same form twice rapidly (double-click)  | Idempotent: only one batch created OR second rejected | INV-007   |
+| AT-026 | Submit while network disconnected              | Graceful error, no partial state                      | INV-011   |
+| AT-027 | Close modal during media upload                | Upload cancelled, no orphan files                     | INV-012   |
+| AT-028 | Submit with stale vendor autocomplete data     | Re-validates vendor exists at submit time             | BL-001    |
+| AT-029 | Concurrent intakes with same lot code          | Unique constraint prevents duplicate                  | INV-009   |
+| AT-030 | Transaction timeout mid-creation               | Full rollback, no partial entities                    | INV-011   |
+| AT-031 | Database connection lost during commit         | Full rollback, error shown to user                    | INV-011   |
+| AT-032 | Media upload succeeds but batch creation fails | Media files cleaned up (rollback)                     | INV-012   |
+| AT-033 | Refresh page after submission started          | Previous submission completes or rolls back cleanly   | INV-011   |
+
+### Authorization Attack Tests
+
+| ID     | Attack Vector                                  | Expected Behavior                          | Business Rule  |
+| ------ | ---------------------------------------------- | ------------------------------------------ | -------------- |
+| AT-034 | Submit without `inventory:create` permission   | 403 Forbidden                              | API Permission |
+| AT-035 | Include `createdBy` in input payload           | Ignored - actor from `ctx.user.id` only    | INV-013        |
+| AT-036 | Include `organizationId` different from user's | Ignored or rejected - scoped to user's org | N/A            |
+| AT-037 | Unauthenticated request                        | 401 Unauthorized                           | N/A            |
+| AT-038 | Expired session token                          | 401 Unauthorized, redirect to login        | N/A            |
+| AT-039 | Access vendor from different organization      | Rejected - vendor not found in user's org  | BL-001         |
+
+### Business Logic Attack Tests
+
+| ID     | Attack Vector                                          | Expected Behavior                                  | Business Rule |
+| ------ | ------------------------------------------------------ | -------------------------------------------------- | ------------- |
+| AT-040 | Flower category without strain                         | Validation error: "Strain required for Flower"     | BR-014        |
+| AT-041 | COD payment terms without amount paid                  | Validation error: "Amount paid required"           | BR-011        |
+| AT-042 | PARTIAL payment without amount paid                    | Validation error: "Amount paid required"           | BR-011        |
+| AT-043 | FIXED cogsMode without unitCogs                        | Validation error: "Unit COGS required"             | BR-007        |
+| AT-044 | RANGE cogsMode without min/max                         | Validation error: "Min and Max COGS required"      | BR-008        |
+| AT-045 | COGS manipulation: set min=0, max=1000000              | Allowed but flagged for review (wide range)        | BR-009        |
+| AT-046 | Grade required by org but submitted empty              | Validation error: "Grade required"                 | BR-013        |
+| AT-047 | CONSIGNMENT terms expect payable creation              | Verify payable record created with correct amounts | BL-009        |
+| AT-048 | Non-CONSIGNMENT should not create payable              | Verify no payable record created                   | BL-009        |
+| AT-049 | Attempt to create batch with status != AWAITING_INTAKE | Input ignored, status forced to AWAITING_INTAKE    | INV-006       |
+| AT-050 | Attempt to set non-zero reservedQty                    | Input ignored, reservedQty forced to 0             | INV-002       |
+
+### Concurrency Tests
+
+| ID     | Attack Vector                             | Expected Behavior                                | Invariant        |
+| ------ | ----------------------------------------- | ------------------------------------------------ | ---------------- |
+| AT-051 | 10 users submit intake simultaneously     | All succeed with unique batch/lot codes          | INV-007, INV-009 |
+| AT-052 | Same user submits 5 intakes in 1 second   | All succeed or rate-limited                      | INV-007          |
+| AT-053 | Autocomplete search during batch creation | Autocomplete returns consistent results          | N/A              |
+| AT-054 | Vendor updated while user types in form   | Form submission uses vendor state at submit time | BL-001           |
+| AT-055 | Category deleted while form is open       | Validation error at submit: "Category not found" | BR-004           |
+
+### Edge Case Tests
+
+| ID     | Attack Vector                              | Expected Behavior                      | Notes  |
+| ------ | ------------------------------------------ | -------------------------------------- | ------ |
+| AT-056 | Exactly 255 character vendor name          | Accepted (boundary value)              | BR-001 |
+| AT-057 | Quantity = 0.01 (minimum positive)         | Accepted                               | BR-005 |
+| AT-058 | Quantity = 0.001 (exceeds decimal limit)   | Truncated to 0.00 or rejected          | BR-006 |
+| AT-059 | COGS min=0, max=0.01                       | Accepted (minimum valid range)         | BR-009 |
+| AT-060 | All optional fields omitted                | Batch created with null/default values | N/A    |
+| AT-061 | Maximum allowed media files (10?)          | All uploaded and linked                | N/A    |
+| AT-062 | Media file at max size limit               | Uploaded successfully                  | N/A    |
+| AT-063 | Media file exceeding max size              | Rejected: "File too large"             | N/A    |
+| AT-064 | Unicode in product name (emoji, CJK chars) | Accepted and displayed correctly       | BR-003 |
+| AT-065 | Very long product name (255 chars)         | Accepted (boundary value)              | BR-003 |
+
+### Test Execution Matrix
+
+| Priority  | Test Category    | Count  | Automation Target    |
+| --------- | ---------------- | ------ | -------------------- |
+| P0        | Authorization    | 6      | E2E + API tests      |
+| P0        | Input Validation | 24     | Unit + API tests     |
+| P1        | Business Logic   | 11     | Integration tests    |
+| P1        | State-Based      | 9      | E2E + manual testing |
+| P2        | Concurrency      | 5      | Load testing         |
+| P2        | Edge Cases       | 10     | Unit tests           |
+| **Total** |                  | **65** |                      |
+
+### Test Data Requirements
+
+```typescript
+// Adversarial test data fixtures
+export const adversarialTestData = {
+  // Input Fuzzing
+  sqlInjection: "'; DROP TABLE batches;--",
+  xssPayload: "<script>alert('xss')</script>",
+  unicodeRTL: "\u202Ereversed",
+  maxString: "A".repeat(256),
+  deeplyNested: JSON.parse('{"a":'.repeat(100) + "1" + "}".repeat(100)),
+
+  // Boundary Values
+  minQuantity: 0.01,
+  maxQuantity: 999999999.99,
+  minCogs: "0.00",
+  maxCogs: "1000000.00",
+
+  // Invalid Enums
+  invalidPaymentTerms: "NET_999",
+  invalidCogsMode: "VARIABLE",
+  invalidCategory: "NotARealCategory",
+
+  // Authorization
+  differentOrgVendorId: 999999,
+  maliciousCreatedBy: 1, // Should be ignored
+};
+```
+
+---
+
 ## Appendix
 
 ### File Locations
@@ -601,7 +743,8 @@ batches (1) ───────┬── batchLocations (many)
 
 ### Revision History
 
-| Version | Date       | Author       | Changes                                                                                                        |
-| ------- | ---------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
-| 1.0     | 2026-01-27 | Claude Agent | Initial specification                                                                                          |
-| 2.0     | 2026-01-27 | Claude Agent | Added problem statement, terminology, known issues, success metrics, FEAT-008 integration, acceptance criteria |
+| Version | Date       | Author       | Changes                                                                                                                              |
+| ------- | ---------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1.0     | 2026-01-27 | Claude Agent | Initial specification                                                                                                                |
+| 2.0     | 2026-01-27 | Claude Agent | Added problem statement, terminology, known issues, success metrics, FEAT-008 integration, acceptance criteria                       |
+| 3.0     | 2026-01-27 | Claude Agent | Added 65 adversarial test scenarios per QA Protocol v3.0 (input fuzzing, state-based, auth, business logic, concurrency, edge cases) |
