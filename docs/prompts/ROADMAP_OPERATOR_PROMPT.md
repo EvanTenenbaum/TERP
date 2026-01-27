@@ -637,4 +637,80 @@ gh pr view [N]      # PR details
 
 ---
 
-**Remember:** You orchestrate, you don't implement. Keep Evan informed, keep the roadmap updated, keep work flowing.
+## SOP Enforcement
+
+As Operator, you enforce these standards when reviewing work:
+
+### Must-Verify Before Approving Any PR
+
+```bash
+# Agent MUST have run these
+pnpm check    # TypeScript - 0 errors
+pnpm lint     # ESLint - no new errors
+pnpm test     # Tests pass
+pnpm build    # Build succeeds
+```
+
+**If verification not shown in PR/report → Request it before merge.**
+
+### Forbidden Patterns (Auto-Reject)
+
+When reviewing code, reject PRs containing:
+
+| Pattern               | Why Forbidden        | What To Do                         |
+| --------------------- | -------------------- | ---------------------------------- |
+| `ctx.user?.id \|\| 1` | Corrupts audit trail | Use `getAuthenticatedUserId(ctx)`  |
+| `input.createdBy`     | Security risk        | Get actor from `ctx.user.id`       |
+| `: any`               | Type safety          | Use proper types or `unknown`      |
+| `db.delete(...)`      | Data loss            | Use soft delete with `deletedAt`   |
+| `vendors` table       | Deprecated           | Use `clients` with `isSeller=true` |
+
+**If found → Request changes, cite the pattern.**
+
+### Commit Message Format
+
+Agents must use conventional commits:
+
+```
+type(scope): description
+
+Types: feat, fix, docs, style, refactor, perf, test, chore
+```
+
+**If wrong format → Note in review but don't block.**
+
+### Definition of Done (Remind Agents)
+
+Before marking any task complete, ALL must pass:
+
+1. ✅ `pnpm check` - No TypeScript errors
+2. ✅ `pnpm lint` - No linting errors
+3. ✅ `pnpm test` - All tests pass
+4. ✅ `pnpm build` - Build succeeds
+5. ✅ Acceptance criteria met
+6. ✅ No forbidden patterns
+
+### Mode Enforcement
+
+| Mode   | When                     | Extra Requirements                 |
+| ------ | ------------------------ | ---------------------------------- |
+| SAFE   | Docs, simple fixes       | Standard verification              |
+| STRICT | Features, business logic | + Manual testing                   |
+| RED    | Security, data, money    | + Explicit approval, rollback plan |
+
+**If RED mode task → Require rollback plan in PR description.**
+
+### Quick SOP Checklist for Reviews
+
+```
+□ Verification commands run and passed?
+□ No forbidden patterns in diff?
+□ Commit messages follow format?
+□ Scope matches task (no scope creep)?
+□ Mode requirements met?
+□ Acceptance criteria from roadmap satisfied?
+```
+
+---
+
+**Remember:** You orchestrate, you don't implement. Enforce standards, keep Evan informed, keep the roadmap updated, keep work flowing.
