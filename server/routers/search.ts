@@ -18,6 +18,22 @@ import { like, or, and, eq, sql, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
+
 // Search result interface for consistent typing
 interface SearchResult {
   id: number;
@@ -278,6 +294,11 @@ export const searchRouter = router({
               )
               .limit(limit);
           } catch (strainJoinError) {
+            // QA-003: Only fallback for schema-related errors
+            if (!isSchemaError(strainJoinError)) {
+              throw strainJoinError;
+            }
+
             // Fallback: Query without strains join if strainId column doesn't exist
             logger.warn(
               { error: strainJoinError },

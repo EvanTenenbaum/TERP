@@ -9,6 +9,22 @@ import { eq, and, like, or, gt, sql, desc } from "drizzle-orm";
 import { strainService } from "./strainService";
 import { logger } from "../_core/logger";
 
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
+
 interface ProductMatch {
   batchId: number;
   batchCode: string;
@@ -163,6 +179,11 @@ export async function findProductsByStrain(options: {
         )
         .orderBy(desc(batches.onHandQty));
     } catch (queryError) {
+      // QA-003: Only fallback for schema-related errors
+      if (!isSchemaError(queryError)) {
+        throw queryError;
+      }
+
       // If strainId column doesn't exist, this feature cannot work
       // Return empty results with a warning
       logger.warn(
@@ -272,6 +293,11 @@ export async function groupProductsBySubcategory(options: {
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(products.subcategory, desc(batches.onHandQty));
     } catch (queryError) {
+      // QA-003: Only fallback for schema-related errors
+      if (!isSchemaError(queryError)) {
+        throw queryError;
+      }
+
       // Fallback: Query without strains join if strainId column doesn't exist
       logger.warn(
         { error: queryError },

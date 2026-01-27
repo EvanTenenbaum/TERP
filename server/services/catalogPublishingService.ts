@@ -17,6 +17,22 @@ import { eq, and, isNull, desc, sql } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { safeInArray } from "../lib/sqlSafety";
 
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -339,6 +355,11 @@ export async function getPublishedCatalog(options: {
       .limit(limit)
       .offset(offset);
   } catch (queryError) {
+    // QA-003: Only fallback for schema-related errors
+    if (!isSchemaError(queryError)) {
+      throw queryError;
+    }
+
     // Fallback: Query without strains join if strainId column doesn't exist
     logger.warn(
       { error: queryError },

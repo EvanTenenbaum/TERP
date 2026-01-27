@@ -19,6 +19,22 @@ import { storagePut, isStorageConfigured } from "../storage";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
+
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
 
@@ -184,6 +200,11 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        // QA-003: Only fallback for schema-related errors
+        if (!isSchemaError(queryError)) {
+          throw queryError;
+        }
+
         // Log the actual error for debugging
         logger.warn(
           { error: queryError },
@@ -414,6 +435,11 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(100);
       } catch (queryError) {
+        // QA-003: Only fallback for schema-related errors
+        if (!isSchemaError(queryError)) {
+          throw queryError;
+        }
+
         // Log the actual error for debugging
         logger.warn(
           { error: queryError },
@@ -852,6 +878,11 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        // QA-003: Only fallback for schema-related errors
+        if (!isSchemaError(queryError)) {
+          throw queryError;
+        }
+
         // Fallback: Query without strains join if strainId column doesn't exist
         logger.warn(
           { error: queryError },
