@@ -182,7 +182,7 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 ```typescript
 {
   poItemId: number,
-  quantity: number,           // Must be > 0
+  quantity: number,           // Must be > 0 (validated via .positive())
   locationId?: number,        // Existing location
   locationData?: {            // Or create inline
     site: string,
@@ -196,6 +196,8 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
   notes?: string
 }
 ```
+
+**Note:** The `items` array requires at least 1 item (`.min(1)` validation).
 
 ### Accounting Router - Bills (`server/routers/accounting.ts`)
 
@@ -536,21 +538,27 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 | `accounting.bills.list` | `accounting:read` | Permission middleware |
 | `accounting.bills.create` | `accounting:create` | Permission middleware |
 | `accounting.bills.recordPayment` | `accounting:update` | Permission middleware |
+| `accounting.bills.generateNumber` | `accounting:read` | Permission middleware |
 
 ### Actor Attribution
 
-All mutations require actor attribution:
+All mutations require actor attribution **from authenticated context, never from client input**:
 
 ```typescript
-// ✅ CORRECT - purchaseOrders.create
-createdBy: poData.createdBy  // Passed from frontend
+// ❌ WRONG - purchaseOrders.create (CURRENT IMPLEMENTATION - NEEDS FIX)
+createdBy: poData.createdBy  // Accepts from client input - SECURITY VIOLATION
 
 // ✅ CORRECT - poReceiving.receiveGoodsWithBatch
 performedBy: getAuthenticatedUserId(ctx)  // From authenticated context
 
 // ✅ CORRECT - accounting.bills.create
 createdBy: getAuthenticatedUserId(ctx)  // From authenticated context
+
+// ✅ CORRECT PATTERN (how purchaseOrders.create SHOULD work)
+createdBy: getAuthenticatedUserId(ctx)  // From authenticated context
 ```
+
+> **WARNING**: `purchaseOrders.create` currently accepts `createdBy` from client input (line 78 of `purchaseOrders.ts`). This violates TERP's security standards and should be fixed to use `getAuthenticatedUserId(ctx)` instead.
 
 ### Data Isolation
 
@@ -839,7 +847,7 @@ PurchaseOrdersWorkSurface
 | **vendorId still required** | MEDIUM | Schema requires vendorId even with supplierClientId | Make vendorId nullable after migration |
 | **createdBy from input** | MEDIUM | `purchaseOrders.create` accepts `createdBy` from input | Use `getAuthenticatedUserId(ctx)` instead |
 | **No PO submission validation** | LOW | Can submit PO without line items | Add min 1 item validation in `submit()` |
-| **Duplicate inventory movements** | LOW | `receiveGoodsWithBatch` inserts movement twice | Remove duplicate insert at lines 543-553 |
+| **Duplicate inventory movements** | LOW | `receiveGoodsWithBatch` inserts movement twice (lines 543-553 AND 598-608) | Remove one of the duplicate inserts |
 
 ---
 
