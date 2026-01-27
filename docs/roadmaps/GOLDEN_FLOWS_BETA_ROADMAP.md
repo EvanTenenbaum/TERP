@@ -1,17 +1,81 @@
 # Golden Flows Beta Roadmap
 
-**Version:** 1.1 (Post-QA Review)
+**Version:** 2.0 (Post-Protocol QA Analysis)
 **Created:** 2026-01-27
 **Status:** ACTIVE
 **Goal:** Achieve fully functional beta-testing state for all 8 Golden Flows
 **QA Review:** `GOLDEN_FLOWS_BETA_ROADMAP_QA_REVIEW.md`
+**Protocol QA Analysis:** `GOLDEN_FLOWS_PROTOCOL_QA_ANALYSIS.md`
 **Source Documents:**
 - `jan-26-checkpoint/` - QA audit findings
 - `docs/reports/GOLDEN_FLOWS_PROD_READY_PLAN_2026-01-27.md`
 - `docs/roadmaps/MASTER_ROADMAP.md`
 - `docs/qa/QA_PLAYBOOK.md`
+- `docs/qa/QA_PROTOCOL_V3.md` - Third-Party QA Protocol
 
-> **QA Review Applied:** This document incorporates findings from a RED mode adversarial QA review. Key improvements include: split investigation/fix tasks, rollback plans, data seeding verification, security task integration, and revised estimates with 20% buffer.
+> **QA Review Applied:** This document incorporates findings from a RED mode adversarial QA review AND a comprehensive 5-lens QA Protocol v3.0 analysis. Key improvements include: split investigation/fix tasks, rollback plans, data seeding verification, security task integration, golden flow specification phase, business invariants, cross-flow regression testing, and escalation procedures. Revised estimates include 20% buffer.
+
+---
+
+## Critical: Business Invariants
+
+These invariants MUST be preserved across all phases. Any violation is a P0 blocker.
+
+| Invariant ID | Rule | Verification |
+|--------------|------|--------------|
+| INV-001 | `inventory.onHandQty >= 0` | Cannot go negative |
+| INV-002 | `order.total = sum(line_items.subtotal)` | Line items sum to order total |
+| INV-003 | `invoice.balance = total - amountPaid` | Balance correctly computed |
+| INV-004 | `GL debits = GL credits` per transaction | Entries always balance |
+| INV-005 | `client.totalOwed = sum(unpaid_invoices)` | Client balance accurate |
+| INV-006 | `batch.onHandQty = initialQty - sum(allocations)` | Inventory tracking accurate |
+| INV-007 | Audit trail exists for all mutations | `createdBy`, `updatedBy` always populated |
+| INV-008 | Order state transitions follow valid paths only | State machine enforced |
+
+**Invariant Verification Commands:**
+```sql
+-- INV-001: Check for negative inventory
+SELECT id, onHandQty FROM batches WHERE onHandQty < 0;
+
+-- INV-002: Check order totals
+SELECT o.id FROM orders o
+WHERE o.total != (SELECT SUM(subtotal) FROM order_items WHERE orderId = o.id);
+
+-- INV-004: Check GL balance
+SELECT sourceType, sourceId, SUM(debit) - SUM(credit) as balance
+FROM gl_entries
+GROUP BY sourceType, sourceId
+HAVING balance != 0;
+```
+
+---
+
+## Escalation Procedures
+
+### When to Escalate
+
+| Situation | Escalation Path |
+|-----------|-----------------|
+| P0 bug found during testing | Create BUG-XXX, mark phase BLOCKED, notify Evan |
+| Invariant violation | Stop immediately, document in `docs/incidents/`, notify Evan |
+| Security vulnerability | RED mode, document in `docs/security/`, create fix task |
+| Schema change required | Create migration plan, get approval before executing |
+| Roadmap estimate exceeded 2x | Document reason, request timeline extension |
+
+### Blocking Issue Template
+
+When a phase is blocked, create `docs/blocks/BLOCK-{DATE}-{PHASE}.md`:
+```markdown
+# Block Report: {PHASE} - {ISSUE}
+
+**Date:** {date}
+**Phase:** {phase}
+**Blocker:** {description}
+**Impact:** {what cannot proceed}
+**Investigation:** {what was tried}
+**Proposed Resolution:** {fix approach}
+**Estimated Unblock Time:** {time}
+```
 
 ---
 
@@ -43,7 +107,277 @@ All 8 Golden Flows functional with:
 
 ---
 
-## Phase 0: Foundation Unblocking (Days 1-3)
+## Phase 0.A: Golden Flow Specification (Days 1-2)
+
+**Objective:** Create complete specifications for each Golden Flow before any fixes begin.
+**Mode:** SAFE
+**Gate Criteria:** All 8 flows have written specifications with data models, state machines, and invariants.
+**Priority:** CRITICAL - Must complete before Phase 0
+
+> **QA Protocol Finding QA-002 [P0]:** No formal specification exists for any Golden Flow. Without specifications, agents cannot verify if behavior is correct or incorrect.
+
+### Why This Phase is Critical
+
+Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, frontend, logic, and business logic standpoint to ensure no gaps are missed or created as work progresses."
+
+**Without specifications:**
+- Agents cannot verify correct behavior
+- Edge cases are discovered during testing, not during design
+- Cross-flow interactions are not documented
+- Data model assumptions may conflict
+
+### Phase 0.A Tasks
+
+#### GF-PHASE0A-001: Define GF-001 Direct Intake Specification
+
+**Task ID:** GF-PHASE0A-001
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-001-DIRECT-INTAKE.md`
+
+**Agent Checklist:**
+- [ ] Document complete UX flow (user journey with all decision points)
+- [ ] Document UI components and their states
+- [ ] Document backend endpoints called with request/response shapes
+- [ ] Document database entities created/modified
+- [ ] Document state transitions (if any)
+- [ ] Document business rules and validation
+- [ ] Document error states and recovery paths
+- [ ] Document invariants that must be preserved
+- [ ] Document cross-flow touchpoints (what other flows this affects)
+
+**Specification Template:**
+```markdown
+# GF-001: Direct Intake - Specification
+
+## Overview
+[1-2 sentence summary]
+
+## User Journey
+1. User navigates to /intake
+2. User clicks "Add Row"
+3. [continue with all steps...]
+
+## UI States
+| State | Trigger | Display |
+|-------|---------|---------|
+| Empty | Initial load | "Add rows to begin" |
+| Editing | Row added | Form fields visible |
+| Saving | Submit clicked | Loading indicator |
+| Success | Save complete | Toast + clear form |
+| Error | Save failed | Error message |
+
+## API Endpoints
+| Endpoint | Method | Request Shape | Response Shape |
+|----------|--------|---------------|----------------|
+| inventory.intake | POST | { items: [...] } | { batchIds: [...] } |
+
+## Data Model
+[List tables affected with key fields]
+
+## Business Rules
+1. Quantity must be > 0
+2. [continue...]
+
+## Error States
+| Error | Cause | Recovery |
+|-------|-------|----------|
+| "Invalid quantity" | qty <= 0 | Show field error |
+
+## Invariants
+- INV-001: onHandQty >= 0 after intake
+
+## Cross-Flow Touchpoints
+- Affects GF-007 (Inventory Management) - new batches appear
+- [continue...]
+```
+
+---
+
+#### GF-PHASE0A-002: Define GF-002 Procure-to-Pay Specification
+
+**Task ID:** GF-PHASE0A-002
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-002-PROCURE-TO-PAY.md`
+
+**Agent Checklist:**
+- [ ] Document complete UX flow (PO creation → receipt → bill recording)
+- [ ] Document UI components: PO form, product selector, receiving screen
+- [ ] Document backend endpoints: purchaseOrders.create, inventory.receive
+- [ ] Document database entities: purchase_orders, po_items, batches, bills
+- [ ] Document state transitions: DRAFT → SUBMITTED → PARTIALLY_RECEIVED → RECEIVED
+- [ ] Document business rules: supplier selection, pricing, receiving quantities
+- [ ] Document error states and recovery
+- [ ] Document invariants
+- [ ] Document cross-flow touchpoints (GF-007 inventory, GF-006 payables)
+
+---
+
+#### GF-PHASE0A-003: Define GF-003 Order-to-Cash Specification
+
+**Task ID:** GF-PHASE0A-003
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-003-ORDER-TO-CASH.md`
+
+**Agent Checklist:**
+- [ ] Document complete UX flow (order → invoice → payment → fulfillment)
+- [ ] Document UI components across all surfaces
+- [ ] Document backend endpoints for full flow
+- [ ] Document database entities: orders, order_items, invoices, payments, shipments
+- [ ] Document state transitions: DRAFT → CONFIRMED → INVOICED → PAID → SHIPPED → DELIVERED
+- [ ] Document business rules: pricing, inventory allocation, payment terms
+- [ ] Document error states
+- [ ] Document invariants (INV-002, INV-003, INV-006)
+- [ ] Document cross-flow touchpoints (GF-004, GF-005, GF-006, GF-007)
+
+---
+
+#### GF-PHASE0A-004: Define GF-004 Invoice & Payment Specification
+
+**Task ID:** GF-PHASE0A-004
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-004-INVOICE-PAYMENT.md`
+
+**Agent Checklist:**
+- [ ] Document UX flow: view invoice → record payment → generate PDF
+- [ ] Document UI components: invoice list, payment dialog, PDF viewer
+- [ ] Document backend endpoints: invoices.list, payments.recordPayment, invoices.generatePdf
+- [ ] Document database entities: invoices, payments, gl_entries
+- [ ] Document payment states: PENDING → PARTIAL → PAID
+- [ ] Document business rules: partial payments, overpayment rejection, GL posting
+- [ ] Document error states
+- [ ] Document invariants (INV-003, INV-004)
+- [ ] Document cross-flow touchpoints (GF-003, GF-006)
+
+---
+
+#### GF-PHASE0A-005: Define GF-005 Pick & Pack Specification
+
+**Task ID:** GF-PHASE0A-005
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-005-PICK-PACK.md`
+
+**Agent Checklist:**
+- [ ] Document UX flow: view queue → pick → pack → ship
+- [ ] Document UI components: order queue, pick list, pack confirmation
+- [ ] Document backend endpoints: fulfillment.pick, fulfillment.pack, fulfillment.ship
+- [ ] Document database entities: orders, shipments, inventory_movements
+- [ ] Document state transitions: CONFIRMED → PICKED → PACKED → SHIPPED
+- [ ] Document business rules: inventory decrement, location handling
+- [ ] Document error states
+- [ ] Document invariants (INV-001, INV-006, INV-008)
+- [ ] Document cross-flow touchpoints (GF-003, GF-007)
+
+---
+
+#### GF-PHASE0A-006: Define GF-006 Client Ledger Specification
+
+**Task ID:** GF-PHASE0A-006
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-006-CLIENT-LEDGER.md`
+
+**Agent Checklist:**
+- [ ] Document UX flow: dashboard → client selection → transaction history → aging
+- [ ] Document UI components: AR/AP widgets, client detail, ledger table
+- [ ] Document backend endpoints: accounting.getTopDebtors, clients.getLedger
+- [ ] Document data model: clients.totalOwed, invoices, payments
+- [ ] Document aging calculation logic
+- [ ] Document business rules: balance computation, statement generation
+- [ ] Document error states
+- [ ] Document invariants (INV-005)
+- [ ] Document cross-flow touchpoints (GF-003, GF-004)
+
+---
+
+#### GF-PHASE0A-007: Define GF-007 Inventory Management Specification
+
+**Task ID:** GF-PHASE0A-007
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-007-INVENTORY-MGMT.md`
+
+**Agent Checklist:**
+- [ ] Document UX flow: view batches → adjust → transfer → report
+- [ ] Document UI components: batch list, adjustment dialog, transfer form
+- [ ] Document backend endpoints: inventory.list, inventory.adjust, inventory.transfer
+- [ ] Document database entities: batches, batch_locations, inventory_movements
+- [ ] Document adjustment types: count, damage, transfer
+- [ ] Document business rules: adjustment reasons, location management
+- [ ] Document error states
+- [ ] Document invariants (INV-001, INV-006)
+- [ ] Document cross-flow touchpoints (GF-001, GF-003, GF-005)
+
+---
+
+#### GF-PHASE0A-008: Define GF-008 Sample Request Specification
+
+**Task ID:** GF-PHASE0A-008
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** SAFE
+**Output:** `docs/golden-flows/specs/GF-008-SAMPLE-REQUEST.md`
+
+**Agent Checklist:**
+- [ ] Document UX flow: create request → select product → submit → fulfill
+- [ ] Document UI components: request form, product selector, status tracker
+- [ ] Document backend endpoints: samples.create, samples.fulfill
+- [ ] Document database entities: sample_requests, sample_items
+- [ ] Document state transitions: PENDING → APPROVED → FULFILLED → DELIVERED
+- [ ] Document business rules: approval workflow, inventory impact
+- [ ] Document error states
+- [ ] Document invariants
+- [ ] Document cross-flow touchpoints (GF-007)
+
+---
+
+### Phase 0.A Gate Verification
+
+Before proceeding to Phase 0, verify:
+
+```bash
+# Verify all spec files exist
+ls docs/golden-flows/specs/
+
+# Expected output:
+# GF-001-DIRECT-INTAKE.md
+# GF-002-PROCURE-TO-PAY.md
+# GF-003-ORDER-TO-CASH.md
+# GF-004-INVOICE-PAYMENT.md
+# GF-005-PICK-PACK.md
+# GF-006-CLIENT-LEDGER.md
+# GF-007-INVENTORY-MGMT.md
+# GF-008-SAMPLE-REQUEST.md
+```
+
+**Phase 0.A Exit Criteria:**
+- [ ] All 8 specification documents created
+- [ ] Each spec includes: UX flow, UI states, API endpoints, data model, business rules, error states, invariants, cross-flow touchpoints
+- [ ] Specs reviewed for internal consistency
+- [ ] Cross-flow touchpoints are bidirectional (if A mentions B, B mentions A)
+
+---
+
+## Phase 0: Foundation Unblocking (Days 3-5)
 
 **Objective:** Remove P0 blockers that cascade to multiple flows.
 **Mode:** RED (all changes to critical paths)
@@ -1319,6 +1653,20 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
+│                     PHASE 0.A: Golden Flow Specification                     │
+│                                                                             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                        │
+│  │P0A-001   │ │P0A-002   │ │P0A-003   │ │P0A-004   │  (All 8 specs can     │
+│  │GF-001 Spc│ │GF-002 Spc│ │GF-003 Spc│ │GF-004 Spc│   be created in       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘   parallel)            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                        │
+│  │P0A-005   │ │P0A-006   │ │P0A-007   │ │P0A-008   │                        │
+│  │GF-005 Spc│ │GF-006 Spc│ │GF-007 Spc│ │GF-008 Spc│                        │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘                        │
+│                                    │                                        │
+└────────────────────────────────────┼────────────────────────────────────────┘
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
 │                           PHASE 0: Foundation                               │
 │                                                                             │
 │  ┌─────────────────┐                                                        │
@@ -1406,19 +1754,54 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 ---
 
-## Summary: Task Breakdown by Phase (Post-QA Review)
+## Cross-Flow Regression Testing
+
+Per QA Protocol Finding QA-013, cross-flow impacts must be verified after each fix.
+
+### Regression Test Matrix
+
+After completing any task, run regression tests for affected flows:
+
+| If You Fix... | Also Test These Flows |
+|---------------|----------------------|
+| Inventory SQL (GF-PHASE0-001) | GF-001, GF-002, GF-003, GF-005, GF-007 |
+| RBAC (GF-PHASE0-002) | All flows with affected role |
+| Order State Machine (GF-PHASE0-004) | GF-003, GF-005 |
+| Payment Recording (GF-PHASE2-001) | GF-003, GF-004, GF-006 |
+| Pick & Pack (GF-PHASE2-002) | GF-003, GF-007 |
+
+### Regression Test Commands
+
+```bash
+# After inventory changes
+pnpm test --grep "inventory|batch|order|fulfillment"
+
+# After RBAC changes
+pnpm test:e2e --grep "RBAC|permission"
+
+# After payment changes
+pnpm test --grep "payment|invoice|ledger"
+
+# Full regression (run after Phase gate)
+pnpm test && pnpm test:e2e
+```
+
+---
+
+## Summary: Task Breakdown by Phase (Post-Protocol QA Analysis)
 
 | Phase | Focus | Tasks | Est. Duration | Buffer |
 |-------|-------|-------|---------------|--------|
+| 0.A | Golden Flow Specification | 8 | 2 days | - |
 | 0 | Foundation Unblocking | 5 | 3 days | +1 day |
 | 1 | Flow Restoration | 6 | 4 days | - |
 | 2 | Flow Completion | 4 | 5 days | +1 day |
 | 3 | RBAC Verification | 5 | 5 days | +1 day |
 | 4 | E2E Automation | 4 | 7 days | +1 day |
 | 5 | Beta Hardening + Security | 6 | 6 days | +1 day |
-| **Total** | | **30** | **30 days** | **+5 days (20% buffer)** |
+| **Total** | | **38** | **36 days** | **+6 days (20% buffer)** |
 
-> **QA Review Note:** Estimates increased by 20% based on RED mode adversarial review. This accounts for investigation uncertainty, RBAC fix buffer, and comprehensive error case testing.
+> **Protocol QA Analysis Note:** Phase 0.A added per QA Protocol v3.0 requirement that all golden flows be "fully defined on a UX, UI, backend, frontend, logic, and business logic standpoint." This adds 2 days but significantly reduces risk of discovering undefined behaviors during implementation.
 
 ---
 
