@@ -9,6 +9,22 @@ import { eq, and, like, or, gt, sql, desc } from "drizzle-orm";
 import { strainService } from "./strainService";
 import { logger } from "../_core/logger";
 
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
+
 interface ProductMatch {
   batchId: number;
   batchCode: string;
@@ -75,14 +91,20 @@ export async function findProductsByStrain(options: {
       if (options.includeRelated) {
         const family = await strainService.getStrainFamily(options.strainId);
         if (family?.variants) {
-          targetStrainIds.push(...family.variants.map((c: { id: number }) => c.id));
+          targetStrainIds.push(
+            ...family.variants.map((c: { id: number }) => c.id)
+          );
         }
         if (family?.parent) {
           targetStrainIds.push(family.parent.id);
           // Also get siblings (other variants of the parent)
-          const parentFamily = await strainService.getStrainFamily(family.parent.id);
+          const parentFamily = await strainService.getStrainFamily(
+            family.parent.id
+          );
           if (parentFamily?.variants) {
-            targetStrainIds.push(...parentFamily.variants.map((c: { id: number }) => c.id));
+            targetStrainIds.push(
+              ...parentFamily.variants.map((c: { id: number }) => c.id)
+            );
           }
         }
       }
@@ -94,7 +116,10 @@ export async function findProductsByStrain(options: {
         .where(
           or(
             like(strains.name, `%${options.strainName}%`),
-            like(strains.standardizedName, `%${options.strainName.toLowerCase().replace(/\s+/g, "-")}%`)
+            like(
+              strains.standardizedName,
+              `%${options.strainName.toLowerCase().replace(/\s+/g, "-")}%`
+            )
           )
         )
         .limit(20);
@@ -107,7 +132,9 @@ export async function findProductsByStrain(options: {
         for (const strainId of targetStrainIds) {
           const family = await strainService.getStrainFamily(strainId);
           if (family?.variants) {
-            family.variants.forEach((c: { id: number }) => relatedIds.add(c.id));
+            family.variants.forEach((c: { id: number }) =>
+              relatedIds.add(c.id)
+            );
           }
           if (family?.parent) {
             relatedIds.add(family.parent.id);
@@ -125,22 +152,46 @@ export async function findProductsByStrain(options: {
     targetStrainIds = [...new Set(targetStrainIds)];
 
     // Get products with these strains
-    const batchProducts = await db
-      .select({
-        batch: batches,
-        product: products,
-        strain: strains,
-      })
-      .from(batches)
-      .leftJoin(products, eq(batches.productId, products.id))
-      .leftJoin(strains, eq(products.strainId, strains.id))
-      .where(
-        and(
-          sql`${products.strainId} IN (${sql.join(targetStrainIds.map(id => sql`${id}`), sql`, `)})`,
-          gt(batches.onHandQty, "0")
+    // BUG-114: Added fallback for schema drift (strainId may not exist in production)
+    let batchProducts: Array<{
+      batch: typeof batches.$inferSelect;
+      product: typeof products.$inferSelect | null;
+      strain: typeof strains.$inferSelect | null;
+    }>;
+    try {
+      batchProducts = await db
+        .select({
+          batch: batches,
+          product: products,
+          strain: strains,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(strains, eq(products.strainId, strains.id))
+        .where(
+          and(
+            sql`${products.strainId} IN (${sql.join(
+              targetStrainIds.map(id => sql`${id}`),
+              sql`, `
+            )})`,
+            gt(batches.onHandQty, "0")
+          )
         )
-      )
-      .orderBy(desc(batches.onHandQty));
+        .orderBy(desc(batches.onHandQty));
+    } catch (queryError) {
+      // QA-003: Only fallback for schema-related errors
+      if (!isSchemaError(queryError)) {
+        throw queryError;
+      }
+
+      // If strainId column doesn't exist, this feature cannot work
+      // Return empty results with a warning
+      logger.warn(
+        { error: queryError },
+        "findProductsByStrain: Query failed due to schema drift (strainId column may not exist). Returning empty results."
+      );
+      return [];
+    }
 
     // Determine match type based on strain relationship
     const primaryStrainId = options.strainId || targetStrainIds[0];
@@ -158,7 +209,7 @@ export async function findProductsByStrain(options: {
         const family = await strainService.getStrainFamily(strainId);
         const familyIds = [
           family?.parent?.id,
-          ...(family?.variants?.map((c: { id: number }) => c.id) || [])
+          ...(family?.variants?.map((c: { id: number }) => c.id) || []),
         ].filter(Boolean);
 
         if (familyIds.includes(primaryStrainId)) {
@@ -223,17 +274,51 @@ export async function groupProductsBySubcategory(options: {
     }
 
     // Get products with subcategory info
-    const batchProducts = await db
-      .select({
-        batch: batches,
-        product: products,
-        strain: strains,
-      })
-      .from(batches)
-      .leftJoin(products, eq(batches.productId, products.id))
-      .leftJoin(strains, eq(products.strainId, strains.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(products.subcategory, desc(batches.onHandQty));
+    // BUG-114: Added fallback for schema drift (strainId may not exist in production)
+    let batchProducts: Array<{
+      batch: typeof batches.$inferSelect;
+      product: typeof products.$inferSelect | null;
+      strain: typeof strains.$inferSelect | null;
+    }>;
+    try {
+      batchProducts = await db
+        .select({
+          batch: batches,
+          product: products,
+          strain: strains,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(strains, eq(products.strainId, strains.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(products.subcategory, desc(batches.onHandQty));
+    } catch (queryError) {
+      // QA-003: Only fallback for schema-related errors
+      if (!isSchemaError(queryError)) {
+        throw queryError;
+      }
+
+      // Fallback: Query without strains join if strainId column doesn't exist
+      logger.warn(
+        { error: queryError },
+        "groupProductsBySubcategory: Query with strains join failed, falling back to simpler query"
+      );
+      const batchProductsNoStrain = await db
+        .select({
+          batch: batches,
+          product: products,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(products.subcategory, desc(batches.onHandQty));
+
+      // Map to expected format with null strain
+      batchProducts = batchProductsNoStrain.map(row => ({
+        ...row,
+        strain: null,
+      }));
+    }
 
     // Group by subcategory
     for (const row of batchProducts) {
@@ -272,7 +357,10 @@ export async function groupProductsBySubcategory(options: {
 /**
  * Find similar strains based on characteristics
  */
-export async function findSimilarStrains(strainId: number, limit: number = 10): Promise<SimilarStrain[]> {
+export async function findSimilarStrains(
+  strainId: number,
+  limit: number = 10
+): Promise<SimilarStrain[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -325,7 +413,12 @@ export async function findSimilarStrains(strainId: number, limit: number = 10): 
           and(
             eq(strains.category, sourceStrain.category),
             sql`${strains.id} != ${strainId}`,
-            sql`${strains.id} NOT IN (${sql.join(results.map(r => sql`${r.id}`), sql`, `) || sql`0`})`
+            sql`${strains.id} NOT IN (${
+              sql.join(
+                results.map(r => sql`${r.id}`),
+                sql`, `
+              ) || sql`0`
+            })`
           )
         )
         .limit(limit - results.length);
@@ -351,7 +444,12 @@ export async function findSimilarStrains(strainId: number, limit: number = 10): 
           and(
             like(strains.name, `%${sourceStrain.baseStrainName}%`),
             sql`${strains.id} != ${strainId}`,
-            sql`${strains.id} NOT IN (${sql.join(results.map(r => sql`${r.id}`), sql`, `) || sql`0`})`
+            sql`${strains.id} NOT IN (${
+              sql.join(
+                results.map(r => sql`${r.id}`),
+                sql`, `
+              ) || sql`0`
+            })`
           )
         )
         .limit(limit - results.length);

@@ -4,6 +4,7 @@
  */
 
 import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
+import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import {
   orders,
@@ -113,23 +114,36 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Extract actor ID from input (already validated by router using ctx.user.id)
+  const actorId = input.createdBy;
+
   // ORD-002: Validate positive quantities and non-negative prices
   for (const item of input.items) {
     if (item.quantity <= 0) {
-      throw new Error(`Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`);
+      throw new Error(
+        `Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`
+      );
     }
     if (item.unitPrice < 0) {
-      throw new Error(`Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`);
+      throw new Error(
+        `Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`
+      );
     }
     // Non-sample items should have a positive price (samples can be free)
     if (!item.isSample && item.unitPrice === 0) {
-      throw new Error(`Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`);
+      throw new Error(
+        `Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`
+      );
     }
     if (item.overridePrice !== undefined && item.overridePrice < 0) {
-      throw new Error(`Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`);
+      throw new Error(
+        `Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`
+      );
     }
     if (item.overrideCogs !== undefined && item.overrideCogs < 0) {
-      throw new Error(`Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`);
+      throw new Error(
+        `Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`
+      );
     }
   }
 
@@ -292,7 +306,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         !isDraft && input.orderType === "SALE" ? "PENDING" : undefined,
       fulfillmentStatus: !isDraft ? "PENDING" : undefined,
       notes: input.notes,
-      createdBy: input.createdBy,
+      createdBy: actorId,
     });
 
     // Get the created order by orderNumber
@@ -352,7 +366,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
             orderId: order.id,
             quantity: item.quantity.toString(),
             action: "CONSUMED",
-            createdBy: input.createdBy,
+            createdBy: actorId,
           });
         } else {
           // Reduce onHandQty
@@ -391,7 +405,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
           tax: 0,
           total: subtotal,
           dueDate,
-          createdBy: input.createdBy,
+          createdBy: actorId,
         });
 
         // Record cash payment if applicable
@@ -399,7 +413,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
           await recordOrderCashPayment({
             invoiceId,
             amount: input.cashPayment,
-            createdBy: input.createdBy,
+            createdBy: actorId,
           });
         }
 
@@ -762,7 +776,7 @@ export async function deleteOrder(
     if (!isValidStatusTransition("sale", currentSaleStatus, "CANCELLED")) {
       throw new Error(
         `Cannot cancel order: invalid transition from ${currentSaleStatus} to CANCELLED. ` +
-        `Orders with status ${currentSaleStatus} cannot be cancelled.`
+          `Orders with status ${currentSaleStatus} cannot be cancelled.`
       );
     }
 
@@ -807,7 +821,9 @@ export async function deleteOrder(
             quantityAllocated: orderLineItemAllocations.quantityAllocated,
           })
           .from(orderLineItemAllocations)
-          .where(inArray(orderLineItemAllocations.orderLineItemId, lineItemIds));
+          .where(
+            inArray(orderLineItemAllocations.orderLineItemId, lineItemIds)
+          );
 
         // Release reserved quantities for each allocation
         for (const allocation of allocations) {
@@ -832,7 +848,7 @@ export async function deleteOrder(
           }
         }
 
-        console.log(
+        console.info(
           `[INV-004] Released ${allocations.length} batch reservations for cancelled order ${id}`
         );
       }
@@ -906,7 +922,7 @@ export async function convertQuoteToSale(
     if (!isValidStatusTransition("quote", currentStatus, "CONVERTED")) {
       throw new Error(
         `Cannot convert quote: invalid transition from ${currentStatus} to CONVERTED. ` +
-        `Only ACCEPTED quotes can be converted. Current status: ${currentStatus}`
+          `Only ACCEPTED quotes can be converted. Current status: ${currentStatus}`
       );
     }
 
@@ -1208,6 +1224,9 @@ export async function confirmDraftOrder(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Extract actor ID from input (already validated by router using ctx.user.id)
+  const confirmActorId = input.confirmedBy;
+
   return await db.transaction(async tx => {
     // 1. Get the draft order
     const draft = await tx
@@ -1231,12 +1250,18 @@ export async function confirmDraftOrder(input: {
     // INV-002: Get unique batch IDs and lock all batches upfront to prevent race conditions
     const batchIds = [...new Set(draftItems.map(item => item.batchId))];
 
+    // BUG-115: Early return if no items to process (prevents empty array crash)
+    if (batchIds.length === 0) {
+      throw new Error("Cannot confirm order with no line items");
+    }
+
     // INV-002: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
     // This ensures that if two confirmations happen simultaneously, one will wait for the other
+    // BUG-115: Use safeInArray to prevent crash if batchIds is somehow empty
     const lockedBatches = await tx
       .select()
       .from(batches)
-      .where(inArray(batches.id, batchIds))
+      .where(safeInArray(batches.id, batchIds))
       .for("update");
 
     // Create a map for quick lookup
@@ -1303,7 +1328,7 @@ export async function confirmDraftOrder(input: {
           orderId: input.orderId,
           quantity: item.quantity.toString(),
           action: "CONSUMED",
-          createdBy: input.confirmedBy,
+          createdBy: confirmActorId,
         });
       } else {
         await tx
@@ -1373,20 +1398,30 @@ export async function updateDraftOrder(input: {
   if (input.items) {
     for (const item of input.items) {
       if (item.quantity <= 0) {
-        throw new Error(`Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`);
+        throw new Error(
+          `Invalid quantity ${item.quantity} for batch ${item.batchId}. Quantity must be greater than 0.`
+        );
       }
       if (item.unitPrice < 0) {
-        throw new Error(`Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`);
+        throw new Error(
+          `Invalid unit price ${item.unitPrice} for batch ${item.batchId}. Price cannot be negative.`
+        );
       }
       // Non-sample items should have a positive price (samples can be free)
       if (!item.isSample && item.unitPrice === 0) {
-        throw new Error(`Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`);
+        throw new Error(
+          `Unit price cannot be zero for non-sample item (batch ${item.batchId}). Use isSample=true for free items.`
+        );
       }
       if (item.overridePrice !== undefined && item.overridePrice < 0) {
-        throw new Error(`Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`);
+        throw new Error(
+          `Invalid override price ${item.overridePrice} for batch ${item.batchId}. Price cannot be negative.`
+        );
       }
       if (item.overrideCogs !== undefined && item.overrideCogs < 0) {
-        throw new Error(`Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`);
+        throw new Error(
+          `Invalid override COGS ${item.overrideCogs} for batch ${item.batchId}. COGS cannot be negative.`
+        );
       }
     }
   }
@@ -1800,7 +1835,12 @@ export async function updateOrderStatus(input: {
       const orderItemsForDecrement = (
         typeof order.items === "string" ? JSON.parse(order.items) : order.items
       ) as OrderItem[];
-      await decrementInventoryForOrder(tx, orderId, orderItemsForDecrement, userId);
+      await decrementInventoryForOrder(
+        tx,
+        orderId,
+        orderItemsForDecrement,
+        userId
+      );
     }
 
     // Update order status with version increment (DATA-005)
@@ -1894,7 +1934,7 @@ export async function updateSaleStatus(input: {
     const validTransitions = getValidSaleStatusTransitions(currentStatus);
     throw new Error(
       `Invalid sale status transition: ${currentStatus} -> ${input.newStatus}. ` +
-      `Valid transitions from ${currentStatus}: ${validTransitions.join(", ") || "none"}`
+        `Valid transitions from ${currentStatus}: ${validTransitions.join(", ") || "none"}`
     );
   }
 

@@ -101,29 +101,74 @@ export async function getInventoryWithPricing(
       "Fetching inventory batches with details"
     );
 
-    // INV-CONSISTENCY-002: Show all inventory with qty > 0, regardless of status
-    // Status is included in the response for display and filtering on frontend
-    const inventoryWithDetails = await db
-      .select({
-        batch: batches,
-        product: products,
-        lot: lots,
-        vendor: vendors,
-        strain: strains,
-      })
-      .from(batches)
-      .leftJoin(products, eq(batches.productId, products.id))
-      .leftJoin(lots, eq(batches.lotId, lots.id))
-      .leftJoin(vendors, eq(lots.vendorId, vendors.id))
-      .leftJoin(strains, eq(products.strainId, strains.id))
-      .where(
-        and(
-          sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) > 0`,
-          isNull(batches.deletedAt)
+    // FIX: Try query with strains join, fall back to simpler query if schema doesn't support it
+    // This handles the case where products.strainId column doesn't exist in production DB
+    let inventoryWithDetails: Array<{
+      batch: typeof batches.$inferSelect;
+      product: typeof products.$inferSelect | null;
+      lot: typeof lots.$inferSelect | null;
+      vendor: typeof vendors.$inferSelect | null;
+      strain: typeof strains.$inferSelect | null;
+    }>;
+
+    try {
+      // INV-CONSISTENCY-002: Show all inventory with qty > 0, regardless of status
+      // Status is included in the response for display and filtering on frontend
+      inventoryWithDetails = await db
+        .select({
+          batch: batches,
+          product: products,
+          lot: lots,
+          vendor: vendors,
+          strain: strains,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(lots, eq(batches.lotId, lots.id))
+        .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+        .leftJoin(strains, eq(products.strainId, strains.id))
+        .where(
+          and(
+            sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) > 0`,
+            isNull(batches.deletedAt)
+          )
         )
-      )
-      .limit(limit)
-      .offset(offset);
+        .limit(limit)
+        .offset(offset);
+    } catch (queryError) {
+      // Log the actual error for debugging
+      logger.warn(
+        { error: queryError, clientId },
+        "Inventory query with strains failed, falling back to simpler query"
+      );
+
+      // Fallback query without strains join (in case strainId column doesn't exist)
+      const fallbackResults = await db
+        .select({
+          batch: batches,
+          product: products,
+          lot: lots,
+          vendor: vendors,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(lots, eq(batches.lotId, lots.id))
+        .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+        .where(
+          and(
+            sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) > 0`,
+            isNull(batches.deletedAt)
+          )
+        )
+        .limit(limit)
+        .offset(offset);
+
+      // Map fallback results to expected format with null strain
+      inventoryWithDetails = fallbackResults.map(row => ({
+        ...row,
+        strain: null,
+      }));
+    }
 
     logger.info(
       { clientId, batchCount: inventoryWithDetails.length },

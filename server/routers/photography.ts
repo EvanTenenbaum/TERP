@@ -19,6 +19,22 @@ import { storagePut, isStorageConfigured } from "../storage";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
+
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
 
@@ -146,31 +162,80 @@ export const photographyRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // Get batches with no images
-      const batchesWithoutPhotos = await db
-        .select({
-          id: batches.id,
-          batchCode: batches.code,
-          onHandQty: batches.onHandQty,
-          createdAt: batches.createdAt,
-          productName: products.nameCanonical,
-          uomSellable: products.uomSellable,
-          strainName: strains.name,
-        })
-        .from(batches)
-        .leftJoin(products, eq(batches.productId, products.id))
-        .leftJoin(strains, eq(products.strainId, strains.id))
-        .leftJoin(productImages, eq(batches.id, productImages.batchId))
-        .where(
-          and(
-            eq(batches.batchStatus, "LIVE"),
-            isNull(productImages.id),
-            isNull(batches.deletedAt)
+      // FIX: Try query with strains join, fall back to simpler query if schema doesn't support it
+      let batchesWithoutPhotos: Array<{
+        id: number;
+        batchCode: string;
+        onHandQty: string | null;
+        createdAt: Date | null;
+        productName: string | null;
+        uomSellable: string | null;
+        strainName: string | null;
+      }>;
+
+      try {
+        // Get batches with no images (with strain info)
+        batchesWithoutPhotos = await db
+          .select({
+            id: batches.id,
+            batchCode: batches.code,
+            onHandQty: batches.onHandQty,
+            createdAt: batches.createdAt,
+            productName: products.nameCanonical,
+            uomSellable: products.uomSellable,
+            strainName: strains.name,
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .leftJoin(strains, eq(products.strainId, strains.id))
+          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .where(
+            and(
+              eq(batches.batchStatus, "LIVE"),
+              isNull(productImages.id),
+              isNull(batches.deletedAt)
+            )
           )
-        )
-        .groupBy(batches.id)
-        .orderBy(desc(batches.createdAt))
-        .limit(input.limit);
+          .groupBy(batches.id)
+          .orderBy(desc(batches.createdAt))
+          .limit(input.limit);
+      } catch (queryError) {
+        // QA-003: Only fallback for schema-related errors
+        if (!isSchemaError(queryError)) {
+          throw queryError;
+        }
+
+        // Log the actual error for debugging
+        logger.warn(
+          { error: queryError },
+          "getBatchesNeedingPhotos query with strains failed, falling back to simpler query"
+        );
+
+        // Fallback query without strains join
+        batchesWithoutPhotos = await db
+          .select({
+            id: batches.id,
+            batchCode: batches.code,
+            onHandQty: batches.onHandQty,
+            createdAt: batches.createdAt,
+            productName: products.nameCanonical,
+            uomSellable: products.uomSellable,
+            strainName: sql<string | null>`NULL`.as("strainName"),
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .where(
+            and(
+              eq(batches.batchStatus, "LIVE"),
+              isNull(productImages.id),
+              isNull(batches.deletedAt)
+            )
+          )
+          .groupBy(batches.id)
+          .orderBy(desc(batches.createdAt))
+          .limit(input.limit);
+      }
 
       return batchesWithoutPhotos.map(b => ({
         id: b.id,
@@ -331,32 +396,81 @@ export const photographyRouter = router({
         conditions.push(eq(batches.batchStatus, "LIVE"));
       }
 
-      // Get batches with product and strain info
-      const results = await db
-        .select({
-          batchId: batches.id,
-          batchCode: batches.code,
-          batchStatus: batches.batchStatus,
-          productName: products.nameCanonical,
-          strainName: strains.name,
-          createdAt: batches.createdAt,
-          hasImages: sql<number>`COUNT(${productImages.id})`.as("hasImages"),
-        })
-        .from(batches)
-        .leftJoin(products, eq(batches.productId, products.id))
-        .leftJoin(strains, eq(products.strainId, strains.id))
-        .leftJoin(productImages, eq(batches.id, productImages.batchId))
-        .where(and(...conditions))
-        .groupBy(
-          batches.id,
-          batches.code,
-          batches.batchStatus,
-          products.nameCanonical,
-          strains.name,
-          batches.createdAt
-        )
-        .orderBy(desc(batches.createdAt))
-        .limit(100);
+      // FIX: Try query with strains join, fall back to simpler query if schema doesn't support it
+      let results: Array<{
+        batchId: number;
+        batchCode: string;
+        batchStatus: string;
+        productName: string | null;
+        strainName: string | null;
+        createdAt: Date | null;
+        hasImages: number;
+      }>;
+
+      try {
+        // Get batches with product and strain info
+        results = await db
+          .select({
+            batchId: batches.id,
+            batchCode: batches.code,
+            batchStatus: batches.batchStatus,
+            productName: products.nameCanonical,
+            strainName: strains.name,
+            createdAt: batches.createdAt,
+            hasImages: sql<number>`COUNT(${productImages.id})`.as("hasImages"),
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .leftJoin(strains, eq(products.strainId, strains.id))
+          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .where(and(...conditions))
+          .groupBy(
+            batches.id,
+            batches.code,
+            batches.batchStatus,
+            products.nameCanonical,
+            strains.name,
+            batches.createdAt
+          )
+          .orderBy(desc(batches.createdAt))
+          .limit(100);
+      } catch (queryError) {
+        // QA-003: Only fallback for schema-related errors
+        if (!isSchemaError(queryError)) {
+          throw queryError;
+        }
+
+        // Log the actual error for debugging
+        logger.warn(
+          { error: queryError },
+          "Photography queue query with strains failed, falling back to simpler query"
+        );
+
+        // Fallback query without strains join (in case strainId column doesn't exist)
+        results = await db
+          .select({
+            batchId: batches.id,
+            batchCode: batches.code,
+            batchStatus: batches.batchStatus,
+            productName: products.nameCanonical,
+            strainName: sql<string | null>`NULL`.as("strainName"),
+            createdAt: batches.createdAt,
+            hasImages: sql<number>`COUNT(${productImages.id})`.as("hasImages"),
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .where(and(...conditions))
+          .groupBy(
+            batches.id,
+            batches.code,
+            batches.batchStatus,
+            products.nameCanonical,
+            batches.createdAt
+          )
+          .orderBy(desc(batches.createdAt))
+          .limit(100);
+      }
 
       // Apply search filter and map results
       let filteredResults = results;
@@ -518,7 +632,10 @@ export const photographyRouter = router({
         })
         .where(eq(batches.id, input.batchId));
 
-      logger.info({ batchId: input.batchId, userId: ctx.user?.id }, "[Photography] Session started");
+      logger.info(
+        { batchId: input.batchId, userId: ctx.user?.id },
+        "[Photography] Session started"
+      );
 
       return { success: true, batchId: input.batchId };
     }),
@@ -602,7 +719,11 @@ export const photographyRouter = router({
       });
 
       logger.info(
-        { batchId: input.batchId, photoId: photo.insertId, photoType: input.photoType },
+        {
+          batchId: input.batchId,
+          photoId: photo.insertId,
+          photoType: input.photoType,
+        },
         "[Photography] Photo uploaded"
       );
 
@@ -645,7 +766,8 @@ export const photographyRouter = router({
       if (!hasPrimary) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "At least one primary photo is required to complete photography",
+          message:
+            "At least one primary photo is required to complete photography",
         });
       }
 
@@ -696,9 +818,14 @@ export const photographyRouter = router({
       }
 
       // Delete the record (storage cleanup can be done in background/cron)
-      await database.delete(productImages).where(eq(productImages.id, input.photoId));
+      await database
+        .delete(productImages)
+        .where(eq(productImages.id, input.photoId));
 
-      logger.info({ photoId: input.photoId, batchId: photo.batchId }, "[Photography] Photo deleted");
+      logger.info(
+        { photoId: input.photoId, batchId: photo.batchId },
+        "[Photography] Photo deleted"
+      );
 
       return { success: true };
     }),
@@ -718,32 +845,78 @@ export const photographyRouter = router({
       if (!database) throw new Error("Database not available");
 
       // Get batches without photos in appropriate status
-      const batchesAwaitingPhotos = await database
-        .select({
-          id: batches.id,
-          code: batches.code,
-          sku: batches.sku,
-          batchStatus: batches.batchStatus,
-          onHandQty: batches.onHandQty,
-          createdAt: batches.createdAt,
-          productName: products.nameCanonical,
-          category: products.category,
-          strainName: strains.name,
-        })
-        .from(batches)
-        .leftJoin(products, eq(batches.productId, products.id))
-        .leftJoin(strains, eq(products.strainId, strains.id))
-        .leftJoin(productImages, eq(batches.id, productImages.batchId))
-        .where(
-          and(
-            or(eq(batches.batchStatus, "LIVE"), eq(batches.batchStatus, "AWAITING_INTAKE")),
-            isNull(productImages.id),
-            isNull(batches.deletedAt)
+      // BUG-112: Added fallback query for schema drift (strainId may not exist)
+      let batchesAwaitingPhotos;
+      try {
+        batchesAwaitingPhotos = await database
+          .select({
+            id: batches.id,
+            code: batches.code,
+            sku: batches.sku,
+            batchStatus: batches.batchStatus,
+            onHandQty: batches.onHandQty,
+            createdAt: batches.createdAt,
+            productName: products.nameCanonical,
+            category: products.category,
+            strainName: strains.name,
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .leftJoin(strains, eq(products.strainId, strains.id))
+          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .where(
+            and(
+              or(
+                eq(batches.batchStatus, "LIVE"),
+                eq(batches.batchStatus, "AWAITING_INTAKE")
+              ),
+              isNull(productImages.id),
+              isNull(batches.deletedAt)
+            )
           )
-        )
-        .groupBy(batches.id)
-        .orderBy(desc(batches.createdAt))
-        .limit(input.limit);
+          .groupBy(batches.id)
+          .orderBy(desc(batches.createdAt))
+          .limit(input.limit);
+      } catch (queryError) {
+        // QA-003: Only fallback for schema-related errors
+        if (!isSchemaError(queryError)) {
+          throw queryError;
+        }
+
+        // Fallback: Query without strains join if strainId column doesn't exist
+        logger.warn(
+          { error: queryError },
+          "getAwaitingPhotography: Query with strains join failed, falling back to simpler query"
+        );
+        batchesAwaitingPhotos = await database
+          .select({
+            id: batches.id,
+            code: batches.code,
+            sku: batches.sku,
+            batchStatus: batches.batchStatus,
+            onHandQty: batches.onHandQty,
+            createdAt: batches.createdAt,
+            productName: products.nameCanonical,
+            category: products.category,
+            strainName: sql<string | null>`NULL`.as("strainName"),
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .where(
+            and(
+              or(
+                eq(batches.batchStatus, "LIVE"),
+                eq(batches.batchStatus, "AWAITING_INTAKE")
+              ),
+              isNull(productImages.id),
+              isNull(batches.deletedAt)
+            )
+          )
+          .groupBy(batches.id)
+          .orderBy(desc(batches.createdAt))
+          .limit(input.limit);
+      }
 
       return batchesAwaitingPhotos.map(b => ({
         id: b.id,
@@ -756,7 +929,9 @@ export const photographyRouter = router({
         quantity: parseFloat(b.onHandQty || "0"),
         createdAt: b.createdAt,
         daysSinceCreation: b.createdAt
-          ? Math.floor((Date.now() - b.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+          ? Math.floor(
+              (Date.now() - b.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+            )
           : 0,
       }));
     }),
