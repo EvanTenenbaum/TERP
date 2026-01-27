@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.9
-**Last Updated:** 2026-01-26 (Added QA Security-Critical Audit findings: BUG-108, BUG-109, ST-054)
+**Version:** 6.10
+**Last Updated:** 2026-01-27 (Added Schema Drift / SQL Safety findings: BUG-110 through BUG-116, ST-055)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -696,6 +696,97 @@ pnpm test --run 2>&1 | tee test-results.log
 - **Root Cause:** Radix UI `react-presence` component triggering infinite update loop in test environment
 - **Impact:** 5 test failures in EventFormDialog test suite
 - **Fix:** Update Radix component usage or add test-specific handling for presence animations
+
+#### Schema Drift / SQL Safety Issues (P0/P1) - Jan 27, 2026
+
+> Discovered during inventory flow debugging session.
+> Root Cause: Drizzle schema defines `products.strainId` column that may not exist in production database.
+> See: `docs/jan-26-checkpoint/INVENTORY_FLOW_ANALYSIS.md` for full analysis.
+
+| Task    | Description                                          | Priority | Status | Estimate | Location                                           |
+| ------- | ---------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------- |
+| BUG-110 | Schema drift: strainId joins in productsDb.ts        | HIGH     | ready  | 2h       | `server/productsDb.ts:92,179`                      |
+| BUG-111 | Schema drift: strainId joins in search.ts            | HIGH     | ready  | 1h       | `server/routers/search.ts:260`                     |
+| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ready  | 1h       | `server/routers/photography.ts:823`                |
+| BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ready  | 1h       | `server/services/catalogPublishingService.ts:310`  |
+| BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ready  | 2h       | `server/services/strainMatchingService.ts:136,234` |
+| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ready  | 1h       | `server/ordersDb.ts:1239`                          |
+| BUG-116 | Systemic: 127 unsafe inArray() calls across codebase | MEDIUM   | ready  | 8h       | Multiple files                                     |
+| ST-055  | Adopt safeInArray/safeNotInArray across codebase     | MEDIUM   | ready  | 16h      | See sqlSafety.ts utilities                         |
+
+**BUG-110 Details (Schema Drift - productsDb.ts):**
+
+- **Location:** `server/productsDb.ts` lines 92, 179
+- **Issue:** LEFT JOIN on `products.strainId` to `strains.id` fails if strainId column doesn't exist in production
+- **Impact:** Product queries fail with "Unknown column 'products.strainId'"
+- **Pattern:** Add try-catch with fallback query that omits strains join
+- **Fix:** Apply same defensive pattern used in photography.ts and salesSheetsDb.ts
+
+**BUG-111 Details (Schema Drift - search.ts):**
+
+- **Location:** `server/routers/search.ts:260`
+- **Issue:** Global search LEFT JOINs strains table via products.strainId
+- **Impact:** Global search fails when strainId column missing
+- **Fix:** Add try-catch with fallback query excluding strains
+
+**BUG-112 Details (Schema Drift - photography.ts getAwaitingPhotography):**
+
+- **Location:** `server/routers/photography.ts:823`
+- **Issue:** `getAwaitingPhotography` procedure still has vulnerable strains join
+- **Impact:** Photography queue features fail intermittently
+- **Note:** `getQueue` and `getBatchesNeedingPhotos` were already fixed in this session
+- **Fix:** Apply same defensive pattern to remaining procedure
+
+**BUG-113 Details (Schema Drift - catalogPublishingService.ts):**
+
+- **Location:** `server/services/catalogPublishingService.ts:310`
+- **Issue:** Catalog publishing joins strains via products.strainId
+- **Impact:** Catalog publishing operations fail
+- **Fix:** Add defensive try-catch with strainless fallback
+
+**BUG-114 Details (Schema Drift - strainMatchingService.ts):**
+
+- **Location:** `server/services/strainMatchingService.ts` lines 136, 234
+- **Issue:** Strain matching service critically depends on strains table
+- **Impact:** Strain matching features completely broken
+- **Fix:** This service inherently needs strains - add graceful degradation with clear error messages
+
+**BUG-115 Details (Empty Array Crash - ordersDb.ts):**
+
+- **Location:** `server/ordersDb.ts:1239`
+- **Issue:** `inArray(batches.id, batchIds)` with no empty array check
+- **Code Pattern:**
+  ```typescript
+  const batchIds = [...new Set(draftItems.map(item => item.batchId))];
+  // No length check - crashes if batchIds is empty
+  .where(inArray(batches.id, batchIds))
+  ```
+- **Impact:** Confirming draft orders with no items crashes with invalid SQL
+- **Fix:** Replace with `safeInArray(batches.id, batchIds)` from sqlSafety.ts
+
+**BUG-116 Details (Systemic inArray Safety):**
+
+- **Issue:** 127 uses of raw `inArray()` and `notInArray()` across codebase
+- **Risk:** Any empty array passed to these functions generates invalid SQL `WHERE id IN ()`
+- **Safe Alternative:** `server/lib/sqlSafety.ts` provides `safeInArray()` and `safeNotInArray()`
+- **Current Adoption:** Only 2 files use safe versions; 127 calls remain unsafe
+- **Fix:** Systematic replacement campaign (see ST-055)
+
+**ST-055 Details (Systemic Safety Adoption):**
+
+- **Scope:** Replace all 127 instances of raw `inArray()`/`notInArray()` with safe versions
+- **Priority Files:** (by risk level)
+  1. `server/ordersDb.ts` - Order processing (RED mode)
+  2. `server/routers/orders.ts` - Order mutations
+  3. `server/inventoryDb.ts` - Inventory operations
+  4. `server/arApDb.ts` - Financial operations
+  5. All other files
+- **Approach:**
+  1. Add ESLint rule to flag raw `inArray()` usage
+  2. Systematically replace in priority order
+  3. Add pre-commit check to prevent new unsafe usage
+- **Dependencies:** None
+- **Estimate:** 16h (includes testing and verification)
 
 #### Stability Issues (P2)
 
@@ -3700,34 +3791,36 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 > These issues can result in financial restatement, security breaches, or data corruption.
 > **Must fix before production use.**
 
-| Task    | Description                                                          | Priority | Status   | Estimate | Module                                                        |
-| ------- | -------------------------------------------------------------------- | -------- | -------- | -------- | ------------------------------------------------------------- |
-| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready    | 1h       | `server/routers/adminSetup.ts`                                |
-| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready    | 1h       | `server/routers/debug.ts`                                     |
-| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready    | 2h       | `server/services/permissionService.ts`                        |
-| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready    | 2h       | `server/routers/vipPortal.ts`                                 |
+| Task    | Description                                                          | Priority | Status | Estimate | Module                                 |
+| ------- | -------------------------------------------------------------------- | -------- | ------ | -------- | -------------------------------------- |
+| SEC-027 | Protect Admin Setup Endpoints (publicProcedure → protectedProcedure) | HIGH     | ready  | 1h       | `server/routers/adminSetup.ts`         |
+| SEC-028 | Remove/Restrict Debug Endpoints (expose full DB schema)              | HIGH     | ready  | 1h       | `server/routers/debug.ts`              |
+| SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts` |
+| SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`          |
+
 <<<<<<< HEAD
-| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | ready    | 4h       | `server/routers/invoices.ts`                                  |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | ready    | 4h       | `server/routers/returns.ts`                                   |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | ready    | 4h       | `server/services/orderAccountingService.ts`                   |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | ready    | 2h       | `server/accountingDb.ts`                                      |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | complete | 4h       | `server/routers/orders.ts`                                    |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | complete | 2h       | `server/ordersDb.ts`                                          |
+| ACC-002 | Add GL Reversals for Invoice Void | HIGH | ready | 4h | `server/routers/invoices.ts` |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | ready | 4h | `server/routers/returns.ts` |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | ready | 4h | `server/services/orderAccountingService.ts` |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | ready | 2h | `server/accountingDb.ts` |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | complete | 4h | `server/routers/orders.ts` |
+| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | complete | 2h | `server/ordersDb.ts` |
 =======
-| ACC-002 | Add GL Reversals for Invoice Void                                    | HIGH     | complete | 4h       | `server/routers/invoices.ts`                                  |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos                            | HIGH     | complete | 4h       | `server/routers/returns.ts`                                   |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely)                    | HIGH     | complete | 4h       | `server/services/orderAccountingService.ts`                   |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods)            | HIGH     | complete | 2h       | `server/accountingDb.ts`                                      |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill                              | HIGH     | ready    | 4h       | `server/routers/orders.ts`                                    |
-| INV-002 | Fix Race Condition in Draft Order Confirmation                       | HIGH     | ready    | 2h       | `server/ordersDb.ts`                                          |
->>>>>>> dbd81f83 (docs: update roadmap with completed Team B backend tasks)
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation                              | HIGH     | ready    | 2h       | `server/routers/orders.ts`                                    |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment)                     | HIGH     | ready    | 4h       | `server/ordersDb.ts`                                          |
-| ST-050  | Fix Silent Error Handling in RED Mode Paths                          | HIGH     | ready    | 4h       | `server/ordersDb.ts`, `server/services/*`                     |
-| ST-051  | Add Transaction Boundaries to Critical Operations                    | HIGH     | ready    | 8h       | `server/ordersDb.ts`, `server/routers/orders.ts`              |
-| ST-052  | Fix Fallback User ID Violations (11 instances)                       | HIGH     | complete | 2h       | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
-| ST-053  | Eliminate `any` Types in Codebase (515 instances)                    | MEDIUM   | ready    | 16h      | Multiple files - see task details                             |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers)                | HIGH     | ready    | 2h       | `server/arApDb.ts`                                            |
+| ACC-002 | Add GL Reversals for Invoice Void | HIGH | complete | 4h | `server/routers/invoices.ts` |
+| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | complete | 4h | `server/routers/returns.ts` |
+| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | complete | 4h | `server/services/orderAccountingService.ts` |
+| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | complete | 2h | `server/accountingDb.ts` |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | ready | 4h | `server/routers/orders.ts` |
+| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | ready | 2h | `server/ordersDb.ts` |
+
+> > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
+> > > > > > > | INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
+> > > > > > > | ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
+> > > > > > > | ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
+> > > > > > > | ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
+> > > > > > > | ST-052 | Fix Fallback User ID Violations (11 instances) | HIGH | complete | 2h | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
+> > > > > > > | ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | ready | 16h | Multiple files - see task details |
+> > > > > > > | FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
 
 ---
 
@@ -4084,26 +4177,28 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 > These issues cause data inconsistency and incorrect business logic.
 > **Should fix in current release.**
 
-| Task      | Description                                      | Priority | Status   | Estimate | Module                                                  |
-| --------- | ------------------------------------------------ | -------- | -------- | -------- | ------------------------------------------------------- |
-| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | ready    | 8h       | `server/services/` (new)                                |
+| Task     | Description                      | Priority | Status | Estimate | Module                   |
+| -------- | -------------------------------- | -------- | ------ | -------- | ------------------------ |
+| ARCH-001 | Create OrderOrchestrator Service | HIGH     | ready  | 8h       | `server/services/` (new) |
+
 <<<<<<< HEAD
-| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | ready    | 8h       | `server/services/`, `server/routers/`                   |
-| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | ready    | 4h       | `server/routers/orders.ts`                              |
-| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | ready    | 4h       | `server/arApDb.ts`                                      |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | complete | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready    | 2h       | `drizzle/schema.ts`                                     |
-| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | complete | 2h       | `server/routers/vendors.ts`                             |
+| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
+| ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
+| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | complete | 2h | `server/routers/vendors.ts` |
 =======
-| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | complete | 8h       | `server/services/`, `server/routers/`                   |
-| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | complete | 4h       | `server/routers/orders.ts`                              |
-| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | complete | 4h       | `server/arApDb.ts`                                      |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | ready    | 4h       | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | ready    | 2h       | `drizzle/schema.ts`                                     |
-| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts`      |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | ready    | 2h       | `server/routers/vendors.ts`                             |
->>>>>>> dbd81f83 (docs: update roadmap with completed Team B backend tasks)
+| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
+| ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
+| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | ready | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+
+> > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
 
 ---
 
