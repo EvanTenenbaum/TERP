@@ -313,3 +313,303 @@ CREATE TABLE order_item_bags (
 3. [ ] Implement Phase 1 and validate with tests
 4. [ ] Plan UI migration (Phase 2) with UX review
 5. [ ] Execute migration in stages with feature flags if needed
+
+---
+
+# QA Review: Efficiency, Robustness & Long-Term Thinking
+
+**QA Version**: 1.0
+**Reviewed**: 2026-01-27
+**Reviewer**: Claude Agent (Self-Review)
+
+---
+
+## Critical Issues Found
+
+### CRIT-001: order_item_bags Has No Referential Integrity (P0)
+
+**Problem**: The `order_item_bags.order_item_id` column has **NO foreign key constraint**.
+
+```typescript
+// drizzle/schema.ts line 2913
+orderItemId: int("order_item_id").notNull(),
+// Comment says: "References order line item (JSON items array index or orderLineItems.id)"
+```
+
+**Why This Is Critical**:
+1. The column is **ambiguous** - does it reference JSON array index or `order_line_items.id`?
+2. WS-003 uses JSON array indices (0, 1, 2...) which can CHANGE if order items are reordered
+3. No database-level protection against orphaned records
+4. Data corruption risk if order items are modified after packing
+
+**Impact**: If an order's JSON `items` array is modified (item removed, reordered), existing bag assignments become CORRUPTED with no database error.
+
+**Required Fix**: Must be addressed BEFORE migration:
+- Add FK constraint to `order_line_items.id`
+- Write data migration to convert JSON indices → orderLineItems.id
+- Test with edge cases (partially packed orders, etc.)
+
+---
+
+### CRIT-002: Dual Status Columns Create State Conflicts (P0)
+
+**Problem**: Orders have BOTH `pickPackStatus` AND `fulfillmentStatus` columns that can CONFLICT.
+
+**Example Conflict Scenarios**:
+| pickPackStatus | fulfillmentStatus | Result |
+|----------------|-------------------|--------|
+| READY | PENDING | Order shows "ready to ship" but fulfillment says "not started" |
+| PICKING | SHIPPED | Warehouse still picking but shipping says "already shipped" |
+| PACKED | CANCELLED | Items packed but order cancelled |
+
+**Why This Is Critical**:
+1. Both systems can mutate the same order independently
+2. No coordination/synchronization between status updates
+3. UI may show conflicting information
+4. Business logic may make wrong decisions
+
+**Required Fix**: During migration:
+- Add status synchronization logic OR
+- Implement a single source of truth status with derived statuses
+
+---
+
+### CRIT-003: No Data Migration Strategy for Existing Orders (P1)
+
+**Problem**: Original analysis assumes a clean slate. Reality: there are orders IN-FLIGHT in WS-003 workflow.
+
+**Questions Not Answered**:
+1. What happens to orders currently `pickPackStatus = PICKING`?
+2. What happens to existing `order_item_bags` records with JSON indices?
+3. How do we handle partially packed orders?
+4. What if an order has bag assignments but no `order_line_items`?
+
+**Required**: Data migration script with:
+- Inventory of current WS-003 state
+- Conversion logic for JSON indices → orderLineItems.id
+- Handling for edge cases (partial packs, orphaned bags)
+- Rollback strategy
+
+---
+
+## Robustness Issues
+
+### ROB-001: Auth Model Mismatch
+
+**Problem**:
+- WS-003 uses `adminProcedure` (admin-only access)
+- ordersRouter uses `protectedProcedure` with `requirePermission()`
+
+**Impact**: Migrating means changing who can access pick/pack:
+- Currently: Only admins can use WS-003
+- After: Anyone with `orders:update` permission
+
+**Question**: Is this the desired behavior? May need new permission: `orders:pack`
+
+---
+
+### ROB-002: Silent Error Handling in WS-003
+
+**Problem**: `packItems` silently catches and ignores errors:
+```typescript
+// pickPack.ts lines 408-419
+try {
+  await db.insert(orderItemBags).values({...});
+  packedCount++;
+} catch (err) {
+  // Item might already be packed - skip
+  console.warn(`Item ${itemId} already packed or error:`, err);
+}
+```
+
+**Impact**:
+- Errors are swallowed, not surfaced to user
+- `console.warn` not captured in production logs (should use `logger.warn`)
+- User thinks items were packed when they weren't
+
+---
+
+### ROB-003: Race Condition in Bag Creation
+
+**Problem**: `packItems` has a check-then-create pattern that's not atomic:
+```typescript
+// Check if bag exists
+const [existingBag] = await db.select()...
+if (existingBag) {
+  bagId = existingBag.id;
+} else {
+  // Create bag - RACE: another request could create between check and insert
+  const [newBag] = await db.insert(orderBags)...
+}
+```
+
+**Impact**: Concurrent pack requests could create duplicate bags.
+
+**Fix Required**: Use `INSERT ... ON DUPLICATE KEY UPDATE` or transaction with lock.
+
+---
+
+## Efficiency Issues
+
+### EFF-001: 4-Phase Approach Is Over-Engineered
+
+**Original Plan** (24-40 hours):
+1. Add bag endpoints to ordersRouter (4-8h)
+2. Migrate UI (16-24h)
+3. Deprecate WS-003 (2-4h)
+4. Schema cleanup (2-4h)
+
+**Problem**: Running systems in parallel is RISKY:
+- State drift between pickPackStatus and fulfillmentStatus
+- Double maintenance burden
+- Confusion about which system to use
+
+**More Efficient Alternative**:
+| Approach | Pros | Cons | Estimate |
+|----------|------|------|----------|
+| **Big Bang Cutover** | Clean break, no parallel systems | Higher risk, needs downtime | 16-24h |
+| **Feature Flag** | Can roll back, A/B test | Complexity, both systems running | 24-40h |
+| **Gradual (Original)** | Lower risk per phase | Long duration, state conflicts | 24-40h |
+
+**Recommendation**: Feature flag with SHORT window (1 week max), not gradual 4-phase.
+
+---
+
+### EFF-002: UI Rewrite May Be Unnecessary
+
+**Problem**: Analysis assumes UI must be rewritten (~1100 lines).
+
+**Alternative**: Could the UI be adapted with an API adapter layer?
+
+```typescript
+// Adapter: translate pickPack calls to orders calls
+const pickPackAdapter = {
+  getPickList: () => orders.getAll({ fulfillmentStatus: 'CONFIRMED' }),
+  packItems: (orderId, itemIds) => orders.fulfillOrder({ id: orderId, items: itemIds.map(...) }),
+  // etc.
+}
+```
+
+**Benefit**: Keeps existing UI, just changes the backend it talks to.
+**Estimate Reduction**: 16-24h → 4-8h for UI work
+
+---
+
+## Long-Term Thinking Issues
+
+### LT-001: Bag Model Doesn't Scale to Multi-Order Packing
+
+**Current Model**: Bags belong to a single order (`order_bags.order_id`).
+
+**Future Need**: Warehouse consolidation packing where one bag/container has items from MULTIPLE orders (same customer, same shipment).
+
+**Schema Gap**: Cannot do multi-order bags without redesign.
+
+**Recommendation**: Consider future-proofing now:
+```sql
+-- Future-proof: bags are independent, linked via junction table
+CREATE TABLE shipping_bags (
+  id INT PRIMARY KEY,
+  bag_identifier VARCHAR(50),
+  created_at TIMESTAMP
+);
+
+CREATE TABLE bag_orders (
+  bag_id INT,
+  order_id INT,
+  PRIMARY KEY (bag_id, order_id)
+);
+```
+
+---
+
+### LT-002: No Wave/Batch Picking Support
+
+**Current**: Pick one order at a time.
+
+**Future Need**: Pick multiple orders simultaneously ("wave picking") for efficiency.
+
+**Gap**: Neither system supports:
+- Grouping orders into pick waves
+- Assigning waves to pickers
+- Tracking picker productivity
+
+**Recommendation**: Consider adding `pick_waves` table during consolidation if this is a known future requirement.
+
+---
+
+### LT-003: No Physical Location/Zone Support
+
+**Current**: `order.items[].location` is a freeform string.
+
+**Future Need**:
+- Warehouse zones (ZONE-A, ZONE-B)
+- Pick path optimization
+- Location-based worker assignment
+
+**Gap**: No `locations` table, no structured location data.
+
+---
+
+## Revised Migration Plan
+
+Based on QA findings, here's a more robust plan:
+
+### Phase 0: Data Audit & Cleanup (NEW - 4-8h)
+- [ ] Count orders in each pickPackStatus state
+- [ ] Identify orders with bag assignments but no order_line_items
+- [ ] Write data migration script: JSON index → orderLineItems.id
+- [ ] Test migration on staging copy
+- [ ] Create rollback script
+
+### Phase 1: Extend ordersRouter (4-8h)
+- [ ] Add bag management endpoints
+- [ ] Add permission `orders:pack` for warehouse workers
+- [ ] Add status synchronization (or single source of truth)
+- [ ] Unit tests for new endpoints
+
+### Phase 2: Feature Flag Cutover (8-12h)
+- [ ] Add feature flag: `use_unified_pick_pack`
+- [ ] Create API adapter for existing UI (if keeping UI)
+- [ ] OR migrate UI to new endpoints
+- [ ] Test both paths
+
+### Phase 3: Data Migration & Flag Enable (4h)
+- [ ] Run data migration script
+- [ ] Enable feature flag
+- [ ] Monitor for errors
+- [ ] 1-week observation period
+
+### Phase 4: Cleanup (4h)
+- [ ] Remove feature flag
+- [ ] Remove WS-003 router
+- [ ] Schema migration: drop pickPackStatus
+- [ ] Update documentation
+
+**Revised Total**: 24-36 hours (similar but with critical Phase 0)
+
+---
+
+## Risk Register
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Data corruption during migration | Medium | High | Phase 0 audit + rollback script |
+| Status conflicts during parallel run | High | Medium | Short feature flag window (1 week) |
+| Permission escalation (admin → user) | Low | Medium | Add `orders:pack` permission |
+| Performance regression | Low | Low | Load test new endpoints |
+| User confusion during transition | Medium | Low | Clear communication, training |
+
+---
+
+## Conclusion
+
+The original recommendation (**consolidate to ordersRouter**) remains correct, but the migration plan needs significant hardening:
+
+1. **Add Phase 0** for data audit and migration script
+2. **Fix CRIT-001** (FK constraint) before any migration
+3. **Use feature flag** instead of gradual parallel systems
+4. **Consider API adapter** to minimize UI changes
+5. **Add `orders:pack` permission** for RBAC parity
+
+The original estimate (24-40h) is **optimistic** - realistic estimate with QA fixes is **32-48h**.
