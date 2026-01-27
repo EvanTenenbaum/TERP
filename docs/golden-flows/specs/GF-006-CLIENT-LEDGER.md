@@ -1,10 +1,12 @@
 # GF-006: Client Ledger - Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Created:** 2026-01-27
+**Updated:** 2026-01-27
 **Status:** ACTIVE
 **Owner Role:** Accounting Manager
 **Entry Point:** `/clients/:clientId/ledger` or Dashboard AR/AP widgets
+**Verification Level:** A+ (All components verified against source code)
 
 ---
 
@@ -75,35 +77,55 @@ The Client Ledger flow provides comprehensive AR (Accounts Receivable) and AP (A
 
 ### Dashboard AR/AP Widgets
 
-| State       | Trigger                  | Display                                                       |
-| ----------- | ------------------------ | ------------------------------------------------------------- |
-| Loading     | Initial page load        | Skeleton loading animation                                    |
-| Data Loaded | API returns successfully | Total Debt Owed To Me (green), Total Debt I Owe Vendors (red) |
-| Empty       | No outstanding balances  | "No debt data" empty state                                    |
-| Error       | API failure              | Error message with retry option                               |
+#### TotalDebtWidget (`TotalDebtWidget.tsx`)
 
-### Client Ledger Page
+| State       | Trigger                  | Display                                                                             |
+| ----------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| Loading     | Initial page load        | Two `<Skeleton>` rows                                                               |
+| Data Loaded | API returns successfully | Table with "Total Debt Owed to Me" (green) and "Total Debt I Owe Vendors" (red)     |
+| Empty       | No outstanding balances  | EmptyState: "No debt data" / "Debt data will appear once transactions are recorded" |
+| Clickable   | Row click                | "Owed to Me" → `/clients?hasDebt=true`, "I Owe Vendors" → `/accounting/bills`       |
 
-| State                        | Trigger                        | Display                                        |
-| ---------------------------- | ------------------------------ | ---------------------------------------------- |
-| No Client Selected           | Initial load without clientId  | "Select a Client" prompt with client dropdown  |
-| Loading                      | Client selected, fetching data | TableSkeleton animation                        |
-| Data Loaded                  | API returns transactions       | Summary cards + Ledger table with pagination   |
-| Empty (No Transactions)      | No transactions for filters    | "No transactions found" with filter suggestion |
-| Empty (No Transactions Ever) | New client with no history     | "This client has no ledger entries yet"        |
-| Filtering                    | User changes filters           | Debounced refetch, loading indicator           |
-| Exporting                    | Export CSV clicked             | "Exporting..." button state                    |
-| Adding Adjustment            | Adjustment dialog open         | Modal with type/amount/notes fields            |
-| Confirming Adjustment        | User clicks "Add Adjustment"   | Confirmation dialog with details               |
-| Error                        | Any API failure                | Toast notification with error message          |
+#### ClientDebtLeaderboard (`ClientDebtLeaderboard.tsx`)
 
-### Client List Debt Indicators
+| State       | Trigger                  | Display                                                           |
+| ----------- | ------------------------ | ----------------------------------------------------------------- |
+| Loading     | Initial page load        | Three `<Skeleton>` rows                                           |
+| Data Loaded | API returns successfully | Table with rank, client name, debt amount (red), oldest debt days |
+| Empty       | No clients with debt     | "No client debt data available"                                   |
 
-| State         | Condition             | Display                               |
-| ------------- | --------------------- | ------------------------------------- |
-| No Debt       | `totalOwed <= 0`      | Muted "$0.00" text                    |
-| Has Debt      | `totalOwed > 0`       | Red alert icon + clickable red amount |
-| Aging Warning | `oldestDebtDays > 30` | "X days" in red beneath amount        |
+### Client Ledger Page (`ClientLedger.tsx`)
+
+| State                 | Trigger                        | Display                                                                                                                |
+| --------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| No Client Selected    | Initial load without clientId  | EmptyState: BookOpen icon + "Select a Client" + "Choose a client from the dropdown above to view their ledger history" |
+| Loading               | Client selected, fetching data | `<TableSkeleton rows={10} columns={7} />`                                                                              |
+| Data Loaded           | API returns transactions       | 4 summary cards + Ledger table with 50 items/page pagination                                                           |
+| Empty (With Filters)  | No transactions match filters  | FileText icon + "No transactions found" + "Try adjusting your filters"                                                 |
+| Empty (No History)    | New client, no transactions    | FileText icon + "No transactions found" + "This client has no ledger entries yet"                                      |
+| Exporting             | Export CSV clicked             | Button shows `<Loader2>` spinner + "Exporting..."                                                                      |
+| Adding Adjustment     | "Add Adjustment" button        | Dialog: Adjustment Type dropdown, Amount input ($), Notes textarea                                                     |
+| Confirming Adjustment | Submit adjustment              | ConfirmDialog with type/amount/client summary in muted box                                                             |
+
+### Client List Debt Indicators (`ClientsListPage.tsx`)
+
+| State         | Condition              | Display                                        |
+| ------------- | ---------------------- | ---------------------------------------------- |
+| No Debt       | `totalOwed <= 0`       | Muted "-" text                                 |
+| Has Debt      | `totalOwed > 0`        | Red text showing formatted currency            |
+| Aging Display | `oldestDebtDays > 0`   | Red text showing "X days" (`text-destructive`) |
+| No Aging      | `oldestDebtDays === 0` | Muted "-" text                                 |
+
+### Transaction Type Badges (Verified Colors)
+
+| Type               | Badge Style                                          |
+| ------------------ | ---------------------------------------------------- |
+| `SALE`             | `bg-blue-100 text-blue-700 border-blue-200`          |
+| `PURCHASE`         | `bg-purple-100 text-purple-700 border-purple-200`    |
+| `PAYMENT_RECEIVED` | `bg-green-100 text-green-700 border-green-200`       |
+| `PAYMENT_SENT`     | `bg-orange-100 text-orange-700 border-orange-200`    |
+| `CREDIT`           | `bg-emerald-100 text-emerald-700 border-emerald-200` |
+| `DEBIT`            | `bg-red-100 text-red-700 border-red-200`             |
 
 ---
 
@@ -111,9 +133,12 @@ The Client Ledger flow provides comprehensive AR (Accounts Receivable) and AP (A
 
 ### Dashboard Endpoints
 
-| Endpoint                 | Method | Description                | Permission       |
-| ------------------------ | ------ | -------------------------- | ---------------- |
-| `dashboard.getTotalDebt` | Query  | Get aggregate AR/AP totals | `dashboard:read` |
+| Endpoint                  | Method | Description                  | Permission       |
+| ------------------------- | ------ | ---------------------------- | ---------------- |
+| `dashboard.getTotalDebt`  | Query  | Get aggregate AR/AP totals   | `dashboard:read` |
+| `dashboard.getClientDebt` | Query  | Get top clients by debt owed | `dashboard:read` |
+
+#### `dashboard.getTotalDebt`
 
 **Request Shape:** `undefined` (no input)
 
@@ -121,12 +146,46 @@ The Client Ledger flow provides comprehensive AR (Accounts Receivable) and AP (A
 
 ```typescript
 {
-  totalDebtOwedToMe: number; // AR - what clients owe
-  totalDebtIOwedToVendors: number; // AP - what we owe suppliers
+  totalDebtOwedToMe: number; // AR - sum of outstanding receivables
+  totalDebtIOwedToVendors: number; // AP - sum of outstanding payables
+  netPosition: number; // AR - AP (positive = net receivables)
 }
 ```
 
+**Source:** `server/routers/dashboard.ts:791-816`
+
+#### `dashboard.getClientDebt`
+
+**Request Shape:**
+
+```typescript
+{
+  limit?: number;   // pagination limit
+  offset?: number;  // pagination offset
+}
+```
+
+**Response Shape:**
+
+```typescript
+{
+  data: {
+    customerId: number;
+    customerName: string;
+    currentDebt: number; // Total outstanding debt
+    oldestDebt: number; // Days since oldest unpaid invoice
+  }
+  [];
+  total: number;
+  hasMore: boolean;
+}
+```
+
+**Source:** `server/routers/dashboard.ts:506-530`
+
 ### Client Ledger Endpoints
+
+**Source:** `server/routers/clientLedger.ts`
 
 | Endpoint                           | Method   | Description                       | Permission          |
 | ---------------------------------- | -------- | --------------------------------- | ------------------- |
@@ -146,7 +205,7 @@ The Client Ledger flow provides comprehensive AR (Accounts Receivable) and AP (A
   startDate?: Date;
   endDate?: Date;
   transactionTypes?: string[];
-  limit?: number;   // default: 100, max: 500
+  limit?: number;   // Frontend uses ITEMS_PER_PAGE = 50
   offset?: number;  // default: 0
 }
 ```
@@ -371,11 +430,34 @@ The `clients.oldestDebtDays` field is updated via application logic or database 
 
 ### Aging Display
 
-In the Client List, aging indicators appear when:
+**Client List (`ClientsListPage.tsx:869-873`):**
 
-- `oldestDebtDays > 30`: Yellow warning
-- `oldestDebtDays > 60`: Orange warning
-- `oldestDebtDays > 90`: Red critical warning
+```tsx
+{
+  client.oldestDebtDays && client.oldestDebtDays > 0 ? (
+    <span className="text-destructive font-medium">
+      {client.oldestDebtDays} days
+    </span>
+  ) : (
+    <span className="text-muted-foreground">-</span>
+  );
+}
+```
+
+- Any non-zero `oldestDebtDays` displays in red (`text-destructive`)
+- Zero or null displays as muted "-"
+
+**Client Debt Leaderboard (`ClientDebtLeaderboard.tsx:34-37`):**
+
+```tsx
+const formatAgingDays = (days: number) => {
+  if (days === 0) return "-";
+  return `${days}d`;
+};
+```
+
+- Displays abbreviated format (e.g., "45d")
+- Zero shows as "-"
 
 ---
 
@@ -412,14 +494,29 @@ In the Client List, aging indicators appear when:
 
 ### Adjustment Rules
 
-7. **Adjustment Validation**
-   - Amount MUST be positive (> 0)
-   - Description is REQUIRED (min 1 character)
-   - Client MUST exist
+7. **Adjustment Validation** (from `ClientLedger.tsx:237-247`)
+   - Amount MUST be positive (> 0) - validated with `parseFloat(amount) <= 0`
+   - Notes/description is REQUIRED - validated with `!notes.trim()`
+   - Toast error messages:
+     - "Notes are required for adjustments"
+     - "Please enter a valid positive amount"
 
-8. **Adjustment Types**
-   - `CREDIT`: Reduces what client owes (e.g., discount, error correction)
-   - `DEBIT`: Increases what client owes (e.g., fee, returned goods)
+8. **Adjustment Types** (from `ClientLedger.tsx:116-119`)
+
+```typescript
+const ADJUSTMENT_TYPES = [
+  {
+    value: "CREDIT",
+    label: "Credit Adjustment",
+    description: "Decrease what they owe",
+  },
+  {
+    value: "DEBIT",
+    label: "Debit Adjustment",
+    description: "Increase what they owe",
+  },
+];
+```
 
 ### Export Rules
 
@@ -639,6 +736,7 @@ const createdBy = ctx.user.id;
 
 ## Change Log
 
-| Version | Date       | Author      | Changes               |
-| ------- | ---------- | ----------- | --------------------- |
-| 1.0     | 2026-01-27 | Claude Code | Initial specification |
+| Version | Date       | Author      | Changes                                                                                                                                                                                                                            |
+| ------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-27 | Claude Code | Initial specification                                                                                                                                                                                                              |
+| 1.1     | 2026-01-27 | Claude Code | Verified all components against source code; added `dashboard.getClientDebt` endpoint; corrected UI states with exact component text; added transaction badge colors; fixed aging display logic; added source file line references |
