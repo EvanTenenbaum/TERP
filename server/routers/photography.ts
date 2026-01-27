@@ -22,17 +22,42 @@ import { TRPCError } from "@trpc/server";
 /**
  * Helper to check if an error is a schema-related error (e.g., missing column)
  * QA-003: Only fallback for schema errors, re-throw others
+ * BUG-112: Enhanced to handle MySQL2 driver errors that may not be Error instances
  */
 function isSchemaError(error: unknown): boolean {
+  // Extract error message from various error formats
+  let msg = "";
+
   if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("unknown column") ||
-      msg.includes("no such column") ||
-      (msg.includes("column") && msg.includes("does not exist"))
-    );
+    msg = error.message;
+  } else if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
+  ) {
+    // Handle plain objects with message property (MySQL2 driver may return these)
+    msg = (error as { message: string }).message;
+  } else if (typeof error === "string") {
+    msg = error;
   }
-  return false;
+
+  if (!msg) {
+    // Log unexpected error format for debugging
+    logger.warn(
+      { errorType: typeof error, error },
+      "isSchemaError: Unexpected error format"
+    );
+    return false;
+  }
+
+  const msgLower = msg.toLowerCase();
+  return (
+    msgLower.includes("unknown column") ||
+    msgLower.includes("no such column") ||
+    msgLower.includes("er_bad_field_error") || // MySQL error code
+    (msgLower.includes("column") && msgLower.includes("does not exist"))
+  );
 }
 
 // Image status enum
