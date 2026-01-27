@@ -1,7 +1,8 @@
 # GF-005: Pick & Pack - Specification
 
-**Version:** 1.0
+**Version:** 2.0
 **Created:** 2026-01-27
+**Updated:** 2026-01-27
 **Author:** Claude Code Agent
 **Status:** ACTIVE
 **Owner Role:** Fulfillment
@@ -10,7 +11,18 @@
 
 ## Overview
 
-The Pick & Pack flow handles warehouse fulfillment operations for confirmed sales orders. It manages the complete process of picking inventory items from storage locations, packing them for shipment, and shipping orders to customers. This flow is the critical link between order confirmation and physical delivery, ensuring inventory is properly decremented and orders transition through fulfillment states correctly.
+The Pick & Pack flow handles warehouse fulfillment operations for confirmed sales orders. TERP implements **two parallel systems** that work together:
+
+1. **Pick & Pack Module (WS-003)** - Warehouse bag-based packing workflow
+   - Route: `/pick-pack`
+   - Router: `pickPackRouter`
+   - Manages: Bag creation, item-to-bag assignments, packing status
+
+2. **Order Fulfillment** - Shipping and inventory workflow
+   - Router: `ordersRouter`
+   - Manages: Status transitions, inventory reservation release, shipping
+
+This flow is the critical link between order confirmation and physical delivery, ensuring inventory is properly decremented and orders transition through fulfillment states correctly.
 
 ---
 
@@ -18,84 +30,151 @@ The Pick & Pack flow handles warehouse fulfillment operations for confirmed sale
 
 ### Primary Flow: Order Queue to Shipped
 
-1. **User navigates to /pick-pack** (as Fulfillment role)
-2. **Views order queue** with stats (Pending, Picking, Packed, Shipped counts)
-3. **Filters or searches orders** using status filter or Cmd+K search
-4. **Selects order** from the queue (keyboard navigation: ArrowDown, Enter)
-5. **Views order details** in inspector panel (items, quantities, customer info)
-6. **Picks items:**
-   - Reviews pick list with item locations
-   - Checks off items as they are physically picked
-   - Confirms picked quantities
-7. **Packs order:**
-   - Verifies all items are picked
-   - Clicks "Pack" or uses keyboard shortcut
-   - Order transitions to PACKED status
-8. **Marks ready for shipping:**
-   - Clicks "Mark Ready" when fully packed
-   - Order enters shipping queue
-9. **Ships order:**
-   - Enters tracking number (optional)
-   - Selects carrier (optional)
-   - Confirms shipment
-   - Order transitions to SHIPPED
-   - Inventory reserved qty released
-   - Inventory movement records created
-10. **Order marked delivered** (optional, may be automatic or via delivery confirmation)
+1. **User navigates to `/pick-pack`** (requires Admin role via `adminProcedure`)
+2. **Views pick list queue** with stats dashboard:
+   - Pending: Orders awaiting pick
+   - Picking: Orders currently being picked
+   - Packed: All items in bags
+   - Ready: Ready for shipping
+3. **Filters/searches orders** using:
+   - Status dropdown filter (All, PENDING, PICKING, PACKED, READY)
+   - Search by order number or client name
+4. **Selects order** from left panel list
+5. **Views order details** in right panel:
+   - Order header (number, client, total, status)
+   - Items list with location and pack status
+   - Bags section showing container assignments
+6. **Picks and packs items:**
+   - Clicks items to select (checkbox toggle)
+   - "Select All Unpacked" to select all remaining items
+   - "Pack Selected" creates a bag and assigns items
+   - "Pack All to One Bag" packs everything at once
+7. **Marks ready for shipping:**
+   - "Mark Ready for Shipping" button (enabled when all items packed)
+   - Updates `pickPackStatus` to READY
+   - Records `packedAt` and `packedBy`
+8. **Ships order** (via orders router):
+   - Calls `orders.shipOrder`
+   - Updates `fulfillmentStatus` to SHIPPED
+   - Releases reserved inventory (`reservedQty` decremented)
+   - Creates `inventory_movements` record with type SALE
+9. **Marks delivered** (optional):
+   - Calls `orders.deliverOrder`
+   - Updates `fulfillmentStatus` to DELIVERED
 
 ### Alternative Flows
 
-- **Partial Pick:** Some items unavailable - flag order for review
-- **Short Ship:** Ship available items, backorder remainder
-- **Pick Exception:** Damaged item found during pick - adjust inventory
-- **Order Cancellation:** Cancel before ship - release reservations
+- **Unpack Items:** Requires reason, logged to `audit_logs` table
+- **Partial Pick:** Not currently supported - must pack entire order
+- **Order Cancellation:** Before ship via `orders.updateOrderStatus` with CANCELLED
+- **Returns:** After ship via `orders.markAsReturned` → RESTOCKED or RETURNED_TO_VENDOR
 
 ---
 
 ## UI States
 
+### PickPackPage Component (`client/src/pages/PickPackPage.tsx`)
+
 | State | Trigger | Display |
 |-------|---------|---------|
-| Queue Empty | No orders pending fulfillment | "No orders pending" message |
-| Queue Loaded | Orders pending | List of orders with status badges |
-| Order Selected | Click/keyboard select order | Order details in right panel |
-| Picking In Progress | Start picking | Items with checkboxes, picking indicator |
-| Partially Picked | Some items checked | Partial progress indicator |
-| Fully Picked | All items checked | "Pack" button enabled |
-| Packing | Pack button clicked | Loading indicator during mutation |
-| Packed | Pack complete | Status updated, "Ship" button enabled |
-| Shipping | Ship button clicked | Tracking/carrier dialog |
-| Shipped | Ship confirmed | Order removed from queue or moved to shipped section |
-| Error | Any operation fails | Error toast with retry option |
+| Queue Empty | No orders in `pickList` | "No orders to pick" with Package icon |
+| Queue Loading | Initial load | Spinner animation |
+| Queue Loaded | Data returned | Order list with progress bars |
+| Order Selected | Click order row | Blue highlight, left border, right panel loads |
+| Order Details Loading | `selectedOrderId` set | Spinner in right panel |
+| Order Not Found | Invalid orderId | "Order not found" with AlertCircle |
+| Items Selectable | Order loaded, items unpacked | Checkbox interaction enabled |
+| Items Selected | Click unpacked item | Blue highlight, count badge updates |
+| Packing In Progress | `packItemsMutation.isPending` | Button disabled, loading state |
+| Marking Ready | `markReadyMutation.isPending` | Button disabled, loading state |
+| All Items Packed | `packedItems === totalItems` | "Mark Ready" button enabled |
 
-### Stats Display
-- **Pending:** Orders awaiting pick
-- **Picking:** Orders currently being picked (if tracked)
-- **Packed:** Orders ready to ship
-- **Shipped:** Recently shipped (optional view)
+### Stats Dashboard
+```
+┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+│ Pending │ │ Picking │ │ Packed  │ │  Ready  │
+│   {n}   │ │   {n}   │ │   {n}   │ │   {n}   │
+│ yellow  │ │  blue   │ │  green  │ │ purple  │
+└─────────┘ └─────────┘ └─────────┘ └─────────┘
+```
 
 ---
 
 ## API Endpoints
 
-| Endpoint | Method | Request Shape | Response Shape | Description |
-|----------|--------|---------------|----------------|-------------|
-| `orders.getAll` | Query | `{ fulfillmentStatus: "PENDING" \| "PACKED", limit?, offset? }` | `{ items: Order[], pagination }` | Get orders in fulfillment queue |
-| `orders.getById` | Query | `{ id: number }` | `Order` with line items | Get single order details |
-| `orders.fulfillOrder` | Mutation | `{ id: number, items: PickedItem[] }` | `{ success, status, pickedItems }` | Record picked items |
-| `orders.shipOrder` | Mutation | `{ id: number, trackingNumber?, carrier?, notes? }` | `{ success, orderId, status, inventoryReleased }` | Ship order, release inventory |
-| `orders.deliverOrder` | Mutation | `{ id: number, signature?, notes?, deliveredAt? }` | `{ success, orderId, deliveredAt }` | Mark order as delivered |
-| `orders.getNextStatuses` | Query | `{ orderId: number }` | `{ status, label }[]` | Get valid next statuses |
-| `orders.getLineItemAllocations` | Query | `{ lineItemId: number }` | `Allocation[]` | Get batch allocations for line item |
-| `inventory.getAvailableForProduct` | Query | `{ productId, minQuantity? }` | `Batch[]` | Get available batches for picking |
+### Pick & Pack Router (`server/routers/pickPack.ts`)
 
-### PickedItem Shape
+| Endpoint | Type | Input | Output | Description |
+|----------|------|-------|--------|-------------|
+| `pickPack.getPickList` | Query | `{ filters?: { status?, customerId?, dateFrom?, dateTo? }, limit?: 50, offset?: 0 }` | `Array<{ orderId, orderNumber, clientName, itemCount, packedCount, bagCount, pickPackStatus }>` | Get orders for pick list |
+| `pickPack.getOrderDetails` | Query | `{ orderId: number }` | `{ order, items[], bags[], summary }` | Get order details with items and bags |
+| `pickPack.packItems` | Mutation | `{ orderId, itemIds[], bagIdentifier?, notes? }` | `{ bagId, bagIdentifier, packedItemCount }` | Pack items into a bag |
+| `pickPack.unpackItems` | Mutation | `{ orderId, itemIds[], reason }` | `{ success, unpackedCount, reason }` | Unpack items (requires reason, logged to audit) |
+| `pickPack.markAllPacked` | Mutation | `{ orderId, bagIdentifier? }` | `{ bagId, bagIdentifier, packedItemCount }` | Pack all items to one bag |
+| `pickPack.markOrderReady` | Mutation | `{ orderId }` | `{ success }` | Mark order ready (validates all packed) |
+| `pickPack.updateStatus` | Mutation | `{ orderId, status }` | `{ success, status }` | Update pick/pack status |
+| `pickPack.getStats` | Query | None | `{ pending, picking, packed, ready, total }` | Get dashboard statistics |
+
+### Orders Router (`server/routers/orders.ts`)
+
+| Endpoint | Type | Input | Output | Description |
+|----------|------|-------|--------|-------------|
+| `orders.fulfillOrder` | Mutation | `{ id, items: PickedItem[] }` | `{ success, status, allFullyPicked, pickedItems }` | Record picked quantities |
+| `orders.shipOrder` | Mutation | `{ id, trackingNumber?, carrier?, notes? }` | `{ success, orderId, status, trackingNumber, carrier, inventoryReleased[] }` | Ship order, release inventory |
+| `orders.deliverOrder` | Mutation | `{ id, signature?, notes?, deliveredAt? }` | `{ success, orderId, deliveredAt }` | Mark order delivered |
+| `orders.markAsReturned` | Mutation | `{ orderId, returnReason }` | `{ success }` | Mark order returned |
+| `orders.getNextStatuses` | Query | `{ orderId }` | `Array<{ status, label }>` | Get valid next statuses |
+| `orders.getLineItemAllocations` | Query | `{ lineItemId }` | `Array<{ id, batchId, batchSku, quantity, unitCost, allocatedAt }>` | Get batch allocations |
+| `orders.allocateBatchesToLineItem` | Mutation | `{ lineItemId, allocations[] }` | `{ lineItemId, allocations[], totalCogs, weightedAverageCost }` | Allocate batches (WSQA-002) |
+
+### Input/Output Shapes
+
 ```typescript
+// PickedItem for fulfillOrder
 interface PickedItem {
   batchId: number;
-  pickedQuantity: number;
+  pickedQuantity: number;  // min: 0
   locationId?: number;
   notes?: string;
+}
+
+// getOrderDetails response
+interface OrderDetails {
+  order: {
+    id: number;
+    orderNumber: string;
+    clientId: number;
+    clientName: string;
+    pickPackStatus: "PENDING" | "PICKING" | "PACKED" | "READY";
+    fulfillmentStatus: string;
+    total: string;
+    notes: string | null;
+    createdAt: Date | null;
+  };
+  items: Array<{
+    id: number;
+    productId?: number;
+    productName: string;
+    quantity: number;
+    unitPrice?: number;
+    location: string;
+    isPacked: boolean;
+    bagId: number | null;
+    bagIdentifier: string | null;
+    packedAt: Date | null;
+  }>;
+  bags: Array<{
+    id: number;
+    identifier: string;
+    notes: string | null;
+    itemCount: number;
+    createdAt: Date | null;
+  }>;
+  summary: {
+    totalItems: number;
+    packedItems: number;
+    bagCount: number;
+  };
 }
 ```
 
@@ -103,272 +182,363 @@ interface PickedItem {
 
 ## Data Model
 
-### Primary Tables
+### Primary Tables (Verified from `drizzle/schema.ts`)
 
 #### orders
 | Column | Type | Description |
 |--------|------|-------------|
-| id | int | Primary key |
-| orderNumber | varchar | Display order number (e.g., "ORD-001234") |
+| id | int | Primary key, autoincrement |
+| version | int | Optimistic locking (default: 1) |
+| orderNumber | varchar(50) | Unique display order number |
+| orderType | enum | "QUOTE" \| "SALE" |
+| isDraft | boolean | Whether order is draft |
 | clientId | int | FK to clients |
-| fulfillmentStatus | enum | PENDING, PROCESSING, CONFIRMED, PICKED, PACKED, SHIPPED, DELIVERED, RETURNED, CANCELLED |
-| packedAt | datetime | When order was packed |
-| packedBy | int | FK to users - who packed |
-| shippedAt | datetime | When order was shipped |
-| shippedBy | int | FK to users - who shipped |
 | items | json | Line items snapshot (legacy) |
+| fulfillmentStatus | enum | DRAFT, CONFIRMED, PENDING, PACKED, SHIPPED, DELIVERED, RETURNED, RESTOCKED, RETURNED_TO_VENDOR, CANCELLED |
+| pickPackStatus | enum | PENDING, PICKING, PACKED, READY |
+| packedAt | timestamp | When order was packed |
+| packedBy | int | FK to users - who packed |
+| shippedAt | timestamp | When order was shipped |
+| shippedBy | int | FK to users - who shipped |
+| deletedAt | timestamp | Soft delete (USP) |
+| createdBy | int | FK to users |
+| createdAt | timestamp | Creation time |
+| updatedAt | timestamp | Last update time |
 
 #### order_line_items
 | Column | Type | Description |
 |--------|------|-------------|
 | id | int | Primary key |
-| orderId | int | FK to orders |
-| batchId | int | FK to batches (primary batch) |
-| productDisplayName | varchar | Product name for display |
-| quantity | decimal | Ordered quantity |
+| orderId | int (FK) | FK to orders |
+| batchId | int (FK) | FK to batches |
+| productDisplayName | varchar(255) | Product name for display |
+| quantity | decimal(10,2) | Ordered quantity |
+| cogsPerUnit | decimal(10,2) | Cost of goods per unit |
+| originalCogsPerUnit | decimal(10,2) | Original COGS before override |
+| isCogsOverridden | boolean | Was COGS manually overridden |
+| marginPercent | decimal(5,2) | Margin percentage |
+| marginDollar | decimal(10,2) | Margin in dollars |
+| isMarginOverridden | boolean | Was margin manually overridden |
+| marginSource | enum | CUSTOMER_PROFILE, DEFAULT, MANUAL |
+| unitPrice | decimal(10,2) | Price per unit |
+| lineTotal | decimal(10,2) | Line total (qty * price) |
 | isSample | boolean | Is this a sample item |
 
-#### order_line_item_allocations
+#### order_line_item_allocations (WSQA-002)
 | Column | Type | Description |
 |--------|------|-------------|
 | id | int | Primary key |
-| orderLineItemId | int | FK to order_line_items |
-| batchId | int | FK to batches |
-| quantityAllocated | decimal | Quantity from this batch |
-| unitCost | decimal | COGS at allocation time |
-| allocatedBy | int | FK to users |
-| allocatedAt | datetime | When allocated |
+| orderLineItemId | int (FK) | FK to order_line_items |
+| batchId | int (FK) | FK to batches |
+| quantityAllocated | decimal(10,2) | Quantity from this batch |
+| unitCost | decimal(12,4) | COGS at allocation time |
+| allocatedAt | timestamp | When allocated |
+| allocatedBy | int (FK) | FK to users |
+
+#### order_bags (WS-003)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | int | Primary key |
+| orderId | int (FK) | FK to orders |
+| bagIdentifier | varchar | Bag label (e.g., "BAG-001") |
+| notes | text | Bag notes |
+| createdAt | timestamp | Creation time |
+| createdBy | int (FK) | FK to users |
+
+#### order_item_bags (WS-003)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | int | Primary key |
+| orderItemId | int | Item ID (from order.items JSON) |
+| bagId | int (FK) | FK to order_bags |
+| packedAt | timestamp | When packed |
+| packedBy | int (FK) | FK to users |
 
 #### batches
 | Column | Type | Description |
 |--------|------|-------------|
 | id | int | Primary key |
-| sku | varchar | Stock keeping unit |
-| code | varchar | Batch code |
-| onHandQty | decimal | Total physical quantity |
-| reservedQty | decimal | Quantity reserved for orders |
-| quarantineQty | decimal | Quantity quarantined |
-| holdQty | decimal | Quantity on hold |
-| sampleQty | decimal | Quantity for samples |
+| code | varchar(50) | Unique batch code |
+| sku | varchar(100) | Unique SKU |
+| productId | int (FK) | FK to products |
+| onHandQty | decimal(15,4) | Total physical quantity |
+| reservedQty | decimal(15,4) | Quantity reserved for orders |
+| quarantineQty | decimal(15,4) | Quantity quarantined |
+| holdQty | decimal(15,4) | Quantity on hold |
+| sampleQty | decimal(15,4) | Quantity for samples |
+| defectiveQty | decimal(15,4) | Defective quantity |
+| unitCogs | decimal(12,4) | Unit cost of goods |
+| version | int | Optimistic locking |
+| deletedAt | timestamp | Soft delete |
 
 #### inventory_movements
 | Column | Type | Description |
 |--------|------|-------------|
 | id | int | Primary key |
-| batchId | int | FK to batches |
-| inventoryMovementType | enum | INTAKE, SALE, ADJUSTMENT, etc. |
-| quantityChange | decimal | Positive or negative change |
-| quantityBefore | decimal | Qty before movement |
-| quantityAfter | decimal | Qty after movement |
-| referenceType | varchar | ORDER_SHIPMENT, MANUAL_ADJUSTMENT, etc. |
+| batchId | int (FK) | FK to batches |
+| inventoryMovementType | enum | INTAKE, SALE, RETURN, REFUND_RETURN, ADJUSTMENT, QUARANTINE, RELEASE_FROM_QUARANTINE, DISPOSAL, TRANSFER, SAMPLE |
+| quantityChange | decimal(15,4) | Positive or negative change |
+| quantityBefore | decimal(15,4) | Qty before movement |
+| quantityAfter | decimal(15,4) | Qty after movement |
+| referenceType | varchar(50) | ORDER_SHIPMENT, etc. |
 | referenceId | int | FK to source record |
 | notes | text | Movement notes |
-| performedBy | int | FK to users |
-| createdAt | datetime | When recorded |
+| performedBy | int (FK) | FK to users |
+| createdAt | timestamp | When recorded |
+| deletedAt | timestamp | Soft delete |
 
 #### order_status_history
 | Column | Type | Description |
 |--------|------|-------------|
 | id | int | Primary key |
-| orderId | int | FK to orders |
-| fulfillmentStatus | varchar | Status at this point |
-| changedBy | int | FK to users |
+| orderId | int (FK) | FK to orders |
+| fulfillmentStatus | enum | Status at this point |
+| changedBy | int (FK) | FK to users |
+| changedAt | timestamp | When changed |
 | notes | text | Transition notes |
-| createdAt | datetime | When changed |
+| deletedAt | timestamp | Soft delete |
 
 ---
 
 ## State Transitions
 
-### Fulfillment Status State Machine
+### Pick & Pack Status (WS-003)
+```
+┌─────────┐      ┌─────────┐      ┌────────┐      ┌───────┐
+│ PENDING │─────►│ PICKING │─────►│ PACKED │─────►│ READY │
+└─────────┘      └─────────┘      └────────┘      └───────┘
+     │                                                 │
+     └─────────────────────────────────────────────────┘
+                    (direct transitions allowed)
+```
+
+### Fulfillment Status State Machine (WSQA-003)
+
+**Source:** `server/services/orderStateMachine.ts`
+
+```typescript
+const ORDER_STATUS_TRANSITIONS = {
+  DRAFT: ["CONFIRMED", "PENDING", "CANCELLED"],
+  CONFIRMED: ["PENDING", "PACKED", "SHIPPED", "CANCELLED"],  // Can skip steps
+  PENDING: ["PACKED", "SHIPPED", "CANCELLED"],                // Can skip PACKED
+  PACKED: ["SHIPPED", "PENDING", "CANCELLED"],                // Can go back
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
+  RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
+  RESTOCKED: [],           // Terminal
+  RETURNED_TO_VENDOR: [],  // Terminal
+  CANCELLED: [],           // Terminal
+};
+```
+
+### State Diagram
 
 ```
                                     ┌────────────┐
-                                    │  CANCELLED │
+                                    │  CANCELLED │ (terminal)
                                     └────────────┘
                                           ▲
-                                          │ (cancel before ship)
-                                          │
-┌─────────┐     ┌────────────┐     ┌──────┴─────┐     ┌─────────┐     ┌───────────┐
-│ PENDING │────►│ PROCESSING │────►│  CONFIRMED │────►│ PACKED  │────►│  SHIPPED  │
-└─────────┘     └────────────┘     └────────────┘     └─────────┘     └─────┬─────┘
-                                                                            │
-                                                            ┌───────────────┼───────────────┐
-                                                            ▼               ▼               ▼
-                                                     ┌───────────┐   ┌───────────┐   ┌──────────┐
-                                                     │ DELIVERED │   │  RETURNED │   │ RETURNED │
-                                                     └───────────┘   └───────────┘   └──────────┘
+            ┌─────────────────────────────┼───────────────────────┐
+            │                             │                       │
+┌───────┐   │   ┌───────────┐      ┌──────┴─────┐      ┌─────────┐
+│ DRAFT │───┼──►│ CONFIRMED │─────►│  PENDING   │─────►│ PACKED  │
+└───────┘   │   └─────┬─────┘      └──────┬─────┘      └────┬────┘
+            │         │                   │                 │
+            │         │         ┌─────────┘                 │
+            │         │         │   (can skip PACKED)       │
+            │         └─────────┼───────────────────────────┤
+            │                   ▼                           ▼
+            │            ┌───────────┐              ┌───────────┐
+            │            │  SHIPPED  │◄─────────────┤  SHIPPED  │
+            │            └─────┬─────┘              └───────────┘
+            │                  │
+            │    ┌─────────────┼─────────────┐
+            │    ▼             ▼             ▼
+     ┌───────────┐      ┌───────────┐
+     │ DELIVERED │      │  RETURNED │
+     └─────┬─────┘      └─────┬─────┘
+           │                  │
+           │    ┌─────────────┼─────────────┐
+           │    ▼             ▼             ▼
+           │          ┌───────────┐  ┌─────────────────┐
+           └─────────►│ RESTOCKED │  │RETURNED_TO_VENDOR│
+                      └───────────┘  └─────────────────┘
+                        (terminal)       (terminal)
 ```
 
-### Valid Transitions
+### Status Labels and Colors
 
-| From | To | Trigger | Actor |
-|------|-----|---------|-------|
-| PENDING | PROCESSING | Order picked up for fulfillment | System/Fulfillment |
-| PENDING | CONFIRMED | Order confirmed with inventory | System |
-| PROCESSING | CONFIRMED | Processing complete | System |
-| CONFIRMED | PACKED | All items picked and packed | Fulfillment |
-| PACKED | SHIPPED | Order shipped | Fulfillment |
-| SHIPPED | DELIVERED | Delivery confirmed | System/Fulfillment |
-| SHIPPED | RETURNED | Order returned | Fulfillment |
-| DELIVERED | RETURNED | Post-delivery return | Fulfillment |
-| PENDING/CONFIRMED | CANCELLED | Order cancelled | Sales/Admin |
-
-### Invalid Transitions (Blocked by State Machine)
-- PACKED → PENDING (cannot un-pack)
-- SHIPPED → PACKED (cannot un-ship)
-- DELIVERED → SHIPPED (cannot un-deliver)
-- CANCELLED → any (terminal state)
+| Status | Label | Color |
+|--------|-------|-------|
+| DRAFT | Draft | gray-100/gray-800 |
+| CONFIRMED | Confirmed | blue-100/blue-800 |
+| PENDING | Pending | yellow-100/yellow-800 |
+| PACKED | Packed | purple-100/purple-800 |
+| SHIPPED | Shipped | indigo-100/indigo-800 |
+| DELIVERED | Delivered | green-100/green-800 |
+| RETURNED | Returned | orange-100/orange-800 |
+| RESTOCKED | Restocked | emerald-100/emerald-800 |
+| RETURNED_TO_VENDOR | Returned to Vendor | amber-100/amber-800 |
+| CANCELLED | Cancelled | red-100/red-800 |
 
 ---
 
 ## Business Rules
 
-### Inventory Management
+### Inventory Reservation (orders.confirm)
 
-1. **Pick Validation:**
-   - Cannot pick more than ordered quantity
-   - Cannot pick more than available (onHand - reserved - quarantine - hold)
-   - Must specify which batch to pick from if multiple allocations
+1. **Confirmation validates and reserves:**
+   - Wraps in `withTransaction` for atomicity (BUG-301)
+   - Uses `SELECT FOR UPDATE` to lock batches (BUG-301)
+   - Validates available: `onHandQty - reservedQty - quarantineQty - holdQty`
+   - For regular orders: increments `reservedQty`
+   - For sample orders: decrements `sampleQty` directly
 
-2. **Reservation Management:**
-   - Inventory reserved at order confirmation (reservedQty incremented)
-   - Reservation released at shipment (reservedQty decremented)
-   - onHandQty NOT decremented at pick (already reserved)
+2. **Available quantity calculation:**
+   ```typescript
+   const availableQty = Math.max(0, onHand - reserved - quarantine - hold);
+   ```
 
-3. **Sample Orders:**
-   - Sample items decrement sampleQty, not onHandQty
-   - Different inventory pool for samples
+### Pack Operations (pickPack router)
 
-### Pack Operations
+3. **Pack items to bag:**
+   - Creates bag if not exists (auto-generates identifier: "BAG-001", "BAG-002", etc.)
+   - Creates `order_item_bags` records for each item
+   - Updates `pickPackStatus` from PENDING to PICKING
 
-4. **Pack Requirements:**
-   - All line items must be picked before packing
-   - Partial packing not allowed (ship complete or partial ship)
+4. **Mark all packed:**
+   - Creates single bag with all items
+   - Updates `pickPackStatus` to PACKED
 
-5. **Pack Recording:**
-   - packedAt timestamp recorded
-   - packedBy user recorded for audit
+5. **Mark order ready:**
+   - Validates all items are packed
+   - Updates `pickPackStatus` to READY
+   - Records `packedAt`, `packedBy` on order
 
-### Ship Operations
+6. **Unpack items (WS-005):**
+   - Requires reason (validation: `z.string().min(1)`)
+   - Logs to `audit_logs` table with before/after state
+   - Deletes `order_item_bags` records
 
-6. **Ship Requirements:**
-   - Order must be in PACKED status
-   - Tracking number optional but recommended
+### Ship Operations (orders.shipOrder)
 
-7. **Ship Actions (INV-001):**
-   - Release reservedQty for each allocated batch
-   - Create inventory_movement record with type SALE
-   - Record tracking info in order notes
-   - Log to order_status_history
+7. **Ship requirements:**
+   - Uses state machine validation: `validateTransition(from, "SHIPPED")`
+   - Order must be in valid transition state (CONFIRMED, PENDING, or PACKED)
 
-8. **Partial Shipment Rules:**
-   - Not currently supported (ship entire order)
-   - Future: Create separate shipment records for partial
+8. **Ship actions (INV-001):**
+   ```typescript
+   // Within transaction:
+   // 1. Lock order row with FOR UPDATE
+   // 2. Get all allocations for order line items
+   // 3. For each allocation:
+   //    - Lock batch row
+   //    - Decrement reservedQty
+   //    - Create inventory_movement with type "SALE"
+   // 4. Update order: fulfillmentStatus = "SHIPPED", shippedAt, shippedBy
+   // 5. Log to order_status_history
+   ```
 
-### Location Tracking
+### Sample Order Handling (BUG-501)
 
-9. **Location Handling:**
-   - Pick from specific locations if multi-location warehouse
-   - Update location quantities on pick
-   - Record location in pick data
+9. **Sample orders use different pool:**
+   - Check `lineItem.isSample` flag
+   - Validates against `batch.sampleQty` instead of available qty
+   - Decrements `sampleQty` at confirmation (not `reservedQty`)
 
 ---
 
 ## Error States
 
-| Error | Cause | HTTP Code | Recovery |
-|-------|-------|-----------|----------|
-| "Order not found" | Invalid orderId | 404 | Refresh queue, select valid order |
-| "Cannot pick items for order in {status}" | Wrong fulfillment status | 400 | Check order status, may already be shipped |
-| "Picked quantity exceeds ordered quantity" | Over-pick | 400 | Reduce picked quantity |
-| "Insufficient inventory for batch" | Stock out during pick | 400 | Check alternate batches, adjust order |
-| "Invalid status transition" | State machine violation | 400 | Check valid next statuses |
-| "Batch not found" | Deleted/invalid batch | 404 | Re-allocate order to valid batches |
-| "Not authorized" | Missing fulfillment permission | 403 | Login with correct role |
-| "Database error" | Transaction failure | 500 | Retry, escalate if persists |
+### pickPack Router Errors
 
-### Error Recovery Flows
+| Error | Code | Cause | Recovery |
+|-------|------|-------|----------|
+| "Database not available" | INTERNAL_SERVER_ERROR | DB connection failed | Retry, escalate |
+| "Order not found" | NOT_FOUND | Invalid orderId | Refresh queue |
+| "No bags found for this order" | NOT_FOUND | Unpack on order without bags | N/A |
+| "Cannot mark as ready: X items still need to be packed" | PRECONDITION_FAILED | Not all items packed | Pack remaining items |
 
-1. **Stock-out During Pick:**
-   - Alert user to insufficient quantity
-   - Option to allocate from different batch
-   - Option to partial fill (if supported)
-   - Option to cancel line item
+### orders Router Errors
 
-2. **Wrong Item Picked:**
-   - Uncheck item, re-pick correct item
-   - Adjust inventory if physical error
-
-3. **Order Already Shipped:**
-   - Cannot modify shipped order
-   - Must process as return if needed
+| Error | Code | Cause | Recovery |
+|-------|------|-------|----------|
+| "Order with ID X not found" | NOT_FOUND | Invalid orderId | Refresh, use valid ID |
+| "Cannot pick items for order in X status (terminal state)" | 400 | Order already terminal | Cannot modify |
+| "Cannot pick items for order that is already SHIPPED/DELIVERED" | 400 | Order shipped | Process as return |
+| "Picked quantity (X) exceeds ordered quantity (Y)" | 400 | Over-pick | Reduce quantity |
+| "Invalid status transition: X → Y. Valid: Z" | 400 | State machine violation | Check valid transitions |
+| "Batch X not found" | NOT_FOUND | Deleted/invalid batch | Re-allocate |
+| "Insufficient inventory for batch X. Available: Y, Requested: Z" | BAD_REQUEST | Stock out | Allocate different batch |
+| "Insufficient sample inventory for batch X" | BAD_REQUEST | Sample stock out | Check sample pool |
+| "Rate limit exceeded: maximum 10 order confirmations per minute" | TOO_MANY_REQUESTS | BUG-502 rate limit | Wait 1 minute |
 
 ---
 
 ## Invariants
 
-### INV-001: onHandQty >= 0 After Pick
-Inventory onHandQty must never go negative after any pick or ship operation.
+### INV-001: onHandQty >= 0 After Any Operation
+Inventory onHandQty must never go negative.
+
+**Enforcement (from orders.ts):**
+```typescript
+// BUG-315: Handle NaN from parseFloat with explicit checks
+const onHand = parseFloat(String(batch.onHandQty || "0"));
+if (Number.isNaN(onHand)) {
+  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid inventory data" });
+}
+
+// Use database arithmetic for precision (BUG-316)
+await tx.execute(sql`
+  UPDATE batches
+  SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${parsedQty}
+  WHERE id = ${item.batchId}
+`);
+```
 
 **Verification:**
 ```sql
-SELECT id, sku, onHandQty FROM batches WHERE CAST(onHandQty AS DECIMAL) < 0;
+SELECT id, sku, onHandQty FROM batches WHERE CAST(onHandQty AS DECIMAL(15,4)) < 0;
 -- Must return 0 rows
 ```
-
-**Enforcement:**
-- Check available quantity before pick
-- Use transactions to prevent race conditions
-- Lock batch rows with FOR UPDATE during operations
 
 ### INV-006: Shipped Qty <= Ordered Qty
 Shipped quantity per line item must never exceed ordered quantity.
 
-**Verification:**
-```sql
-SELECT oli.id, oli.quantity as ordered,
-       (SELECT SUM(quantityAllocated) FROM order_line_item_allocations WHERE orderLineItemId = oli.id) as allocated
-FROM order_line_items oli
-WHERE allocated > quantity;
--- Must return 0 rows
+**Enforcement (from orders.ts:fulfillOrder):**
+```typescript
+if (pickItem.pickedQuantity > orderItem.quantity) {
+  throw new Error(
+    `Picked quantity (${pickItem.pickedQuantity}) exceeds ordered quantity (${orderItem.quantity})`
+  );
+}
 ```
-
-**Enforcement:**
-- Validate picked quantity against line item quantity
-- Reject over-picks at API level
 
 ### INV-008: Inventory Movements Must Balance
-For each order shipment, inventory movement records must correctly reflect:
-- Quantity change equals sum of shipped items
-- Reference links back to order
+For each shipment, inventory movement records must correctly reflect quantity changes.
 
-**Verification:**
-```sql
-SELECT o.id, o.orderNumber,
-       (SELECT SUM(ABS(CAST(quantityChange AS DECIMAL)))
-        FROM inventory_movements
-        WHERE referenceType = 'ORDER_SHIPMENT' AND referenceId = o.id) as movement_total
-FROM orders o
-WHERE o.fulfillmentStatus = 'SHIPPED'
-  AND movement_total != (SELECT SUM(quantity) FROM order_line_items WHERE orderId = o.id);
--- Must return 0 rows
+**Enforcement (from orders.ts:shipOrder):**
+```typescript
+await tx.insert(inventoryMovements).values({
+  batchId: allocation.batchId,
+  inventoryMovementType: "SALE",
+  quantityChange: `-${allocatedQty}`,
+  quantityBefore: currentOnHand.toString(),
+  quantityAfter: currentOnHand.toString(),
+  referenceType: "ORDER_SHIPMENT",
+  referenceId: input.id,
+  notes: `Order shipped - reservation released. Reserved: ${currentReserved} → ${newReserved}`,
+  performedBy: userId,
+});
 ```
 
-**Enforcement:**
-- Create movement records in same transaction as ship
-- Record quantityBefore and quantityAfter for audit
-
 ### INV-007: Audit Trail for Mutations
-All pick, pack, and ship operations must record:
-- performedBy (user ID)
-- createdAt (timestamp)
-- Status history entry
+All mutations must record actor and timestamp.
 
 **Enforcement:**
-- Never use fallback user IDs (ctx.user?.id || 1 is FORBIDDEN)
-- Use getAuthenticatedUserId(ctx) for all operations
-- Insert into order_status_history on status change
+- All procedures use `getAuthenticatedUserId(ctx)` (not fallback IDs)
+- Status changes logged to `order_status_history`
+- Unpack operations logged to `audit_logs`
 
 ---
 
@@ -378,154 +548,189 @@ All pick, pack, and ship operations must record:
 
 | Flow | Interaction | Data |
 |------|-------------|------|
-| **GF-003: Order-to-Cash** | Creates confirmed orders for fulfillment | Orders with CONFIRMED status, allocated inventory |
-| **GF-007: Inventory Management** | Provides available inventory for picking | Batch quantities, locations |
+| **GF-003: Order-to-Cash** | Creates confirmed orders for fulfillment | Orders with `isDraft=false`, inventory reserved |
+| **GF-007: Inventory Management** | Provides available inventory | Batch quantities via `getAvailableForProduct` |
 
 ### Downstream (Outputs from GF-005)
 
 | Flow | Interaction | Data |
 |------|-------------|------|
-| **GF-003: Order-to-Cash** | Updates order status to SHIPPED/DELIVERED | Order completion triggers invoice finalization |
-| **GF-004: Invoice & Payment** | Shipped orders ready for final billing | Order fulfillment data |
-| **GF-006: Client Ledger** | Delivered orders affect AR aging | Transaction history |
-| **GF-007: Inventory Management** | Decrements inventory on ship | Reduced onHandQty, inventory movements |
+| **GF-003: Order-to-Cash** | Updates order status | `fulfillmentStatus` changes |
+| **GF-004: Invoice & Payment** | Shipped orders ready for billing | Order completion data |
+| **GF-006: Client Ledger** | Delivered orders affect AR | Transaction history |
+| **GF-007: Inventory Management** | Releases reservations, creates movements | `reservedQty` decremented, `inventory_movements` records |
 
-### Bidirectional Relationships
+### Integration Diagram
 
 ```
-┌─────────────────┐
-│ GF-003          │ Creates orders with allocated inventory
-│ Order-to-Cash   │────────────────────────────────────────────┐
-└─────────────────┘                                            │
-                                                               ▼
-                                                        ┌──────────────┐
-                                                        │  GF-005      │
-                                                        │  Pick & Pack │
-                                                        └──────┬───────┘
-                                                               │
-        ┌──────────────────────────────────────────────────────┤
-        │ Updates order status                                 │
-        ▼                                                      │ Decrements inventory
-┌─────────────────┐                                            ▼
-│ GF-003          │                                     ┌──────────────┐
-│ Order-to-Cash   │                                     │  GF-007      │
-│ (status update) │                                     │  Inventory   │
-└─────────────────┘                                     └──────────────┘
+                     ┌──────────────────────────────────────┐
+                     │         GF-003: Order-to-Cash        │
+                     │  (creates orders, allocates batches) │
+                     └─────────────────┬────────────────────┘
+                                       │ orders.confirm
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         GF-005: Pick & Pack                              │
+│                                                                          │
+│  ┌─────────────────────┐              ┌─────────────────────┐            │
+│  │  pickPack Router    │              │   orders Router     │            │
+│  │  (WS-003 Workflow)  │              │  (Fulfillment)      │            │
+│  │                     │              │                     │            │
+│  │  getPickList        │              │  fulfillOrder       │            │
+│  │  getOrderDetails    │  ─────────►  │  shipOrder          │            │
+│  │  packItems          │   triggers   │  deliverOrder       │            │
+│  │  markOrderReady     │              │  markAsReturned     │            │
+│  └─────────────────────┘              └──────────┬──────────┘            │
+│                                                  │                       │
+└──────────────────────────────────────────────────┼───────────────────────┘
+                                                   │
+                    ┌──────────────────────────────┼───────────────────────┐
+                    │                              │                       │
+                    ▼                              ▼                       ▼
+     ┌──────────────────────┐      ┌───────────────────────┐   ┌─────────────────┐
+     │ GF-007: Inventory    │      │ GF-004: Invoice       │   │ GF-006: Ledger  │
+     │ (releases reserved,  │      │ (shipped → billable)  │   │ (AR impact)     │
+     │  creates movements)  │      │                       │   │                 │
+     └──────────────────────┘      └───────────────────────┘   └─────────────────┘
 ```
 
 ---
 
 ## UI Components
 
-### OrderQueue (Main List)
-- Displays orders pending fulfillment
-- Columns: Order #, Client, Items, Status, Created Date
-- Status badges with color coding
-- Sort by date, status, client
-- Keyboard navigation (ArrowUp/Down, Enter to select)
+### PickPackPage (`client/src/pages/PickPackPage.tsx`)
 
-### PickList (Order Detail Panel)
-- Shows selected order items
-- Item rows with: Product name, SKU, Quantity, Batch/Location
-- Checkbox per item for pick tracking
-- "Select All" button
-- Pack button (enabled when all picked)
+**Layout:** Two-panel design (1/3 left, 2/3 right)
 
-### StatusFilter
-- Dropdown/tabs: All, Pending, Packed, Shipped
-- Quick filter buttons
+#### Left Panel: Order Queue
+- **Header:** Title with Package icon, Refresh button
+- **Stats Grid:** 4-column grid (Pending/Picking/Packed/Ready counts)
+- **Search/Filter Bar:**
+  - Search input with Search icon (filters by orderNumber or clientName)
+  - Status dropdown (All/PENDING/PICKING/PACKED/READY)
+- **Order List:** Scrollable list of orders
+  - Order number + StatusBadge
+  - Client name
+  - Progress text: "{packed}/{total} items packed"
+  - Bag count
+  - Progress bar (green, percentage based)
 
-### SearchBar
-- Global search (Cmd+K)
-- Search by order number, client name, product
+#### Right Panel: Order Details
+- **Empty State:** Box icon + "Select an order to start packing"
+- **Loading State:** Spinner
+- **Order Header:**
+  - Order number + client name
+  - StatusBadge
+  - Total, items packed count, bag count
+- **Action Bar:**
+  - "Select All Unpacked" button
+  - "Pack Selected (n)" button (blue, primary)
+  - "Pack All to One Bag" button
+  - "Mark Ready for Shipping" button (green, disabled until all packed)
+- **Items List:** Cards with checkboxes
+  - Product name, quantity, location
+  - Packed indicator (green check + bag identifier)
+- **Bags Section:** Grid of bag cards
+  - Bag identifier, item count
 
-### InspectorPanel
-- Right-side detail view
-- Order summary, client info, shipping address
-- Item list with quantities
-- Action buttons: Pack, Ship, View Details
-
-### ShipDialog (Modal)
-- Carrier selector
-- Tracking number input
-- Notes field
-- Confirm/Cancel buttons
+### StatusBadge Component
+```typescript
+const config = {
+  PENDING: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
+  PICKING: { color: "bg-blue-100 text-blue-800", icon: Package },
+  PACKED: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+  READY: { color: "bg-purple-100 text-purple-800", icon: Truck },
+};
+```
 
 ---
 
 ## Keyboard Shortcuts
 
+**Verified from E2E tests (`tests-e2e/golden-flows/pick-pack-fulfillment.spec.ts`):**
+
 | Shortcut | Action |
 |----------|--------|
-| Cmd+K / Ctrl+K | Focus search |
-| ArrowDown | Next order in list |
-| ArrowUp | Previous order in list |
+| Cmd+K / Ctrl+K | Focus search input |
+| Tab | Move focus through elements |
+| ArrowDown | Navigate to next order |
+| ArrowUp | Navigate to previous order |
 | Enter | Select focused order |
-| i | Open inspector panel |
-| p | Pack selected order (if ready) |
-| s | Ship selected order (if packed) |
-| Escape | Close dialogs/deselect |
-
----
-
-## Performance Considerations
-
-1. **Queue Loading:**
-   - Paginate orders (50 per page default)
-   - Cache frequently accessed data
-   - Lazy load order details on selection
-
-2. **Inventory Queries:**
-   - Batch allocation queries should use indexes on orderLineItemId
-   - Consider materialized views for high-volume warehouses
-
-3. **Transaction Performance:**
-   - Ship operation locks multiple rows - keep transaction short
-   - Use connection pooling for concurrent fulfillment
+| i | Open inspector panel (E2E test verified) |
 
 ---
 
 ## Security Considerations
 
-1. **Role Requirements:**
-   - `orders:read` - View queue and orders
-   - `orders:update` - Pick, pack, ship operations
-   - `inventory:read` - View available batches
+1. **Access Control:**
+   - All pickPack endpoints use `adminProcedure` (requires admin role)
+   - orders endpoints use `protectedProcedure` with permission middleware
+   - Required permissions: `orders:read`, `orders:update`, `orders:create`
 
-2. **Audit Trail:**
-   - All mutations record performedBy user
-   - Status changes logged to order_status_history
-   - Inventory movements create audit records
+2. **Actor Attribution:**
+   - Uses `getAuthenticatedUserId(ctx)` - NEVER fallback IDs
+   - All mutations record `performedBy` / `createdBy` / `packedBy` / `shippedBy`
 
-3. **Data Validation:**
-   - Validate batchId exists and has quantity
-   - Validate order belongs to authenticated tenant
-   - Prevent SQL injection in notes fields
+3. **Audit Trail:**
+   - Status changes → `order_status_history`
+   - Inventory changes → `inventory_movements`
+   - Unpack operations → `audit_logs` with reason
+
+4. **Transaction Safety:**
+   - Ship operations wrapped in `withTransaction`
+   - Uses `SELECT FOR UPDATE` to prevent race conditions
+   - Database arithmetic for decimal precision (BUG-316)
 
 ---
 
 ## Testing Checklist
 
-### Unit Tests
-- [ ] State machine transition validation
-- [ ] Pick quantity validation
-- [ ] Ship inventory release logic
-- [ ] Movement record creation
+### E2E Tests (Verified Files)
 
-### Integration Tests
-- [ ] fulfillOrder mutation with valid data
-- [ ] fulfillOrder rejection for over-pick
-- [ ] shipOrder inventory release
-- [ ] Status history creation
+**`tests-e2e/golden-flows/pick-pack-fulfillment.spec.ts`:**
+- [x] Navigate to /pick-pack
+- [x] Display pick list with Work Surface pattern
+- [x] Navigate orders with keyboard
+- [x] Filter by status
+- [x] Search orders with Cmd+K
+- [x] Multi-select items
+- [x] Select all unpacked
+- [x] Pack selected items
+- [x] Mark order ready when fully packed
+- [x] Inspector panel shows details
+- [x] Keyboard shortcut 'i' for inspect
 
-### E2E Tests (`tests-e2e/golden-flows/pick-pack-fulfillment.spec.ts`)
-- [ ] Navigate to /pick-pack
-- [ ] Select order from queue
-- [ ] Pick all items
-- [ ] Pack order
-- [ ] Ship order
-- [ ] Verify inventory decremented
-- [ ] Verify status history
+**`tests-e2e/critical-paths/pick-pack.spec.ts`:**
+- [x] Navigate to pick and pack page
+- [x] Display order queue
+- [x] Filter orders by status
+- [x] Open order details for packing
+- [x] Display order items for picking
+- [x] Pack items into bags
+- [x] Bag management interface
+- [x] Mark order as ready when fully packed
+- [x] Print packing slip option
+- [x] Mobile responsive viewport
+
+**`tests-e2e/critical-paths/order-fulfillment-workflow.spec.ts`:**
+- [x] Order creation flow
+- [x] Order fulfillment flow (pick-pack integration)
+- [x] Payment flow
+- [x] Order completion flow
+- [x] Track inventory deduction after fulfillment
+- [x] Update client balance after payment
+
+---
+
+## Known Issues & Technical Debt
+
+1. **Two Status Systems:** Orders have both `fulfillmentStatus` and `pickPackStatus` which can be confusing. Consider consolidating.
+
+2. **Item IDs from JSON:** Pack operations use item IDs from `order.items` JSON array (index-based fallback), not from `order_line_items` table. This could cause issues if items array is modified.
+
+3. **No Partial Shipment:** Current implementation requires shipping entire order. Partial shipments not supported.
+
+4. **Rate Limiting:** Confirm endpoint has in-memory rate limiting (10/minute). Not distributed - won't work across multiple instances.
 
 ---
 
@@ -534,3 +739,4 @@ All pick, pack, and ship operations must record:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-01-27 | Claude Code Agent | Initial specification |
+| 2.0 | 2026-01-27 | Claude Code Agent | Major revision with verified codebase research: added pickPack router endpoints, corrected data model from drizzle/schema.ts, added actual state machine from orderStateMachine.ts, documented both parallel systems (WS-003 + fulfillment), added UI component details from PickPackPage.tsx, verified E2E test coverage, documented known issues |
