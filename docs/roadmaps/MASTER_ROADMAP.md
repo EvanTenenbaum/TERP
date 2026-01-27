@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 6.10
-**Last Updated:** 2026-01-27 (Added Schema Drift / SQL Safety findings: BUG-110 through BUG-116, ST-055)
+**Version:** 7.1
+**Last Updated:** 2026-01-26 (Completed INFRA-017, INFRA-018 - memory health check fixes)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -853,12 +853,29 @@ pnpm test --run 2>&1 | tee test-results.log
 
 ### Infrastructure Tasks (P2)
 
-| Task        | Description                                 | Priority | Status                                                 | Prompt |
-| ----------- | ------------------------------------------- | -------- | ------------------------------------------------------ | ------ |
-| INFRA-004   | Implement Deployment Monitoring Enforcement | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-007   | Update Swarm Manager                        | LOW      | ✅ COMPLETE (audit verified)                           | -      |
-| INFRA-012   | Deploy TERP Commander Slack Bot             | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
-| CLEANUP-001 | Remove LLM/AI from Codebase                 | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| Task        | Description                                      | Priority | Status                                                 | Prompt |
+| ----------- | ------------------------------------------------ | -------- | ------------------------------------------------------ | ------ |
+| INFRA-004   | Implement Deployment Monitoring Enforcement      | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-007   | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
+| INFRA-012   | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
+| CLEANUP-001 | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-017   | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
+| INFRA-018   | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
+
+> **INFRA-017 Details (Memory Health Check False Positive):**
+>
+> - **Issue:** Health endpoint reports 93-97% memory usage (critical) while platform shows 11%
+> - **Root Cause:** `server/_core/healthCheck.ts` used `heapUsed/heapTotal` which is always near 100%
+> - **Solution:** Updated `healthCheck.ts` to use `getMemoryStats()` from `memoryOptimizer.ts`
+> - **Commit:** `9cb33376` - fix(health): Use memoryOptimizer for accurate memory reporting
+> - **Completion Date:** Jan 26, 2026
+>
+> **INFRA-018 Details (Configuration Drift):**
+>
+> - **Issue:** `.do/app.yaml` showed `basic-xs` (512MB) but production uses `apps-d-1vcpu-2gb` (2GB)
+> - **Solution:** Updated `.do/app.yaml` with correct instance size, autoscaling config, and NODE_MEMORY_LIMIT
+> - **Commit:** `6dc8bdfd` - fix(infra): Sync .do/app.yaml with production config
+> - **Completion Date:** Jan 26, 2026
 
 ---
 
@@ -3798,29 +3815,19 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 | SEC-029 | Fix Default Permission Grants (new users get read all)               | HIGH     | ready  | 2h       | `server/services/permissionService.ts` |
 | SEC-030 | Fix VIP Portal Token Validation (UUID not validated)                 | HIGH     | ready  | 2h       | `server/routers/vipPortal.ts`          |
 
-<<<<<<< HEAD
-| ACC-002 | Add GL Reversals for Invoice Void | HIGH | ready | 4h | `server/routers/invoices.ts` |
-| ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | ready | 4h | `server/routers/returns.ts` |
-| ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | ready | 4h | `server/services/orderAccountingService.ts` |
-| ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | ready | 2h | `server/accountingDb.ts` |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | complete | 4h | `server/routers/orders.ts` |
-| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | complete | 2h | `server/ordersDb.ts` |
-=======
 | ACC-002 | Add GL Reversals for Invoice Void | HIGH | complete | 4h | `server/routers/invoices.ts` |
 | ACC-003 | Add GL Reversals for Returns/Credit Memos | HIGH | complete | 4h | `server/routers/returns.ts` |
 | ACC-004 | Create COGS GL Entries on Sale (missing entirely) | HIGH | complete | 4h | `server/services/orderAccountingService.ts` |
 | ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | complete | 2h | `server/accountingDb.ts` |
-| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | ready | 4h | `server/routers/orders.ts` |
-| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | ready | 2h | `server/ordersDb.ts` |
-
-> > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
-> > > > > > > | INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
-> > > > > > > | ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
-> > > > > > > | ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
-> > > > > > > | ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
-> > > > > > > | ST-052 | Fix Fallback User ID Violations (11 instances) | HIGH | complete | 2h | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
-> > > > > > > | ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | ready | 16h | Multiple files - see task details |
-> > > > > > > | FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
+| INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | complete | 4h | `server/routers/orders.ts` |
+| INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | complete | 2h | `server/ordersDb.ts` |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
+| ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
+| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
+| ST-052 | Fix Fallback User ID Violations (11 instances) | HIGH | complete | 2h | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
+| ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | ready | 16h | Multiple files - see task details |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
 
 ---
 
@@ -4181,7 +4188,6 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 | -------- | -------------------------------- | -------- | ------ | -------- | ------------------------ |
 | ARCH-001 | Create OrderOrchestrator Service | HIGH     | ready  | 8h       | `server/services/` (new) |
 
-<<<<<<< HEAD
 | ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
 | ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
 | ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
@@ -4189,7 +4195,6 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 | PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
 | PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
 | PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | complete | 2h | `server/routers/vendors.ts` |
-=======
 | ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
 | ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
 | ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
@@ -4199,6 +4204,13 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 | PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
 
 > > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
+| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
+| ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
+| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
 
 ---
 
@@ -5098,3 +5110,202 @@ global.ResizeObserver = class ResizeObserver {
 **Estimated Hours:** 35-50h
 
 ---
+
+---
+
+## 🐞 January 26 QA Audit - New Bug Reports
+
+> The following tasks were generated from the Golden Flows QA audit on Jan 26, 2026. They represent critical, blocking issues.
+
+### BUG-110: Critical SQL Error on Inventory Load
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-04, FINDING-10)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `server/routers/orders.ts`, `server/inventoryDb.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+When creating a Sales Order, the system fails to load available inventory and displays a raw SQL query error to the user. This is a system-wide blocker for all transactional flows.
+
+**Context / Evidence:**
+
+- See `jan-26-checkpoint/findings/all_findings.json` for the full error message.
+- The query joins `batches`, `products`, `lots`, `vendors`, and `strains` and appears to be malformed or timing out.
+
+**Acceptance Criteria:**
+
+- [ ] The inventory query in the order creation flow executes successfully without errors.
+- [ ] Available inventory batches are displayed to the user.
+- [ ] Raw SQL errors are never exposed to the frontend.
+
+---
+
+### BUG-111: Sales Rep Cannot View Clients (RBAC Failure)
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-01, FINDING-03)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/clients.ts`, `server/_core/rbac.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+Users with the `QA Sales Rep` role cannot view the client list, receiving a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
+
+**Context / Evidence:**
+
+- The Sales Rep role is blocked from its primary function of selecting clients for orders.
+
+**Acceptance Criteria:**
+
+- [ ] Users with the Sales Rep role can view the client list at `/clients`.
+- [ ] The API at `/api/trpc/clients.list` returns a successful response for users with appropriate permissions.
+
+---
+
+### BUG-112: Direct Intake Form Not Rendering
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-05)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `client/src/pages/intake/index.tsx`
+**Dependencies:** None
+
+**Problem / Goal:**
+The Direct Intake page does not render any form fields, making it impossible to add new inventory into the system. Clicking "Add Row" increments a counter but no inputs appear.
+
+**Context / Evidence:**
+
+- The UI is broken, preventing the entire GF-001 (Direct Intake) flow.
+
+**Acceptance Criteria:**
+
+- [ ] The Direct Intake page renders form fields for adding new inventory batches.
+- [ ] Clicking "Add Row" adds a new, visible set of input fields to the form.
+
+---
+
+### BUG-113: Invoice PDF Generation Timeout
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-07)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `server/services/pdfGenerationService.ts` (or similar)
+**Dependencies:** None
+
+**Problem / Goal:**
+Attempting to download a PDF of an invoice causes the browser to hang and eventually time out after ~3 minutes. This suggests a server-side issue with the PDF generation service.
+
+**Context / Evidence:**
+
+- This prevents users from getting PDF copies of invoices, a critical accounting function.
+
+**Acceptance Criteria:**
+
+- [ ] Clicking "Download PDF" on an invoice generates and downloads a PDF file within a reasonable time (< 10 seconds).
+- [ ] The server-side PDF generation process is investigated for performance bottlenecks or infinite loops.
+
+---
+
+### BUG-114: Purchase Order Product Dropdown Empty
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-08)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `client/src/components/po/CreatePO.tsx`
+**Dependencies:** BUG-110
+
+**Problem / Goal:**
+When creating a Purchase Order, the "Select product" dropdown is empty, even though 150 products exist in the system. This blocks the Procure-to-Pay (GF-002) flow.
+
+**Context / Evidence:**
+
+- The Products page correctly lists 150 products, but the PO creation form does not.
+- This may be related to the inventory query failure (BUG-110) if the dropdown is attempting to show products with available inventory.
+
+**Acceptance Criteria:**
+
+- [ ] The "Select product" dropdown in the PO creation form lists all available products from the catalog.
+
+---
+
+### BUG-115: Sample Request Form Product Selector Broken
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-13)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `client/src/components/samples/CreateSampleRequest.tsx`
+**Dependencies:** None
+
+**Problem / Goal:**
+The "Create Sample Request" form has a plain text input for the product, not a proper searchable selector. This leads to validation errors and prevents the creation of sample requests.
+
+**Context / Evidence:**
+
+- The form is unusable as users cannot correctly select a product to sample.
+
+**Acceptance Criteria:**
+
+- [ ] The product field on the Sample Request form is replaced with a searchable, selectable dropdown component.
+- [ ] Selecting a product from the component correctly populates the form state.
+
+---
+
+### DATA-026: Investigate and Fix Dashboard/Inventory Data Mismatch
+
+**Type:** Data
+**Source:** Jan 26 QA Audit (FINDING-06)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/routers/dashboard.ts`, `server/routers/inventory.ts`
+**Dependencies:** BUG-110
+
+**Problem / Goal:**
+There is a severe data integrity issue. The main dashboard displays an inventory value of ~$13M, but the dedicated Inventory page shows 0 batches and a value of $0.00.
+
+**Context / Evidence:**
+
+- This is likely a symptom of the critical SQL error (BUG-110), with the dashboard showing stale or cached data while the live inventory query fails.
+
+**Acceptance Criteria:**
+
+- [ ] The root cause of the data mismatch is identified and fixed.
+- [ ] The dashboard inventory value is consistent with the data shown on the Inventory page.
+- [ ] If caching is used, a clear strategy for cache invalidation is implemented and documented.
+
+---
+
+### BUG-116: AR/AP Dashboard Data Inconsistencies
+
+**Type:** Bug
+**Source:** Jan 26 QA Audit (FINDING-12)
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `server/routers/accounting.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Vendors Owed" shows "Unknown Vendor" for all entries.
+
+**Context / Evidence:**
+
+- The queries for these specific dashboard widgets are likely failing to join or resolve related entity names (clients, vendors).
+
+**Acceptance Criteria:**
+
+- [ ] The "Top Debtors" widget correctly lists clients with the highest outstanding balances.
+- [ ] The "Top Vendors Owed" widget correctly lists vendor names.

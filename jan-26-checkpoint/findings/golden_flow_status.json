@@ -1,0 +1,50 @@
+[
+  {
+    "id": "GF-003",
+    "title": "Order-to-Cash",
+    "status": "BLOCKED",
+    "blocker": "P0: SQL error on inventory load."
+  },
+  {
+    "id": "GF-002",
+    "title": "Procure-to-Pay",
+    "status": "BLOCKED",
+    "blocker": "P0: Product dropdown is empty."
+  },
+  {
+    "id": "GF-007",
+    "title": "Inventory Management",
+    "status": "BLOCKED",
+    "blocker": "P0: Inventory page shows 0 batches."
+  },
+  {
+    "id": "GF-001",
+    "title": "Direct Intake",
+    "status": "BLOCKED",
+    "blocker": "P1: Form fields are not visible."
+  },
+  {
+    "id": "GF-008",
+    "title": "Sample Request",
+    "status": "BLOCKED",
+    "blocker": "P1: Product selector is broken."
+  },
+  {
+    "id": "GF-004",
+    "title": "Invoice & Payment",
+    "status": "PARTIAL",
+    "blocker": "P1: PDF download causes browser timeout."
+  },
+  {
+    "id": "GF-006",
+    "title": "Client Ledger Review",
+    "status": "PARTIAL",
+    "blocker": "P2: Data inconsistencies (Top Debtors)."
+  },
+  {
+    "id": "GF-005",
+    "title": "Pick & Pack",
+    "status": "NOT TESTED",
+    "blocker": "Blocked by inability to create orders."
+  }
+]

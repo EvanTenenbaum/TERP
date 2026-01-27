@@ -1,0 +1,223 @@
+{
+  "metadata": {
+    "audit_date": "2026-01-26",
+    "auditor": "Manus AI",
+    "environment": "https://terp-app-b9s35.ondigitalocean.app",
+    "repository": "https://github.com/EvanTenenbaum/TERP",
+    "total_findings": 14,
+    "critical_findings": 6,
+    "positive_findings": 4
+  },
+  "summary": {
+    "overall_status": "RED",
+    "core_functionality": "BLOCKED",
+    "data_integrity": "CRITICAL",
+    "user_experience": "POOR",
+    "security_rbac": "NEEDS_REVIEW"
+  },
+  "findings": [
+    {
+      "id": "FINDING-01",
+      "timestamp": "2026-01-26T18:16:00Z",
+      "severity": "P0",
+      "type": "BUG",
+      "title": "Clients Page Fails to Load for Sales Rep",
+      "flow": "GF-003",
+      "description": "The Clients page shows 'Failed to load clients' error when logged in as QA Sales Rep.",
+      "impact": "BLOCKER for Sales Order flow - cannot select customers.",
+      "steps_to_reproduce": [
+        "Log in as qa.salesrep@terp.test",
+        "Navigate to /clients",
+        "Observe 'Failed to load clients' error"
+      ],
+      "expected_behavior": "Clients list should load with all accessible clients.",
+      "actual_behavior": "Error message displayed, no clients shown.",
+      "workaround": "Use Super Admin role instead."
+    },
+    {
+      "id": "FINDING-02",
+      "timestamp": "2026-01-26T18:18:51Z",
+      "severity": "P0",
+      "type": "BUG",
+      "title": "Client Creation Fails Silently",
+      "flow": "GF-003",
+      "description": "The 'Add New Client' wizard completes all 3 steps but clicking 'Create Client' does nothing.",
+      "impact": "Cannot create new clients, blocking new customer onboarding.",
+      "steps_to_reproduce": [
+        "Navigate to /clients",
+        "Click 'Add Client'",
+        "Fill in Step 1 (Basic Information)",
+        "Click Next",
+        "Fill in Step 2 (Client Types) - Select 'Buyer'",
+        "Click Next",
+        "Step 3 (Tags) - Skip tags",
+        "Click 'Create Client' - NOTHING HAPPENS"
+      ],
+      "expected_behavior": "Client should be created and user redirected to client list or detail page.",
+      "actual_behavior": "Button click has no effect, no error, no loading indicator."
+    },
+    {
+      "id": "FINDING-03",
+      "timestamp": "2026-01-26T18:20:02Z",
+      "severity": "P1",
+      "type": "RBAC",
+      "title": "Clients Load for Super Admin but NOT for Sales Rep",
+      "flow": "GF-003",
+      "description": "When logged in as QA Super Admin, the Clients page loads successfully showing 100 clients. When logged in as QA Sales Rep, the same page shows 'Failed to load clients' error.",
+      "impact": "RBAC failure - Sales Reps cannot perform their core function.",
+      "root_cause_hypothesis": "API permissions for /clients endpoint may not include Sales Rep role."
+    },
+    {
+      "id": "FINDING-04",
+      "timestamp": "2026-01-26T18:21:08Z",
+      "severity": "P0",
+      "type": "BUG",
+      "title": "Inventory Fails to Load with SQL Error",
+      "flow": "GF-003",
+      "description": "After selecting a customer, the order creation page shows a raw SQL query error when trying to load inventory.",
+      "impact": "COMPLETE BLOCKER - Cannot add items to orders. The entire Sales Order flow is broken.",
+      "error_message": "Failed to load inventory: Failed query: select `batches`.`id`, `batches`.`code`... (truncated)",
+      "root_cause": "Malformed SQL query joining batches, products, lots, vendors, and strains tables.",
+      "security_concern": "Raw SQL error exposed to user."
+    },
+    {
+      "id": "FINDING-05",
+      "timestamp": "2026-01-26T18:22:37Z",
+      "severity": "P1",
+      "type": "BUG",
+      "title": "Direct Intake Page Missing Form Fields",
+      "flow": "GF-001",
+      "description": "The Direct Intake page shows 'Items: 2, Qty: 0, Value: $0.00' but there are no visible form fields to enter intake data.",
+      "impact": "Cannot test GF-001 Direct Intake flow.",
+      "expected_behavior": "Form fields should be visible for entering intake data.",
+      "actual_behavior": "Only 'Add Row', 'Remove', and 'Submit All' buttons visible. Clicking 'Add Row' increments counter but shows no fields."
+    },
+    {
+      "id": "FINDING-06",
+      "timestamp": "2026-01-26T18:22:57Z",
+      "severity": "P0",
+      "type": "DATA_INTEGRITY",
+      "title": "Inventory Page Shows 0 Batches Despite Dashboard Showing $13M",
+      "flow": "GF-007",
+      "description": "The Inventory page shows 0 batches and $0.00 value, but the Dashboard showed $13,010,881 inventory value.",
+      "impact": "DATA INTEGRITY ISSUE - System cannot be trusted.",
+      "dashboard_values": {
+        "total_inventory_value": 13010881,
+        "total_units": 30572.21
+      },
+      "inventory_page_values": {
+        "batches": 0,
+        "live": 0,
+        "value": 0
+      },
+      "root_cause_hypothesis": "Same SQL query error as FINDING-04, or dashboard showing cached/hardcoded data."
+    },
+    {
+      "id": "FINDING-07",
+      "timestamp": "2026-01-26T18:27:15Z",
+      "severity": "P1",
+      "type": "BUG",
+      "title": "PDF Download Caused Browser Timeout",
+      "flow": "GF-004",
+      "description": "Clicking 'Download PDF' on an invoice caused the browser to timeout after ~197 seconds.",
+      "impact": "Cannot test PDF generation functionality.",
+      "possible_causes": [
+        "PDF generation taking extremely long time",
+        "Infinite loop in PDF generation",
+        "Server-side PDF generation crash"
+      ]
+    },
+    {
+      "id": "FINDING-08",
+      "timestamp": "2026-01-26T18:29:19Z",
+      "severity": "P1",
+      "type": "BUG",
+      "title": "Purchase Order Product Dropdown Empty",
+      "flow": "GF-002",
+      "description": "The Purchase Order creation form opens correctly and allows selecting a supplier, but the 'Select product' dropdown appears to be empty.",
+      "impact": "Cannot complete GF-002 flow without products to add to the PO."
+    },
+    {
+      "id": "FINDING-09",
+      "timestamp": "2026-01-26T18:30:04Z",
+      "severity": "INFO",
+      "type": "POSITIVE",
+      "title": "Products Page Works - 150 Products Exist",
+      "flow": "N/A",
+      "description": "The Products page loads correctly and shows 150 active products across 7 categories.",
+      "categories": ["Pre-Roll", "Concentrate", "Tincture", "Flower", "Vape", "Topical", "Edible"],
+      "insight": "Products exist (catalog items), but inventory batches do NOT exist (actual stock)."
+    },
+    {
+      "id": "FINDING-10",
+      "timestamp": "2026-01-26T18:31:10Z",
+      "severity": "P0",
+      "type": "BUG",
+      "title": "CRITICAL SQL Error Confirmed - Inventory Query Failure",
+      "flow": "GF-003",
+      "description": "Retry of Sales Order flow confirms the SQL error is persistent and reproducible.",
+      "impact": "Confirms FINDING-04 is a systemic issue, not a transient error."
+    },
+    {
+      "id": "FINDING-11",
+      "timestamp": "2026-01-26T18:31:55Z",
+      "severity": "P1",
+      "type": "BUG",
+      "title": "Add Item Button Blocked by Inventory Failure",
+      "flow": "GF-003",
+      "description": "Clicking 'Add Item' does not open a product selector. The inventory failure error persists and blocks the entire order creation flow.",
+      "impact": "Order has validation errors message appears, preventing order confirmation."
+    },
+    {
+      "id": "FINDING-12",
+      "timestamp": "2026-01-26T18:32:18Z",
+      "severity": "P2",
+      "type": "PARTIAL_PASS",
+      "title": "AR/AP Dashboard Works - POSITIVE",
+      "flow": "GF-006",
+      "description": "The AR/AP (Accounting) dashboard loads correctly and displays financial data.",
+      "data": {
+        "cash_balance": 0,
+        "accounts_receivable": 2497288.62,
+        "accounts_payable": 1753971.17,
+        "net_position": 743317.45
+      },
+      "issues": [
+        "'Top Debtors' shows 'No outstanding balances' despite $2.5M in AR",
+        "'Top Vendors Owed' shows 'Unknown Vendor' for all entries"
+      ],
+      "status": "PARTIAL PASS - Dashboard loads but has data quality issues."
+    },
+    {
+      "id": "FINDING-13",
+      "timestamp": "2026-01-26T18:33:37Z",
+      "severity": "P1",
+      "type": "BUG",
+      "title": "Sample Request Form - Validation Issues",
+      "flow": "GF-008",
+      "description": "The Create Sample Request form shows validation errors. Product field is a text input, not a proper product selector.",
+      "impact": "Cannot complete GF-008 flow - Sample Request creation is broken.",
+      "issues": [
+        "Product field accepts text input but doesn't select from catalog",
+        "No autocomplete/dropdown for product selection",
+        "Form validation fires but UX doesn't guide user to correct issues"
+      ]
+    },
+    {
+      "id": "FINDING-14",
+      "timestamp": "2026-01-26T18:34:16Z",
+      "severity": "INFO",
+      "type": "POSITIVE",
+      "title": "Vendors Page Works - POSITIVE",
+      "flow": "GF-002",
+      "description": "The Vendors page loads correctly and displays 20 active vendors.",
+      "data": {
+        "total_vendors": 20,
+        "active": 20,
+        "value": 0
+      },
+      "note": "All vendors show $0.00 value and 0 orders, consistent with inventory/order issues.",
+      "status": "PASS - Page loads and displays data correctly."
+    }
+  ]
+}
