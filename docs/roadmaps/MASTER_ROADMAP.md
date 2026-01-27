@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.1
-**Last Updated:** 2026-01-26 (Completed INFRA-017, INFRA-018 - memory health check fixes)
+**Version:** 7.2
+**Last Updated:** 2026-01-27 (Added INFRA-020 through INFRA-024 - Pick & Pack Consolidation)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -861,6 +861,11 @@ pnpm test --run 2>&1 | tee test-results.log
 | CLEANUP-001 | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
 | INFRA-017   | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
 | INFRA-018   | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
+| INFRA-020   | Pick & Pack Consolidation Phase 0 - Data Audit   | HIGH     | ready                                                  | -      |
+| INFRA-021   | Pick & Pack Consolidation Phase 1 - Backend      | HIGH     | ready                                                  | -      |
+| INFRA-022   | Pick & Pack Consolidation Phase 2 - Feature Flag | HIGH     | ready                                                  | -      |
+| INFRA-023   | Pick & Pack Consolidation Phase 3 - Migration    | HIGH     | ready                                                  | -      |
+| INFRA-024   | Pick & Pack Consolidation Phase 4 - Cleanup      | MEDIUM   | ready                                                  | -      |
 
 > **INFRA-017 Details (Memory Health Check False Positive):**
 >
@@ -876,6 +881,201 @@ pnpm test --run 2>&1 | tee test-results.log
 > - **Solution:** Updated `.do/app.yaml` with correct instance size, autoscaling config, and NODE_MEMORY_LIMIT
 > - **Commit:** `6dc8bdfd` - fix(infra): Sync .do/app.yaml with production config
 > - **Completion Date:** Jan 26, 2026
+
+---
+
+### Pick & Pack Consolidation (INFRA-020 through INFRA-024)
+
+> **Initiative:** Consolidate dual pick & pack systems to single ordersRouter-based system
+> **Analysis:** `docs/golden-flows/analysis/PICK-PACK-CONSOLIDATION-ANALYSIS.md`
+> **Execution Plan:** `docs/golden-flows/execution/GF-005-PICK-PACK-CONSOLIDATION-EXECUTION-PLAN.md`
+> **Focus:** ROBUSTNESS and EFFICACY first, efficiency second
+> **Total Estimate:** 28-44h across 5 phases
+
+#### INFRA-020: Pick & Pack Consolidation Phase 0 - Data Audit
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Mode:** 🔴 RED (Data integrity critical path)
+**Module:** docs/migration/, scripts/migration/
+**Dependencies:** None
+
+**Problem:** Two parallel pick & pack systems (WS-003 pickPackRouter and ordersRouter fulfillment) create state conflicts and data integrity risks. Must audit current state before any changes.
+
+**Objectives:**
+1. Audit current WS-003 usage and data state
+2. Identify status conflicts between pickPackStatus and fulfillmentStatus
+3. Analyze order_item_bags.orderItemId values (JSON index vs ID)
+4. Create backup and rollback scripts
+
+**Deliverables:**
+- [ ] Data audit report (docs/migration/PICK-PACK-DATA-AUDIT.md)
+- [ ] Status conflict analysis (docs/migration/PICK-PACK-STATUS-CONFLICTS.md)
+- [ ] Backup script (scripts/migration/pick-pack-backup.sql)
+- [ ] Rollback script (scripts/migration/pick-pack-rollback.sql)
+- [ ] Rollback procedure tested on staging
+
+**Acceptance Criteria:**
+- All SQL queries documented and tested
+- Problem orders identified and categorized
+- Rollback procedure verified on staging
+- pnpm check && pnpm lint && pnpm test passes
+
+---
+
+#### INFRA-021: Pick & Pack Consolidation Phase 1 - Backend Extension
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Mode:** 🟡 STRICT
+**Module:** server/routers/orders.ts, drizzle/schema.ts
+**Dependencies:** INFRA-020
+
+**Problem:** ordersRouter lacks bag management capabilities needed to replace WS-003.
+
+**Objectives:**
+1. Add `orders:pack` permission for warehouse workers
+2. Add 5 bag management endpoints to ordersRouter
+3. Add FK constraint to order_item_bags (orderLineItemId)
+4. Implement status synchronization logic
+
+**Deliverables:**
+- [ ] `orders:pack` permission added and assigned to roles
+- [ ] orders.getBagsForOrder endpoint
+- [ ] orders.createBag endpoint
+- [ ] orders.addItemsToBag endpoint (uses transactions, audit logs)
+- [ ] orders.removeItemsFromBag endpoint (requires reason, audit logs)
+- [ ] orders.deleteBag endpoint
+- [ ] orderLineItemId FK migration created
+- [ ] Data migration script (JSON index → orderLineItems.id)
+- [ ] Status sync logic in shipOrder/deliverOrder
+- [ ] Unit tests (100% coverage for new code)
+
+**Acceptance Criteria:**
+- All endpoints use `getAuthenticatedUserId(ctx)` (NOT `ctx.user?.id`)
+- All mutations use transactions
+- All mutations log to audit_logs
+- FK constraint prevents orphaned records
+- pnpm check && pnpm lint && pnpm test passes
+
+---
+
+#### INFRA-022: Pick & Pack Consolidation Phase 2 - Feature Flag & UI Adapter
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Mode:** 🟡 STRICT
+**Module:** client/src/hooks/, client/src/pages/, server/services/
+**Dependencies:** INFRA-021
+
+**Problem:** Need ability to switch between systems without code deployment for safe rollback.
+
+**Objectives:**
+1. Create USE_UNIFIED_PICK_PACK feature flag
+2. Create API adapter layer for UI
+3. Update UI components to use adapter
+4. Test both flag states
+
+**Deliverables:**
+- [ ] Feature flag created and configurable in admin UI
+- [ ] usePickPackAdapter hook implemented
+- [ ] PickPackPage uses adapter
+- [ ] PickPackWorkSurface uses adapter
+- [ ] PickPackGrid uses adapter
+- [ ] Integration tests for both flag states
+- [ ] Manual QA with flag OFF (existing behavior)
+- [ ] Manual QA with flag ON (new behavior)
+
+**Acceptance Criteria:**
+- UI works identically with flag ON or OFF
+- No direct pickPack.* calls remain in UI code
+- Can toggle flag without deployment
+- pnpm check && pnpm lint && pnpm test passes
+
+---
+
+#### INFRA-023: Pick & Pack Consolidation Phase 3 - Migration & Cutover
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Mode:** 🔴 RED (Production data changes)
+**Module:** Database, production environment
+**Dependencies:** INFRA-022
+
+**Problem:** Need to migrate existing data and enable new system safely.
+
+**Objectives:**
+1. Execute data migration
+2. Enable feature flag
+3. Complete 1-week observation period
+4. Document any issues
+
+**Deliverables:**
+- [ ] Pre-migration checklist completed
+- [ ] Database backup verified
+- [ ] Data migration executed (orderItemId → orderLineItemId)
+- [ ] Migration counts verified (before/after match)
+- [ ] Status conflicts resolved
+- [ ] Feature flag enabled
+- [ ] 15-minute error monitoring completed
+- [ ] 1-week observation log maintained
+
+**Acceptance Criteria:**
+- No data corruption
+- No orphaned records
+- No error rate increase >5%
+- No user-reported data loss
+- 1-week observation period completed
+
+**Rollback Triggers** (immediate rollback if any occur):
+- Data corruption detected
+- Critical UI functionality broken
+- Error rate >5% increase
+- User-reported data loss
+
+---
+
+#### INFRA-024: Pick & Pack Consolidation Phase 4 - Cleanup
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Mode:** 🟡 STRICT
+**Module:** server/routers/, drizzle/schema.ts, docs/
+**Dependencies:** INFRA-023 (including 1-week observation)
+
+**Problem:** Old system code and schema remain after successful migration.
+
+**Objectives:**
+1. Remove feature flag logic
+2. Deprecate and remove pickPackRouter
+3. Clean up schema (drop columns)
+4. Update documentation
+
+**Deliverables:**
+- [ ] Feature flag check removed from adapter
+- [ ] Adapter hook deleted
+- [ ] UI calls orders.* directly
+- [ ] Deprecation warning added to pickPack endpoints
+- [ ] 1-week monitoring for pickPack.* calls
+- [ ] pickPackRouter removed from _app.ts
+- [ ] pickPack.ts file deleted
+- [ ] Migration: drop orderItemId column
+- [ ] Migration: drop pickPackStatus column
+- [ ] Migration: remove pickPackStatusEnum
+- [ ] GF-005-PICK-PACK.md spec updated
+- [ ] WS-003-SPEC.md archived
+- [ ] Migration completion report filed
+
+**Acceptance Criteria:**
+- No deprecated code remains
+- Schema is clean (no unused columns)
+- Documentation is current
+- pnpm check && pnpm lint && pnpm test passes
 
 ---
 
