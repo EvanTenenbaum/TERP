@@ -707,7 +707,7 @@ pnpm test --run 2>&1 | tee test-results.log
 | ------- | ---------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------- |
 | BUG-110 | Schema drift: strainId joins in productsDb.ts        | HIGH     | ready  | 2h       | `server/productsDb.ts:92,179`                      |
 | BUG-111 | Schema drift: strainId joins in search.ts            | HIGH     | ready  | 1h       | `server/routers/search.ts:260`                     |
-| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ready  | 1h       | `server/routers/photography.ts:823`                |
+| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ✅ DONE | 1h       | Fixed: commit e6e47cdd (2026-01-27)               |
 | BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ready  | 1h       | `server/services/catalogPublishingService.ts:310`  |
 | BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ready  | 2h       | `server/services/strainMatchingService.ts:136,234` |
 | BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ready  | 1h       | `server/ordersDb.ts:1239`                          |
@@ -729,13 +729,18 @@ pnpm test --run 2>&1 | tee test-results.log
 - **Impact:** Global search fails when strainId column missing
 - **Fix:** Add try-catch with fallback query excluding strains
 
-**BUG-112 Details (Schema Drift - photography.ts getAwaitingPhotography):**
+**BUG-112 Details (Schema Drift - photography.ts getAwaitingPhotography):** ✅ **COMPLETED**
 
-- **Location:** `server/routers/photography.ts:823`
-- **Issue:** `getAwaitingPhotography` procedure still has vulnerable strains join
-- **Impact:** Photography queue features fail intermittently
-- **Note:** `getQueue` and `getBatchesNeedingPhotos` were already fixed in this session
-- **Fix:** Apply same defensive pattern to remaining procedure
+- **Location:** `server/routers/photography.ts` (multiple procedures)
+- **Issue:** Photography procedures had vulnerable strains joins that failed with schema drift
+- **Impact:** Photography queue features failed completely in production
+- **Resolution:** Enhanced error detection and fallback mechanism (commit e6e47cdd)
+  - Improved `isSchemaError()` to handle MySQL2 error codes (errno 1054, ER_BAD_FIELD_ERROR)
+  - Added nested error handling (cause, originalError)
+  - Added comprehensive error logging in all catch blocks
+  - Fixed in: `getBatchesNeedingPhotos`, `getQueue`, `getAwaitingPhotography`
+- **Deployed:** 2026-01-27
+- **Verified:** Photography page now loads successfully with fallback queries
 
 **BUG-113 Details (Schema Drift - catalogPublishingService.ts):**
 
