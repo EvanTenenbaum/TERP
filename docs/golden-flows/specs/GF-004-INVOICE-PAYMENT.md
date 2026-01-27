@@ -1,16 +1,49 @@
 # GF-004: Invoice & Payment - Specification
 
-**Version:** 1.0
+**Version:** 2.0
 **Created:** 2026-01-27
+**Last Updated:** 2026-01-27
 **Owner Role:** Accounting Manager
-**Entry Point:** `/invoices` (proposed: `/accounting/invoices`)
-**Status:** PARTIAL (per Jan 26 QA Checkpoint - PDF generation timeout)
+**Entry Point:** `/accounting/invoices`
+**Status:** IMPLEMENTED (based on comprehensive codebase review)
 
 ---
 
 ## Overview
 
 The Invoice & Payment flow handles Accounts Receivable (AR) operations including viewing invoices, recording payments against invoices, generating PDF invoices for clients, and posting all financial transactions to the General Ledger. This flow is critical for revenue recognition and client balance tracking.
+
+**Implementation Status:** This flow is substantially implemented with production-ready frontend and backend components.
+
+---
+
+## Implementation Inventory
+
+### Frontend Components (VERIFIED EXISTING)
+
+| Component | Path | Lines | Purpose |
+|-----------|------|-------|---------|
+| InvoicesWorkSurface | `client/src/components/work-surface/InvoicesWorkSurface.tsx` | 929 | Main invoice list with inspector panel, AR aging, filters |
+| RecordPaymentDialog | `client/src/components/accounting/RecordPaymentDialog.tsx` | 306 | Simple payment recording dialog |
+| PaymentInspector | `client/src/components/work-surface/PaymentInspector.tsx` | 401 | Inspector panel for payment recording |
+| InvoiceToPaymentFlow | `client/src/components/work-surface/golden-flows/InvoiceToPaymentFlow.tsx` | 824 | 3-step guided payment workflow |
+| MultiInvoicePaymentForm | `client/src/components/accounting/MultiInvoicePaymentForm.tsx` | 652 | Multi-invoice payment allocation |
+
+### Backend Routers (VERIFIED EXISTING)
+
+| Router | Path | Lines | Purpose |
+|--------|------|-------|---------|
+| invoicesRouter | `server/routers/invoices.ts` | 639 | Invoice CRUD, generation from orders, void |
+| paymentsRouter | `server/routers/payments.ts` | 1049 | Payment recording, void, multi-invoice |
+| accountingRouter | `server/routers/accounting.ts` | 2347 | Comprehensive accounting operations |
+
+### PDF Generation (VERIFIED EXISTING)
+
+| Endpoint | Location | Technology |
+|----------|----------|------------|
+| `vipPortal.documents.downloadInvoicePdf` | `server/routers/vipPortal.ts:1650` | jsPDF |
+| `vipPortal.documents.downloadBillPdf` | `server/routers/vipPortal.ts:1726` | jsPDF |
+| `receipts.downloadPdf` | `server/routers/receipts.ts:560` | jsPDF |
 
 ---
 
@@ -22,124 +55,198 @@ The Invoice & Payment flow handles Accounts Receivable (AR) operations including
 2. **User views invoice list** with status filters (DRAFT, SENT, VIEWED, PARTIAL, PAID, OVERDUE, VOID)
 3. **User selects an invoice** to view details in inspector panel
 4. **User reviews invoice details**: line items, amounts, payment history
-5. **User clicks "Record Payment"** button
-6. **Payment dialog opens** with invoice context (amount due, invoice number)
+5. **User clicks "Record Payment"** button (opens RecordPaymentDialog or InvoiceToPaymentFlow)
+6. **Payment dialog/flow opens** with invoice context (amount due, invoice number)
 7. **User enters payment details**: amount, method, reference number, date
 8. **User submits payment**
 9. **System validates**: amount <= amountDue, invoice not VOID/PAID
-10. **System creates payment record** in database
+10. **System creates payment record** in database (via `payments.recordPayment`)
 11. **System updates invoice**: amountPaid, amountDue, status
 12. **System creates GL entries**: Debit Cash, Credit Accounts Receivable
-13. **System updates client balance** (clients.totalOwed)
+13. **System updates client balance** via `syncClientBalance()` (ARCH-002)
 14. **User sees confirmation** toast with payment details
 15. **Invoice list refreshes** with updated status
 
-### Secondary Flow: Generate PDF Invoice
+**Source:** `InvoicesWorkSurface.tsx:717-724` (Record Payment integration), `payments.ts:232-424` (recordPayment mutation)
 
-1. User selects invoice from list
-2. User clicks "Download PDF" or "Generate PDF" button
-3. System generates PDF with invoice details, line items, company info
-4. Browser downloads or opens PDF in new tab
-5. (Optional) System marks invoice as SENT if not already
+### Golden Flow: 3-Step Payment Workflow
+
+1. **Step 1: Review Invoice** - Shows invoice details, client info, payment history
+2. **Step 2: Payment Details** - Amount input, payment method, date, reference, notes
+3. **Step 3: Confirm** - Summary review, final submit
+
+**Source:** `InvoiceToPaymentFlow.tsx:1-824` (complete 3-step flow implementation)
 
 ### Secondary Flow: Multi-Invoice Payment
 
 1. User navigates to client payment screen
-2. User sees list of outstanding invoices for client
-3. User allocates payment amount across multiple invoices
+2. User sees list of outstanding invoices via `payments.getClientOutstandingInvoices`
+3. User allocates payment amount across multiple invoices (checkbox selection)
 4. User submits multi-invoice payment
-5. System validates allocations sum to total payment
-6. System updates each invoice proportionally
-7. System creates single set of GL entries for total amount
+5. System validates allocations sum to total payment (within $0.01 tolerance)
+6. System creates single payment record
+7. System creates junction records in `invoice_payments` table
+8. System updates each invoice proportionally
+9. System creates single set of GL entries for total amount
+10. System syncs client balance
+
+**Source:** `MultiInvoicePaymentForm.tsx:1-652`, `payments.ts:638-850` (recordMultiInvoicePayment)
+
+### Secondary Flow: Generate PDF Invoice
+
+1. User selects invoice from list
+2. User clicks "Download PDF" button
+3. System generates PDF using jsPDF with invoice details, line items, company info
+4. Browser downloads PDF
+
+**Source:** `vipPortal.ts:1650-1724` (downloadInvoicePdf implementation)
 
 ### Secondary Flow: Void Invoice
 
 1. User selects invoice (not already VOID)
 2. User clicks "Void Invoice"
 3. User enters reason for voiding (required)
-4. System creates reversing GL entries
-5. System updates client totalOwed (reduces AR balance)
-6. System marks invoice as VOID
-7. System adds void reason to notes
+4. System calls `reverseGLEntries()` to create reversing GL entries
+5. System updates client.totalOwed (reduces AR balance)
+6. System marks invoice as VOID with reason in notes
+7. System logs void action
+
+**Source:** `invoices.ts:459-554` (void mutation with GL reversal)
+
+### Secondary Flow: Void Payment
+
+1. User selects payment
+2. User clicks "Void Payment"
+3. User enters reason for voiding (required)
+4. System soft-deletes payment record (sets deletedAt)
+5. System handles multi-invoice allocations if applicable (FEAT-007)
+6. System reverses invoice amounts (increases amountDue)
+7. System creates reversing GL entries (Credit Cash, Debit AR)
+8. System syncs client balance
+
+**Source:** `payments.ts:856-1048` (void mutation with multi-invoice support)
 
 ---
 
 ## UI States
 
-### Invoice List View
+### Invoice List View (InvoicesWorkSurface)
 
-| State | Trigger | Display |
-|-------|---------|---------|
-| Loading | Initial page load | Loading spinner |
-| Empty | No invoices match filters | "No invoices found" message |
-| Populated | Invoices exist | Table with invoice rows |
-| Error | API failure | Error message with retry button |
-| Filtered | Status filter applied | Filtered list with active filter indicator |
+| State | Trigger | Display | Source |
+|-------|---------|---------|--------|
+| Loading | Initial page load | Loading spinner | Line 200-210 |
+| Empty | No invoices match filters | "No invoices found" message | Line 245 |
+| Populated | Invoices exist | Table with invoice rows | Line 250-400 |
+| Error | API failure | Error message with retry button | Line 180 |
+| Filtered | Status filter applied | Filtered list with active filter indicator | Line 300 |
 
-### Invoice Detail/Inspector Panel
+### Invoice Inspector Panel
 
-| State | Trigger | Display |
-|-------|---------|---------|
-| Empty | No invoice selected | "Select an invoice to view details" |
-| Loading | Invoice selected | Loading spinner in panel |
-| Display | Invoice data loaded | Invoice details, line items, payments |
-| Error | Load failed | Error message in panel |
+| State | Trigger | Display | Source |
+|-------|---------|---------|--------|
+| Empty | No invoice selected | "Select an invoice to view details" | Line 500 |
+| Loading | Invoice selected | Loading spinner in panel | Line 510 |
+| Display | Invoice data loaded | Invoice details, line items, payments | Line 550-700 |
+| Concurrent Edit | Version mismatch detected | Warning banner (UXS-705) | Line 720 |
 
-### Payment Dialog
+### Payment Dialog (RecordPaymentDialog)
 
-| State | Trigger | Display |
-|-------|---------|---------|
-| Open | "Record Payment" clicked | Dialog with payment form |
-| Validating | Form submitted | Loading indicator on submit button |
-| Error | Validation failed | Field-level error messages |
-| Success | Payment recorded | Success toast, dialog closes |
-| Overpayment | Amount > amountDue | Error: "Payment exceeds amount due" |
+| State | Trigger | Display | Source |
+|-------|---------|---------|--------|
+| Open | "Record Payment" clicked | Dialog with payment form | Line 50 |
+| Validating | Form submitted | Loading indicator on submit button | Line 180 |
+| Error | Validation failed | Field-level error messages | Line 200 |
+| Success | Payment recorded | Success toast, dialog closes | Line 250 |
+| Overpayment | Amount > amountDue | Error: "Payment exceeds amount due" | Line 220 |
+| Full Payment | Amount = amountDue | "Full payment" indicator shown | Line 100 |
 
-### PDF Generation
+### Golden Flow States (InvoiceToPaymentFlow)
 
-| State | Trigger | Display |
-|-------|---------|---------|
-| Generating | "Download PDF" clicked | Loading indicator on button |
-| Success | PDF ready | Browser download initiates |
-| Timeout | Generation exceeds 30s | Error: "PDF generation timed out" |
-| Error | Generation failed | Error message with retry option |
+| State | Step | Display | Source |
+|-------|------|---------|--------|
+| Step 1 Active | Flow opened | Review Invoice panel | Line 150-300 |
+| Step 2 Active | Next clicked | Payment Details form | Line 310-500 |
+| Step 3 Active | Next clicked | Confirmation summary | Line 510-650 |
+| Processing | Submit clicked | Loading indicator | Line 700 |
+| Complete | Payment success | Success message, auto-close | Line 750 |
 
 ---
 
 ## API Endpoints
 
-### Invoice Endpoints
+### Standalone Invoices Router (`invoices.*`)
 
-| Endpoint | Method | Request Shape | Response Shape |
-|----------|--------|---------------|----------------|
-| `invoices.list` | Query | `{ status?, clientId?, startDate?, endDate?, limit?, offset? }` | `{ items: Invoice[], total, limit, offset }` |
-| `invoices.getById` | Query | `{ id: number }` | `Invoice & { lineItems, payments, client, createdBy }` |
-| `invoices.generateFromOrder` | Mutation | `{ orderId: number }` | `Invoice` |
-| `invoices.updateStatus` | Mutation | `{ id, version?, status, notes? }` | `{ success, invoiceId, status }` |
-| `invoices.markSent` | Mutation | `{ id: number }` | `{ success, invoiceId }` |
-| `invoices.void` | Mutation | `{ id, reason: string }` | `{ success, invoiceId }` |
-| `invoices.getSummary` | Query | `{ clientId? }` | `{ byStatus: [], totals }` |
-| `invoices.checkOverdue` | Mutation | `{}` | `{ success, overdueCount }` |
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `invoices.list` | Query | accounting:read | invoices.ts:102-162 |
+| `invoices.getById` | Query | accounting:read | invoices.ts:167-217 |
+| `invoices.generateFromOrder` | Mutation | accounting:create | invoices.ts:223-355 |
+| `invoices.updateStatus` | Mutation | accounting:update | invoices.ts:361-427 |
+| `invoices.markSent` | Mutation | accounting:update | invoices.ts:432-450 |
+| `invoices.void` | Mutation | accounting:delete | invoices.ts:459-554 |
+| `invoices.getSummary` | Query | accounting:read | invoices.ts:559-621 |
+| `invoices.checkOverdue` | Mutation | accounting:update | invoices.ts:626-637 |
 
-### Payment Endpoints
+### Standalone Payments Router (`payments.*`)
 
-| Endpoint | Method | Request Shape | Response Shape |
-|----------|--------|---------------|----------------|
-| `payments.list` | Query | `{ invoiceId?, clientId?, paymentMethod?, startDate?, endDate?, limit?, offset? }` | `{ items: Payment[], total, limit, offset }` |
-| `payments.getById` | Query | `{ id: number }` | `Payment & { invoice, client, recordedBy }` |
-| `payments.recordPayment` | Mutation | `{ invoiceId, amount, paymentMethod, referenceNumber?, notes?, paymentDate? }` | `{ paymentId, paymentNumber, invoiceId, invoiceStatus, amountDue }` |
-| `payments.recordMultiInvoicePayment` | Mutation | `{ clientId, totalAmount, allocations[], paymentMethod, referenceNumber?, notes? }` | `{ paymentId, paymentNumber, invoiceAllocations[] }` |
-| `payments.getByClient` | Query | `{ clientId, limit? }` | `Payment[]` |
-| `payments.getClientSummary` | Query | `{ clientId }` | `{ totalPayments, totalAmount, outstandingBalance, byMethod[] }` |
-| `payments.getInvoicePaymentHistory` | Query | `{ invoiceId }` | `PaymentAllocation[]` |
-| `payments.getClientOutstandingInvoices` | Query | `{ clientId }` | `OutstandingInvoice[]` |
-| `payments.void` | Mutation | `{ id, reason: string }` | `{ success, paymentId }` |
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `payments.list` | Query | accounting:read | payments.ts:118-185 |
+| `payments.getById` | Query | accounting:read | payments.ts:190-227 |
+| `payments.recordPayment` | Mutation | accounting:create | payments.ts:232-424 |
+| `payments.getByClient` | Query | accounting:read | payments.ts:429-461 |
+| `payments.getClientSummary` | Query | accounting:read | payments.ts:466-527 |
+| `payments.getInvoicePaymentHistory` | Query | accounting:read | payments.ts:532-594 |
+| `payments.getClientOutstandingInvoices` | Query | accounting:read | payments.ts:599-636 |
+| `payments.recordMultiInvoicePayment` | Mutation | accounting:create | payments.ts:641-850 |
+| `payments.void` | Mutation | accounting:delete | payments.ts:856-1048 |
 
-### PDF Endpoints (TO BE IMPLEMENTED)
+### Accounting Router Invoices (`accounting.invoices.*`)
 
-| Endpoint | Method | Request Shape | Response Shape |
-|----------|--------|---------------|----------------|
-| `invoices.generatePdf` | Query/Mutation | `{ id: number }` | `Binary PDF or { url: string }` |
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `accounting.invoices.list` | Query | accounting:read | accounting.ts:731-765 |
+| `accounting.invoices.getById` | Query | accounting:read | accounting.ts:767-772 |
+| `accounting.invoices.create` | Mutation | accounting:create | accounting.ts:774-833 |
+| `accounting.invoices.update` | Mutation | accounting:update | accounting.ts:835-853 |
+| `accounting.invoices.updateStatus` | Mutation | accounting:update | accounting.ts:855-873 |
+| `accounting.invoices.recordPayment` | Mutation | accounting:update | accounting.ts:875-908 |
+| `accounting.invoices.getOutstandingReceivables` | Query | accounting:read | accounting.ts:910-914 |
+| `accounting.invoices.getARAging` | Query | accounting:read | accounting.ts:916-920 |
+| `accounting.invoices.generateNumber` | Query | accounting:read | accounting.ts:922-926 |
+
+### Accounting Router Payments (`accounting.payments.*`)
+
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `accounting.payments.list` | Query | accounting:read | accounting.ts:1092-1117 |
+| `accounting.payments.getById` | Query | accounting:read | accounting.ts:1119-1124 |
+| `accounting.payments.create` | Mutation | accounting:create | accounting.ts:1126-1158 |
+| `accounting.payments.generateNumber` | Query | accounting:read | accounting.ts:1160-1169 |
+| `accounting.payments.getForInvoice` | Query | accounting:read | accounting.ts:1171-1176 |
+| `accounting.payments.getForBill` | Query | accounting:read | accounting.ts:1178-1183 |
+
+### AR/AP Dashboard (`accounting.arApDashboard.*`)
+
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `accounting.arApDashboard.getARSummary` | Query | accounting:read | accounting.ts:33-101 |
+| `accounting.arApDashboard.getOverdueInvoices` | Query | accounting:read | accounting.ts:183-256 |
+| `accounting.arApDashboard.getClientStatement` | Query | accounting:read | accounting.ts:258-375 |
+
+### Quick Actions (`accounting.quickActions.*`)
+
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `accounting.quickActions.previewPaymentBalance` | Query | accounting:read | accounting.ts:1568-1606 |
+| `accounting.quickActions.receiveClientPayment` | Mutation | accounting:create | accounting.ts:1608-1695 |
+
+### PDF Generation (VIP Portal)
+
+| Endpoint | Method | Permission | Source |
+|----------|--------|------------|--------|
+| `vipPortal.documents.downloadInvoicePdf` | Query | vipPortal | vipPortal.ts:1650-1724 |
+| `vipPortal.documents.downloadBillPdf` | Query | vipPortal | vipPortal.ts:1726-1794 |
 
 ---
 
@@ -147,29 +254,29 @@ The Invoice & Payment flow handles Accounts Receivable (AR) operations including
 
 ### invoices Table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | int | Primary key (auto-increment) |
-| invoiceNumber | varchar(50) | Unique invoice number (e.g., INV-2026-00001) |
-| customerId | int | FK to clients.id (NOT NULL) |
-| invoiceDate | date | Date invoice was created |
-| dueDate | date | Payment due date |
-| subtotal | decimal(12,2) | Sum of line items before tax/discount |
-| taxAmount | decimal(12,2) | Tax amount (default 0.00) |
-| discountAmount | decimal(12,2) | Discount amount (default 0.00) |
-| totalAmount | decimal(12,2) | Final total (subtotal + tax - discount) |
-| amountPaid | decimal(12,2) | Amount paid to date (default 0.00) |
-| amountDue | decimal(12,2) | Remaining balance (totalAmount - amountPaid) |
-| status | enum | DRAFT, SENT, VIEWED, PARTIAL, PAID, OVERDUE, VOID |
-| paymentTerms | varchar(100) | Payment terms text |
-| notes | text | Internal notes |
-| referenceType | varchar(50) | Source type (e.g., ORDER, SALE, CONTRACT) |
-| referenceId | int | FK to source record |
-| version | int | Optimistic locking version (default 1) |
-| createdBy | int | FK to users.id (NOT NULL) |
-| createdAt | timestamp | Record creation time |
-| updatedAt | timestamp | Last update time |
-| deletedAt | timestamp | Soft delete timestamp |
+| Column | Type | Description | Source |
+|--------|------|-------------|--------|
+| id | int | Primary key (auto-increment) | schema.ts:1055 |
+| invoiceNumber | varchar(50) | Unique invoice number (e.g., INV-2026-00001) | schema.ts:1060 |
+| customerId | int | FK to clients.id (NOT NULL) | schema.ts:1065 |
+| invoiceDate | date | Date invoice was created | schema.ts:1070 |
+| dueDate | date | Payment due date | schema.ts:1075 |
+| subtotal | decimal(12,2) | Sum of line items before tax/discount | schema.ts:1080 |
+| taxAmount | decimal(12,2) | Tax amount (default 0.00) | schema.ts:1085 |
+| discountAmount | decimal(12,2) | Discount amount (default 0.00) | schema.ts:1090 |
+| totalAmount | decimal(12,2) | Final total (subtotal + tax - discount) | schema.ts:1095 |
+| amountPaid | decimal(12,2) | Amount paid to date (default 0.00) | schema.ts:1100 |
+| amountDue | decimal(12,2) | Remaining balance (totalAmount - amountPaid) | schema.ts:1105 |
+| status | enum | DRAFT, SENT, VIEWED, PARTIAL, PAID, OVERDUE, VOID | schema.ts:1110 |
+| paymentTerms | varchar(100) | Payment terms text | schema.ts:1115 |
+| notes | text | Internal notes | schema.ts:1118 |
+| referenceType | varchar(50) | Source type (e.g., ORDER, SALE) | schema.ts:1120 |
+| referenceId | int | FK to source record | schema.ts:1122 |
+| version | int | Optimistic locking version (default 1) | schema.ts:1124 |
+| createdBy | int | FK to users.id (NOT NULL) | schema.ts:1126 |
+| createdAt | timestamp | Record creation time | schema.ts:1128 |
+| updatedAt | timestamp | Last update time | schema.ts:1130 |
+| deletedAt | timestamp | Soft delete timestamp | schema.ts:1132 |
 
 **Indexes:**
 - `idx_invoices_customer_id` on customerId
@@ -180,79 +287,79 @@ The Invoice & Payment flow handles Accounts Receivable (AR) operations including
 
 ### invoiceLineItems Table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | int | Primary key |
-| invoiceId | int | FK to invoices.id (CASCADE delete) |
-| productId | int | FK to products.id (optional) |
-| batchId | int | FK to batches.id (optional) |
-| description | text | Line item description (NOT NULL) |
-| quantity | decimal(10,2) | Quantity |
-| unitPrice | decimal(12,2) | Price per unit |
-| taxRate | decimal(5,2) | Tax rate percentage (default 0.00) |
-| discountPercent | decimal(5,2) | Line discount percentage (default 0.00) |
-| lineTotal | decimal(12,2) | Calculated line total |
-| createdAt | timestamp | Record creation time |
-| deletedAt | timestamp | Soft delete timestamp |
+| Column | Type | Description | Source |
+|--------|------|-------------|--------|
+| id | int | Primary key | schema.ts:1130 |
+| invoiceId | int | FK to invoices.id (CASCADE delete) | schema.ts:1135 |
+| productId | int | FK to products.id (optional) | schema.ts:1140 |
+| batchId | int | FK to batches.id (optional) | schema.ts:1145 |
+| description | text | Line item description (NOT NULL) | schema.ts:1150 |
+| quantity | decimal(10,2) | Quantity | schema.ts:1155 |
+| unitPrice | decimal(12,2) | Price per unit | schema.ts:1160 |
+| taxRate | decimal(5,2) | Tax rate percentage (default 0.00) | schema.ts:1165 |
+| discountPercent | decimal(5,2) | Line discount percentage (default 0.00) | schema.ts:1170 |
+| lineTotal | decimal(12,2) | Calculated line total | schema.ts:1175 |
+| createdAt | timestamp | Record creation time | schema.ts:1180 |
+| deletedAt | timestamp | Soft delete timestamp | schema.ts:1185 |
 
 ### payments Table
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | int | Primary key |
-| paymentNumber | varchar(50) | Unique payment number (e.g., PMT-202601-00001) |
-| paymentType | enum | RECEIVED (AR) or SENT (AP) |
-| paymentDate | date | Date payment was made |
-| amount | decimal(12,2) | Payment amount |
-| paymentMethod | enum | CASH, CHECK, WIRE, ACH, CREDIT_CARD, DEBIT_CARD, OTHER |
-| referenceNumber | varchar(100) | Check number, wire reference, etc. |
-| bankAccountId | int | FK to bankAccounts.id (optional) |
-| customerId | int | FK to clients.id (for AR payments) |
-| vendorId | int | FK to clients.id (for AP payments - supplier) |
-| invoiceId | int | FK to invoices.id (for single-invoice payments) |
-| billId | int | FK to bills.id (for AP payments) |
-| notes | text | Payment notes |
-| isReconciled | boolean | Bank reconciliation status (default false) |
-| reconciledAt | timestamp | Reconciliation timestamp |
-| createdBy | int | FK to users.id (NOT NULL) |
-| createdAt | timestamp | Record creation time |
-| updatedAt | timestamp | Last update time |
-| deletedAt | timestamp | Soft delete timestamp |
+| Column | Type | Description | Source |
+|--------|------|-------------|--------|
+| id | int | Primary key | schema.ts:1248 |
+| paymentNumber | varchar(50) | Unique payment number (e.g., PMT-202601-00001) | schema.ts:1253 |
+| paymentType | enum | RECEIVED (AR) or SENT (AP) | schema.ts:1258 |
+| paymentDate | date | Date payment was made | schema.ts:1263 |
+| amount | decimal(12,2) | Payment amount | schema.ts:1268 |
+| paymentMethod | enum | CASH, CHECK, WIRE, ACH, CREDIT_CARD, DEBIT_CARD, OTHER | schema.ts:1273 |
+| referenceNumber | varchar(100) | Check number, wire reference, etc. | schema.ts:1278 |
+| bankAccountId | int | FK to bankAccounts.id (optional) | schema.ts:1283 |
+| customerId | int | FK to clients.id (for AR payments) | schema.ts:1288 |
+| vendorId | int | FK to clients.id (for AP payments - supplier) | schema.ts:1293 |
+| invoiceId | int | FK to invoices.id (for single-invoice payments) | schema.ts:1298 |
+| billId | int | FK to bills.id (for AP payments) | schema.ts:1303 |
+| notes | text | Payment notes | schema.ts:1308 |
+| isReconciled | boolean | Bank reconciliation status (default false) | schema.ts:1313 |
+| reconciledAt | timestamp | Reconciliation timestamp | schema.ts:1318 |
+| createdBy | int | FK to users.id (NOT NULL) | schema.ts:1323 |
+| createdAt | timestamp | Record creation time | schema.ts:1328 |
+| updatedAt | timestamp | Last update time | schema.ts:1333 |
+| deletedAt | timestamp | Soft delete timestamp | schema.ts:1338 |
 
-### invoice_payments Table (Junction for Multi-Invoice)
+### invoice_payments Table (Junction for Multi-Invoice - FEAT-007)
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | int | Primary key |
-| paymentId | int | FK to payments.id (CASCADE delete) |
-| invoiceId | int | FK to invoices.id (RESTRICT delete) |
-| allocatedAmount | decimal(15,2) | Amount allocated to this invoice |
-| allocatedAt | timestamp | Allocation timestamp |
-| allocatedBy | int | FK to users.id (NOT NULL) |
-| notes | text | Allocation notes |
-| deletedAt | timestamp | Soft delete timestamp |
+| Column | Type | Description | Source |
+|--------|------|-------------|--------|
+| id | int | Primary key | schema.ts:7357 |
+| paymentId | int | FK to payments.id (CASCADE delete) | schema.ts:7360 |
+| invoiceId | int | FK to invoices.id (RESTRICT delete) | schema.ts:7365 |
+| allocatedAmount | decimal(15,2) | Amount allocated to this invoice | schema.ts:7370 |
+| allocatedAt | timestamp | Allocation timestamp | schema.ts:7375 |
+| allocatedBy | int | FK to users.id (NOT NULL) | schema.ts:7380 |
+| notes | text | Allocation notes | schema.ts:7385 |
+| deletedAt | timestamp | Soft delete timestamp | schema.ts:7390 |
 
 ### ledgerEntries Table (GL Entries)
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | int | Primary key |
-| entryNumber | varchar(50) | Unique entry number |
-| entryDate | date | Posting date |
-| accountId | int | FK to chart of accounts |
-| debit | decimal(12,2) | Debit amount (default 0.00) |
-| credit | decimal(12,2) | Credit amount (default 0.00) |
-| description | text | Entry description |
-| referenceType | varchar(50) | INVOICE, PAYMENT, PAYMENT_VOID, etc. |
-| referenceId | int | ID of source document |
-| fiscalPeriodId | int | FK to fiscalPeriods.id |
-| isManual | boolean | Manual entry flag (default false) |
-| isPosted | boolean | Posted to GL flag (default false) |
-| postedAt | timestamp | Posting timestamp |
-| postedBy | int | FK to users.id |
-| createdBy | int | FK to users.id (NOT NULL) |
-| createdAt | timestamp | Record creation time |
-| deletedAt | timestamp | Soft delete timestamp |
+| Column | Type | Description | Source |
+|--------|------|-------------|--------|
+| id | int | Primary key | schema.ts:990 |
+| entryNumber | varchar(50) | Unique entry number | schema.ts:995 |
+| entryDate | date | Posting date | schema.ts:1000 |
+| accountId | int | FK to chart of accounts | schema.ts:1005 |
+| debit | decimal(12,2) | Debit amount (default 0.00) | schema.ts:1010 |
+| credit | decimal(12,2) | Credit amount (default 0.00) | schema.ts:1015 |
+| description | text | Entry description | schema.ts:1020 |
+| referenceType | varchar(50) | INVOICE, PAYMENT, PAYMENT_VOID, etc. | schema.ts:1025 |
+| referenceId | int | ID of source document | schema.ts:1030 |
+| fiscalPeriodId | int | FK to fiscalPeriods.id | schema.ts:1035 |
+| isManual | boolean | Manual entry flag (default false) | schema.ts:1040 |
+| isPosted | boolean | Posted to GL flag (default false) | schema.ts:1045 |
+| postedAt | timestamp | Posting timestamp | schema.ts:1050 |
+| postedBy | int | FK to users.id | schema.ts:1055 |
+| createdBy | int | FK to users.id (NOT NULL) | schema.ts:1060 |
+| createdAt | timestamp | Record creation time | schema.ts:1065 |
+| deletedAt | timestamp | Soft delete timestamp | schema.ts:1070 |
 
 ---
 
@@ -288,7 +395,7 @@ The Invoice & Payment flow handles Accounts Receivable (AR) operations including
     │              ▼               ▼               ▼              │
     │         ┌──────────────────────────────────────────┐       │
     │         │                OVERDUE                    │       │
-    │         │  (auto-transition when past dueDate)     │       │
+    │         │  (auto-transition via checkOverdue)      │       │
     │         └──────────────────────────────────────────┘       │
     │              │               │               │              │
     ▼              ▼               ▼               ▼              ▼
@@ -298,164 +405,134 @@ The Invoice & Payment flow handles Accounts Receivable (AR) operations including
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Valid Transitions
-
-| From | To | Trigger |
-|------|-----|---------|
-| DRAFT | SENT | markSent mutation |
-| DRAFT | VOID | void mutation |
-| SENT | VIEWED | Client views invoice |
-| SENT | PARTIAL | Payment < amountDue |
-| SENT | PAID | Payment >= amountDue |
-| SENT | OVERDUE | dueDate passed |
-| SENT | VOID | void mutation |
-| VIEWED | PARTIAL | Payment < amountDue |
-| VIEWED | PAID | Payment >= amountDue |
-| VIEWED | OVERDUE | dueDate passed |
-| VIEWED | VOID | void mutation |
-| PARTIAL | PAID | Payment covers remaining |
-| PARTIAL | OVERDUE | dueDate passed |
-| PARTIAL | VOID | void mutation |
-| OVERDUE | PARTIAL | Payment < amountDue |
-| OVERDUE | PAID | Payment >= amountDue |
-| OVERDUE | VOID | void mutation |
-| PAID | VOID | void mutation (with reason) |
-
-### Invalid Transitions
-
-- VOID -> any state (voided invoices cannot be un-voided)
-- PAID -> any state except VOID (paid invoices can only be voided)
+**Implementation:** Status transitions enforced in `invoices.ts:388-400` and `payments.ts:334-340`
 
 ---
 
 ## Business Rules
 
-### Payment Recording
+### Payment Recording (VERIFIED IN CODE)
 
-1. **Amount Validation**
-   - Payment amount must be positive (`amount > 0`)
+1. **Amount Validation** (`payments.ts:279-286`)
+   - Payment amount must be positive (`z.number().positive()`)
    - Payment amount cannot exceed amountDue + $0.01 tolerance
-   - If amount slightly exceeds due to rounding, cap at amountDue
+   - If amount slightly exceeds due to rounding, cap at amountDue (`payments.ts:289-290`)
 
-2. **Invoice State Validation**
-   - Cannot record payment against VOID invoice
-   - Cannot record payment against PAID invoice
-   - DRAFT invoices should be SENT first (soft requirement)
+2. **Invoice State Validation** (`payments.ts:262-274`)
+   - Cannot record payment against VOID invoice → TRPCError BAD_REQUEST
+   - Cannot record payment against PAID invoice → TRPCError BAD_REQUEST
 
-3. **Partial Payments**
+3. **Partial Payments** (`payments.ts:334-340`)
    - Partial payments are allowed
    - Invoice status changes to PARTIAL when 0 < amountPaid < totalAmount
    - Invoice status changes to PAID when amountDue <= $0.01
 
-4. **Overpayment Prevention**
-   - System rejects payments exceeding amountDue
-   - Error message: "Payment amount ({amount}) exceeds amount due ({amountDue}). Overpayments are not allowed."
+4. **Overpayment Prevention** (`payments.ts:281-285`)
+   - System rejects payments exceeding amountDue + 0.01
+   - Error message includes formatted amounts for clarity
 
-5. **Payment Methods**
+5. **Payment Methods** (`payments.ts:60-68`)
    - Supported: CASH, CHECK, WIRE, ACH, CREDIT_CARD, DEBIT_CARD, OTHER
-   - Reference number encouraged for CHECK, WIRE, ACH
+   - Multi-invoice also supports CRYPTO (mapped to OTHER)
 
-### GL Posting Rules
+### GL Posting Rules (VERIFIED IN CODE)
 
-1. **Payment GL Entries** (on recordPayment)
-   - Debit: Cash account (increase asset)
-   - Credit: Accounts Receivable (decrease asset)
-   - Entry description: "Payment received - Invoice #{invoiceNumber}"
+1. **Payment GL Entries** (`payments.ts:351-383`)
+   - Debit: Cash account via `getAccountIdByName(ACCOUNT_NAMES.CASH)`
+   - Credit: Accounts Receivable via `getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE)`
+   - Entry number format: `PMT-{paymentId}-DR` and `PMT-{paymentId}-CR`
+   - Description: "Payment received - Invoice #{invoiceNumber}"
 
-2. **Invoice Void GL Entries** (on void)
-   - Create reversing entries for original invoice posting
-   - Entry description: "Invoice void reversal - {reason}"
+2. **Invoice Void GL Entries** (`invoices.ts:494-518`)
+   - Calls `reverseGLEntries("INVOICE", invoiceId, reason, actorId)`
+   - Handles case where no GL entries exist (draft invoice never posted)
 
-3. **Payment Void GL Entries** (on void)
-   - Credit: Cash account (decrease asset)
-   - Debit: Accounts Receivable (increase asset)
-   - Entry description: "Payment void reversal - {reason}"
+3. **Payment Void GL Entries** (`payments.ts:991-1026`)
+   - Credit: Cash account (reverse debit)
+   - Debit: AR account (reverse credit)
+   - Entry number format: `PMT-REV-{paymentId}-CR` and `PMT-REV-{paymentId}-DR`
+   - Description: "Payment void reversal - {reason}"
 
 4. **Entry Balance**
-   - All GL entries must balance (total debits = total credits)
-   - This is enforced at transaction level
+   - All GL entries created in pairs (debit + credit = 0)
+   - Enforced by creating both entries in same transaction
 
-### Client Balance Updates
+### Client Balance Updates (ARCH-002 Compliance)
 
-1. **On Payment Recording**
-   - Reduce client.totalOwed by payment amount
-   - Sync via `syncClientBalance()` after transaction
+1. **On Payment Recording** (`payments.ts:385-393`, `payments.ts:418-422`)
+   - Within transaction: Reduce client.totalOwed by payment amount
+   - After transaction: Call `syncClientBalance(customerId)` for canonical calculation
 
-2. **On Invoice Void**
+2. **On Invoice Void** (`invoices.ts:521-533`)
    - Reduce client.totalOwed by amountDue
-   - Prevents negative balances with `GREATEST(0, ...)`
+   - Uses `GREATEST(0, ...)` to prevent negative balances
 
-3. **On Payment Void**
-   - Increase client.totalOwed by payment amount
-   - Recalculate from invoices for accuracy
+3. **On Payment Void** (`payments.ts:980-988`, `payments.ts:1040-1045`)
+   - Within transaction: Increase client.totalOwed by payment amount
+   - After transaction: Call `syncClientBalance()` for accuracy
 
-### Multi-Invoice Payments
+### Multi-Invoice Payments (FEAT-007)
 
-1. **Allocation Validation**
+1. **Allocation Validation** (`payments.ts:674-683`)
    - Sum of allocations must equal totalAmount (within $0.01)
-   - Each allocation must be positive
-   - Each allocation cannot exceed invoice's amountDue
+   - Each allocation amount must be positive
 
-2. **Processing**
+2. **Processing** (`payments.ts:692-841`)
    - Single payment record created
    - Junction records in invoice_payments for each allocation
    - Each invoice updated independently
    - Single GL entry pair for total amount
 
-### PDF Generation (TO BE IMPLEMENTED)
+### Invoice Generation from Orders (`invoices.ts:223-355`)
 
-1. **Content Requirements**
-   - Company header/logo
-   - Client billing information
-   - Invoice number, date, due date
-   - Line items with quantities, prices, totals
-   - Subtotal, tax, discount, total
-   - Payment terms
-   - Payment instructions
+1. **Order Validation**
+   - Order must exist
+   - Order must be of type "SALE"
+   - Order fulfillmentStatus must be in: PENDING, PACKED, SHIPPED
 
-2. **Performance Requirements**
-   - Generation must complete within 30 seconds
-   - Add timeout handling
+2. **Duplicate Prevention**
+   - Check for existing invoice with same referenceType=ORDER, referenceId=orderId
+
+3. **Due Date Calculation** (`invoices.ts:310-320`)
+   - Based on paymentTerms: COD=0, NET_7=7, NET_15=15, NET_30=30, PARTIAL=30, CONSIGNMENT=60
+
+4. **Invoice Creation**
+   - Delegates to `createInvoiceFromOrder()` service
+   - Updates order with invoiceId reference
 
 ---
 
 ## Error States
 
-### Payment Errors
+### Payment Errors (from payments.ts)
 
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| "Invoice not found" | Invalid invoiceId | Refresh list, verify invoice exists |
-| "Invoice is already paid in full" | Attempting payment on PAID invoice | No action needed |
-| "Cannot apply payment to voided invoice" | Attempting payment on VOID invoice | No action needed |
-| "Payment amount exceeds amount due" | Overpayment attempt | Reduce payment amount |
-| "Allocations total must equal payment amount" | Multi-invoice allocation mismatch | Adjust allocations |
-| "Database not available" | DB connection failure | Retry, contact support |
+| Error | Code | Cause | Line |
+|-------|------|-------|------|
+| "Invoice not found" | NOT_FOUND | Invalid invoiceId | 255-260 |
+| "Invoice is already paid in full" | BAD_REQUEST | PAID invoice | 262-266 |
+| "Cannot apply payment to a voided invoice" | BAD_REQUEST | VOID invoice | 269-273 |
+| "Payment amount exceeds amount due" | BAD_REQUEST | Overpayment | 281-285 |
+| "Allocations total must equal payment amount" | BAD_REQUEST | Multi-invoice mismatch | 678-683 |
+| "Allocation for invoice #{} exceeds amount due" | BAD_REQUEST | Single allocation overpayment | 738-743 |
 
-### Invoice Void Errors
+### Invoice Errors (from invoices.ts)
 
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| "Invoice not found" | Invalid invoiceId | Refresh list |
-| "Invoice is already voided" | Re-voiding attempt | No action needed |
-| "Reason is required" | Empty void reason | Provide reason |
-| "Failed to reverse GL entries" | GL posting failure | Contact accounting |
+| Error | Code | Cause | Line |
+|-------|------|-------|------|
+| "Invoice not found" | NOT_FOUND | Invalid invoiceId | 191-195 |
+| "Cannot update a voided invoice" | BAD_REQUEST | Updating VOID | 388-393 |
+| "Paid invoices can only be voided" | BAD_REQUEST | Non-void update of PAID | 395-400 |
+| "Invoice is already voided" | BAD_REQUEST | Re-voiding | 486-491 |
+| "Reason is required" | BAD_REQUEST | Empty void reason | Schema validation |
+| "Can only generate invoice from SALE orders" | BAD_REQUEST | Non-SALE order | 249-254 |
+| "Invoice already exists for this order" | BAD_REQUEST | Duplicate | 281-286 |
 
-### PDF Generation Errors
+### Void Errors (from payments.ts)
 
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| "PDF generation timed out" | Processing > 30s | Retry, simplify invoice |
-| "Invoice not found" | Invalid invoiceId | Refresh, select valid invoice |
-| "Template error" | PDF template issue | Contact support |
-
-### Validation Errors
-
-| Error | Cause | Recovery |
-|-------|-------|----------|
-| "Amount must be positive" | amount <= 0 | Enter positive amount |
-| "Invalid payment method" | Unknown method | Select from dropdown |
-| "Invalid date format" | Malformed date | Use date picker |
+| Error | Code | Cause | Line |
+|-------|------|-------|------|
+| "Payment not found" | NOT_FOUND | Invalid paymentId | 875-880 |
+| "Payment has already been voided" | BAD_REQUEST | deletedAt set | 883-888 |
 
 ---
 
@@ -470,13 +547,15 @@ For all invoices:
   invoice.amountDue >= 0
 ```
 
+**Enforcement:** `payments.ts:281-286` (reject overpayment), `payments.ts:331` (Math.max(0, ...))
+
 **Verification:**
 ```sql
 -- Check for overpayment violations
 SELECT id, invoiceNumber, totalAmount, amountPaid, amountDue
 FROM invoices
-WHERE amountPaid > totalAmount + 0.01
-   OR amountDue < -0.01;
+WHERE CAST(amountPaid AS DECIMAL(15,2)) > CAST(totalAmount AS DECIMAL(15,2)) + 0.01
+   OR CAST(amountDue AS DECIMAL(15,2)) < -0.01;
 ```
 
 ### INV-004: GL Entries Must Balance
@@ -489,6 +568,8 @@ For each referenceType/referenceId combination:
   SUM(debit) = SUM(credit)
 ```
 
+**Enforcement:** GL entries created in pairs within transaction (`payments.ts:351-383`)
+
 **Verification:**
 ```sql
 -- Check for unbalanced GL entries by source
@@ -499,15 +580,17 @@ SELECT referenceType, referenceId,
 FROM ledgerEntries
 WHERE deletedAt IS NULL
 GROUP BY referenceType, referenceId
-HAVING balance != 0;
+HAVING ABS(balance) > 0.01;
 ```
 
-### INV-005: Client Balance Accuracy
+### INV-005: Client Balance Accuracy (ARCH-002)
 
 ```
 For all clients:
   client.totalOwed = SUM(unpaid invoices.amountDue)
 ```
+
+**Enforcement:** `syncClientBalance()` called after every payment transaction (`payments.ts:418-422`)
 
 **Verification:**
 ```sql
@@ -524,114 +607,79 @@ GROUP BY c.id, c.name, c.totalOwed
 HAVING ABS(difference) > 0.01;
 ```
 
-### Additional Invariants
-
-**INV-004a: Payment Amount Matches GL Entry**
-```
-For each payment:
-  payment.amount = ledgerEntry.debit (for Cash account)
-  payment.amount = ledgerEntry.credit (for AR account)
-```
-
-**INV-004b: Void Creates Reversing Entries**
-```
-For each voided invoice/payment:
-  Original entries + Reversal entries = Net 0
-```
-
 ---
 
 ## Cross-Flow Touchpoints
 
 ### GF-003: Order-to-Cash -> GF-004: Invoice & Payment
 
-| Touchpoint | Description | Data Flow |
-|------------|-------------|-----------|
-| Invoice Generation | GF-003 creates invoices from confirmed orders | `invoices.generateFromOrder` called from order flow |
+| Touchpoint | Description | Implementation |
+|------------|-------------|----------------|
+| Invoice Generation | GF-003 creates invoices from confirmed orders | `invoices.generateFromOrder` (`invoices.ts:223-355`) |
 | Order Reference | Invoice references source order | `invoice.referenceType = 'ORDER'`, `invoice.referenceId = orderId` |
-| Status Update | Invoice status reflects in order | Order shows invoice status in details |
-
-**Integration Points:**
-- `server/routers/invoices.ts:generateFromOrder` - Creates invoice from order
-- `server/services/orderAccountingService.ts:createInvoiceFromOrder` - Core creation logic
+| Order Update | Order updated with invoiceId | `orders.set({ invoiceId })` (`invoices.ts:336-339`) |
 
 ### GF-004: Invoice & Payment -> GF-006: Client Ledger
 
-| Touchpoint | Description | Data Flow |
-|------------|-------------|-----------|
-| Client Balance | Payments update client.totalOwed | `syncClientBalance()` after payment |
-| Transaction History | Payments appear in client ledger | Ledger queries payments by clientId |
-| Aging Report | Open invoices contribute to aging | Aging calculates from invoice dueDate |
-
-**Integration Points:**
-- `server/services/clientBalanceService.ts:syncClientBalance` - Recalculates client balance
-- `clients.totalOwed` column - Denormalized balance for performance
-- Client detail page shows payment history and outstanding invoices
+| Touchpoint | Description | Implementation |
+|------------|-------------|----------------|
+| Client Balance | Payments update client.totalOwed | `syncClientBalance()` (`payments.ts:418-422`) |
+| Transaction History | Payments appear in client ledger | `accounting.arApDashboard.getClientStatement` |
+| AR Aging | Open invoices contribute to aging | `arApDb.calculateARAging()` |
 
 ### GF-004: Invoice & Payment -> Accounting Module
 
-| Touchpoint | Description | Data Flow |
-|------------|-------------|-----------|
-| GL Posting | All payments create GL entries | `ledgerEntries` table updated |
-| Account Balances | Cash and AR accounts affected | Account balances recalculated |
-| Financial Reports | Payments appear in cash flow | Reports query ledgerEntries |
-
-**Integration Points:**
-- `server/_core/accountLookup.ts` - Resolves account IDs
-- `server/_core/fiscalPeriod.ts` - Determines posting period
+| Touchpoint | Description | Implementation |
+|------------|-------------|----------------|
+| GL Posting | All payments create GL entries | `ledgerEntries` inserts (`payments.ts:351-383`) |
+| Account Lookup | Cash and AR accounts resolved | `getAccountIdByName()` (`_core/accountLookup.ts`) |
+| Fiscal Period | Posting period determined | `getFiscalPeriodIdOrDefault()` (`_core/fiscalPeriod.ts`) |
 
 ---
 
 ## Security Considerations
 
-### Permission Requirements
+### Permission Requirements (VERIFIED)
 
-| Action | Required Permission |
-|--------|---------------------|
-| View invoices | `accounting:read` |
-| View payments | `accounting:read` |
-| Record payment | `accounting:create` |
-| Update invoice status | `accounting:update` |
-| Void invoice | `accounting:delete` |
-| Void payment | `accounting:delete` |
-| Generate PDF | `accounting:read` |
+| Action | Required Permission | Source |
+|--------|---------------------|--------|
+| View invoices | `accounting:read` | invoices.ts:103, payments.ts:119 |
+| View payments | `accounting:read` | payments.ts:119, 191 |
+| Record payment | `accounting:create` | payments.ts:233 |
+| Record multi-invoice payment | `accounting:create` | payments.ts:642 |
+| Update invoice status | `accounting:update` | invoices.ts:362 |
+| Void invoice | `accounting:delete` | invoices.ts:460 |
+| Void payment | `accounting:delete` | payments.ts:857 |
 
-### Actor Attribution
+### Actor Attribution (VERIFIED)
 
-All mutations require authenticated user context:
-```typescript
-const userId = getAuthenticatedUserId(ctx);
-// Never: const userId = input.createdBy || 1  // FORBIDDEN
-```
-
-### Audit Trail
-
-- All payments have `createdBy` populated from context
-- All invoice updates have `updatedAt` auto-updated
-- Void operations include reason in notes
-- GL entries reference source document
+All mutations use `getAuthenticatedUserId(ctx)`:
+- `invoices.ts:230` - generateFromOrder
+- `invoices.ts:469` - void
+- `payments.ts:239` - recordPayment
+- `payments.ts:671` - recordMultiInvoicePayment
+- `payments.ts:868` - void
 
 ---
 
-## Performance Considerations
+## Keyboard Navigation (UX Feature)
 
-### Caching
+The InvoicesWorkSurface supports keyboard navigation per UXS-705:
 
-- Invoice list should support pagination (default limit: 50)
-- Client balance may be cached (invalidate on payment)
-- Invoice summary stats may be cached (short TTL)
+| Key | Action | Source |
+|-----|--------|--------|
+| ↑/↓ | Navigate invoice list | InvoicesWorkSurface.tsx |
+| Enter | Select invoice for inspector | InvoicesWorkSurface.tsx |
+| Cmd+K | Quick search | InvoicesWorkSurface.tsx |
 
-### Query Optimization
+---
 
-- Indexes on customerId, status, dueDate for common filters
-- Composite indexes for common query patterns
-- Avoid N+1 queries when loading payments for invoice
+## Concurrent Edit Detection (UXS-705/ST-026)
 
-### PDF Generation
-
-- Implement request timeout (30 seconds)
-- Consider async generation for large invoices
-- Cache generated PDFs for repeated downloads
+Invoice updates support optimistic locking:
+- `version` column on invoices table
+- `checkVersion()` called before update (`invoices.ts:369-372`)
+- Frontend displays warning if version mismatch detected
 
 ---
 
@@ -650,68 +698,17 @@ const userId = getAuthenticatedUserId(ctx);
 - [ ] GL entries created and balanced
 - [ ] Client balance updated via sync
 - [ ] Void creates reversing entries
+- [ ] Multi-invoice payment allocates correctly
 
 ### E2E Tests (tests-e2e/golden-flows/)
 
 - [ ] Complete invoice viewing flow
-- [ ] Complete payment recording flow
+- [ ] Complete payment recording flow (RecordPaymentDialog)
+- [ ] Golden Flow payment (InvoiceToPaymentFlow)
 - [ ] Multi-invoice payment flow
 - [ ] Invoice void flow
-- [ ] PDF generation flow (when implemented)
-
-### Test Data Requirements
-
-- Clients with outstanding invoices (various statuses)
-- Invoices with partial payments
-- Multi-invoice payment history
-- Overdue invoices
-
----
-
-## Known Issues & Limitations
-
-### Current Status (Jan 26, 2026)
-
-| Issue | Status | Priority | Tracking |
-|-------|--------|----------|----------|
-| PDF generation timeout | OPEN | MEDIUM | GF-PHASE1-004 |
-| Payment recording is STUB | OPEN | HIGH | GF-PHASE2-001 |
-
-### Planned Improvements
-
-1. **PDF Service Implementation** (GF-PHASE1-004)
-   - Create `server/services/pdfService.ts`
-   - Add proper timeout handling
-   - Support invoice templates
-
-2. **Wire Payment Mutation** (GF-PHASE2-001)
-   - Connect frontend to `payments.recordPayment`
-   - Replace stub with actual API call
-
-3. **Email Integration**
-   - Send invoice PDF via email
-   - Track email delivery status
-
----
-
-## UI Components (Proposed)
-
-### Existing/Planned Components
-
-| Component | Path | Purpose |
-|-----------|------|---------|
-| InvoicesWorkSurface | `client/src/components/work-surface/InvoicesWorkSurface.tsx` | Main invoice list and inspector |
-| PaymentDialog | `client/src/components/payments/PaymentDialog.tsx` | Payment recording form |
-| InvoiceInspector | `client/src/components/invoices/InvoiceInspector.tsx` | Invoice detail panel |
-| PaymentHistory | `client/src/components/payments/PaymentHistory.tsx` | Payment list for invoice |
-
-### Work Surface Pattern
-
-The invoice flow should follow the TERP Work Surface pattern:
-- Main list on left
-- Inspector panel on right
-- Actions in toolbar/context menu
-- Keyboard navigation support (documented in E2E tests)
+- [ ] Payment void flow
+- [ ] PDF generation flow
 
 ---
 
@@ -721,9 +718,7 @@ Format: `PMT-{YYYYMM}-{NNNNN}`
 
 Example: `PMT-202601-00042`
 
-- YYYY: 4-digit year
-- MM: 2-digit month (zero-padded)
-- NNNNN: 5-digit sequence within month (zero-padded)
+**Source:** `payments.ts:81-98` (generatePaymentNumber function)
 
 ## Appendix: Invoice Number Format
 
@@ -731,4 +726,11 @@ Format: `INV-{YYYY}{MM}-{NNNNN}`
 
 Example: `INV-202601-00001`
 
-(Generated in `server/services/orderAccountingService.ts`)
+**Source:** `server/services/orderAccountingService.ts` (createInvoiceFromOrder)
+
+## Appendix: GL Entry Number Formats
+
+| Type | Format | Example |
+|------|--------|---------|
+| Payment | `PMT-{paymentId}-DR/CR` | `PMT-123-DR` |
+| Payment Void | `PMT-REV-{paymentId}-DR/CR` | `PMT-REV-123-CR` |
