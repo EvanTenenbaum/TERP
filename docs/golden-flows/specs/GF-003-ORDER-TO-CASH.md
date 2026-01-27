@@ -1,6 +1,6 @@
 # GF-003: Order-to-Cash Golden Flow Specification
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Draft
 **Last Updated:** 2026-01-27
 **Module:** Sales / Accounting
@@ -126,7 +126,11 @@ Order Creation → Confirmation → Invoice Generation → Payment Collection �
      │                │ For each item: validate availableQty >= requestedQty
      │                │<────────────────────────────────│                │
      │                │                │                │                │
-     │                │ For each item: UPDATE batch SET reservedQty += qty
+     │                │ For each item:                  │                │
+     │                │   IF item.isSample:             │                │
+     │                │     UPDATE batch SET sampleQty -= qty            │
+     │                │   ELSE:                         │                │
+     │                │     UPDATE batch SET reservedQty += qty          │
      │                │────────────────────────────────>│                │
      │                │                │                │                │
      │                │ UPDATE order SET isDraft=false, confirmedAt=NOW()
@@ -139,6 +143,8 @@ Order Creation → Confirmation → Invoice Generation → Payment Collection �
      │<───────────────│                │                │                │
      │                │                │                │                │
 ```
+
+**Note:** Sample items (`isSample=true`) decrement from a separate `sampleQty` pool, not `reservedQty`. This allows tracking sample inventory separately from regular sales inventory.
 
 ### 3.2 Payment Recording Flow
 
@@ -365,7 +371,7 @@ Order Creation → Confirmation → Invoice Generation → Payment Collection �
 |----------|--------|-------------|------------|
 | `invoices.list` | query | List invoices with filters | `accounting:read` |
 | `invoices.getById` | query | Get invoice with line items | `accounting:read` |
-| `invoices.generateFromOrder` | mutation | Create invoice from order | `accounting:create` |
+| `invoices.generateFromOrder` | mutation | Create invoice from order (see validation rules below) | `accounting:create` |
 | `invoices.updateStatus` | mutation | Update invoice status | `accounting:update` |
 | `invoices.markSent` | mutation | Mark invoice as sent | `accounting:update` |
 | `invoices.void` | mutation | Void invoice with GL reversal | `accounting:delete` |
@@ -950,10 +956,22 @@ Order Creation → Confirmation → Invoice Generation → Payment Collection �
 
 | Rule ID | Rule | Enforcement |
 |---------|------|-------------|
-| BR-013 | Only SALE orders can generate invoices | API validation |
-| BR-014 | Order must be PENDING, PACKED, or SHIPPED | Status check |
-| BR-015 | One invoice per order | Duplicate check |
-| BR-016 | Due date calculated from payment terms | Automatic calculation |
+| BR-013 | Only SALE orders can generate invoices | API validation (`orderType !== "SALE"` throws) |
+| BR-014 | Order must be PENDING, PACKED, or SHIPPED | Status check in `generateFromOrder` |
+| BR-015 | One invoice per order | Duplicate check (`order.invoiceId` already set) |
+| BR-016 | Due date calculated from payment terms | Automatic calculation based on `paymentTerms` |
+
+**`invoices.generateFromOrder` Validation Flow (Verified):**
+```
+1. Validate order exists → TRPCError NOT_FOUND if missing
+2. Validate orderType === "SALE" → TRPCError BAD_REQUEST if QUOTE
+3. Validate fulfillmentStatus in [PENDING, PACKED, SHIPPED] → TRPCError BAD_REQUEST
+4. Check order.invoiceId is null → TRPCError BAD_REQUEST if invoice exists
+5. Generate invoice number (INV-YYYYMM-XXXXX)
+6. Create invoice with line items from order
+7. Update order.invoiceId with new invoice ID
+8. Increase client.totalOwed by invoice total
+```
 
 ### 9.4 Payments
 
@@ -1041,6 +1059,7 @@ Order Creation → Confirmation → Invoice Generation → Payment Collection �
 | **Void payment on paid invoice** | Payment voided, invoice was PAID | Invoice reverts to PARTIAL or SENT | AR balance restored correctly |
 | **Return after invoice paid** | Customer returns goods, invoice settled | Creates credit memo (future feature) | Manual adjustment currently required |
 | **Sample qty exceeds sample pool** | Order 10 samples, only 5 available | Validation fails at confirmation | Reduce sample qty or wait for restock |
+| **Order without allocations** | Order line items exist but no batch allocations | Shipment uses line item quantities directly | Legacy orders remain shippable; new orders require allocations |
 
 ### 10.7 Failure Recovery Procedures
 
@@ -1079,7 +1098,22 @@ payment.amount <= invoice.amountDue + 0.01 (tolerance)
 **Enforcement:**
 - Validated in `payments.recordPayment`
 - Validated in `payments.recordMultiInvoicePayment`
-- Payment capped at amountDue if slightly over due to rounding
+- If `payment.amount > invoice.amountDue` but `<= amountDue + 0.01`:
+  - Payment is ACCEPTED (not rejected)
+  - `effectiveAmount = amountDue` (capped at exact balance)
+  - Invoice marked as PAID
+  - No overpayment recorded
+- If `payment.amount > invoice.amountDue + 0.01`:
+  - Payment is REJECTED with error "Payment exceeds amount due"
+
+**Tolerance Rationale:** The 0.01 tolerance accommodates minor floating-point rounding in UI calculations while preventing actual overpayments.
+
+**Test Case:**
+```typescript
+// Invoice with amountDue = $100.00
+await recordPayment({ amount: "100.01" }); // ACCEPTED, caps to $100.00
+await recordPayment({ amount: "100.02" }); // REJECTED: exceeds tolerance
+```
 
 ### INV-006: Fulfilled Quantity Constraint
 
@@ -1096,14 +1130,15 @@ FOR EACH line_item:
 
 ### INV-007: Invoice Balance Consistency
 
-**Statement:** Invoice amountDue must always equal totalAmount minus amountPaid.
+**Statement:** Invoice amountDue must always equal totalAmount minus amountPaid, never negative.
 
 ```
-invoice.amountDue = invoice.totalAmount - invoice.amountPaid
+invoice.amountDue = MAX(0, invoice.totalAmount - invoice.amountPaid)
 ```
 
 **Enforcement:**
-- Recalculated on every payment operation
+- Recalculated on every payment operation using database arithmetic
+- MAX(0, ...) prevents negative balance due to rounding tolerance (0.01)
 - Verified by reconciliation jobs
 
 **Test Case:**
@@ -1112,6 +1147,10 @@ invoice.amountDue = invoice.totalAmount - invoice.amountPaid
 expect(invoice.totalAmount).toBe("14000.00");
 expect(invoice.amountPaid).toBe("7000.00");
 expect(invoice.amountDue).toBe("7000.00");
+
+// Edge case: slight overpayment due to tolerance
+// Payment of $14000.01 on $14000 invoice caps at amountDue
+expect(invoice.amountDue).toBe("0.00"); // Never negative
 ```
 
 ### INV-008: Client AR Balance Consistency
@@ -1123,9 +1162,18 @@ client.totalOwed = SUM(invoices.amountDue WHERE customerId = client.id AND statu
 ```
 
 **Enforcement:**
-- Updated within payment transaction
-- Synced via `clientBalanceService.syncClientBalance()` after transaction
-- Daily reconciliation job validates
+- Updated within payment transaction (optimistic update)
+- Synced via `clientBalanceService.syncClientBalance()` for consistency
+
+**`syncClientBalance` Trigger Points:**
+| Trigger | Location | Purpose |
+|---------|----------|---------|
+| After payment recorded | `payments.recordPayment` | Ensure balance reflects new payment |
+| After multi-invoice payment | `payments.recordMultiInvoicePayment` | Sync after batch update |
+| After payment voided | `payments.void` | Restore balance after reversal |
+| After invoice voided | `invoices.void` | Remove voided invoice from balance |
+| After invoice generated | `invoices.generateFromOrder` | Include new AR in balance |
+| Daily reconciliation | Scheduled job (4:00 AM) | Catch any drift from partial failures |
 
 **Test Case:**
 ```typescript
@@ -1216,6 +1264,31 @@ batch.availableQty = batch.totalQty - batch.reservedQty - batch.quarantineQty - 
 - Checked with row lock before reservation
 - Validation in `calculateAvailableQty()`
 
+### INV-014: Decimal Precision Requirements
+
+**Statement:** All monetary and quantity values must use consistent decimal precision to prevent rounding errors.
+
+| Field Type | Precision | Database Type | Examples |
+|------------|-----------|---------------|----------|
+| Monetary amounts (prices, totals, payments) | 2 decimal places | `DECIMAL(15,2)` | `1200.00`, `14000.00` |
+| Quantities (inventory, line items) | 4 decimal places | `DECIMAL(15,4)` | `5.0000`, `10.5000` |
+| Percentages (margins, tax rates) | 2 decimal places | `DECIMAL(5,2)` | `29.17`, `8.25` |
+| COGS per unit | 2 decimal places | `DECIMAL(10,2)` | `850.00`, `525.00` |
+
+**Enforcement:**
+- Database schema enforces precision at storage layer
+- Drizzle ORM returns string representations to preserve precision
+- Application code uses database arithmetic (not JavaScript) for calculations
+- JavaScript `Number` type avoided for monetary calculations to prevent floating-point errors
+
+**Test Case:**
+```typescript
+// Verify no floating-point precision loss
+const payment = await recordPayment({ amount: "14000.01" }); // String input
+expect(payment.amount).toBe("14000.01"); // Exact precision preserved
+// Avoid: payment.amount = 14000.01 * 100 / 100 (floating-point error risk)
+```
+
 ### Invariant Summary Table
 
 | ID | Invariant | Critical Level | Check Frequency |
@@ -1230,6 +1303,7 @@ batch.availableQty = batch.totalQty - batch.reservedQty - batch.quarantineQty - 
 | INV-011 | totalCogs = SUM(item COGS) | MEDIUM | Order creation |
 | INV-012 | GL entries balanced | HIGH | Every payment |
 | INV-013 | Available qty >= 0 | HIGH | Every reservation |
+| INV-014 | Decimal precision consistency | HIGH | All monetary/qty operations |
 
 ---
 
@@ -1498,3 +1572,4 @@ batch.availableQty = batch.totalQty - batch.reservedQty - batch.quarantineQty - 
 |---------|------|--------|---------|
 | 1.0 | 2026-01-27 | Claude | Initial specification |
 | 1.1 | 2026-01-27 | Claude | Added sequence diagrams, concrete examples, expanded invariants, acceptance tests, performance benchmarks, edge cases |
+| 1.2 | 2026-01-27 | Claude | QA audit fixes: INV-014 decimal precision, sample inventory branching in sequence diagram, MAX(0,...) formula, payment tolerance clarification, syncClientBalance triggers, generateFromOrder validation verified |
