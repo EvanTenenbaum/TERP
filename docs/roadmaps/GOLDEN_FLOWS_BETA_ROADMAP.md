@@ -136,7 +136,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-001: Define GF-001 Direct Intake Specification
 
 **Task ID:** GF-PHASE0A-001
-**Status:** ready
+**Status:** complete (PR #323 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -215,7 +215,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-002: Define GF-002 Procure-to-Pay Specification
 
 **Task ID:** GF-PHASE0A-002
-**Status:** ready
+**Status:** complete (PR #322 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -238,7 +238,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-003: Define GF-003 Order-to-Cash Specification
 
 **Task ID:** GF-PHASE0A-003
-**Status:** ready
+**Status:** complete (PR #324 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -261,7 +261,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-004: Define GF-004 Invoice & Payment Specification
 
 **Task ID:** GF-PHASE0A-004
-**Status:** ready
+**Status:** complete (PR #325 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -284,7 +284,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-005: Define GF-005 Pick & Pack Specification
 
 **Task ID:** GF-PHASE0A-005
-**Status:** ready
+**Status:** in-progress (PR #329 open - CI needs update)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -307,7 +307,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-006: Define GF-006 Client Ledger Specification
 
 **Task ID:** GF-PHASE0A-006
-**Status:** ready
+**Status:** complete (PR #328 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -330,7 +330,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-007: Define GF-007 Inventory Management Specification
 
 **Task ID:** GF-PHASE0A-007
-**Status:** ready
+**Status:** complete (PR #326 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -353,7 +353,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-008: Define GF-008 Sample Request Specification
 
 **Task ID:** GF-PHASE0A-008
-**Status:** ready
+**Status:** complete (PR #327 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -760,6 +760,43 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 - [ ] Manual verification checklist passes
 
 ---
+
+
+---
+
+#### GF-PHASE0-005: Fix Photography Module Schema Drift (BUG-112 Regression)
+
+**Task ID:** GF-PHASE0-005
+**Source:** QA Verification Report 2026-01-27
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** RED
+**Module:** `server/routers/photography.ts`
+**Blocks:** GF-001 Direct Intake flow testing
+
+**Problem:**
+Photography queue fails with "unknown column" error on strains join. PR #318 was merged 2026-01-27 to fix schema drift across 5 modules, but BUG-112 (photography.ts) is NOT working in production.
+
+**Root Cause Options:**
+1. Fix was not fully deployed to production
+2. Photography route uses different query path than expected
+3. The fallback try-catch is not being triggered
+
+**Agent Checklist:**
+- [ ] Verify `photography.ts` has try-catch fallback from PR #318 commits
+- [ ] Check if `getBatchesNeedingPhotos` query has strain join fallback
+- [ ] Compare working `productsDb.ts` pattern to photography implementation
+- [ ] If missing: Apply same schema drift fallback pattern
+- [ ] Test photography queue loads after fix
+- [ ] Verify no console errors on /photography page
+
+**Acceptance Criteria:**
+- [ ] Photography queue page loads without SQL errors
+- [ ] Batches display in photography queue
+- [ ] No "unknown column" errors in production logs
+
+
 
 ## Phase 1: Flow Restoration (Days 3-6)
 
@@ -1313,6 +1350,76 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 - [ ] Data integrity verified across flows
 
 ---
+
+
+---
+
+#### GF-PHASE2-005: Integrate GL Reversal Visibility Components
+
+**Task ID:** GF-PHASE2-005
+**Source:** QA Verification Report 2026-01-27 (TERP-0012 Phase 2)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Mode:** STRICT
+**Module:** `client/src/pages/accounting/Invoices.tsx`, `client/src/pages/ReturnsPage.tsx`
+**Depends On:** None (components already exist)
+
+**Problem:**
+GLReversalStatus, InvoiceGLStatus, ReturnGLStatus components exist in `client/src/components/accounting/` but are NOT imported into any pages. Users cannot see GL reversal status for voided invoices and returns.
+
+**Components to Integrate:**
+- `GLReversalStatus.tsx` (311 lines) - Main reversal status display
+- `InvoiceGLStatus.tsx` - Wrapper for invoices
+- `ReturnGLStatus.tsx` - Wrapper for returns/credit memos
+
+**Agent Checklist:**
+- [ ] Import GLReversalStatus, InvoiceGLStatus into `Invoices.tsx`
+- [ ] Add GL status rendering in invoice detail drawer
+- [ ] Import ReturnGLStatus into `ReturnsPage.tsx`
+- [ ] Add return GL status in return detail views
+- [ ] Test with VOID invoices (INV-20260121-00092, INV-20260120-00335)
+- [ ] Verify reversal entries display correctly
+
+**Acceptance Criteria:**
+- [ ] Void invoices show GL reversal status
+- [ ] Returns show credit memo GL entries
+- [ ] No UI errors when viewing accounting pages
+
+---
+
+#### GF-PHASE2-006: Integrate COGS Visibility Components
+
+**Task ID:** GF-PHASE2-006
+**Source:** QA Verification Report 2026-01-27 (TERP-0012 Phase 5)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Mode:** STRICT
+**Module:** `client/src/pages/Orders.tsx`
+**Depends On:** None (components already exist)
+
+**Problem:**
+OrderCOGSDetails (366 lines) and GLEntriesViewer (265 lines) components exist but are NOT imported into Orders.tsx. Users cannot see order profitability metrics, COGS breakdown, or related GL entries.
+
+**Components to Integrate:**
+- `OrderCOGSDetails.tsx` - Shows COGS breakdown and profitability
+- `GLEntriesViewer.tsx` - Reusable GL entries viewer
+
+**Agent Checklist:**
+- [ ] Import OrderCOGSDetails into `Orders.tsx`
+- [ ] Add COGS details in order detail drawer/expanded view
+- [ ] Import GLEntriesViewer for GL entry access
+- [ ] Connect to order data for margin calculations
+- [ ] Test with existing orders (need sample order data)
+- [ ] Verify profitability metrics display
+
+**Acceptance Criteria:**
+- [ ] Orders show COGS breakdown
+- [ ] Margin percentages display correctly
+- [ ] GL entries accessible from order view
+
+
 
 ## Phase 3: Role-Based QA & RBAC Verification (Days 11-14)
 
