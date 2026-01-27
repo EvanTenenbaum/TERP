@@ -1,6 +1,6 @@
 # GF-002: Procure-to-Pay Golden Flow Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Draft
 **Created:** 2026-01-27
 **Last Updated:** 2026-01-27
@@ -10,6 +10,20 @@
 ## Overview
 
 The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating purchase orders through receiving goods and recording vendor bills. This flow creates inventory batches and accounts payable entries.
+
+---
+
+## Implementation Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| PO Creation UI | **Implemented** | `PurchaseOrdersPage.tsx`, `PurchaseOrdersWorkSurface.tsx` |
+| PO Router | **Implemented** | Full CRUD + submit/confirm workflows |
+| PO Receiving API | **Implemented** | `poReceiving.ts` with batch creation |
+| PO Receiving UI | **Not Implemented** | API-only; no dedicated frontend |
+| Bills API | **Implemented** | Full CRUD via `accounting.bills.*` |
+| Bills UI | **Partial** | Basic list via AR/AP dashboard |
+| Direct Intake UI | **Implemented** | Alternative flow via `DirectIntakeWorkSurface.tsx` |
 
 ---
 
@@ -133,49 +147,71 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 
 ### Purchase Orders Router (`server/routers/purchaseOrders.ts`)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `purchaseOrders.list` | Query | List POs with pagination, filtering by status/supplier |
-| `purchaseOrders.getAll` | Query | Get all POs (legacy, use `.list` instead) |
-| `purchaseOrders.getById` | Query | Get PO by ID with items and supplier details |
-| `purchaseOrders.getByIdWithDetails` | Query | Get PO with full product info |
-| `purchaseOrders.create` | Mutation | Create new PO with line items |
-| `purchaseOrders.update` | Mutation | Update PO fields |
-| `purchaseOrders.updateStatus` | Mutation | Update PO status |
-| `purchaseOrders.delete` | Mutation | Delete PO (cascades to items) |
-| `purchaseOrders.submit` | Mutation | Submit PO (DRAFT → SENT) |
-| `purchaseOrders.confirm` | Mutation | Confirm PO (SENT → CONFIRMED) |
-| `purchaseOrders.addItem` | Mutation | Add line item to PO |
-| `purchaseOrders.updateItem` | Mutation | Update line item |
-| `purchaseOrders.deleteItem` | Mutation | Remove line item |
-| `purchaseOrders.getBySupplier` | Query | Get POs for a supplier |
-| `purchaseOrders.getByProduct` | Query | Get POs containing a product |
+| Endpoint | Method | Input | Description |
+|----------|--------|-------|-------------|
+| `purchaseOrders.list` | Query | `{ limit?, offset?, supplierClientId?, status?, search? }` | Paginated list with filters |
+| `purchaseOrders.getAll` | Query | `{ supplierClientId?, vendorId?, status?, limit?, offset? }` | Legacy list (use `.list`) |
+| `purchaseOrders.getById` | Query | `{ id: number }` | PO with items and supplier |
+| `purchaseOrders.getByIdWithDetails` | Query | `{ id: number }` | PO with full product info |
+| `purchaseOrders.create` | Mutation | `{ supplierClientId?, vendorId?, items[], ... }` | Create PO with line items |
+| `purchaseOrders.update` | Mutation | `{ id, supplierClientId?, expectedDeliveryDate?, ... }` | Update PO fields |
+| `purchaseOrders.updateStatus` | Mutation | `{ id, status: enum }` | Update status with timestamps |
+| `purchaseOrders.delete` | Mutation | `{ id: number }` | **Hard delete** PO and items |
+| `purchaseOrders.submit` | Mutation | `{ id: number }` | DRAFT → SENT, sets `sentAt` |
+| `purchaseOrders.confirm` | Mutation | `{ id, vendorConfirmationNumber?, confirmedDeliveryDate? }` | SENT → CONFIRMED |
+| `purchaseOrders.addItem` | Mutation | `{ purchaseOrderId, productId, quantityOrdered, unitCost }` | Add line item, recalc totals |
+| `purchaseOrders.updateItem` | Mutation | `{ id, quantityOrdered?, unitCost?, notes? }` | Update item, recalc totals |
+| `purchaseOrders.deleteItem` | Mutation | `{ id: number }` | Remove item, recalc totals |
+| `purchaseOrders.getBySupplier` | Query | `{ supplierClientId: number }` | PO history for supplier |
+| `purchaseOrders.getByVendor` | Query | `{ vendorId: number }` | **DEPRECATED** - use `getBySupplier` |
+| `purchaseOrders.getByProduct` | Query | `{ productId: number }` | POs containing product |
 
 ### PO Receiving Router (`server/routers/poReceiving.ts`)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `poReceiving.receive` | Mutation | Receive PO items, create batches |
-| `poReceiving.receiveGoodsWithBatch` | Mutation | Enhanced receiving with location assignment |
-| `poReceiving.getReceivingHistory` | Query | Get receiving history for a PO |
-| `poReceiving.getPOItemsWithReceipts` | Query | Get PO items with received quantities |
-| `poReceiving.getPendingReceiving` | Query | Get POs pending receiving |
-| `poReceiving.getStats` | Query | Get receiving statistics |
-| `poReceiving.getAvailableLocations` | Query | Get locations for receiving |
+| Endpoint | Method | Input | Description |
+|----------|--------|-------|-------------|
+| `poReceiving.receive` | Mutation | `{ poId, receivedItems[], receivedBy, notes? }` | Basic receiving, create batches |
+| `poReceiving.receiveGoodsWithBatch` | Mutation | `{ purchaseOrderId, items[], receivingNotes? }` | Enhanced: location, lot, expiry |
+| `poReceiving.getReceivingHistory` | Query | `{ poId: number }` | Inventory movements for PO |
+| `poReceiving.getPOItemsWithReceipts` | Query | `{ poId: number }` | Items with remaining qty |
+| `poReceiving.getPendingReceiving` | Query | `{}` | CONFIRMED/RECEIVING POs with items |
+| `poReceiving.getStats` | Query | `{}` | Total and recent receipt counts |
+| `poReceiving.getAvailableLocations` | Query | `{}` | Active locations for assignment |
+
+**`receiveGoodsWithBatch` item schema:**
+```typescript
+{
+  poItemId: number,
+  quantity: number,           // Must be > 0
+  locationId?: number,        // Existing location
+  locationData?: {            // Or create inline
+    site: string,
+    zone?: string,
+    rack?: string,
+    shelf?: string,
+    bin?: string
+  },
+  lotNumber?: string,
+  expirationDate?: string,
+  notes?: string
+}
+```
 
 ### Accounting Router - Bills (`server/routers/accounting.ts`)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `accounting.bills.list` | Query | List bills with filters |
-| `accounting.bills.getById` | Query | Get bill by ID |
-| `accounting.bills.create` | Mutation | Create bill with line items |
-| `accounting.bills.update` | Mutation | Update bill |
-| `accounting.bills.updateStatus` | Mutation | Update bill status |
-| `accounting.bills.recordPayment` | Mutation | Record payment against bill |
-| `accounting.bills.getOutstandingPayables` | Query | Get unpaid bills |
-| `accounting.bills.getAPAging` | Query | Get AP aging report |
-| `accounting.bills.generateNumber` | Query | Generate next bill number |
+| Endpoint | Method | Input | Description |
+|----------|--------|-------|-------------|
+| `accounting.bills.list` | Query | `{ vendorId?, status?, startDate?, endDate?, limit?, offset? }` | Paginated bills |
+| `accounting.bills.getById` | Query | `{ id: number }` | Bill with line items |
+| `accounting.bills.create` | Mutation | `{ billNumber, vendorId, lineItems[], ... }` | Create bill, calc amountDue |
+| `accounting.bills.update` | Mutation | `{ id, billDate?, dueDate?, ... }` | Update bill fields |
+| `accounting.bills.updateStatus` | Mutation | `{ id, status: enum }` | Change bill status |
+| `accounting.bills.recordPayment` | Mutation | `{ billId, amount: number }` | Apply payment, update status |
+| `accounting.bills.getOutstandingPayables` | Query | `{}` | Bills with amountDue > 0 |
+| `accounting.bills.getAPAging` | Query | `{}` | Aging buckets (current, 30, 60, 90, 90+) |
+| `accounting.bills.generateNumber` | Query | `{}` | Next bill number |
+
+**Bill status enum:** `DRAFT | PENDING | APPROVED | PARTIAL | PAID | OVERDUE | VOID`
 
 ---
 
@@ -369,6 +405,206 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 
 ---
 
+## Sequence Diagrams
+
+### PO Creation Flow
+
+```
+┌──────┐          ┌──────────┐          ┌────────────┐          ┌──────────┐
+│ User │          │ Frontend │          │ PO Router  │          │ Database │
+└──┬───┘          └────┬─────┘          └─────┬──────┘          └────┬─────┘
+   │                   │                      │                      │
+   │ Click Create PO   │                      │                      │
+   │──────────────────▶│                      │                      │
+   │                   │                      │                      │
+   │                   │ clients.list({seller})                      │
+   │                   │─────────────────────▶│                      │
+   │                   │                      │ SELECT clients       │
+   │                   │                      │─────────────────────▶│
+   │                   │                      │◀─────────────────────│
+   │                   │◀─────────────────────│                      │
+   │                   │                      │                      │
+   │ Fill form, Submit │                      │                      │
+   │──────────────────▶│                      │                      │
+   │                   │                      │                      │
+   │                   │ purchaseOrders.create()                     │
+   │                   │─────────────────────▶│                      │
+   │                   │                      │ generatePONumber()   │
+   │                   │                      │─────────────────────▶│
+   │                   │                      │ INSERT purchase_orders│
+   │                   │                      │─────────────────────▶│
+   │                   │                      │ INSERT po_items      │
+   │                   │                      │─────────────────────▶│
+   │                   │                      │◀─────────────────────│
+   │                   │◀─────────────────────│                      │
+   │ Toast: Created    │                      │                      │
+   │◀──────────────────│                      │                      │
+```
+
+### Goods Receiving Flow (API)
+
+```
+┌──────────┐          ┌────────────────┐          ┌──────────┐
+│ Caller   │          │ poReceiving    │          │ Database │
+└────┬─────┘          └───────┬────────┘          └────┬─────┘
+     │                        │                        │
+     │ receiveGoodsWithBatch()│                        │
+     │───────────────────────▶│                        │
+     │                        │                        │
+     │                        │ BEGIN TRANSACTION      │
+     │                        │───────────────────────▶│
+     │                        │                        │
+     │                        │ Validate PO status     │
+     │                        │ (CONFIRMED|RECEIVING)  │
+     │                        │───────────────────────▶│
+     │                        │                        │
+     │                        │ Generate lot code      │
+     │                        │ INSERT lots            │
+     │                        │───────────────────────▶│
+     │                        │                        │
+     │                        │ For each item:         │
+     │                        │ ┌──────────────────┐   │
+     │                        │ │Generate batch code│  │
+     │                        │ │INSERT batches    │   │
+     │                        │ │INSERT movements  │   │
+     │                        │ │INSERT locations  │   │
+     │                        │ │UPDATE po_items   │   │
+     │                        │ └──────────────────┘   │
+     │                        │───────────────────────▶│
+     │                        │                        │
+     │                        │ Check all received?    │
+     │                        │ UPDATE PO status       │
+     │                        │───────────────────────▶│
+     │                        │                        │
+     │                        │ COMMIT                 │
+     │                        │───────────────────────▶│
+     │                        │◀───────────────────────│
+     │                        │                        │
+     │ { batches: [...] }     │                        │
+     │◀───────────────────────│                        │
+```
+
+### Bill Payment Flow
+
+```
+┌──────┐          ┌──────────────┐          ┌────────────┐          ┌──────────┐
+│ User │          │ Frontend     │          │ Accounting │          │ Database │
+└──┬───┘          └──────┬───────┘          └─────┬──────┘          └────┬─────┘
+   │                     │                        │                      │
+   │ Record Payment      │                        │                      │
+   │────────────────────▶│                        │                      │
+   │                     │                        │                      │
+   │                     │ bills.recordPayment()  │                      │
+   │                     │───────────────────────▶│                      │
+   │                     │                        │                      │
+   │                     │                        │ Get current bill     │
+   │                     │                        │─────────────────────▶│
+   │                     │                        │◀─────────────────────│
+   │                     │                        │                      │
+   │                     │                        │ amountPaid += payment│
+   │                     │                        │ amountDue -= payment │
+   │                     │                        │                      │
+   │                     │                        │ if amountDue <= 0:   │
+   │                     │                        │   status = PAID      │
+   │                     │                        │ else:                │
+   │                     │                        │   status = PARTIAL   │
+   │                     │                        │                      │
+   │                     │                        │ UPDATE bills         │
+   │                     │                        │─────────────────────▶│
+   │                     │                        │◀─────────────────────│
+   │                     │◀───────────────────────│                      │
+   │ Toast: Paid         │                        │                      │
+   │◀────────────────────│                        │                      │
+```
+
+---
+
+## Security & Permissions
+
+### Permission Matrix
+
+| Endpoint | Required Permission | Notes |
+|----------|---------------------|-------|
+| `purchaseOrders.list` | `authenticated` | Any logged-in user |
+| `purchaseOrders.create` | `authenticated` | Actor ID from context |
+| `purchaseOrders.update` | `authenticated` | Actor ID from context |
+| `purchaseOrders.delete` | `authenticated` | Hard delete (not soft) |
+| `purchaseOrders.submit` | `authenticated` | DRAFT → SENT only |
+| `purchaseOrders.confirm` | `authenticated` | SENT → CONFIRMED only |
+| `poReceiving.receive` | `authenticated` | Actor via `receivedBy` input |
+| `poReceiving.receiveGoodsWithBatch` | `authenticated` | Actor from `ctx.user` |
+| `accounting.bills.list` | `accounting:read` | Permission middleware |
+| `accounting.bills.create` | `accounting:create` | Permission middleware |
+| `accounting.bills.recordPayment` | `accounting:update` | Permission middleware |
+
+### Actor Attribution
+
+All mutations require actor attribution:
+
+```typescript
+// ✅ CORRECT - purchaseOrders.create
+createdBy: poData.createdBy  // Passed from frontend
+
+// ✅ CORRECT - poReceiving.receiveGoodsWithBatch
+performedBy: getAuthenticatedUserId(ctx)  // From authenticated context
+
+// ✅ CORRECT - accounting.bills.create
+createdBy: getAuthenticatedUserId(ctx)  // From authenticated context
+```
+
+### Data Isolation
+
+- POs are **not tenant-isolated** (single-tenant system)
+- Soft delete via `deletedAt` for bills, lots, batches, movements
+- **Hard delete** for POs and PO items (consider migration to soft delete)
+
+---
+
+## Performance Considerations
+
+### Query Patterns
+
+| Operation | Complexity | Optimization |
+|-----------|------------|--------------|
+| `purchaseOrders.list` | O(n) | Paginated, indexed on `createdAt` |
+| `poReceiving.getPendingReceiving` | O(n×m) | N+1 query for items; consider JOIN |
+| `receiveGoodsWithBatch` | O(items) | Single transaction, batch inserts |
+| `accounting.bills.list` | O(n) | Paginated, indexed on `status` |
+| `recalculatePOTotals` | O(items) | Aggregates line items |
+
+### Batch Operations
+
+The `receiveGoodsWithBatch` mutation processes all items in a single transaction:
+- Creates 1 lot
+- Creates N batches (one per item)
+- Creates N inventory movements
+- Creates N batch locations (if provided)
+- Updates N PO items
+- Updates 1 PO status
+
+**Recommended limit:** 50 items per receiving session to avoid long transactions.
+
+### Indexes
+
+Critical indexes for P2P flow (already in schema):
+
+```sql
+-- purchase_orders
+idx_po_supplier_client_id (supplierClientId)
+idx_po_status (purchaseOrderStatus)
+idx_po_created_at (createdAt)
+
+-- inventory_movements
+idx_inventory_movements_batch (batchId)
+idx_inventory_movements_reference (referenceType, referenceId)
+
+-- bills
+idx_bills_vendor (vendorId)
+idx_bills_status (status)
+```
+
+---
+
 ## Business Rules
 
 ### Supplier Selection
@@ -476,24 +712,68 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 
 ## Frontend Components
 
-### Pages
-- `client/src/pages/PurchaseOrdersPage.tsx` - Basic PO list and create
-- `client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx` - Enhanced Work Surface implementation
+### Implemented Pages
 
-### Key UI Components
-- PO list table with filtering and sorting
-- Create PO dialog with supplier selection and line items
-- Inspector panel for PO details
-- Status badges with color coding
-- Delete confirmation dialog
+| File | Component | Features |
+|------|-----------|----------|
+| `client/src/pages/PurchaseOrdersPage.tsx` | Basic PO Page | List, create dialog, delete, status filter |
+| `client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx` | Work Surface PO | Inspector panel, keyboard shortcuts, save state |
+| `client/src/components/work-surface/DirectIntakeWorkSurface.tsx` | Direct Intake | Alternative: AG Grid spreadsheet intake (no PO) |
+
+### Not Yet Implemented
+
+| Component | Description | Priority |
+|-----------|-------------|----------|
+| **PO Receiving UI** | Frontend for `poReceiving.*` endpoints | HIGH |
+| **Bills Management UI** | Dedicated bills list and detail view | MEDIUM |
+| **PO Detail Page** | Full-page PO view with receiving history | MEDIUM |
+
+### Key UI Components (Existing)
+
+```
+PurchaseOrdersWorkSurface
+├── Header (title, save state indicator, stats)
+├── Filters (search, status dropdown)
+├── Table (AG Grid or basic table)
+│   └── Row click → opens Inspector
+├── Create PO Dialog
+│   ├── Supplier Select (clients with isSeller=true)
+│   ├── Order Date / Expected Delivery
+│   ├── Payment Terms
+│   ├── Line Items Editor
+│   │   ├── Product Select
+│   │   ├── Quantity Input (>0)
+│   │   ├── Unit Cost Input (>=0)
+│   │   └── Add/Remove buttons
+│   └── Notes (internal + supplier)
+├── Inspector Panel
+│   ├── Order Information section
+│   ├── Line Items section
+│   ├── Notes section
+│   └── Status Update buttons
+└── Delete Confirmation Dialog
+```
 
 ### Hooks Used
-- `trpc.purchaseOrders.*` - PO CRUD operations
-- `trpc.clients.list({ clientTypes: ['seller'] })` - Supplier selection
-- `trpc.inventory.list` - Product selection for line items
-- `useWorkSurfaceKeyboard` - Keyboard shortcuts
-- `useSaveState` - Save state indicator
-- `useInspectorPanel` - Inspector panel management
+
+| Hook | Purpose | Source |
+|------|---------|--------|
+| `trpc.purchaseOrders.*` | PO CRUD operations | tRPC |
+| `trpc.clients.list({ clientTypes: ['seller'] })` | Supplier dropdown | tRPC |
+| `trpc.inventory.list` | Product dropdown for line items | tRPC |
+| `useWorkSurfaceKeyboard` | Esc to close, Cmd+K to search | Work Surface |
+| `useSaveState` | Saved/Saving/Error indicator | Work Surface |
+| `useInspectorPanel` | Open/close inspector panel | Work Surface |
+| `useValidationTiming` | "Reward early, punish late" validation | Work Surface |
+| `useConcurrentEditDetection` | Optimistic locking conflict dialog | Work Surface |
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Esc` | Close dialog or inspector |
+| `Cmd+K` / `Ctrl+K` | Focus search input |
+| `Cmd+Z` | Undo (if supported) |
 
 ---
 
@@ -533,6 +813,33 @@ The Procure-to-Pay (P2P) flow covers the complete purchasing cycle from creating
 2. Attempt receive on DRAFT PO
 3. Attempt duplicate bill number
 4. Verify appropriate error messages
+
+### Edge Cases
+
+| Scenario | Expected Behavior |
+|----------|-------------------|
+| Zero-quantity line item | Validation error: "Quantity must be > 0" |
+| Negative unit cost | Validation error: "Unit cost cannot be negative" |
+| Delete PO with received items | Should fail or warn (currently allows) |
+| Receive same item twice | Cumulative: adds to existing received qty |
+| Supplier with no legacyVendorId | Error: "Unable to resolve vendor ID" |
+| PO without line items submitted | Allowed (no validation currently) |
+| Concurrent receiving sessions | Last write wins (no optimistic locking on PO) |
+| Bill amount exceeds PO total | Allowed (bills are independent) |
+
+---
+
+## Known Issues & Tech Debt
+
+| Issue | Severity | Description | Recommended Fix |
+|-------|----------|-------------|-----------------|
+| **Hard delete on POs** | MEDIUM | `purchaseOrders.delete` uses hard delete | Migrate to soft delete with `deletedAt` |
+| **No receiving UI** | HIGH | `poReceiving.*` endpoints have no frontend | Build `ReceivingWorkSurface.tsx` |
+| **N+1 query in getPendingReceiving** | LOW | Fetches items separately per PO | Use JOIN or subquery |
+| **vendorId still required** | MEDIUM | Schema requires vendorId even with supplierClientId | Make vendorId nullable after migration |
+| **createdBy from input** | MEDIUM | `purchaseOrders.create` accepts `createdBy` from input | Use `getAuthenticatedUserId(ctx)` instead |
+| **No PO submission validation** | LOW | Can submit PO without line items | Add min 1 item validation in `submit()` |
+| **Duplicate inventory movements** | LOW | `receiveGoodsWithBatch` inserts movement twice | Remove duplicate insert at lines 543-553 |
 
 ---
 
