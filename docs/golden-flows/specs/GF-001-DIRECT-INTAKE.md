@@ -1,15 +1,90 @@
 # GF-001: Direct Intake Specification
 
-**Version:** 1.0
+**Version:** 2.0
 **Status:** Draft
 **Last Updated:** 2026-01-27
 **Author:** Claude Agent (GF-PHASE0A-001)
+**Reviewed By:** Pending
+
+---
+
+## Problem Statement
+
+### Customer Pain Point
+
+> _"We've been off by 12 pounds."_
+> — Customer meeting, January 11, 2026 (MEET-064)
+
+The customer experienced a **12 lb inventory discrepancy** because the person entering the intake receipt didn't communicate with the warehouse stacker. There was no verification step before finalizing the intake, and quantities were never confirmed against the physical count.
+
+### Root Causes
+
+1. No verification workflow between receiver and stacker
+2. Quantities entered without physical confirmation
+3. No accountability trail for who verified what
+4. Discrepancies discovered only after financial impact
+
+### How This Flow Addresses It
+
+GF-001 (Direct Intake) is **Step 1** of a two-step process:
+
+1. **GF-001**: Create the initial intake record with claimed quantities
+2. **FEAT-008**: Two-step verification (Farmer Verified → Stacker Verified → Finalized)
+
+This flow creates the initial record. The [Intake Verification System (FEAT-008)](/docs/specs/FEAT-008-INTAKE-VERIFICATION-SPEC.md) adds the accountability layer.
 
 ---
 
 ## Overview
 
 The Direct Intake flow allows warehouse staff to add inventory batches directly into the system without requiring a Purchase Order. This is the primary method for recording new inventory arrivals from suppliers, capturing product details, quantity, cost (COGS), and storage location in a single transaction.
+
+**Key Distinction**: This flow creates batches in `AWAITING_INTAKE` status, which then require verification before becoming `LIVE` sellable inventory.
+
+---
+
+## Terminology
+
+> Per MEET-066: Terminology was causing user confusion. This section clarifies terms.
+
+| Term               | Definition                                                | Usage                 |
+| ------------------ | --------------------------------------------------------- | --------------------- |
+| **Intake**         | The process of receiving inventory into the system        | This flow             |
+| **Intake Receipt** | The document created during intake, shared with suppliers | Generated post-intake |
+| **Purchase**       | ~~Deprecated term~~ - Do not use in intake context        | Removed from UI       |
+| **Purchase Order** | A formal order placed with a supplier (different flow)    | GF-002: PO Intake     |
+| **Batch**          | A quantity of a single product from a single intake       | Created by this flow  |
+| **Lot**            | A grouping of batches from the same supplier delivery     | Created by this flow  |
+
+**UI Changes Made (MEET-066)**:
+
+- Button: "New Purchase" → **"New Intake"**
+- Modal title: "New Product Purchase" → **"New Product Intake"**
+- Success message updated to use "intake" terminology
+
+---
+
+## Known Issues
+
+| Issue                                       | Status  | Impact                                                                | Workaround                              |
+| ------------------------------------------- | ------- | --------------------------------------------------------------------- | --------------------------------------- |
+| **BUG-112**: Form fields not rendering      | BLOCKED | Users see "Items: 2, Qty: 0, Value: $0.00" but no visible form fields | None - flow is currently non-functional |
+| **BUG-073**: Race condition in autocomplete | Fixed   | Stale search results could appear                                     | Fixed via request ID tracking           |
+| **BUG-071**: Orphaned media on failure      | Fixed   | Uploaded files not cleaned up on batch creation failure               | Rollback logic added                    |
+
+**Current Status**: GF-001 is **BLOCKED** by BUG-112. Phase 1 task GF-PHASE1-001 will restore form field rendering.
+
+---
+
+## Success Metrics
+
+| Metric                      | Target      | Measurement                                   |
+| --------------------------- | ----------- | --------------------------------------------- |
+| Intake completion rate      | > 95%       | Intakes started vs. completed                 |
+| Discrepancy rate            | < 1%        | Discrepancies found in FEAT-008 verification  |
+| Time to catch discrepancies | < 24 hours  | Time from intake to discrepancy detection     |
+| Data entry errors           | < 2%        | Intakes requiring correction post-creation    |
+| Form completion time        | < 3 minutes | Time from modal open to successful submission |
 
 ---
 
@@ -51,7 +126,7 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 
 ### 3. Submission
 
-11. User clicks **"Create Purchase"** button
+11. User clicks **"Create Intake"** button
 12. If media files exist, they are uploaded first
 13. System validates all inputs
 14. System creates all required entities in a single transaction
@@ -59,7 +134,28 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 16. Modal closes automatically
 17. Inventory list refreshes with new batch
 
-### 4. Alternative Paths
+### 4. Post-Intake Verification (FEAT-008)
+
+> This section describes what happens AFTER GF-001 completes.
+
+18. System generates **Intake Receipt** document
+19. Shareable link/PDF sent to supplier for acknowledgment
+20. Supplier marks receipt as **"Farmer Verified"**
+21. Warehouse stacker verifies physical quantities
+22. Stacker marks as **"Stacker Verified"** or flags **discrepancy**
+23. If discrepancy: notification sent to **receipt creator** (not generic admin)
+24. Admin resolves discrepancy
+25. Batch status transitions to `LIVE` (sellable)
+
+**State Machine (FEAT-008)**:
+
+```
+PENDING → FARMER_VERIFIED → STACKER_VERIFIED → FINALIZED
+                                    ↓
+                               DISPUTED (requires resolution)
+```
+
+### 5. Alternative Paths
 
 **Cancellation:**
 
@@ -93,11 +189,13 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 | **Modal Open - Filling**     | User typing                      | Input fields populated, autocomplete dropdowns appear |
 | **Vendor Autocomplete Open** | Focus on vendor field + typing   | Dropdown with matching vendors below input            |
 | **Brand Autocomplete Open**  | Focus on brand field + typing    | Dropdown with matching brands below input             |
+| **Flower Mode**              | Category = "Flower"              | Strain field required, product name auto-filled       |
+| **Non-Flower Mode**          | Category != "Flower"             | Product name required, strain optional                |
 | **COGS Fixed Mode**          | Select "Fixed Price" radio       | Single "Unit COGS" input visible                      |
 | **COGS Range Mode**          | Select "Price Range" radio       | "Min COGS" and "Max COGS" inputs visible              |
 | **Amount Paid Visible**      | Payment Terms = COD or PARTIAL   | "Amount Paid" input field appears                     |
 | **Media Files Added**        | Upload files                     | File list with names and remove buttons               |
-| **Submitting**               | Click "Create Purchase"          | Button shows loading spinner, disabled                |
+| **Submitting**               | Click "Create Intake"            | Button shows loading spinner, disabled                |
 | **Validation Error**         | Submit with invalid data         | Toast error, form remains open                        |
 | **Success**                  | Successful creation              | Success toast, modal closes                           |
 
@@ -107,11 +205,12 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 
 ### Primary Endpoint: `inventory.intake`
 
-| Property       | Value                              |
-| -------------- | ---------------------------------- |
-| **Endpoint**   | `inventory.intake` (tRPC mutation) |
-| **Method**     | POST (via tRPC)                    |
-| **Permission** | `inventory:create`                 |
+| Property              | Value                              |
+| --------------------- | ---------------------------------- |
+| **Endpoint**          | `inventory.intake` (tRPC mutation) |
+| **Method**            | POST (via tRPC)                    |
+| **Permission**        | `inventory:create`                 |
+| **Actor Attribution** | `ctx.user.id` (never from input)   |
 
 #### Request Shape
 
@@ -185,18 +284,26 @@ The Direct Intake flow allows warehouse staff to add inventory batches directly 
 
 ## Data Model
 
-### Tables Created/Modified
+### Tables Created/Modified by GF-001
 
-| Table            | Operation            | Description                          |
-| ---------------- | -------------------- | ------------------------------------ |
-| `vendors`        | Find or Create       | Supplier record                      |
-| `brands`         | Find or Create       | Brand record linked to vendor        |
-| `products`       | Find or Create       | Product record linked to brand       |
-| `lots`           | Create               | Lot record for batch grouping        |
-| `batches`        | Create               | Main inventory batch record          |
-| `batchLocations` | Create               | Physical storage location            |
-| `auditLogs`      | Create               | Audit trail entry                    |
-| `payables`       | Create (conditional) | Created if ownershipType = CONSIGNED |
+| Table            | Operation            | Description                                           |
+| ---------------- | -------------------- | ----------------------------------------------------- |
+| `vendors`        | Find or Create       | Supplier record (uses `clients` with `isSeller=true`) |
+| `brands`         | Find or Create       | Brand record linked to vendor                         |
+| `products`       | Find or Create       | Product record linked to brand                        |
+| `lots`           | Create               | Lot record for batch grouping                         |
+| `batches`        | Create               | Main inventory batch record                           |
+| `batchLocations` | Create               | Physical storage location                             |
+| `auditLogs`      | Create               | Audit trail entry                                     |
+| `payables`       | Create (conditional) | Created if ownershipType = CONSIGNED                  |
+
+### Tables Created by FEAT-008 (Post-Intake)
+
+| Table                  | Operation            | Description                                   |
+| ---------------------- | -------------------- | --------------------------------------------- |
+| `intake_receipts`      | Create               | Receipt document for verification             |
+| `intake_receipt_items` | Create               | Line items with expected vs actual quantities |
+| `intake_discrepancies` | Create (conditional) | Tracking resolution of quantity discrepancies |
 
 ### Entity Relationships
 
@@ -213,7 +320,9 @@ lots (1) ──────────── batches (many)
 
 batches (1) ───────┬── batchLocations (many)
                    │
-                   └── auditLogs (many, polymorphic)
+                   ├── auditLogs (many, polymorphic)
+                   │
+                   └── intake_receipt_items (many) [FEAT-008]
 ```
 
 ### Key Fields Created
@@ -283,6 +392,14 @@ batches (1) ───────┬── batchLocations (many)
 | BL-011  | Audit log created with action "CREATED"                 | Service logic                        |
 | BL-012  | Media files stored in metadata JSON                     | Service logic                        |
 
+### Notification Rules (FEAT-008)
+
+| Rule ID | Rule                                                                   | Implementation                |
+| ------- | ---------------------------------------------------------------------- | ----------------------------- |
+| NR-001  | Discrepancy notifications go to **receipt creator**, not generic admin | `intake_receipts.createdBy`   |
+| NR-002  | Farmer verification notification sent when receipt shared              | Email/SMS to supplier contact |
+| NR-003  | Stacker assignment notification when farmer verifies                   | In-app notification           |
+
 ---
 
 ## Error States
@@ -307,36 +424,67 @@ batches (1) ───────┬── batchLocations (many)
 
 ## Invariants
 
-| ID      | Invariant                                        | Verification                                   |
-| ------- | ------------------------------------------------ | ---------------------------------------------- |
-| INV-001 | `onHandQty >= 0` after intake                    | `onHandQty = input.quantity` (always positive) |
-| INV-002 | `reservedQty = 0` after intake                   | Hardcoded in service                           |
-| INV-003 | `quarantineQty = 0` after intake                 | Hardcoded in service                           |
-| INV-004 | `holdQty = 0` after intake                       | Hardcoded in service                           |
-| INV-005 | `defectiveQty = 0` after intake                  | Hardcoded in service                           |
-| INV-006 | `batchStatus = AWAITING_INTAKE` after intake     | Hardcoded in service                           |
-| INV-007 | Batch.code is unique                             | Database unique constraint                     |
-| INV-008 | Batch.sku is unique                              | Database unique constraint                     |
-| INV-009 | Lot.code is unique                               | Database unique constraint                     |
-| INV-010 | Audit log exists for every batch created         | Service creates audit log in same transaction  |
-| INV-011 | All entities created atomically (all or nothing) | Database transaction                           |
-| INV-012 | Media files cleaned up on batch creation failure | Rollback logic in frontend                     |
+| ID      | Invariant                                              | Verification                                   |
+| ------- | ------------------------------------------------------ | ---------------------------------------------- |
+| INV-001 | `onHandQty >= 0` after intake                          | `onHandQty = input.quantity` (always positive) |
+| INV-002 | `reservedQty = 0` after intake                         | Hardcoded in service                           |
+| INV-003 | `quarantineQty = 0` after intake                       | Hardcoded in service                           |
+| INV-004 | `holdQty = 0` after intake                             | Hardcoded in service                           |
+| INV-005 | `defectiveQty = 0` after intake                        | Hardcoded in service                           |
+| INV-006 | `batchStatus = AWAITING_INTAKE` after intake           | Hardcoded in service                           |
+| INV-007 | Batch.code is unique                                   | Database unique constraint                     |
+| INV-008 | Batch.sku is unique                                    | Database unique constraint                     |
+| INV-009 | Lot.code is unique                                     | Database unique constraint                     |
+| INV-010 | Audit log exists for every batch created               | Service creates audit log in same transaction  |
+| INV-011 | All entities created atomically (all or nothing)       | Database transaction                           |
+| INV-012 | Media files cleaned up on batch creation failure       | Rollback logic in frontend                     |
+| INV-013 | Actor attribution from `ctx.user.id`, never from input | `getAuthenticatedUserId(ctx)`                  |
 
 ---
 
 ## Cross-Flow Touchpoints
 
-| Flow                             | Relationship            | Impact                                                    |
-| -------------------------------- | ----------------------- | --------------------------------------------------------- |
-| **GF-002: PO Intake**            | Alternative intake path | Uses same `batches` table, different status workflow      |
-| **GF-003: Batch QC**             | Next step               | Batches in `AWAITING_INTAKE` status await QC verification |
-| **GF-004: Photography**          | Optional next step      | Batch status can transition to `PHOTOGRAPHY_COMPLETE`     |
-| **GF-005: Status Change**        | Status management       | Direct intake creates batch in `AWAITING_INTAKE` status   |
-| **GF-006: Quantity Adjustment**  | Quantity updates        | Intaked batches can have quantities adjusted              |
-| **GF-007: Inventory Management** | Inventory listing       | New batches appear in inventory list immediately          |
-| **GF-008: Sales/Orders**         | Order fulfillment       | Batches must reach `LIVE` status before sale              |
-| **GF-009: Consignment Payables** | Financial tracking      | CONSIGNED batches create payables automatically           |
-| **GF-010: Vendor Management**    | Vendor records          | Intake can create new vendor records                      |
+| Flow                              | Relationship            | Impact                                                    | Documentation                                                     |
+| --------------------------------- | ----------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| **FEAT-008: Intake Verification** | Immediate next step     | Creates intake receipt, enables two-step verification     | [FEAT-008 Spec](/docs/specs/FEAT-008-INTAKE-VERIFICATION-SPEC.md) |
+| **GF-002: PO Intake**             | Alternative intake path | Uses same `batches` table, different entry point          | Pending spec                                                      |
+| **GF-003: Batch QC**              | Verification step       | Batches in `AWAITING_INTAKE` status await QC verification | Pending spec                                                      |
+| **GF-004: Photography**           | Optional workflow       | Batch status can transition to `PHOTOGRAPHY_COMPLETE`     | Pending spec                                                      |
+| **GF-005: Status Change**         | Status management       | Direct intake creates batch in `AWAITING_INTAKE` status   | Pending spec                                                      |
+| **GF-006: Quantity Adjustment**   | Quantity updates        | Intaked batches can have quantities adjusted              | Pending spec                                                      |
+| **GF-007: Inventory Management**  | Inventory listing       | New batches appear in inventory list immediately          | Pending spec                                                      |
+| **GF-008: Sales/Orders**          | Order fulfillment       | Batches must reach `LIVE` status before sale              | Pending spec                                                      |
+| **GF-009: Consignment Payables**  | Financial tracking      | CONSIGNED batches create payables automatically           | Pending spec                                                      |
+| **GF-010: Vendor Management**     | Vendor records          | Intake can create new vendor records                      | Pending spec                                                      |
+
+### Batch Status Lifecycle
+
+```
+                    GF-001 Creates
+                         │
+                         ▼
+               ┌─────────────────┐
+               │ AWAITING_INTAKE │ ◄── Initial state
+               └────────┬────────┘
+                        │
+          ┌─────────────┼─────────────┐
+          │             │             │
+          ▼             ▼             ▼
+   ┌────────────┐ ┌──────────┐ ┌────────────┐
+   │ QUARANTINED│ │   LIVE   │ │  PHOTO-    │
+   │            │ │ (sellable)│ │  GRAPHY_   │
+   └────────────┘ └──────────┘ │  COMPLETE  │
+                        │      └────────────┘
+                        ▼
+                 ┌──────────┐
+                 │ SOLD_OUT │
+                 └──────────┘
+                        │
+                        ▼
+                 ┌──────────┐
+                 │  CLOSED  │
+                 └──────────┘
+```
 
 ---
 
@@ -394,8 +542,34 @@ batches (1) ───────┬── batchLocations (many)
     │  Modal      │  │  Media Rollback │─────┘
     │  Closes     │  │  (cleanup)      │
     │             │  │                 │
-    └─────────────┘  └─────────────────┘
+    └──────┬──────┘  └─────────────────┘
+           │
+           │ FEAT-008 begins
+           ▼
+    ┌─────────────────┐
+    │  Intake Receipt │
+    │  Generated      │
+    └─────────────────┘
 ```
+
+---
+
+## Acceptance Criteria
+
+> From GOLDEN_FLOWS_PROD_READY_PLAN_2026-01-27.md
+
+| ID     | Criterion                                      | Verification                      |
+| ------ | ---------------------------------------------- | --------------------------------- |
+| AC-001 | Form fields render on page load                | Visual inspection                 |
+| AC-002 | "Add Row" button creates visible input fields  | Click test                        |
+| AC-003 | Form submission creates inventory batch        | Database query                    |
+| AC-004 | Batch appears in inventory list after creation | UI verification                   |
+| AC-005 | Audit log created for new batch                | Database query                    |
+| AC-006 | Media files uploaded and linked to batch       | File storage + metadata check     |
+| AC-007 | CONSIGNED batches create payable record        | Database query                    |
+| AC-008 | Error messages display for validation failures | Form submission with invalid data |
+| AC-009 | Autocomplete returns matching vendors/brands   | Type in search fields             |
+| AC-010 | Modal closes on successful submission          | UI verification                   |
 
 ---
 
@@ -416,6 +590,18 @@ batches (1) ───────┬── batchLocations (many)
 
 ### Related Documentation
 
-- [CLAUDE.md](/CLAUDE.md) - Agent protocol and development standards
-- [MASTER_ROADMAP.md](/docs/roadmaps/MASTER_ROADMAP.md) - Project roadmap
-- [GOLDEN_FLOWS_BETA_ROADMAP.md](/docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md) - Golden flows roadmap
+| Document                                                                                               | Purpose                        |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| [FEAT-008-INTAKE-VERIFICATION-SPEC.md](/docs/specs/FEAT-008-INTAKE-VERIFICATION-SPEC.md)               | Two-step verification workflow |
+| [MEET-066 Completion Report](/docs/archive/completion-reports/MEET-066-INTAKE-TERMINOLOGY-UPDATE.md)   | Terminology changes            |
+| [GOLDEN_FLOWS_BETA_ROADMAP.md](/docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md)                            | Phase 0/1 tasks                |
+| [GOLDEN_FLOWS_PROD_READY_PLAN_2026-01-27.md](/docs/reports/GOLDEN_FLOWS_PROD_READY_PLAN_2026-01-27.md) | Current blockers               |
+| [TERP_Final_Unified_Report.md](/docs/meeting-analysis-2026-01-11/TERP_Final_Unified_Report.md)         | Customer meeting notes         |
+| [CLAUDE.md](/CLAUDE.md)                                                                                | Agent protocol                 |
+
+### Revision History
+
+| Version | Date       | Author       | Changes                                                                                                        |
+| ------- | ---------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-27 | Claude Agent | Initial specification                                                                                          |
+| 2.0     | 2026-01-27 | Claude Agent | Added problem statement, terminology, known issues, success metrics, FEAT-008 integration, acceptance criteria |
