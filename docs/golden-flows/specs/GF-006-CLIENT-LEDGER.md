@@ -1,12 +1,12 @@
 # GF-006: Client Ledger - Specification
 
-**Version:** 1.1
+**Version:** 1.2
 **Created:** 2026-01-27
 **Updated:** 2026-01-27
 **Status:** ACTIVE
 **Owner Role:** Accounting Manager
 **Entry Point:** `/clients/:clientId/ledger` or Dashboard AR/AP widgets
-**Verification Level:** A+ (All components verified against source code)
+**Verification Level:** A+ (All components and RBAC permissions verified against source code)
 
 ---
 
@@ -645,14 +645,40 @@ SELECT * FROM orders WHERE created_by IS NULL;
 
 ## Security Considerations
 
-### Permissions
+### Permissions (Verified from `server/services/rbacDefinitions.ts`)
 
-| Action               | Required Permission |
-| -------------------- | ------------------- |
-| View ledger          | `clients:read`      |
-| Export ledger        | `clients:read`      |
-| Add adjustment       | `accounting:create` |
-| View dashboard AR/AP | `dashboard:read`    |
+| Permission          | Description                                               | Module     |
+| ------------------- | --------------------------------------------------------- | ---------- |
+| `dashboard:read`    | "Can read dashboard data and widgets"                     | dashboard  |
+| `clients:read`      | "Can view client list and details"                        | clients    |
+| `accounting:create` | "Can create accounting entries (Work Surface compatible)" | accounting |
+
+**Source:** `server/services/rbacDefinitions.ts:79, 136, 653`
+
+### Permission to Action Mapping
+
+| Action                | Required Permission | Verified Location       |
+| --------------------- | ------------------- | ----------------------- |
+| View ledger           | `clients:read`      | `clientLedger.ts:110`   |
+| Export ledger         | `clients:read`      | `clientLedger.ts:638`   |
+| Add adjustment        | `accounting:create` | `clientLedger.ts:566`   |
+| View dashboard AR/AP  | `dashboard:read`    | `dashboard.ts:507, 792` |
+| Get balance as of     | `clients:read`      | `clientLedger.ts:425`   |
+| Get transaction types | `clients:read`      | `clientLedger.ts:880`   |
+
+### Role Access Matrix (Verified from `rbacDefinitions.ts`)
+
+| Role               | `dashboard:read` | `clients:read` | `accounting:create` | Ledger Access |
+| ------------------ | ---------------- | -------------- | ------------------- | ------------- |
+| Super Admin        | ✅               | ✅             | ✅                  | Full          |
+| Owner/Executive    | ✅               | ✅             | ❌                  | Read-only     |
+| Operations Manager | ✅               | ✅             | ❌                  | Read-only     |
+| Sales Manager      | ✅               | ✅             | ❌                  | Read-only     |
+| Accountant         | ✅               | ✅             | ✅                  | Full          |
+| Customer Service   | ✅               | ✅             | ❌                  | Read-only     |
+| Warehouse Staff    | ✅               | ✅             | ❌                  | Read-only     |
+
+**Note:** Only **Super Admin** and **Accountant** roles can add manual adjustments.
 
 ### Data Sensitivity
 
@@ -740,3 +766,4 @@ const createdBy = ctx.user.id;
 | ------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1.0     | 2026-01-27 | Claude Code | Initial specification                                                                                                                                                                                                              |
 | 1.1     | 2026-01-27 | Claude Code | Verified all components against source code; added `dashboard.getClientDebt` endpoint; corrected UI states with exact component text; added transaction badge colors; fixed aging display logic; added source file line references |
+| 1.2     | 2026-01-27 | Claude Code | Verified RBAC permissions against `rbacDefinitions.ts`; added permission descriptions with source line refs; added role access matrix showing which roles can add adjustments; added permission-to-action mapping table            |
