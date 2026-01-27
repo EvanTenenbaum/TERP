@@ -6,10 +6,32 @@
  */
 
 import { getDb } from "../db";
-import { batches, products, productImages, productMedia, brands, strains } from "../../drizzle/schema";
-import { eq, and, gt, inArray, isNull, desc, sql } from "drizzle-orm";
+import {
+  batches,
+  products,
+  productImages,
+  brands,
+  strains,
+} from "../../drizzle/schema";
+import { eq, and, isNull, desc, sql } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { safeInArray } from "../lib/sqlSafety";
+
+/**
+ * Helper to check if an error is a schema-related error (e.g., missing column)
+ * QA-003: Only fallback for schema errors, re-throw others
+ */
+function isSchemaError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("unknown column") ||
+      msg.includes("no such column") ||
+      (msg.includes("column") && msg.includes("does not exist"))
+    );
+  }
+  return false;
+}
 
 // ============================================================================
 // TYPES
@@ -60,7 +82,10 @@ export async function publishBatchToCatalog(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  logger.info({ batchId, publishedById }, "[Catalog] Publishing batch to catalog");
+  logger.info(
+    { batchId, publishedById },
+    "[Catalog] Publishing batch to catalog"
+  );
 
   // Get batch with related data
   const [batch] = await db
@@ -88,7 +113,8 @@ export async function publishBatchToCatalog(
   }
 
   // Check quantity is available
-  const availableQty = parseFloat(batch.onHandQty || "0") - parseFloat(batch.reservedQty || "0");
+  const availableQty =
+    parseFloat(batch.onHandQty || "0") - parseFloat(batch.reservedQty || "0");
   if (availableQty <= 0) {
     return {
       success: false,
@@ -130,7 +156,12 @@ export async function publishBatchToCatalog(
     .where(eq(batches.id, batchId));
 
   logger.info(
-    { batchId, batchCode: batch.code, publishB2b: options.publishB2b, publishEcom: options.publishEcom },
+    {
+      batchId,
+      batchCode: batch.code,
+      publishB2b: options.publishB2b,
+      publishEcom: options.publishEcom,
+    },
     "[Catalog] Batch published to catalog"
   );
 
@@ -146,7 +177,9 @@ export async function publishBatchToCatalog(
  * Unpublish a batch from the catalog
  * Sets publishB2b and publishEcom to false but keeps LIVE status
  */
-export async function unpublishBatchFromCatalog(batchId: number): Promise<PublishResult> {
+export async function unpublishBatchFromCatalog(
+  batchId: number
+): Promise<PublishResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -180,7 +213,10 @@ export async function unpublishBatchFromCatalog(batchId: number): Promise<Publis
     })
     .where(eq(batches.id, batchId));
 
-  logger.info({ batchId, batchCode: batch.code }, "[Catalog] Batch unpublished");
+  logger.info(
+    { batchId, batchCode: batch.code },
+    "[Catalog] Batch unpublished"
+  );
 
   return {
     success: true,
@@ -193,18 +229,18 @@ export async function unpublishBatchFromCatalog(batchId: number): Promise<Publis
 /**
  * Get batches ready for publishing (PHOTOGRAPHY_COMPLETE status)
  */
-export async function getBatchesReadyForPublishing(
-  limit: number = 50
-): Promise<Array<{
-  id: number;
-  code: string;
-  sku: string;
-  productName: string;
-  category: string;
-  quantity: number;
-  photoCount: number;
-  createdAt: Date | null;
-}>> {
+export async function getBatchesReadyForPublishing(limit: number = 50): Promise<
+  Array<{
+    id: number;
+    code: string;
+    sku: string;
+    productName: string;
+    category: string;
+    quantity: number;
+    photoCount: number;
+    createdAt: Date | null;
+  }>
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -244,7 +280,10 @@ export async function getBatchesReadyForPublishing(
 
     for (const photo of photos) {
       if (photo.batchId) {
-        photoCounts.set(photo.batchId, (photoCounts.get(photo.batchId) || 0) + 1);
+        photoCounts.set(
+          photo.batchId,
+          (photoCounts.get(photo.batchId) || 0) + 1
+        );
       }
     }
   }
@@ -297,21 +336,55 @@ export async function getPublishedCatalog(options: {
   }
 
   // Get batches with product info
-  const publishedBatches = await db
-    .select({
-      batch: batches,
-      product: products,
-      brand: brands,
-      strain: strains,
-    })
-    .from(batches)
-    .leftJoin(products, eq(batches.productId, products.id))
-    .leftJoin(brands, eq(products.brandId, brands.id))
-    .leftJoin(strains, eq(products.strainId, strains.id))
-    .where(and(...conditions))
-    .orderBy(desc(batches.updatedAt))
-    .limit(limit)
-    .offset(offset);
+  // BUG-113: Added fallback query for schema drift (strainId may not exist)
+  let publishedBatches;
+  try {
+    publishedBatches = await db
+      .select({
+        batch: batches,
+        product: products,
+        brand: brands,
+        strain: strains,
+      })
+      .from(batches)
+      .leftJoin(products, eq(batches.productId, products.id))
+      .leftJoin(brands, eq(products.brandId, brands.id))
+      .leftJoin(strains, eq(products.strainId, strains.id))
+      .where(and(...conditions))
+      .orderBy(desc(batches.updatedAt))
+      .limit(limit)
+      .offset(offset);
+  } catch (queryError) {
+    // QA-003: Only fallback for schema-related errors
+    if (!isSchemaError(queryError)) {
+      throw queryError;
+    }
+
+    // Fallback: Query without strains join if strainId column doesn't exist
+    logger.warn(
+      { error: queryError },
+      "getPublishedCatalog: Query with strains join failed, falling back to simpler query"
+    );
+    const batchesWithoutStrains = await db
+      .select({
+        batch: batches,
+        product: products,
+        brand: brands,
+      })
+      .from(batches)
+      .leftJoin(products, eq(batches.productId, products.id))
+      .leftJoin(brands, eq(products.brandId, brands.id))
+      .where(and(...conditions))
+      .orderBy(desc(batches.updatedAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Map to expected format with null strain
+    publishedBatches = batchesWithoutStrains.map(row => ({
+      ...row,
+      strain: null,
+    }));
+  }
 
   // Apply search filter
   let filteredBatches = publishedBatches;
@@ -335,7 +408,10 @@ export async function getPublishedCatalog(options: {
 
   // Get photos for all batches
   const batchIds = filteredBatches.map(({ batch }) => batch.id);
-  const photoMap = new Map<number, Array<{ url: string; isPrimary: boolean; caption?: string }>>();
+  const photoMap = new Map<
+    number,
+    Array<{ url: string; isPrimary: boolean; caption?: string }>
+  >();
 
   if (batchIds.length > 0) {
     const photos = await db
@@ -351,10 +427,11 @@ export async function getPublishedCatalog(options: {
 
     for (const photo of photos) {
       if (photo.batchId) {
+        const batchPhotos = photoMap.get(photo.batchId) ?? [];
         if (!photoMap.has(photo.batchId)) {
-          photoMap.set(photo.batchId, []);
+          photoMap.set(photo.batchId, batchPhotos);
         }
-        photoMap.get(photo.batchId)!.push({
+        batchPhotos.push({
           url: photo.imageUrl,
           isPrimary: photo.isPrimary || false,
           caption: photo.caption || undefined,
@@ -364,30 +441,36 @@ export async function getPublishedCatalog(options: {
   }
 
   // Build catalog entries
-  const catalogItems: CatalogEntry[] = filteredBatches.map(({ batch, product, brand, strain }) => {
-    const photos = photoMap.get(batch.id) || [];
-    const primaryPhoto = photos.find(p => p.isPrimary);
-    const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
+  const catalogItems: CatalogEntry[] = filteredBatches.map(
+    ({ batch, product, brand, strain }) => {
+      const photos = photoMap.get(batch.id) || [];
+      const primaryPhoto = photos.find(p => p.isPrimary);
+      const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
 
-    return {
-      batchId: batch.id,
-      batchCode: batch.code,
-      sku: batch.sku,
-      productId: batch.productId,
-      productName: product?.nameCanonical || "Unknown Product",
-      category: product?.category || "Unknown",
-      subcategory: product?.subcategory || undefined,
-      brandName: brand?.name || undefined,
-      strainName: strain?.name || undefined,
-      availableQuantity: parseFloat(batch.onHandQty || "0") - parseFloat(batch.reservedQty || "0"),
-      unitOfMeasure: product?.uomSellable || "EA",
-      primaryPhotoUrl: primaryPhoto?.url,
-      photos,
-      grade: batch.grade || undefined,
-      publishedAt: metadata.publishedAt ? new Date(metadata.publishedAt) : batch.updatedAt || new Date(),
-      isActive: batch.publishB2b === 1 || batch.publishEcom === 1,
-    };
-  });
+      return {
+        batchId: batch.id,
+        batchCode: batch.code,
+        sku: batch.sku,
+        productId: batch.productId,
+        productName: product?.nameCanonical || "Unknown Product",
+        category: product?.category || "Unknown",
+        subcategory: product?.subcategory || undefined,
+        brandName: brand?.name || undefined,
+        strainName: strain?.name || undefined,
+        availableQuantity:
+          parseFloat(batch.onHandQty || "0") -
+          parseFloat(batch.reservedQty || "0"),
+        unitOfMeasure: product?.uomSellable || "EA",
+        primaryPhotoUrl: primaryPhoto?.url,
+        photos,
+        grade: batch.grade || undefined,
+        publishedAt: metadata.publishedAt
+          ? new Date(metadata.publishedAt)
+          : batch.updatedAt || new Date(),
+        isActive: batch.publishB2b === 1 || batch.publishEcom === 1,
+      };
+    }
+  );
 
   return {
     items: catalogItems,
@@ -419,21 +502,20 @@ export async function syncCatalogQuantities(): Promise<{
       publishEcom: batches.publishEcom,
     })
     .from(batches)
-    .where(
-      and(
-        eq(batches.batchStatus, "LIVE"),
-        isNull(batches.deletedAt)
-      )
-    );
+    .where(and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt)));
 
   let synced = 0;
   let unpublished = 0;
 
   for (const batch of publishedBatches) {
-    const availableQty = parseFloat(batch.onHandQty || "0") - parseFloat(batch.reservedQty || "0");
+    const availableQty =
+      parseFloat(batch.onHandQty || "0") - parseFloat(batch.reservedQty || "0");
 
     // If no available quantity and currently published, unpublish
-    if (availableQty <= 0 && (batch.publishB2b === 1 || batch.publishEcom === 1)) {
+    if (
+      availableQty <= 0 &&
+      (batch.publishB2b === 1 || batch.publishEcom === 1)
+    ) {
       await db
         .update(batches)
         .set({
@@ -444,7 +526,10 @@ export async function syncCatalogQuantities(): Promise<{
         })
         .where(eq(batches.id, batch.id));
 
-      logger.info({ batchId: batch.id, batchCode: batch.code }, "[Catalog] Auto-unpublished sold out batch");
+      logger.info(
+        { batchId: batch.id, batchCode: batch.code },
+        "[Catalog] Auto-unpublished sold out batch"
+      );
       unpublished++;
     }
 
@@ -530,7 +615,10 @@ export async function getCatalogStats(): Promise<{
     .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
     .where(
-      and(eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE"), isNull(batches.deletedAt))
+      and(
+        eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE"),
+        isNull(batches.deletedAt)
+      )
     );
 
   // Count sold out
@@ -543,12 +631,7 @@ export async function getCatalogStats(): Promise<{
   const [totalCount] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
-    .where(
-      and(
-        eq(batches.batchStatus, "LIVE"),
-        isNull(batches.deletedAt)
-      )
-    );
+    .where(and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt)));
 
   return {
     totalPublished: Number(totalCount?.count || 0),
