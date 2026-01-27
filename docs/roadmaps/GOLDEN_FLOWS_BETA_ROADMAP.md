@@ -284,7 +284,7 @@ Per QA Protocol v3.0, golden flows must be "fully defined on a UX, UI, backend, 
 #### GF-PHASE0A-005: Define GF-005 Pick & Pack Specification
 
 **Task ID:** GF-PHASE0A-005
-**Status:** in-progress (PR #329 open - CI needs update)
+**Status:** complete (PR #329 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** SAFE
@@ -768,7 +768,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE0-005
 **Source:** QA Verification Report 2026-01-27
-**Status:** ready
+**Status:** complete (PR #330 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** RED
