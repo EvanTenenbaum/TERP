@@ -443,6 +443,49 @@ export async function restoreInventoryFromOrder(input: {
 }
 
 /**
+ * ST-051: Transaction-aware version of restoreInventoryFromOrder
+ * Restores inventory within an existing transaction context
+ * @param tx - Database transaction
+ * @param input - Items to restore and order ID
+ */
+export async function restoreInventoryFromOrderTx(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: any,
+  input: {
+    items: OrderItem[];
+    orderId: number;
+  }
+): Promise<void> {
+  const { items, orderId } = input;
+
+  for (const item of items) {
+    if (item.isSample) {
+      // Restore sample quantity
+      await tx
+        .update(batches)
+        .set({
+          sampleQty: sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) + ${item.quantity}`,
+        })
+        .where(eq(batches.id, item.batchId));
+    } else {
+      // Restore on-hand quantity
+      await tx
+        .update(batches)
+        .set({
+          onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) + ${item.quantity}`,
+        })
+        .where(eq(batches.id, item.batchId));
+    }
+  }
+
+  logger.info({
+    msg: "ST-051: Inventory restored within transaction",
+    orderId,
+    itemCount: items.length,
+  });
+}
+
+/**
  * Reverse accounting entries for a cancelled order
  * Uses transaction to ensure all reversing entries and invoice void are atomic
  */
@@ -514,4 +557,352 @@ export async function reverseOrderAccountingEntries(input: {
     });
     throw error;
   }
+}
+
+/**
+ * ST-051: Transaction-aware version of reverseOrderAccountingEntries
+ * Reverses accounting entries within an existing transaction context
+ * @param tx - Database transaction
+ * @param input - Invoice ID, order ID, reason, and user ID
+ */
+export async function reverseOrderAccountingEntriesTx(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: any,
+  input: {
+    invoiceId: number;
+    orderId: number;
+    reason: string;
+    reversedBy: number;
+  }
+): Promise<void> {
+  const { invoiceId, orderId, reason, reversedBy } = input;
+
+  // Pre-fetch fiscal period (lookup, not mutation)
+  const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+  const reversalNumber = `REV-${Date.now()}`;
+
+  // 1. Get original ledger entries for this invoice
+  const originalEntries = await tx.query.ledgerEntries.findMany({
+    where: and(
+      eq(ledgerEntries.referenceType, "INVOICE"),
+      eq(ledgerEntries.referenceId, invoiceId)
+    ),
+  });
+
+  // 2. Create reversing entries
+  for (const entry of originalEntries) {
+    await tx.insert(ledgerEntries).values({
+      entryNumber: `${reversalNumber}-${entry.id}`,
+      entryDate: new Date(),
+      accountId: entry.accountId,
+      debit: entry.credit, // Swap debit and credit
+      credit: entry.debit,
+      description: `Reversal: ${reason} (Original: ${entry.entryNumber})`,
+      referenceType: "REVERSAL",
+      referenceId: orderId,
+      fiscalPeriodId,
+      isManual: false,
+      createdBy: reversedBy,
+    });
+  }
+
+  // 3. Void the invoice by updating status
+  await tx
+    .update(invoices)
+    .set({
+      status: "VOID",
+      notes: `Voided: ${reason} on ${new Date().toISOString()}`,
+    })
+    .where(eq(invoices.id, invoiceId));
+
+  logger.info({
+    msg: "ST-051: Accounting entries reversed within transaction",
+    orderId,
+    invoiceId,
+    reason,
+  });
+}
+
+/**
+ * ST-050: Transaction-aware version of createInvoiceFromOrder
+ * Creates an invoice within an existing transaction context
+ * All operations are atomic with the parent transaction
+ * @param tx - Database transaction
+ * @param input - Invoice creation parameters
+ * @returns The created invoice ID
+ */
+export async function createInvoiceFromOrderTx(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: any,
+  input: CreateInvoiceFromOrderInput
+): Promise<number> {
+  const {
+    orderId,
+    orderNumber,
+    clientId,
+    items,
+    subtotal,
+    tax,
+    total,
+    dueDate,
+    createdBy,
+  } = input;
+
+  // Generate invoice number and dates
+  const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
+  const invoiceDate = new Date();
+  const dueDateValue =
+    dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30
+
+  // Pre-fetch account IDs and fiscal period (these are lookups, not mutations)
+  const arAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+  );
+  const revenueAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.SALES_REVENUE
+  );
+  // ACC-004: Get COGS and Inventory account IDs for proper GL entries
+  const cogsAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.COST_OF_GOODS_SOLD
+  );
+  const inventoryAccountId = await getAccountIdByName(ACCOUNT_NAMES.INVENTORY);
+  const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+
+  // 1. Create invoice
+  const result = await tx.insert(invoices).values({
+    invoiceNumber,
+    customerId: clientId,
+    invoiceDate,
+    dueDate: dueDateValue,
+    subtotal: subtotal.toFixed(2),
+    taxAmount: tax.toFixed(2),
+    discountAmount: "0.00",
+    totalAmount: total.toFixed(2),
+    amountPaid: "0.00",
+    amountDue: total.toFixed(2),
+    status: "SENT",
+    referenceType: "ORDER",
+    referenceId: orderId,
+    createdBy,
+  });
+
+  const newInvoiceId = Number(result[0].insertId);
+
+  // 2. Create line items
+  const lineItemsData = items
+    .filter(item => !item.isSample) // Don't invoice samples
+    .map(item => ({
+      invoiceId: newInvoiceId,
+      description: item.displayName,
+      quantity: item.quantity.toFixed(2),
+      unitPrice: item.unitPrice.toFixed(2),
+      lineTotal: item.lineTotal.toFixed(2),
+      batchId: item.batchId,
+      taxRate: "0.00",
+      discountPercent: "0.00",
+    }));
+
+  if (lineItemsData.length > 0) {
+    await tx.insert(invoiceLineItems).values(lineItemsData);
+  }
+
+  // 3. Create GL entries (AR debit, Revenue credit)
+  const entryNumber = `SALE-${invoiceNumber}`;
+
+  // Debit AR
+  await tx.insert(ledgerEntries).values({
+    entryNumber: `${entryNumber}-DR`,
+    entryDate: new Date(),
+    accountId: arAccountId,
+    debit: total.toFixed(2),
+    credit: "0.00",
+    description: `Sale - Invoice ${invoiceNumber}`,
+    referenceType: "INVOICE",
+    referenceId: newInvoiceId,
+    fiscalPeriodId,
+    isManual: false,
+    createdBy,
+  });
+
+  // Credit Revenue
+  await tx.insert(ledgerEntries).values({
+    entryNumber: `${entryNumber}-CR`,
+    entryDate: new Date(),
+    accountId: revenueAccountId,
+    debit: "0.00",
+    credit: total.toFixed(2),
+    description: `Sale - Invoice ${invoiceNumber}`,
+    referenceType: "INVOICE",
+    referenceId: newInvoiceId,
+    fiscalPeriodId,
+    isManual: false,
+    createdBy,
+  });
+
+  // ACC-004: Create COGS GL entries (Debit COGS, Credit Inventory)
+  // Calculate total COGS from non-sample items
+  const totalCogs = items
+    .filter(item => !item.isSample)
+    .reduce((sum, item) => sum + (item.lineCogs || 0), 0);
+
+  if (totalCogs > 0) {
+    // Debit COGS Expense
+    await tx.insert(ledgerEntries).values({
+      entryNumber: `${entryNumber}-COGS-DR`,
+      entryDate: new Date(),
+      accountId: cogsAccountId,
+      debit: totalCogs.toFixed(2),
+      credit: "0.00",
+      description: `COGS - Invoice ${invoiceNumber}`,
+      referenceType: "INVOICE",
+      referenceId: newInvoiceId,
+      fiscalPeriodId,
+      isManual: false,
+      createdBy,
+    });
+
+    // Credit Inventory Asset
+    await tx.insert(ledgerEntries).values({
+      entryNumber: `${entryNumber}-INV-CR`,
+      entryDate: new Date(),
+      accountId: inventoryAccountId,
+      debit: "0.00",
+      credit: totalCogs.toFixed(2),
+      description: `Inventory reduction - Invoice ${invoiceNumber}`,
+      referenceType: "INVOICE",
+      referenceId: newInvoiceId,
+      fiscalPeriodId,
+      isManual: false,
+      createdBy,
+    });
+  }
+
+  logger.info({
+    msg: "ST-050: Invoice created within transaction",
+    orderId,
+    invoiceId: newInvoiceId,
+    invoiceNumber,
+    total,
+  });
+
+  return newInvoiceId;
+}
+
+/**
+ * ST-050: Transaction-aware version of recordOrderCashPayment
+ * Records a cash payment within an existing transaction context
+ * All operations are atomic with the parent transaction
+ * @param tx - Database transaction
+ * @param input - Payment parameters
+ * @returns The created payment ID or null if amount <= 0
+ */
+export async function recordOrderCashPaymentTx(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: any,
+  input: {
+    invoiceId: number;
+    amount: number;
+    createdBy: number;
+  }
+): Promise<number | null> {
+  const { invoiceId, amount, createdBy } = input;
+
+  if (amount <= 0) return null;
+
+  // Pre-fetch account IDs and fiscal period (these are lookups, not mutations)
+  const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+  const arAccountId = await getAccountIdByName(
+    ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+  );
+  const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+
+  // 1. Get invoice details
+  const invoice = await tx.query.invoices.findFirst({
+    where: eq(invoices.id, invoiceId),
+  });
+
+  if (!invoice) {
+    throw new Error(`Invoice ${invoiceId} not found`);
+  }
+
+  // 2. Generate payment number and create payment record
+  const paymentNumber = `PMT-${Date.now()}`;
+  const result = await tx.insert(payments).values({
+    paymentNumber,
+    paymentType: "RECEIVED",
+    invoiceId,
+    customerId: invoice.customerId,
+    paymentDate: new Date(),
+    amount: amount.toFixed(2),
+    paymentMethod: "CASH",
+    referenceNumber: `CASH-${Date.now()}`,
+    notes: "Cash payment at time of sale",
+    createdBy,
+  });
+
+  const newPaymentId = Number(result[0].insertId);
+
+  // 3. Update invoice amounts
+  const currentPaid = parseFloat(invoice.amountPaid ?? "0");
+  const newPaid = currentPaid + amount;
+  const totalAmount = parseFloat(invoice.totalAmount ?? "0");
+  const newDue = Math.max(0, totalAmount - newPaid);
+
+  // Determine new status
+  let newStatus: "PARTIAL" | "PAID" = "PARTIAL";
+  if (newDue <= 0.01) {
+    newStatus = "PAID";
+  }
+
+  await tx
+    .update(invoices)
+    .set({
+      amountPaid: newPaid.toFixed(2),
+      amountDue: newDue.toFixed(2),
+      status: newStatus,
+    })
+    .where(eq(invoices.id, invoiceId));
+
+  // 4. Create GL entries (Cash debit, AR credit)
+  const entryNumber = `PMT-${newPaymentId}`;
+
+  // Debit Cash
+  await tx.insert(ledgerEntries).values({
+    entryNumber: `${entryNumber}-DR`,
+    entryDate: new Date(),
+    accountId: cashAccountId,
+    debit: amount.toFixed(2),
+    credit: "0.00",
+    description: `Payment received - Invoice #${invoiceId}`,
+    referenceType: "PAYMENT",
+    referenceId: newPaymentId,
+    fiscalPeriodId,
+    isManual: false,
+    createdBy,
+  });
+
+  // Credit AR
+  await tx.insert(ledgerEntries).values({
+    entryNumber: `${entryNumber}-CR`,
+    entryDate: new Date(),
+    accountId: arAccountId,
+    debit: "0.00",
+    credit: amount.toFixed(2),
+    description: `Payment received - Invoice #${invoiceId}`,
+    referenceType: "PAYMENT",
+    referenceId: newPaymentId,
+    fiscalPeriodId,
+    isManual: false,
+    createdBy,
+  });
+
+  logger.info({
+    msg: "ST-050: Cash payment recorded within transaction",
+    invoiceId,
+    paymentId: newPaymentId,
+    amount,
+    newStatus,
+  });
+
+  return newPaymentId;
 }

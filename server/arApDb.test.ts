@@ -24,6 +24,9 @@ import {
   getOutstandingPayables,
   calculateAPAging,
   getPaymentById,
+  generateInvoiceNumber,
+  generateBillNumber,
+  generatePaymentNumber,
 } from "./arApDb";
 
 describe("arApDb Soft-Delete Filtering", () => {
@@ -599,6 +602,325 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
 
       const total = aging.current + aging.days30 + aging.days60 + aging.days90 + aging.days90Plus;
       expect(total).toBeGreaterThanOrEqual(0);
+    });
+  });
+});
+
+/**
+ * FIN-001: Tests for atomic invoice/bill/payment number generation
+ * These tests verify that the sequence generation functions properly use
+ * database transactions with row-level locking to prevent race conditions.
+ */
+describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("generateInvoiceNumber", () => {
+    it("should generate invoice number with correct format", async () => {
+      // Arrange
+      const mockSequence = {
+        id: 1,
+        name: `invoice_${new Date().getFullYear()}`,
+        prefix: `INV-${new Date().getFullYear()}-`,
+        currentValue: 5,
+      };
+
+      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: vi.fn().mockResolvedValue([mockSequence]),
+          insert: vi.fn().mockReturnThis(),
+          values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
+          update: vi.fn().mockReturnThis(),
+          set: vi.fn().mockReturnThis(),
+        };
+        // Mock the update chain
+        mockTx.update = vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+          }),
+        });
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      const invoiceNumber = await generateInvoiceNumber();
+
+      // Assert
+      const year = new Date().getFullYear();
+      expect(invoiceNumber).toBe(`INV-${year}-000006`);
+    });
+
+    it("should create new sequence if it does not exist", async () => {
+      // Arrange - First call returns empty, second returns the new sequence
+      let callCount = 0;
+      const year = new Date().getFullYear();
+      const newSequence = {
+        id: 1,
+        name: `invoice_${year}`,
+        prefix: `INV-${year}-`,
+        currentValue: 0,
+      };
+
+      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: vi.fn().mockImplementation(() => {
+            callCount++;
+            // First call returns empty (sequence doesn't exist)
+            // Second call returns the newly created sequence
+            return Promise.resolve(callCount === 1 ? [] : [newSequence]);
+          }),
+          insert: vi.fn().mockReturnThis(),
+          values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+            }),
+          }),
+        };
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      const invoiceNumber = await generateInvoiceNumber();
+
+      // Assert
+      expect(invoiceNumber).toBe(`INV-${year}-000001`);
+    });
+
+    it("should throw error when database is not available", async () => {
+      // Arrange
+      vi.mocked(getDb).mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(generateInvoiceNumber()).rejects.toThrow("Database not available");
+    });
+
+    it("should propagate transaction errors", async () => {
+      // Arrange
+      const mockTransaction = vi.fn().mockRejectedValue(new Error("Lock timeout"));
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert
+      await expect(generateInvoiceNumber()).rejects.toThrow("Failed to generate invoice number: Lock timeout");
+    });
+  });
+
+  describe("generateBillNumber", () => {
+    it("should generate bill number with correct format", async () => {
+      // Arrange
+      const year = new Date().getFullYear();
+      const mockSequence = {
+        id: 1,
+        name: `bill_${year}`,
+        prefix: `BILL-${year}-`,
+        currentValue: 10,
+      };
+
+      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: vi.fn().mockResolvedValue([mockSequence]),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+            }),
+          }),
+        };
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      const billNumber = await generateBillNumber();
+
+      // Assert
+      expect(billNumber).toBe(`BILL-${year}-000011`);
+    });
+  });
+
+  describe("generatePaymentNumber", () => {
+    it("should generate received payment number with correct format", async () => {
+      // Arrange
+      const year = new Date().getFullYear();
+      const mockSequence = {
+        id: 1,
+        name: `payment_received_${year}`,
+        prefix: `PMT-RCV-${year}-`,
+        currentValue: 3,
+      };
+
+      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: vi.fn().mockResolvedValue([mockSequence]),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+            }),
+          }),
+        };
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      const paymentNumber = await generatePaymentNumber("RECEIVED");
+
+      // Assert
+      expect(paymentNumber).toBe(`PMT-RCV-${year}-000004`);
+    });
+
+    it("should generate sent payment number with correct format", async () => {
+      // Arrange
+      const year = new Date().getFullYear();
+      const mockSequence = {
+        id: 1,
+        name: `payment_sent_${year}`,
+        prefix: `PMT-SNT-${year}-`,
+        currentValue: 7,
+      };
+
+      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: vi.fn().mockResolvedValue([mockSequence]),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+            }),
+          }),
+        };
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      const paymentNumber = await generatePaymentNumber("SENT");
+
+      // Assert
+      expect(paymentNumber).toBe(`PMT-SNT-${year}-000008`);
+    });
+  });
+
+  describe("Concurrent generation protection", () => {
+    it("should use SELECT ... FOR UPDATE for row-level locking", async () => {
+      // Arrange
+      const year = new Date().getFullYear();
+      const mockSequence = {
+        id: 1,
+        name: `invoice_${year}`,
+        prefix: `INV-${year}-`,
+        currentValue: 0,
+      };
+
+      const forMock = vi.fn().mockResolvedValue([mockSequence]);
+
+      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: forMock,
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+            }),
+          }),
+        };
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: mockTransaction,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      await generateInvoiceNumber();
+
+      // Assert - Verify that FOR UPDATE was called for row-level locking
+      expect(forMock).toHaveBeenCalledWith("update");
+    });
+
+    it("should use transaction for atomic updates", async () => {
+      // Arrange
+      const transactionMock = vi.fn().mockImplementation(async (callback) => {
+        const mockTx = {
+          select: vi.fn().mockReturnThis(),
+          from: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          for: vi.fn().mockResolvedValue([{
+            id: 1,
+            name: `invoice_${new Date().getFullYear()}`,
+            prefix: `INV-${new Date().getFullYear()}-`,
+            currentValue: 0,
+          }]),
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+            }),
+          }),
+        };
+        return callback(mockTx);
+      });
+
+      const mockDb = {
+        transaction: transactionMock,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act
+      await generateInvoiceNumber();
+
+      // Assert - Verify transaction was used
+      expect(transactionMock).toHaveBeenCalledTimes(1);
     });
   });
 });

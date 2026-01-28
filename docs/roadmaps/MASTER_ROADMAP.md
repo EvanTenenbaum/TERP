@@ -350,7 +350,7 @@ pnpm test --run 2>&1 | tee test-results.log
 | ------ | ----------------- | -------------- | ------------------------------------ |
 | GF-001 | Direct Intake     | 🔴 BLOCKED     | ~~BUG-117~~, ST-058, INV-003         |
 | GF-002 | Procure-to-Pay    | 🔴 BLOCKED     | ST-059, PARTY-001, SCHEMA-011        |
-| GF-003 | Order-to-Cash     | 🔴 BLOCKED     | BUG-115, ST-058, ST-050, ST-051      |
+| GF-003 | Order-to-Cash     | 🔴 BLOCKED     | ~~BUG-115~~, ST-058, ST-050, ST-051  |
 | GF-004 | Invoice & Payment | 🟡 PARTIAL     | FIN-001, ST-057, ORD-001             |
 | GF-005 | Pick & Pack       | 🔴 BLOCKED     | Depends on GF-003                    |
 | GF-006 | Client Ledger     | 🟡 PARTIAL     | ST-057                               |
@@ -439,7 +439,7 @@ pnpm build    # ✅ PASS
 | ------- | --------------------------------------------------- | -------- | ------ | --- | ------------------------- | ------------------------------ |
 | ST-056  | Add CHECK constraints on batch quantities           | HIGH     | ready  | 2h  | `drizzle/schema.ts`       | GF-001, GF-003, GF-007, GF-008 |
 | ST-057  | Add GL entry single-direction constraint            | HIGH     | ready  | 1h  | `drizzle/schema.ts`       | GF-004, GF-006                 |
-| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH     | ready  | 1h  | `server/ordersDb.ts:1239` | GF-003, GF-005                 |
+| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH     | complete | 1h  | `server/ordersDb.ts:1239` | GF-003, GF-005                 |
 
 **ST-056 Migration SQL:**
 
@@ -1002,7 +1002,7 @@ pnpm mega:qa:invariants
 | BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ✅ DONE | 1h       | Fixed: commit e6e47cdd (2026-01-27)                |
 | BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ready   | 1h       | `server/services/catalogPublishingService.ts:310`  |
 | BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ready   | 2h       | `server/services/strainMatchingService.ts:136,234` |
-| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ready   | 1h       | `server/ordersDb.ts:1239`                          |
+| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ✅ DONE | 1h       | Fixed: safeInArray + early return check            |
 | BUG-116 | Systemic: 127 unsafe inArray() calls across codebase | MEDIUM   | ready   | 8h       | Multiple files                                     |
 | ST-055  | Adopt safeInArray/safeNotInArray across codebase     | MEDIUM   | ready   | 16h      | See sqlSafety.ts utilities                         |
 
@@ -1048,18 +1048,16 @@ pnpm mega:qa:invariants
 - **Impact:** Strain matching features completely broken
 - **Fix:** This service inherently needs strains - add graceful degradation with clear error messages
 
-**BUG-115 Details (Empty Array Crash - ordersDb.ts):**
+**BUG-115 Details (Empty Array Crash - ordersDb.ts):** ✅ **COMPLETED**
 
-- **Location:** `server/ordersDb.ts:1239`
+- **Location:** `server/ordersDb.ts:1253-1264`
 - **Issue:** `inArray(batches.id, batchIds)` with no empty array check
-- **Code Pattern:**
-  ```typescript
-  const batchIds = [...new Set(draftItems.map(item => item.batchId))];
-  // No length check - crashes if batchIds is empty
-  .where(inArray(batches.id, batchIds))
-  ```
-- **Impact:** Confirming draft orders with no items crashes with invalid SQL
-- **Fix:** Replace with `safeInArray(batches.id, batchIds)` from sqlSafety.ts
+- **Resolution:**
+  1. Added early return check at line 1253-1256 throwing error for empty orders
+  2. Replaced `inArray` with `safeInArray` at line 1264 for defense-in-depth
+- **Import:** `safeInArray` from `./lib/sqlSafety` added at line 7
+- **Impact:** Confirming draft orders with no items now throws proper error instead of SQL crash
+- **Verified:** TypeScript check passes, build succeeds
 
 **BUG-116 Details (Systemic inArray Safety):**
 

@@ -38,7 +38,7 @@ import { orderValidationService } from "../services/orderValidationService";
 import { orderAuditService } from "../services/orderAuditService";
 import { cogsChangeIntegrationService } from "../services/cogsChangeIntegrationService";
 import { createSafeUnifiedResponse } from "../_core/pagination";
-import { withTransaction } from "../dbTransaction";
+import { withTransaction, withRetryableTransaction } from "../dbTransaction";
 import { logger } from "../_core/logger";
 
 // ============================================================================
@@ -1048,6 +1048,7 @@ export const ordersRouter = router({
 
   /**
    * Finalize draft order
+   * INV-003: Wrapped in retryable transaction with FOR UPDATE locks to prevent race conditions
    */
   finalizeDraft: protectedProcedure
     .use(requirePermission("orders:create"))
@@ -1058,71 +1059,166 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = getAuthenticatedUserId(ctx);
 
-      // ST-026: Check version for concurrent edit detection
-      const { checkVersion } = await import("../_core/optimisticLocking");
-      await checkVersion(db, orders, "Order", input.orderId, input.version);
+      // INV-003: Wrap entire finalization in a retryable transaction
+      return await withRetryableTransaction(async tx => {
+        // INV-003: Lock the order row first
+        const [existingOrder] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.orderId))
+          .for("update")
+          .limit(1);
 
-      // Get full existing order
-      const existingOrder = await db.query.orders.findFirst({
-        where: eq(orders.id, input.orderId),
-      });
+        if (!existingOrder) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
 
-      if (!existingOrder) {
-        throw new Error("Order not found");
-      }
+        // ST-026: Check version for concurrent edit detection
+        if (existingOrder.version !== input.version) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `Order was modified by another user. Please refresh and try again.`,
+          });
+        }
 
-      // Get line items
-      const lineItems = await db.query.orderLineItems.findMany({
-        where: eq(orderLineItems.orderId, input.orderId),
-      });
+        if (!existingOrder.isDraft) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Order is already finalized",
+          });
+        }
 
-      // Final validation
-      const validation = orderValidationService.validateOrder({
-        orderType: existingOrder.orderType as "QUOTE" | "SALE",
-        clientId: existingOrder.clientId,
-        lineItems: lineItems.map(item => ({
-          batchId: item.batchId,
-          quantity: parseFloat(item.quantity),
-          cogsPerUnit: parseFloat(item.cogsPerUnit),
-          pricePerUnit: parseFloat(item.unitPrice),
-          marginPercent: parseFloat(item.marginPercent),
-          isSample: item.isSample,
-        })),
-        finalTotal: parseFloat(existingOrder.total),
-        overallMarginPercent: parseFloat(existingOrder.avgMarginPercent || "0"),
-      });
+        // INV-003: Lock line items to prevent modification during finalization
+        const lineItems = await tx
+          .select()
+          .from(orderLineItems)
+          .where(eq(orderLineItems.orderId, input.orderId))
+          .for("update");
 
-      if (!validation.isValid) {
-        throw new Error(`Cannot finalize: ${validation.errors.join(", ")}`);
-      }
+        if (lineItems.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot finalize order with no line items",
+          });
+        }
 
-      // ST-026: Update order to finalized with version increment
-      const { sql } = await import("drizzle-orm");
-      await db
-        .update(orders)
-        .set({
-          isDraft: false,
-          confirmedAt: new Date(),
-          version: sql`version + 1`,
-        })
-        .where(eq(orders.id, input.orderId));
+        // INV-003: Extract unique batch IDs and lock all batches
+        const batchIds = [...new Set(lineItems.map(item => item.batchId))];
+        const batchRecords = await tx
+          .select()
+          .from(batches)
+          .where(inArray(batches.id, batchIds))
+          .for("update");
 
-      // Log audit entry
-      await orderAuditService.logOrderFinalization(input.orderId, userId, {
-        finalTotal: parseFloat(existingOrder.total),
-        finalizedAt: new Date(),
-      });
+        const batchMap = new Map(batchRecords.map(b => [b.id, b]));
 
-      return {
-        orderId: input.orderId,
-        orderNumber: existingOrder.orderNumber,
-        validation,
-      };
+        // INV-003: Verify inventory availability AFTER acquiring locks
+        for (const item of lineItems) {
+          const batch = batchMap.get(item.batchId);
+          if (!batch) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Batch ${item.batchId} not found`,
+            });
+          }
+
+          const requestedQty = parseFloat(item.quantity);
+          const onHand = parseFloat(batch.onHandQty || "0");
+          const reserved = parseFloat(batch.reservedQty || "0");
+          const quarantine = parseFloat(batch.quarantineQty || "0");
+          const hold = parseFloat(batch.holdQty || "0");
+          const sampleQty = parseFloat(batch.sampleQty || "0");
+
+          const availableQty = item.isSample
+            ? sampleQty
+            : Math.max(0, onHand - reserved - quarantine - hold);
+
+          if (availableQty < requestedQty) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Required: ${requestedQty}`,
+            });
+          }
+        }
+
+        // Final validation
+        const validation = orderValidationService.validateOrder({
+          orderType: existingOrder.orderType as "QUOTE" | "SALE",
+          clientId: existingOrder.clientId,
+          lineItems: lineItems.map(item => ({
+            batchId: item.batchId,
+            quantity: parseFloat(item.quantity),
+            cogsPerUnit: parseFloat(item.cogsPerUnit),
+            pricePerUnit: parseFloat(item.unitPrice),
+            marginPercent: parseFloat(item.marginPercent),
+            isSample: item.isSample,
+          })),
+          finalTotal: parseFloat(existingOrder.total),
+          overallMarginPercent: parseFloat(existingOrder.avgMarginPercent || "0"),
+        });
+
+        if (!validation.isValid) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot finalize: ${validation.errors.join(", ")}`,
+          });
+        }
+
+        // INV-003: Reserve inventory by incrementing reservedQty
+        const { sql: sqlFn } = await import("drizzle-orm");
+        for (const item of lineItems) {
+          const qty = parseFloat(item.quantity);
+          if (item.isSample) {
+            // Decrement sample quantity directly
+            await tx.execute(sqlFn`
+              UPDATE batches
+              SET sampleQty = CAST(sampleQty AS DECIMAL(15,4)) - ${qty}
+              WHERE id = ${item.batchId}
+            `);
+          } else {
+            // Increment reserved quantity to prevent overselling
+            await tx.execute(sqlFn`
+              UPDATE batches
+              SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${qty}
+              WHERE id = ${item.batchId}
+            `);
+          }
+        }
+
+        // ST-026: Update order to finalized with version increment
+        await tx
+          .update(orders)
+          .set({
+            isDraft: false,
+            confirmedAt: new Date(),
+            fulfillmentStatus: "PENDING",
+            version: sqlFn`version + 1`,
+          })
+          .where(eq(orders.id, input.orderId));
+
+        // Log audit entry (outside transaction is fine - non-critical)
+        await orderAuditService.logOrderFinalization(input.orderId, userId, {
+          finalTotal: parseFloat(existingOrder.total),
+          finalizedAt: new Date(),
+        });
+
+        logger.info({
+          msg: "INV-003: Draft order finalized with inventory reservation",
+          orderId: input.orderId,
+          lineItemCount: lineItems.length,
+        });
+
+        return {
+          orderId: input.orderId,
+          orderNumber: existingOrder.orderNumber,
+          validation,
+        };
+      }, { maxRetries: 3 });
     }),
 
   /**
@@ -1325,6 +1421,7 @@ export const ordersRouter = router({
 
   /**
    * Process return
+   * ARCH-001: Uses OrderOrchestrator for transactional integrity
    */
   processReturn: protectedProcedure
     .use(requirePermission("orders:update"))
@@ -1349,10 +1446,21 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
-      return await ordersDb.processReturn({
-        ...input,
-        userId,
+
+      // ARCH-001: Delegate to OrderOrchestrator for transactional integrity
+      const { orderOrchestrator } = await import(
+        "../services/orderOrchestrator"
+      );
+
+      const result = await orderOrchestrator.processReturn({
+        orderId: input.orderId,
+        items: input.items,
+        reason: input.reason,
+        notes: input.notes,
+        actorId: userId,
       });
+
+      return { success: true, returnId: result.returnId };
     }),
 
   /**
@@ -1456,6 +1564,7 @@ export const ordersRouter = router({
   /**
    * Confirm a pending order
    * Validates inventory and transitions order to confirmed state
+   * INV-003: Wrapped in transaction with FOR UPDATE locks to prevent race conditions
    */
   confirmOrder: protectedProcedure
     .use(requirePermission("orders:update"))
@@ -1466,96 +1575,152 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      // INV-003: Wrap entire confirm logic in a retryable transaction
+      // This prevents race conditions when multiple users confirm orders simultaneously
+      return await withRetryableTransaction(async tx => {
+        // INV-003: Lock the order row first to prevent concurrent confirmations
+        const [order] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.id))
+          .for("update")
+          .limit(1);
 
-      // Get the order
-      const [order] = await db
-        .select()
-        .from(orders)
-        .where(eq(orders.id, input.id))
-        .limit(1);
-
-      if (!order) {
-        throw new Error("Order not found");
-      }
-
-      if (order.orderType !== "SALE") {
-        throw new Error("Only SALE orders can be confirmed");
-      }
-
-      if (
-        order.saleStatus !== "PENDING" &&
-        order.fulfillmentStatus !== "PENDING"
-      ) {
-        throw new Error(
-          `Order cannot be confirmed. Current status: ${order.saleStatus || order.fulfillmentStatus}`
-        );
-      }
-
-      // Parse and verify inventory
-      let orderItems;
-      try {
-        orderItems =
-          typeof order.items === "string"
-            ? JSON.parse(order.items)
-            : order.items;
-      } catch {
-        throw new Error("Failed to parse order items - data may be corrupted");
-      }
-
-      // FIXED: Batch query instead of N+1 individual queries
-      const batchIds = orderItems.map(
-        (item: { batchId: number }) => item.batchId
-      );
-      const batchRecords = await db
-        .select()
-        .from(batches)
-        .where(inArray(batches.id, batchIds));
-
-      const batchMap = new Map(batchRecords.map(b => [b.id, b]));
-
-      for (const item of orderItems) {
-        const batch = batchMap.get(item.batchId);
-
-        if (!batch) {
+        if (!order) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: `Batch ${item.batchId} not found`,
+            message: "Order not found",
           });
         }
 
-        const availableQty = item.isSample
-          ? parseFloat(batch.sampleQty || "0")
-          : parseFloat(batch.onHandQty || "0");
-
-        if (availableQty < item.quantity) {
+        if (order.orderType !== "SALE") {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message:
-              `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
-              `Available: ${availableQty}, Required: ${item.quantity}`,
+            message: "Only SALE orders can be confirmed",
           });
         }
-      }
 
-      // Update order to confirmed
-      await db
-        .update(orders)
-        .set({
-          confirmedAt: new Date(),
-          notes: input.notes
-            ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
-            : order.notes,
-        })
-        .where(eq(orders.id, input.id));
+        if (
+          order.saleStatus !== "PENDING" &&
+          order.fulfillmentStatus !== "PENDING"
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Order cannot be confirmed. Current status: ${order.saleStatus || order.fulfillmentStatus}`,
+          });
+        }
 
-      return { success: true, orderId: input.id };
+        // Parse and verify inventory
+        let orderItems: Array<{ batchId: number; quantity: number; isSample?: boolean }>;
+        try {
+          orderItems =
+            typeof order.items === "string"
+              ? JSON.parse(order.items)
+              : order.items;
+        } catch {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to parse order items - data may be corrupted",
+          });
+        }
+
+        // INV-003: Extract unique batch IDs
+        const batchIds = [...new Set(orderItems.map(item => item.batchId))];
+
+        if (batchIds.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Order has no items to confirm",
+          });
+        }
+
+        // INV-003: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
+        const batchRecords = await tx
+          .select()
+          .from(batches)
+          .where(inArray(batches.id, batchIds))
+          .for("update");
+
+        const batchMap = new Map(batchRecords.map(b => [b.id, b]));
+
+        // INV-003: Verify quantity is still available AFTER acquiring locks
+        for (const item of orderItems) {
+          const batch = batchMap.get(item.batchId);
+
+          if (!batch) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Batch ${item.batchId} not found`,
+            });
+          }
+
+          // Calculate available quantity accounting for all allocations
+          const onHand = parseFloat(batch.onHandQty || "0");
+          const reserved = parseFloat(batch.reservedQty || "0");
+          const quarantine = parseFloat(batch.quarantineQty || "0");
+          const hold = parseFloat(batch.holdQty || "0");
+          const sampleQty = parseFloat(batch.sampleQty || "0");
+
+          const availableQty = item.isSample
+            ? sampleQty
+            : Math.max(0, onHand - reserved - quarantine - hold);
+
+          if (availableQty < item.quantity) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
+                `Available: ${availableQty}, Required: ${item.quantity}`,
+            });
+          }
+        }
+
+        // INV-003: Reserve inventory by incrementing reservedQty
+        const { sql: sqlFn } = await import("drizzle-orm");
+        for (const item of orderItems) {
+          if (item.isSample) {
+            // Decrement sample quantity directly
+            await tx.execute(sqlFn`
+              UPDATE batches
+              SET sampleQty = CAST(sampleQty AS DECIMAL(15,4)) - ${item.quantity}
+              WHERE id = ${item.batchId}
+            `);
+          } else {
+            // Increment reserved quantity to prevent overselling
+            await tx.execute(sqlFn`
+              UPDATE batches
+              SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${item.quantity}
+              WHERE id = ${item.batchId}
+            `);
+          }
+        }
+
+        // Update order to confirmed
+        await tx
+          .update(orders)
+          .set({
+            confirmedAt: new Date(),
+            fulfillmentStatus: "PENDING",
+            notes: input.notes
+              ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
+              : order.notes,
+          })
+          .where(eq(orders.id, input.id));
+
+        logger.info({
+          msg: "INV-003: Order confirmed with inventory reservation",
+          orderId: input.id,
+          itemCount: orderItems.length,
+        });
+
+        return { success: true, orderId: input.id };
+      }, { maxRetries: 3 });
     }),
 
   /**
    * Fulfill order items with pick quantities
    * Records picked quantities and updates inventory
+   * ARCH-001: Uses OrderOrchestrator for transactional integrity
    */
   fulfillOrder: protectedProcedure
     .use(requirePermission("orders:update"))
@@ -1573,126 +1738,25 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get the order
-      const [order] = await db
-        .select()
-        .from(orders)
-        .where(eq(orders.id, input.id))
-        .limit(1);
-
-      if (!order) {
-        throw new Error("Order not found");
-      }
-
-      // ARCH-003: Check if order is in a terminal state or not pickable
-      const { isTerminalStatus } = await import("../services/orderStateMachine");
-      if (isTerminalStatus(order.fulfillmentStatus || "PENDING")) {
-        throw new Error(
-          `Cannot pick items for order in ${order.fulfillmentStatus} status (terminal state)`
-        );
-      }
-
-      if (order.fulfillmentStatus === "SHIPPED" || order.fulfillmentStatus === "DELIVERED") {
-        throw new Error(
-          `Cannot pick items for order that is already ${order.fulfillmentStatus}`
-        );
-      }
-
-      // Parse order items
-      let orderItems;
-      try {
-        orderItems =
-          typeof order.items === "string"
-            ? JSON.parse(order.items)
-            : order.items;
-      } catch {
-        throw new Error("Failed to parse order items - data may be corrupted");
-      }
-
-      // Type for picked items
-      interface PickedItem {
-        batchId: number;
-        pickedQuantity: number;
-        locationId?: number;
-        pickedNotes?: string;
-        pickedAt: string;
-        pickedBy: number;
-        [key: string]: unknown; // Allow additional properties from orderItem spread
-      }
-
-      // Validate and track picked items
-      const pickedItems: PickedItem[] = [];
-      let allFullyPicked = true;
-
-      for (const pickItem of input.items) {
-        const orderItem = orderItems.find(
-          (oi: { batchId: number }) => oi.batchId === pickItem.batchId
-        );
-
-        if (!orderItem) {
-          throw new Error(`Batch ${pickItem.batchId} is not in this order`);
-        }
-
-        if (pickItem.pickedQuantity > orderItem.quantity) {
-          throw new Error(
-            `Picked quantity (${pickItem.pickedQuantity}) exceeds ordered quantity (${orderItem.quantity}) for batch ${pickItem.batchId}`
-          );
-        }
-
-        if (pickItem.pickedQuantity < orderItem.quantity) {
-          allFullyPicked = false;
-        }
-
-        pickedItems.push({
-          ...orderItem,
-          pickedQuantity: pickItem.pickedQuantity,
-          locationId: pickItem.locationId,
-          pickedNotes: pickItem.notes,
-          pickedAt: new Date().toISOString(),
-          pickedBy: userId,
-        });
-      }
-
-      // Update order with picked items info
-      const newStatus = allFullyPicked ? "PACKED" : "PENDING";
-
-      // ARCH-003: Validate status transition using state machine
-      const { validateTransition, canTransition } = await import(
-        "../services/orderStateMachine"
+      // ARCH-001: Delegate to OrderOrchestrator for transactional integrity
+      const { orderOrchestrator } = await import(
+        "../services/orderOrchestrator"
       );
-      // Only validate if status is actually changing
-      if (order.fulfillmentStatus !== newStatus && !canTransition(order.fulfillmentStatus || "PENDING", newStatus)) {
-        validateTransition(order.fulfillmentStatus, newStatus, input.id);
-      }
 
-      const updatedItems = orderItems.map((item: { batchId: number }) => {
-        const picked = pickedItems.find(
-          (p: { batchId: number }) => p.batchId === item.batchId
-        );
-        return picked || item;
+      const result = await orderOrchestrator.fulfillOrder({
+        orderId: input.id,
+        items: input.items,
+        actorId: userId,
       });
-
-      await db
-        .update(orders)
-        .set({
-          items: JSON.stringify(updatedItems),
-          fulfillmentStatus: newStatus,
-          packedAt: allFullyPicked ? new Date() : null,
-          packedBy: allFullyPicked ? userId : null,
-        })
-        .where(eq(orders.id, input.id));
 
       return {
         success: true,
-        orderId: input.id,
-        status: newStatus,
-        allFullyPicked,
-        pickedItems: pickedItems.length,
+        orderId: result.id,
+        status: result.status,
+        allFullyPicked: result.status === "PACKED",
+        pickedItems: input.items.length,
       };
     }),
 
@@ -1881,6 +1945,7 @@ export const ordersRouter = router({
   /**
    * Mark order as delivered
    * Final step in fulfillment workflow
+   * ST-051: Wrapped in transaction for atomicity
    */
   deliverOrder: protectedProcedure
     .use(requirePermission("orders:update"))
@@ -1893,60 +1958,64 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get the order
-      const [order] = await db
-        .select()
-        .from(orders)
-        .where(eq(orders.id, input.id))
-        .limit(1);
+      // ST-051: Wrap in transaction to ensure order update and status history are atomic
+      return await withTransaction(async tx => {
+        // Get the order with row lock
+        const [order] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.id))
+          .for("update")
+          .limit(1);
 
-      if (!order) {
-        throw new Error("Order not found");
-      }
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
 
-      // ARCH-003: Use state machine for transition validation
-      const { validateTransition } = await import(
-        "../services/orderStateMachine"
-      );
-      validateTransition(order.fulfillmentStatus, "DELIVERED", input.id);
+        // ARCH-003: Use state machine for transition validation
+        const { validateTransition } = await import(
+          "../services/orderStateMachine"
+        );
+        validateTransition(order.fulfillmentStatus, "DELIVERED", input.id);
 
-      // Build delivery notes
-      let deliveryNotes = `Delivered: ${input.deliveredAt || new Date().toISOString()}\n`;
-      if (input.signature) deliveryNotes += `Signature: ${input.signature}\n`;
-      if (input.notes) deliveryNotes += input.notes;
+        // Build delivery notes
+        let deliveryNotes = `Delivered: ${input.deliveredAt || new Date().toISOString()}\n`;
+        if (input.signature) deliveryNotes += `Signature: ${input.signature}\n`;
+        if (input.notes) deliveryNotes += input.notes;
 
-      // WSQA-003: Now using proper DELIVERED status
-      await db
-        .update(orders)
-        .set({
+        // WSQA-003: Now using proper DELIVERED status
+        await tx
+          .update(orders)
+          .set({
+            fulfillmentStatus: "DELIVERED",
+            notes: `${order.notes || ""}\n[Delivered]: ${deliveryNotes}`.trim(),
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, input.id));
+
+        // Log to status history (within same transaction)
+        await tx.insert(orderStatusHistory).values({
+          orderId: input.id,
           fulfillmentStatus: "DELIVERED",
-          notes: `${order.notes || ""}\n[Delivered]: ${deliveryNotes}`.trim(),
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, input.id));
+          changedBy: userId,
+          notes: deliveryNotes,
+        });
 
-      // Log to status history
-      const { orderStatusHistory } = await import("../../drizzle/schema");
-      await db.insert(orderStatusHistory).values({
-        orderId: input.id,
-        fulfillmentStatus: "DELIVERED",
-        changedBy: userId,
-        notes: deliveryNotes,
+        return {
+          success: true,
+          orderId: input.id,
+          deliveredAt: input.deliveredAt || new Date().toISOString(),
+        };
       });
-
-      return {
-        success: true,
-        orderId: input.id,
-        deliveredAt: input.deliveredAt || new Date().toISOString(),
-      };
     }),
 
   // WSQA-003: Mark order as returned
+  // ST-051: Wrapped in transaction for atomicity
   markAsReturned: protectedProcedure
     .use(requirePermission("orders:update"))
     .input(
@@ -1956,64 +2025,64 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get order
-      const [order] = await db
-        .select()
-        .from(orders)
-        .where(eq(orders.id, input.orderId))
-        .limit(1);
+      // ST-051: Wrap in transaction to ensure order update and status history are atomic
+      return await withTransaction(async tx => {
+        // Get order with row lock
+        const [order] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.orderId))
+          .for("update")
+          .limit(1);
 
-      if (!order) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Order not found",
-        });
-      }
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
 
-      // ARCH-003: Use state machine for transition validation
-      const { validateTransition } = await import(
-        "../services/orderStateMachine"
-      );
-      try {
-        validateTransition(order.fulfillmentStatus, "RETURNED", input.orderId);
-      } catch (err) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: err instanceof Error ? err.message : "Invalid transition",
-        });
-      }
+        // ARCH-003: Use state machine for transition validation
+        const { validateTransition } = await import(
+          "../services/orderStateMachine"
+        );
+        try {
+          validateTransition(order.fulfillmentStatus, "RETURNED", input.orderId);
+        } catch (err) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: err instanceof Error ? err.message : "Invalid transition",
+          });
+        }
 
-      // Update order status
-      await db
-        .update(orders)
-        .set({
+        // Update order status
+        await tx
+          .update(orders)
+          .set({
+            fulfillmentStatus: "RETURNED",
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, input.orderId));
+
+        // Log status change (within same transaction)
+        await tx.insert(orderStatusHistory).values({
+          orderId: input.orderId,
           fulfillmentStatus: "RETURNED",
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, input.orderId));
+          changedBy: userId,
+          notes: input.returnReason,
+        });
 
-      // Log status change
-      const { orderStatusHistory } = await import("../../drizzle/schema");
-      await db.insert(orderStatusHistory).values({
-        orderId: input.orderId,
-        fulfillmentStatus: "RETURNED",
-        changedBy: userId,
-        notes: input.returnReason,
+        logger.info({
+          msg: "ST-051: Order marked as returned within transaction",
+          orderId: input.orderId,
+          returnReason: input.returnReason,
+          userId,
+        });
+
+        return { success: true };
       });
-
-      logger.info({
-        msg: "WSQA-003: Order marked as returned",
-        orderId: input.orderId,
-        returnReason: input.returnReason,
-        userId,
-      });
-
-      return { success: true };
     }),
 
   // WSQA-003: Process restock - return items to inventory

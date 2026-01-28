@@ -168,6 +168,18 @@ export interface ProcessReturnInput {
   actorId: number;
 }
 
+export interface FulfillOrderInput {
+  orderId: number;
+  items: Array<{
+    batchId: number;
+    pickedQuantity: number;
+    locationId?: number;
+    notes?: string;
+  }>;
+  /** User ID from authenticated context (ctx.user.id) */
+  actorId: number;
+}
+
 interface OrderResult {
   id: number;
   orderNumber: string;
@@ -713,6 +725,271 @@ export class OrderOrchestrator {
     });
   }
 
+  /**
+   * Fulfill an order by picking items.
+   * This operation:
+   * 1. Validates the order can be fulfilled
+   * 2. Records picked quantities for each item
+   * 3. Updates order status to PACKED if all items are fully picked
+   */
+  async fulfillOrder(input: FulfillOrderInput): Promise<OrderResult> {
+    const actorId = input.actorId;
+    logger.info({ orderId: input.orderId }, "Fulfilling order");
+
+    return await withTransaction(async tx => {
+      // 1. Get and lock the order
+      const [order] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .for("update")
+        .limit(1);
+
+      if (!order) {
+        throw new Error(`Order ${input.orderId} not found`);
+      }
+
+      // 2. Check if order is in a terminal state or not pickable
+      const currentStatus = (order.fulfillmentStatus ||
+        "PENDING") as FulfillmentStatus;
+
+      if (isTerminalStatus(currentStatus)) {
+        throw new Error(
+          `Cannot pick items for order in ${currentStatus} status (terminal state)`
+        );
+      }
+
+      if (currentStatus === "SHIPPED" || currentStatus === "DELIVERED") {
+        throw new Error(
+          `Cannot pick items for order that is already ${currentStatus}`
+        );
+      }
+
+      // 3. Parse order items
+      const orderItems = this.parseOrderItems(order.items);
+      if (orderItems.length === 0) {
+        throw new Error("Order has no items to fulfill");
+      }
+
+      // 4. Validate and track picked items
+      interface PickedItem extends OrderItem {
+        pickedQuantity: number;
+        locationId?: number;
+        pickedNotes?: string;
+        pickedAt: string;
+        pickedBy: number;
+      }
+
+      const pickedItems: PickedItem[] = [];
+      let allFullyPicked = true;
+
+      for (const pickItem of input.items) {
+        const orderItem = orderItems.find(
+          oi => oi.batchId === pickItem.batchId
+        );
+
+        if (!orderItem) {
+          throw new Error(`Batch ${pickItem.batchId} is not in this order`);
+        }
+
+        if (pickItem.pickedQuantity > orderItem.quantity) {
+          throw new Error(
+            `Picked quantity (${pickItem.pickedQuantity}) exceeds ordered quantity (${orderItem.quantity}) for batch ${pickItem.batchId}`
+          );
+        }
+
+        if (pickItem.pickedQuantity < orderItem.quantity) {
+          allFullyPicked = false;
+        }
+
+        pickedItems.push({
+          ...orderItem,
+          pickedQuantity: pickItem.pickedQuantity,
+          locationId: pickItem.locationId,
+          pickedNotes: pickItem.notes,
+          pickedAt: new Date().toISOString(),
+          pickedBy: actorId,
+        });
+      }
+
+      // 5. Determine new status
+      const newStatus = allFullyPicked ? "PACKED" : "PENDING";
+
+      // 6. Validate status transition using state machine (only if changing)
+      if (currentStatus !== newStatus && !canTransition(currentStatus, newStatus)) {
+        throw new Error(
+          `Invalid status transition from ${currentStatus} to ${newStatus}`
+        );
+      }
+
+      // 7. Update order items with pick info
+      const updatedItems = orderItems.map(item => {
+        const picked = pickedItems.find(p => p.batchId === item.batchId);
+        return picked || item;
+      });
+
+      // 8. Update order
+      await tx
+        .update(orders)
+        .set({
+          items: JSON.stringify(updatedItems),
+          fulfillmentStatus: newStatus,
+          packedAt: allFullyPicked ? new Date() : null,
+          packedBy: allFullyPicked ? actorId : null,
+          version: sql`version + 1`,
+        })
+        .where(eq(orders.id, input.orderId));
+
+      // 9. Log status history if status changed
+      if (currentStatus !== newStatus) {
+        await tx.insert(orderStatusHistory).values({
+          orderId: input.orderId,
+          fulfillmentStatus: newStatus,
+          changedBy: actorId,
+          notes: `Order ${allFullyPicked ? "fully packed" : "partially picked"}. ${pickedItems.length} items processed.`,
+        });
+      }
+
+      logger.info(
+        {
+          orderId: input.orderId,
+          status: newStatus,
+          allFullyPicked,
+          pickedItems: pickedItems.length,
+        },
+        "Order fulfilled"
+      );
+
+      return {
+        id: input.orderId,
+        orderNumber: order.orderNumber || "",
+        status: newStatus,
+      };
+    });
+  }
+
+  /**
+   * Process a return for an order.
+   * This operation:
+   * 1. Validates the order can be returned
+   * 2. Creates a return record with items
+   * 3. Updates order status to RETURNED
+   */
+  async processReturn(input: ProcessReturnInput): Promise<OrderResult & { returnId: number }> {
+    const actorId = input.actorId;
+    logger.info(
+      { orderId: input.orderId, reason: input.reason },
+      "Processing order return"
+    );
+
+    return await withRetryableTransaction(async tx => {
+      // 1. Get and lock the order
+      const [order] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .for("update")
+        .limit(1);
+
+      if (!order) {
+        throw new Error(`Order ${input.orderId} not found`);
+      }
+
+      // 2. Validate state transition
+      const currentStatus = (order.fulfillmentStatus ||
+        "PENDING") as FulfillmentStatus;
+
+      if (!canTransition(currentStatus, "RETURNED")) {
+        throw new Error(
+          `Cannot return order from ${currentStatus} status. ` +
+            `Order must be SHIPPED or DELIVERED to be returned.`
+        );
+      }
+
+      // 3. Parse order items and validate return quantities
+      const orderItems = this.parseOrderItems(order.items);
+      const returnedByBatch = new Map<number, number>();
+
+      // Get existing returns for this order
+      const { returns } = await import("../../drizzle/schema");
+      const existingReturns = await tx
+        .select()
+        .from(returns)
+        .where(eq(returns.orderId, input.orderId));
+
+      // Calculate already returned quantities
+      for (const existingReturn of existingReturns) {
+        const returnItems = JSON.parse(existingReturn.items as string) as Array<{
+          batchId: number;
+          quantity: number;
+        }>;
+        for (const item of returnItems) {
+          const current = returnedByBatch.get(item.batchId) || 0;
+          returnedByBatch.set(item.batchId, current + item.quantity);
+        }
+      }
+
+      // Validate return quantities
+      for (const returnItem of input.items) {
+        const orderItem = orderItems.find(oi => oi.batchId === returnItem.batchId);
+        if (!orderItem) {
+          throw new Error(`Batch ${returnItem.batchId} is not in this order`);
+        }
+
+        const alreadyReturned = returnedByBatch.get(returnItem.batchId) || 0;
+        const maxReturnable = orderItem.quantity - alreadyReturned;
+
+        if (returnItem.quantity > maxReturnable) {
+          throw new Error(
+            `Cannot return ${returnItem.quantity} of batch ${returnItem.batchId}. ` +
+              `Maximum returnable: ${maxReturnable} (ordered: ${orderItem.quantity}, already returned: ${alreadyReturned})`
+          );
+        }
+      }
+
+      // 4. Create return record
+      const [returnResult] = await tx.insert(returns).values({
+        orderId: input.orderId,
+        items: JSON.stringify(input.items),
+        returnReason: input.reason,
+        notes: input.notes ? input.notes.trim().substring(0, 5000) : null,
+        processedBy: actorId,
+      });
+
+      const returnId = Number(returnResult.insertId);
+
+      // 5. Update order status
+      await tx
+        .update(orders)
+        .set({
+          fulfillmentStatus: "RETURNED",
+          notes: `${order.notes || ""}\n[Returned]: ${input.reason}`.trim(),
+          version: sql`version + 1`,
+        })
+        .where(eq(orders.id, input.orderId));
+
+      // 6. Log status history
+      await tx.insert(orderStatusHistory).values({
+        orderId: input.orderId,
+        fulfillmentStatus: "RETURNED",
+        changedBy: actorId,
+        notes: `Return #${returnId} processed. Reason: ${input.reason}`,
+      });
+
+      logger.info(
+        { orderId: input.orderId, returnId, reason: input.reason },
+        "Return processed"
+      );
+
+      return {
+        id: input.orderId,
+        orderNumber: order.orderNumber || "",
+        status: "RETURNED",
+        returnId,
+      };
+    });
+  }
+
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
@@ -1197,24 +1474,20 @@ export class OrderOrchestrator {
   }
 
   /**
-   * Update payables tracking when inventory is sold.
+   * ST-050: Update payables tracking when inventory is sold.
+   * Errors now propagate to ensure financial consistency.
+   * If payables update fails, the calling transaction will rollback.
    */
   private async updatePayablesTracking(items: OrderItem[]): Promise<void> {
     for (const item of items) {
       if (!item.isSample) {
-        try {
-          await payablesService.updatePayableOnSale(
-            item.batchId,
-            item.quantity
-          );
-          await payablesService.checkInventoryZeroThreshold(item.batchId);
-        } catch (error) {
-          // Log but don't fail - payables can be reconciled later
-          logger.warn(
-            { batchId: item.batchId, error },
-            "Payables update error (non-fatal)"
-          );
-        }
+        // ST-050: Errors propagate to rollback parent transaction
+        // This ensures orders and payables remain consistent
+        await payablesService.updatePayableOnSale(
+          item.batchId,
+          item.quantity
+        );
+        await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
   }
