@@ -1,0 +1,99 @@
+name: Deploy Operations API
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - restart
+          - status
+          - logs
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 167.71.255.38 >> ~/.ssh/known_hosts
+
+      - name: Deploy Operations API
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        run: |
+          # Copy files to droplet
+          scp -r ops-api/* root@167.71.255.38:/tmp/terp-ops-api/
+          
+          # Run deployment
+          ssh root@167.71.255.38 << 'DEPLOY_SCRIPT'
+          set -e
+          
+          INSTALL_DIR="/opt/terp-ops-api"
+          
+          # Install Node.js if needed
+          if ! command -v node &> /dev/null; then
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+          fi
+          
+          # Create directory and copy files
+          mkdir -p $INSTALL_DIR
+          cp -r /tmp/terp-ops-api/* $INSTALL_DIR/
+          
+          # Install dependencies and build
+          cd $INSTALL_DIR
+          npm install
+          npm run build
+          
+          # Create .env if it doesn't exist
+          if [ ! -f "$INSTALL_DIR/.env" ]; then
+            API_KEY=$(openssl rand -hex 32)
+            cat > $INSTALL_DIR/.env << EOF
+          OPS_API_KEY=$API_KEY
+          OPS_API_PORT=3100
+          DB_HOST=private-terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com
+          DB_PORT=25060
+          DB_USER=doadmin
+          DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+          DB_NAME=defaultdb
+          READ_ONLY_MODE=true
+          ALLOWED_SHELL_COMMANDS=ls,cat,head,tail,grep,wc,df,free,uptime,ps,docker,systemctl,journalctl
+          EOF
+            chmod 600 $INSTALL_DIR/.env
+            echo "Generated API Key: $API_KEY"
+          fi
+          
+          # Install and start service
+          cp $INSTALL_DIR/terp-ops-api.service /etc/systemd/system/
+          systemctl daemon-reload
+          systemctl enable terp-ops-api
+          systemctl restart terp-ops-api
+          
+          sleep 3
+          curl -s http://localhost:3100/health
+          DEPLOY_SCRIPT
+
+      - name: Restart Service
+        if: ${{ github.event.inputs.action == 'restart' }}
+        run: |
+          ssh root@167.71.255.38 'systemctl restart terp-ops-api && sleep 2 && curl -s http://localhost:3100/health'
+
+      - name: Check Status
+        if: ${{ github.event.inputs.action == 'status' }}
+        run: |
+          ssh root@167.71.255.38 'systemctl status terp-ops-api --no-pager && curl -s http://localhost:3100/health'
+
+      - name: View Logs
+        if: ${{ github.event.inputs.action == 'logs' }}
+        run: |
+          ssh root@167.71.255.38 'journalctl -u terp-ops-api -n 100 --no-pager'
