@@ -111,9 +111,35 @@ pnpm seed:qa-data
 ### Script Characteristics
 
 - **Idempotent:** Safe to run multiple times
+- **Transactional:** All inserts in a single transaction (rollback on error)
 - **Soft Delete Aware:** Checks for `deletedAt IS NULL`
 - **Registry Output:** Updates `docs/qa/qa-data-registry.json`
 - **Connection Handling:** Proper cleanup on success or failure
+- **Error Recovery:** Registry write failures show DB recovery queries
+
+### Database Connection Requirements
+
+#### SSL Configuration
+
+DigitalOcean MySQL requires SSL connections. The DATABASE_URL should include SSL parameters:
+
+```bash
+# Format with SSL (recommended for DigitalOcean)
+DATABASE_URL="mysql://user:password@host:25060/database?ssl=true&sslmode=require"
+
+# Alternative: The mysql2 driver automatically handles SSL for DigitalOcean URLs
+# containing port 25060 (managed database default port)
+```
+
+If you encounter SSL errors, ensure your connection string is properly formatted.
+
+#### Connection Timeout
+
+For slow networks, the script may timeout. The default MySQL connection timeout is 10 seconds. If needed, add timeout parameters:
+
+```bash
+DATABASE_URL="mysql://user:password@host:25060/database?connectTimeout=30000"
+```
 
 ## Data Registry
 
@@ -154,6 +180,23 @@ This file contains all created QA entity IDs and is updated automatically by the
 This registry was created during the Reality Map analysis phase and notes the missing QA data. It will be updated once seeding is complete.
 
 ## Data Cleanup Policy
+
+### Important: FK Reference Warning
+
+**Do not soft-delete QA entities that are referenced by orders, invoices, or other transactional data.**
+
+If you soft-delete a QA entity (e.g., `QA_CUSTOMER_01`) and then re-run the seeding script:
+
+1. A **new** entity with a **new ID** will be created
+2. Old orders/invoices will reference the **soft-deleted** entity
+3. New tests will use the **new** entity with a different ID
+4. This causes **orphaned FK references** and test failures
+
+**Safe cleanup procedure:**
+
+1. Delete transactional data (orders, invoices) referencing QA entities first
+2. Then soft-delete QA entities
+3. Re-run seeding
 
 ### When to Reset
 
@@ -265,7 +308,14 @@ Without QA test data, the following are blocked:
 
 ## Changelog
 
-| Date       | Change                                     | Author       |
-| ---------- | ------------------------------------------ | ------------ |
-| 2026-01-28 | Initial strategy document created          | Claude Agent |
-| 2026-01-28 | Seeding infrastructure ready for execution | Claude Agent |
+| Date       | Change                                       | Author       |
+| ---------- | -------------------------------------------- | ------------ |
+| 2026-01-28 | Initial strategy document created            | Claude Agent |
+| 2026-01-28 | Seeding infrastructure ready for execution   | Claude Agent |
+| 2026-01-28 | Added transactional seeding (QA-001)         | Claude Agent |
+| 2026-01-28 | Added SSL configuration docs (QA-005)        | Claude Agent |
+| 2026-01-28 | Added FK orphan warning (QA-004)             | Claude Agent |
+| 2026-01-28 | Fixed script path resolution (QA-006)        | Claude Agent |
+| 2026-01-28 | Added corrupt registry backup (QA-007)       | Claude Agent |
+| 2026-01-28 | Added insertId validation (QA-008)           | Claude Agent |
+| 2026-01-28 | Added registry write error handling (QA-003) | Claude Agent |
