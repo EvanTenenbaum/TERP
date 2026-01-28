@@ -79,8 +79,11 @@ function isSchemaError(error: unknown): boolean {
 
   // Check MySQL error codes (most reliable)
   if (errno === 1054) return true; // ER_BAD_FIELD_ERROR
+  if (errno === 1146) return true; // ER_NO_SUCH_TABLE
   if (errorCode === "ER_BAD_FIELD_ERROR") return true;
+  if (errorCode === "ER_NO_SUCH_TABLE") return true;
   if (errorCode === 1054) return true;
+  if (errorCode === 1146) return true;
 
   // Check error message patterns
   const msgLower = msg.toLowerCase();
@@ -88,6 +91,9 @@ function isSchemaError(error: unknown): boolean {
     msgLower.includes("unknown column") ||
     msgLower.includes("no such column") ||
     msgLower.includes("er_bad_field_error") ||
+    msgLower.includes("er_no_such_table") ||
+    msgLower.includes("table") && msgLower.includes("doesn't exist") ||
+    msgLower.includes("table") && msgLower.includes("does not exist") ||
     (msgLower.includes("column") && msgLower.includes("does not exist")) ||
     (msgLower.includes("column") && msgLower.includes("on clause"))
   );
@@ -288,7 +294,9 @@ export const photographyRouter = router({
           "Schema error detected, falling back to query without strains join"
         );
 
-        // Fallback query without strains join
+        // Fallback query without strains join and product_images join
+        // (in case strainId column or product_images table doesn't exist)
+        // Note: Without product_images table, we return all LIVE batches
         batchesWithoutPhotos = await db
           .select({
             id: batches.id,
@@ -301,11 +309,9 @@ export const photographyRouter = router({
           })
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
           .where(
             and(
               eq(batches.batchStatus, "LIVE"),
-              isNull(productImages.id),
               isNull(batches.deletedAt)
             )
           )
@@ -542,7 +548,8 @@ export const photographyRouter = router({
           "Schema error detected, falling back to query without strains join"
         );
 
-        // Fallback query without strains join (in case strainId column doesn't exist)
+        // Fallback query without strains join and product_images join
+        // (in case strainId column or product_images table doesn't exist)
         results = await db
           .select({
             batchId: batches.id,
@@ -551,11 +558,10 @@ export const photographyRouter = router({
             productName: products.nameCanonical,
             strainName: sql<string | null>`NULL`.as("strainName"),
             createdAt: batches.createdAt,
-            hasImages: sql<number>`COUNT(${productImages.id})`.as("hasImages"),
+            hasImages: sql<number>`0`.as("hasImages"),
           })
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
           .where(and(...conditions))
           .groupBy(
             batches.id,
@@ -998,10 +1004,11 @@ export const photographyRouter = router({
           throw queryError;
         }
 
-        // Fallback: Query without strains join if strainId column doesn't exist
+        // Fallback: Query without strains join and product_images join
+        // (in case strainId column or product_images table doesn't exist)
         logger.warn(
           { error: queryError },
-          "Schema error detected, falling back to query without strains join"
+          "Schema error detected, falling back to query without strains/product_images joins"
         );
         batchesAwaitingPhotos = await database
           .select({
@@ -1017,14 +1024,12 @@ export const photographyRouter = router({
           })
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
           .where(
             and(
               or(
                 eq(batches.batchStatus, "LIVE"),
                 eq(batches.batchStatus, "AWAITING_INTAKE")
               ),
-              isNull(productImages.id),
               isNull(batches.deletedAt)
             )
           )
