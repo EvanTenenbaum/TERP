@@ -1,49 +1,105 @@
 {
   "generated": "2026-01-23T15:54:00Z",
+  "updated": "2026-01-28T00:00:00Z",
   "environment": "staging",
   "base_url": "http://terp-app-b9s35.ondigitalocean.app",
-  "strategy": "USE_EXISTING_DATA",
-  "note": "QA-prefixed entities do not exist. Using existing staging data for testing.",
-  "entities": {
+  "strategy": "QA_PREFIXED_SEEDING",
+  "status": "INFRASTRUCTURE_READY",
+  "note": "Seeding infrastructure implemented. Run 'pnpm seed:qa-data' with DATABASE_URL to create entities.",
+  "seeding": {
+    "script": "scripts/seed-qa-data.ts",
+    "command": "pnpm seed:qa-data",
+    "registry": "docs/qa/qa-data-registry.json",
+    "documentation": "docs/qa/TEST_DATA_STRATEGY.md"
+  },
+  "pending_entities": {
+    "locations": {
+      "count": 5,
+      "items": [
+        { "site": "QA_LOCATION_MAIN", "zone": "Zone-A" },
+        { "site": "QA_LOCATION_WAREHOUSE", "zone": "Zone-B" },
+        { "site": "QA_LOCATION_COLD", "zone": "Cold-Zone" },
+        { "site": "QA_LOCATION_STAGING", "zone": "Staging" },
+        { "site": "QA_LOCATION_RETURNS", "zone": "Returns" }
+      ]
+    },
     "customers": {
-      "note": "Using existing customers from staging",
-      "examples": [
+      "count": 5,
+      "items": [
+        { "teriCode": "QA_CUSTOMER_01", "name": "QA Test Dispensary Alpha" },
+        { "teriCode": "QA_CUSTOMER_02", "name": "QA Test Retail Beta" },
+        { "teriCode": "QA_CUSTOMER_03", "name": "QA Test Wholesale Gamma" },
+        { "teriCode": "QA_CUSTOMER_CREDIT", "name": "QA Test Credit Customer" },
+        { "teriCode": "QA_CUSTOMER_VIP", "name": "QA Test VIP Customer" }
+      ]
+    },
+    "suppliers": {
+      "count": 3,
+      "items": [
+        { "teriCode": "QA_SUPPLIER_01", "name": "QA Test Farm Delta" },
+        { "teriCode": "QA_SUPPLIER_02", "name": "QA Test Cultivator Epsilon" },
+        { "teriCode": "QA_SUPPLIER_03", "name": "QA Test Manufacturer Zeta" }
+      ]
+    },
+    "brands": {
+      "count": 3,
+      "items": [
         {
-          "name": "Emerald Naturals",
-          "type": "Buyer",
-          "contact": "contact.emerald@yahoo.com",
-          "usage": "General testing"
+          "name": "QA_BRAND_PREMIUM",
+          "description": "QA test brand - premium tier"
         },
         {
-          "name": "Riverside Naturals",
-          "type": "Buyer",
-          "contact": "contact_riverside57@hotmail.com",
-          "usage": "General testing"
+          "name": "QA_BRAND_STANDARD",
+          "description": "QA test brand - standard tier"
+        },
+        {
+          "name": "QA_BRAND_BUDGET",
+          "description": "QA test brand - budget tier"
         }
       ]
     },
     "products": {
-      "note": "Using existing products from staging",
-      "categories": [
-        "Pre-Roll",
-        "Vape",
-        "Edible",
-        "Concentrate",
-        "Flower",
-        "Topical",
-        "Tincture"
+      "count": 6,
+      "items": [
+        {
+          "name": "QA_PRODUCT_FLOWER_A",
+          "category": "Flower",
+          "subcategory": "Indoor"
+        },
+        {
+          "name": "QA_PRODUCT_FLOWER_B",
+          "category": "Flower",
+          "subcategory": "Outdoor"
+        },
+        {
+          "name": "QA_PRODUCT_PREROLL",
+          "category": "Pre-Roll",
+          "subcategory": "Singles"
+        },
+        {
+          "name": "QA_PRODUCT_EDIBLE",
+          "category": "Edibles",
+          "subcategory": "Gummies"
+        },
+        {
+          "name": "QA_PRODUCT_CONCENTRATE",
+          "category": "Concentrates",
+          "subcategory": "Wax"
+        },
+        {
+          "name": "QA_PRODUCT_VAPE",
+          "category": "Vapes",
+          "subcategory": "Cartridges"
+        }
       ]
-    },
-    "inventory": {
-      "note": "30,572 units available across 7 categories",
-      "total_value": "$13,010,881"
-    },
-    "locations": {
-      "note": "Will be discovered during testing"
-    },
-    "vendors": {
-      "note": "Will be discovered during testing"
     }
+  },
+  "existing_staging_data": {
+    "customers": "100+ customers (Emerald Naturals, Riverside Naturals, etc.)",
+    "products": "7 categories (Pre-Roll, Vape, Edible, Concentrate, Flower, Topical, Tincture)",
+    "inventory": "30,572 units worth $13M+",
+    "orders": "Historical order data present",
+    "financial": "AR/AP tracking active"
   },
   "qa_accounts": {
     "super_admin": {
