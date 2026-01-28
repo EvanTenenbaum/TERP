@@ -1,0 +1,293 @@
+[
+  {
+    "charter_id": "CH_orders_pick_pack_update_status",
+    "domain": "Orders",
+    "entity": "Pick Pack",
+    "flow_name": "Update Status",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "pickPack.updateStatus",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Fulfillment"
+    ],
+    "business_purpose": "Update pack/ship status",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/pickPack.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  },
+  {
+    "charter_id": "CH_orders_order_status_update_order_status",
+    "domain": "Orders",
+    "entity": "Order Status",
+    "flow_name": "Update Order Status",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "orders.updateOrderStatus",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Sales Manager",
+      "Fulfillment"
+    ],
+    "business_purpose": "Update order fulfillment status",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/orders.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": [
+      "SKU",
+      "CUSTOMER",
+      "LOCATION"
+    ]
+  },
+  {
+    "charter_id": "CH_orders_orders_update_order",
+    "domain": "Orders",
+    "entity": "Orders",
+    "flow_name": "Update Order",
+    "ui_entry_paths": [],
+    "archetype": "Update",
+    "trpc_procedure": "orders.update",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Sales Manager"
+    ],
+    "business_purpose": "Update order",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/orders.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": [
+      "SKU",
+      "CUSTOMER",
+      "LOCATION"
+    ]
+  },
+  {
+    "charter_id": "CH_inventory_batches_update_status",
+    "domain": "Inventory",
+    "entity": "Batches",
+    "flow_name": "Update Status",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "batches.updateStatus",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Inventory Manager"
+    ],
+    "business_purpose": "Update batch status (AWAITING_INTAKE\u2192LIVE etc)",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/batches.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  },
+  {
+    "charter_id": "CH_inventory_products_update_product",
+    "domain": "Inventory",
+    "entity": "Products",
+    "flow_name": "Update Product",
+    "ui_entry_paths": [],
+    "archetype": "Update",
+    "trpc_procedure": "productCatalogue.update",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Inventory Manager"
+    ],
+    "business_purpose": "Update product",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/productCatalogue.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  },
+  {
+    "charter_id": "CH_accounting_invoices_void_invoice",
+    "domain": "Accounting",
+    "entity": "Invoices",
+    "flow_name": "Void Invoice",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "invoices.void",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Accounting Manager"
+    ],
+    "business_purpose": "Void an invoice (cannot be reversed)",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/invoices.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": [
+      "ORDER",
+      "CUSTOMER"
+    ]
+  },
+  {
+    "charter_id": "CH_accounting_invoices_update_status",
+    "domain": "Accounting",
+    "entity": "Invoices",
+    "flow_name": "Update Status",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "invoices.updateStatus",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Accounting Manager"
+    ],
+    "business_purpose": "Update invoice status (DRAFT\u2192SENT\u2192PAID etc)",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/invoices.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": [
+      "ORDER",
+      "CUSTOMER"
+    ]
+  },
+  {
+    "charter_id": "CH_accounting_invoices_mark_sent",
+    "domain": "Accounting",
+    "entity": "Invoices",
+    "flow_name": "Mark Sent",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "invoices.markSent",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin",
+      "Accounting Manager"
+    ],
+    "business_purpose": "Mark invoice as sent to customer",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/invoices.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": [
+      "ORDER",
+      "CUSTOMER"
+    ]
+  },
+  {
+    "charter_id": "CH_workflow_todo_lists_update_task",
+    "domain": "Workflow",
+    "entity": "Todo Lists",
+    "flow_name": "Update Task",
+    "ui_entry_paths": [],
+    "archetype": "Update",
+    "trpc_procedure": "todoTasks.update",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "All Authenticated Users"
+    ],
+    "business_purpose": "Update task",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/todoTasks.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  },
+  {
+    "charter_id": "CH_purchase_orders_po_core_update_status",
+    "domain": "Purchase Orders",
+    "entity": "PO Core",
+    "flow_name": "Update Status",
+    "ui_entry_paths": [],
+    "archetype": "State Transition",
+    "trpc_procedure": "purchaseOrders.updateStatus",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Manager"
+    ],
+    "business_purpose": "Update PO status",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/purchaseOrders.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  },
+  {
+    "charter_id": "CH_admin_rbac_roles_update_role",
+    "domain": "Admin",
+    "entity": "RBAC Roles",
+    "flow_name": "Update Role",
+    "ui_entry_paths": [],
+    "archetype": "Update",
+    "trpc_procedure": "rbacRoles.update",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Super Admin"
+    ],
+    "business_purpose": "Update role",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/rbac-roles.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  },
+  {
+    "charter_id": "CH_purchase_orders_po_core_update_po",
+    "domain": "Purchase Orders",
+    "entity": "PO Core",
+    "flow_name": "Update PO",
+    "ui_entry_paths": [],
+    "archetype": "Update",
+    "trpc_procedure": "purchaseOrders.update",
+    "procedure_type": null,
+    "permission": null,
+    "roles": [
+      "Purchasing",
+      "Manager"
+    ],
+    "business_purpose": "Update purchase order",
+    "implementation_status": "CLIENT_WIRED",
+    "known_issues": null,
+    "router_file": "server/routers/purchaseOrders.ts",
+    "priority": "P0",
+    "mutation_level": "WRITE",
+    "required_role": "SUPER_ADMIN",
+    "required_test_data": []
+  }
+]

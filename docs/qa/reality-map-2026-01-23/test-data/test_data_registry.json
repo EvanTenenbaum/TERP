@@ -1,0 +1,86 @@
+{
+  "generated": "2026-01-23T15:54:00Z",
+  "environment": "staging",
+  "base_url": "http://terp-app-b9s35.ondigitalocean.app",
+  "strategy": "USE_EXISTING_DATA",
+  "note": "QA-prefixed entities do not exist. Using existing staging data for testing.",
+  "entities": {
+    "customers": {
+      "note": "Using existing customers from staging",
+      "examples": [
+        {
+          "name": "Emerald Naturals",
+          "type": "Buyer",
+          "contact": "contact.emerald@yahoo.com",
+          "usage": "General testing"
+        },
+        {
+          "name": "Riverside Naturals",
+          "type": "Buyer",
+          "contact": "contact_riverside57@hotmail.com",
+          "usage": "General testing"
+        }
+      ]
+    },
+    "products": {
+      "note": "Using existing products from staging",
+      "categories": [
+        "Pre-Roll",
+        "Vape",
+        "Edible",
+        "Concentrate",
+        "Flower",
+        "Topical",
+        "Tincture"
+      ]
+    },
+    "inventory": {
+      "note": "30,572 units available across 7 categories",
+      "total_value": "$13,010,881"
+    },
+    "locations": {
+      "note": "Will be discovered during testing"
+    },
+    "vendors": {
+      "note": "Will be discovered during testing"
+    }
+  },
+  "qa_accounts": {
+    "super_admin": {
+      "email": "qa.superadmin@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Super Admin",
+      "status": "AUTHENTICATED"
+    },
+    "sales_manager": {
+      "email": "qa.salesmanager@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Sales Manager"
+    },
+    "sales_rep": {
+      "email": "qa.salesrep@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Customer Service"
+    },
+    "inventory_manager": {
+      "email": "qa.inventory@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Inventory Manager"
+    },
+    "fulfillment": {
+      "email": "qa.fulfillment@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Warehouse Staff"
+    },
+    "accounting": {
+      "email": "qa.accounting@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Accountant"
+    },
+    "auditor": {
+      "email": "qa.auditor@terp.test",
+      "password": "TerpQA2026!",
+      "role": "Read-Only Auditor"
+    }
+  }
+}
