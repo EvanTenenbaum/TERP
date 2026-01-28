@@ -1050,12 +1050,13 @@ This ensures all future migrations are automatically applied during deployment, 
 
 **Task ID:** GF-PHASE0-008
 **Source:** PR #331 Database Audit (23 issues identified)
-**Status:** ready
+**Status:** complete
+**Completed:** 2026-01-28
 **Priority:** HIGH
 **Estimate:** 4h
+**Actual Time:** ~3h
 **Mode:** SAFE
 **Module:** Documentation, planning
-**Depends On:** PR #331 merged
 
 **Problem:**
 PR #331 identifies 23 database schema issues (3 CRITICAL, 8 HIGH, 7 MEDIUM, 5 LOW) that affect Golden Flows and long-term system health.
@@ -1085,43 +1086,48 @@ Review audit findings and create prioritized remediation plan.
 16-20. Documentation and cleanup items
 
 **Agent Checklist:**
-- [ ] Review all 23 issues in PR #331 audit
-- [ ] Categorize by impact on Golden Flows (Phases 1-5)
-- [ ] Create remediation tasks for CRITICAL and HIGH issues
-- [ ] Determine which issues can be deferred to Phase 6
-- [ ] Document which issues are acceptable technical debt
-- [ ] Create migration strategy for vendors → clients
-- [ ] Update roadmap with database standardization tasks
-- [ ] Create risk assessment for each deferred issue
+- [x] Review all 23 issues in PR #331 audit
+- [x] Categorize by impact on Golden Flows (Phases 1-5)
+- [x] Create remediation tasks for CRITICAL and HIGH issues
+- [x] Determine which issues can be deferred to Phase 6
+- [x] Document which issues are acceptable technical debt
+- [x] Create migration strategy for vendors → clients
+- [x] Update roadmap with database standardization tasks
+- [x] Create risk assessment for each deferred issue
 
 **Deliverables:**
-- [ ] Database remediation roadmap
-- [ ] Migration priority matrix
-- [ ] Risk assessment document
-- [ ] Phase 6 task list (Database Standardization)
-- [ ] Technical debt register
+- [x] Database remediation roadmap: `docs/roadmaps/DATABASE_REMEDIATION_ROADMAP.md`
+- [x] Migration priority matrix (in remediation roadmap)
+- [x] Risk assessment document: `docs/audits/DATABASE_REMEDIATION_RISK_ASSESSMENT.md`
+- [x] Phase 6 task list (INFRA-DB-001 through INFRA-DB-004)
+- [x] Technical debt register (in audit document)
 
-**Recommended Prioritization:**
+**Prioritization Summary:**
 
-**Phase 0 (Immediate):**
+**Phase 0 (Immediate) - ADDRESSED:**
 - ✅ GF-PHASE0-006: Create product_images table (CRITICAL #3)
 - ✅ GF-PHASE0-007: Fix migration infrastructure
 
-**Phase 6 (Post-Beta):**
+**Phase 6 (Post-Beta) - PLANNED:**
 - INFRA-DB-001: Add missing FK constraints (8h)
 - INFRA-DB-002: Rename misleading vendorId columns (4h)
 - INFRA-DB-003: Consolidate image tables (16h) - DEFERRED
 - INFRA-DB-004: Complete vendors → clients migration (24h) - DEFERRED
 
 **Acceptance Criteria:**
-- [ ] All 23 audit issues reviewed and categorized
-- [ ] Remediation plan created
-- [ ] Phase 6 tasks defined
-- [ ] Risk assessment complete
-- [ ] Roadmap updated
+- [x] All 23 audit issues reviewed and categorized
+- [x] Remediation plan created
+- [x] Phase 6 tasks defined
+- [x] Risk assessment complete
+- [x] Roadmap updated
+
+**Key Documents Created:**
+- `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md` - Comprehensive audit
+- `docs/roadmaps/DATABASE_REMEDIATION_ROADMAP.md` - Remediation plan
+- `docs/audits/DATABASE_REMEDIATION_RISK_ASSESSMENT.md` - Risk analysis
 
 **References:**
-- PR #331: `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md`
+- `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md`
 - BUG-112 Investigation findings
 - CLAUDE.md Section 4: Database standards
 
@@ -2234,6 +2240,167 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 - [ ] All verification passes
 - [ ] No P0/P1 bugs open
 - [ ] 95%+ E2E tests pass
+
+---
+
+## Phase 6: Database Standardization (Days 26-35)
+
+**Objective:** Address HIGH and MEDIUM severity database schema issues identified in the PR #331 audit.
+**Mode:** RED
+**Gate Criteria:** All Priority 2 tasks complete, data integrity verified, FK constraints added.
+**Source:** GF-PHASE0-008 analysis, `docs/roadmaps/DATABASE_REMEDIATION_ROADMAP.md`
+
+> **Note:** This phase runs AFTER Phase 5 (beta hardening). Database standardization work can proceed in parallel with beta testing since it focuses on data integrity rather than application features.
+
+### Phase 6 Overview
+
+Based on the comprehensive database audit (GF-PHASE0-008), this phase addresses:
+- **8 HIGH severity issues** requiring immediate attention
+- **7 MEDIUM severity issues** for standardization
+- **5 LOW severity issues** deferred to post-beta
+
+**Estimated Effort:** 12-28 hours (depending on scope)
+
+**Key Documents:**
+- Audit: `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md`
+- Remediation Plan: `docs/roadmaps/DATABASE_REMEDIATION_ROADMAP.md`
+- Risk Assessment: `docs/audits/DATABASE_REMEDIATION_RISK_ASSESSMENT.md`
+
+### Phase 6 Tasks
+
+#### INFRA-DB-001: Add Missing FK Constraints
+
+**Task ID:** INFRA-DB-001
+**Source:** PR #331 Database Audit (Issues #4-8, #13-18)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Mode:** RED
+**Module:** Database migrations
+
+**Problem:**
+15+ tables have columns without FK constraints, risking data integrity:
+- `brands.vendorId`, `lots.vendorId`, `paymentHistory.vendorId`
+- `bills.vendorId`, `expenses.vendorId`
+- `products.brandId`, `batches.productId/lotId`
+- `billLineItems`, `ledgerEntries`, `sales`
+
+**Agent Checklist:**
+- [ ] Audit current FK constraints in production
+- [ ] Check for orphaned records in each table
+- [ ] Fix orphaned records (update to valid ID or set NULL)
+- [ ] Create migration file with FK additions
+- [ ] Test migration in staging
+- [ ] Apply to production
+- [ ] Verify all constraints active
+- [ ] Document FK relationships
+
+**Acceptance Criteria:**
+- [ ] All FK constraints added successfully
+- [ ] No orphaned records remain
+- [ ] Database integrity verified
+- [ ] Application functions normally
+
+---
+
+#### INFRA-DB-002: Rename Misleading vendorId Columns
+
+**Task ID:** INFRA-DB-002
+**Source:** PR #331 Database Audit (Issues #9, #11)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Mode:** RED
+**Module:** Database migrations, server code
+
+**Problem:**
+Columns named `vendorId` that reference `clients.id` cause confusion:
+- `payments.vendorId` → references `clients.id` (suppliers)
+- `purchaseOrders.vendorId` → deprecated, use `supplierClientId`
+
+**Agent Checklist:**
+- [ ] Identify all code references to affected columns
+- [ ] Create migration to rename columns
+- [ ] Update Drizzle schema definitions
+- [ ] Update all server-side queries
+- [ ] Update all client-side references
+- [ ] Test all affected flows
+- [ ] Run full test suite
+
+**Acceptance Criteria:**
+- [ ] Columns renamed in database
+- [ ] Drizzle schema updated
+- [ ] All code references updated
+- [ ] All tests pass
+
+---
+
+#### INFRA-DB-003: Consolidate Image Tables (DEFERRED)
+
+**Task ID:** INFRA-DB-003
+**Status:** deferred
+**Priority:** MEDIUM
+**Estimate:** 16h
+**Mode:** RED
+**Deferred To:** Post-Beta
+
+**Problem:**
+Two image tables exist with overlapping purposes:
+- `productMedia` - Basic image storage
+- `productImages` - Richer schema with status, uploadedBy, sortOrder
+
+**Why Deferred:**
+- Large refactor (16h+)
+- Current workarounds functional
+- Risk of regression during beta
+
+---
+
+#### INFRA-DB-004: Complete Vendors → Clients Migration (DEFERRED)
+
+**Task ID:** INFRA-DB-004
+**Status:** deferred
+**Priority:** MEDIUM
+**Estimate:** 24h
+**Mode:** RED
+**Deferred To:** Post-Beta
+
+**Problem:**
+The Party Model transition from `vendors` to `clients` is incomplete.
+
+**Why Deferred:**
+- Major data migration (24h+)
+- High risk during beta
+- Current dual-table approach functional
+
+---
+
+### Phase 6 Gate Verification
+
+Before declaring Phase 6 complete:
+
+```bash
+# Check FK constraints exist
+mysql -e "SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
+FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE CONSTRAINT_SCHEMA = 'defaultdb' AND REFERENCED_TABLE_NAME IS NOT NULL;"
+
+# Check no orphan errors
+mysql -e "SELECT 'brands', COUNT(*) FROM brands WHERE vendorId NOT IN (SELECT id FROM clients)
+UNION SELECT 'bills', COUNT(*) FROM bills WHERE vendorId NOT IN (SELECT id FROM clients);"
+
+# Run full verification
+pnpm check && pnpm lint && pnpm test && pnpm build
+```
+
+**Phase 6 Exit Criteria:**
+
+- [ ] INFRA-DB-001 complete (FK constraints added)
+- [ ] INFRA-DB-002 complete (columns renamed)
+- [ ] No orphan records in production
+- [ ] All tests pass
+- [ ] No FK violation errors in logs
+- [ ] Documentation updated
 
 ---
 

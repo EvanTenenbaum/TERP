@@ -871,6 +871,23 @@ pnpm test --run 2>&1 | tee test-results.log
 | INFRA-022   | Pick & Pack Consolidation Phase 2 - Feature Flag | HIGH     | ready                                                  | -      |
 | INFRA-023   | Pick & Pack Consolidation Phase 3 - Migration    | HIGH     | ready                                                  | -      |
 | INFRA-024   | Pick & Pack Consolidation Phase 4 - Cleanup      | MEDIUM   | ready                                                  | -      |
+| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)            | HIGH     | ready                                                  | -      |
+| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)    | HIGH     | ready                                                  | -      |
+| INFRA-DB-003 | Consolidate Image Tables (Deferred)             | MEDIUM   | deferred                                               | -      |
+| INFRA-DB-004 | Complete Vendors → Clients Migration (Deferred) | MEDIUM   | deferred                                               | -      |
+
+> **INFRA-DB Tasks (Database Standardization - Phase 6):**
+>
+> - **Source:** GF-PHASE0-008 Database Audit Review (Jan 28, 2026)
+> - **Audit Document:** `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md`
+> - **Remediation Plan:** `docs/roadmaps/DATABASE_REMEDIATION_ROADMAP.md`
+> - **Risk Assessment:** `docs/audits/DATABASE_REMEDIATION_RISK_ASSESSMENT.md`
+> - **Total Issues:** 23 (3 CRITICAL, 8 HIGH, 7 MEDIUM, 5 LOW)
+> - **Phase 6 Effort:** 12-28h (Priority 2 + optional Priority 3)
+> - **INFRA-DB-001:** Add FK constraints to 15+ tables (brands, lots, bills, etc.)
+> - **INFRA-DB-002:** Rename payments.vendorId → supplierClientId
+> - **INFRA-DB-003:** Consolidate productMedia + productImages tables (DEFERRED)
+> - **INFRA-DB-004:** Complete Party Model vendors → clients migration (DEFERRED)
 
 > **INFRA-017 Details (Memory Health Check False Positive):**
 >
