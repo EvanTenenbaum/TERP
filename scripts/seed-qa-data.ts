@@ -201,17 +201,28 @@ const QA_PRODUCTS = [
 ];
 
 /**
- * Registry file path
+ * Registry file path - uses __dirname for consistent path resolution (QA-006 fix)
  */
 const REGISTRY_PATH = path.join(
-  process.cwd(),
+  __dirname,
+  "..",
   "docs",
   "qa",
   "qa-data-registry.json"
 );
 
 /**
- * Load existing registry or create new one
+ * Safely extract insertId from result with defensive check (QA-008 fix)
+ */
+function getInsertId(result: { insertId: number | bigint }[]): number {
+  if (!result || !result[0] || result[0].insertId === undefined) {
+    throw new Error("INSERT operation did not return an insertId");
+  }
+  return Number(result[0].insertId);
+}
+
+/**
+ * Load existing registry or create new one (QA-007 fix: backup corrupt files)
  */
 function loadRegistry(): QARegistry {
   try {
@@ -219,8 +230,26 @@ function loadRegistry(): QARegistry {
       const content = fs.readFileSync(REGISTRY_PATH, "utf-8");
       return JSON.parse(content);
     }
-  } catch (_error) {
-    console.warn("Warning: Could not load existing registry, creating new one");
+  } catch (error) {
+    // QA-007: Backup corrupt file before overwriting
+    if (fs.existsSync(REGISTRY_PATH)) {
+      const backupPath = `${REGISTRY_PATH}.corrupt.${Date.now()}`;
+      try {
+        fs.copyFileSync(REGISTRY_PATH, backupPath);
+        console.warn(`Warning: Corrupt registry backed up to: ${backupPath}`);
+      } catch (backupError) {
+        console.warn(
+          "Warning: Could not backup corrupt registry:",
+          backupError instanceof Error
+            ? backupError.message
+            : String(backupError)
+        );
+      }
+    }
+    console.warn(
+      "Warning: Could not load existing registry, creating new one. Error:",
+      error instanceof Error ? error.message : String(error)
+    );
   }
 
   return {
@@ -234,19 +263,38 @@ function loadRegistry(): QARegistry {
 }
 
 /**
- * Save registry to file
+ * Save registry to file (QA-003 fix: proper error handling)
  */
-function saveRegistry(registry: QARegistry): void {
+function saveRegistry(registry: QARegistry): boolean {
   registry.updatedAt = new Date().toISOString();
 
-  // Ensure directory exists
-  const dir = path.dirname(REGISTRY_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  try {
+    // Ensure directory exists
+    const dir = path.dirname(REGISTRY_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
 
-  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
-  console.info(`\nRegistry saved to: ${REGISTRY_PATH}`);
+    fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
+    console.info(`\nRegistry saved to: ${REGISTRY_PATH}`);
+    return true;
+  } catch (error) {
+    console.error(
+      "\nWARNING: Failed to write registry file:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error("Entities were created in the database successfully.");
+    console.error("To recover registry, query the database directly:");
+    console.error("  SELECT id, site FROM locations WHERE site LIKE 'QA_%';");
+    console.error(
+      "  SELECT id, teri_code, name FROM clients WHERE teri_code LIKE 'QA_%';"
+    );
+    console.error("  SELECT id, name FROM brands WHERE name LIKE 'QA_%';");
+    console.error(
+      "  SELECT id, nameCanonical FROM products WHERE nameCanonical LIKE 'QA_%';"
+    );
+    return false;
+  }
 }
 
 /**
@@ -271,10 +319,16 @@ async function seedQAData(): Promise<void> {
 
   let connection: Awaited<ReturnType<typeof mysql.createConnection>> | null =
     null;
+  let transactionStarted = false;
 
   try {
     connection = await mysql.createConnection(databaseUrl);
     const db = drizzle(connection, { schema, mode: "default" });
+
+    // QA-001: Start transaction for atomicity
+    await connection.beginTransaction();
+    transactionStarted = true;
+    console.info("Transaction started (QA-001: atomic seeding)...");
 
     const registry = loadRegistry();
 
@@ -325,7 +379,7 @@ async function seedQAData(): Promise<void> {
         isActive: 1,
       });
 
-      const insertId = Number(result[0].insertId);
+      const insertId = getInsertId(result);
       registry.locations.push({ id: insertId, site: loc.site });
       stats.locations.created++;
       console.info(`[OK] ID: ${insertId}`);
@@ -377,7 +431,7 @@ async function seedQAData(): Promise<void> {
         creditLimit: "5000.00",
       });
 
-      const insertId = Number(result[0].insertId);
+      const insertId = getInsertId(result);
       registry.clients.customers.push({
         id: insertId,
         teriCode: cust.teriCode,
@@ -432,7 +486,7 @@ async function seedQAData(): Promise<void> {
         paymentTerms: 30,
       });
 
-      const insertId = Number(result[0].insertId);
+      const insertId = getInsertId(result);
       registry.clients.suppliers.push({
         id: insertId,
         teriCode: supp.teriCode,
@@ -479,7 +533,7 @@ async function seedQAData(): Promise<void> {
         description: brand.description,
       });
 
-      const insertId = Number(result[0].insertId);
+      const insertId = getInsertId(result);
       brandIds.push(insertId);
       registry.brands.push({ id: insertId, name: brand.name });
       stats.brands.created++;
@@ -532,7 +586,7 @@ async function seedQAData(): Promise<void> {
           uomSellable: "EA",
         });
 
-        const insertId = Number(result[0].insertId);
+        const insertId = getInsertId(result);
         registry.products.push({
           id: insertId,
           name: prod.nameCanonical,
@@ -543,7 +597,12 @@ async function seedQAData(): Promise<void> {
       }
     }
 
-    // Save registry
+    // QA-001: Commit transaction before saving registry
+    await connection.commit();
+    transactionStarted = false;
+    console.info("\nTransaction committed successfully.");
+
+    // Save registry (outside transaction - file operation)
     saveRegistry(registry);
 
     // ======================================================================
@@ -598,6 +657,20 @@ async function seedQAData(): Promise<void> {
     );
     console.info("");
   } catch (error) {
+    // QA-001: Rollback transaction on error
+    if (transactionStarted && connection) {
+      try {
+        await connection.rollback();
+        console.error("\nTransaction rolled back due to error.");
+      } catch (rollbackError) {
+        console.error(
+          "WARNING: Rollback failed:",
+          rollbackError instanceof Error
+            ? rollbackError.message
+            : String(rollbackError)
+        );
+      }
+    }
     console.error(
       "ERROR:",
       error instanceof Error ? error.message : String(error)
