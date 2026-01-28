@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router, vipPortalProcedure } from "../_core/trpc";
+import { invalidateVipSession } from "../_core/tokenInvalidation";
 import { getDb } from "../db";
 import {
   appointmentRequests,

@@ -10,6 +10,7 @@ import { env } from "./env";
 import { db } from "../db";
 import { vipPortalAuth } from "../../drizzle/schema-vip-portal";
 import { eq, and, gt } from "drizzle-orm";
+import { isVipSessionInvalidated } from "./tokenInvalidation";
 
 /**
  * Helper to get authenticated user ID from context.
@@ -348,6 +349,15 @@ async function verifyVipPortalSession(
   }
 
   try {
+    // SEC-030: Check token blacklist first (for revoked/suspicious tokens)
+    if (isVipSessionInvalidated(sessionToken)) {
+      logger.warn({
+        msg: "VIP portal session token is blacklisted",
+        tokenPrefix: sessionToken.substring(0, 10) + "...",
+      });
+      return null;
+    }
+
     const now = new Date();
 
     // Find valid session (not expired)

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +22,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Check, User, Building2, Mail, Phone, MapPin, CreditCard, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Separator } from "@/components/ui/separator";
 
 interface AddClientWizardProps {
   open: boolean;
@@ -33,8 +34,19 @@ interface AddClientWizardProps {
   onSuccess?: (clientId: number) => void;
 }
 
+// Step names for the wizard
+const STEP_NAMES = {
+  1: "Basic Information",
+  2: "Client Types",
+  3: "Tags & Notes",
+  4: "Review & Confirm",
+} as const;
+
+const TOTAL_STEPS = 4;
+
 export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWizardProps) {
   const [step, setStep] = useState(1);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [formData, setFormData] = useState({
     teriCode: "",
     name: "",
@@ -133,12 +145,75 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   };
 
   const handleNext = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < TOTAL_STEPS) setStep(step + 1);
   };
 
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
+
+  // Handle cancel with confirmation if there's partial progress
+  const handleCancelClick = useCallback(() => {
+    if (hasFormData) {
+      setCancelConfirmOpen(true);
+    } else {
+      onOpenChange(false);
+      resetForm();
+    }
+  }, [hasFormData, onOpenChange]);
+
+  const confirmCancel = useCallback(() => {
+    setCancelConfirmOpen(false);
+    onOpenChange(false);
+    resetForm();
+  }, [onOpenChange]);
+
+  // Get client types as display strings
+  const getSelectedClientTypes = useCallback(() => {
+    const types: string[] = [];
+    if (formData.isBuyer) types.push("Buyer");
+    if (formData.isSeller) types.push("Seller");
+    if (formData.isBrand) types.push("Brand");
+    if (formData.isReferee) types.push("Referee");
+    if (formData.isContractor) types.push("Contractor");
+    return types;
+  }, [formData.isBuyer, formData.isSeller, formData.isBrand, formData.isReferee, formData.isContractor]);
+
+  // Get formatted address for review
+  const getFormattedAddress = useCallback(() => {
+    const parts = [
+      formData.address,
+      formData.city,
+      formData.state,
+      formData.zipCode
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : null;
+  }, [formData.address, formData.city, formData.state, formData.zipCode]);
+
+  // Get business type label for display
+  const getBusinessTypeLabel = useCallback((type: string) => {
+    const labels: Record<string, string> = {
+      RETAIL: "Retail",
+      WHOLESALE: "Wholesale",
+      DISPENSARY: "Dispensary",
+      DELIVERY: "Delivery",
+      MANUFACTURER: "Manufacturer",
+      DISTRIBUTOR: "Distributor",
+      OTHER: "Other",
+    };
+    return labels[type] || type;
+  }, []);
+
+  // Get preferred contact label for display
+  const getPreferredContactLabel = useCallback((method: string) => {
+    const labels: Record<string, string> = {
+      EMAIL: "Email",
+      PHONE: "Phone",
+      TEXT: "Text",
+      ANY: "Any",
+    };
+    return labels[method] || method;
+  }, []);
 
   const handleSubmit = async () => {
     // BUG-071 FIX: Enhanced validation with user feedback
@@ -230,8 +305,19 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
         <DialogHeader>
           <DialogTitle>Add New Client</DialogTitle>
           <DialogDescription>
-            Step {step} of 3: {step === 1 ? "Basic Information" : step === 2 ? "Client Types" : "Tags & Notes"}
+            Step {step} of {TOTAL_STEPS}: {STEP_NAMES[step as keyof typeof STEP_NAMES]}
           </DialogDescription>
+          {/* Step progress indicator */}
+          <div className="flex gap-1 mt-2">
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+              <div
+                key={i}
+                className={`h-1 flex-1 rounded-full transition-colors ${
+                  i + 1 <= step ? "bg-primary" : "bg-muted"
+                }`}
+              />
+            ))}
+          </div>
         </DialogHeader>
 
         {/* Step 1: Basic Information - FEAT-001 Enhanced */}
@@ -612,6 +698,174 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                         ))}
                     </div>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Step 4: Review & Confirm */}
+        {step === 4 && (
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-primary" />
+                  Review Client Information
+                </CardTitle>
+                <CardDescription>
+                  Please review the information below before creating the client
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Basic Information Section */}
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    Basic Information
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 pl-6 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">TERI Code:</span>
+                      <p className="font-medium">{formData.teriCode}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Contact Name:</span>
+                      <p className="font-medium">{formData.name}</p>
+                    </div>
+                    {formData.companyName && (
+                      <div className="col-span-2">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Building2 className="h-3 w-3" /> Company:
+                        </span>
+                        <p className="font-medium">{formData.companyName}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Contact Information Section */}
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    Contact Details
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 pl-6 text-sm">
+                    {formData.email && (
+                      <div>
+                        <span className="text-muted-foreground">Email:</span>
+                        <p className="font-medium">{formData.email}</p>
+                      </div>
+                    )}
+                    {formData.phone && (
+                      <div>
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Phone className="h-3 w-3" /> Primary Phone:
+                        </span>
+                        <p className="font-medium">{formData.phone}</p>
+                      </div>
+                    )}
+                    {formData.secondaryPhone && (
+                      <div>
+                        <span className="text-muted-foreground">Secondary Phone:</span>
+                        <p className="font-medium">{formData.secondaryPhone}</p>
+                      </div>
+                    )}
+                    {formData.preferredContact && (
+                      <div>
+                        <span className="text-muted-foreground">Preferred Contact:</span>
+                        <p className="font-medium">{getPreferredContactLabel(formData.preferredContact)}</p>
+                      </div>
+                    )}
+                    {!formData.email && !formData.phone && (
+                      <p className="text-muted-foreground col-span-2 italic">No contact details provided</p>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Address Section */}
+                {getFormattedAddress() && (
+                  <>
+                    <div className="space-y-3">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        Address
+                      </h4>
+                      <p className="pl-6 text-sm font-medium">{getFormattedAddress()}</p>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Business Details Section */}
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    Business Details
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 pl-6 text-sm">
+                    {formData.businessType && (
+                      <div>
+                        <span className="text-muted-foreground">Business Type:</span>
+                        <p className="font-medium">{getBusinessTypeLabel(formData.businessType)}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground">Payment Terms:</span>
+                      <p className="font-medium">Net {formData.paymentTerms} days</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Client Types Section */}
+                <div className="space-y-3">
+                  <h4 className="font-medium">Client Types</h4>
+                  <div className="flex flex-wrap gap-2 pl-6">
+                    {getSelectedClientTypes().map((type) => (
+                      <Badge key={type} variant="default">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags Section */}
+                {formData.tags.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                        Tags
+                      </h4>
+                      <div className="flex flex-wrap gap-2 pl-6">
+                        {formData.tags.map((tag) => (
+                          <Badge key={tag} variant="outline">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Notes Section */}
+                {formData.notes && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Notes</h4>
+                      <p className="pl-6 text-sm text-muted-foreground whitespace-pre-wrap">
+                        {formData.notes}
+                      </p>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

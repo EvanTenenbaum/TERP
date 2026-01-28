@@ -98,6 +98,29 @@ export const purchaseOrdersRouter = router({
       let resolvedSupplierClientId = poData.supplierClientId;
       let resolvedVendorId = poData.vendorId;
 
+      // PARTY-001: Validate supplierClientId is a seller client if provided directly
+      if (resolvedSupplierClientId) {
+        const [supplierClient] = await db
+          .select({ id: clients.id, isSeller: clients.isSeller })
+          .from(clients)
+          .where(eq(clients.id, resolvedSupplierClientId))
+          .limit(1);
+
+        if (!supplierClient) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Client with ID ${resolvedSupplierClientId} not found`,
+          });
+        }
+
+        if (!supplierClient.isSeller) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Client with ID ${resolvedSupplierClientId} is not a supplier (isSeller=false)`,
+          });
+        }
+      }
+
       // If only vendorId provided, resolve to supplierClientId via supplier_profiles
       if (!resolvedSupplierClientId && resolvedVendorId) {
         console.warn('[DEPRECATED] purchaseOrders.create called with vendorId - use supplierClientId instead');

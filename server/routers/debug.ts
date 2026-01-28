@@ -4,7 +4,7 @@
  */
 
 import { sql, isNull, eq } from 'drizzle-orm';
-import { adminProcedure, protectedProcedure, router } from '../_core/trpc.js';
+import { adminProcedure, router } from '../_core/trpc.js';
 import { getDb } from '../db.js';
 import { getConnectionPool } from '../_core/connectionPool.js';
 import { vendors, clients, products, batches, orders, invoices, payments, sampleRequests } from '../../drizzle/schema.js';
@@ -443,9 +443,10 @@ export const debugRouter = router({
   /**
    * QA-049/QA-050: Data Display Diagnostic Endpoint
    * Comprehensive check of products and samples data at database level
-   * Protected: Requires authentication to prevent information disclosure
+   * SEC-028: Requires admin authentication, disabled in production
    */
-  dataDisplayDiagnostics: protectedProcedure.query(async () => {
+  dataDisplayDiagnostics: adminProcedure.query(async () => {
+    assertDebugAllowed();
     try {
       const db = await getDb();
       if (!db) throw new Error('Database not available');
