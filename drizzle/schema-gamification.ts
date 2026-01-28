@@ -727,7 +727,8 @@ export type InsertCouchTaxPayout = typeof couchTaxPayouts.$inferInsert;
  * Referral Settings
  * Global configuration for the referral program
  */
-export const referralSettings = mysqlTable("referral_settings", {
+// SCHEMA-010 FIX: Renamed from referralSettings to avoid conflict with schema.ts
+export const referralGamificationSettings = mysqlTable("referral_gamification_settings", {
   id: int("id").autoincrement().primaryKey(),
 
   // Only one active settings record
@@ -766,8 +767,11 @@ export const referralSettings = mysqlTable("referral_settings", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export type ReferralSettings = typeof referralSettings.$inferSelect;
-export type InsertReferralSettings = typeof referralSettings.$inferInsert;
+export type ReferralGamificationSettings = typeof referralGamificationSettings.$inferSelect;
+export type InsertReferralGamificationSettings = typeof referralGamificationSettings.$inferInsert;
+// Backwards compatibility aliases for gamification settings
+export type ReferralSettings = ReferralGamificationSettings;
+export type InsertReferralSettings = InsertReferralGamificationSettings;
 
 // ============================================================================
 // Relations
@@ -922,11 +926,11 @@ export const couchTaxPayoutsRelations = relations(
   })
 );
 
-export const referralSettingsRelations = relations(
-  referralSettings,
+export const referralGamificationSettingsRelations = relations(
+  referralGamificationSettings,
   ({ one }) => ({
     updatedBy: one(users, {
-      fields: [referralSettings.updatedById],
+      fields: [referralGamificationSettings.updatedById],
       references: [users.id],
     }),
   })

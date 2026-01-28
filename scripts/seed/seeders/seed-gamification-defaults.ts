@@ -13,7 +13,7 @@ import { db, closePool } from "../../db-sync";
 import {
   achievements,
   rewardCatalog,
-  referralSettings,
+  referralGamificationSettings,
 } from "../../../drizzle/schema-gamification";
 import { eq } from "drizzle-orm";
 
@@ -575,8 +575,8 @@ async function seedReferralSettings(): Promise<boolean> {
   try {
     // First, try to query with gamification schema to verify columns exist
     // This will fail if the table has legacy columns instead
-    const existing = await db.query.referralSettings.findFirst({
-      where: eq(referralSettings.isActive, true),
+    const existing = await db.query.referralGamificationSettings.findFirst({
+      where: eq(referralGamificationSettings.isActive, true),
     });
 
     if (existing) {
@@ -601,7 +601,7 @@ async function seedReferralSettings(): Promise<boolean> {
     }
 
     // No existing records - try to insert
-    await db.insert(referralSettings).values(DEFAULT_REFERRAL_SETTINGS);
+    await db.insert(referralGamificationSettings).values(DEFAULT_REFERRAL_SETTINGS);
     console.info("  ✓ Created default referral settings");
     return true;
   } catch (error) {
