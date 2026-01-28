@@ -3,7 +3,7 @@
  * Provides reusable database queries for inventory operations
  */
 
-import { eq, and, or, like, desc, sql } from "drizzle-orm";
+import { eq, and, or, like, desc, sql, isNull } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
@@ -1166,7 +1166,8 @@ export async function updateLocation(data: {
 export async function deleteLocation(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(locations).where(eq(locations.id, id));
+  // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+  await db.update(locations).set({ deletedAt: new Date() }).where(eq(locations.id, id));
   return { success: true };
 }
 
@@ -1218,9 +1219,10 @@ export async function updateCategory(
 export async function deleteCategory(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Delete associated subcategories first
-  await db.delete(subcategories).where(eq(subcategories.categoryId, id));
-  await db.delete(categories).where(eq(categories.id, id));
+  // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+  // Soft delete associated subcategories first
+  await db.update(subcategories).set({ deletedAt: new Date() }).where(eq(subcategories.categoryId, id));
+  await db.update(categories).set({ deletedAt: new Date() }).where(eq(categories.id, id));
   return { success: true };
 }
 
@@ -1261,7 +1263,8 @@ export async function updateSubcategory(
 export async function deleteSubcategory(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(subcategories).where(eq(subcategories.id, id));
+  // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+  await db.update(subcategories).set({ deletedAt: new Date() }).where(eq(subcategories.id, id));
   return { success: true };
 }
 
@@ -1308,7 +1311,8 @@ export async function updateGrade(
 export async function deleteGrade(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(grades).where(eq(grades.id, id));
+  // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+  await db.update(grades).set({ deletedAt: new Date() }).where(eq(grades.id, id));
   return { success: true };
 }
 
@@ -1450,7 +1454,11 @@ export async function getDashboardStats() {
       // INV-CONSISTENCY-001: Define sellable status filter for consistent inventory counting
       // Only LIVE and PHOTOGRAPHY_COMPLETE batches are considered "available" inventory
       // ST-058-B: Using safeInArray to handle empty array edge case gracefully
-      const sellableStatusFilter = safeInArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]);
+      // TERP-0019: Added isNull(batches.deletedAt) to exclude soft-deleted batches
+      const sellableStatusFilter = and(
+        safeInArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]),
+        isNull(batches.deletedAt)
+      );
 
       // PERF-004: Use SQL aggregation instead of fetching all batches
       // Query 1: Get totals using SQL SUM aggregation
@@ -1468,12 +1476,14 @@ export async function getDashboardStats() {
 
       // Query 2: Get status counts using SQL COUNT with GROUP BY
       // NOTE: This query intentionally counts ALL statuses for visibility
+      // TERP-0019: Filter out soft-deleted batches for accurate counts
       const statusCountsResult = await db
         .select({
           status: batches.batchStatus,
           count: sql<number>`COUNT(*)`,
         })
         .from(batches)
+        .where(isNull(batches.deletedAt))
         .groupBy(batches.batchStatus);
 
       // Build status counts object with defaults

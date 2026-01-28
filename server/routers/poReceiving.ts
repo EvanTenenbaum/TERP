@@ -22,7 +22,7 @@ import {
   batchLocations,
   locations,
 } from "../../drizzle/schema";
-import { eq, and, desc, sql, or } from "drizzle-orm";
+import { eq, and, desc, sql, or, isNull } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
@@ -144,11 +144,16 @@ export const poReceivingRouter = router({
               poId: input.poId,
             });
           } else if (batchId) {
-            // Update existing batch quantity
+            // Update existing batch quantity (exclude soft-deleted)
             const [batch] = await tx
               .select()
               .from(batches)
-              .where(eq(batches.id, batchId))
+              .where(
+                and(
+                  eq(batches.id, batchId),
+                  isNull(batches.deletedAt)
+                )
+              )
               .for("update");
 
             if (!batch) {
@@ -241,7 +246,8 @@ export const poReceivingRouter = router({
         .where(
           and(
             eq(inventoryMovements.referenceType, "PO_RECEIPT"),
-            eq(inventoryMovements.referenceId, input.poId)
+            eq(inventoryMovements.referenceId, input.poId),
+            isNull(inventoryMovements.deletedAt)
           )
         )
         .orderBy(desc(inventoryMovements.createdAt));
@@ -288,7 +294,12 @@ export const poReceivingRouter = router({
         `,
       })
       .from(inventoryMovements)
-      .where(eq(inventoryMovements.referenceType, "PO_RECEIPT"));
+      .where(
+        and(
+          eq(inventoryMovements.referenceType, "PO_RECEIPT"),
+          isNull(inventoryMovements.deletedAt)
+        )
+      );
 
     return (
       stats[0] || {
@@ -340,16 +351,27 @@ export const poReceivingRouter = router({
             category: products.category,
           })
           .from(purchaseOrderItems)
-          .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+          .leftJoin(
+            products,
+            and(
+              eq(purchaseOrderItems.productId, products.id),
+              isNull(products.deletedAt)
+            )
+          )
           .where(eq(purchaseOrderItems.purchaseOrderId, po.id));
 
-        // Get supplier info
+        // Get supplier info (exclude soft-deleted)
         let supplierName = "Unknown";
         if (po.supplierClientId) {
           const [supplier] = await db
             .select({ name: clients.name })
             .from(clients)
-            .where(eq(clients.id, po.supplierClientId));
+            .where(
+              and(
+                eq(clients.id, po.supplierClientId),
+                isNull(clients.deletedAt)
+              )
+            );
           supplierName = supplier?.name || "Unknown";
         }
 
@@ -428,14 +450,20 @@ export const poReceivingRouter = router({
         });
       }
 
-      // Get PO items with product info
+      // Get PO items with product info (exclude soft-deleted products)
       const poItems = await db
         .select({
           item: purchaseOrderItems,
           product: products,
         })
         .from(purchaseOrderItems)
-        .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+        .leftJoin(
+          products,
+          and(
+            eq(purchaseOrderItems.productId, products.id),
+            isNull(products.deletedAt)
+          )
+        )
         .where(eq(purchaseOrderItems.purchaseOrderId, input.purchaseOrderId));
 
       const poItemMap = new Map(poItems.map(i => [i.item.id, i]));
@@ -556,12 +584,17 @@ export const poReceivingRouter = router({
           if (item.locationId || item.locationData) {
             let locationData = item.locationData;
 
-            // If locationId provided, get the location data
+            // If locationId provided, get the location data (exclude soft-deleted)
             if (item.locationId) {
               const [loc] = await tx
                 .select()
                 .from(locations)
-                .where(eq(locations.id, item.locationId));
+                .where(
+                  and(
+                    eq(locations.id, item.locationId),
+                    isNull(locations.deletedAt)
+                  )
+                );
               if (loc) {
                 locationData = {
                   site: loc.site,
@@ -676,7 +709,12 @@ export const poReceivingRouter = router({
     const availableLocations = await db
       .select()
       .from(locations)
-      .where(eq(locations.isActive, 1))
+      .where(
+        and(
+          eq(locations.isActive, 1),
+          isNull(locations.deletedAt)
+        )
+      )
       .orderBy(
         locations.site,
         locations.zone,

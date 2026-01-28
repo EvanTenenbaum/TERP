@@ -340,7 +340,8 @@ export const purchaseOrdersRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    await db.delete(purchaseOrders).where(eq(purchaseOrders.id, input.id));
+    // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+    await db.update(purchaseOrders).set({ deletedAt: new Date() }).where(eq(purchaseOrders.id, input.id));
     return { success: true };
   }),
 
@@ -463,7 +464,8 @@ export const purchaseOrdersRouter = router({
       throw new Error("Purchase order item not found");
     }
 
-    await db.delete(purchaseOrderItems).where(eq(purchaseOrderItems.id, input.id));
+    // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+    await db.update(purchaseOrderItems).set({ deletedAt: new Date() }).where(eq(purchaseOrderItems.id, input.id));
 
     // Recalculate PO totals
     await recalculatePOTotals(db, item.purchaseOrderId);

@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import { getDb } from "./db";
 import { vendorSupply } from "../drizzle/schema";
 import { logger } from "./_core/logger";
@@ -35,7 +35,7 @@ export async function createVendorSupply(
 /**
  * Get a vendor supply item by ID
  * @param id - The vendor supply ID
- * @returns The vendor supply or null if not found
+ * @returns The vendor supply or null if not found (excludes soft-deleted)
  */
 export async function getVendorSupplyById(
   id: number
@@ -44,10 +44,11 @@ export async function getVendorSupplyById(
   if (!db) throw new Error("Database not available");
 
   try {
+    // PARTY-004: Exclude soft-deleted records
     const [supply] = await db
       .select()
       .from(vendorSupply)
-      .where(eq(vendorSupply.id, id));
+      .where(and(eq(vendorSupply.id, id), isNull(vendorSupply.deletedAt)));
 
     return supply || null;
   } catch (error) {
@@ -61,7 +62,7 @@ export async function getVendorSupplyById(
 /**
  * Get all vendor supply items with optional filters
  * @param filters - Optional filters for status, vendorId, strain, category
- * @returns Array of vendor supply items
+ * @returns Array of vendor supply items (excludes soft-deleted)
  */
 export async function getVendorSupply(filters?: {
   status?: "AVAILABLE" | "RESERVED" | "PURCHASED" | "EXPIRED";
@@ -75,7 +76,8 @@ export async function getVendorSupply(filters?: {
   try {
     let query = db.select().from(vendorSupply);
 
-    const conditions = [];
+    // PARTY-004: Always exclude soft-deleted records
+    const conditions = [isNull(vendorSupply.deletedAt)];
     if (filters?.status) {
       conditions.push(eq(vendorSupply.status, filters.status));
     }
@@ -89,10 +91,8 @@ export async function getVendorSupply(filters?: {
       conditions.push(eq(vendorSupply.category, filters.category));
     }
 
-    if (conditions.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      query = query.where(and(...conditions)) as any;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query = query.where(and(...conditions)) as any;
 
     const supplies = await query.orderBy(desc(vendorSupply.createdAt));
     return supplies;
@@ -107,7 +107,7 @@ export async function getVendorSupply(filters?: {
 /**
  * Get available vendor supply items
  * @param vendorId - Optional vendor ID filter
- * @returns Array of available vendor supply items
+ * @returns Array of available vendor supply items (excludes soft-deleted)
  */
 export async function getAvailableVendorSupply(
   vendorId?: number
@@ -116,7 +116,11 @@ export async function getAvailableVendorSupply(
   if (!db) throw new Error("Database not available");
 
   try {
-    const conditions = [eq(vendorSupply.status, "AVAILABLE")];
+    // PARTY-004: Always exclude soft-deleted records
+    const conditions = [
+      eq(vendorSupply.status, "AVAILABLE"),
+      isNull(vendorSupply.deletedAt),
+    ];
 
     if (vendorId) {
       conditions.push(eq(vendorSupply.vendorId, vendorId));
@@ -216,19 +220,23 @@ export async function purchaseVendorSupply(id: number): Promise<VendorSupply> {
 }
 
 /**
- * Delete a vendor supply item
+ * Soft delete a vendor supply item (PARTY-004)
  * @param id - The vendor supply ID
- * @returns True if deleted successfully
+ * @returns True if soft deleted successfully
  */
 export async function deleteVendorSupply(id: number): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.delete(vendorSupply).where(eq(vendorSupply.id, id));
+    // PARTY-004: Use soft delete instead of hard delete
+    await db
+      .update(vendorSupply)
+      .set({ deletedAt: new Date() })
+      .where(eq(vendorSupply.id, id));
     return true;
   } catch (error) {
-    logger.error({ error }, "Error deleting vendor supply");
+    logger.error({ error }, "Error soft-deleting vendor supply");
     throw new Error(
       `Failed to delete vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -294,19 +302,21 @@ export async function getVendorSupplyWithMatches(filters?: {
 
 /**
  * Expire old vendor supply items based on availableUntil date
- * @returns Number of supplies expired
+ * @returns Number of supplies expired (excludes soft-deleted)
  */
 export async function expireOldVendorSupply(): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
+    // PARTY-004: Only expire non-deleted records
     const result = await db
       .update(vendorSupply)
       .set({ status: "EXPIRED" })
       .where(
         and(
           eq(vendorSupply.status, "AVAILABLE"),
+          isNull(vendorSupply.deletedAt),
           sql`${vendorSupply.availableUntil} < NOW()`
         )
       );

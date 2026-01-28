@@ -186,6 +186,7 @@ export async function updateInvoiceStatus(
 
 /**
  * Record payment for invoice
+ * ST-061: Added over-allocation validation to prevent payments exceeding invoice total
  */
 export async function recordInvoicePayment(invoiceId: number, amount: number) {
   const db = await getDb();
@@ -199,8 +200,21 @@ export async function recordInvoicePayment(invoiceId: number, amount: number) {
   if (!invoice[0]) throw new Error("Invoice not found or deleted");
 
   const currentAmountPaid = Number(invoice[0].amountPaid);
-  const newAmountPaid = currentAmountPaid + amount;
   const totalAmount = Number(invoice[0].totalAmount);
+  const currentAmountDue = totalAmount - currentAmountPaid;
+
+  // ST-061: Validate payment doesn't exceed amount due (with 0.01 tolerance for floating point)
+  if (amount > currentAmountDue + 0.01) {
+    const maxAllocation = Math.max(0, currentAmountDue).toFixed(2);
+    throw new Error(
+      `Payment would exceed invoice total. Amount: ${amount.toFixed(2)}, Max allocation: ${maxAllocation}`
+    );
+  }
+
+  // Cap at amount due to handle minor floating point discrepancies
+  const effectiveAmount = amount > currentAmountDue ? currentAmountDue : amount;
+
+  const newAmountPaid = currentAmountPaid + effectiveAmount;
   const newAmountDue = totalAmount - newAmountPaid;
 
   // Determine new status
@@ -552,6 +566,7 @@ export async function updateBillStatus(
 
 /**
  * Record payment for bill
+ * ST-061: Added over-allocation validation to prevent payments exceeding bill total
  */
 export async function recordBillPayment(billId: number, amount: number) {
   const db = await getDb();
@@ -565,8 +580,21 @@ export async function recordBillPayment(billId: number, amount: number) {
   if (!bill[0]) throw new Error("Bill not found or deleted");
 
   const currentAmountPaid = Number(bill[0].amountPaid);
-  const newAmountPaid = currentAmountPaid + amount;
   const totalAmount = Number(bill[0].totalAmount);
+  const currentAmountDue = totalAmount - currentAmountPaid;
+
+  // ST-061: Validate payment doesn't exceed amount due (with 0.01 tolerance for floating point)
+  if (amount > currentAmountDue + 0.01) {
+    const maxAllocation = Math.max(0, currentAmountDue).toFixed(2);
+    throw new Error(
+      `Payment would exceed bill total. Amount: ${amount.toFixed(2)}, Max allocation: ${maxAllocation}`
+    );
+  }
+
+  // Cap at amount due to handle minor floating point discrepancies
+  const effectiveAmount = amount > currentAmountDue ? currentAmountDue : amount;
+
+  const newAmountPaid = currentAmountPaid + effectiveAmount;
   const newAmountDue = totalAmount - newAmountPaid;
 
   // Determine new status
