@@ -618,13 +618,28 @@ export const batches = mysqlTable(
      * onHandQty: Current available quantity for sale
      * This is the "live" quantity that changes with every transaction.
      * Decremented on sales, adjusted via inventory adjustments.
+     *
+     * DB Constraint: chk_batches_onHandQty_nonnegative CHECK (>= 0)
+     * Added in migration 0060_add_batch_quantity_check_constraints.sql (ST-056)
      */
     onHandQty: decimal("onHandQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
+    /**
+     * sampleQty: Quantity allocated for samples
+     *
+     * DB Constraint: chk_batches_sampleQty_nonnegative CHECK (>= 0)
+     * Added in migration 0060_add_batch_quantity_check_constraints.sql (ST-056)
+     */
     sampleQty: decimal("sampleQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),
+    /**
+     * reservedQty: Quantity reserved for pending orders
+     *
+     * DB Constraint: chk_batches_reservedQty_nonnegative CHECK (>= 0)
+     * Added in migration 0060_add_batch_quantity_check_constraints.sql (ST-056)
+     */
     reservedQty: decimal("reservedQty", { precision: 15, scale: 4 })
       .notNull()
       .default("0"),

@@ -264,10 +264,23 @@ export async function getLedgerEntryById(id: number) {
 /**
  * Create ledger entry
  * ACC-005: Validates fiscal period is OPEN before posting
+ * ST-057: Validates single-direction constraint (debit OR credit, not both)
  */
 export async function createLedgerEntry(data: InsertLedgerEntry) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ST-057: Validate single-direction constraint
+  // In double-entry bookkeeping, each entry line should have either debit OR credit, never both
+  const debitAmount = parseFloat(String(data.debit || "0"));
+  const creditAmount = parseFloat(String(data.credit || "0"));
+
+  if (debitAmount > 0 && creditAmount > 0) {
+    throw new Error(
+      "Invalid ledger entry: cannot have both debit and credit values. " +
+        "Each entry line must have either a debit OR a credit, not both."
+    );
+  }
 
   // ACC-005: Validate fiscal period is open for posting
   if (data.fiscalPeriodId) {

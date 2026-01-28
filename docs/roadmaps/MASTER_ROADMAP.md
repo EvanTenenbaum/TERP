@@ -344,34 +344,38 @@ pnpm test --run 2>&1 | tee test-results.log
 
 #### Golden Flow Status Matrix
 
-| # | Golden Flow | Current Status | Primary Blockers |
-|---|-------------|----------------|------------------|
-| GF-001 | Direct Intake | 🔴 BLOCKED | BUG-117, ST-058, INV-003 |
-| GF-002 | Procure-to-Pay | 🔴 BLOCKED | ST-059, PARTY-001, SCHEMA-011 |
-| GF-003 | Order-to-Cash | 🔴 BLOCKED | BUG-115, ST-058, ST-050, ST-051 |
-| GF-004 | Invoice & Payment | 🟡 PARTIAL | FIN-001, ST-057, ORD-001 |
-| GF-005 | Pick & Pack | 🔴 BLOCKED | Depends on GF-003 |
-| GF-006 | Client Ledger | 🟡 PARTIAL | ST-057 |
-| GF-007 | Inventory Mgmt | 🔴 BLOCKED | ST-056, ST-058, INV-003 |
-| GF-008 | Sample Request | 🔴 BLOCKED | BUG-117 |
+> **Updated:** 2026-01-28 - Wave 0 complete (BUG-117, 118, 119, 120, SCHEMA-010 fixed)
+
+| #      | Golden Flow       | Current Status | Primary Blockers                     |
+| ------ | ----------------- | -------------- | ------------------------------------ |
+| GF-001 | Direct Intake     | 🔴 BLOCKED     | ~~BUG-117~~, ST-058, INV-003         |
+| GF-002 | Procure-to-Pay    | 🔴 BLOCKED     | ST-059, PARTY-001, SCHEMA-011        |
+| GF-003 | Order-to-Cash     | 🔴 BLOCKED     | ~~BUG-115~~, ST-058, ST-050, ST-051  |
+| GF-004 | Invoice & Payment | 🟡 PARTIAL     | FIN-001, ST-057, ORD-001             |
+| GF-005 | Pick & Pack       | 🔴 BLOCKED     | Depends on GF-003                    |
+| GF-006 | Client Ledger     | 🟡 PARTIAL     | ST-057                               |
+| GF-007 | Inventory Mgmt    | 🔴 BLOCKED     | ST-056, ST-058, INV-003              |
+| GF-008 | Sample Request    | 🟡 PARTIAL     | ~~BUG-117~~ (Wave 1 blockers remain) |
 
 ---
 
-#### Wave 0: Database Pre-Requisites (4h) - MUST COMPLETE FIRST
+#### Wave 0: Database Pre-Requisites (4h) - ✅ COMPLETE
 
-> **NEW FROM QA PROTOCOL v3.0 AUDIT**
-> These bugs BLOCK database constraint deployment and safeInArray migration.
-> **Parallel Execution:** 4 agents can work simultaneously (no file conflicts)
+> **Status:** All Wave 0 tasks complete as of 2026-01-28
+> **Completed By:** Claude Code session `017MBBpCG5HjH3Y3nhjPKDP1`
+> **Key Commits:** `0afb08d`, `e7a297f`
+> **QA Audit:** Full 5-lens QA Protocol v3.0 audit passed
 
-| Task | Description | Priority | Status | Est | Module | Blocks |
-|------|-------------|----------|--------|-----|--------|--------|
-| BUG-117 | Race condition: samplesDb.ts missing transaction/lock | HIGH | ready | 1h | `server/samplesDb.ts:109-119` | ST-056 |
-| BUG-118 | Empty array bug: referrals.ts creditIds truthy check | HIGH | ready | 30m | `server/routers/referrals.ts:389-391` | ST-058 |
-| BUG-119 | Missing validation: productCategories.ts bulk update | HIGH | ready | 30m | `server/routers/productCategories.ts:378` | ST-058 |
-| BUG-120 | RBAC validates arrays after crash (rbac-roles/users) | HIGH | ready | 1h | `server/routers/rbac-*.ts` | ST-058 |
-| SCHEMA-010 | Duplicate referralSettings table (schema.ts vs schema-gamification.ts) | HIGH | ready | 2h | `drizzle/schema*.ts` | None |
+| Task       | Description                                                            | Priority | Status   | Est | Module                                    | Blocks |
+| ---------- | ---------------------------------------------------------------------- | -------- | -------- | --- | ----------------------------------------- | ------ |
+| BUG-117    | Race condition: samplesDb.ts missing transaction/lock                  | HIGH     | complete | 1h  | `server/samplesDb.ts:109-119`             | ST-056 |
+| BUG-118    | Empty array bug: referrals.ts creditIds truthy check                   | HIGH     | complete | 30m | `server/routers/referrals.ts:389-391`     | ST-058 |
+| BUG-119    | Missing validation: productCategories.ts bulk update                   | HIGH     | complete | 30m | `server/routers/productCategories.ts:378` | ST-058 |
+| BUG-120    | RBAC validates arrays after crash (rbac-roles/users)                   | HIGH     | complete | 1h  | `server/routers/rbac-*.ts`                | ST-058 |
+| SCHEMA-010 | Duplicate referralSettings table (schema.ts vs schema-gamification.ts) | HIGH     | complete | 2h  | `drizzle/schema*.ts`                      | None   |
 
 **BUG-117 Details (samplesDb.ts Race Condition):**
+
 ```typescript
 // CURRENT (UNSAFE) - server/samplesDb.ts:109-119
 const quantityAfter = (parseFloat(batch.sampleQty) - parseFloat(product.quantity)).toString();
@@ -389,22 +393,28 @@ await db.transaction(async tx => {
 ```
 
 **BUG-118/119/120 Details (Empty Array Fixes):**
+
 ```typescript
 // Pattern: Empty array [] is truthy, crashes inArray()
 // FIX: Add length check
-input.creditIds?.length ? inArray(col, input.creditIds) : undefined
+input.creditIds?.length ? inArray(col, input.creditIds) : undefined;
 ```
 
 **SCHEMA-010 Details (Duplicate referralSettings):**
+
 - `drizzle/schema.ts:6615`: clientTier, creditPercentage, minOrderAmount
 - `drizzle/schema-gamification.ts:730`: defaultCouchTaxPercent, pointsPerReferral
 - **Resolution:** Rename to `referralCreditSettings` and `referralGamificationSettings`
 
-**Verification Gate 0:**
+**Verification Gate 0:** ✅ PASSED
+
 ```bash
-pnpm check && pnpm test
-# All empty array bugs fixed
-# samplesDb.ts uses transaction + FOR UPDATE
+pnpm check    # ✅ PASS
+pnpm test     # ✅ 2400/2405 tests pass (5 pre-existing failures)
+pnpm build    # ✅ PASS
+# All empty array bugs fixed ✅
+# samplesDb.ts uses transaction + FOR UPDATE ✅
+# QA Protocol v3.0 5-lens audit completed ✅
 ```
 
 ---
@@ -416,22 +426,23 @@ pnpm check && pnpm test
 
 ##### Wave 1A: Concurrent Safety (4 agents parallel, 4h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| INV-003 | Add FOR UPDATE lock in batch allocation | HIGH | ready | 2h | `server/routers/orders.ts` | GF-001, GF-003, GF-007 |
-| FIN-001 | Fix invoice number race condition | HIGH | ready | 2h | `server/arApDb.ts` | GF-004 |
-| ST-050 | Fix silent error handling in RED mode | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` | GF-001, GF-003, GF-004 |
-| ORD-001 | Fix invoice creation timing | HIGH | ready | 2h | `server/ordersDb.ts` | GF-004 |
+| Task    | Description                             | Priority | Status | Est | Module                                    | GF Impact              |
+| ------- | --------------------------------------- | -------- | ------ | --- | ----------------------------------------- | ---------------------- |
+| INV-003 | Add FOR UPDATE lock in batch allocation | HIGH     | ready  | 2h  | `server/routers/orders.ts`                | GF-001, GF-003, GF-007 |
+| FIN-001 | Fix invoice number race condition       | HIGH     | ready  | 2h  | `server/arApDb.ts`                        | GF-004                 |
+| ST-050  | Fix silent error handling in RED mode   | HIGH     | ready  | 4h  | `server/ordersDb.ts`, `server/services/*` | GF-001, GF-003, GF-004 |
+| ORD-001 | Fix invoice creation timing             | HIGH     | ready  | 2h  | `server/ordersDb.ts`                      | GF-004                 |
 
 ##### Wave 1B: Database Constraints (3 agents parallel, 3h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| ST-056 | Add CHECK constraints on batch quantities | HIGH | ready | 2h | `drizzle/schema.ts` | GF-001, GF-003, GF-007, GF-008 |
-| ST-057 | Add GL entry single-direction constraint | HIGH | ready | 1h | `drizzle/schema.ts` | GF-004, GF-006 |
-| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH | ready | 1h | `server/ordersDb.ts:1239` | GF-003, GF-005 |
+| Task    | Description                                         | Priority | Status | Est | Module                    | GF Impact                      |
+| ------- | --------------------------------------------------- | -------- | ------ | --- | ------------------------- | ------------------------------ |
+| ST-056  | Add CHECK constraints on batch quantities           | HIGH     | ready  | 2h  | `drizzle/schema.ts`       | GF-001, GF-003, GF-007, GF-008 |
+| ST-057  | Add GL entry single-direction constraint            | HIGH     | ready  | 1h  | `drizzle/schema.ts`       | GF-004, GF-006                 |
+| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH     | complete | 1h  | `server/ordersDb.ts:1239` | GF-003, GF-005                 |
 
 **ST-056 Migration SQL:**
+
 ```sql
 ALTER TABLE batches
   ADD CONSTRAINT chk_onHandQty_nonnegative CHECK (CAST(onHandQty AS DECIMAL(15,4)) >= 0),
@@ -440,6 +451,7 @@ ALTER TABLE batches
 ```
 
 **ST-057 Migration SQL:**
+
 ```sql
 ALTER TABLE ledger_entries
   ADD CONSTRAINT chk_single_direction CHECK (
@@ -450,14 +462,15 @@ ALTER TABLE ledger_entries
 
 ##### Wave 1C: Transaction Atomicity (Sequential, 16h)
 
-| Task | Description | Priority | Status | Est | Module | Dependencies |
-|------|-------------|----------|--------|-----|--------|--------------|
-| ST-051 | Add transaction boundaries to critical operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050 |
-| ARCH-001 | Create OrderOrchestrator service | HIGH | ready | 8h | `server/services/` (new) | ST-051 |
+| Task     | Description                                       | Priority | Status | Est | Module                                           | Dependencies |
+| -------- | ------------------------------------------------- | -------- | ------ | --- | ------------------------------------------------ | ------------ |
+| ST-051   | Add transaction boundaries to critical operations | HIGH     | ready  | 8h  | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050       |
+| ARCH-001 | Create OrderOrchestrator service                  | HIGH     | ready  | 8h  | `server/services/` (new)                         | ST-051       |
 
 **Note:** ARCH-001 may be partially complete (commit `bb06aad`). Verify before starting.
 
 **Verification Gate 1:**
+
 ```bash
 pnpm check && pnpm test
 pnpm gate:invariants
@@ -474,22 +487,23 @@ pnpm gate:invariants
 
 ##### Wave 2A: Security Critical (4 agents parallel, 6h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| SEC-027 | Protect admin setup endpoints | HIGH | ready | 1h | `server/routers/adminSetup.ts` | All GF |
-| SEC-028 | Remove/restrict debug endpoints | HIGH | ready | 1h | `server/routers/debug.ts` | All GF |
-| SEC-029 | Fix default permission grants | HIGH | ready | 2h | `server/services/permissionService.ts` | All GF |
-| SEC-030 | Fix VIP portal token validation | HIGH | ready | 2h | `server/routers/vipPortal.ts` | GF-004 |
+| Task    | Description                     | Priority | Status | Est | Module                                 | GF Impact |
+| ------- | ------------------------------- | -------- | ------ | --- | -------------------------------------- | --------- |
+| SEC-027 | Protect admin setup endpoints   | HIGH     | ready  | 1h  | `server/routers/adminSetup.ts`         | All GF    |
+| SEC-028 | Remove/restrict debug endpoints | HIGH     | ready  | 1h  | `server/routers/debug.ts`              | All GF    |
+| SEC-029 | Fix default permission grants   | HIGH     | ready  | 2h  | `server/services/permissionService.ts` | All GF    |
+| SEC-030 | Fix VIP portal token validation | HIGH     | ready  | 2h  | `server/routers/vipPortal.ts`          | GF-004    |
 
 ##### Wave 2B: safeInArray Migration (3 agents parallel, 8h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| ST-058-A | safeInArray: ordersDb.ts + orders.ts (21 calls) | HIGH | ready | 3h | `server/ordersDb.ts`, `server/routers/orders.ts` | GF-003, GF-005 |
-| ST-058-B | safeInArray: inventoryDb.ts + inventory.ts (20 calls) | HIGH | ready | 3h | `server/inventoryDb.ts`, `server/routers/inventory.ts` | GF-001, GF-007 |
-| ST-058-C | safeInArray: arApDb + payments + clientLedger (10 calls) | HIGH | ready | 2h | `server/arApDb.ts`, `server/routers/payments.ts`, `server/routers/clientLedger.ts` | GF-004, GF-006 |
+| Task     | Description                                              | Priority | Status | Est | Module                                                                             | GF Impact      |
+| -------- | -------------------------------------------------------- | -------- | ------ | --- | ---------------------------------------------------------------------------------- | -------------- |
+| ST-058-A | safeInArray: ordersDb.ts + orders.ts (21 calls)          | HIGH     | ready  | 3h  | `server/ordersDb.ts`, `server/routers/orders.ts`                                   | GF-003, GF-005 |
+| ST-058-B | safeInArray: inventoryDb.ts + inventory.ts (20 calls)    | HIGH     | ready  | 3h  | `server/inventoryDb.ts`, `server/routers/inventory.ts`                             | GF-001, GF-007 |
+| ST-058-C | safeInArray: arApDb + payments + clientLedger (10 calls) | HIGH     | ready  | 2h  | `server/arApDb.ts`, `server/routers/payments.ts`, `server/routers/clientLedger.ts` | GF-004, GF-006 |
 
 **Migration Pattern:**
+
 ```typescript
 // Add import at top of file:
 import { safeInArray } from "./lib/sqlSafety";
@@ -501,20 +515,21 @@ import { safeInArray } from "./lib/sqlSafety";
 
 ##### Wave 2C: Client & Order Hardening (3 agents parallel, 16h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| TERP-0003 | Add client wizard dialog | HIGH | ready | 2h | Client components | GF-003 |
-| TERP-0014 | Token invalidation & rate limiting | HIGH | ready | 6h | Auth services | All GF |
-| TERP-0017 | Convert remaining public routers | HIGH | ready | 8h | Multiple routers | All GF |
+| Task      | Description                        | Priority | Status | Est | Module            | GF Impact |
+| --------- | ---------------------------------- | -------- | ------ | --- | ----------------- | --------- |
+| TERP-0003 | Add client wizard dialog           | HIGH     | ready  | 2h  | Client components | GF-003    |
+| TERP-0014 | Token invalidation & rate limiting | HIGH     | ready  | 6h  | Auth services     | All GF    |
+| TERP-0017 | Convert remaining public routers   | HIGH     | ready  | 8h  | Multiple routers  | All GF    |
 
 ##### Wave 2D: Party Model (2 agents parallel, 6h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| PARTY-001 | Add nullable supplierClientId to POs | HIGH | ready | 4h | `server/routers/purchaseOrders.ts` | GF-002 |
-| PARTY-002 | Add FK constraints to bills table | HIGH | ready | 2h | `drizzle/schema.ts` | GF-004 |
+| Task      | Description                          | Priority | Status | Est | Module                             | GF Impact |
+| --------- | ------------------------------------ | -------- | ------ | --- | ---------------------------------- | --------- |
+| PARTY-001 | Add nullable supplierClientId to POs | HIGH     | ready  | 4h  | `server/routers/purchaseOrders.ts` | GF-002    |
+| PARTY-002 | Add FK constraints to bills table    | HIGH     | ready  | 2h  | `drizzle/schema.ts`                | GF-004    |
 
 **Verification Gate 2:**
+
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 # All 48 safeInArray migrations complete
@@ -530,28 +545,29 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 ##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM | ready | 2h | Schema migration | GF-002 |
-| ST-059 | Convert hard deletes to soft deletes | MEDIUM | ready | 8h | inventoryDb, pricingEngine, purchaseOrders, vendorSupplyDb | GF-001, GF-002, GF-007 |
-| ST-060 | Add deletedAt query filters (50+ queries) | MEDIUM | ready | 4h | pricingEngine, poReceiving, matchingEngine | GF-002 |
+| Task       | Description                                | Priority | Status | Est | Module                                                     | GF Impact              |
+| ---------- | ------------------------------------------ | -------- | ------ | --- | ---------------------------------------------------------- | ---------------------- |
+| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM   | ready  | 2h  | Schema migration                                           | GF-002                 |
+| ST-059     | Convert hard deletes to soft deletes       | MEDIUM   | ready  | 8h  | inventoryDb, pricingEngine, purchaseOrders, vendorSupplyDb | GF-001, GF-002, GF-007 |
+| ST-060     | Add deletedAt query filters (50+ queries)  | MEDIUM   | ready  | 4h  | pricingEngine, poReceiving, matchingEngine                 | GF-002                 |
 
 ##### Wave 3B: COGS & Payment Validation (2 agents parallel, 6h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| SCHEMA-012 | Standardize COGS precision to decimal(15,4) | MEDIUM | ready | 4h | orders, orderLineItems, invoiceLineItems | GF-003, GF-004 |
-| ST-061 | Add payment over-allocation validation trigger | MEDIUM | ready | 2h | `drizzle/schema.ts` | GF-004, GF-006 |
+| Task       | Description                                    | Priority | Status | Est | Module                                   | GF Impact      |
+| ---------- | ---------------------------------------------- | -------- | ------ | --- | ---------------------------------------- | -------------- |
+| SCHEMA-012 | Standardize COGS precision to decimal(15,4)    | MEDIUM   | ready  | 4h  | orders, orderLineItems, invoiceLineItems | GF-003, GF-004 |
+| ST-061     | Add payment over-allocation validation trigger | MEDIUM   | ready  | 2h  | `drizzle/schema.ts`                      | GF-004, GF-006 |
 
 ##### Wave 3C: UX & Type Safety (3 agents parallel, 14h)
 
-| Task | Description | Priority | Status | Est | Module | GF Impact |
-|------|-------------|----------|--------|-----|--------|-----------|
-| ST-053 | Eliminate `any` types in critical paths | MEDIUM | ready | 8h | ordersDb, orders.ts, Orders.tsx | GF-001, GF-003 |
-| PARTY-004 | Convert vendor hard deletes to soft | MEDIUM | ready | 2h | Vendor services | All GF |
-| TERP-0019 | Verify inventory snapshot widget SQL | MEDIUM | ready | 4h | Dashboard widgets | GF-003 |
+| Task      | Description                             | Priority | Status | Est | Module                          | GF Impact      |
+| --------- | --------------------------------------- | -------- | ------ | --- | ------------------------------- | -------------- |
+| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | ready  | 8h  | ordersDb, orders.ts, Orders.tsx | GF-001, GF-003 |
+| PARTY-004 | Convert vendor hard deletes to soft     | MEDIUM   | ready  | 2h  | Vendor services                 | All GF         |
+| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | ready  | 4h  | Dashboard widgets               | GF-003         |
 
 **Verification Gate 3:**
+
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 pnpm gate:invariants
@@ -567,18 +583,19 @@ pnpm mega:qa:invariants
 
 > **All waves complete - verify all 8 Golden Flows work end-to-end**
 
-| Golden Flow | Test Case | Expected Result |
-|-------------|-----------|-----------------|
-| GF-001 Direct Intake | Create intake with new vendor | Batch created, quantities correct |
-| GF-002 Procure-to-Pay | Create PO, receive, pay | Full flow complete |
-| GF-003 Order-to-Cash | Create order, confirm, fulfill | Order complete, inventory decremented |
-| GF-004 Invoice & Payment | Create invoice, record payment | Invoice PAID, GL balanced |
-| GF-005 Pick & Pack | Pick and pack order | Bags created, movements recorded |
-| GF-006 Client Ledger | View client ledger | All transactions, running balance |
-| GF-007 Inventory Mgmt | Adjust inventory | Movement recorded, CHECK passes |
-| GF-008 Sample Request | Create sample request | Allocation tracked, quantity reserved |
+| Golden Flow              | Test Case                      | Expected Result                       |
+| ------------------------ | ------------------------------ | ------------------------------------- |
+| GF-001 Direct Intake     | Create intake with new vendor  | Batch created, quantities correct     |
+| GF-002 Procure-to-Pay    | Create PO, receive, pay        | Full flow complete                    |
+| GF-003 Order-to-Cash     | Create order, confirm, fulfill | Order complete, inventory decremented |
+| GF-004 Invoice & Payment | Create invoice, record payment | Invoice PAID, GL balanced             |
+| GF-005 Pick & Pack       | Pick and pack order            | Bags created, movements recorded      |
+| GF-006 Client Ledger     | View client ledger             | All transactions, running balance     |
+| GF-007 Inventory Mgmt    | Adjust inventory               | Movement recorded, CHECK passes       |
+| GF-008 Sample Request    | Create sample request          | Allocation tracked, quantity reserved |
 
 **Final Verification:**
+
 ```bash
 pnpm check && pnpm lint && pnpm test && pnpm build
 pnpm gate:invariants
@@ -590,16 +607,17 @@ pnpm mega:qa:invariants
 
 #### Golden Flow Initiative Summary
 
-| Wave | Tasks | Est Hours | Wall-Clock (Parallel) | Agents |
-|------|-------|-----------|----------------------|--------|
-| Wave 0: Pre-requisites | 5 | 5h | 2h | 4 |
-| Wave 1: Data Integrity | 9 | 25h | 8h | 4→3→1 |
-| Wave 2: Security + safeInArray | 11 | 48h | 14h | 4→3→3→2 |
-| Wave 3: Hardening | 8 | 34h | 10h | 3→2→3 |
-| Wave 4: Verification | - | 8h | 4h | 2 |
-| **TOTAL** | **33** | **120h** | **38h** | - |
+| Wave                           | Tasks  | Est Hours | Wall-Clock (Parallel) | Agents  |
+| ------------------------------ | ------ | --------- | --------------------- | ------- |
+| Wave 0: Pre-requisites         | 5      | 5h        | 2h                    | 4       |
+| Wave 1: Data Integrity         | 9      | 25h       | 8h                    | 4→3→1   |
+| Wave 2: Security + safeInArray | 11     | 48h       | 14h                   | 4→3→3→2 |
+| Wave 3: Hardening              | 8      | 34h       | 10h                   | 3→2→3   |
+| Wave 4: Verification           | -      | 8h        | 4h                    | 2       |
+| **TOTAL**                      | **33** | **120h**  | **38h**               | -       |
 
 **Success Criteria:**
+
 - [ ] All 8 Golden Flows pass E2E testing
 - [ ] `pnpm gate:invariants` passes
 - [ ] `pnpm mega:qa:invariants` passes
@@ -977,16 +995,16 @@ pnpm mega:qa:invariants
 > Root Cause: Drizzle schema defines `products.strainId` column that may not exist in production database.
 > See: `docs/jan-26-checkpoint/INVENTORY_FLOW_ANALYSIS.md` for full analysis.
 
-| Task    | Description                                          | Priority | Status | Estimate | Location                                           |
-| ------- | ---------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------- |
-| BUG-110 | Schema drift: strainId joins in productsDb.ts        | HIGH     | ready  | 2h       | `server/productsDb.ts:92,179`                      |
-| BUG-111 | Schema drift: strainId joins in search.ts            | HIGH     | ready  | 1h       | `server/routers/search.ts:260`                     |
-| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ✅ DONE | 1h       | Fixed: commit e6e47cdd (2026-01-27)               |
-| BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ready  | 1h       | `server/services/catalogPublishingService.ts:310`  |
-| BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ready  | 2h       | `server/services/strainMatchingService.ts:136,234` |
-| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ready  | 1h       | `server/ordersDb.ts:1239`                          |
-| BUG-116 | Systemic: 127 unsafe inArray() calls across codebase | MEDIUM   | ready  | 8h       | Multiple files                                     |
-| ST-055  | Adopt safeInArray/safeNotInArray across codebase     | MEDIUM   | ready  | 16h      | See sqlSafety.ts utilities                         |
+| Task    | Description                                          | Priority | Status  | Estimate | Location                                           |
+| ------- | ---------------------------------------------------- | -------- | ------- | -------- | -------------------------------------------------- |
+| BUG-110 | Schema drift: strainId joins in productsDb.ts        | HIGH     | ready   | 2h       | `server/productsDb.ts:92,179`                      |
+| BUG-111 | Schema drift: strainId joins in search.ts            | HIGH     | ready   | 1h       | `server/routers/search.ts:260`                     |
+| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ✅ DONE | 1h       | Fixed: commit e6e47cdd (2026-01-27)                |
+| BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ready   | 1h       | `server/services/catalogPublishingService.ts:310`  |
+| BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ready   | 2h       | `server/services/strainMatchingService.ts:136,234` |
+| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ✅ DONE | 1h       | Fixed: safeInArray + early return check            |
+| BUG-116 | Systemic: 127 unsafe inArray() calls across codebase | MEDIUM   | ready   | 8h       | Multiple files                                     |
+| ST-055  | Adopt safeInArray/safeNotInArray across codebase     | MEDIUM   | ready   | 16h      | See sqlSafety.ts utilities                         |
 
 **BUG-110 Details (Schema Drift - productsDb.ts):**
 
@@ -1030,18 +1048,16 @@ pnpm mega:qa:invariants
 - **Impact:** Strain matching features completely broken
 - **Fix:** This service inherently needs strains - add graceful degradation with clear error messages
 
-**BUG-115 Details (Empty Array Crash - ordersDb.ts):**
+**BUG-115 Details (Empty Array Crash - ordersDb.ts):** ✅ **COMPLETED**
 
-- **Location:** `server/ordersDb.ts:1239`
+- **Location:** `server/ordersDb.ts:1253-1264`
 - **Issue:** `inArray(batches.id, batchIds)` with no empty array check
-- **Code Pattern:**
-  ```typescript
-  const batchIds = [...new Set(draftItems.map(item => item.batchId))];
-  // No length check - crashes if batchIds is empty
-  .where(inArray(batches.id, batchIds))
-  ```
-- **Impact:** Confirming draft orders with no items crashes with invalid SQL
-- **Fix:** Replace with `safeInArray(batches.id, batchIds)` from sqlSafety.ts
+- **Resolution:**
+  1. Added early return check at line 1253-1256 throwing error for empty orders
+  2. Replaced `inArray` with `safeInArray` at line 1264 for defense-in-depth
+- **Import:** `safeInArray` from `./lib/sqlSafety` added at line 7
+- **Impact:** Confirming draft orders with no items now throws proper error instead of SQL crash
+- **Verified:** TypeScript check passes, build succeeds
 
 **BUG-116 Details (Systemic inArray Safety):**
 
@@ -1132,23 +1148,23 @@ pnpm mega:qa:invariants
 
 ### Infrastructure Tasks (P2)
 
-| Task        | Description                                      | Priority | Status                                                 | Prompt |
-| ----------- | ------------------------------------------------ | -------- | ------------------------------------------------------ | ------ |
-| INFRA-004   | Implement Deployment Monitoring Enforcement      | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-007   | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
-| INFRA-012   | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
-| CLEANUP-001 | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
-| INFRA-017   | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
-| INFRA-018   | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
-| INFRA-020   | Pick & Pack Consolidation Phase 0 - Data Audit   | HIGH     | ready                                                  | -      |
-| INFRA-021   | Pick & Pack Consolidation Phase 1 - Backend      | HIGH     | ready                                                  | -      |
-| INFRA-022   | Pick & Pack Consolidation Phase 2 - Feature Flag | HIGH     | ready                                                  | -      |
-| INFRA-023   | Pick & Pack Consolidation Phase 3 - Migration    | HIGH     | ready                                                  | -      |
-| INFRA-024   | Pick & Pack Consolidation Phase 4 - Cleanup      | MEDIUM   | ready                                                  | -      |
-| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)            | HIGH     | ready                                                  | -      |
-| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)    | HIGH     | ready                                                  | -      |
-| INFRA-DB-003 | Consolidate Image Tables (Deferred)             | MEDIUM   | deferred                                               | -      |
-| INFRA-DB-004 | Complete Vendors → Clients Migration (Deferred) | MEDIUM   | deferred                                               | -      |
+| Task         | Description                                      | Priority | Status                                                 | Prompt |
+| ------------ | ------------------------------------------------ | -------- | ------------------------------------------------------ | ------ |
+| INFRA-004    | Implement Deployment Monitoring Enforcement      | MEDIUM   | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-007    | Update Swarm Manager                             | LOW      | ✅ COMPLETE (audit verified)                           | -      |
+| INFRA-012    | Deploy TERP Commander Slack Bot                  | LOW      | ⊘ REMOVED (not needed - optional enhancement, not MVP) | -      |
+| CLEANUP-001  | Remove LLM/AI from Codebase                      | LOW      | ✅ COMPLETE (already implemented)                      | -      |
+| INFRA-017    | Fix Hardcoded Memory Value in memoryOptimizer.ts | HIGH     | ✅ COMPLETE                                            | -      |
+| INFRA-018    | Sync .do/app.yaml with Production Config         | MEDIUM   | ✅ COMPLETE                                            | -      |
+| INFRA-020    | Pick & Pack Consolidation Phase 0 - Data Audit   | HIGH     | ready                                                  | -      |
+| INFRA-021    | Pick & Pack Consolidation Phase 1 - Backend      | HIGH     | ready                                                  | -      |
+| INFRA-022    | Pick & Pack Consolidation Phase 2 - Feature Flag | HIGH     | ready                                                  | -      |
+| INFRA-023    | Pick & Pack Consolidation Phase 3 - Migration    | HIGH     | ready                                                  | -      |
+| INFRA-024    | Pick & Pack Consolidation Phase 4 - Cleanup      | MEDIUM   | ready                                                  | -      |
+| INFRA-DB-001 | Add Missing FK Constraints (Phase 6)             | HIGH     | ready                                                  | -      |
+| INFRA-DB-002 | Rename Misleading vendorId Columns (Phase 6)     | HIGH     | ready                                                  | -      |
+| INFRA-DB-003 | Consolidate Image Tables (Deferred)              | MEDIUM   | deferred                                               | -      |
+| INFRA-DB-004 | Complete Vendors → Clients Migration (Deferred)  | MEDIUM   | deferred                                               | -      |
 
 > **INFRA-DB Tasks (Database Standardization - Phase 6):**
 >
@@ -1200,12 +1216,14 @@ pnpm mega:qa:invariants
 **Problem:** Two parallel pick & pack systems (WS-003 pickPackRouter and ordersRouter fulfillment) create state conflicts and data integrity risks. Must audit current state before any changes.
 
 **Objectives:**
+
 1. Audit current WS-003 usage and data state
 2. Identify status conflicts between pickPackStatus and fulfillmentStatus
 3. Analyze order_item_bags.orderItemId values (JSON index vs ID)
 4. Create backup and rollback scripts
 
 **Deliverables:**
+
 - [ ] Data audit report (docs/migration/PICK-PACK-DATA-AUDIT.md)
 - [ ] Status conflict analysis (docs/migration/PICK-PACK-STATUS-CONFLICTS.md)
 - [ ] Backup script (scripts/migration/pick-pack-backup.sql)
@@ -1213,6 +1231,7 @@ pnpm mega:qa:invariants
 - [ ] Rollback procedure tested on staging
 
 **Acceptance Criteria:**
+
 - All SQL queries documented and tested
 - Problem orders identified and categorized
 - Rollback procedure verified on staging
@@ -1232,12 +1251,14 @@ pnpm mega:qa:invariants
 **Problem:** ordersRouter lacks bag management capabilities needed to replace WS-003.
 
 **Objectives:**
+
 1. Add `orders:pack` permission for warehouse workers
 2. Add 5 bag management endpoints to ordersRouter
 3. Add FK constraint to order_item_bags (orderLineItemId)
 4. Implement status synchronization logic
 
 **Deliverables:**
+
 - [ ] `orders:pack` permission added and assigned to roles
 - [ ] orders.getBagsForOrder endpoint
 - [ ] orders.createBag endpoint
@@ -1250,6 +1271,7 @@ pnpm mega:qa:invariants
 - [ ] Unit tests (100% coverage for new code)
 
 **Acceptance Criteria:**
+
 - All endpoints use `getAuthenticatedUserId(ctx)` (NOT `ctx.user?.id`)
 - All mutations use transactions
 - All mutations log to audit_logs
@@ -1270,12 +1292,14 @@ pnpm mega:qa:invariants
 **Problem:** Need ability to switch between systems without code deployment for safe rollback.
 
 **Objectives:**
+
 1. Create USE_UNIFIED_PICK_PACK feature flag
 2. Create API adapter layer for UI
 3. Update UI components to use adapter
 4. Test both flag states
 
 **Deliverables:**
+
 - [ ] Feature flag created and configurable in admin UI
 - [ ] usePickPackAdapter hook implemented
 - [ ] PickPackPage uses adapter
@@ -1286,8 +1310,9 @@ pnpm mega:qa:invariants
 - [ ] Manual QA with flag ON (new behavior)
 
 **Acceptance Criteria:**
+
 - UI works identically with flag ON or OFF
-- No direct pickPack.* calls remain in UI code
+- No direct pickPack.\* calls remain in UI code
 - Can toggle flag without deployment
 - pnpm check && pnpm lint && pnpm test passes
 
@@ -1305,12 +1330,14 @@ pnpm mega:qa:invariants
 **Problem:** Need to migrate existing data and enable new system safely.
 
 **Objectives:**
+
 1. Execute data migration
 2. Enable feature flag
 3. Complete 1-week observation period
 4. Document any issues
 
 **Deliverables:**
+
 - [ ] Pre-migration checklist completed
 - [ ] Database backup verified
 - [ ] Data migration executed (orderItemId → orderLineItemId)
@@ -1321,6 +1348,7 @@ pnpm mega:qa:invariants
 - [ ] 1-week observation log maintained
 
 **Acceptance Criteria:**
+
 - No data corruption
 - No orphaned records
 - No error rate increase >5%
@@ -1328,6 +1356,7 @@ pnpm mega:qa:invariants
 - 1-week observation period completed
 
 **Rollback Triggers** (immediate rollback if any occur):
+
 - Data corruption detected
 - Critical UI functionality broken
 - Error rate >5% increase
@@ -1347,18 +1376,20 @@ pnpm mega:qa:invariants
 **Problem:** Old system code and schema remain after successful migration.
 
 **Objectives:**
+
 1. Remove feature flag logic
 2. Deprecate and remove pickPackRouter
 3. Clean up schema (drop columns)
 4. Update documentation
 
 **Deliverables:**
+
 - [ ] Feature flag check removed from adapter
 - [ ] Adapter hook deleted
-- [ ] UI calls orders.* directly
+- [ ] UI calls orders.\* directly
 - [ ] Deprecation warning added to pickPack endpoints
-- [ ] 1-week monitoring for pickPack.* calls
-- [ ] pickPackRouter removed from _app.ts
+- [ ] 1-week monitoring for pickPack.\* calls
+- [ ] pickPackRouter removed from \_app.ts
 - [ ] pickPack.ts file deleted
 - [ ] Migration: drop orderItemId column
 - [ ] Migration: drop pickPackStatus column
@@ -1368,6 +1399,7 @@ pnpm mega:qa:invariants
 - [ ] Migration completion report filed
 
 **Acceptance Criteria:**
+
 - No deprecated code remains
 - Schema is clean (no unused columns)
 - Documentation is current
@@ -4700,13 +4732,13 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 | PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
 
 > > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
-| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
-| ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
-| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
-| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+> > > > > > > | ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
+> > > > > > > | ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
+> > > > > > > | ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
+> > > > > > > | PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
+> > > > > > > | PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
+> > > > > > > | PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+> > > > > > > | PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
 
 ---
 

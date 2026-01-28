@@ -6,12 +6,14 @@ import {
   bills,
   billLineItems,
   payments,
+  sequences,
   InsertInvoice,
   InsertInvoiceLineItem,
   InsertBill,
   InsertBillLineItem,
   InsertPayment,
 } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 // ============================================================================
 // INVOICES (ACCOUNTS RECEIVABLE)
@@ -305,20 +307,79 @@ export async function calculateARAging() {
 }
 
 /**
- * Generate unique invoice number
+ * Generate unique invoice number atomically
+ * FIN-001: Uses SELECT ... FOR UPDATE to prevent race conditions
+ *
+ * Uses a yearly sequence (e.g., "invoice_2026") with row-level locking
+ * to ensure unique invoice numbers even under high concurrency.
  */
 export async function generateInvoiceNumber(): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
-    .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
-    .from(invoices)
-    .where(sql`${invoices.deletedAt} IS NULL`);
-
-  const nextId = (Number(result[0]?.maxId) || 0) + 1;
   const year = new Date().getFullYear();
-  return `INV-${year}-${String(nextId).padStart(6, "0")}`;
+  const sequenceName = `invoice_${year}`;
+  const prefix = `INV-${year}-`;
+  const padding = 6;
+
+  try {
+    // Use transaction with row-level locking for atomicity
+    const invoiceNumber = await db.transaction(async (tx) => {
+      // Try to get and lock the sequence row
+      let [sequence] = await tx
+        .select()
+        .from(sequences)
+        .where(eq(sequences.name, sequenceName))
+        .for("update"); // Row-level lock
+
+      // If sequence doesn't exist, create it
+      if (!sequence) {
+        // Insert new sequence
+        await tx.insert(sequences).values({
+          name: sequenceName,
+          prefix,
+          currentValue: 0,
+        });
+
+        // Re-fetch with lock
+        [sequence] = await tx
+          .select()
+          .from(sequences)
+          .where(eq(sequences.name, sequenceName))
+          .for("update");
+      }
+
+      // Increment the sequence
+      const nextValue = sequence.currentValue + 1;
+
+      // Update the sequence atomically
+      await tx
+        .update(sequences)
+        .set({ currentValue: nextValue })
+        .where(eq(sequences.id, sequence.id));
+
+      // Format the invoice number
+      const paddedValue = nextValue.toString().padStart(padding, "0");
+      return `${prefix}${paddedValue}`;
+    });
+
+    logger.debug({
+      msg: "[arApDb] Invoice number generated atomically",
+      invoiceNumber,
+      sequenceName,
+    });
+
+    return invoiceNumber;
+  } catch (error) {
+    logger.error({
+      msg: "[arApDb] Failed to generate invoice number",
+      sequenceName,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error(
+      `Failed to generate invoice number: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
 }
 
 // ============================================================================
@@ -612,20 +673,79 @@ export async function calculateAPAging() {
 }
 
 /**
- * Generate unique bill number
+ * Generate unique bill number atomically
+ * FIN-001: Uses SELECT ... FOR UPDATE to prevent race conditions
+ *
+ * Uses a yearly sequence (e.g., "bill_2026") with row-level locking
+ * to ensure unique bill numbers even under high concurrency.
  */
 export async function generateBillNumber(): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
-    .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
-    .from(bills)
-    .where(sql`${bills.deletedAt} IS NULL`);
-
-  const nextId = (Number(result[0]?.maxId) || 0) + 1;
   const year = new Date().getFullYear();
-  return `BILL-${year}-${String(nextId).padStart(6, "0")}`;
+  const sequenceName = `bill_${year}`;
+  const prefix = `BILL-${year}-`;
+  const padding = 6;
+
+  try {
+    // Use transaction with row-level locking for atomicity
+    const billNumber = await db.transaction(async (tx) => {
+      // Try to get and lock the sequence row
+      let [sequence] = await tx
+        .select()
+        .from(sequences)
+        .where(eq(sequences.name, sequenceName))
+        .for("update"); // Row-level lock
+
+      // If sequence doesn't exist, create it
+      if (!sequence) {
+        // Insert new sequence
+        await tx.insert(sequences).values({
+          name: sequenceName,
+          prefix,
+          currentValue: 0,
+        });
+
+        // Re-fetch with lock
+        [sequence] = await tx
+          .select()
+          .from(sequences)
+          .where(eq(sequences.name, sequenceName))
+          .for("update");
+      }
+
+      // Increment the sequence
+      const nextValue = sequence.currentValue + 1;
+
+      // Update the sequence atomically
+      await tx
+        .update(sequences)
+        .set({ currentValue: nextValue })
+        .where(eq(sequences.id, sequence.id));
+
+      // Format the bill number
+      const paddedValue = nextValue.toString().padStart(padding, "0");
+      return `${prefix}${paddedValue}`;
+    });
+
+    logger.debug({
+      msg: "[arApDb] Bill number generated atomically",
+      billNumber,
+      sequenceName,
+    });
+
+    return billNumber;
+  } catch (error) {
+    logger.error({
+      msg: "[arApDb] Failed to generate bill number",
+      sequenceName,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error(
+      `Failed to generate bill number: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
 }
 
 // ============================================================================
@@ -734,21 +854,82 @@ export async function createPayment(data: InsertPayment) {
 }
 
 /**
- * Generate unique payment number
+ * Generate unique payment number atomically
+ * FIN-001: Uses SELECT ... FOR UPDATE to prevent race conditions
+ *
+ * Uses a yearly sequence based on payment type (e.g., "payment_received_2026")
+ * with row-level locking to ensure unique payment numbers even under high concurrency.
  */
 export async function generatePaymentNumber(type: "RECEIVED" | "SENT"): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
-    .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
-    .from(payments)
-    .where(sql`${payments.deletedAt} IS NULL`);
-
-  const nextId = (Number(result[0]?.maxId) || 0) + 1;
   const year = new Date().getFullYear();
-  const prefix = type === "RECEIVED" ? "PMT-RCV" : "PMT-SNT";
-  return `${prefix}-${year}-${String(nextId).padStart(6, "0")}`;
+  const typeKey = type === "RECEIVED" ? "received" : "sent";
+  const sequenceName = `payment_${typeKey}_${year}`;
+  const prefix = type === "RECEIVED" ? `PMT-RCV-${year}-` : `PMT-SNT-${year}-`;
+  const padding = 6;
+
+  try {
+    // Use transaction with row-level locking for atomicity
+    const paymentNumber = await db.transaction(async (tx) => {
+      // Try to get and lock the sequence row
+      let [sequence] = await tx
+        .select()
+        .from(sequences)
+        .where(eq(sequences.name, sequenceName))
+        .for("update"); // Row-level lock
+
+      // If sequence doesn't exist, create it
+      if (!sequence) {
+        // Insert new sequence
+        await tx.insert(sequences).values({
+          name: sequenceName,
+          prefix,
+          currentValue: 0,
+        });
+
+        // Re-fetch with lock
+        [sequence] = await tx
+          .select()
+          .from(sequences)
+          .where(eq(sequences.name, sequenceName))
+          .for("update");
+      }
+
+      // Increment the sequence
+      const nextValue = sequence.currentValue + 1;
+
+      // Update the sequence atomically
+      await tx
+        .update(sequences)
+        .set({ currentValue: nextValue })
+        .where(eq(sequences.id, sequence.id));
+
+      // Format the payment number
+      const paddedValue = nextValue.toString().padStart(padding, "0");
+      return `${prefix}${paddedValue}`;
+    });
+
+    logger.debug({
+      msg: "[arApDb] Payment number generated atomically",
+      paymentNumber,
+      sequenceName,
+      type,
+    });
+
+    return paymentNumber;
+  } catch (error) {
+    logger.error({
+      msg: "[arApDb] Failed to generate payment number",
+      sequenceName,
+      type,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error(
+      `Failed to generate payment number: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
 }
 
 /**

@@ -18,10 +18,14 @@ import {
 import { calculateCogs, calculateDueDate } from "./cogsCalculator";
 import {
   createInvoiceFromOrder,
+  createInvoiceFromOrderTx,
   recordOrderCashPayment,
+  recordOrderCashPaymentTx,
   updateClientCreditExposure,
   restoreInventoryFromOrder,
+  restoreInventoryFromOrderTx,
   reverseOrderAccountingEntries,
+  reverseOrderAccountingEntriesTx,
 } from "./services/orderAccountingService";
 import { calculateAvailableQty } from "./inventoryUtils";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
@@ -377,55 +381,21 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
             })
             .where(eq(batches.id, item.batchId));
 
-          // MEET-005: Update payables tracking when inventory is sold
-          try {
-            await payablesService.updatePayableOnSale(
-              item.batchId,
-              item.quantity
-            );
-            await payablesService.checkInventoryZeroThreshold(item.batchId);
-          } catch (payableError) {
-            // Log but don't fail the order - payables can be reconciled later
-            console.error(
-              "[MEET-005] Payables update error (non-fatal):",
-              payableError
-            );
-          }
+          // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
+          // If payables update fails, the entire order creation is rolled back
+          // This ensures financial consistency between orders and payables
+          await payablesService.updatePayableOnSale(
+            item.batchId,
+            item.quantity
+          );
+          await payablesService.checkInventoryZeroThreshold(item.batchId);
         }
       }
 
-      // Create invoice from order (accounting integration)
-      try {
-        const invoiceId = await createInvoiceFromOrder({
-          orderId: order.id,
-          orderNumber: orderNumber,
-          clientId: input.clientId,
-          items: processedItems,
-          subtotal,
-          tax: 0,
-          total: subtotal,
-          dueDate,
-          createdBy: actorId,
-        });
-
-        // Record cash payment if applicable
-        if (input.cashPayment && input.cashPayment > 0) {
-          await recordOrderCashPayment({
-            invoiceId,
-            amount: input.cashPayment,
-            createdBy: actorId,
-          });
-        }
-
-        // Update credit exposure
-        await updateClientCreditExposure(input.clientId);
-      } catch (accountingError) {
-        // Log but don't fail the order - accounting can be reconciled later
-        console.error(
-          "Accounting integration error (non-fatal):",
-          accountingError
-        );
-      }
+      // ORD-001: Invoice creation moved to fulfillment (updateOrderStatus when SHIPPED)
+      // Invoices are now created AFTER fulfillment is complete, not at order confirmation.
+      // This ensures invoice amounts match actual fulfilled quantities.
+      // Cash payments and credit exposure updates also happen at fulfillment time.
     }
 
     // 8. Return the created order
@@ -754,6 +724,7 @@ export async function updateOrder(
 
 /**
  * Delete/cancel an order
+ * ST-051: Wrapped in transaction for atomicity - all steps succeed or all fail
  * @param id - Order ID to delete/cancel
  * @param cancelledBy - Required: User ID performing the cancellation (for audit trail)
  */
@@ -780,33 +751,28 @@ export async function deleteOrder(
       );
     }
 
-    await db
-      .update(orders)
-      .set({ saleStatus: "CANCELLED" })
-      .where(eq(orders.id, id));
+    // ST-051: Wrap all cancellation steps in a transaction for atomicity
+    // If any step fails, the entire cancellation is rolled back
+    await db.transaction(async tx => {
+      // Step 1: Update order status to CANCELLED
+      await tx
+        .update(orders)
+        .set({ saleStatus: "CANCELLED" })
+        .where(eq(orders.id, id));
 
-    // Restore inventory
-    const orderItems =
-      typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      // Step 2: Restore inventory (critical - must succeed)
+      const orderItems =
+        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
 
-    if (Array.isArray(orderItems) && orderItems.length > 0) {
-      try {
-        await restoreInventoryFromOrder({
+      if (Array.isArray(orderItems) && orderItems.length > 0) {
+        await restoreInventoryFromOrderTx(tx, {
           items: orderItems,
           orderId: id,
         });
-      } catch (inventoryError) {
-        console.error(
-          "Failed to restore inventory (non-fatal):",
-          inventoryError
-        );
       }
-    }
 
-    // INV-004: Release any reserved quantities from allocations
-    try {
-      // Get all line items for this order
-      const lineItems = await db
+      // Step 3: INV-004: Release any reserved quantities from allocations
+      const lineItems = await tx
         .select({ id: orderLineItems.id })
         .from(orderLineItems)
         .where(eq(orderLineItems.orderId, id));
@@ -815,7 +781,7 @@ export async function deleteOrder(
         const lineItemIds = lineItems.map((li: { id: number }) => li.id);
 
         // Get all allocations for the order's line items
-        const allocations = await db
+        const allocations = await tx
           .select({
             batchId: orderLineItemAllocations.batchId,
             quantityAllocated: orderLineItemAllocations.quantityAllocated,
@@ -829,18 +795,19 @@ export async function deleteOrder(
         for (const allocation of allocations) {
           const allocatedQty = parseFloat(allocation.quantityAllocated || "0");
           if (allocatedQty > 0) {
-            // Get current reserved qty and release
-            const [batch] = await db
+            // Lock batch row and release reservation
+            const [batch] = await tx
               .select({ reservedQty: batches.reservedQty })
               .from(batches)
               .where(eq(batches.id, allocation.batchId))
+              .for("update")
               .limit(1);
 
             if (batch) {
               const currentReserved = parseFloat(batch.reservedQty || "0");
               const newReserved = Math.max(0, currentReserved - allocatedQty);
 
-              await db
+              await tx
                 .update(batches)
                 .set({ reservedQty: newReserved.toString() })
                 .where(eq(batches.id, allocation.batchId));
@@ -849,32 +816,21 @@ export async function deleteOrder(
         }
 
         console.info(
-          `[INV-004] Released ${allocations.length} batch reservations for cancelled order ${id}`
+          `[ST-051] Released ${allocations.length} batch reservations for cancelled order ${id}`
         );
       }
-    } catch (reservationError) {
-      console.error(
-        "Failed to release reservations (non-fatal):",
-        reservationError
-      );
-    }
 
-    // Reverse accounting entries if invoice exists
-    if (order.invoiceId) {
-      try {
-        await reverseOrderAccountingEntries({
+      // Step 4: Reverse accounting entries if invoice exists
+      // Note: This is critical for financial integrity - must succeed or rollback
+      if (order.invoiceId) {
+        await reverseOrderAccountingEntriesTx(tx, {
           invoiceId: order.invoiceId,
           orderId: id,
           reason: "Order cancelled",
           reversedBy: cancelledBy,
         });
-      } catch (accountingError) {
-        console.error(
-          "Failed to reverse accounting entries (non-fatal):",
-          accountingError
-        );
       }
-    }
+    });
   } else {
     // For quotes, use soft delete (per CLAUDE.md - never hard delete)
     await db
@@ -1030,20 +986,14 @@ export async function convertQuoteToSale(
           })
           .where(eq(batches.id, item.batchId));
 
-        // MEET-005: Update payables tracking when inventory is sold
-        try {
-          await payablesService.updatePayableOnSale(
-            item.batchId,
-            item.quantity
-          );
-          await payablesService.checkInventoryZeroThreshold(item.batchId);
-        } catch (payableError) {
-          // Log but don't fail the conversion - payables can be reconciled later
-          console.error(
-            "[MEET-005] Payables update error in convertQuoteToSale (non-fatal):",
-            payableError
-          );
-        }
+        // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
+        // If payables update fails, the entire quote-to-sale conversion is rolled back
+        // This ensures financial consistency between orders and payables
+        await payablesService.updatePayableOnSale(
+          item.batchId,
+          item.quantity
+        );
+        await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
 
@@ -1056,51 +1006,12 @@ export async function convertQuoteToSale(
       })
       .where(eq(orders.id, input.quoteId));
 
-    // 8. Create invoice, record payment, update credit
-    if (sale) {
-      // Validate quote has createdBy (data integrity check)
-      if (!quote.createdBy) {
-        throw new Error(
-          `Data integrity error: Quote ${input.quoteId} is missing createdBy. ` +
-            `Cannot create invoice without a valid user attribution.`
-        );
-      }
+    // ORD-001: Invoice creation moved to fulfillment (updateOrderStatus when SHIPPED)
+    // Invoices are now created AFTER fulfillment is complete, not at quote-to-sale conversion.
+    // This ensures invoice amounts match actual fulfilled quantities.
+    // Cash payments and credit exposure updates also happen at fulfillment time.
 
-      try {
-        const subtotal = parseFloat(quote.subtotal ?? "0");
-        const invoiceId = await createInvoiceFromOrder({
-          orderId: sale.id,
-          orderNumber: saleNumber,
-          clientId: quote.clientId,
-          items: quoteItems,
-          subtotal,
-          tax: parseFloat(quote.tax ?? "0"),
-          total: parseFloat(quote.total ?? "0"),
-          dueDate,
-          createdBy: quote.createdBy,
-        });
-
-        // Record cash payment if applicable
-        if (input.cashPayment && input.cashPayment > 0) {
-          await recordOrderCashPayment({
-            invoiceId,
-            amount: input.cashPayment,
-            createdBy: quote.createdBy,
-          });
-        }
-
-        // Update credit exposure
-        await updateClientCreditExposure(quote.clientId);
-      } catch (accountingError) {
-        // Log but don't fail the conversion - accounting can be reconciled later
-        console.error(
-          "Accounting integration error (non-fatal):",
-          accountingError
-        );
-      }
-    }
-
-    // 9. Return the sale
+    // 8. Return the sale
     if (!sale) {
       throw new Error("Failed to create sale order");
     }
@@ -1338,19 +1249,14 @@ export async function confirmDraftOrder(input: {
           })
           .where(eq(batches.id, item.batchId));
 
-        // MEET-005: Update payables tracking when inventory is sold
-        try {
-          await payablesService.updatePayableOnSale(
-            item.batchId,
-            item.quantity
-          );
-          await payablesService.checkInventoryZeroThreshold(item.batchId);
-        } catch (payableError) {
-          console.error(
-            "[MEET-005] Payables update error (non-fatal):",
-            payableError
-          );
-        }
+        // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
+        // If payables update fails, the entire order confirmation is rolled back
+        // This ensures financial consistency between orders and payables
+        await payablesService.updatePayableOnSale(
+          item.batchId,
+          item.quantity
+        );
+        await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
 
@@ -1841,6 +1747,55 @@ export async function updateOrderStatus(input: {
         orderItemsForDecrement,
         userId
       );
+
+      // ORD-001: Create invoice AFTER fulfillment is complete
+      // This ensures invoice amounts match actual fulfilled quantities
+      try {
+        // Calculate totals from fulfilled items
+        const fulfilledItems = orderItemsForDecrement.filter(
+          item => !item.isSample
+        );
+        const subtotal = fulfilledItems.reduce(
+          (sum, item) => sum + (item.lineTotal || 0),
+          0
+        );
+        const tax = parseFloat(order.tax ?? "0");
+        const total = subtotal + tax;
+
+        const invoiceId = await createInvoiceFromOrder({
+          orderId: orderId,
+          orderNumber: order.orderNumber,
+          clientId: order.clientId,
+          items: orderItemsForDecrement,
+          subtotal,
+          tax,
+          total,
+          dueDate: order.dueDate ? new Date(order.dueDate) : undefined,
+          createdBy: userId,
+        });
+
+        // Update order with invoice reference
+        updateData.invoiceId = invoiceId;
+
+        // Record cash payment if applicable
+        const cashPayment = parseFloat(order.cashPayment ?? "0");
+        if (cashPayment > 0) {
+          await recordOrderCashPayment({
+            invoiceId,
+            amount: cashPayment,
+            createdBy: userId,
+          });
+        }
+
+        // Update credit exposure
+        await updateClientCreditExposure(order.clientId);
+      } catch (accountingError) {
+        // Log but don't fail the fulfillment - accounting can be reconciled later
+        console.error(
+          "[ORD-001] Accounting integration error during fulfillment (non-fatal):",
+          accountingError
+        );
+      }
     }
 
     // Update order status with version increment (DATA-005)
@@ -1903,6 +1858,7 @@ export async function getOrderStatusHistory(orderId: number) {
 /**
  * Update order sale status with state machine validation
  * SM-002: Ensures only valid transitions are allowed
+ * ST-051: Wrapped in transaction to prevent race conditions and ensure atomicity
  */
 export async function updateSaleStatus(input: {
   orderId: number;
@@ -1913,38 +1869,42 @@ export async function updateSaleStatus(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get current order
-  const [order] = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.id, input.orderId));
+  // ST-051: Wrap in transaction to lock order row and ensure atomicity
+  return await db.transaction(async tx => {
+    // Get current order with row lock
+    const [order] = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, input.orderId))
+      .for("update");
 
-  if (!order) {
-    throw new Error(`Order ${input.orderId} not found`);
-  }
+    if (!order) {
+      throw new Error(`Order ${input.orderId} not found`);
+    }
 
-  if (order.orderType !== "SALE") {
-    throw new Error("Only SALE orders have sale status");
-  }
+    if (order.orderType !== "SALE") {
+      throw new Error("Only SALE orders have sale status");
+    }
 
-  const currentStatus = order.saleStatus || "PENDING";
+    const currentStatus = order.saleStatus || "PENDING";
 
-  // Validate transition using state machine
-  if (!isValidStatusTransition("sale", currentStatus, input.newStatus)) {
-    const validTransitions = getValidSaleStatusTransitions(currentStatus);
-    throw new Error(
-      `Invalid sale status transition: ${currentStatus} -> ${input.newStatus}. ` +
-        `Valid transitions from ${currentStatus}: ${validTransitions.join(", ") || "none"}`
-    );
-  }
+    // Validate transition using state machine
+    if (!isValidStatusTransition("sale", currentStatus, input.newStatus)) {
+      const validTransitions = getValidSaleStatusTransitions(currentStatus);
+      throw new Error(
+        `Invalid sale status transition: ${currentStatus} -> ${input.newStatus}. ` +
+          `Valid transitions from ${currentStatus}: ${validTransitions.join(", ") || "none"}`
+      );
+    }
 
-  // Update status
-  await db
-    .update(orders)
-    .set({ saleStatus: input.newStatus })
-    .where(eq(orders.id, input.orderId));
+    // Update status
+    await tx
+      .update(orders)
+      .set({ saleStatus: input.newStatus })
+      .where(eq(orders.id, input.orderId));
 
-  return { success: true, newStatus: input.newStatus };
+    return { success: true, newStatus: input.newStatus };
+  });
 }
 
 // ============================================================================
