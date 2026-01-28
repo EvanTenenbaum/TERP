@@ -768,35 +768,364 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE0-005
 **Source:** QA Verification Report 2026-01-27
-**Status:** complete (PR #330 merged 2026-01-27)
+**Status:** BLOCKED - Workaround deployed but ineffective (PR #330 merged 2026-01-27)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** RED
 **Module:** `server/routers/photography.ts`
 **Blocks:** GF-001 Direct Intake flow testing
+**Blocker:** GF-PHASE0-006 (Missing product_images table)
 
 **Problem:**
-Photography queue fails with "unknown column" error on strains join. PR #318 was merged 2026-01-27 to fix schema drift across 5 modules, but BUG-112 (photography.ts) is NOT working in production.
+Photography queue fails with "Table 'defaultdb.product_images' doesn't exist" error. PR #318 and PR #330 deployed schema drift fallbacks, but photography page still broken.
 
-**Root Cause Options:**
-1. Fix was not fully deployed to production
-2. Photography route uses different query path than expected
-3. The fallback try-catch is not being triggered
+**Root Cause (Discovered Jan 27):**
+The `product_images` table was never created in production despite:
+- ✅ Schema defined in `drizzle/schema.ts` (since Dec 31, 2025)
+- ✅ Migration file exists (`0016_add_ws007_010_tables.sql`)
+- ❌ Migration never applied to production database
+- ❌ Auto-migration system doesn't create tables (only adds columns)
 
-**Agent Checklist:**
-- [ ] Verify `photography.ts` has try-catch fallback from PR #318 commits
-- [ ] Check if `getBatchesNeedingPhotos` query has strain join fallback
-- [ ] Compare working `productsDb.ts` pattern to photography implementation
-- [ ] If missing: Apply same schema drift fallback pattern
-- [ ] Test photography queue loads after fix
-- [ ] Verify no console errors on /photography page
+**Why Workaround Failed:**
+The fallback code attempts to catch errors, but the primary query executes first and fails before the fallback can activate. The table must exist for the photography module to function.
+
+**Resolution:**
+Blocked by GF-PHASE0-006 (Create product_images table). Once table exists, photography will work.
 
 **Acceptance Criteria:**
+- [ ] Depends on GF-PHASE0-006 completion
 - [ ] Photography queue page loads without SQL errors
 - [ ] Batches display in photography queue
-- [ ] No "unknown column" errors in production logs
+- [ ] No "table doesn't exist" errors in production logs
 
+---
 
+#### GF-PHASE0-006: Create Missing product_images Table (BUG-112-TABLE)
+
+**Task ID:** GF-PHASE0-006
+**Source:** BUG-112 Investigation (Jan 27), PR #331 Database Audit (CRITICAL #3)
+**Status:** ready
+**Priority:** CRITICAL (P0)
+**Estimate:** 2-4h
+**Mode:** RED
+**Module:** Database migration, `server/routers/photography.ts`
+**Blocks:** GF-PHASE0-001c, GF-PHASE0-005, GF-PHASE1-001, GF-001, GF-007
+
+**Problem:**
+The `product_images` table was never created in production despite:
+- ✅ Schema defined in `drizzle/schema.ts` (since Dec 31, 2025)
+- ✅ Migration file exists (`drizzle/migrations/0016_add_ws007_010_tables.sql`)
+- ❌ Migration never applied to production database
+- ❌ Auto-migration system doesn't create tables (only adds columns)
+- ❌ Code expects table to exist (8 references in server/)
+
+**Impact:**
+- Photography workflow completely broken
+- Cannot track which batches have photos
+- Catalog publishing cannot verify images
+- GF-001 (Direct Intake) photography features blocked
+- GF-007 (Inventory Management) photo tracking broken
+- Workaround deployed (commits 893f0589, e6e47cdd) but ineffective
+
+**Root Cause:**
+Migration system gap - formal migrations in `drizzle/migrations/` are never executed during deployment.
+
+**Solution Options:**
+
+**Option 1 (RECOMMENDED): Create Table Immediately**
+- **Effort:** 2-4 hours
+- **Risk:** LOW (additive change, no data loss)
+- **Outcome:** Full functionality restored
+
+**Option 2: Refactor to use productMedia table**
+- **Effort:** 1-2 days
+- **Risk:** MEDIUM (requires code changes)
+- **Outcome:** Consolidated media management
+
+**Option 3: Keep workaround, defer**
+- **Effort:** 0 hours
+- **Risk:** LOW immediate, HIGH long-term (technical debt)
+- **Outcome:** Degraded functionality continues
+
+**Agent Checklist (Option 1):**
+- [ ] Connect to production database
+- [ ] Verify table doesn't exist: `SHOW TABLES LIKE 'product_images';`
+- [ ] Run migration: `drizzle/migrations/0016_add_ws007_010_tables.sql`
+- [ ] Verify table created with correct schema: `DESCRIBE product_images;`
+- [ ] Verify indexes created: `SHOW INDEX FROM product_images;`
+- [ ] Revert workaround code (commits 893f0589, e6e47cdd photography changes)
+- [ ] Deploy updated code
+- [ ] Test photography page loads
+- [ ] Test photography queue functionality
+- [ ] Verify catalog publishing works
+- [ ] Check production logs for errors
+
+**Migration SQL:**
+```sql
+-- File: drizzle/migrations/0016_add_ws007_010_tables.sql (lines 27-41)
+CREATE TABLE IF NOT EXISTS product_images (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  batch_id INT REFERENCES batches(id),
+  product_id INT REFERENCES products(id),
+  image_url VARCHAR(500) NOT NULL,
+  thumbnail_url VARCHAR(500),
+  caption VARCHAR(255),
+  is_primary BOOLEAN DEFAULT FALSE,
+  sort_order INT DEFAULT 0,
+  status ENUM('PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED') DEFAULT 'APPROVED',
+  uploaded_by INT REFERENCES users(id),
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_batch_images (batch_id),
+  INDEX idx_product_images (product_id)
+);
+```
+
+**Verification:**
+```bash
+# 1. Check table exists
+mysql -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
+  -P 25060 -u <user> -p defaultdb \
+  -e "SHOW TABLES LIKE 'product_images';"
+
+# 2. Verify schema
+mysql -h <host> -P 25060 -u <user> -p defaultdb \
+  -e "DESCRIBE product_images;"
+
+# 3. Verify photography page
+curl https://terp-app-b9s35.ondigitalocean.app/photography
+
+# 4. Check logs for errors
+./scripts/terp-logs.sh run 100 | grep -i "product_images"
+
+# 5. Verify no table errors
+./scripts/terp-logs.sh run 100 | grep -i "ER_NO_SUCH_TABLE"
+```
+
+**Acceptance Criteria:**
+- [ ] product_images table exists in production
+- [ ] Table has correct schema (14 columns)
+- [ ] Indexes created (idx_batch_images, idx_product_images)
+- [ ] Photography page loads without errors
+- [ ] Photography queue displays batches
+- [ ] Catalog publishing can verify images
+- [ ] No "table doesn't exist" errors in logs
+- [ ] GF-PHASE0-005 unblocked
+
+**Rollback Plan:**
+If issues occur, re-deploy workaround code (commit 893f0589).
+
+**References:**
+- BUG-112 Investigation Final Summary
+- PR #331 Database Audit (CRITICAL Issue #3)
+- `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md`
+
+---
+
+#### GF-PHASE0-007: Fix Migration System Infrastructure (INFRA-MIGRATE)
+
+**Task ID:** GF-PHASE0-007
+**Source:** BUG-112 Investigation (Jan 27), PR #331 Database Audit
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Mode:** RED
+**Module:** Deployment infrastructure, `server/autoMigrate.ts`, `.do/app.yaml`
+**Depends On:** GF-PHASE0-006
+
+**Problem:**
+Formal migrations in `drizzle/migrations/` are never executed during deployment, causing schema drift.
+
+**Current State:**
+- ✅ Migration files exist in `drizzle/migrations/` (46 migrations)
+- ❌ No deployment process runs them
+- ⚠️ Auto-migration system only adds columns, not tables
+- ❌ Silent failures allow schema drift to accumulate
+- ❌ No schema validation on startup
+
+**Impact:**
+- Future features will hit same "table doesn't exist" errors
+- Schema drift will continue
+- Manual intervention required for each deployment
+- Developer productivity impacted
+
+**Solution:**
+Add migration runner to deployment process.
+
+**Agent Checklist:**
+- [ ] Create migration runner script: `scripts/run-migrations.sh`
+- [ ] Add pre-deploy job to `.do/app.yaml`
+- [ ] Add schema validation on startup
+- [ ] Add migration status logging
+- [ ] Test migration runner in staging
+- [ ] Document migration process in README
+- [ ] Update deployment documentation
+- [ ] Add migration rollback procedure
+
+**Migration Runner Script:**
+```bash
+#!/bin/bash
+# scripts/run-migrations.sh
+set -e
+
+echo "Running database migrations..."
+for migration in drizzle/migrations/*.sql; do
+  echo "Applying: $migration"
+  mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME < $migration || {
+    echo "Migration failed: $migration"
+    exit 1
+  }
+done
+echo "Migrations complete."
+```
+
+**DigitalOcean App Spec Update:**
+```yaml
+# .do/app.yaml
+jobs:
+  - name: db-migrate
+    kind: PRE_DEPLOY
+    run_command: ./scripts/run-migrations.sh
+    envs:
+      - key: DB_HOST
+        scope: RUN_TIME
+        value: ${DATABASE_HOST}
+      - key: DB_PORT
+        scope: RUN_TIME
+        value: ${DATABASE_PORT}
+      - key: DB_USER
+        scope: RUN_TIME
+        value: ${DATABASE_USERNAME}
+      - key: DB_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: ${DATABASE_PASSWORD}
+      - key: DB_NAME
+        scope: RUN_TIME
+        value: ${DATABASE_NAME}
+```
+
+**Schema Validation on Startup:**
+```typescript
+// server/validateSchema.ts (NEW FILE)
+export async function validateSchema() {
+  const requiredTables = [
+    'product_images',
+    'products',
+    'batches',
+    'clients',
+    // ... other critical tables
+  ];
+  
+  for (const table of requiredTables) {
+    const result = await db.execute(`SHOW TABLES LIKE '${table}'`);
+    if (result.rows.length === 0) {
+      throw new Error(`Required table missing: ${table}`);
+    }
+  }
+  
+  console.log('✅ Schema validation passed');
+}
+```
+
+**Acceptance Criteria:**
+- [ ] Migration runner script created and tested
+- [ ] Pre-deploy job configured in `.do/app.yaml`
+- [ ] Schema validation added to startup
+- [ ] Migration status logged on each deployment
+- [ ] Documentation updated (README, deployment docs)
+- [ ] Tested in staging environment
+- [ ] No migration failures in deployment logs
+- [ ] Rollback procedure documented
+
+**Future Prevention:**
+This ensures all future migrations are automatically applied during deployment, preventing schema drift.
+
+**References:**
+- BUG-112 Investigation: Migration system gap identified
+- PR #331 Database Audit: Validates need for migration infrastructure
+
+---
+
+#### GF-PHASE0-008: Database Schema Audit Review & Prioritization
+
+**Task ID:** GF-PHASE0-008
+**Source:** PR #331 Database Audit (23 issues identified)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Mode:** SAFE
+**Module:** Documentation, planning
+**Depends On:** PR #331 merged
+
+**Problem:**
+PR #331 identifies 23 database schema issues (3 CRITICAL, 8 HIGH, 7 MEDIUM, 5 LOW) that affect Golden Flows and long-term system health.
+
+**Objective:**
+Review audit findings and create prioritized remediation plan.
+
+**Audit Summary:**
+
+**CRITICAL Issues (3):**
+1. Missing `products.strainId` column → Addressed with fallbacks (GF-PHASE0-001b)
+2. Dual image tables conflict → Deferred to Phase 6
+3. Missing `product_images` table → Addressed (GF-PHASE0-006)
+
+**HIGH Issues (8):**
+4. Missing FK constraints on `vendorId` columns
+5. Misleading `payments.vendorId` → references `clients.id`
+6. Deprecated `vendors` table still in use
+7. Dual column confusion: `lots.vendorId` vs `lots.supplierClientId`
+8. `purchaseOrders` dual vendor references
+
+**MEDIUM Issues (7):**
+9. camelCase vs snake_case naming inconsistency
+10-15. Various missing FKs and documentation gaps
+
+**LOW Issues (5):**
+16-20. Documentation and cleanup items
+
+**Agent Checklist:**
+- [ ] Review all 23 issues in PR #331 audit
+- [ ] Categorize by impact on Golden Flows (Phases 1-5)
+- [ ] Create remediation tasks for CRITICAL and HIGH issues
+- [ ] Determine which issues can be deferred to Phase 6
+- [ ] Document which issues are acceptable technical debt
+- [ ] Create migration strategy for vendors → clients
+- [ ] Update roadmap with database standardization tasks
+- [ ] Create risk assessment for each deferred issue
+
+**Deliverables:**
+- [ ] Database remediation roadmap
+- [ ] Migration priority matrix
+- [ ] Risk assessment document
+- [ ] Phase 6 task list (Database Standardization)
+- [ ] Technical debt register
+
+**Recommended Prioritization:**
+
+**Phase 0 (Immediate):**
+- ✅ GF-PHASE0-006: Create product_images table (CRITICAL #3)
+- ✅ GF-PHASE0-007: Fix migration infrastructure
+
+**Phase 6 (Post-Beta):**
+- INFRA-DB-001: Add missing FK constraints (8h)
+- INFRA-DB-002: Rename misleading vendorId columns (4h)
+- INFRA-DB-003: Consolidate image tables (16h) - DEFERRED
+- INFRA-DB-004: Complete vendors → clients migration (24h) - DEFERRED
+
+**Acceptance Criteria:**
+- [ ] All 23 audit issues reviewed and categorized
+- [ ] Remediation plan created
+- [ ] Phase 6 tasks defined
+- [ ] Risk assessment complete
+- [ ] Roadmap updated
+
+**References:**
+- PR #331: `docs/audits/DATABASE_TABLE_AUDIT_2026-01-28.md`
+- BUG-112 Investigation findings
+- CLAUDE.md Section 4: Database standards
+
+---
 
 ## Phase 1: Flow Restoration (Days 3-6)
 
