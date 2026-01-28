@@ -534,6 +534,15 @@ export const rbacRolesRouter = router({
           throw new Error(`Role with ID ${input.roleId} not found`);
         }
 
+        // BUG-120 FIX: Return early if no permissions to assign (empty array crashes inArray)
+        if (input.permissionIds.length === 0) {
+          return {
+            success: true,
+            message: `No permissions to assign to role "${role[0].name}"`,
+            assignedCount: 0,
+          };
+        }
+
         // Validate all permissions exist
         const existingPermissions = await db
           .select({ id: permissions.id })
@@ -610,14 +619,17 @@ export const rbacRolesRouter = router({
           throw new Error(`Role with ID ${input.roleId} not found`);
         }
 
-        // Validate all permissions exist
-        const existingPermissions = await db
-          .select({ id: permissions.id })
-          .from(permissions)
-          .where(inArray(permissions.id, input.permissionIds));
+        // BUG-120 FIX: Only validate permissions if array is non-empty (empty array crashes inArray)
+        if (input.permissionIds.length > 0) {
+          // Validate all permissions exist
+          const existingPermissions = await db
+            .select({ id: permissions.id })
+            .from(permissions)
+            .where(inArray(permissions.id, input.permissionIds));
 
-        if (existingPermissions.length !== input.permissionIds.length) {
-          throw new Error("One or more permission IDs are invalid");
+          if (existingPermissions.length !== input.permissionIds.length) {
+            throw new Error("One or more permission IDs are invalid");
+          }
         }
 
         // Delete all current permission assignments

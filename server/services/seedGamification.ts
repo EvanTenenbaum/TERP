@@ -11,7 +11,7 @@
 
 import { getDb } from "../db";
 import { achievements, rewardCatalog } from "../../drizzle/schema-gamification";
-import { referralSettings } from "../../drizzle/schema";
+import { referralCreditSettings } from "../../drizzle/schema";
 import { logger } from "../_core/logger";
 import { eq, isNull } from "drizzle-orm";
 
@@ -312,7 +312,7 @@ const DEFAULT_REFERRAL_SETTINGS = [
 export async function seedGamification(): Promise<{
   achievements: { created: number; skipped: number };
   rewards: { created: number; skipped: number };
-  referralSettings: { created: number; skipped: number };
+  referralCreditSettings: { created: number; skipped: number };
   errors: string[];
 }> {
   const db = await getDb();
@@ -323,7 +323,7 @@ export async function seedGamification(): Promise<{
   const result = {
     achievements: { created: 0, skipped: 0 },
     rewards: { created: 0, skipped: 0 },
-    referralSettings: { created: 0, skipped: 0 },
+    referralCreditSettings: { created: 0, skipped: 0 },
     errors: [] as string[],
   };
 
@@ -386,21 +386,21 @@ export async function seedGamification(): Promise<{
       // Check for existing setting with same tier (or null for global)
       const [existing] = await db
         .select()
-        .from(referralSettings)
+        .from(referralCreditSettings)
         .where(
           setting.clientTier
-            ? eq(referralSettings.clientTier, setting.clientTier)
-            : isNull(referralSettings.clientTier)
+            ? eq(referralCreditSettings.clientTier, setting.clientTier)
+            : isNull(referralCreditSettings.clientTier)
         )
         .limit(1);
 
       if (existing) {
-        result.referralSettings.skipped++;
+        result.referralCreditSettings.skipped++;
         continue;
       }
 
-      await db.insert(referralSettings).values(setting);
-      result.referralSettings.created++;
+      await db.insert(referralCreditSettings).values(setting);
+      result.referralCreditSettings.created++;
       logger.debug(
         { tier: setting.clientTier || "global" },
         "[Gamification] Referral setting created"
@@ -416,7 +416,7 @@ export async function seedGamification(): Promise<{
     {
       achievements: result.achievements,
       rewards: result.rewards,
-      referralSettings: result.referralSettings,
+      referralCreditSettings: result.referralCreditSettings,
       errorCount: result.errors.length,
     },
     "[Gamification] Seed complete"

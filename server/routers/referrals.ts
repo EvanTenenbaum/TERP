@@ -14,7 +14,7 @@ import {
   clients,
   orders,
   referralCredits,
-  referralSettings,
+  referralCreditSettings,
 } from "../../drizzle/schema";
 import { adminProcedure, router } from "../_core/trpc";
 
@@ -25,9 +25,9 @@ export const referralsRouter = router({
   getSettings: adminProcedure.query(async () => {
     const settings = await db
       .select()
-      .from(referralSettings)
-      .where(eq(referralSettings.isActive, true))
-      .orderBy(referralSettings.clientTier);
+      .from(referralCreditSettings)
+      .where(eq(referralCreditSettings.isActive, true))
+      .orderBy(referralCreditSettings.clientTier);
 
     const globalSetting = settings.find(s => s.clientTier === null);
     const tierSettings = settings.filter(s => s.clientTier !== null);
@@ -72,7 +72,7 @@ export const referralsRouter = router({
       // Update global setting
       if (input.globalPercentage !== undefined) {
         await db
-          .insert(referralSettings)
+          .insert(referralCreditSettings)
           .values({
             clientTier: null,
             creditPercentage: input.globalPercentage.toFixed(2),
@@ -90,7 +90,7 @@ export const referralsRouter = router({
       if (input.tierSettings) {
         for (const tier of input.tierSettings) {
           await db
-            .insert(referralSettings)
+            .insert(referralCreditSettings)
             .values({
               clientTier: tier.tier,
               creditPercentage: tier.percentage.toFixed(2),
@@ -260,11 +260,11 @@ export const referralsRouter = router({
 
       const globalSetting = await db
         .select()
-        .from(referralSettings)
+        .from(referralCreditSettings)
         .where(
           and(
-            isNull(referralSettings.clientTier),
-            eq(referralSettings.isActive, true)
+            isNull(referralCreditSettings.clientTier),
+            eq(referralCreditSettings.isActive, true)
           )
         )
         .limit(1);
@@ -379,6 +379,7 @@ export const referralsRouter = router({
       }
 
       // Get available credits for this client
+      // BUG-118 FIX: Check array length, not just truthiness (empty array [] is truthy but crashes inArray)
       const availableCreditsQuery = db
         .select()
         .from(referralCredits)
@@ -386,7 +387,7 @@ export const referralsRouter = router({
           and(
             eq(referralCredits.referrerClientId, order.clientId),
             eq(referralCredits.status, "AVAILABLE"),
-            input.creditIds
+            input.creditIds?.length
               ? inArray(referralCredits.id, input.creditIds)
               : undefined
           )

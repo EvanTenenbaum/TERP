@@ -6612,7 +6612,8 @@ export type InsertReferralCredit = typeof referralCredits.$inferInsert;
  * Referral Settings Table
  * Configures referral credit percentages (global and per-tier)
  */
-export const referralSettings = mysqlTable(
+// SCHEMA-010 FIX: Renamed from referralSettings to avoid conflict with schema-gamification.ts
+export const referralCreditSettings = mysqlTable(
   "referral_settings",
   {
     id: int("id").primaryKey().autoincrement(),
@@ -6635,8 +6636,11 @@ export const referralSettings = mysqlTable(
   })
 );
 
-export type ReferralSetting = typeof referralSettings.$inferSelect;
-export type InsertReferralSetting = typeof referralSettings.$inferInsert;
+export type ReferralCreditSetting = typeof referralCreditSettings.$inferSelect;
+export type InsertReferralCreditSetting = typeof referralCreditSettings.$inferInsert;
+// Backwards compatibility aliases
+export type ReferralSetting = ReferralCreditSetting;
+export type InsertReferralSetting = InsertReferralCreditSetting;
 
 // WS-004: Relations for referral credits
 export const referralCreditsRelations = relations(

@@ -459,6 +459,16 @@ export const rbacUsersRouter = router({
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+
+        // BUG-120 FIX: Return early if no roles to assign (empty array crashes inArray)
+        if (input.roleIds.length === 0) {
+          return {
+            success: true,
+            message: `No roles to assign to user`,
+            assignedCount: 0,
+          };
+        }
+
         // Validate all roles exist
         const existingRoles = await db
           .select({ id: roles.id, name: roles.name })
@@ -523,14 +533,18 @@ export const rbacUsersRouter = router({
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-        // Validate all roles exist
-        const existingRoles = await db
-          .select({ id: roles.id, name: roles.name })
-          .from(roles)
-          .where(inArray(roles.id, input.roleIds));
 
-        if (existingRoles.length !== input.roleIds.length) {
-          throw new Error("One or more role IDs are invalid");
+        // BUG-120 FIX: Only validate roles if array is non-empty (empty array crashes inArray)
+        if (input.roleIds.length > 0) {
+          // Validate all roles exist
+          const existingRoles = await db
+            .select({ id: roles.id, name: roles.name })
+            .from(roles)
+            .where(inArray(roles.id, input.roleIds));
+
+          if (existingRoles.length !== input.roleIds.length) {
+            throw new Error("One or more role IDs are invalid");
+          }
         }
 
         // Delete all current role assignments

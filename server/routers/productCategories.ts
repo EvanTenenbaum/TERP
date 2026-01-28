@@ -368,6 +368,15 @@ export const productCategoriesRouter = router({
         });
       }
 
+      // BUG-119 FIX: Validate productIds is not empty before calling inArray
+      if (input.productIds.length === 0) {
+        return {
+          success: true,
+          movedCount: 0,
+          targetCategoryId: targetSubcat.categoryId,
+        };
+      }
+
       // Update products with both subcategory and category names
       await db
         .update(products)

@@ -29,7 +29,7 @@ import {
   clientReferralCodes,
   referralTracking,
   couchTaxPayouts,
-  referralSettings,
+  referralGamificationSettings,
 } from "../../drizzle/schema-gamification";
 import { clients, orders } from "../../drizzle/schema";
 import { clientVipStatus, vipTiers } from "../../drizzle/schema-vip-portal";
@@ -1302,8 +1302,8 @@ export const gamificationRouter = router({
         // Get referral settings
         const [settings] = await db
           .select()
-          .from(referralSettings)
-          .where(eq(referralSettings.isActive, true))
+          .from(referralGamificationSettings)
+          .where(eq(referralGamificationSettings.isActive, true))
           .limit(1);
 
         const couchTaxPercent = settings?.defaultCouchTaxPercent ?? "5.00";
@@ -1477,8 +1477,8 @@ export const gamificationRouter = router({
         // Get settings for minimum order value
         const [settings] = await db
           .select()
-          .from(referralSettings)
-          .where(eq(referralSettings.isActive, true))
+          .from(referralGamificationSettings)
+          .where(eq(referralGamificationSettings.isActive, true))
           .limit(1);
 
         const minOrderValue = Number(settings?.minOrderValueForCouch ?? 100);
@@ -1685,8 +1685,8 @@ export const gamificationRouter = router({
 
       const [settings] = await db
         .select()
-        .from(referralSettings)
-        .where(eq(referralSettings.isActive, true))
+        .from(referralGamificationSettings)
+        .where(eq(referralGamificationSettings.isActive, true))
         .limit(1);
 
       return settings ?? null;
@@ -1719,8 +1719,8 @@ export const gamificationRouter = router({
         // Check if settings exist
         const [existing] = await db
           .select()
-          .from(referralSettings)
-          .where(eq(referralSettings.isActive, true))
+          .from(referralGamificationSettings)
+          .where(eq(referralGamificationSettings.isActive, true))
           .limit(1);
 
         const updateData = {
@@ -1733,11 +1733,11 @@ export const gamificationRouter = router({
 
         if (existing) {
           await db
-            .update(referralSettings)
+            .update(referralGamificationSettings)
             .set(updateData)
-            .where(eq(referralSettings.id, existing.id));
+            .where(eq(referralGamificationSettings.id, existing.id));
         } else {
-          await db.insert(referralSettings).values({
+          await db.insert(referralGamificationSettings).values({
             ...updateData,
             isActive: true,
           });

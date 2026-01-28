@@ -89,66 +89,78 @@ export async function fulfillSampleRequest(
     const products = JSON.parse(request.products as any) as Array<{productId: number, quantity: string}>;
     let totalCost = 0;
 
-    // Allocate inventory for each product
-    for (const product of products) {
-      // Find sample-available batches for this product
-      const availableBatches = await db.select()
-        .from(batches)
-        .where(and(
-          eq(batches.productId, product.productId),
-          sql`${batches.sampleAvailable} = 1 OR ${batches.sampleOnly} = 1`,
-          sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) >= ${product.quantity}`
-        ))
-        .orderBy(desc(batches.sampleOnly)) // Prefer sample-only batches first
-        .limit(1);
+    // BUG-117 FIX: Wrap batch allocation in transaction with FOR UPDATE lock
+    // This prevents race conditions when multiple requests try to allocate from the same batch
+    await db.transaction(async (tx) => {
+      // Allocate inventory for each product
+      for (const product of products) {
+        // Find sample-available batches for this product with FOR UPDATE lock
+        const availableBatches = await tx.select()
+          .from(batches)
+          .where(and(
+            eq(batches.productId, product.productId),
+            sql`${batches.sampleAvailable} = 1 OR ${batches.sampleOnly} = 1`,
+            sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) >= ${product.quantity}`
+          ))
+          .orderBy(desc(batches.sampleOnly)) // Prefer sample-only batches first
+          .limit(1)
+          .for("update"); // Lock the row to prevent concurrent modifications
 
-      if (availableBatches.length === 0) {
-        throw new Error(`Insufficient sample inventory for product ${product.productId}`);
+        if (availableBatches.length === 0) {
+          throw new Error(`Insufficient sample inventory for product ${product.productId}`);
+        }
+
+        const batch = availableBatches[0];
+
+        // Double-check quantity after acquiring lock (another request may have modified it)
+        if (parseFloat(batch.sampleQty) < parseFloat(product.quantity)) {
+          throw new Error(`Insufficient sample quantity for product ${product.productId} after lock acquisition`);
+        }
+
+        const quantityBefore = batch.sampleQty;
+        const quantityAfter = (parseFloat(batch.sampleQty) - parseFloat(product.quantity)).toString();
+
+        // Reduce sample quantity
+        await tx.update(batches)
+          .set({
+            sampleQty: quantityAfter,
+            updatedAt: new Date()
+          })
+          .where(eq(batches.id, batch.id));
+
+        // Create inventory movement
+        await tx.insert(inventoryMovements).values({
+          batchId: batch.id,
+          inventoryMovementType: "SAMPLE",
+          quantityChange: `-${product.quantity}`,
+          quantityBefore,
+          quantityAfter,
+          referenceType: "SAMPLE_REQUEST",
+          referenceId: requestId,
+          notes: `Sample request #${requestId}`,
+          performedBy: fulfilledBy
+        });
+
+        // Calculate cost (use batch COGS)
+        const unitCogs = batch.cogsMode === "FIXED"
+          ? parseFloat(batch.unitCogs || "0")
+          : (parseFloat(batch.unitCogsMin || "0") + parseFloat(batch.unitCogsMax || "0")) / 2;
+
+        totalCost += unitCogs * parseFloat(product.quantity);
       }
 
-      const batch = availableBatches[0];
-      const quantityBefore = batch.sampleQty;
-      const quantityAfter = (parseFloat(batch.sampleQty) - parseFloat(product.quantity)).toString();
-
-      // Reduce sample quantity
-      await db.update(batches)
-        .set({ 
-          sampleQty: quantityAfter,
+      // QA-002 FIX: Move sample request status update INSIDE transaction
+      // This ensures atomicity - if status update fails, batch changes are rolled back
+      await tx.update(sampleRequests)
+        .set({
+          sampleRequestStatus: "FULFILLED",
+          fulfilledDate: new Date(),
+          fulfilledBy,
+          totalCost: totalCost.toFixed(2),
           updatedAt: new Date()
         })
-        .where(eq(batches.id, batch.id));
-
-      // Create inventory movement
-      await db.insert(inventoryMovements).values({
-        batchId: batch.id,
-        inventoryMovementType: "SAMPLE",
-        quantityChange: `-${product.quantity}`,
-        quantityBefore,
-        quantityAfter,
-        referenceType: "SAMPLE_REQUEST",
-        referenceId: requestId,
-        notes: `Sample request #${requestId}`,
-        performedBy: fulfilledBy
-      });
-
-      // Calculate cost (use batch COGS)
-      const unitCogs = batch.cogsMode === "FIXED" 
-        ? parseFloat(batch.unitCogs || "0")
-        : (parseFloat(batch.unitCogsMin || "0") + parseFloat(batch.unitCogsMax || "0")) / 2;
-      
-      totalCost += unitCogs * parseFloat(product.quantity);
-    }
-
-    // Update sample request
-    await db.update(sampleRequests)
-      .set({
-        sampleRequestStatus: "FULFILLED",
-        fulfilledDate: new Date(),
-        fulfilledBy,
-        totalCost: totalCost.toFixed(2),
-        updatedAt: new Date()
-      })
-      .where(eq(sampleRequests.id, requestId));
+        .where(eq(sampleRequests.id, requestId));
+    });
 
     // Update monthly allocation
     const currentMonth = new Date().toISOString().slice(0, 7);
