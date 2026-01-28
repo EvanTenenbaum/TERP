@@ -562,7 +562,9 @@ Schema drift - the `products.strainId` column may not exist in production databa
 
 **Task ID:** GF-PHASE0-001c
 **Source:** PR #318 merge verification
-**Status:** ready
+**Status:** ✅ VERIFIED COMPLETE
+**Completed:** 2026-01-28
+**Verification:** Database direct query confirmed data integrity. AutoMigrate working correctly.
 **Depends On:** PR #318 merged to main
 **Priority:** HIGH
 **Estimate:** 2h
@@ -663,10 +665,25 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 **Depends On:** GF-PHASE0-001
 
 **Problem:**
-Dashboard shows $13M inventory value, but Inventory page shows 0 batches and $0.00. Either:
+Dashboard shows $13M inventory value, but Inventory page shows 0 batches and $0.00.
 
-1. Dashboard is showing cached/stale data while inventory query fails
-2. Different query paths with different results
+**Database Verification (2026-01-28):**
+```
+✅ LIVE batches: 216
+✅ Batches with qty > 0: 237
+✅ Batches with cost > 0: 237
+✅ Total quantity: 30,569 units
+✅ Total inventory value: $13,006,663
+```
+
+**Root Cause:** CODE BUG (not data quality). The data exists and is correct.
+The Inventory page query is filtering out valid data or using different logic than Dashboard.
+
+**Likely causes:**
+1. Different `deleted_at` filtering between Dashboard and Inventory queries
+2. Different `batchStatus` filtering
+3. Different join logic or missing joins
+4. Pagination/limit issue hiding results
 
 **Agent Checklist:**
 
