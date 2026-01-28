@@ -148,18 +148,19 @@ export async function fulfillSampleRequest(
 
         totalCost += unitCogs * parseFloat(product.quantity);
       }
-    });
 
-    // Update sample request
-    await db.update(sampleRequests)
-      .set({
-        sampleRequestStatus: "FULFILLED",
-        fulfilledDate: new Date(),
-        fulfilledBy,
-        totalCost: totalCost.toFixed(2),
-        updatedAt: new Date()
-      })
-      .where(eq(sampleRequests.id, requestId));
+      // QA-002 FIX: Move sample request status update INSIDE transaction
+      // This ensures atomicity - if status update fails, batch changes are rolled back
+      await tx.update(sampleRequests)
+        .set({
+          sampleRequestStatus: "FULFILLED",
+          fulfilledDate: new Date(),
+          fulfilledBy,
+          totalCost: totalCost.toFixed(2),
+          updatedAt: new Date()
+        })
+        .where(eq(sampleRequests.id, requestId));
+    });
 
     // Update monthly allocation
     const currentMonth = new Date().toISOString().slice(0, 7);

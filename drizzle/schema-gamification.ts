@@ -727,8 +727,11 @@ export type InsertCouchTaxPayout = typeof couchTaxPayouts.$inferInsert;
  * Referral Settings
  * Global configuration for the referral program
  */
-// SCHEMA-010 FIX: Renamed from referralSettings to avoid conflict with schema.ts
-export const referralGamificationSettings = mysqlTable("referral_gamification_settings", {
+// SCHEMA-010 FIX: Renamed export from referralSettings to referralGamificationSettings
+// NOTE: Table name kept as "referral_settings" to match existing migration 0050
+// The schema.ts referralCreditSettings uses the same table name but different columns
+// This is a pre-existing schema conflict that needs a separate migration to resolve
+export const referralGamificationSettings = mysqlTable("referral_settings", {
   id: int("id").autoincrement().primaryKey(),
 
   // Only one active settings record
