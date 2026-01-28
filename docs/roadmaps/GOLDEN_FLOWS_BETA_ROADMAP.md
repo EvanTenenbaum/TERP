@@ -767,7 +767,9 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE0-005
 **Source:** QA Verification Report 2026-01-27
-**Status:** ready (unblocked by GF-PHASE0-006 completion 2026-01-28)
+**Status:** ✅ VERIFIED COMPLETE (resolved by GF-PHASE0-006)
+**Completed:** 2026-01-28
+**Verified:** 2026-01-28 (Photography page loads, queue displays 216 batches)
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** RED
@@ -805,8 +807,10 @@ Blocked by GF-PHASE0-006 (Create product_images table). Once table exists, photo
 
 **Task ID:** GF-PHASE0-006
 **Source:** BUG-112 Investigation (Jan 27), PR #331 Database Audit (CRITICAL #3)
-**Status:** complete
+**Status:** ✅ VERIFIED COMPLETE
 **Completed:** 2026-01-28
+**Verified:** 2026-01-28 (Verification Report confirms Photography module fully functional)
+**PR:** #334 (merged 2026-01-28T16:44:23Z)
 **Priority:** CRITICAL (P0)
 **Estimate:** 2-4h
 **Actual Time:** 1h
@@ -867,10 +871,10 @@ This follows the existing pattern for table creation in the codebase.
 - [x] Verified TypeScript check passes: `pnpm check`
 - [x] Verified build succeeds: `pnpm build`
 - [x] Kept workaround code (fallback for strainId remains useful)
-- [ ] Deploy updated code (on next push to main)
-- [ ] Verify table created in production (check logs)
-- [ ] Test photography page loads
-- [ ] Test photography queue functionality
+- [x] Deploy updated code (PR #334 merged, deployment ACTIVE)
+- [x] Verify table created in production (no fallback errors in logs)
+- [x] Test photography page loads (✅ Loads without error)
+- [x] Test photography queue functionality (✅ Shows 216 Pending batches)
 
 **Migration SQL:**
 
