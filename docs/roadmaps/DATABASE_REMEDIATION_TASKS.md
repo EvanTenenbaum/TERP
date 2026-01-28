@@ -2,6 +2,16 @@
 
 > **Source:** QA Protocol v3.0 Database Audit (2026-01-28)
 > **Integrate into:** `docs/roadmaps/MASTER_ROADMAP.md` under MVP: Bug Fixes section
+> **Related:** `docs/roadmaps/GOLDEN_FLOW_EXECUTION_PLAN_v2_INTEGRATED.md`
+
+---
+
+## Task ID Allocation
+
+To avoid conflicts with existing MASTER_ROADMAP tasks:
+- BUG-117 through BUG-120 (next available BUG IDs)
+- SCHEMA-010 through SCHEMA-012 (SCHEMA-001/002 already exist for different tasks)
+- ST-056 through ST-061 (next available ST IDs)
 
 ---
 
@@ -15,7 +25,7 @@
 | BUG-118 | Empty array bug in referrals.ts creditIds check | HIGH | ready | 30m | `server/routers/referrals.ts:389-391` |
 | BUG-119 | Missing validation in productCategories.ts bulk update | HIGH | ready | 30m | `server/routers/productCategories.ts:378` |
 | BUG-120 | RBAC routes validate arrays after query (crash first) | HIGH | ready | 1h | `server/routers/rbac-roles.ts:541,617`, `rbac-users.ts:466,530` |
-| SCHEMA-001 | Duplicate referralSettings table definition | HIGH | ready | 2h | `drizzle/schema.ts:6615`, `drizzle/schema-gamification.ts:730` |
+| SCHEMA-010 | Duplicate referralSettings table definition | HIGH | ready | 2h | `drizzle/schema.ts:6615`, `drizzle/schema-gamification.ts:730` |
 
 ---
 
@@ -33,10 +43,10 @@
 
 | Task | Description | Priority | Status | Estimate | Module |
 |------|-------------|----------|--------|----------|--------|
-| SCHEMA-002 | Add deletedAt columns to pricing/PO tables | MEDIUM | ready | 2h | pricingRules, purchaseOrders, purchaseOrderItems, vendorSupply |
+| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM | ready | 2h | pricingRules, purchaseOrders, purchaseOrderItems, vendorSupply |
 | ST-059 | Convert hard deletes to soft deletes | MEDIUM | ready | 8h | inventoryDb, pricingEngine, purchaseOrders, vendorSupplyDb |
 | ST-060 | Add deletedAt query filters (50+ queries) | MEDIUM | ready | 4h | pricingEngine, purchaseOrders, poReceiving, matchingEngine |
-| SCHEMA-003 | Standardize COGS precision to decimal(15,4) | MEDIUM | ready | 4h | orders.totalCogs, orderLineItems, invoiceLineItems |
+| SCHEMA-012 | Standardize COGS precision to decimal(15,4) | MEDIUM | ready | 4h | orders.totalCogs, orderLineItems, invoiceLineItems |
 | ST-061 | Add payment over-allocation validation trigger | MEDIUM | ready | 2h | `drizzle/schema.ts` (invoice_payments) |
 
 ---
@@ -46,7 +56,7 @@
 | Task | Description | Priority | Status | Estimate | Module |
 |------|-------------|----------|--------|----------|--------|
 | ST-062 | Complete safeInArray migration (remaining 38 files) | LOW | ready | 4h | Multiple files |
-| SCHEMA-004 | Add client balance sync trigger | LOW | ready | 4h | `drizzle/schema.ts` (clients, invoices) |
+| SCHEMA-013 | Add client balance sync trigger | LOW | ready | 4h | `drizzle/schema.ts` (clients, invoices) |
 | PARTY-005 | Migrate vendorId to supplierClientId (264 occurrences) | LOW | ready | 40h | Multiple files (dedicated sprint) |
 
 ---
@@ -154,7 +164,7 @@ if (!input.permissionIds?.length) {
 
 ---
 
-### SCHEMA-001: Duplicate referralSettings Table
+### SCHEMA-010: Duplicate referralSettings Table
 
 **Location:** `drizzle/schema.ts:6615-6636` and `drizzle/schema-gamification.ts:730-767`
 **Issue:** Two DIFFERENT schemas with SAME table name "referral_settings"
@@ -259,7 +269,7 @@ Add under `## 🐛 MVP: Bug Fixes` section, after existing BUG-116 entry:
 | BUG-118 | Empty array bug in referrals.ts creditIds check | HIGH | ready | 30m | `server/routers/referrals.ts:389-391` |
 | BUG-119 | Missing validation in productCategories.ts bulk update | HIGH | ready | 30m | `server/routers/productCategories.ts:378` |
 | BUG-120 | RBAC routes validate arrays after query (crash first) | HIGH | ready | 1h | `server/routers/rbac-roles.ts`, `rbac-users.ts` |
-| SCHEMA-001 | Duplicate referralSettings table definition | HIGH | ready | 2h | `drizzle/schema.ts`, `schema-gamification.ts` |
+| SCHEMA-010 | Duplicate referralSettings table definition | HIGH | ready | 2h | `drizzle/schema.ts`, `schema-gamification.ts` |
 | ST-056 | Add CHECK constraints on batch quantities | HIGH | ready | 2h | `drizzle/schema.ts` |
 | ST-057 | Add GL entry single-direction constraint | HIGH | ready | 1h | `drizzle/schema.ts` |
 | ST-058 | Migrate critical paths to safeInArray | HIGH | ready | 8h | ordersDb, inventoryDb, arApDb |
@@ -274,10 +284,10 @@ Add under `## 🛡️ MVP: Stability & Reliability` section:
 
 | Task | Description | Priority | Status | Estimate | Module |
 |------|-------------|----------|--------|----------|--------|
-| SCHEMA-002 | Add deletedAt columns to pricing/PO tables | MEDIUM | ready | 2h | Schema migration |
+| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM | ready | 2h | Schema migration |
 | ST-059 | Convert hard deletes to soft deletes | MEDIUM | ready | 8h | inventoryDb, pricingEngine, purchaseOrders |
 | ST-060 | Add deletedAt query filters | MEDIUM | ready | 4h | 50+ queries across codebase |
-| SCHEMA-003 | Standardize COGS precision to decimal(15,4) | MEDIUM | ready | 4h | orders, orderLineItems, invoiceLineItems |
+| SCHEMA-012 | Standardize COGS precision to decimal(15,4) | MEDIUM | ready | 4h | orders, orderLineItems, invoiceLineItems |
 | ST-061 | Add payment over-allocation validation | MEDIUM | ready | 2h | invoice_payments trigger |
 ```
 
