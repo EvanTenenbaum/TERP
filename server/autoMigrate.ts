@@ -522,6 +522,68 @@ export async function runAutoMigrations() {
       }
     }
 
+    // GF-PHASE0-003 FIX: Add businessType column (FEAT-001)
+    // This column exists in schema.ts but was never migrated to production
+    // Causes inventory.getEnhanced to fail with "Unknown column 'businessType'" error
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN businessType ENUM('RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER') NULL`
+      );
+      console.info("  ✅ Added businessType column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  clients.businessType already exists");
+      } else {
+        console.info("  ⚠️  clients.businessType:", errMsg);
+      }
+    }
+
+    // GF-PHASE0-003 FIX: Add preferredContact column (FEAT-001)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN preferredContact ENUM('EMAIL', 'PHONE', 'TEXT', 'ANY') NULL`
+      );
+      console.info("  ✅ Added preferredContact column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  clients.preferredContact already exists");
+      } else {
+        console.info("  ⚠️  clients.preferredContact:", errMsg);
+      }
+    }
+
+    // GF-PHASE0-003 FIX: Add payment_terms column (FEAT-001)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN payment_terms INT DEFAULT 30`
+      );
+      console.info("  ✅ Added payment_terms column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  clients.payment_terms already exists");
+      } else {
+        console.info("  ⚠️  clients.payment_terms:", errMsg);
+      }
+    }
+
+    // GF-PHASE0-003 FIX: Add referred_by_client_id column (referral tracking)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN referred_by_client_id INT NULL`
+      );
+      console.info("  ✅ Added referred_by_client_id column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  clients.referred_by_client_id already exists");
+      } else {
+        console.info("  ⚠️  clients.referred_by_client_id:", errMsg);
+      }
+    }
+
     // FIX-002: Add version column to batches table for optimistic locking (DATA-005)
     try {
       await db.execute(
