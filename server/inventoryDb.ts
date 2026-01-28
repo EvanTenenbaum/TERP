@@ -3,7 +3,8 @@
  * Provides reusable database queries for inventory operations
  */
 
-import { eq, and, or, like, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, or, like, desc, sql } from "drizzle-orm";
+import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { logSilentCatch, safeJsonParse } from "./_core/logger";
@@ -1448,7 +1449,8 @@ export async function getDashboardStats() {
 
       // INV-CONSISTENCY-001: Define sellable status filter for consistent inventory counting
       // Only LIVE and PHOTOGRAPHY_COMPLETE batches are considered "available" inventory
-      const sellableStatusFilter = inArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]);
+      // ST-058-B: Using safeInArray to handle empty array edge case gracefully
+      const sellableStatusFilter = safeInArray(batches.batchStatus, [...SELLABLE_BATCH_STATUSES]);
 
       // PERF-004: Use SQL aggregation instead of fetching all batches
       // Query 1: Get totals using SQL SUM aggregation

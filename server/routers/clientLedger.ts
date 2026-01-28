@@ -25,7 +25,8 @@ import {
   clientLedgerAdjustments,
   users,
 } from "../../drizzle/schema";
-import { eq, and, inArray, sql, isNull } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
+import { safeInArray } from "../lib/sqlSafety";
 import { logger } from "../_core/logger";
 
 // ============================================================================
@@ -294,7 +295,7 @@ export const clientLedgerRouter = router({
           and(
             eq(purchaseOrders.supplierClientId, input.clientId),
             // Only include confirmed/received purchase orders
-            inArray(purchaseOrders.purchaseOrderStatus, [
+            safeInArray(purchaseOrders.purchaseOrderStatus, [
               "CONFIRMED",
               "RECEIVING",
               "RECEIVED",
@@ -517,7 +518,7 @@ export const clientLedgerRouter = router({
         .where(
           and(
             eq(purchaseOrders.supplierClientId, input.clientId),
-            inArray(purchaseOrders.purchaseOrderStatus, [
+            safeInArray(purchaseOrders.purchaseOrderStatus, [
               "CONFIRMED",
               "RECEIVING",
               "RECEIVED",

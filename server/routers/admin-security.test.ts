@@ -14,10 +14,13 @@ import * as path from 'path';
 describe('Admin Endpoints Security (CL-003)', () => {
   const adminRouterFiles = [
     'admin.ts',
+    'adminDataAugment.ts',
     'adminImport.ts',
     'adminMigrations.ts',
     'adminQuickFix.ts',
+    'adminSchema.ts',
     'adminSchemaPush.ts',
+    'adminSetup.ts',
     'vipPortalAdmin.ts'
   ];
 

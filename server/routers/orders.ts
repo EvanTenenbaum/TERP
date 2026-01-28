@@ -27,7 +27,8 @@ import {
   orderStatusHistory,
   type Batch,
 } from "../../drizzle/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
 import { pricingService } from "../services/pricingService";
@@ -433,7 +434,7 @@ export const ordersRouter = router({
         const batchRecords = await tx
           .select()
           .from(batches)
-          .where(inArray(batches.id, batchIds))
+          .where(safeInArray(batches.id, batchIds))
           .for("update");
 
         const batchMap = new Map<number, Batch>(
@@ -1112,7 +1113,7 @@ export const ordersRouter = router({
         const batchRecords = await tx
           .select()
           .from(batches)
-          .where(inArray(batches.id, batchIds))
+          .where(safeInArray(batches.id, batchIds))
           .for("update");
 
         const batchMap = new Map(batchRecords.map(b => [b.id, b]));
@@ -1638,7 +1639,7 @@ export const ordersRouter = router({
         const batchRecords = await tx
           .select()
           .from(batches)
-          .where(inArray(batches.id, batchIds))
+          .where(safeInArray(batches.id, batchIds))
           .for("update");
 
         const batchMap = new Map(batchRecords.map(b => [b.id, b]));
@@ -1826,7 +1827,7 @@ export const ordersRouter = router({
             })
             .from(orderLineItemAllocations)
             .where(
-              inArray(orderLineItemAllocations.orderLineItemId, lineItemIds)
+              safeInArray(orderLineItemAllocations.orderLineItemId, lineItemIds)
             );
         }
 

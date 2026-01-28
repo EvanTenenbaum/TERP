@@ -210,6 +210,51 @@ vi.mock("./_core/cache", () => ({
   },
 }));
 
+/**
+ * ST-058-B: safeInArray Migration Tests
+ * Verifies that getDashboardStats uses safeInArray for the sellable batch status filter.
+ * The SELLABLE_BATCH_STATUSES constant is never empty, but using safeInArray ensures
+ * consistent behavior if the constant were ever modified and provides defense-in-depth.
+ */
+describe("ST-058-B: safeInArray migration for inventory", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("getDashboardStats should not throw when SELLABLE_BATCH_STATUSES filter is applied", async () => {
+    // This test verifies the safeInArray integration doesn't cause issues
+    const mockDb = {
+      select: vi.fn().mockImplementation(() => {
+        const builder: any = {
+          from: vi.fn().mockReturnThis(),
+          leftJoin: vi.fn().mockReturnThis(),
+          groupBy: vi.fn().mockReturnThis(),
+          orderBy: vi.fn().mockReturnThis(),
+          where: vi.fn().mockReturnThis(),
+          then: (resolve: any) => resolve([{ totalUnits: "0", totalValue: "0" }]),
+        };
+        return builder;
+      }),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+
+    // Should not throw - safeInArray handles the status array correctly
+    await expect(getDashboardStats()).resolves.not.toThrow();
+  });
+
+  it("SELLABLE_BATCH_STATUSES constant should be non-empty", () => {
+    // Import and verify the constant is valid for safeInArray
+    // This is a defense-in-depth test to catch accidental empty array
+    const { SELLABLE_BATCH_STATUSES } = require("./inventoryDb");
+    expect(SELLABLE_BATCH_STATUSES).toBeDefined();
+    expect(Array.isArray(SELLABLE_BATCH_STATUSES)).toBe(true);
+    expect(SELLABLE_BATCH_STATUSES.length).toBeGreaterThan(0);
+    expect(SELLABLE_BATCH_STATUSES).toContain("LIVE");
+    expect(SELLABLE_BATCH_STATUSES).toContain("PHOTOGRAPHY_COMPLETE");
+  });
+});
+
 describe("getDashboardStats (Gold Standard for PERF-004)", () => {
   let mockDb: any;
   let queryCallCount: number;

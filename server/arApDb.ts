@@ -1,5 +1,6 @@
-import { eq, and, desc, asc, sql, or, like, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, like } from "drizzle-orm";
 import { getDb } from "./db";
+import { safeInArray } from "./lib/sqlSafety";
 import {
   invoices,
   invoiceLineItems,
@@ -232,7 +233,7 @@ export async function getOutstandingReceivables() {
     .from(invoices)
     .where(
       and(
-        inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
+        safeInArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
         sql`${invoices.amountDue} > 0`,
         sql`${invoices.deletedAt} IS NULL`
       )
@@ -268,7 +269,7 @@ export async function calculateARAging() {
       .from(invoices)
       .where(
         and(
-          inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
+          safeInArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
           sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
           sql`${invoices.deletedAt} IS NULL`
         )
@@ -598,7 +599,7 @@ export async function getOutstandingPayables() {
     .from(bills)
     .where(
       and(
-        inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+        safeInArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
         sql`${bills.amountDue} > 0`,
         sql`${bills.deletedAt} IS NULL`
       )
@@ -634,7 +635,7 @@ export async function calculateAPAging() {
       .from(bills)
       .where(
         and(
-          inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+          safeInArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
           sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
           sql`${bills.deletedAt} IS NULL`
         )

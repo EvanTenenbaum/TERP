@@ -523,6 +523,125 @@ describe("permissionService", () => {
     });
   });
 
+  // SEC-029: Tests for default permission denial (least privilege principle)
+  describe("getUserPermissions - Default Permission Denial (SEC-029)", () => {
+    it("should return empty set for users without RBAC roles when ENABLE_DEFAULT_READ_PERMISSIONS is not set", async () => {
+      // Ensure the environment variable is not set
+      const originalEnv = process.env.ENABLE_DEFAULT_READ_PERMISSIONS;
+      delete process.env.ENABLE_DEFAULT_READ_PERMISSIONS;
+
+      // Mock: User has no roles and is not an admin in users table
+      let callCount = 0;
+      (db.select as any).mockImplementation(() => ({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockImplementation(async () => {
+            callCount++;
+            if (callCount === 1) {
+              // First call: check user roles - returns empty (no RBAC roles)
+              return [];
+            } else if (callCount === 2) {
+              // Second call: check if user is admin in users table - returns non-admin
+              return [{ role: "user" }];
+            }
+            return [];
+          }),
+          limit: vi.fn().mockImplementation(function() {
+            return this; // Return the same object for chaining
+          }),
+        }),
+      }));
+
+      clearPermissionCache();
+      const permissions = await getUserPermissions("user_no_roles");
+
+      // SEC-029: Users without RBAC roles should have NO permissions by default
+      expect(permissions.size).toBe(0);
+
+      // Restore original env
+      if (originalEnv !== undefined) {
+        process.env.ENABLE_DEFAULT_READ_PERMISSIONS = originalEnv;
+      }
+    });
+
+    it("should return minimal permissions when ENABLE_DEFAULT_READ_PERMISSIONS is explicitly true", async () => {
+      // Set environment variable to enable default permissions
+      const originalEnv = process.env.ENABLE_DEFAULT_READ_PERMISSIONS;
+      process.env.ENABLE_DEFAULT_READ_PERMISSIONS = 'true';
+
+      // Mock: User has no roles and is not an admin
+      let callCount = 0;
+      (db.select as any).mockImplementation(() => ({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockImplementation(async () => {
+            callCount++;
+            if (callCount === 1) {
+              return []; // No RBAC roles
+            } else if (callCount === 2) {
+              return [{ role: "user" }]; // Not admin
+            }
+            return [];
+          }),
+          limit: vi.fn().mockImplementation(function() {
+            return this;
+          }),
+        }),
+      }));
+
+      clearPermissionCache();
+      const permissions = await getUserPermissions("user_with_fallback");
+
+      // SEC-029: When enabled, should only grant minimal read permissions
+      expect(permissions.size).toBe(2);
+      expect(permissions.has("dashboard:read")).toBe(true);
+      expect(permissions.has("calendar:read")).toBe(true);
+      // Should NOT have sensitive permissions
+      expect(permissions.has("orders:create")).toBe(false);
+      expect(permissions.has("inventory:update")).toBe(false);
+      expect(permissions.has("accounting:create")).toBe(false);
+
+      // Restore original env
+      if (originalEnv !== undefined) {
+        process.env.ENABLE_DEFAULT_READ_PERMISSIONS = originalEnv;
+      } else {
+        delete process.env.ENABLE_DEFAULT_READ_PERMISSIONS;
+      }
+    });
+
+    it("should deny all write operations for users without RBAC roles", async () => {
+      // Ensure the environment variable is not set
+      delete process.env.ENABLE_DEFAULT_READ_PERMISSIONS;
+
+      (db.select as any).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]), // No roles
+          limit: vi.fn().mockImplementation(function() {
+            return this;
+          }),
+        }),
+      });
+
+      clearPermissionCache();
+
+      // All write permissions should be denied
+      const writePermissions = [
+        "orders:create",
+        "orders:update",
+        "orders:delete",
+        "inventory:create",
+        "inventory:update",
+        "clients:create",
+        "clients:delete",
+        "accounting:create",
+      ];
+
+      for (const perm of writePermissions) {
+        const result = await hasPermission("user_no_roles", perm);
+        expect(result).toBe(false);
+        clearPermissionCache(); // Clear cache between checks
+      }
+    });
+  });
+
   describe("getUserRoles - Empty Array Handling (BUG-043)", () => {
     it("should return empty array when user has no role assignments", async () => {
       (db.select as any).mockReturnValue({

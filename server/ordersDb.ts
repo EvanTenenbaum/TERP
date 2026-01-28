@@ -788,7 +788,7 @@ export async function deleteOrder(
           })
           .from(orderLineItemAllocations)
           .where(
-            inArray(orderLineItemAllocations.orderLineItemId, lineItemIds)
+            safeInArray(orderLineItemAllocations.orderLineItemId, lineItemIds)
           );
 
         // Release reserved quantities for each allocation
