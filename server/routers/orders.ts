@@ -26,6 +26,7 @@ import {
   inventoryMovements,
   orderStatusHistory,
   type Batch,
+  type OrderLineItem,
 } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
@@ -429,8 +430,8 @@ export const ordersRouter = router({
         }
 
         // BUG-301, BUG-304: SELECT FOR UPDATE to lock batches and prevent race conditions
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const batchIds = lineItems.map((item: any) => item.batchId as number);
+        // ST-053: Properly typed - lineItems is OrderLineItem[]
+        const batchIds = lineItems.map((item: OrderLineItem) => item.batchId as number);
         const batchRecords = await tx
           .select()
           .from(batches)

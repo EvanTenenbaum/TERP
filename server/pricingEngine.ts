@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { eq, sql, desc, inArray } from "drizzle-orm";
+import { eq, sql, desc, inArray, and, isNull } from "drizzle-orm";
 import {
   pricingRules,
   pricingProfiles,
@@ -147,7 +147,8 @@ export async function deletePricingRule(ruleId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(pricingRules).where(eq(pricingRules.id, ruleId));
+  // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+  await db.update(pricingRules).set({ deletedAt: new Date() }).where(eq(pricingRules.id, ruleId));
 }
 
 // ============================================================================
@@ -161,6 +162,7 @@ export async function getPricingProfiles() {
   return await db
     .select()
     .from(pricingProfiles)
+    .where(isNull(pricingProfiles.deletedAt))
     .orderBy(desc(pricingProfiles.createdAt));
 }
 
@@ -171,7 +173,12 @@ export async function getPricingProfileById(profileId: number) {
   const result = await db
     .select()
     .from(pricingProfiles)
-    .where(eq(pricingProfiles.id, profileId))
+    .where(
+      and(
+        eq(pricingProfiles.id, profileId),
+        isNull(pricingProfiles.deletedAt)
+      )
+    )
     .limit(1);
   return result[0] || null;
 }
@@ -221,7 +228,8 @@ export async function deletePricingProfile(profileId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(pricingProfiles).where(eq(pricingProfiles.id, profileId));
+  // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+  await db.update(pricingProfiles).set({ deletedAt: new Date() }).where(eq(pricingProfiles.id, profileId));
 }
 
 export async function applyProfileToClient(
@@ -413,11 +421,16 @@ export async function getClientPricingRules(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get client
+  // Get client (exclude soft-deleted)
   const clientResult = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, clientId))
+    .where(
+      and(
+        eq(clients.id, clientId),
+        isNull(clients.deletedAt)
+      )
+    )
     .limit(1);
   if (!clientResult[0]) {
     console.warn(`[PricingEngine] Client ${clientId} not found`);

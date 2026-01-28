@@ -1,5 +1,5 @@
 // Re-export db utilities for router compatibility
-export { getDb, upsertUser, getUser, getUserByEmail } from '../db';
+export { getDb, upsertUser, getUser, getUserByEmail, getUserById } from '../db';
 
 // For convenience, also export a promise-based db getter
 import { getDb as getDatabase } from '../db';

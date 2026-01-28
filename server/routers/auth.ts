@@ -6,6 +6,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import {
   publicProcedure,
   strictlyProtectedProcedure,
+  adminProcedure,
   router,
 } from "../_core/trpc";
 import { simpleAuth } from "../_core/simpleAuth";
@@ -236,6 +237,80 @@ export const authRouter = router({
           email: user.email,
           role: user.role,
         },
+      };
+    }),
+
+  /**
+   * TERP-0014: Admin revocation of user sessions
+   * Allows admins to invalidate all sessions for a specific user
+   * Use cases: compromised account, employee termination, security incident
+   */
+  revokeUserSessions: adminProcedure
+    .input(
+      z.object({
+        userId: z.number().int().positive("User ID must be a positive integer"),
+        reason: z.string().min(1, "Reason is required").max(500, "Reason too long").optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const adminUser = ctx.user;
+
+      if (!adminUser) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        });
+      }
+
+      // Verify target user exists
+      const targetUser = await db.getUserById(input.userId);
+      if (!targetUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      // Prevent admin from revoking their own sessions through this endpoint
+      // (they should use logout instead)
+      if (targetUser.id === adminUser.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot revoke your own sessions. Use logout instead.",
+        });
+      }
+
+      // Invalidate all tokens for the target user
+      invalidateUserTokens(input.userId, "ADMIN_REVOKE");
+
+      // Log audit event
+      await logAuditEvent({
+        eventType: AuditEventType.PERMISSION_CHANGED,
+        entityType: "user",
+        entityId: input.userId,
+        userId: adminUser.id,
+        metadata: {
+          action: "sessions.revoke",
+          targetUserId: input.userId,
+          targetUserEmail: targetUser.email,
+          reason: input.reason || "Admin revocation",
+          revokedBy: adminUser.email,
+        },
+      });
+
+      logger.info({
+        msg: "Admin revoked user sessions",
+        adminUserId: adminUser.id,
+        adminEmail: adminUser.email,
+        targetUserId: input.userId,
+        targetEmail: targetUser.email,
+        reason: input.reason,
+      });
+
+      return {
+        success: true,
+        message: `All sessions for user ${targetUser.email} have been revoked`,
+        targetUserId: input.userId,
       };
     }),
 });

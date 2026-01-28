@@ -30,6 +30,8 @@ import {
 import { calculateAvailableQty } from "./inventoryUtils";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
+// ST-053: Import DbTransaction type for proper typing
+import type { DbTransaction } from "./_core/dbTransaction";
 
 // ============================================================================
 // TYPES
@@ -1920,8 +1922,7 @@ export async function updateSaleStatus(input: {
  * @param performedBy - User ID who performed the action (for audit trail)
  */
 async function decrementInventoryForOrder(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any, // Drizzle transaction type is complex, using any for flexibility
+  tx: DbTransaction,
   orderId: number,
   items: OrderItem[],
   performedBy: number
@@ -1931,23 +1932,33 @@ async function decrementInventoryForOrder(
   for (const item of items) {
     if (!item.batchId || item.isSample) continue; // Skip samples
 
-    // Decrement batch quantity with row-level locking
-    await tx.execute(sql`
-      UPDATE batches
-      SET onHandQty = CAST(onHandQty AS DECIMAL(15,4)) - ${item.quantity}
-      WHERE id = ${item.batchId}
-      FOR UPDATE
-    `);
+    // Get current batch quantity before update (for audit trail)
+    const [batch] = await tx
+      .select({ onHandQty: batches.onHandQty })
+      .from(batches)
+      .where(eq(batches.id, item.batchId))
+      .for("update");
+
+    const quantityBefore = parseFloat(batch?.onHandQty || "0");
+    const quantityAfter = quantityBefore - item.quantity;
+
+    // Decrement batch quantity
+    await tx
+      .update(batches)
+      .set({ onHandQty: String(quantityAfter) })
+      .where(eq(batches.id, item.batchId));
 
     // Log inventory movement
     await tx.insert(inventoryMovements).values({
       batchId: item.batchId,
-      movementType: "SALE",
-      quantity: -item.quantity,
+      inventoryMovementType: "SALE",
+      quantityChange: String(-item.quantity),
+      quantityBefore: String(quantityBefore),
+      quantityAfter: String(quantityAfter),
       referenceType: "ORDER",
       referenceId: orderId,
       notes: `Shipped order #${orderId}`,
-      createdBy: performedBy,
+      performedBy: performedBy,
     });
   }
 }

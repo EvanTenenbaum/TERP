@@ -27,6 +27,8 @@ import {
   generateInvoiceNumber,
   generateBillNumber,
   generatePaymentNumber,
+  recordInvoicePayment,
+  recordBillPayment,
 } from "./arApDb";
 
 describe("arApDb Soft-Delete Filtering", () => {
@@ -921,6 +923,311 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
 
       // Assert - Verify transaction was used
       expect(transactionMock).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+/**
+ * ST-061: Tests for payment over-allocation validation
+ * Ensures that payments cannot exceed invoice/bill totals
+ */
+describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("recordInvoicePayment", () => {
+    it("should throw error when payment exceeds amount due", async () => {
+      // Arrange - Invoice with $1000 total, $0 paid = $1000 due
+      const mockInvoice = {
+        id: 1,
+        invoiceNumber: "INV-001",
+        totalAmount: "1000.00",
+        amountPaid: "0.00",
+        amountDue: "1000.00",
+        status: "SENT",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockInvoice]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Try to pay $1500 on $1000 invoice
+      await expect(recordInvoicePayment(1, 1500)).rejects.toThrow(
+        "Payment would exceed invoice total"
+      );
+    });
+
+    it("should throw error with max allocation amount in message", async () => {
+      // Arrange - Invoice with $500 total, $300 paid = $200 due
+      const mockInvoice = {
+        id: 2,
+        invoiceNumber: "INV-002",
+        totalAmount: "500.00",
+        amountPaid: "300.00",
+        amountDue: "200.00",
+        status: "PARTIAL",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockInvoice]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Try to pay $250 when only $200 is due
+      await expect(recordInvoicePayment(2, 250)).rejects.toThrow(
+        "Max allocation: 200.00"
+      );
+    });
+
+    it("should allow payment equal to amount due", async () => {
+      // Arrange - Invoice with $1000 total, $0 paid = $1000 due
+      const mockInvoice = {
+        id: 3,
+        invoiceNumber: "INV-003",
+        totalAmount: "1000.00",
+        amountPaid: "0.00",
+        amountDue: "1000.00",
+        status: "SENT",
+        deletedAt: null,
+      };
+
+      const updateMock = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+        }),
+      });
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockInvoice]),
+        update: updateMock,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act - Pay exactly $1000
+      await expect(recordInvoicePayment(3, 1000)).resolves.not.toThrow();
+
+      // Assert - Update was called
+      expect(updateMock).toHaveBeenCalled();
+    });
+
+    it("should allow payment within tolerance (0.01)", async () => {
+      // Arrange - Invoice with $100 due
+      const mockInvoice = {
+        id: 4,
+        invoiceNumber: "INV-004",
+        totalAmount: "100.00",
+        amountPaid: "0.00",
+        amountDue: "100.00",
+        status: "SENT",
+        deletedAt: null,
+      };
+
+      const updateMock = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+        }),
+      });
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockInvoice]),
+        update: updateMock,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act - Pay $100.01 (within tolerance)
+      await expect(recordInvoicePayment(4, 100.01)).resolves.not.toThrow();
+    });
+
+    it("should reject payment exceeding tolerance", async () => {
+      // Arrange - Invoice with $100 due
+      const mockInvoice = {
+        id: 5,
+        invoiceNumber: "INV-005",
+        totalAmount: "100.00",
+        amountPaid: "0.00",
+        amountDue: "100.00",
+        status: "SENT",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockInvoice]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Pay $100.02 (exceeds tolerance)
+      await expect(recordInvoicePayment(5, 100.02)).rejects.toThrow(
+        "Payment would exceed invoice total"
+      );
+    });
+
+    it("should reject payment on fully paid invoice", async () => {
+      // Arrange - Invoice already fully paid
+      const mockInvoice = {
+        id: 6,
+        invoiceNumber: "INV-006",
+        totalAmount: "500.00",
+        amountPaid: "500.00",
+        amountDue: "0.00",
+        status: "PAID",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockInvoice]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Try to pay any amount on paid invoice
+      await expect(recordInvoicePayment(6, 50)).rejects.toThrow(
+        "Max allocation: 0.00"
+      );
+    });
+  });
+
+  describe("recordBillPayment", () => {
+    it("should throw error when payment exceeds bill total", async () => {
+      // Arrange - Bill with $2000 total, $500 paid = $1500 due
+      const mockBill = {
+        id: 1,
+        billNumber: "BILL-001",
+        totalAmount: "2000.00",
+        amountPaid: "500.00",
+        amountDue: "1500.00",
+        status: "PARTIAL",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockBill]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Try to pay $2000 when only $1500 is due
+      await expect(recordBillPayment(1, 2000)).rejects.toThrow(
+        "Payment would exceed bill total"
+      );
+    });
+
+    it("should throw error with max allocation in message for bills", async () => {
+      // Arrange - Bill with $1000 total, $800 paid = $200 due
+      const mockBill = {
+        id: 2,
+        billNumber: "BILL-002",
+        totalAmount: "1000.00",
+        amountPaid: "800.00",
+        amountDue: "200.00",
+        status: "PARTIAL",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockBill]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Try to pay $300 when only $200 is due
+      await expect(recordBillPayment(2, 300)).rejects.toThrow(
+        "Max allocation: 200.00"
+      );
+    });
+
+    it("should allow bill payment equal to amount due", async () => {
+      // Arrange - Bill with $1500 due
+      const mockBill = {
+        id: 3,
+        billNumber: "BILL-003",
+        totalAmount: "1500.00",
+        amountPaid: "0.00",
+        amountDue: "1500.00",
+        status: "PENDING",
+        deletedAt: null,
+      };
+
+      const updateMock = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
+        }),
+      });
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockBill]),
+        update: updateMock,
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act - Pay exactly $1500
+      await expect(recordBillPayment(3, 1500)).resolves.not.toThrow();
+
+      // Assert - Update was called
+      expect(updateMock).toHaveBeenCalled();
+    });
+
+    it("should handle multiple partial payments correctly", async () => {
+      // Arrange - Bill with $1000 total, already has partial payments totaling $700
+      const mockBill = {
+        id: 4,
+        billNumber: "BILL-004",
+        totalAmount: "1000.00",
+        amountPaid: "700.00",
+        amountDue: "300.00",
+        status: "PARTIAL",
+        deletedAt: null,
+      };
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([mockBill]),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Act & Assert - Try to pay $350 (would total $1050, exceeding $1000)
+      await expect(recordBillPayment(4, 350)).rejects.toThrow(
+        "Payment would exceed bill total"
+      );
     });
   });
 });

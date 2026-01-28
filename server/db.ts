@@ -126,4 +126,16 @@ export async function getUserByEmail(email: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+/**
+ * TERP-0014: Get user by numeric ID
+ * Used for admin session revocation and other admin operations
+ */
+export async function getUserById(id: number) {
+  const database = await getDb();
+
+  const result = await database.select().from(users).where(eq(users.id, id)).limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
 // TODO: add feature queries here as your schema grows.

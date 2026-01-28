@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import { getDb } from "./db";
 import { clientNeeds, vendorSupply, batches } from "../drizzle/schema";
 import {
@@ -272,14 +272,15 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
 
     const matches: Match[] = [];
 
-    // 1. Check inventory (batches with available quantity)
+    // 1. Check inventory (batches with available quantity, exclude soft-deleted)
     const inventoryMatches = await db
       .select()
       .from(batches)
       .where(
         and(
           eq(batches.batchStatus, "LIVE"),
-          sql`CAST(${batches.onHandQty} AS DECIMAL) > 0`
+          sql`CAST(${batches.onHandQty} AS DECIMAL) > 0`,
+          isNull(batches.deletedAt)
         )
       );
 
@@ -404,11 +405,16 @@ export async function findBuyersForInventory(
   if (!db) throw new Error("Database not available");
 
   try {
-    // Get the batch
+    // Get the batch (exclude soft-deleted)
     const [batch] = await db
       .select()
       .from(batches)
-      .where(eq(batches.id, batchId));
+      .where(
+        and(
+          eq(batches.id, batchId),
+          isNull(batches.deletedAt)
+        )
+      );
 
     if (!batch) {
       throw new Error("Batch not found");

@@ -264,6 +264,9 @@ export const purchaseOrders = mysqlTable(
     notes: text("notes"),
     vendorNotes: text("vendorNotes"), // Notes visible to vendor
 
+    // Soft delete
+    deletedAt: timestamp("deletedAt"), // Soft delete support (ST-059)
+
     // Tracking
     createdBy: int("createdBy")
       .notNull()
@@ -334,6 +337,7 @@ export const purchaseOrderItems = mysqlTable(
     // Item-specific notes
     notes: text("notes"),
 
+    deletedAt: timestamp("deletedAt"), // Soft delete support (ST-059)
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -600,9 +604,9 @@ export const batches = mysqlTable(
     sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
     sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
     cogsMode: cogsModeEnum.notNull(),
-    unitCogs: decimal("unitCogs", { precision: 12, scale: 4 }), // FIXED
-    unitCogsMin: decimal("unitCogsMin", { precision: 12, scale: 4 }), // RANGE
-    unitCogsMax: decimal("unitCogsMax", { precision: 12, scale: 4 }), // RANGE
+    unitCogs: decimal("unitCogs", { precision: 15, scale: 4 }), // FIXED - SCHEMA-012: standardized to decimal(15,4)
+    unitCogsMin: decimal("unitCogsMin", { precision: 15, scale: 4 }), // RANGE - SCHEMA-012: standardized to decimal(15,4)
+    unitCogsMax: decimal("unitCogsMax", { precision: 15, scale: 4 }), // RANGE - SCHEMA-012: standardized to decimal(15,4)
     paymentTerms: paymentTermsEnum.notNull(),
     ownershipType: ownershipTypeEnum.notNull().default("CONSIGNED"), // MEET-006: Track inventory ownership
     amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }).default("0"), // For COD/Partial tracking
@@ -728,7 +732,7 @@ export const sales = mysqlTable(
     productId: int("productId").notNull(),
     quantity: decimal("quantity", { precision: 15, scale: 4 }).notNull(),
     deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-    cogsAtSale: decimal("cogsAtSale", { precision: 12, scale: 4 }).notNull(), // COGS snapshot
+    cogsAtSale: decimal("cogsAtSale", { precision: 15, scale: 4 }).notNull(), // COGS snapshot - SCHEMA-012: standardized to decimal(15,4)
     salePrice: decimal("salePrice", { precision: 12, scale: 2 }).notNull(),
     cogsOverride: int("cogsOverride").notNull().default(0), // 0 = false, 1 = true
     // FK added: customerId → clients.id (Task 10.4)
@@ -770,9 +774,9 @@ export type InsertSale = typeof sales.$inferInsert;
 export const cogsHistory = mysqlTable("cogsHistory", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
-  oldCogs: decimal("oldCogs", { precision: 12, scale: 4 }),
+  oldCogs: decimal("oldCogs", { precision: 15, scale: 4 }), // SCHEMA-012: standardized to decimal(15,4)
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  newCogs: decimal("newCogs", { precision: 12, scale: 4 }).notNull(),
+  newCogs: decimal("newCogs", { precision: 15, scale: 4 }).notNull(), // SCHEMA-012: standardized to decimal(15,4)
   changeType: varchar("changeType", { length: 50 }).notNull(), // prospective, retroactive, both
   affectedSalesCount: int("affectedSalesCount").default(0),
   reason: text("reason"),
@@ -1627,7 +1631,7 @@ export const clients = mysqlTable(
     // COGS configuration
     cogsAdjustmentType: cogsAdjustmentTypeEnum.default("NONE"),
     cogsAdjustmentValue: decimal("cogs_adjustment_value", {
-      precision: 10,
+      precision: 15, // SCHEMA-012: standardized to decimal(15,4)
       scale: 4,
     }).default("0"),
     autoDeferConsignment: boolean("auto_defer_consignment").default(false),
@@ -2241,6 +2245,7 @@ export const pricingRules = mysqlTable(
     priority: int("priority").default(0),
 
     isActive: boolean("is_active").default(true),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-059)
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
@@ -2705,7 +2710,7 @@ export const orders = mysqlTable(
     tax: decimal("tax", { precision: 15, scale: 2 }).default("0"),
     discount: decimal("discount", { precision: 15, scale: 2 }).default("0"),
     total: decimal("total", { precision: 15, scale: 2 }).notNull(),
-    totalCogs: decimal("total_cogs", { precision: 15, scale: 2 }),
+    totalCogs: decimal("total_cogs", { precision: 15, scale: 4 }), // SCHEMA-012: standardized to decimal(15,4)
     totalMargin: decimal("total_margin", { precision: 15, scale: 2 }),
     avgMarginPercent: decimal("avg_margin_percent", { precision: 5, scale: 2 }),
 
@@ -4180,6 +4185,7 @@ export const vendorSupply = mysqlTable(
     notes: text("notes"),
     internalNotes: text("internal_notes"), // Staff only
 
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-059)
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
     // Attribution - either internal user OR VIP portal client (BUG-037)
@@ -4197,6 +4203,7 @@ export const vendorSupply = mysqlTable(
     strainIdx: index("idx_strain").on(table.strain),
     productNameIdx: index("idx_product_name_vs").on(table.productName),
     categoryIdx: index("idx_category").on(table.category),
+    deletedAtIdx: index("idx_deleted_at_vs").on(table.deletedAt), // PARTY-004
   })
 );
 
@@ -4501,12 +4508,12 @@ export const orderLineItems = mysqlTable(
     productDisplayName: varchar("product_display_name", { length: 255 }),
     quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
     cogsPerUnit: decimal("cogs_per_unit", {
-      precision: 10,
-      scale: 2,
+      precision: 15, // SCHEMA-012: standardized to decimal(15,4)
+      scale: 4,
     }).notNull(),
     originalCogsPerUnit: decimal("original_cogs_per_unit", {
-      precision: 10,
-      scale: 2,
+      precision: 15, // SCHEMA-012: standardized to decimal(15,4)
+      scale: 4,
     }).notNull(),
     isCogsOverridden: boolean("is_cogs_overridden").notNull().default(false),
     cogsOverrideReason: text("cogs_override_reason"),
