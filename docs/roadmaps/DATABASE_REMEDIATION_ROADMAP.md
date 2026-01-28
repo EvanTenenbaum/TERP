@@ -14,10 +14,10 @@ This roadmap provides a prioritized plan to remediate **23 database schema issue
 | Priority | Issues | Effort | Phase | Status |
 |----------|--------|--------|-------|--------|
 | Priority 1 (Immediate) | 2 | 6h | Phase 0 | ADDRESSED |
-| Priority 2 (Quick Wins) | 8 | 12h | Phase 6 | PLANNED |
-| Priority 3 (Medium-term) | 8 | 16h | Phase 6 | PLANNED |
-| Priority 4 (Deferred) | 5 | 40h | Post-Beta | DEFERRED |
-| **Total** | **23** | **74h** | | |
+| Priority 2 (Quick Wins) | 7 | 12h | Phase 6 | PLANNED |
+| Priority 3 (Medium-term) | 7 | 16h | Phase 6 | PLANNED |
+| Priority 4 (Deferred) | 7 | 56h | Post-Beta | DEFERRED |
+| **Total** | **23** | **90h** | | |
 
 **Recommended Phase 6 Scope:** 12-28 hours (Priority 2 + selected Priority 3)
 
@@ -185,6 +185,12 @@ ALTER TABLE ledger_entries
 ALTER TABLE sales
   ADD CONSTRAINT fk_sales_batch FOREIGN KEY (batchId) REFERENCES batches(id) ON DELETE RESTRICT,
   ADD CONSTRAINT fk_sales_product FOREIGN KEY (productId) REFERENCES products(id) ON DELETE RESTRICT;
+
+-- Expenses (additional FKs from Issue #17)
+ALTER TABLE expenses
+  ADD CONSTRAINT fk_expenses_category FOREIGN KEY (categoryId) REFERENCES expense_categories(id) ON DELETE SET NULL,
+  ADD CONSTRAINT fk_expenses_bank FOREIGN KEY (bankAccountId) REFERENCES bank_accounts(id) ON DELETE SET NULL,
+  ADD CONSTRAINT fk_expenses_bill FOREIGN KEY (billId) REFERENCES bills(id) ON DELETE SET NULL;
 ```
 
 **Verification:**

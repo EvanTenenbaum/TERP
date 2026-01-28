@@ -80,7 +80,7 @@ Two image tables exist in schema with overlapping purposes:
 
 **Table 1: productMedia (line 451)**
 ```typescript
-export const productMedia = mysqlTable("product_media", {
+export const productMedia = mysqlTable("productMedia", {
   id: serial("id").primaryKey(),
   productId: int("productId"),
   mediaType: mysqlEnum("mediaType", ["IMAGE", "VIDEO", "DOCUMENT"]),
@@ -281,7 +281,7 @@ ALTER TABLE payments CHANGE vendorId supplierClientId INT;
 
 **Severity:** HIGH
 **Location:** `drizzle/schema.ts:167`
-**Status:** Ready (Phase 6 - INFRA-DB-004)
+**Status:** deferred (Post-Beta - INFRA-DB-004)
 
 **Problem:**
 The `vendors` table is deprecated per Party Model, but multiple tables still reference it:
