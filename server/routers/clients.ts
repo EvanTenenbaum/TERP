@@ -7,8 +7,6 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const clientsRouter = router({
-  // List clients with pagination and filters
-  // BUG-034: Standardized pagination response
   list: protectedProcedure
     .use(requirePermission("clients:read"))
     .input(
@@ -23,12 +21,11 @@ export const clientsRouter = router({
         hasDebt: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
-      const clients = await clientsDb.getClients(input);
+    .query(async ({ input, ctx }) => {
+      const clients = await clientsDb.getClients(ctx.user, input);
       return createSafeUnifiedResponse(clients, -1, input.limit, input.offset);
     }),
 
-  // Get total count for pagination
   count: protectedProcedure
     .use(requirePermission("clients:read"))
     .input(
@@ -41,11 +38,10 @@ export const clientsRouter = router({
         hasDebt: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => {
-      return await clientsDb.getClientCount(input);
+    .query(async ({ input, ctx }) => {
+      return await clientsDb.getClientCount(ctx.user, input);
     }),
 
-  // Get single client by ID
   getById: protectedProcedure
     .use(requirePermission("clients:read"))
     .input(z.object({ clientId: z.number() }))
@@ -53,7 +49,6 @@ export const clientsRouter = router({
       return await clientsDb.getClientById(input.clientId);
     }),
 
-  // Get client by TERI code
   getByTeriCode: protectedProcedure
     .use(requirePermission("clients:read"))
     .input(z.object({ teriCode: z.string() }))
@@ -61,37 +56,28 @@ export const clientsRouter = router({
       return await clientsDb.getClientByTeriCode(input.teriCode);
     }),
 
-  // Check if a TERI code is available (for real-time validation)
-  // BLOCK-001: Added for proactive duplicate detection
   checkTeriCodeAvailable: protectedProcedure
     .use(requirePermission("clients:read"))
     .input(
       z.object({
         teriCode: z.string().min(1).max(50),
-        excludeClientId: z.number().optional(), // For edit mode - exclude current client
+        excludeClientId: z.number().optional(),
       })
     )
     .query(async ({ input }) => {
       const existing = await clientsDb.getClientByTeriCode(input.teriCode);
-      // If no existing client, code is available
       if (!existing) {
         return { available: true, message: null };
       }
-      // If editing and the found client is the same as excludeClientId, it's available
       if (input.excludeClientId && existing.id === input.excludeClientId) {
         return { available: true, message: null };
       }
-      // Otherwise, code is taken
-      // MEDIUM-006 FIX: Don't disclose existing client name for security
       return {
         available: false,
         message: `TERI code "${input.teriCode}" is already in use.`,
       };
     }),
 
-  // Create new client
-  // BLOCK-001: Enhanced error handling for duplicate TERI codes
-  // FEAT-001: Added wishlist/notes field support and business fields
   create: protectedProcedure
     .use(requirePermission("clients:create"))
     .input(
@@ -101,8 +87,8 @@ export const clientsRouter = router({
         email: z.string().email().optional(),
         phone: z.string().max(50).optional(),
         address: z.string().optional(),
-        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
-        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        businessType: z.enum(["RETAIL", "WHOLESALE", "DISPENSARY", "DELIVERY", "MANUFACTURER", "DISTRIBUTOR", "OTHER"]).optional(),
+        preferredContact: z.enum(["EMAIL", "PHONE", "TEXT", "ANY"]).optional(),
         paymentTerms: z.number().int().positive().optional().default(30),
         isBuyer: z.boolean().optional(),
         isSeller: z.boolean().optional(),
@@ -110,7 +96,7 @@ export const clientsRouter = router({
         isReferee: z.boolean().optional(),
         isContractor: z.boolean().optional(),
         tags: z.array(z.string()).optional(),
-        wishlist: z.string().optional(), // FEAT-001: Notes/additional info field
+        wishlist: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -123,7 +109,6 @@ export const clientsRouter = router({
       try {
         return await clientsDb.createClient(ctx.user.id, input);
       } catch (error) {
-        // Handle duplicate TERI code error with user-friendly message
         if (
           error instanceof Error &&
           error.message.includes("TERI code already exists")
@@ -134,25 +119,22 @@ export const clientsRouter = router({
             cause: error,
           });
         }
-        // Re-throw other errors
         throw error;
       }
     }),
 
-  // Update client (with optimistic locking - DATA-005)
-  // FEAT-001: Added business fields
   update: protectedProcedure
     .use(requirePermission("clients:update"))
     .input(
       z.object({
         clientId: z.number(),
-        version: z.number().optional(), // Optimistic locking - if provided, will check version before update
+        version: z.number().optional(),
         name: z.string().min(1).max(255).optional(),
         email: z.string().email().optional(),
         phone: z.string().max(50).optional(),
         address: z.string().optional(),
-        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
-        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        businessType: z.enum(["RETAIL", "WHOLESALE", "DISPENSARY", "DELIVERY", "MANUFACTURER", "DISTRIBUTOR", "OTHER"]).optional(),
+        preferredContact: z.enum(["EMAIL", "PHONE", "TEXT", "ANY"]).optional(),
         paymentTerms: z.number().int().positive().optional(),
         isBuyer: z.boolean().optional(),
         isSeller: z.boolean().optional(),
@@ -160,7 +142,7 @@ export const clientsRouter = router({
         isReferee: z.boolean().optional(),
         isContractor: z.boolean().optional(),
         tags: z.array(z.string()).optional(),
-        wishlist: z.string().optional(), // WS-015: Customer wishlist field
+        wishlist: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -169,8 +151,6 @@ export const clientsRouter = router({
       return await clientsDb.updateClient(clientId, ctx.user.id, data, version);
     }),
 
-  // Delete client (soft delete - this is the same as archive)
-  // DI-004: Soft delete preserves data integrity and allows recovery
   delete: protectedProcedure
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
@@ -179,8 +159,6 @@ export const clientsRouter = router({
       return await clientsDb.deleteClient(input.clientId, ctx.user.id);
     }),
 
-  // Archive client (soft delete using deletedAt timestamp)
-  // DI-004: Proper soft-delete implementation with audit trail
   archive: protectedProcedure
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
@@ -189,8 +167,6 @@ export const clientsRouter = router({
       return await clientsDb.deleteClient(input.clientId, ctx.user.id);
     }),
 
-  // Restore archived client (clear deletedAt timestamp)
-  // DI-004: Allow recovery of soft-deleted clients
   restore: protectedProcedure
     .use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
@@ -199,7 +175,6 @@ export const clientsRouter = router({
       return await clientsDb.restoreClient(input.clientId, ctx.user.id);
     }),
 
-  // Transactions
   transactions: router({
     list: protectedProcedure
       .use(requirePermission("clients:read"))
@@ -249,7 +224,7 @@ export const clientsRouter = router({
           paymentDate: z.date().optional(),
           paymentAmount: z.number().optional(),
           notes: z.string().optional(),
-          metadata: z.record(z.string(), z.unknown()).optional(), // Strict object validation
+          metadata: z.record(z.string(), z.unknown()).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -275,241 +250,7 @@ export const clientsRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
         const { transactionId, ...data } = input;
-        return await clientsDb.updateTransaction(
-          transactionId,
-          ctx.user.id,
-          data
-        );
-      }),
-
-    // FIX-SEC: Changed permission from clients:read to clients:update
-    // Recording a payment is a write operation, not a read operation
-    recordPayment: protectedProcedure
-      .use(requirePermission("clients:update"))
-      .input(
-        z.object({
-          transactionId: z.number(),
-          paymentDate: z.date(),
-          paymentAmount: z.number(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.recordPayment(
-          input.transactionId,
-          ctx.user.id,
-          input.paymentDate,
-          input.paymentAmount
-        );
-      }),
-
-    delete: protectedProcedure
-      .use(requirePermission("clients:delete"))
-      .input(z.object({ transactionId: z.number() }))
-      .mutation(async ({ input }) => {
-        return await clientsDb.deleteTransaction(input.transactionId);
-      }),
-
-    // Link transactions (e.g., refund to original sale)
-    linkTransaction: protectedProcedure
-      .use(requirePermission("clients:update"))
-      .input(
-        z.object({
-          parentTransactionId: z.number(),
-          childTransactionId: z.number(),
-          linkType: z.enum([
-            "REFUND_OF",
-            "PAYMENT_FOR",
-            "CREDIT_APPLIED_TO",
-            "CONVERTED_FROM",
-            "PARTIAL_OF",
-            "RELATED_TO",
-          ]),
-          linkAmount: z.string().optional(),
-          notes: z.string().optional(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await transactionsDb.linkTransactions(
-          input.parentTransactionId,
-          input.childTransactionId,
-          input.linkType,
-          ctx.user.id,
-          input.linkAmount,
-          input.notes
-        );
-      }),
-
-    // Get transaction with relationships
-    getWithRelationships: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .input(z.object({ transactionId: z.number() }))
-      .query(async ({ input }) => {
-        return await transactionsDb.getTransactionWithRelationships(
-          input.transactionId
-        );
-      }),
-
-    // Get transaction history with relationship counts
-    getHistory: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          limit: z.number().optional().default(50),
-        })
-      )
-      .query(async ({ input }) => {
-        return await transactionsDb.getClientTransactionHistory(
-          input.clientId,
-          input.limit
-        );
+        return await clientsDb.updateTransaction(transactionId, ctx.user.id, data);
       }),
   }),
-
-  // Activity log
-  activity: router({
-    list: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          limit: z.number().optional().default(50),
-        })
-      )
-      .query(async ({ input }) => {
-        return await clientsDb.getClientActivity(input.clientId, input.limit);
-      }),
-  }),
-
-  // Tags
-  tags: router({
-    getAll: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .query(async () => {
-        return await clientsDb.getAllTags();
-      }),
-
-    add: protectedProcedure
-      .use(requirePermission("clients:create"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          tag: z.string().min(1).max(50),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.addTag(input.clientId, ctx.user.id, input.tag);
-      }),
-
-    remove: protectedProcedure
-      .use(requirePermission("clients:delete"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          tag: z.string(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.removeTag(
-          input.clientId,
-          ctx.user.id,
-          input.tag
-        );
-      }),
-  }),
-
-  // Client notes
-  notes: router({
-    getNoteId: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .input(z.object({ clientId: z.number() }))
-      .query(async ({ input }) => {
-        return await clientsDb.getClientNoteId(input.clientId);
-      }),
-    linkNote: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          noteId: z.number(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.linkNoteToClient(input.clientId, input.noteId);
-      }),
-  }),
-
-  // Client communications
-  communications: router({
-    list: protectedProcedure
-      .use(requirePermission("clients:read"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          type: z.enum(["CALL", "EMAIL", "MEETING", "NOTE"]).optional(),
-        })
-      )
-      .query(async ({ input }) => {
-        return await clientsDb.getClientCommunications(
-          input.clientId,
-          input.type
-        );
-      }),
-
-    add: protectedProcedure
-      .use(requirePermission("clients:create"))
-      .input(
-        z.object({
-          clientId: z.number(),
-          type: z.enum(["CALL", "EMAIL", "MEETING", "NOTE"]),
-          subject: z.string().min(1).max(255),
-          notes: z.string().optional(),
-          communicatedAt: z.string(), // ISO date string
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Unauthorized");
-        return await clientsDb.addCommunication({
-          ...input,
-          loggedBy: ctx.user.id,
-        });
-      }),
-  }),
-
-  // Supplier profile endpoints (for clients with isSeller=true)
-  // Part of Canonical Model Unification - replaces vendor profile functionality
-  getSupplierProfile: protectedProcedure
-    .use(requirePermission("clients:read"))
-    .input(z.object({ clientId: z.number() }))
-    .query(async ({ input }) => {
-      return await clientsDb.getSupplierProfile(input.clientId);
-    }),
-
-  updateSupplierProfile: protectedProcedure
-    .use(requirePermission("clients:update"))
-    .input(
-      z.object({
-        clientId: z.number(),
-        contactName: z.string().optional(),
-        contactEmail: z.string().email().optional().or(z.literal("")),
-        contactPhone: z.string().optional(),
-        licenseNumber: z.string().optional(),
-        taxId: z.string().optional(),
-        paymentTerms: z.string().optional(),
-        preferredPaymentMethod: z
-          .enum(["CASH", "CHECK", "WIRE", "ACH", "CREDIT_CARD", "OTHER"])
-          .optional()
-          .or(z.literal("")),
-        supplierNotes: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-      return await clientsDb.updateSupplierProfile(input.clientId, input);
-    }),
 });
