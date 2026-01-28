@@ -23,11 +23,14 @@ export type FulfillmentStatus =
  * - PENDING -> SHIPPED allowed for flexibility (skip PACKED step)
  * - CONFIRMED -> SHIPPED allowed for direct shipping
  */
-export const ORDER_STATUS_TRANSITIONS: Record<FulfillmentStatus, FulfillmentStatus[]> = {
+export const ORDER_STATUS_TRANSITIONS: Record<
+  FulfillmentStatus,
+  FulfillmentStatus[]
+> = {
   DRAFT: ["CONFIRMED", "PENDING", "CANCELLED"],
   CONFIRMED: ["PENDING", "PACKED", "SHIPPED", "CANCELLED"], // Can skip to PACKED or SHIPPED
   PENDING: ["PACKED", "SHIPPED", "CANCELLED"], // Can skip PACKED step
-  PACKED: ["SHIPPED", "PENDING", "CANCELLED"], // Can go back to PENDING if unpacked
+  PACKED: ["SHIPPED", "CANCELLED"], // Can go back to PENDING if unpacked
   SHIPPED: ["DELIVERED", "RETURNED"],
   DELIVERED: ["RETURNED"],
   RETURNED: ["RESTOCKED", "RETURNED_TO_VENDOR"],
@@ -46,6 +49,36 @@ export function canTransition(from: string, to: string): boolean {
 }
 
 /**
+ * Get a descriptive error message for an invalid transition.
+ *
+ * @param currentStatus - Current order status
+ * @param newStatus - Desired new status
+ * @param orderId - Order ID for error messages
+ * @returns A descriptive error message string or null if the transition is valid.
+ */
+export function getTransitionError(
+  currentStatus: string | null,
+  newStatus: string,
+  orderId?: number
+): string | null {
+  const from = currentStatus || "PENDING";
+
+  if (!canTransition(from, newStatus)) {
+    const validNext = getNextStatuses(from);
+    const validOptions =
+      validNext.length > 0 ? validNext.join(", ") : "none (terminal state)";
+    const orderRef = orderId ? ` for order #${orderId}` : "";
+
+    return (
+      `Invalid status transition${orderRef}: ${from} → ${newStatus}. ` +
+      `Valid transitions from ${from}: ${validOptions}`
+    );
+  }
+
+  return null; // Return null if the transition is valid
+}
+
+/**
  * ARCH-003: Validate and enforce status transition
  * Throws descriptive error if transition is invalid
  *
@@ -59,17 +92,9 @@ export function validateTransition(
   newStatus: string,
   orderId?: number
 ): void {
-  const from = currentStatus || "PENDING";
-
-  if (!canTransition(from, newStatus)) {
-    const validNext = getNextStatuses(from);
-    const validOptions = validNext.length > 0 ? validNext.join(", ") : "none (terminal state)";
-    const orderRef = orderId ? ` for order #${orderId}` : "";
-
-    throw new Error(
-      `Invalid status transition${orderRef}: ${from} → ${newStatus}. ` +
-        `Valid transitions from ${from}: ${validOptions}`
-    );
+  const errorMessage = getTransitionError(currentStatus, newStatus, orderId);
+  if (errorMessage) {
+    throw new Error(errorMessage);
   }
 }
 
