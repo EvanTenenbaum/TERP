@@ -335,6 +335,280 @@ pnpm test --run 2>&1 | tee test-results.log
 
 ---
 
+### 🔥 INITIATIVE: Golden Flows MVP (P0) - Updated Jan 28, 2026
+
+> **CRITICAL PRIORITY**: All 8 Golden Flows must be fully functional before any other MVP work.
+> **Source:** Golden Flow Execution Plan v1.0 + QA Protocol v3.0 Database Audit
+> **Status:** 6/8 BLOCKED, 2/8 PARTIAL
+> **Target:** 8/8 WORKING within 2 weeks
+
+#### Golden Flow Status Matrix
+
+| # | Golden Flow | Current Status | Primary Blockers |
+|---|-------------|----------------|------------------|
+| GF-001 | Direct Intake | 🔴 BLOCKED | BUG-117, ST-058, INV-003 |
+| GF-002 | Procure-to-Pay | 🔴 BLOCKED | ST-059, PARTY-001, SCHEMA-011 |
+| GF-003 | Order-to-Cash | 🔴 BLOCKED | BUG-115, ST-058, ST-050, ST-051 |
+| GF-004 | Invoice & Payment | 🟡 PARTIAL | FIN-001, ST-057, ORD-001 |
+| GF-005 | Pick & Pack | 🔴 BLOCKED | Depends on GF-003 |
+| GF-006 | Client Ledger | 🟡 PARTIAL | ST-057 |
+| GF-007 | Inventory Mgmt | 🔴 BLOCKED | ST-056, ST-058, INV-003 |
+| GF-008 | Sample Request | 🔴 BLOCKED | BUG-117 |
+
+---
+
+#### Wave 0: Database Pre-Requisites (4h) - MUST COMPLETE FIRST
+
+> **NEW FROM QA PROTOCOL v3.0 AUDIT**
+> These bugs BLOCK database constraint deployment and safeInArray migration.
+> **Parallel Execution:** 4 agents can work simultaneously (no file conflicts)
+
+| Task | Description | Priority | Status | Est | Module | Blocks |
+|------|-------------|----------|--------|-----|--------|--------|
+| BUG-117 | Race condition: samplesDb.ts missing transaction/lock | HIGH | ready | 1h | `server/samplesDb.ts:109-119` | ST-056 |
+| BUG-118 | Empty array bug: referrals.ts creditIds truthy check | HIGH | ready | 30m | `server/routers/referrals.ts:389-391` | ST-058 |
+| BUG-119 | Missing validation: productCategories.ts bulk update | HIGH | ready | 30m | `server/routers/productCategories.ts:378` | ST-058 |
+| BUG-120 | RBAC validates arrays after crash (rbac-roles/users) | HIGH | ready | 1h | `server/routers/rbac-*.ts` | ST-058 |
+| SCHEMA-010 | Duplicate referralSettings table (schema.ts vs schema-gamification.ts) | HIGH | ready | 2h | `drizzle/schema*.ts` | None |
+
+**BUG-117 Details (samplesDb.ts Race Condition):**
+```typescript
+// CURRENT (UNSAFE) - server/samplesDb.ts:109-119
+const quantityAfter = (parseFloat(batch.sampleQty) - parseFloat(product.quantity)).toString();
+await db.update(batches).set({ sampleQty: quantityAfter })...
+
+// REQUIRED FIX - Add transaction + FOR UPDATE lock
+await db.transaction(async tx => {
+  const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId)).for("update");
+  if (parseFloat(batch.sampleQty) < parseFloat(product.quantity)) {
+    throw new Error("Insufficient sample quantity");
+  }
+  const quantityAfter = (parseFloat(batch.sampleQty) - parseFloat(product.quantity)).toString();
+  await tx.update(batches).set({ sampleQty: quantityAfter }).where(eq(batches.id, batchId));
+});
+```
+
+**BUG-118/119/120 Details (Empty Array Fixes):**
+```typescript
+// Pattern: Empty array [] is truthy, crashes inArray()
+// FIX: Add length check
+input.creditIds?.length ? inArray(col, input.creditIds) : undefined
+```
+
+**SCHEMA-010 Details (Duplicate referralSettings):**
+- `drizzle/schema.ts:6615`: clientTier, creditPercentage, minOrderAmount
+- `drizzle/schema-gamification.ts:730`: defaultCouchTaxPercent, pointsPerReferral
+- **Resolution:** Rename to `referralCreditSettings` and `referralGamificationSettings`
+
+**Verification Gate 0:**
+```bash
+pnpm check && pnpm test
+# All empty array bugs fixed
+# samplesDb.ts uses transaction + FOR UPDATE
+```
+
+---
+
+#### Wave 1: Data Integrity Blockers (18h) - Critical Path
+
+> **Combines:** Original Phase 1 tasks + New database constraints
+> **Parallel Execution:** 4 agents in Wave 1A, 3 agents in Wave 1B
+
+##### Wave 1A: Concurrent Safety (4 agents parallel, 4h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| INV-003 | Add FOR UPDATE lock in batch allocation | HIGH | ready | 2h | `server/routers/orders.ts` | GF-001, GF-003, GF-007 |
+| FIN-001 | Fix invoice number race condition | HIGH | ready | 2h | `server/arApDb.ts` | GF-004 |
+| ST-050 | Fix silent error handling in RED mode | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` | GF-001, GF-003, GF-004 |
+| ORD-001 | Fix invoice creation timing | HIGH | ready | 2h | `server/ordersDb.ts` | GF-004 |
+
+##### Wave 1B: Database Constraints (3 agents parallel, 3h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| ST-056 | Add CHECK constraints on batch quantities | HIGH | ready | 2h | `drizzle/schema.ts` | GF-001, GF-003, GF-007, GF-008 |
+| ST-057 | Add GL entry single-direction constraint | HIGH | ready | 1h | `drizzle/schema.ts` | GF-004, GF-006 |
+| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH | ready | 1h | `server/ordersDb.ts:1239` | GF-003, GF-005 |
+
+**ST-056 Migration SQL:**
+```sql
+ALTER TABLE batches
+  ADD CONSTRAINT chk_onHandQty_nonnegative CHECK (CAST(onHandQty AS DECIMAL(15,4)) >= 0),
+  ADD CONSTRAINT chk_reservedQty_nonnegative CHECK (CAST(reservedQty AS DECIMAL(15,4)) >= 0),
+  ADD CONSTRAINT chk_sampleQty_nonnegative CHECK (CAST(sampleQty AS DECIMAL(15,4)) >= 0);
+```
+
+**ST-057 Migration SQL:**
+```sql
+ALTER TABLE ledger_entries
+  ADD CONSTRAINT chk_single_direction CHECK (
+    (CAST(debit AS DECIMAL(12,2)) = 0 AND CAST(credit AS DECIMAL(12,2)) >= 0) OR
+    (CAST(credit AS DECIMAL(12,2)) = 0 AND CAST(debit AS DECIMAL(12,2)) >= 0)
+  );
+```
+
+##### Wave 1C: Transaction Atomicity (Sequential, 16h)
+
+| Task | Description | Priority | Status | Est | Module | Dependencies |
+|------|-------------|----------|--------|-----|--------|--------------|
+| ST-051 | Add transaction boundaries to critical operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050 |
+| ARCH-001 | Create OrderOrchestrator service | HIGH | ready | 8h | `server/services/` (new) | ST-051 |
+
+**Note:** ARCH-001 may be partially complete (commit `bb06aad`). Verify before starting.
+
+**Verification Gate 1:**
+```bash
+pnpm check && pnpm test
+pnpm gate:invariants
+# Concurrent order test: 10 orders for same batch - no overselling
+# Invoice number uniqueness under load
+```
+
+---
+
+#### Wave 2: Security + safeInArray Migration (48h)
+
+> **Combines:** Original Phase 2 security + safeInArray migration
+> **Parallel Execution:** 4 agents per sub-wave
+
+##### Wave 2A: Security Critical (4 agents parallel, 6h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| SEC-027 | Protect admin setup endpoints | HIGH | ready | 1h | `server/routers/adminSetup.ts` | All GF |
+| SEC-028 | Remove/restrict debug endpoints | HIGH | ready | 1h | `server/routers/debug.ts` | All GF |
+| SEC-029 | Fix default permission grants | HIGH | ready | 2h | `server/services/permissionService.ts` | All GF |
+| SEC-030 | Fix VIP portal token validation | HIGH | ready | 2h | `server/routers/vipPortal.ts` | GF-004 |
+
+##### Wave 2B: safeInArray Migration (3 agents parallel, 8h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| ST-058-A | safeInArray: ordersDb.ts + orders.ts (21 calls) | HIGH | ready | 3h | `server/ordersDb.ts`, `server/routers/orders.ts` | GF-003, GF-005 |
+| ST-058-B | safeInArray: inventoryDb.ts + inventory.ts (20 calls) | HIGH | ready | 3h | `server/inventoryDb.ts`, `server/routers/inventory.ts` | GF-001, GF-007 |
+| ST-058-C | safeInArray: arApDb + payments + clientLedger (10 calls) | HIGH | ready | 2h | `server/arApDb.ts`, `server/routers/payments.ts`, `server/routers/clientLedger.ts` | GF-004, GF-006 |
+
+**Migration Pattern:**
+```typescript
+// Add import at top of file:
+import { safeInArray } from "./lib/sqlSafety";
+
+// Replace all occurrences:
+// BEFORE: inArray(batches.id, batchIds)
+// AFTER:  safeInArray(batches.id, batchIds)
+```
+
+##### Wave 2C: Client & Order Hardening (3 agents parallel, 16h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| TERP-0003 | Add client wizard dialog | HIGH | ready | 2h | Client components | GF-003 |
+| TERP-0014 | Token invalidation & rate limiting | HIGH | ready | 6h | Auth services | All GF |
+| TERP-0017 | Convert remaining public routers | HIGH | ready | 8h | Multiple routers | All GF |
+
+##### Wave 2D: Party Model (2 agents parallel, 6h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| PARTY-001 | Add nullable supplierClientId to POs | HIGH | ready | 4h | `server/routers/purchaseOrders.ts` | GF-002 |
+| PARTY-002 | Add FK constraints to bills table | HIGH | ready | 2h | `drizzle/schema.ts` | GF-004 |
+
+**Verification Gate 2:**
+```bash
+pnpm check && pnpm lint && pnpm test && pnpm build
+# All 48 safeInArray migrations complete
+# Security endpoints protected
+# VIP token validation working
+```
+
+---
+
+#### Wave 3: Data Integrity Hardening (34h)
+
+> **Combines:** Soft delete conversion + COGS precision + UX hardening
+
+##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM | ready | 2h | Schema migration | GF-002 |
+| ST-059 | Convert hard deletes to soft deletes | MEDIUM | ready | 8h | inventoryDb, pricingEngine, purchaseOrders, vendorSupplyDb | GF-001, GF-002, GF-007 |
+| ST-060 | Add deletedAt query filters (50+ queries) | MEDIUM | ready | 4h | pricingEngine, poReceiving, matchingEngine | GF-002 |
+
+##### Wave 3B: COGS & Payment Validation (2 agents parallel, 6h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| SCHEMA-012 | Standardize COGS precision to decimal(15,4) | MEDIUM | ready | 4h | orders, orderLineItems, invoiceLineItems | GF-003, GF-004 |
+| ST-061 | Add payment over-allocation validation trigger | MEDIUM | ready | 2h | `drizzle/schema.ts` | GF-004, GF-006 |
+
+##### Wave 3C: UX & Type Safety (3 agents parallel, 14h)
+
+| Task | Description | Priority | Status | Est | Module | GF Impact |
+|------|-------------|----------|--------|-----|--------|-----------|
+| ST-053 | Eliminate `any` types in critical paths | MEDIUM | ready | 8h | ordersDb, orders.ts, Orders.tsx | GF-001, GF-003 |
+| PARTY-004 | Convert vendor hard deletes to soft | MEDIUM | ready | 2h | Vendor services | All GF |
+| TERP-0019 | Verify inventory snapshot widget SQL | MEDIUM | ready | 4h | Dashboard widgets | GF-003 |
+
+**Verification Gate 3:**
+```bash
+pnpm check && pnpm lint && pnpm test && pnpm build
+pnpm gate:invariants
+pnpm mega:qa:invariants
+# All soft deletes converted
+# COGS precision standardized
+# No `any` types in critical paths
+```
+
+---
+
+#### Wave 4: Golden Flow E2E Verification (8h)
+
+> **All waves complete - verify all 8 Golden Flows work end-to-end**
+
+| Golden Flow | Test Case | Expected Result |
+|-------------|-----------|-----------------|
+| GF-001 Direct Intake | Create intake with new vendor | Batch created, quantities correct |
+| GF-002 Procure-to-Pay | Create PO, receive, pay | Full flow complete |
+| GF-003 Order-to-Cash | Create order, confirm, fulfill | Order complete, inventory decremented |
+| GF-004 Invoice & Payment | Create invoice, record payment | Invoice PAID, GL balanced |
+| GF-005 Pick & Pack | Pick and pack order | Bags created, movements recorded |
+| GF-006 Client Ledger | View client ledger | All transactions, running balance |
+| GF-007 Inventory Mgmt | Adjust inventory | Movement recorded, CHECK passes |
+| GF-008 Sample Request | Create sample request | Allocation tracked, quantity reserved |
+
+**Final Verification:**
+```bash
+pnpm check && pnpm lint && pnpm test && pnpm build
+pnpm gate:invariants
+pnpm mega:qa:invariants
+# Manual E2E test each Golden Flow
+```
+
+---
+
+#### Golden Flow Initiative Summary
+
+| Wave | Tasks | Est Hours | Wall-Clock (Parallel) | Agents |
+|------|-------|-----------|----------------------|--------|
+| Wave 0: Pre-requisites | 5 | 5h | 2h | 4 |
+| Wave 1: Data Integrity | 9 | 25h | 8h | 4→3→1 |
+| Wave 2: Security + safeInArray | 11 | 48h | 14h | 4→3→3→2 |
+| Wave 3: Hardening | 8 | 34h | 10h | 3→2→3 |
+| Wave 4: Verification | - | 8h | 4h | 2 |
+| **TOTAL** | **33** | **120h** | **38h** | - |
+
+**Success Criteria:**
+- [ ] All 8 Golden Flows pass E2E testing
+- [ ] `pnpm gate:invariants` passes
+- [ ] `pnpm mega:qa:invariants` passes
+- [ ] No `any` types in critical paths
+- [ ] All database constraints active
+- [ ] Schema health score: 8.0+/10
+
+---
+
 ### Sprint Integration QA Findings (Pre-existing Issues) - Added Jan 25, 2026
 
 > Discovered during RedHat-grade QA audit of the sprint integration release.
