@@ -1,592 +1,348 @@
-# Database Schema Audit Report
+# Database Table Audit Report
 
 **Date:** 2026-01-28
-**Auditor:** Claude Code Agent (GF-PHASE0-008)
-**Source:** Drizzle schema analysis (7,822 lines)
-**Status:** COMPLETE
-**Reference:** PR #331, BUG-112 Investigation
+**Auditor:** Claude Code Agent
+**Scope:** Identify all cases where the codebase expects or needs a table to exist but it doesn't, or exists in a way that cannot be correctly used
 
 ---
 
 ## Executive Summary
 
-This audit identifies **23 database schema issues** across 4 severity levels affecting the TERP ERP system. The issues were discovered during the BUG-112 investigation and comprehensive schema review.
+This audit identified **23 issues** across the codebase where database table/column expectations don't match reality:
 
-| Severity | Count | Status |
-|----------|-------|--------|
-| CRITICAL | 3 | 2 addressed (Phase 0), 1 deferred (Phase 6) |
-| HIGH | 8 | Planned for Phase 6 |
-| MEDIUM | 7 | Planned for Phase 6 |
-| LOW | 5 | Deferred post-beta |
-
-**Key Findings:**
-- Production schema drift causing runtime failures
-- Missing `product_images` table blocking photography module
-- Deprecated `vendors` table still in use (Party Model incomplete)
-- Inconsistent FK constraints across 30+ tables
-- Naming convention violations (vendorId → clients)
+| Severity | Count | Description |
+|----------|-------|-------------|
+| **CRITICAL** | 3 | Tables/columns referenced that don't exist in production DB |
+| **HIGH** | 8 | Missing FK constraints or deprecated table references |
+| **MEDIUM** | 7 | Naming inconsistencies that could cause confusion |
+| **LOW** | 5 | Documentation/cleanup items |
 
 ---
 
-## CRITICAL Issues (3)
+## CRITICAL Issues
 
-### Issue #1: Schema Drift - products.strainId Column
+### 1. `products.strainId` Column - Does Not Exist in Production DB
 
-**Severity:** CRITICAL
 **Location:** `drizzle/schema.ts:418`
-**Status:** ADDRESSED (GF-PHASE0-001b)
 
-**Problem:**
-The `products.strainId` column exists in Drizzle schema but may not exist in production database. Queries joining on strains fail with `ER_BAD_FIELD_ERROR`.
-
-**Impact:**
-- Photography queue fails completely
-- Product listings with strain info fail
-- Affects GF-001, GF-002, GF-003, GF-007
-
-**Schema Definition:**
 ```typescript
-// drizzle/schema.ts:418
-strainId: int("strainId"),  // May not exist in production
-```
-
-**Resolution:**
-Fallback queries implemented in PR #318 that catch schema errors and retry without strains join.
-
-**Affected Files:**
-- `server/productsDb.ts` - getProducts, getProductById
-- `server/routers/photography.ts` - getAwaitingPhotography
-- `server/routers/search.ts` - global search
-- `server/services/catalogPublishingService.ts`
-- `server/services/strainMatchingService.ts`
-
-**Verification:**
-```sql
--- Check if column exists
-SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'strainId';
-```
-
----
-
-### Issue #2: Dual Image Tables Conflict
-
-**Severity:** CRITICAL
-**Location:** `drizzle/schema.ts:451`, `drizzle/schema.ts:6740`
-**Status:** DEFERRED (Phase 6 - INFRA-DB-003)
-
-**Problem:**
-Two image tables exist in schema with overlapping purposes:
-
-**Table 1: productMedia (line 451)**
-```typescript
-export const productMedia = mysqlTable("productMedia", {
-  id: serial("id").primaryKey(),
-  productId: int("productId"),
-  mediaType: mysqlEnum("mediaType", ["IMAGE", "VIDEO", "DOCUMENT"]),
-  url: varchar("url", { length: 500 }),
-  isPrimary: boolean("isPrimary").default(false),
-  createdAt: timestamp("createdAt").defaultNow(),
+export const products = mysqlTable("products", {
+  // ...
+  strainId: int("strainId"), // Link to strain library - NO FK CONSTRAINT
+  // ...
 });
 ```
 
-**Table 2: productImages (line 6740)**
-```typescript
-export const productImages = mysqlTable("product_images", {
-  id: serial("id").primaryKey(),
-  batchId: int("batch_id").references(() => batches.id),
-  productId: int("product_id").references(() => products.id),
-  imageUrl: varchar("image_url", { length: 500 }).notNull(),
-  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
-  caption: varchar("caption", { length: 255 }),
-  isPrimary: boolean("is_primary").default(false),
-  sortOrder: int("sort_order").default(0),
-  status: mysqlEnum("status", ["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]),
-  uploadedBy: int("uploaded_by").references(() => users.id),
-  uploadedAt: timestamp("uploaded_at").defaultNow(),
-});
-```
-
-**Impact:**
-- Developer confusion about canonical source
-- Duplicate data storage potential
-- Code references both tables inconsistently
-
-**Recommendation:**
-Consolidate into single table with all required fields (productImages preferred due to richer schema).
-
----
-
-### Issue #3: Missing product_images Table in Production
-
-**Severity:** CRITICAL (P0)
-**Location:** `drizzle/schema.ts:6740`, Migration `0016_add_ws007_010_tables.sql`
-**Status:** ADDRESSED (GF-PHASE0-006)
-
 **Problem:**
-The `product_images` table exists in Drizzle schema but was never created in production database. Migration file exists but was never executed.
+- The column is defined in the Drizzle schema but **does not exist in the production database**
+- 21+ queries across 8 files attempt to JOIN via `products.strainId` → `strains.id`
+- Fails at runtime with: `Unknown column 'products.strainId' in 'on clause'`
 
-**Root Cause:**
-Migration system gap - formal migrations in `drizzle/migrations/` are not executed during deployment. The auto-migration system only adds columns, not tables.
+**Files Affected:**
+| File | Lines |
+|------|-------|
+| `server/productsDb.ts` | 5 occurrences |
+| `server/routers/photography.ts` | Lines 253-255, 506-508, 967-968 |
+| `server/routers/search.ts` | Line 298 |
+| `server/salesSheetsDb.ts` | 2 occurrences |
+| `server/services/catalogPublishingService.ts` | 1 occurrence |
+| `server/services/strainMatchingService.ts` | 2 occurrences |
+| `server/services/strainService.ts` | 1 occurrence |
 
-**Impact:**
-- Photography module completely broken
-- Error: `ER_NO_SUCH_TABLE: Table 'defaultdb.product_images' doesn't exist`
-- Blocks GF-001, GF-007
+**Current Mitigation:** BUG-112 added `isSchemaError()` function with try-catch fallbacks (photography.ts:27-100)
 
-**Migration SQL:**
-```sql
-CREATE TABLE IF NOT EXISTS product_images (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  batch_id INT REFERENCES batches(id),
-  product_id INT REFERENCES products(id),
-  image_url VARCHAR(500) NOT NULL,
-  thumbnail_url VARCHAR(500),
-  caption VARCHAR(255),
-  is_primary BOOLEAN DEFAULT FALSE,
-  sort_order INT DEFAULT 0,
-  status ENUM('PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED') DEFAULT 'APPROVED',
-  uploaded_by INT REFERENCES users(id),
-  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_batch_images (batch_id),
-  INDEX idx_product_images (product_id)
-);
-```
-
-**Verification:**
-```sql
-SHOW TABLES LIKE 'product_images';
-DESCRIBE product_images;
-SHOW INDEX FROM product_images;
-```
+**Fix Required:** Either:
+1. Add the `strainId` column to the production database via migration
+2. OR remove all `strainId` references from queries and schema
 
 ---
 
-## HIGH Priority Issues (8)
+### 2. Dual Image Tables - Conflicting Usage
 
-### Issue #4: Missing FK Constraint - brands.vendorId
+**Problem:** Two separate tables exist for product/batch images with overlapping purposes:
 
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:375`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
+| Table | DB Name | Purpose | Used By |
+|-------|---------|---------|---------|
+| `productMedia` | `productMedia` | Product-level images | `liveCatalogService.ts:370-380` |
+| `productImages` | `product_images` | Batch-level photos | `photography.ts`, `catalogPublishingService.ts` |
 
-**Problem:**
-`brands.vendorId` column has no FK constraint, allowing orphan records.
+**Specific Issues:**
+1. `productMedia` uses **camelCase** DB column names (`productId`, `uploadedBy`)
+2. `productImages` uses **snake_case** DB column names (`product_id`, `uploaded_by`)
+3. No clear documentation on which table to use for which purpose
+4. Both tables can store the same image data, leading to duplication
 
-```typescript
-vendorId: int("vendorId"),  // No .references(() => vendors.id)
-```
-
-**Risk:** Can insert brand with non-existent vendorId, breaking joins.
-
-**Fix:**
-```sql
-ALTER TABLE brands ADD CONSTRAINT fk_brands_vendor
-  FOREIGN KEY (vendorId) REFERENCES clients(id) ON DELETE RESTRICT;
-```
+**Files with Conflicting Usage:**
+- `server/services/liveCatalogService.ts:368-387` - Uses `productMedia`
+- `server/services/catalogPublishingService.ts:276-280` - Uses `productImages`
+- `server/routers/photography.ts` - Uses `productImages` exclusively
 
 ---
 
-### Issue #5: Missing FK Constraint - lots.vendorId (Deprecated)
+### 3. Missing `product_images` Table in Some Environments
 
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:548`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
+**Location:** `drizzle/migrations/0016_add_ws007_010_tables.sql:27-41`
 
-**Problem:**
-`lots.vendorId` has no FK constraint AND is deprecated (use `supplierClientId`).
+**Problem:** The migration creates the table conditionally with `CREATE TABLE IF NOT EXISTS`, but:
+- Some production databases may not have run this migration
+- Code assumes table exists (no try-catch in some paths)
+- Fallback queries in photography.ts remove image-based filtering when table is missing
 
-```typescript
-supplierClientId: int("supplier_client_id").references(() => clients.id),  // CANONICAL
-vendorId: int("vendorId"),  // DEPRECATED - no FK
-```
-
-**Risk:** Dual columns with inconsistent data, no referential integrity on vendorId.
-
-**Note:** This column should be deprecated in favor of `supplierClientId`.
+**Evidence:** The `isSchemaError()` function specifically handles `ER_NO_SUCH_TABLE` (errno 1146)
 
 ---
 
-### Issue #6: Missing FK Constraint - paymentHistory.vendorId
+## HIGH Severity Issues
 
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:669`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
+### 4. Missing FK Constraints on `vendorId` Columns
 
-**Problem:**
-`paymentHistory.vendorId` has no FK constraint.
+Multiple tables have `vendorId` columns with **no FK constraint**, meaning:
+- No referential integrity enforcement
+- Orphaned records possible if vendors are deleted
+- No clarity on which table `vendorId` should reference (`vendors` or `clients`)
 
-```typescript
-vendorId: int("vendorId"),  // No reference
-```
-
----
-
-### Issue #7: Missing FK Constraint - bills.vendorId
-
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:1178`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-`bills.vendorId` has no FK constraint.
-
-```typescript
-vendorId: int("vendorId"),  // No reference
-```
+| Table | Line | Column | FK Status |
+|-------|------|--------|-----------|
+| `bills` | 1178 | `vendorId: int("vendorId").notNull()` | **NO FK** |
+| `expenses` | 1421 | `vendorId: int("vendorId")` | **NO FK** |
+| `brands` | 375 | `vendorId: int("vendorId")` | **NO FK** |
+| `paymentHistory` | 669 | `vendorId: int("vendorId").notNull()` | **NO FK** |
+| `lots` | 548 | `vendorId: int("vendorId").notNull()` | **NO FK** (has `supplierClientId` with FK) |
 
 ---
 
-### Issue #8: Missing FK Constraint - expenses.vendorId
+### 5. `payments.vendorId` References `clients.id` (Misleading Name)
 
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:1421`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-`expenses.vendorId` has no FK constraint.
-
-```typescript
-vendorId: int("vendorId"),  // No reference
-```
-
----
-
-### Issue #9: Misleading payments.vendorId Naming
-
-**Severity:** HIGH
 **Location:** `drizzle/schema.ts:1279`
-**Status:** Ready (Phase 6 - INFRA-DB-002)
-
-**Problem:**
-Column named `vendorId` but references `clients.id`, not `vendors.id`.
 
 ```typescript
-// NOTE: This references clients.id (as supplier), NOT vendors.id
-vendorId: int("vendorId").references(() => clients.id),
+vendorId: int("vendorId").references(() => clients.id, {
+  onDelete: "restrict",
+}),
 ```
 
-**Impact:** Confusing naming causes developer mistakes.
-
-**Fix:**
-Rename to `supplierClientId` for clarity.
-
-```sql
-ALTER TABLE payments CHANGE vendorId supplierClientId INT;
-```
+**Problem:**
+- Column named `vendorId` but references `clients.id`, not `vendors.id`
+- Causes confusion: developers expect FK to `vendors` table
+- Comment in schema says "NOTE: This references clients.id (as supplier), NOT vendors.id"
+- Should be renamed to `supplierClientId` for clarity
 
 ---
 
-### Issue #10: Deprecated vendors Table Still in Use
+### 6. Tables Using Deprecated `vendors` Table
 
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:167`
-**Status:** deferred (Post-Beta - INFRA-DB-004)
+Per CLAUDE.md, the `vendors` table is **DEPRECATED** - should use `clients` with `isSeller=true`. However, these tables still reference `vendors.id`:
 
-**Problem:**
-The `vendors` table is deprecated per Party Model, but multiple tables still reference it:
-
-| Table | Column | FK Constraint |
-|-------|--------|---------------|
-| purchaseOrders | vendorId | YES (vendors.id) |
-| vendorNotes | vendorId | YES (vendors.id) |
-| calendarEvents | vendorId | YES (vendors.id) |
-| vendorReturns | vendorId | YES (vendors.id) |
-
-**Canonical Model:**
-All vendor references should use `clients` table with `isSeller=true`.
-
-**Migration Required:**
-1. Create `supplierClientId` columns where missing
-2. Migrate data from vendors to clients with isSeller=true
-3. Update FKs to point to clients
-4. Deprecate vendors table
+| Table | Line | FK Target | Migration Status |
+|-------|------|-----------|------------------|
+| `vendorNotes` | 192 | `vendors.id` | Not migrated |
+| `purchaseOrders` | 239 | `vendors.id` | Has dual FK (vendorId + supplierClientId) |
+| `calendarEvents` | 5056 | `vendors.id` | Not migrated |
+| `vendorHarvestReminders` | 6810 | `vendors.id` | Not migrated |
+| `vendorSupply` | 4134 | `vendors.id` | Not migrated |
+| `lots` | 548 | (no FK but uses vendorId) | Partial - has supplierClientId |
 
 ---
 
-### Issue #11: Dual Vendor Columns in purchaseOrders
+### 7. `lots.vendorId` vs `lots.supplierClientId` - Dual Column Confusion
 
-**Severity:** HIGH
-**Location:** `drizzle/schema.ts:231, 237`
-**Status:** Ready (Phase 6 - INFRA-DB-002)
-
-**Problem:**
-`purchaseOrders` has both canonical and deprecated columns:
+**Location:** `drizzle/schema.ts:548-560`
 
 ```typescript
-supplierClientId: int("supplier_client_id").references(() => clients.id),  // CANONICAL
-vendorId: int("vendorId").references(() => vendors.id),  // DEPRECATED
+vendorId: int("vendorId").notNull(),  // No FK - deprecated
+supplierClientId: int("supplier_client_id").references(() => clients.id, {...}),  // Canonical
 ```
 
-**Risk:** Data inconsistency if both populated differently.
-
-**Note:** Kept for backward compatibility during Party Model migration.
+**Problem:**
+- Both columns exist and are used
+- Code in `inventoryDb.ts` joins on BOTH (lines 886, 949)
+- Creates maintenance burden and potential data inconsistency
 
 ---
 
-## MEDIUM Priority Issues (7)
+### 8. `purchaseOrders` Has Dual Vendor References
 
-### Issue #12: Naming Inconsistency - camelCase vs snake_case
-
-**Severity:** MEDIUM
-**Location:** Multiple files
-**Status:** Ready (Phase 6 - INFRA-DB-003)
-
-**Problem:**
-Inconsistent column naming patterns:
-
-**Pattern A: camelCase key → camelCase DB column**
-```typescript
-vendorId: int("vendorId")  // Same name
-```
-
-**Pattern B: camelCase key → snake_case DB column**
-```typescript
-pricingProfileId: int("pricing_profile_id")  // Different
-```
-
-**Impact:** Cognitive overhead, potential bugs in raw SQL.
-
-**Recommendation:** Standardize on snake_case for DB columns per CLAUDE.md Section 4.
-
----
-
-### Issue #13: Missing FK - products.brandId
-
-**Severity:** MEDIUM
-**Location:** `drizzle/schema.ts:417`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-```typescript
-brandId: int("brandId"),  // No .references(() => brands.id)
-```
-
----
-
-### Issue #14: Missing FK - batches.productId, batches.lotId
-
-**Severity:** MEDIUM
-**Location:** `drizzle/schema.ts:592-593`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-```typescript
-productId: int("productId"),  // No FK
-lotId: int("lotId"),  // No FK
-```
-
----
-
-### Issue #15: Missing FK - billLineItems (billId, productId, lotId)
-
-**Severity:** MEDIUM
-**Location:** `drizzle/schema.ts:1222-1224`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-```typescript
-billId: int("billId"),  // No FK
-productId: int("productId"),  // No FK
-lotId: int("lotId"),  // No FK
-```
-
----
-
-### Issue #16: Missing FK - ledgerEntries (accountId, fiscalPeriodId)
-
-**Severity:** MEDIUM
-**Location:** `drizzle/schema.ts:997, 1007`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-```typescript
-accountId: int("accountId"),  // No FK
-fiscalPeriodId: int("fiscalPeriodId"),  // No FK
-```
-
----
-
-### Issue #17: Missing FK - expenses (categoryId, bankAccountId, billId)
-
-**Severity:** MEDIUM
-**Location:** `drizzle/schema.ts:1420, 1435, 1438`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-```typescript
-categoryId: int("categoryId"),  // No FK
-bankAccountId: int("bankAccountId"),  // No FK
-billId: int("billId"),  // No FK
-```
-
----
-
-### Issue #18: Missing FK - sales (batchId, productId)
-
-**Severity:** MEDIUM
-**Location:** `drizzle/schema.ts:712-713`
-**Status:** Ready (Phase 6 - INFRA-DB-001)
-
-**Problem:**
-```typescript
-batchId: int("batchId"),  // No FK
-productId: int("productId"),  // No FK
-```
-
----
-
-## LOW Priority Issues (5)
-
-### Issue #19: Missing Indexes on FK Columns
-
-**Severity:** LOW
-**Location:** Multiple tables
-**Status:** Deferred (Post-Beta)
-
-**Problem:**
-Many FK columns lack corresponding indexes, impacting query performance.
-
-**Tables Needing Indexes:**
-- `batches(productId, lotId)`
-- `billLineItems(billId, productId, lotId)`
-- `sales(batchId, productId)`
-- `ledgerEntries(accountId, fiscalPeriodId)`
-
----
-
-### Issue #20: Schema Documentation Gaps
-
-**Severity:** LOW
-**Location:** N/A
-**Status:** Deferred (Post-Beta)
-
-**Problem:**
-- No ER diagrams in codebase
-- No FK constraint matrix documentation
-- Complex relationships not documented
-- No column naming convention guide
-
----
-
-### Issue #21: Soft Delete Consistency
-
-**Severity:** LOW
-**Location:** Multiple queries
-**Status:** Deferred (Post-Beta)
-
-**Problem:**
-Not all queries consistently filter `deletedAt IS NULL`, risking return of "deleted" records.
-
----
-
-### Issue #22: auditLogs.actorId Missing FK
-
-**Severity:** LOW
-**Location:** `drizzle/schema.ts:779`
-**Status:** Deferred (Post-Beta)
-
-**Problem:**
-`auditLogs.actorId` has no FK to users table.
+**Location:** `drizzle/schema.ts:231-239`
 
 ```typescript
-actorId: int("actorId"),  // No .references(() => users.id)
+// Supplier relationship (canonical - uses clients table)
+supplierClientId: int("supplier_client_id").references(() => clients.id, {...}),
+
+// Vendor relationship (DEPRECATED - use supplierClientId instead)
+vendorId: int("vendorId").notNull().references(() => vendors.id, {...}),
 ```
-
-**Note:** May be intentional for flexibility (system actions, etc.)
-
----
-
-### Issue #23: Self-Referential FK - accounts.parentAccountId
-
-**Severity:** LOW
-**Location:** `drizzle/schema.ts:974`
-**Status:** Deferred (Post-Beta)
 
 **Problem:**
-`accounts.parentAccountId` has no self-referential FK constraint.
+- Both FKs required (vendorId is NOT NULL)
+- Migration to single `supplierClientId` incomplete
+- Queries must handle both columns
+
+---
+
+## MEDIUM Severity Issues
+
+### 9. camelCase vs snake_case Column Naming Inconsistency
+
+The schema uses **inconsistent** DB column naming:
+
+**Tables using camelCase DB columns (problematic):**
+- `productMedia` - `productId`, `uploadedBy`
+- `productSynonyms` - `productId`
+- `productTags` - `productId`, `tagId`
+- `billLineItems` - `productId`
+- `freeformNotes` - `createdBy`
+- `strains` - `parentStrainId`, `baseStrainName`
+
+**Tables using snake_case DB columns (correct pattern):**
+- `productImages` - `product_id`, `batch_id`, `uploaded_by`
+- `clientNeeds` - `client_id`, `strain_id`
+- `calendarEvents` - `vendor_id`, `client_id`
+
+**Impact:** Inconsistent naming makes it harder to:
+- Write correct raw SQL queries
+- Debug database issues
+- Maintain coding standards
+
+---
+
+### 10. Missing FK on `products.strainId`
+
+**Location:** `drizzle/schema.ts:418`
+
+Even if the column existed, it has **no FK constraint**:
 
 ```typescript
-parentAccountId: int("parentAccountId"),  // No .references(() => accounts.id)
+strainId: int("strainId"), // No .references() call
+```
+
+Compare to `clientNeeds.strainId` which does have proper FK (line 4064):
+```typescript
+strainId: int("strainId").references(() => strains.id, { onDelete: "set null" }),
 ```
 
 ---
 
-## Summary by Table
+### 11. Missing FK on `productMedia.productId`
 
-| Table | Issues | Severity | Status |
-|-------|--------|----------|--------|
-| products | #1, #13 | CRITICAL, MEDIUM | Addressed, Planned |
-| product_images | #3 | CRITICAL | Addressed |
-| productMedia | #2 | CRITICAL | Deferred |
-| brands | #4 | HIGH | Planned |
-| lots | #5 | HIGH | Planned |
-| paymentHistory | #6 | HIGH | Planned |
-| bills | #7 | HIGH | Planned |
-| expenses | #8, #17 | HIGH, MEDIUM | Planned |
-| payments | #9 | HIGH | Planned |
-| vendors | #10 | HIGH | Planned |
-| purchaseOrders | #11 | HIGH | Planned |
-| batches | #14 | MEDIUM | Planned |
-| billLineItems | #15 | MEDIUM | Planned |
-| ledgerEntries | #16 | MEDIUM | Planned |
-| sales | #18 | MEDIUM | Planned |
-| Multiple | #12 | MEDIUM | Planned |
-| Multiple | #19-23 | LOW | Deferred |
+**Location:** `drizzle/schema.ts:453`
+
+```typescript
+productId: int("productId").notNull(),  // No FK to products.id
+```
+
+Should be:
+```typescript
+productId: int("productId").notNull().references(() => products.id, { onDelete: "cascade" }),
+```
 
 ---
 
-## Remediation Timeline
+### 12. Missing FK on `billLineItems` Columns
 
-### Phase 0 (Immediate) - ADDRESSED
-- Issue #1: strainId schema drift → Fallback queries (PR #318)
-- Issue #3: product_images table → Create table (GF-PHASE0-006)
+**Location:** `drizzle/schema.ts:1220-1224`
 
-### Phase 6 (Database Standardization) - PLANNED
-- Issues #4-8: Add missing FK constraints (INFRA-DB-001)
-- Issues #9, #11: Rename misleading columns (INFRA-DB-002)
-- Issues #2, #12: Consolidate/standardize (INFRA-DB-003)
-- Issue #10: Complete vendors → clients migration (INFRA-DB-004)
+```typescript
+billId: int("billId").notNull(),  // No FK to bills.id
+productId: int("productId"),       // No FK to products.id
+lotId: int("lotId"),               // No FK to lots.id
+```
 
-### Post-Beta (Deferred)
-- Issues #19-23: Documentation, indexes, cleanup
+All three should have `.references()` constraints.
+
+---
+
+### 13. `intakeSessions` - vendorId Naming Ambiguity
+
+**Issue:** Some `vendorId` columns reference `clients.id` (suppliers) while others reference `vendors.id`. The naming doesn't distinguish between these.
+
+Per `.kiro/specs/canonical-model-unification/design.md:890`:
+> `vendorId` is context-dependent: If in `intakeSessions` → `clients.id`; else → `vendors.id` (deprecated)
+
+---
+
+### 14. Missing Table Documentation
+
+The `productMedia` table is marked as "UNUSED" in some QA reports but is actively used:
+- `server/services/liveCatalogService.ts` queries it
+- Unclear if it should be deprecated in favor of `productImages`
+
+---
+
+### 15. mysqlEnum First Argument Naming
+
+Some enums may have first argument mismatches with actual DB column names:
+
+```typescript
+// Line 110 - uses camelCase
+export const batchStatusEnum = mysqlEnum("batchStatus", [...]);
+
+// Line 144 - uses snake_case
+export const ownershipTypeEnum = mysqlEnum("ownership_type", [...]);
+```
+
+The enum name MUST match the DB column name or runtime "Unknown column" errors occur.
+
+---
+
+## LOW Severity Issues
+
+### 16-20. Documentation & Cleanup Items
+
+| Issue | Location | Description |
+|-------|----------|-------------|
+| Deprecated vendors table still in schema | `drizzle/schema.ts:167` | Should be removed after full migration |
+| Legacy seeder references | `verify-all-data.ts:28` | Uses `db.select().from(vendors)` |
+| Inconsistent image table usage docs | N/A | No clear guidance on productMedia vs productImages |
+| Orphan FK references in comments | Various | Comments reference tables that may not exist |
+| Missing index on new columns | `products.strainId` | If column is added, needs index |
+
+---
+
+## Recommendations
+
+### Immediate (Before Next Deploy)
+
+1. **Add migration for `products.strainId`** OR **remove all strainId query references**
+2. **Verify `product_images` table exists** in production before removing fallback queries
+3. **Document** when to use `productMedia` vs `productImages`
+
+### Short-Term (This Sprint)
+
+4. Add FK constraints to `bills.vendorId`, `expenses.vendorId`, `brands.vendorId`
+5. Rename `payments.vendorId` to `payments.supplierClientId` with migration
+6. Standardize on snake_case DB column names for new tables
+
+### Medium-Term (Next Quarter)
+
+7. Complete `vendors` → `clients` migration for all tables
+8. Remove dual `vendorId`/`supplierClientId` columns once migration complete
+9. Consolidate image tables to single `productImages` pattern
+10. Add missing FK constraints to all `productId`, `billId`, `lotId` columns
 
 ---
 
 ## Verification Commands
 
 ```bash
-# Check for orphan vendorId records
-SELECT COUNT(*) FROM brands WHERE vendorId NOT IN (SELECT id FROM clients);
-SELECT COUNT(*) FROM bills WHERE vendorId NOT IN (SELECT id FROM clients);
-SELECT COUNT(*) FROM expenses WHERE vendorId NOT IN (SELECT id FROM clients);
+# Check for "Unknown column" errors in logs
+./scripts/terp-logs.sh run 500 | grep -i "unknown column"
 
-# Check FK constraints
-SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
-FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-WHERE TABLE_SCHEMA = 'defaultdb' AND REFERENCED_TABLE_NAME IS NOT NULL;
+# Verify tables exist in production
+mysql -e "SHOW TABLES LIKE '%images%';"
+mysql -e "DESCRIBE products;" | grep strainId
 
-# Check for missing product_images table
-SHOW TABLES LIKE 'product_images';
+# Find all vendorId usages without FK
+grep -rn "vendorId.*int(" drizzle/schema.ts | grep -v "references"
 
-# Check strainId column existence
-SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'products' AND COLUMN_NAME = 'strainId';
+# Find all strainId JOIN queries
+grep -rn "strainId.*strains\|strains.*strainId" server/
 ```
 
 ---
 
 ## References
 
-- **BUG-112:** Photography module investigation
-- **PR #318:** Schema drift fallback implementation
-- **GF-PHASE0-006:** Create product_images table
-- **GF-PHASE0-007:** Fix migration infrastructure
-- **CLAUDE.md Section 4:** Database standards
-- **CLAUDE.md Section 9:** Deprecated systems (vendors table)
-
----
-
-**Document Version:** 1.0
-**Author:** Claude Code Agent
-**Task:** GF-PHASE0-008
+- BUG-112: Schema drift fallback implementation
+- CLAUDE.md Section 4: Database standards
+- `.kiro/steering/07-deprecated-systems.md`: Deprecated vendors table guidance
+- `docs/jan-26-checkpoint/INVENTORY_FLOW_ANALYSIS.md`: Previous strainId analysis
