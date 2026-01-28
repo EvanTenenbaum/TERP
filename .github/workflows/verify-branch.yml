@@ -1,0 +1,91 @@
+name: Verify Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to verify'
+        required: true
+        type: string
+      task_id:
+        description: 'Task ID for tracking'
+        required: false
+        type: string
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      typecheck: ${{ steps.typecheck.outcome }}
+      lint: ${{ steps.lint.outcome }}
+      test: ${{ steps.test.outcome }}
+      build: ${{ steps.build.outcome }}
+      overall: ${{ steps.summary.outputs.overall }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript Check
+        id: typecheck
+        run: pnpm check
+        continue-on-error: true
+
+      - name: Lint
+        id: lint
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Test
+        id: test
+        run: pnpm test
+        continue-on-error: true
+
+      - name: Build
+        id: build
+        run: pnpm build
+        continue-on-error: true
+
+      - name: Summary
+        id: summary
+        run: |
+          echo "## Verification Results for ${{ inputs.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "Task ID: ${{ inputs.task_id || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | ${{ steps.typecheck.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ steps.lint.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | ${{ steps.test.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ steps.build.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ steps.typecheck.outcome }}" == "success" && \
+                "${{ steps.lint.outcome }}" == "success" && \
+                "${{ steps.test.outcome }}" == "success" && \
+                "${{ steps.build.outcome }}" == "success" ]]; then
+            echo "overall=pass" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **All checks passed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "overall=fail" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Some checks failed**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if any check failed
+        if: steps.summary.outputs.overall == 'fail'
+        run: exit 1
