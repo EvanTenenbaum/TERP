@@ -14,11 +14,11 @@ let migrationRun = false;
 export async function runAutoMigrations() {
   // Only run once per app lifecycle
   if (migrationRun) {
-    console.log("✅ Migrations already run in this session");
+    console.info("✅ Migrations already run in this session");
     return;
   }
 
-  console.log("🔄 Running auto-migrations...");
+  console.info("🔄 Running auto-migrations...");
   const startTime = Date.now();
 
   // Initialize database connection
@@ -38,12 +38,12 @@ export async function runAutoMigrations() {
     try {
       await db.execute(sql`SELECT 1 FROM client_needs LIMIT 1`);
       matchingTablesExist = true;
-      console.log(
+      console.info(
         "  ℹ️  Matching/needs tables already exist - skipping creation"
       );
     } catch {
       // client_needs table doesn't exist, proceed with table creation
-      console.log(
+      console.info(
         "  ℹ️  Matching/needs tables not found - will create as fallback"
       );
     }
@@ -71,16 +71,16 @@ export async function runAutoMigrations() {
             updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created client_needs table");
+        console.info("  ✅ Created client_needs table");
       } catch (error) {
         if (
           error instanceof Error
             ? error.message
             : String(error).includes("already exists")
         ) {
-          console.log("  ℹ️  client_needs table already exists");
+          console.info("  ℹ️  client_needs table already exists");
         } else {
-          console.log(
+          console.info(
             "  ⚠️  client_needs table:",
             error instanceof Error ? error.message : String(error)
           );
@@ -107,16 +107,16 @@ export async function runAutoMigrations() {
             updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created vendor_supply table");
+        console.info("  ✅ Created vendor_supply table");
       } catch (error) {
         if (
           error instanceof Error
             ? error.message
             : String(error).includes("already exists")
         ) {
-          console.log("  ℹ️  vendor_supply table already exists");
+          console.info("  ℹ️  vendor_supply table already exists");
         } else {
-          console.log(
+          console.info(
             "  ⚠️  vendor_supply table:",
             error instanceof Error ? error.message : String(error)
           );
@@ -143,16 +143,16 @@ export async function runAutoMigrations() {
             createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created match_records table");
+        console.info("  ✅ Created match_records table");
       } catch (error) {
         if (
           error instanceof Error
             ? error.message
             : String(error).includes("already exists")
         ) {
-          console.log("  ℹ️  match_records table already exists");
+          console.info("  ℹ️  match_records table already exists");
         } else {
-          console.log(
+          console.info(
             "  ⚠️  match_records table:",
             error instanceof Error ? error.message : String(error)
           );
@@ -165,13 +165,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE strains ADD COLUMN openthcId VARCHAR(255) NULL`
       );
-      console.log("  ✅ Added openthcId column");
+      console.info("  ✅ Added openthcId column");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  openthcId column already exists");
+        console.info("  ℹ️  openthcId column already exists");
       } else {
-        console.log("  ⚠️  openthcId:", errMsg);
+        console.info("  ⚠️  openthcId:", errMsg);
       }
     }
 
@@ -180,13 +180,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE strains ADD COLUMN openthcStub VARCHAR(255) NULL`
       );
-      console.log("  ✅ Added openthcStub column");
+      console.info("  ✅ Added openthcStub column");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  openthcStub column already exists");
+        console.info("  ℹ️  openthcStub column already exists");
       } else {
-        console.log("  ⚠️  openthcStub:", errMsg);
+        console.info("  ⚠️  openthcStub:", errMsg);
       }
     }
 
@@ -195,13 +195,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE strains ADD COLUMN parentStrainId INT NULL`
       );
-      console.log("  ✅ Added parentStrainId column");
+      console.info("  ✅ Added parentStrainId column");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  parentStrainId column already exists");
+        console.info("  ℹ️  parentStrainId column already exists");
       } else {
-        console.log("  ⚠️  parentStrainId:", errMsg);
+        console.info("  ⚠️  parentStrainId:", errMsg);
       }
     }
 
@@ -210,13 +210,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE strains ADD COLUMN baseStrainName VARCHAR(255) NULL`
       );
-      console.log("  ✅ Added baseStrainName column");
+      console.info("  ✅ Added baseStrainName column");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  baseStrainName column already exists");
+        console.info("  ℹ️  baseStrainName column already exists");
       } else {
-        console.log("  ⚠️  baseStrainName:", errMsg);
+        console.info("  ⚠️  baseStrainName:", errMsg);
       }
     }
 
@@ -225,13 +225,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE client_needs ADD COLUMN strainId INT NULL`
       );
-      console.log("  ✅ Added strainId to client_needs");
+      console.info("  ✅ Added strainId to client_needs");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  client_needs.strainId already exists");
+        console.info("  ℹ️  client_needs.strainId already exists");
       } else {
-        console.log("  ⚠️  client_needs.strainId:", errMsg);
+        console.info("  ⚠️  client_needs.strainId:", errMsg);
       }
     }
 
@@ -240,13 +240,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`CREATE INDEX idx_strains_openthc_id ON strains(openthcId)`
       );
-      console.log("  ✅ Created index on openthcId");
+      console.info("  ✅ Created index on openthcId");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
-        console.log("  ℹ️  Index on openthcId already exists");
+        console.info("  ℹ️  Index on openthcId already exists");
       } else {
-        console.log("  ⚠️  Index openthcId:", errMsg);
+        console.info("  ⚠️  Index openthcId:", errMsg);
       }
     }
 
@@ -254,13 +254,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`CREATE INDEX idx_strains_parent ON strains(parentStrainId)`
       );
-      console.log("  ✅ Created index on parentStrainId");
+      console.info("  ✅ Created index on parentStrainId");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
-        console.log("  ℹ️  Index on parentStrainId already exists");
+        console.info("  ℹ️  Index on parentStrainId already exists");
       } else {
-        console.log("  ⚠️  Index parentStrainId:", errMsg);
+        console.info("  ⚠️  Index parentStrainId:", errMsg);
       }
     }
 
@@ -268,13 +268,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`CREATE INDEX idx_strains_base_name ON strains(baseStrainName)`
       );
-      console.log("  ✅ Created index on baseStrainName");
+      console.info("  ✅ Created index on baseStrainName");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
-        console.log("  ℹ️  Index on baseStrainName already exists");
+        console.info("  ℹ️  Index on baseStrainName already exists");
       } else {
-        console.log("  ⚠️  Index baseStrainName:", errMsg);
+        console.info("  ⚠️  Index baseStrainName:", errMsg);
       }
     }
 
@@ -282,13 +282,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`CREATE INDEX idx_client_needs_strain ON client_needs(strainId)`
       );
-      console.log("  ✅ Created index on client_needs.strainId");
+      console.info("  ✅ Created index on client_needs.strainId");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
-        console.log("  ℹ️  Index on client_needs.strainId already exists");
+        console.info("  ℹ️  Index on client_needs.strainId already exists");
       } else {
-        console.log("  ⚠️  Index client_needs.strainId:", errMsg);
+        console.info("  ⚠️  Index client_needs.strainId:", errMsg);
       }
     }
 
@@ -299,13 +299,13 @@ export async function runAutoMigrations() {
         ADD CONSTRAINT fk_parent_strain 
         FOREIGN KEY (parentStrainId) REFERENCES strains(id) ON DELETE SET NULL
       `);
-      console.log("  ✅ Added foreign key fk_parent_strain");
+      console.info("  ✅ Added foreign key fk_parent_strain");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
-        console.log("  ℹ️  Foreign key fk_parent_strain already exists");
+        console.info("  ℹ️  Foreign key fk_parent_strain already exists");
       } else {
-        console.log("  ⚠️  Foreign key fk_parent_strain:", errMsg);
+        console.info("  ⚠️  Foreign key fk_parent_strain:", errMsg);
       }
     }
 
@@ -315,13 +315,13 @@ export async function runAutoMigrations() {
         ADD CONSTRAINT fk_client_needs_strain
         FOREIGN KEY (strainId) REFERENCES strains(id) ON DELETE SET NULL
       `);
-      console.log("  ✅ Added foreign key fk_client_needs_strain");
+      console.info("  ✅ Added foreign key fk_client_needs_strain");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
-        console.log("  ℹ️  Foreign key fk_client_needs_strain already exists");
+        console.info("  ℹ️  Foreign key fk_client_needs_strain already exists");
       } else {
-        console.log("  ⚠️  Foreign key fk_client_needs_strain:", errMsg);
+        console.info("  ⚠️  Foreign key fk_client_needs_strain:", errMsg);
       }
     }
 
@@ -330,13 +330,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN vip_portal_enabled BOOLEAN DEFAULT FALSE`
       );
-      console.log("  ✅ Added vip_portal_enabled column to clients");
+      console.info("  ✅ Added vip_portal_enabled column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.vip_portal_enabled already exists");
+        console.info("  ℹ️  clients.vip_portal_enabled already exists");
       } else {
-        console.log("  ⚠️  clients.vip_portal_enabled:", errMsg);
+        console.info("  ⚠️  clients.vip_portal_enabled:", errMsg);
       }
     }
 
@@ -344,31 +344,31 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN vip_portal_last_login TIMESTAMP NULL`
       );
-      console.log("  ✅ Added vip_portal_last_login column to clients");
+      console.info("  ✅ Added vip_portal_last_login column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.vip_portal_last_login already exists");
+        console.info("  ℹ️  clients.vip_portal_last_login already exists");
       } else {
-        console.log("  ⚠️  clients.vip_portal_last_login:", errMsg);
+        console.info("  ⚠️  clients.vip_portal_last_login:", errMsg);
       }
     }
 
     // FIX-001: Add missing columns to clients table (schema drift fix)
     // These columns exist in schema.ts but were never migrated to production
-    
+
     // Add version column for optimistic locking (DATA-005)
     try {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN version INT NOT NULL DEFAULT 1`
       );
-      console.log("  ✅ Added version column to clients");
+      console.info("  ✅ Added version column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.version already exists");
+        console.info("  ℹ️  clients.version already exists");
       } else {
-        console.log("  ⚠️  clients.version:", errMsg);
+        console.info("  ⚠️  clients.version:", errMsg);
       }
     }
 
@@ -377,13 +377,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN pricing_profile_id INT NULL`
       );
-      console.log("  ✅ Added pricing_profile_id column to clients");
+      console.info("  ✅ Added pricing_profile_id column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.pricing_profile_id already exists");
+        console.info("  ℹ️  clients.pricing_profile_id already exists");
       } else {
-        console.log("  ⚠️  clients.pricing_profile_id:", errMsg);
+        console.info("  ⚠️  clients.pricing_profile_id:", errMsg);
       }
     }
 
@@ -392,13 +392,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN custom_pricing_rules JSON NULL`
       );
-      console.log("  ✅ Added custom_pricing_rules column to clients");
+      console.info("  ✅ Added custom_pricing_rules column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.custom_pricing_rules already exists");
+        console.info("  ℹ️  clients.custom_pricing_rules already exists");
       } else {
-        console.log("  ⚠️  clients.custom_pricing_rules:", errMsg);
+        console.info("  ⚠️  clients.custom_pricing_rules:", errMsg);
       }
     }
 
@@ -407,13 +407,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'FIXED_AMOUNT') DEFAULT 'NONE'`
       );
-      console.log("  ✅ Added cogsAdjustmentType column to clients");
+      console.info("  ✅ Added cogsAdjustmentType column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.cogsAdjustmentType already exists");
+        console.info("  ℹ️  clients.cogsAdjustmentType already exists");
       } else {
-        console.log("  ⚠️  clients.cogsAdjustmentType:", errMsg);
+        console.info("  ⚠️  clients.cogsAdjustmentType:", errMsg);
       }
     }
 
@@ -422,13 +422,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN cogs_adjustment_value DECIMAL(10,4) DEFAULT 0`
       );
-      console.log("  ✅ Added cogs_adjustment_value column to clients");
+      console.info("  ✅ Added cogs_adjustment_value column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.cogs_adjustment_value already exists");
+        console.info("  ℹ️  clients.cogs_adjustment_value already exists");
       } else {
-        console.log("  ⚠️  clients.cogs_adjustment_value:", errMsg);
+        console.info("  ⚠️  clients.cogs_adjustment_value:", errMsg);
       }
     }
 
@@ -437,13 +437,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN auto_defer_consignment BOOLEAN DEFAULT FALSE`
       );
-      console.log("  ✅ Added auto_defer_consignment column to clients");
+      console.info("  ✅ Added auto_defer_consignment column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.auto_defer_consignment already exists");
+        console.info("  ℹ️  clients.auto_defer_consignment already exists");
       } else {
-        console.log("  ⚠️  clients.auto_defer_consignment:", errMsg);
+        console.info("  ⚠️  clients.auto_defer_consignment:", errMsg);
       }
     }
 
@@ -452,13 +452,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN credit_limit DECIMAL(15,2) DEFAULT 0`
       );
-      console.log("  ✅ Added credit_limit column to clients");
+      console.info("  ✅ Added credit_limit column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.credit_limit already exists");
+        console.info("  ℹ️  clients.credit_limit already exists");
       } else {
-        console.log("  ⚠️  clients.credit_limit:", errMsg);
+        console.info("  ⚠️  clients.credit_limit:", errMsg);
       }
     }
 
@@ -467,13 +467,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN credit_limit_updated_at TIMESTAMP NULL`
       );
-      console.log("  ✅ Added credit_limit_updated_at column to clients");
+      console.info("  ✅ Added credit_limit_updated_at column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.credit_limit_updated_at already exists");
+        console.info("  ℹ️  clients.credit_limit_updated_at already exists");
       } else {
-        console.log("  ⚠️  clients.credit_limit_updated_at:", errMsg);
+        console.info("  ⚠️  clients.credit_limit_updated_at:", errMsg);
       }
     }
 
@@ -482,13 +482,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN creditLimitSource ENUM('CALCULATED', 'MANUAL') DEFAULT 'CALCULATED'`
       );
-      console.log("  ✅ Added creditLimitSource column to clients");
+      console.info("  ✅ Added creditLimitSource column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.creditLimitSource already exists");
+        console.info("  ℹ️  clients.creditLimitSource already exists");
       } else {
-        console.log("  ⚠️  clients.creditLimitSource:", errMsg);
+        console.info("  ⚠️  clients.creditLimitSource:", errMsg);
       }
     }
 
@@ -497,28 +497,28 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE clients ADD COLUMN credit_limit_override_reason TEXT NULL`
       );
-      console.log("  ✅ Added credit_limit_override_reason column to clients");
+      console.info("  ✅ Added credit_limit_override_reason column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.credit_limit_override_reason already exists");
+        console.info(
+          "  ℹ️  clients.credit_limit_override_reason already exists"
+        );
       } else {
-        console.log("  ⚠️  clients.credit_limit_override_reason:", errMsg);
+        console.info("  ⚠️  clients.credit_limit_override_reason:", errMsg);
       }
     }
 
     // Add wishlist column (WS-015)
     try {
-      await db.execute(
-        sql`ALTER TABLE clients ADD COLUMN wishlist TEXT NULL`
-      );
-      console.log("  ✅ Added wishlist column to clients");
+      await db.execute(sql`ALTER TABLE clients ADD COLUMN wishlist TEXT NULL`);
+      console.info("  ✅ Added wishlist column to clients");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  clients.wishlist already exists");
+        console.info("  ℹ️  clients.wishlist already exists");
       } else {
-        console.log("  ⚠️  clients.wishlist:", errMsg);
+        console.info("  ⚠️  clients.wishlist:", errMsg);
       }
     }
 
@@ -527,13 +527,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE batches ADD COLUMN version INT NOT NULL DEFAULT 1`
       );
-      console.log("  ✅ Added version column to batches");
+      console.info("  ✅ Added version column to batches");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  batches.version already exists");
+        console.info("  ℹ️  batches.version already exists");
       } else {
-        console.log("  ⚠️  batches.version:", errMsg);
+        console.info("  ⚠️  batches.version:", errMsg);
       }
     }
 
@@ -542,13 +542,13 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE orders ADD COLUMN version INT NOT NULL DEFAULT 1`
       );
-      console.log("  ✅ Added version column to orders");
+      console.info("  ✅ Added version column to orders");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  orders.version already exists");
+        console.info("  ℹ️  orders.version already exists");
       } else {
-        console.log("  ⚠️  orders.version:", errMsg);
+        console.info("  ⚠️  orders.version:", errMsg);
       }
     }
 
@@ -556,13 +556,16 @@ export async function runAutoMigrations() {
     // NOTE: Schema uses camelCase "statusId" not snake_case
     try {
       await db.execute(sql`ALTER TABLE batches ADD COLUMN statusId INT NULL`);
-      console.log("  ✅ Added statusId column to batches");
+      console.info("  ✅ Added statusId column to batches");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  batches.statusId already exists");
+        console.info("  ℹ️  batches.statusId already exists");
       } else {
-        logger.error({ error: errMsg, fullError: error }, "batches.statusId migration failed");
+        logger.error(
+          { error: errMsg, fullError: error },
+          "batches.statusId migration failed"
+        );
       }
     }
 
@@ -571,13 +574,16 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE batches ADD COLUMN deleted_at TIMESTAMP NULL`
       );
-      console.log("  ✅ Added deleted_at column to batches");
+      console.info("  ✅ Added deleted_at column to batches");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  batches.deleted_at already exists");
+        console.info("  ℹ️  batches.deleted_at already exists");
       } else {
-        logger.error({ error: errMsg, fullError: error }, "batches.deleted_at migration failed");
+        logger.error(
+          { error: errMsg, fullError: error },
+          "batches.deleted_at migration failed"
+        );
       }
     }
 
@@ -586,13 +592,16 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE batches ADD COLUMN photo_session_event_id INT NULL`
       );
-      console.log("  ✅ Added photo_session_event_id column to batches");
+      console.info("  ✅ Added photo_session_event_id column to batches");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.log("  ℹ️  batches.photo_session_event_id already exists");
+        console.info("  ℹ️  batches.photo_session_event_id already exists");
       } else {
-        logger.error({ error: errMsg, fullError: error }, "batches.photo_session_event_id migration failed");
+        logger.error(
+          { error: errMsg, fullError: error },
+          "batches.photo_session_event_id migration failed"
+        );
       }
     }
 
@@ -608,10 +617,10 @@ export async function runAutoMigrations() {
     try {
       await db.execute(sql`SELECT 1 FROM roles LIMIT 1`);
       rbacTablesExist = true;
-      console.log("  ℹ️  RBAC tables already exist - skipping creation");
+      console.info("  ℹ️  RBAC tables already exist - skipping creation");
     } catch {
       // roles table doesn't exist, proceed with table creation
-      console.log("  ℹ️  RBAC tables not found - will create as fallback");
+      console.info("  ℹ️  RBAC tables not found - will create as fallback");
     }
 
     if (!rbacTablesExist) {
@@ -626,13 +635,13 @@ export async function runAutoMigrations() {
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created roles table");
+        console.info("  ✅ Created roles table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  roles table already exists");
+          console.info("  ℹ️  roles table already exists");
         } else {
-          console.log("  ⚠️  roles table:", errMsg);
+          console.info("  ⚠️  roles table:", errMsg);
         }
       }
 
@@ -646,13 +655,13 @@ export async function runAutoMigrations() {
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created permissions table");
+        console.info("  ✅ Created permissions table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  permissions table already exists");
+          console.info("  ℹ️  permissions table already exists");
         } else {
-          console.log("  ⚠️  permissions table:", errMsg);
+          console.info("  ⚠️  permissions table:", errMsg);
         }
       }
 
@@ -667,13 +676,13 @@ export async function runAutoMigrations() {
             FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created role_permissions table");
+        console.info("  ✅ Created role_permissions table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  role_permissions table already exists");
+          console.info("  ℹ️  role_permissions table already exists");
         } else {
-          console.log("  ⚠️  role_permissions table:", errMsg);
+          console.info("  ⚠️  role_permissions table:", errMsg);
         }
       }
 
@@ -688,13 +697,13 @@ export async function runAutoMigrations() {
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created user_roles table");
+        console.info("  ✅ Created user_roles table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  user_roles table already exists");
+          console.info("  ℹ️  user_roles table already exists");
         } else {
-          console.log("  ⚠️  user_roles table:", errMsg);
+          console.info("  ⚠️  user_roles table:", errMsg);
         }
       }
 
@@ -710,13 +719,13 @@ export async function runAutoMigrations() {
             FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created user_permission_overrides table");
+        console.info("  ✅ Created user_permission_overrides table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  user_permission_overrides table already exists");
+          console.info("  ℹ️  user_permission_overrides table already exists");
         } else {
-          console.log("  ⚠️  user_permission_overrides table:", errMsg);
+          console.info("  ⚠️  user_permission_overrides table:", errMsg);
         }
       }
     }
@@ -730,10 +739,10 @@ export async function runAutoMigrations() {
     try {
       await db.execute(sql`SELECT 1 FROM vip_portal_configurations LIMIT 1`);
       vipPortalTablesExist = true;
-      console.log("  ℹ️  VIP Portal tables already exist - skipping creation");
+      console.info("  ℹ️  VIP Portal tables already exist - skipping creation");
     } catch {
       // vip_portal_configurations table doesn't exist, proceed with table creation
-      console.log(
+      console.info(
         "  ℹ️  VIP Portal tables not found - will create as fallback"
       );
     }
@@ -761,13 +770,13 @@ export async function runAutoMigrations() {
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created vip_portal_configurations table");
+        console.info("  ✅ Created vip_portal_configurations table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  vip_portal_configurations table already exists");
+          console.info("  ℹ️  vip_portal_configurations table already exists");
         } else {
-          console.log("  ⚠️  vip_portal_configurations table:", errMsg);
+          console.info("  ⚠️  vip_portal_configurations table:", errMsg);
         }
       }
 
@@ -788,13 +797,13 @@ export async function runAutoMigrations() {
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created vip_portal_auth table");
+        console.info("  ✅ Created vip_portal_auth table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  vip_portal_auth table already exists");
+          console.info("  ℹ️  vip_portal_auth table already exists");
         } else {
-          console.log("  ⚠️  vip_portal_auth table:", errMsg);
+          console.info("  ⚠️  vip_portal_auth table:", errMsg);
         }
       }
     }
@@ -807,9 +816,11 @@ export async function runAutoMigrations() {
     try {
       await db.execute(sql`SELECT 1 FROM feature_flags LIMIT 1`);
       featureFlagsTablesExist = true;
-      console.log("  ℹ️  Feature flags tables already exist - skipping creation");
+      console.info(
+        "  ℹ️  Feature flags tables already exist - skipping creation"
+      );
     } catch {
-      console.log("  ℹ️  Feature flags tables not found - will create");
+      console.info("  ℹ️  Feature flags tables not found - will create");
     }
 
     if (!featureFlagsTablesExist) {
@@ -833,13 +844,13 @@ export async function runAutoMigrations() {
             UNIQUE INDEX idx_feature_flags_key (\`key\`)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created feature_flags table");
+        console.info("  ✅ Created feature_flags table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  feature_flags table already exists");
+          console.info("  ℹ️  feature_flags table already exists");
         } else {
-          console.log("  ⚠️  feature_flags table:", errMsg);
+          console.info("  ⚠️  feature_flags table:", errMsg);
         }
       }
 
@@ -858,13 +869,15 @@ export async function runAutoMigrations() {
             UNIQUE INDEX idx_flag_role_unique (flag_id, role_id)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created feature_flag_role_overrides table");
+        console.info("  ✅ Created feature_flag_role_overrides table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  feature_flag_role_overrides table already exists");
+          console.info(
+            "  ℹ️  feature_flag_role_overrides table already exists"
+          );
         } else {
-          console.log("  ⚠️  feature_flag_role_overrides table:", errMsg);
+          console.info("  ⚠️  feature_flag_role_overrides table:", errMsg);
         }
       }
 
@@ -884,13 +897,15 @@ export async function runAutoMigrations() {
             INDEX idx_flag_user_open_id (user_open_id)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created feature_flag_user_overrides table");
+        console.info("  ✅ Created feature_flag_user_overrides table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  feature_flag_user_overrides table already exists");
+          console.info(
+            "  ℹ️  feature_flag_user_overrides table already exists"
+          );
         } else {
-          console.log("  ⚠️  feature_flag_user_overrides table:", errMsg);
+          console.info("  ⚠️  feature_flag_user_overrides table:", errMsg);
         }
       }
 
@@ -912,13 +927,13 @@ export async function runAutoMigrations() {
             INDEX idx_audit_created_at (created_at)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created feature_flag_audit_logs table");
+        console.info("  ✅ Created feature_flag_audit_logs table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  feature_flag_audit_logs table already exists");
+          console.info("  ℹ️  feature_flag_audit_logs table already exists");
         } else {
-          console.log("  ⚠️  feature_flag_audit_logs table:", errMsg);
+          console.info("  ⚠️  feature_flag_audit_logs table:", errMsg);
         }
       }
     }
@@ -946,13 +961,13 @@ export async function runAutoMigrations() {
           INDEX idx_admin_imp_sessions_guid (session_guid)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-      console.log("  ✅ Created admin_impersonation_sessions table");
+      console.info("  ✅ Created admin_impersonation_sessions table");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  admin_impersonation_sessions table already exists");
+        console.info("  ℹ️  admin_impersonation_sessions table already exists");
       } else {
-        console.log("  ⚠️  admin_impersonation_sessions table:", errMsg);
+        console.info("  ⚠️  admin_impersonation_sessions table:", errMsg);
       }
     }
 
@@ -973,31 +988,31 @@ export async function runAutoMigrations() {
           INDEX idx_admin_imp_actions_created_at (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-      console.log("  ✅ Created admin_impersonation_actions table");
+      console.info("  ✅ Created admin_impersonation_actions table");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  admin_impersonation_actions table already exists");
+        console.info("  ℹ️  admin_impersonation_actions table already exists");
       } else {
-        console.log("  ⚠️  admin_impersonation_actions table:", errMsg);
+        console.info("  ⚠️  admin_impersonation_actions table:", errMsg);
       }
     }
-
-
 
     // ========================================================================
     // LIVE SHOPPING SESSION TIMEOUT COLUMNS (MEET-075-BE)
     // ========================================================================
     // Add timeout-related columns to liveShoppingSessions table
     // These columns are required for the session timeout cron job
-    
+
     // Check if liveShoppingSessions table exists first
     let liveShoppingTableExists = false;
     try {
       await db.execute(sql`SELECT 1 FROM liveShoppingSessions LIMIT 1`);
       liveShoppingTableExists = true;
     } catch {
-      console.log("  ℹ️  liveShoppingSessions table not found - skipping timeout columns");
+      console.info(
+        "  ℹ️  liveShoppingSessions table not found - skipping timeout columns"
+      );
     }
 
     if (liveShoppingTableExists) {
@@ -1006,13 +1021,17 @@ export async function runAutoMigrations() {
         await db.execute(
           sql`ALTER TABLE liveShoppingSessions ADD COLUMN timeoutSeconds INT DEFAULT 7200`
         );
-        console.log("  ✅ Added timeoutSeconds column to liveShoppingSessions");
+        console.info(
+          "  ✅ Added timeoutSeconds column to liveShoppingSessions"
+        );
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate column")) {
-          console.log("  ℹ️  liveShoppingSessions.timeoutSeconds already exists");
+          console.info(
+            "  ℹ️  liveShoppingSessions.timeoutSeconds already exists"
+          );
         } else {
-          console.log("  ⚠️  liveShoppingSessions.timeoutSeconds:", errMsg);
+          console.info("  ⚠️  liveShoppingSessions.timeoutSeconds:", errMsg);
         }
       }
 
@@ -1021,13 +1040,13 @@ export async function runAutoMigrations() {
         await db.execute(
           sql`ALTER TABLE liveShoppingSessions ADD COLUMN expiresAt TIMESTAMP NULL`
         );
-        console.log("  ✅ Added expiresAt column to liveShoppingSessions");
+        console.info("  ✅ Added expiresAt column to liveShoppingSessions");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate column")) {
-          console.log("  ℹ️  liveShoppingSessions.expiresAt already exists");
+          console.info("  ℹ️  liveShoppingSessions.expiresAt already exists");
         } else {
-          console.log("  ⚠️  liveShoppingSessions.expiresAt:", errMsg);
+          console.info("  ⚠️  liveShoppingSessions.expiresAt:", errMsg);
         }
       }
 
@@ -1036,13 +1055,20 @@ export async function runAutoMigrations() {
         await db.execute(
           sql`ALTER TABLE liveShoppingSessions ADD COLUMN autoReleaseEnabled BOOLEAN DEFAULT TRUE`
         );
-        console.log("  ✅ Added autoReleaseEnabled column to liveShoppingSessions");
+        console.info(
+          "  ✅ Added autoReleaseEnabled column to liveShoppingSessions"
+        );
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate column")) {
-          console.log("  ℹ️  liveShoppingSessions.autoReleaseEnabled already exists");
+          console.info(
+            "  ℹ️  liveShoppingSessions.autoReleaseEnabled already exists"
+          );
         } else {
-          console.log("  ⚠️  liveShoppingSessions.autoReleaseEnabled:", errMsg);
+          console.info(
+            "  ⚠️  liveShoppingSessions.autoReleaseEnabled:",
+            errMsg
+          );
         }
       }
 
@@ -1051,13 +1077,17 @@ export async function runAutoMigrations() {
         await db.execute(
           sql`ALTER TABLE liveShoppingSessions ADD COLUMN lastActivityAt TIMESTAMP NULL`
         );
-        console.log("  ✅ Added lastActivityAt column to liveShoppingSessions");
+        console.info(
+          "  ✅ Added lastActivityAt column to liveShoppingSessions"
+        );
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate column")) {
-          console.log("  ℹ️  liveShoppingSessions.lastActivityAt already exists");
+          console.info(
+            "  ℹ️  liveShoppingSessions.lastActivityAt already exists"
+          );
         } else {
-          console.log("  ⚠️  liveShoppingSessions.lastActivityAt:", errMsg);
+          console.info("  ⚠️  liveShoppingSessions.lastActivityAt:", errMsg);
         }
       }
 
@@ -1066,13 +1096,17 @@ export async function runAutoMigrations() {
         await db.execute(
           sql`ALTER TABLE liveShoppingSessions ADD COLUMN extensionCount INT DEFAULT 0`
         );
-        console.log("  ✅ Added extensionCount column to liveShoppingSessions");
+        console.info(
+          "  ✅ Added extensionCount column to liveShoppingSessions"
+        );
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate column")) {
-          console.log("  ℹ️  liveShoppingSessions.extensionCount already exists");
+          console.info(
+            "  ℹ️  liveShoppingSessions.extensionCount already exists"
+          );
         } else {
-          console.log("  ⚠️  liveShoppingSessions.extensionCount:", errMsg);
+          console.info("  ⚠️  liveShoppingSessions.extensionCount:", errMsg);
         }
       }
 
@@ -1081,13 +1115,15 @@ export async function runAutoMigrations() {
         await db.execute(
           sql`CREATE INDEX idx_lss_expires ON liveShoppingSessions (expiresAt)`
         );
-        console.log("  ✅ Added idx_lss_expires index to liveShoppingSessions");
+        console.info(
+          "  ✅ Added idx_lss_expires index to liveShoppingSessions"
+        );
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("Duplicate key name")) {
-          console.log("  ℹ️  idx_lss_expires index already exists");
+          console.info("  ℹ️  idx_lss_expires index already exists");
         } else {
-          console.log("  ⚠️  idx_lss_expires index:", errMsg);
+          console.info("  ⚠️  idx_lss_expires index:", errMsg);
         }
       }
     }
@@ -1112,13 +1148,13 @@ export async function runAutoMigrations() {
           INDEX idx_cll_expires_at (expires_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-      console.log("  ✅ Created cron_leader_lock table");
+      console.info("  ✅ Created cron_leader_lock table");
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  cron_leader_lock table already exists");
+        console.info("  ℹ️  cron_leader_lock table already exists");
       } else {
-        console.log("  ⚠️  cron_leader_lock table:", errMsg);
+        console.info("  ⚠️  cron_leader_lock table:", errMsg);
       }
     }
 
@@ -1130,9 +1166,11 @@ export async function runAutoMigrations() {
     try {
       await db.execute(sql`SELECT 1 FROM notifications LIMIT 1`);
       notificationsTablesExist = true;
-      console.log("  ℹ️  Notifications tables already exist - skipping creation");
+      console.info(
+        "  ℹ️  Notifications tables already exist - skipping creation"
+      );
     } catch {
-      console.log("  ℹ️  Notifications tables not found - will create");
+      console.info("  ℹ️  Notifications tables not found - will create");
     }
 
     if (!notificationsTablesExist) {
@@ -1159,13 +1197,13 @@ export async function runAutoMigrations() {
             INDEX idx_notifications_recipient_created (recipient_type, user_id, client_id, created_at)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created notifications table");
+        console.info("  ✅ Created notifications table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  notifications table already exists");
+          console.info("  ℹ️  notifications table already exists");
         } else {
-          console.log("  ⚠️  notifications table:", errMsg);
+          console.info("  ⚠️  notifications table:", errMsg);
         }
       }
 
@@ -1189,13 +1227,13 @@ export async function runAutoMigrations() {
             INDEX idx_notif_prefs_recipient (recipient_type, user_id, client_id)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        console.log("  ✅ Created notification_preferences table");
+        console.info("  ✅ Created notification_preferences table");
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         if (errMsg.includes("already exists")) {
-          console.log("  ℹ️  notification_preferences table already exists");
+          console.info("  ℹ️  notification_preferences table already exists");
         } else {
-          console.log("  ⚠️  notification_preferences table:", errMsg);
+          console.info("  ⚠️  notification_preferences table:", errMsg);
         }
       }
     }
@@ -1211,7 +1249,9 @@ export async function runAutoMigrations() {
       await db.execute(sql`SELECT 1 FROM calendar_events LIMIT 1`);
       calendarEventsTableExists = true;
     } catch {
-      console.info("  ℹ️  calendar_events table not found - skipping calendar_id column");
+      console.info(
+        "  ℹ️  calendar_events table not found - skipping calendar_id column"
+      );
     }
 
     if (calendarEventsTableExists) {
@@ -1239,20 +1279,63 @@ export async function runAutoMigrations() {
         `);
         console.info("  ✅ Added idx_calendar_events_calendar_id index");
       } catch (indexError) {
-        const indexErrMsg = indexError instanceof Error ? indexError.message : String(indexError);
+        const indexErrMsg =
+          indexError instanceof Error ? indexError.message : String(indexError);
         if (indexErrMsg.includes("Duplicate key name")) {
-          console.info("  ℹ️  idx_calendar_events_calendar_id index already exists");
+          console.info(
+            "  ℹ️  idx_calendar_events_calendar_id index already exists"
+          );
         } else {
-          console.warn("  ⚠️  idx_calendar_events_calendar_id index:", indexErrMsg);
+          console.warn(
+            "  ⚠️  idx_calendar_events_calendar_id index:",
+            indexErrMsg
+          );
         }
       }
     }
 
+    // ========================================================================
+    // PRODUCT_IMAGES TABLE (GF-PHASE0-006, WS-010)
+    // ========================================================================
+    // Create product_images table for photography module
+    // This table stores images associated with batches and products
+    // Required for photography workflow - missing table was blocking GF-001, GF-007
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS product_images (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          batch_id INT NULL,
+          product_id INT NULL,
+          image_url VARCHAR(500) NOT NULL,
+          thumbnail_url VARCHAR(500) NULL,
+          caption VARCHAR(255) NULL,
+          is_primary BOOLEAN DEFAULT FALSE,
+          sort_order INT DEFAULT 0,
+          status ENUM('PENDING', 'APPROVED', 'REJECTED', 'ARCHIVED') DEFAULT 'APPROVED',
+          uploaded_by INT NULL,
+          uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_batch_images (batch_id),
+          INDEX idx_product_images (product_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.info("  ✅ Created product_images table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info("  ℹ️  product_images table already exists");
+      } else {
+        console.warn("  ⚠️  product_images table:", errMsg);
+      }
+    }
+
     const duration = Date.now() - startTime;
-    console.log(`✅ Auto-migrations completed in ${duration}ms`);
+    console.info(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
   } catch (error) {
-    logger.error({ error: error instanceof Error ? error.message : String(error) }, "Auto-migration error");
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Auto-migration error"
+    );
     // Don't throw - allow app to start even if migrations fail
   }
 }
