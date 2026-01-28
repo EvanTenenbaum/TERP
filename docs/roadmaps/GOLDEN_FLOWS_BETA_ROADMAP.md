@@ -607,11 +607,11 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 
 ---
 
-#### GF-PHASE0-002: Fix Sales Rep RBAC Failure
+#### GF-PHASE0-002: Fix Sales Rep RBAC Failure (VERIFIED - Working)
 
 **Task ID:** GF-PHASE0-002
 **Source:** BUG-111, FINDING-01, FINDING-03
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** RED
@@ -657,7 +657,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE0-003
 **Source:** DATA-026, FINDING-06
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -719,7 +719,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE0-004
 **Source:** GOLDEN_FLOWS_PROD_READY_PLAN Workstream 0C
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** RED
@@ -962,7 +962,7 @@ If issues occur, re-deploy workaround code (commit 893f0589).
 
 **Task ID:** GF-PHASE0-007
 **Source:** BUG-112 Investigation (Jan 27), PR #331 Database Audit
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -1192,7 +1192,7 @@ Review audit findings and create prioritized remediation plan.
 
 **Task ID:** GF-PHASE1-001
 **Source:** BUG-112, FINDING-05
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1241,7 +1241,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE1-002
 **Source:** BUG-114, FINDING-08
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1290,7 +1290,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE1-003
 **Source:** BUG-115, FINDING-13
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1336,7 +1336,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE1-004
 **Source:** BUG-113, FINDING-07
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 8h
 **Mode:** STRICT
@@ -1387,7 +1387,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE1-005
 **Source:** BUG-116, FINDING-12
-**Status:** ready
+**Status:** verified
 **Priority:** LOW
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1436,7 +1436,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE1-006
 **Source:** FINDING-02
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1517,7 +1517,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE2-001
 **Source:** WSQA-001, golden_flows.md analysis
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1574,7 +1574,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE2-002
 **Source:** GF-005 NOT TESTED status
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** STRICT
@@ -1623,7 +1623,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE2-003
 **Source:** ACC-001 fix verification, TEAM_ACTION_PROMPT ACC-001/002
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** RED
@@ -1665,7 +1665,7 @@ SELECT SUM(debit) - SUM(credit) as balance FROM gl_entries WHERE source_type = '
 
 **Task ID:** GF-PHASE2-004
 **Source:** GF-003 integration
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** STRICT
@@ -1739,7 +1739,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE2-005
 **Source:** QA Verification Report 2026-01-27 (TERP-0012 Phase 2)
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1776,7 +1776,7 @@ GLReversalStatus, InvoiceGLStatus, ReturnGLStatus components exist in `client/sr
 
 **Task ID:** GF-PHASE2-006
 **Source:** QA Verification Report 2026-01-27 (TERP-0012 Phase 5)
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** STRICT
@@ -1817,7 +1817,7 @@ OrderCOGSDetails (366 lines) and GLEntriesViewer (265 lines) components exist bu
 #### GF-PHASE3-001: Verify Sales Flows with Sales Rep Role
 
 **Task ID:** GF-PHASE3-001
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -1849,7 +1849,7 @@ OrderCOGSDetails (366 lines) and GLEntriesViewer (265 lines) components exist bu
 #### GF-PHASE3-002: Verify Inventory Flows with Inventory Role
 
 **Task ID:** GF-PHASE3-002
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -1879,7 +1879,7 @@ OrderCOGSDetails (366 lines) and GLEntriesViewer (265 lines) components exist bu
 #### GF-PHASE3-003: Verify Accounting Flows with Accounting Role
 
 **Task ID:** GF-PHASE3-003
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -1911,7 +1911,7 @@ OrderCOGSDetails (366 lines) and GLEntriesViewer (265 lines) components exist bu
 #### GF-PHASE3-004: Verify Fulfillment Flows with Fulfillment Role
 
 **Task ID:** GF-PHASE3-004
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -1941,7 +1941,7 @@ OrderCOGSDetails (366 lines) and GLEntriesViewer (265 lines) components exist bu
 #### GF-PHASE3-005: Verify Read-Only Auditor Access
 
 **Task ID:** GF-PHASE3-005
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** RED
@@ -1997,7 +1997,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 #### GF-PHASE4-001: E2E Test for GF-001 Direct Intake
 
 **Task ID:** GF-PHASE4-001
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** STRICT
@@ -2035,7 +2035,7 @@ describe("GF-001: Direct Intake", () => {
 #### GF-PHASE4-002: E2E Test for GF-003 Order-to-Cash
 
 **Task ID:** GF-PHASE4-002
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 16h
 **Mode:** STRICT
@@ -2058,7 +2058,7 @@ describe("GF-001: Direct Intake", () => {
 #### GF-PHASE4-003: E2E Tests for Remaining Flows
 
 **Task ID:** GF-PHASE4-003
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 24h
 **Mode:** STRICT
@@ -2078,7 +2078,7 @@ describe("GF-001: Direct Intake", () => {
 #### GF-PHASE4-004: CI Integration for Golden Flow Tests
 
 **Task ID:** GF-PHASE4-004
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** STRICT
@@ -2127,7 +2127,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE5-001
 **Source:** TEST-INFRA-07, TEST-INFRA-08, TEST-INFRA-09
-**Status:** ready
+**Status:** verified
 **Priority:** MEDIUM
 **Estimate:** 8h
 **Mode:** SAFE
@@ -2145,7 +2145,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 #### GF-PHASE5-002: Update Golden Flow Documentation
 
 **Task ID:** GF-PHASE5-002
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** SAFE
@@ -2165,7 +2165,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 #### GF-PHASE5-003: Security Review for Beta
 
 **Task ID:** GF-PHASE5-003
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -2185,7 +2185,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 #### GF-PHASE5-004: Beta Testing Checklist
 
 **Task ID:** GF-PHASE5-004
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** SAFE
@@ -2205,7 +2205,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 **Task ID:** GF-PHASE5-005
 **Source:** BUG-103 (MASTER_ROADMAP)
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** RED
@@ -2233,7 +2233,7 @@ The QA Role Switcher panel displays a visible password hint "TerpQA2026!" on the
 
 **Task ID:** GF-PHASE5-006
 **Source:** BUG-107 (MASTER_ROADMAP)
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 1h
 **Mode:** RED
@@ -2324,7 +2324,7 @@ Based on the comprehensive database audit (GF-PHASE0-008), this phase addresses:
 
 **Task ID:** INFRA-DB-001
 **Source:** PR #331 Database Audit (Issues #4-8, #13-18)
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 8h
 **Mode:** RED
@@ -2362,7 +2362,7 @@ Based on the comprehensive database audit (GF-PHASE0-008), this phase addresses:
 
 **Task ID:** INFRA-DB-002
 **Source:** PR #331 Database Audit (Issues #9, #11)
-**Status:** ready
+**Status:** verified
 **Priority:** HIGH
 **Estimate:** 4h
 **Mode:** RED
