@@ -37,7 +37,8 @@ function assertAdminSetupAllowed(): void {
 }
 
 // SEC-012: In-memory rate limiter for admin setup endpoints
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+// Exported for test cleanup only
+export const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 5; // 5 requests per minute
 

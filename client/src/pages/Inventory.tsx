@@ -164,7 +164,8 @@ export default function Inventory() {
         const batch = item.batch;
         const product = item.product;
         const brand = item.brand;
-        const vendor = item.vendor;
+        // BUG-122: Use supplierClient instead of deprecated vendor field
+        const supplierClient = item.supplierClient;
 
         const onHand = batch ? parseFloat(batch.onHandQty) : 0;
         const reserved = batch ? parseFloat(batch.reservedQty) : 0;
@@ -178,7 +179,7 @@ export default function Inventory() {
           productName: product?.nameCanonical || "",
           category: product?.category || "",
           subcategory: product?.subcategory || "",
-          vendor: vendor?.name || "",
+          vendor: supplierClient?.name || "",
           brand: brand?.name || "",
           grade: batch?.grade || "",
           status: batch?.batchStatus || "",
@@ -426,7 +427,8 @@ export default function Inventory() {
           category: item.category,
           subcategory: item.subcategory,
         },
-        vendor: {
+        // BUG-122: Use supplierClient to match database query result structure
+        supplierClient: {
           name: item.vendorName,
         },
         brand: {
@@ -474,7 +476,8 @@ export default function Inventory() {
       const batch = item.batch;
       const product = item.product;
       const brand = item.brand;
-      const vendor = item.vendor;
+      // BUG-122: Use supplierClient instead of deprecated vendor field
+      const supplierClient = item.supplierClient;
 
       if (!batch) return false;
 
@@ -496,10 +499,10 @@ export default function Inventory() {
         return false;
       }
 
-      // Vendor filter
+      // Vendor filter (using supplierClient for canonical supplier data)
       if (
         filters.vendor.length > 0 &&
-        !filters.vendor.includes(vendor?.name || "")
+        !filters.vendor.includes(supplierClient?.name || "")
       ) {
         return false;
       }
@@ -788,7 +791,7 @@ export default function Inventory() {
           vendors={Array.from(
             new Set(
               inventoryData
-                ?.map(i => i.vendor?.name)
+                ?.map(i => i.supplierClient?.name)
                 .filter((v): v is string => Boolean(v)) || []
             )
           )}
@@ -1052,7 +1055,8 @@ export default function Inventory() {
                     const batch = item.batch;
                     const product = item.product;
                     const brand = item.brand;
-                    const vendor = item.vendor;
+                    // BUG-122: Use supplierClient instead of deprecated vendor field
+                    const supplierClient = item.supplierClient;
 
                     if (!batch) return null;
 
@@ -1116,7 +1120,7 @@ export default function Inventory() {
                         </TableCell>
                         <TableCell>
                           <SearchHighlight
-                            text={vendor?.name || "Unknown"}
+                            text={supplierClient?.name || "Unknown"}
                             query={debouncedSearch}
                           />
                         </TableCell>
@@ -1292,7 +1296,8 @@ export default function Inventory() {
                 const batch = item.batch;
                 const product = item.product;
                 const brand = item.brand;
-                const vendor = item.vendor;
+                // BUG-122: Use supplierClient instead of deprecated vendor field
+                const supplierClient = item.supplierClient;
 
                 if (!batch) return null;
 
@@ -1306,7 +1311,7 @@ export default function Inventory() {
                       sku: batch.sku,
                       productName: product?.nameCanonical || "Unknown",
                       brandName: brand?.name || "Unknown",
-                      vendorName: vendor?.name || "Unknown",
+                      vendorName: supplierClient?.name || "Unknown",
                       grade: batch.grade || "-",
                       status: batch.batchStatus,
                       onHandQty: batch.onHandQty,

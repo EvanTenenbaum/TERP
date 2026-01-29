@@ -63,7 +63,8 @@ export type InventoryBatchRecord = {
     code?: string | null;
     date?: Date | null;
   } | null;
-  vendor: {
+  // BUG-122: Use supplierClient instead of deprecated vendor field
+  supplierClient: {
     name?: string | null;
   } | null;
   intakeQty?: number | null; // TERP-SS-004: Original intake quantity from first inventory movement
@@ -117,9 +118,9 @@ export function transformInventoryRecord(
 
   return {
     id: record.batch.id,
-    vendorCode: record.lot?.code ?? record.vendor?.name ?? null,
+    vendorCode: record.lot?.code ?? record.supplierClient?.name ?? null,
     lotDate: formatDate(record.lot?.date),
-    source: record.brand?.name ?? record.vendor?.name ?? null,
+    source: record.brand?.name ?? record.supplierClient?.name ?? null,
     category: record.product?.category ?? null,
     item: record.product?.nameCanonical ?? null,
     available,

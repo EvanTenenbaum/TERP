@@ -143,8 +143,9 @@ describe("spreadsheetViewService", () => {
       expect(row.intake).toBe(75); // Should extract from metadata
     });
 
-    // QA-W2-003: Test vendorCode fallback to vendor name
-    it("falls back to vendor name when lot code is missing", () => {
+    // QA-W2-003: Test vendorCode fallback to supplier client name
+    // BUG-122: Updated to use supplierClient instead of deprecated vendor field
+    it("falls back to supplier client name when lot code is missing", () => {
       const record: InventoryBatchRecord = {
         batch: {
           id: 5,
@@ -164,11 +165,11 @@ describe("spreadsheetViewService", () => {
         product: null,
         brand: null,
         lot: { code: undefined, date: undefined },
-        vendor: { name: "Fallback Vendor" },
+        supplierClient: { name: "Fallback Supplier" },
       };
 
       const row = transformInventoryRecord(record);
-      expect(row.vendorCode).toBe("Fallback Vendor");
+      expect(row.vendorCode).toBe("Fallback Supplier");
     });
   });
 

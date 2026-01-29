@@ -77,6 +77,7 @@ import { appRouter } from "../routers";
 import type { TrpcContext } from "../_core/context";
 import { isPublicDemoUser } from "../_core/context";
 import * as permissionService from "../services/permissionService";
+import { rateLimitMap } from "./adminSetup";
 
 // ============================================================================
 // TEST FIXTURES
@@ -164,6 +165,8 @@ describe("Admin Setup Router Security (SEC-027)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // TEST-030: Clear rate limiter state between tests to prevent interference
+    rateLimitMap.clear();
     // Set up environment variable for setup key
     process.env.ADMIN_SETUP_KEY = VALID_SETUP_KEY;
     // Reset permission mocks to deny by default

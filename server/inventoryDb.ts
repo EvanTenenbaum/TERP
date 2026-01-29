@@ -876,16 +876,14 @@ export async function getBatchesWithDetails(
       product: products,
       brand: brands,
       lot: lots,
-      vendor: vendors,
-      // Also select supplier client data as fallback for deprecated vendor table
+      // BUG-122: Removed deprecated vendor field - use supplierClient instead
       supplierClient: clients,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(lots, eq(batches.lotId, lots.id))
-    .leftJoin(vendors, eq(lots.vendorId, vendors.id))
-    // BUG-098 FIX: Add canonical supplier join as fallback
+    // BUG-122: Removed deprecated vendors join - using canonical clients table instead
     .leftJoin(clients, eq(lots.supplierClientId, clients.id))
     .orderBy(desc(batches.id))
     .limit(limit + 1); // Fetch one extra to determine if there are more results
@@ -917,10 +915,10 @@ export async function searchBatches(
 
   // Build where conditions
   // BUG-098 FIX: Also search in clients.name for canonical supplier data
+  // BUG-122: Removed vendors.name - using clients.name for supplier search instead
   const searchCondition = sql`${batches.sku} LIKE ${`%${query}%`}
       OR ${batches.code} LIKE ${`%${query}%`}
       OR ${products.nameCanonical} LIKE ${`%${query}%`}
-      OR ${vendors.name} LIKE ${`%${query}%`}
       OR ${clients.name} LIKE ${`%${query}%`}
       OR ${brands.name} LIKE ${`%${query}%`}
       OR ${products.category} LIKE ${`%${query}%`}
@@ -934,20 +932,20 @@ export async function searchBatches(
 
   // Multi-field search with cursor-based pagination
   // BUG-098 FIX: Also join clients table for canonical supplier data
+  // BUG-122: Removed deprecated vendor field - use supplierClient instead
   const result = await db
     .select({
       batch: batches,
       product: products,
       brand: brands,
       lot: lots,
-      vendor: vendors,
       supplierClient: clients,
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(lots, eq(batches.lotId, lots.id))
-    .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+    // BUG-122: Removed deprecated vendors join - using canonical clients table instead
     .leftJoin(clients, eq(lots.supplierClientId, clients.id))
     .where(and(...conditions))
     .orderBy(desc(batches.id))
