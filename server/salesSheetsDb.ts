@@ -10,13 +10,14 @@ import {
   orders,
   products,
   lots,
-  vendors,
-  strains,
   type SalesSheetHistory,
   type SalesSheetTemplate,
   type SalesSheetDraft,
 } from "../drizzle/schema";
-import { liveShoppingSessions, sessionCartItems } from "../drizzle/schema-live-shopping";
+import {
+  liveShoppingSessions,
+  sessionCartItems,
+} from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
 
@@ -24,21 +25,18 @@ import { logger } from "./_core/logger";
 // TYPES
 // ============================================================================
 
+// SCHEMA-015: Removed strain and vendor ID fields (not in production schema)
 export interface PricedInventoryItem {
   id: number;
   productId?: number; // WSQA-002: Product ID for flexible lot selection
   name: string;
   category?: string;
   subcategory?: string;
-  strain?: string;
-  strainId?: number;
-  strainFamily?: string; // Base strain name for grouping (e.g., "Runtz" for "White Runtz")
   basePrice: number;
   retailPrice: number;
   quantity: number;
   grade?: string;
-  vendor?: string;
-  vendorId?: number;
+  vendor?: string; // Supplier name for backward compatibility
   status?: string; // INV-CONSISTENCY-002: Include batch status for display/filtering
   priceMarkup: number;
   appliedRules: Array<{
@@ -101,14 +99,13 @@ export async function getInventoryWithPricing(
       "Fetching inventory batches with details"
     );
 
-    // FIX: Try query with strains join, fall back to simpler query if schema doesn't support it
-    // This handles the case where products.strainId column doesn't exist in production DB
+    // SCHEMA-015: Removed strainId and vendors joins - columns don't exist in production
+    // Use clients table for supplier data via supplierClientId
     let inventoryWithDetails: Array<{
       batch: typeof batches.$inferSelect;
       product: typeof products.$inferSelect | null;
       lot: typeof lots.$inferSelect | null;
-      vendor: typeof vendors.$inferSelect | null;
-      strain: typeof strains.$inferSelect | null;
+      supplier: typeof clients.$inferSelect | null;
     }>;
 
     try {
@@ -119,14 +116,15 @@ export async function getInventoryWithPricing(
           batch: batches,
           product: products,
           lot: lots,
-          vendor: vendors,
-          strain: strains,
+          supplier: clients,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
-        .leftJoin(vendors, eq(lots.vendorId, vendors.id))
-        .leftJoin(strains, eq(products.strainId, strains.id))
+        .leftJoin(
+          clients,
+          and(eq(lots.supplierClientId, clients.id), eq(clients.isSeller, true))
+        )
         .where(
           and(
             sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) > 0`,
@@ -139,21 +137,19 @@ export async function getInventoryWithPricing(
       // Log the actual error for debugging
       logger.warn(
         { error: queryError, clientId },
-        "Inventory query with strains failed, falling back to simpler query"
+        "Inventory query failed, falling back to simpler query"
       );
 
-      // Fallback query without strains join (in case strainId column doesn't exist)
+      // Fallback query without joins in case of other schema issues
       const fallbackResults = await db
         .select({
           batch: batches,
           product: products,
           lot: lots,
-          vendor: vendors,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
-        .leftJoin(vendors, eq(lots.vendorId, vendors.id))
         .where(
           and(
             sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) > 0`,
@@ -163,10 +159,10 @@ export async function getInventoryWithPricing(
         .limit(limit)
         .offset(offset);
 
-      // Map fallback results to expected format with null strain
+      // Map fallback results to expected format with null supplier
       inventoryWithDetails = fallbackResults.map(row => ({
         ...row,
-        strain: null,
+        supplier: null,
       }));
     }
 
@@ -205,22 +201,19 @@ export async function getInventoryWithPricing(
     // Convert batches to inventory items format with joined data
     // FIX: Filter out any null batches (shouldn't happen but defensive)
     // INV-CONSISTENCY-002: Include status for display/filtering
+    // SCHEMA-015: Updated to use supplier instead of vendor, removed strain fields
     const inventoryItems = inventoryWithDetails
       .filter(({ batch }) => batch !== null && batch !== undefined)
-      .map(({ batch, product, vendor, strain }) => ({
+      .map(({ batch, product, supplier }) => ({
         id: batch.id,
         productId: product?.id || undefined, // WSQA-002: Include productId for flexible lot selection
         name: product?.nameCanonical || batch.sku || `Batch #${batch.id}`,
         category: product?.category || undefined,
         subcategory: product?.subcategory || undefined,
-        strain: strain?.name || undefined,
-        strainId: strain?.id || undefined,
-        strainFamily: strain?.baseStrainName || strain?.name || undefined,
         basePrice: parseNumber(batch.unitCogs, 0),
         quantity: parseNumber(batch.onHandQty, 0),
         grade: batch.grade || undefined,
-        vendor: vendor?.name || undefined,
-        vendorId: vendor?.id || undefined,
+        vendor: supplier?.name || undefined, // Keep 'vendor' key name for backward compatibility
         status: batch.batchStatus || undefined,
       }));
 
@@ -234,14 +227,12 @@ export async function getInventoryWithPricing(
       // Ensure all items have quantity defined and preserve new fields
       // INV-CONSISTENCY-002: Include status for display/filtering
       // WSQA-002: Include productId for flexible lot selection
+      // SCHEMA-015: Removed strainId, strainFamily, vendorId (not in production schema)
       return pricedItems.map((item, index) => ({
         ...item,
         quantity: item.quantity || 0,
         // Preserve joined fields that pricing engine doesn't know about
         productId: inventoryItems[index].productId,
-        strainId: inventoryItems[index].strainId,
-        strainFamily: inventoryItems[index].strainFamily,
-        vendorId: inventoryItems[index].vendorId,
         status: inventoryItems[index].status,
       }));
     } catch (pricingError) {
@@ -261,10 +252,7 @@ export async function getInventoryWithPricing(
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Unknown error";
-    logger.error(
-      { error: errorMsg, clientId },
-      "Error fetching inventory"
-    );
+    logger.error({ error: errorMsg, clientId }, "Error fetching inventory");
 
     // Provide specific error message based on error type
     if (errorMsg.includes("timeout") || errorMsg.includes("ETIMEDOUT")) {
@@ -623,7 +611,7 @@ export async function listSalesSheets(
   const sheets = await db
     .select()
     .from(salesSheetHistory)
-    .where(baseQuery as any)
+    .where(baseQuery)
     .orderBy(desc(salesSheetHistory.createdAt))
     .limit(limit)
     .offset(offset);
@@ -632,7 +620,7 @@ export async function listSalesSheets(
   const countResult = await db
     .select()
     .from(salesSheetHistory)
-    .where(baseQuery as any);
+    .where(baseQuery);
 
   return {
     sheets,
@@ -819,17 +807,25 @@ export async function convertToLiveSession(
   const sessionId = Number(sessionResult[0].insertId);
 
   // Add items from the sales sheet to the session
-  const items = sheet.items as any[];
+  interface SheetItem {
+    id: number;
+    name?: string;
+    quantity?: number;
+    finalPrice?: number;
+    retailPrice?: number;
+    basePrice?: number;
+  }
+  const items = sheet.items as unknown as SheetItem[];
   if (items && items.length > 0) {
     // Fetch all batches at once to avoid N+1 queries
-    const batchIds = items.map((item) => item.id).filter(Boolean);
+    const batchIds = items.map(item => item.id).filter(Boolean);
     const batchesData = await db
       .select()
       .from(batches)
       .where(inArray(batches.id, batchIds));
 
     // Create a map for quick lookup
-    const batchMap = new Map(batchesData.map((b) => [b.id, b]));
+    const batchMap = new Map(batchesData.map(b => [b.id, b]));
 
     // Track items that couldn't be added
     const skippedItems: string[] = [];
@@ -839,7 +835,9 @@ export async function convertToLiveSession(
       if (batch) {
         // Validate required fields before inserting
         if (!batch.productId) {
-          skippedItems.push(`${item.name || `Item #${item.id}`} (missing productId)`);
+          skippedItems.push(
+            `${item.name || `Item #${item.id}`} (missing productId)`
+          );
           continue;
         }
         await db.insert(sessionCartItems).values({
@@ -847,7 +845,12 @@ export async function convertToLiveSession(
           batchId: item.id,
           productId: batch.productId,
           quantity: item.quantity?.toString() || "1",
-          unitPrice: (item.finalPrice || item.retailPrice || item.basePrice)?.toString() || "0",
+          unitPrice:
+            (
+              item.finalPrice ||
+              item.retailPrice ||
+              item.basePrice
+            )?.toString() || "0",
           addedByRole: "HOST",
           itemStatus: "TO_PURCHASE",
         });
@@ -898,7 +901,7 @@ export interface SavedViewData {
   };
   sort: {
     field: string;
-    direction: 'asc' | 'desc';
+    direction: "asc" | "desc";
   };
   columnVisibility: {
     category: boolean;
@@ -986,18 +989,20 @@ export async function saveView(data: SavedViewData): Promise<number> {
 export async function getViews(
   clientId?: number,
   userId?: number
-): Promise<Array<{
-  id: number;
-  name: string;
-  description: string | null;
-  clientId: number | null;
-  filters: SavedViewData['filters'];
-  sort: SavedViewData['sort'];
-  columnVisibility: SavedViewData['columnVisibility'];
-  isDefault: boolean;
-  createdAt: Date | null;
-  lastUsedAt: Date | null;
-}>> {
+): Promise<
+  Array<{
+    id: number;
+    name: string;
+    description: string | null;
+    clientId: number | null;
+    filters: SavedViewData["filters"];
+    sort: SavedViewData["sort"];
+    columnVisibility: SavedViewData["columnVisibility"];
+    isDefault: boolean;
+    createdAt: Date | null;
+    lastUsedAt: Date | null;
+  }>
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1026,15 +1031,27 @@ export async function getViews(
     .where(conditions.length > 0 ? conditions[0] : undefined)
     .orderBy(desc(salesSheetTemplates.createdAt));
 
-  return templates.map((t) => {
-    const filtersData = t.filters as any;
+  return templates.map(t => {
+    interface FiltersData {
+      search?: string;
+      categories?: string[];
+      grades?: string[];
+      priceMin?: number | null;
+      priceMax?: number | null;
+      strainFamilies?: string[];
+      vendors?: string[];
+      inStockOnly?: boolean;
+      _sort?: { field: string; direction: "asc" | "desc" };
+      _isDefault?: boolean;
+    }
+    const filtersData = t.filters as unknown as FiltersData;
     return {
       id: t.id,
       name: t.name,
       description: t.description,
       clientId: t.clientId,
       filters: {
-        search: filtersData?.search ?? '',
+        search: filtersData?.search ?? "",
         categories: filtersData?.categories ?? [],
         grades: filtersData?.grades ?? [],
         priceMin: filtersData?.priceMin ?? null,
@@ -1043,17 +1060,18 @@ export async function getViews(
         vendors: filtersData?.vendors ?? [],
         inStockOnly: filtersData?.inStockOnly ?? false,
       },
-      sort: filtersData?._sort ?? { field: 'name', direction: 'asc' },
-      columnVisibility: (t.columnVisibility as SavedViewData['columnVisibility']) ?? {
-        category: true,
-        quantity: true,
-        basePrice: true,
-        retailPrice: true,
-        markup: true,
-        grade: false,
-        vendor: false,
-        strain: false,
-      },
+      sort: filtersData?._sort ?? { field: "name", direction: "asc" },
+      columnVisibility:
+        (t.columnVisibility as SavedViewData["columnVisibility"]) ?? {
+          category: true,
+          quantity: true,
+          basePrice: true,
+          retailPrice: true,
+          markup: true,
+          grade: false,
+          vendor: false,
+          strain: false,
+        },
       isDefault: filtersData?._isDefault ?? false,
       createdAt: t.createdAt,
       lastUsedAt: t.lastUsedAt,
@@ -1065,14 +1083,17 @@ export async function getViews(
  * Load a specific view by ID
  * FIX: Added userId for authorization - users can only load their own views or universal views
  */
-export async function loadViewById(viewId: number, userId?: number): Promise<{
+export async function loadViewById(
+  viewId: number,
+  userId?: number
+): Promise<{
   id: number;
   name: string;
   description: string | null;
   clientId: number | null;
-  filters: SavedViewData['filters'];
-  sort: SavedViewData['sort'];
-  columnVisibility: SavedViewData['columnVisibility'];
+  filters: SavedViewData["filters"];
+  sort: SavedViewData["sort"];
+  columnVisibility: SavedViewData["columnVisibility"];
   isDefault: boolean;
 } | null> {
   const db = await getDb();
@@ -1099,7 +1120,19 @@ export async function loadViewById(viewId: number, userId?: number): Promise<{
   }
 
   const t = result[0];
-  const filtersData = t.filters as any;
+  interface FiltersData {
+    search?: string;
+    categories?: string[];
+    grades?: string[];
+    priceMin?: number | null;
+    priceMax?: number | null;
+    strainFamilies?: string[];
+    vendors?: string[];
+    inStockOnly?: boolean;
+    _sort?: { field: string; direction: "asc" | "desc" };
+    _isDefault?: boolean;
+  }
+  const filtersData = t.filters as unknown as FiltersData;
 
   // Update lastUsedAt
   await db
@@ -1113,7 +1146,7 @@ export async function loadViewById(viewId: number, userId?: number): Promise<{
     description: t.description,
     clientId: t.clientId,
     filters: {
-      search: filtersData?.search ?? '',
+      search: filtersData?.search ?? "",
       categories: filtersData?.categories ?? [],
       grades: filtersData?.grades ?? [],
       priceMin: filtersData?.priceMin ?? null,
@@ -1122,17 +1155,18 @@ export async function loadViewById(viewId: number, userId?: number): Promise<{
       vendors: filtersData?.vendors ?? [],
       inStockOnly: filtersData?.inStockOnly ?? false,
     },
-    sort: filtersData?._sort ?? { field: 'name', direction: 'asc' },
-    columnVisibility: (t.columnVisibility as SavedViewData['columnVisibility']) ?? {
-      category: true,
-      quantity: true,
-      basePrice: true,
-      retailPrice: true,
-      markup: true,
-      grade: false,
-      vendor: false,
-      strain: false,
-    },
+    sort: filtersData?._sort ?? { field: "name", direction: "asc" },
+    columnVisibility:
+      (t.columnVisibility as SavedViewData["columnVisibility"]) ?? {
+        category: true,
+        quantity: true,
+        basePrice: true,
+        retailPrice: true,
+        markup: true,
+        grade: false,
+        vendor: false,
+        strain: false,
+      },
     isDefault: filtersData?._isDefault ?? false,
   };
 }
@@ -1172,8 +1206,20 @@ export async function setDefaultView(
     .where(eq(salesSheetTemplates.clientId, clientId));
 
   // Clear defaults in batch (reduces N+1 queries)
+  interface FiltersData {
+    search?: string;
+    categories?: string[];
+    grades?: string[];
+    priceMin?: number | null;
+    priceMax?: number | null;
+    strainFamilies?: string[];
+    vendors?: string[];
+    inStockOnly?: boolean;
+    _sort?: { field: string; direction: "asc" | "desc" };
+    _isDefault?: boolean;
+  }
   for (const view of clientViews) {
-    const filtersData = view.filters as any;
+    const filtersData = view.filters as unknown as FiltersData;
     if (filtersData?._isDefault && view.id !== viewId) {
       await db
         .update(salesSheetTemplates)
@@ -1185,7 +1231,7 @@ export async function setDefaultView(
   }
 
   // Set the new default
-  const filtersData = targetView[0].filters as any;
+  const filtersData = targetView[0].filters as unknown as FiltersData;
   await db
     .update(salesSheetTemplates)
     .set({
@@ -1199,7 +1245,10 @@ export async function setDefaultView(
  * Delete a saved view
  * FIX: Added ownership validation to prevent unauthorized deletions
  */
-export async function deleteView(viewId: number, userId: number): Promise<void> {
+export async function deleteView(
+  viewId: number,
+  userId: number
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 

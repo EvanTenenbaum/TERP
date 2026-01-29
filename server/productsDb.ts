@@ -89,16 +89,15 @@ export async function getProducts(options: ProductFilters = {}) {
     fullConditions.push(eq(products.strainId, strainId));
   }
 
-  // BUG-110: Try-catch fallback for schema drift (strainId may not exist in production)
-  // QA-001 FIX: Fallback uses baseConditions (without strainId filter)
-  // QA-003 FIX: Only fallback for schema errors, re-throw others
+  // SCHEMA-015: Removed strainId join - column doesn't exist in production
+  // Still have try-catch for other potential schema issues
   let result;
   try {
     result = await db
       .select({
         id: products.id,
         brandId: products.brandId,
-        strainId: products.strainId,
+        strainId: sql<number | null>`NULL`.as("strainId"),
         nameCanonical: products.nameCanonical,
         category: products.category,
         subcategory: products.subcategory,
@@ -109,13 +108,12 @@ export async function getProducts(options: ProductFilters = {}) {
         deletedAt: products.deletedAt,
         // Join brand name
         brandName: brands.name,
-        // Join strain name
-        strainName: strains.name,
+        // No strain name - strainId column doesn't exist in production
+        strainName: sql<string | null>`NULL`.as("strainName"),
       })
       .from(products)
       .leftJoin(brands, eq(products.brandId, brands.id))
-      .leftJoin(strains, eq(products.strainId, strains.id))
-      .where(fullConditions.length > 0 ? and(...fullConditions) : undefined)
+      .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
       .orderBy(desc(products.updatedAt))
       .limit(limit)
       .offset(offset);
@@ -125,10 +123,10 @@ export async function getProducts(options: ProductFilters = {}) {
       throw queryError;
     }
 
-    // Fallback: Query without strains join if strainId column doesn't exist
+    // Fallback: Query without brand join in case of other schema issues
     logger.warn(
       { error: queryError },
-      "getProducts: Query with strains join failed, falling back to simpler query"
+      "getProducts: Query failed, falling back to simpler query without joins"
     );
 
     // QA-001 FIX: If strainId filter was requested but column doesn't exist,
@@ -154,11 +152,10 @@ export async function getProducts(options: ProductFilters = {}) {
         createdAt: products.createdAt,
         updatedAt: products.updatedAt,
         deletedAt: products.deletedAt,
-        brandName: brands.name,
+        brandName: sql<string | null>`NULL`.as("brandName"),
         strainName: sql<string | null>`NULL`.as("strainName"),
       })
       .from(products)
-      .leftJoin(brands, eq(products.brandId, brands.id))
       .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
       .orderBy(desc(products.updatedAt))
       .limit(limit)
@@ -217,35 +214,20 @@ export async function getProductCount(
     fullConditions.push(eq(products.strainId, strainId));
   }
 
-  // QA-002 FIX: Try-catch fallback for schema drift
-  let result;
-  try {
-    result = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(products)
-      .where(fullConditions.length > 0 ? and(...fullConditions) : undefined);
-  } catch (queryError) {
-    // QA-003: Only fallback for schema-related errors
-    if (!isSchemaError(queryError)) {
-      throw queryError;
-    }
-
+  // SCHEMA-015: strainId column doesn't exist in production, so only use baseConditions
+  // If strainId filter was requested, return 0 since no products can match
+  if (strainId) {
     logger.warn(
-      { error: queryError },
-      "getProductCount: Query failed, falling back to simpler query"
+      { strainId },
+      "getProductCount: strainId filter requested but column doesn't exist, returning 0"
     );
-
-    // If strainId filter was requested but column doesn't exist,
-    // return 0 since no products can match
-    if (strainId) {
-      return 0;
-    }
-
-    result = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(products)
-      .where(baseConditions.length > 0 ? and(...baseConditions) : undefined);
+    return 0;
   }
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(products)
+    .where(baseConditions.length > 0 ? and(...baseConditions) : undefined);
 
   return result[0]?.count ?? 0;
 }
@@ -257,62 +239,27 @@ export async function getProductById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // BUG-110: Try-catch fallback for schema drift (strainId may not exist in production)
-  let result;
-  try {
-    result = await db
-      .select({
-        id: products.id,
-        brandId: products.brandId,
-        strainId: products.strainId,
-        nameCanonical: products.nameCanonical,
-        category: products.category,
-        subcategory: products.subcategory,
-        uomSellable: products.uomSellable,
-        description: products.description,
-        createdAt: products.createdAt,
-        updatedAt: products.updatedAt,
-        deletedAt: products.deletedAt,
-        brandName: brands.name,
-        strainName: strains.name,
-      })
-      .from(products)
-      .leftJoin(brands, eq(products.brandId, brands.id))
-      .leftJoin(strains, eq(products.strainId, strains.id))
-      .where(eq(products.id, id))
-      .limit(1);
-  } catch (queryError) {
-    // QA-003: Only fallback for schema-related errors
-    if (!isSchemaError(queryError)) {
-      throw queryError;
-    }
-
-    // Fallback: Query without strains join if strainId column doesn't exist
-    logger.warn(
-      { error: queryError },
-      "getProductById: Query with strains join failed, falling back to simpler query"
-    );
-    result = await db
-      .select({
-        id: products.id,
-        brandId: products.brandId,
-        strainId: sql<number | null>`NULL`.as("strainId"),
-        nameCanonical: products.nameCanonical,
-        category: products.category,
-        subcategory: products.subcategory,
-        uomSellable: products.uomSellable,
-        description: products.description,
-        createdAt: products.createdAt,
-        updatedAt: products.updatedAt,
-        deletedAt: products.deletedAt,
-        brandName: brands.name,
-        strainName: sql<string | null>`NULL`.as("strainName"),
-      })
-      .from(products)
-      .leftJoin(brands, eq(products.brandId, brands.id))
-      .where(eq(products.id, id))
-      .limit(1);
-  }
+  // SCHEMA-015: Removed strains join - strainId column doesn't exist in production
+  const result = await db
+    .select({
+      id: products.id,
+      brandId: products.brandId,
+      strainId: sql<number | null>`NULL`.as("strainId"),
+      nameCanonical: products.nameCanonical,
+      category: products.category,
+      subcategory: products.subcategory,
+      uomSellable: products.uomSellable,
+      description: products.description,
+      createdAt: products.createdAt,
+      updatedAt: products.updatedAt,
+      deletedAt: products.deletedAt,
+      brandName: brands.name,
+      strainName: sql<string | null>`NULL`.as("strainName"),
+    })
+    .from(products)
+    .leftJoin(brands, eq(products.brandId, brands.id))
+    .where(eq(products.id, id))
+    .limit(1);
 
   return result[0] ?? null;
 }

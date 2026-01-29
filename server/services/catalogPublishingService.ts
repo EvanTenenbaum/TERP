@@ -6,32 +6,10 @@
  */
 
 import { getDb } from "../db";
-import {
-  batches,
-  products,
-  productImages,
-  brands,
-  strains,
-} from "../../drizzle/schema";
+import { batches, products, productImages, brands } from "../../drizzle/schema";
 import { eq, and, isNull, desc, sql } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { safeInArray } from "../lib/sqlSafety";
-
-/**
- * Helper to check if an error is a schema-related error (e.g., missing column)
- * QA-003: Only fallback for schema errors, re-throw others
- */
-function isSchemaError(error: unknown): boolean {
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("unknown column") ||
-      msg.includes("no such column") ||
-      (msg.includes("column") && msg.includes("does not exist"))
-    );
-  }
-  return false;
-}
 
 // ============================================================================
 // TYPES
@@ -336,66 +314,30 @@ export async function getPublishedCatalog(options: {
   }
 
   // Get batches with product info
-  // BUG-113: Added fallback query for schema drift (strainId may not exist)
-  let publishedBatches;
-  try {
-    publishedBatches = await db
-      .select({
-        batch: batches,
-        product: products,
-        brand: brands,
-        strain: strains,
-      })
-      .from(batches)
-      .leftJoin(products, eq(batches.productId, products.id))
-      .leftJoin(brands, eq(products.brandId, brands.id))
-      .leftJoin(strains, eq(products.strainId, strains.id))
-      .where(and(...conditions))
-      .orderBy(desc(batches.updatedAt))
-      .limit(limit)
-      .offset(offset);
-  } catch (queryError) {
-    // QA-003: Only fallback for schema-related errors
-    if (!isSchemaError(queryError)) {
-      throw queryError;
-    }
-
-    // Fallback: Query without strains join if strainId column doesn't exist
-    logger.warn(
-      { error: queryError },
-      "getPublishedCatalog: Query with strains join failed, falling back to simpler query"
-    );
-    const batchesWithoutStrains = await db
-      .select({
-        batch: batches,
-        product: products,
-        brand: brands,
-      })
-      .from(batches)
-      .leftJoin(products, eq(batches.productId, products.id))
-      .leftJoin(brands, eq(products.brandId, brands.id))
-      .where(and(...conditions))
-      .orderBy(desc(batches.updatedAt))
-      .limit(limit)
-      .offset(offset);
-
-    // Map to expected format with null strain
-    publishedBatches = batchesWithoutStrains.map(row => ({
-      ...row,
-      strain: null,
-    }));
-  }
+  // SCHEMA-015: Removed strains join - strainId column doesn't exist in production
+  const publishedBatches = await db
+    .select({
+      batch: batches,
+      product: products,
+      brand: brands,
+    })
+    .from(batches)
+    .leftJoin(products, eq(batches.productId, products.id))
+    .leftJoin(brands, eq(products.brandId, brands.id))
+    .where(and(...conditions))
+    .orderBy(desc(batches.updatedAt))
+    .limit(limit)
+    .offset(offset);
 
   // Apply search filter
   let filteredBatches = publishedBatches;
   if (options.search) {
     const searchLower = options.search.toLowerCase();
     filteredBatches = publishedBatches.filter(
-      ({ batch, product, strain }) =>
+      ({ batch, product }) =>
         batch.sku?.toLowerCase().includes(searchLower) ||
         batch.code?.toLowerCase().includes(searchLower) ||
-        product?.nameCanonical?.toLowerCase().includes(searchLower) ||
-        strain?.name?.toLowerCase().includes(searchLower)
+        product?.nameCanonical?.toLowerCase().includes(searchLower)
     );
   }
 
@@ -441,8 +383,9 @@ export async function getPublishedCatalog(options: {
   }
 
   // Build catalog entries
+  // SCHEMA-015: Removed strain reference - not in production schema
   const catalogItems: CatalogEntry[] = filteredBatches.map(
-    ({ batch, product, brand, strain }) => {
+    ({ batch, product, brand }) => {
       const photos = photoMap.get(batch.id) || [];
       const primaryPhoto = photos.find(p => p.isPrimary);
       const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
@@ -456,7 +399,7 @@ export async function getPublishedCatalog(options: {
         category: product?.category || "Unknown",
         subcategory: product?.subcategory || undefined,
         brandName: brand?.name || undefined,
-        strainName: strain?.name || undefined,
+        strainName: undefined,
         availableQuantity:
           parseFloat(batch.onHandQty || "0") -
           parseFloat(batch.reservedQty || "0"),
