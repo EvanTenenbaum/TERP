@@ -1,0 +1,134 @@
+%% TERP Golden Flow Dependencies
+%% Shows cross-flow touchpoints and module relationships
+
+flowchart TD
+    subgraph Intake["Inventory Intake"]
+        GF001[GF-001: Direct Intake]
+        GF002[GF-002: Procure-to-Pay]
+        FEAT008[FEAT-008: Intake Verification]
+    end
+
+    subgraph Inventory["Inventory Management"]
+        GF007[GF-007: Inventory Management]
+    end
+
+    subgraph Sales["Sales Operations"]
+        GF003[GF-003: Order-to-Cash]
+        GF008[GF-008: Sample Request]
+    end
+
+    subgraph Fulfillment["Order Fulfillment"]
+        GF005[GF-005: Pick & Pack]
+    end
+
+    subgraph Accounting["Accounting"]
+        GF004[GF-004: Invoice & Payment]
+        GF006[GF-006: Client Ledger]
+    end
+
+    %% Intake flows create inventory
+    GF001 -->|creates batches| GF007
+    GF002 -->|creates batches| GF007
+    GF001 -->|triggers| FEAT008
+    FEAT008 -->|activates| GF007
+
+    %% Sales uses inventory
+    GF007 -->|provides available qty| GF003
+    GF007 -->|provides sample qty| GF008
+
+    %% Order-to-Cash spawns other flows
+    GF003 -->|generates invoice| GF004
+    GF003 -->|triggers fulfillment| GF005
+    GF003 -.->|optional conversion| GF008
+
+    %% Fulfillment affects inventory
+    GF005 -->|decrements| GF007
+
+    %% Accounting updates ledger
+    GF004 -->|updates AR| GF006
+    GF002 -->|creates AP| GF004
+
+    %% Samples can convert
+    GF008 -.->|conversion| GF003
+
+    %% Status indicators
+    classDef blocked fill:#ff6b6b,stroke:#c92a2a
+    classDef partial fill:#ffd43b,stroke:#f08c00
+    classDef functional fill:#69db7c,stroke:#2b8a3e
+    classDef implemented fill:#4dabf7,stroke:#1864ab
+
+    class GF001,GF003,GF007 blocked
+    class GF002,GF008 partial
+    class GF005,GF006 functional
+    class GF004 implemented
+
+%% ==========================================
+%% Flow Sequence: Order-to-Cash Happy Path
+%% ==========================================
+
+sequenceDiagram
+    participant U as User (Sales)
+    participant Orders as Orders Module
+    participant Inv as Inventory
+    participant Acct as Accounting
+    participant Fulfill as Fulfillment
+
+    Note over U,Fulfill: GF-003: Order-to-Cash
+
+    U->>Orders: Create Order
+    Orders->>Inv: Check availability
+    Inv-->>Orders: Available qty
+    U->>Orders: Add line items
+    U->>Orders: Confirm order
+
+    Orders->>Inv: Reserve qty (reservedQty++)
+    Inv-->>Orders: Reserved
+
+    Note over U,Fulfill: GF-004: Invoice & Payment
+
+    U->>Acct: Generate invoice
+    Acct->>Orders: Link to order
+    U->>Acct: Record payment
+    Acct->>Acct: Post GL entries
+    Acct->>Acct: Update client balance
+
+    Note over U,Fulfill: GF-005: Pick & Pack
+
+    U->>Fulfill: Pick items
+    U->>Fulfill: Pack to bags
+    U->>Fulfill: Ship order
+
+    Fulfill->>Inv: Decrement qty
+    Fulfill->>Orders: Update status
+
+    U->>Fulfill: Mark delivered
+    Orders-->>U: Order complete
+
+%% ==========================================
+%% Module Relationships
+%% ==========================================
+
+flowchart LR
+    subgraph Core["Core Modules"]
+        Auth[Authentication]
+        CRM[Client Management]
+    end
+
+    subgraph Operations["Business Operations"]
+        INV[Inventory]
+        ORD[Orders]
+        ACCT[Accounting]
+        FULF[Fulfillment]
+        SAMP[Samples]
+    end
+
+    Auth --> CRM
+    CRM --> ORD
+    CRM --> SAMP
+    CRM --> ACCT
+
+    INV --> ORD
+    INV --> SAMP
+    ORD --> ACCT
+    ORD --> FULF
+    FULF --> INV

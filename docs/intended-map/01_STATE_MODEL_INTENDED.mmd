@@ -1,0 +1,163 @@
+%% TERP Intended State Model - Mermaid Diagrams
+%% Source: docs/intended-map/01_STATE_MODEL_INTENDED.md
+
+%% ============================================
+%% ORDER STATE MACHINE
+%% ============================================
+stateDiagram-v2
+    direction LR
+
+    [*] --> draft: Create Order
+
+    draft --> confirmed: Confirm [items valid, inventory available]
+    draft --> cancelled: Cancel
+
+    confirmed --> invoiced: Generate Invoice
+    confirmed --> cancelled: Cancel [before ship]
+
+    invoiced --> shipped: Ship [all items packed]
+
+    shipped --> delivered: Deliver
+
+    cancelled --> [*]
+    delivered --> [*]
+
+    note right of draft: Mutable state
+    note right of confirmed: Inventory reserved
+    note right of shipped: Inventory decremented
+
+%% ============================================
+%% INVOICE STATE MACHINE
+%% ============================================
+stateDiagram-v2
+    direction TB
+
+    [*] --> DRAFT: Generate from Order
+
+    DRAFT --> SENT: Mark Sent
+    DRAFT --> VOID: Void
+
+    SENT --> VIEWED: Customer Views
+    SENT --> PARTIAL: Partial Payment
+    SENT --> PAID: Full Payment
+    SENT --> OVERDUE: Due Date Passed
+    SENT --> VOID: Void
+
+    VIEWED --> PARTIAL: Partial Payment
+    VIEWED --> PAID: Full Payment
+    VIEWED --> OVERDUE: Due Date Passed
+    VIEWED --> VOID: Void
+
+    PARTIAL --> PAID: Full Payment
+    PARTIAL --> OVERDUE: Due Date Passed
+    PARTIAL --> VOID: Void
+
+    OVERDUE --> PARTIAL: Partial Payment
+    OVERDUE --> PAID: Full Payment
+    OVERDUE --> VOID: Void
+
+    PAID --> [*]
+    VOID --> [*]
+
+    note right of PAID: GL entries complete
+    note right of PARTIAL: amountPaid < total
+
+%% ============================================
+%% BATCH (INVENTORY) STATE MACHINE
+%% ============================================
+stateDiagram-v2
+    direction TB
+
+    [*] --> AWAITING_INTAKE: Direct Intake / PO Receipt
+
+    AWAITING_INTAKE --> LIVE: Verify (FEAT-008)
+
+    LIVE --> ON_HOLD: Hold [reason required]
+    LIVE --> QUARANTINED: Quarantine [reason required]
+    LIVE --> SOLD_OUT: availableQty = 0
+    LIVE --> PHOTOGRAPHY_COMPLETE: Photo Complete
+
+    PHOTOGRAPHY_COMPLETE --> ON_HOLD: Hold
+    PHOTOGRAPHY_COMPLETE --> QUARANTINED: Quarantine
+    PHOTOGRAPHY_COMPLETE --> SOLD_OUT: availableQty = 0
+
+    ON_HOLD --> LIVE: Release
+    ON_HOLD --> CLOSED: Close
+
+    QUARANTINED --> LIVE: Release
+    QUARANTINED --> CLOSED: Close
+
+    SOLD_OUT --> CLOSED: Close
+
+    CLOSED --> [*]
+
+    note right of AWAITING_INTAKE: Not sellable
+    note right of LIVE: Sellable
+    note right of QUARANTINED: Qty in quarantineQty
+
+%% ============================================
+%% PURCHASE ORDER STATE MACHINE
+%% ============================================
+stateDiagram-v2
+    direction LR
+
+    [*] --> DRAFT: Create PO
+
+    DRAFT --> SENT: Submit
+    DRAFT --> CANCELLED: Cancel
+
+    SENT --> CONFIRMED: Vendor Confirms
+    SENT --> CANCELLED: Cancel
+
+    CONFIRMED --> RECEIVING: Partial Receipt
+    CONFIRMED --> RECEIVED: Full Receipt
+
+    RECEIVING --> RECEIVED: Complete Receipt
+
+    CANCELLED --> [*]
+    RECEIVED --> [*]
+
+    note right of CONFIRMED: Ready for receiving
+    note right of RECEIVING: Batches created partially
+    note right of RECEIVED: All batches created
+
+%% ============================================
+%% SAMPLE REQUEST STATE MACHINE
+%% ============================================
+stateDiagram-v2
+    direction TB
+
+    [*] --> PENDING: Create Request
+
+    PENDING --> FULFILLED: Fulfill [sampleQty available]
+    PENDING --> CANCELLED: Cancel
+
+    FULFILLED --> RETURN_REQUESTED: Request Return
+    FULFILLED --> VENDOR_RETURN_REQUESTED: Vendor Return
+
+    RETURN_REQUESTED --> RETURNED: Complete Return
+
+    CANCELLED --> [*]
+    RETURNED --> [*]
+    VENDOR_RETURN_REQUESTED --> [*]
+
+    note right of FULFILLED: UI shows "Approved"
+    note right of RETURNED: sampleQty restored
+
+%% ============================================
+%% FISCAL PERIOD STATE MACHINE
+%% ============================================
+stateDiagram-v2
+    direction LR
+
+    [*] --> OPEN: Create Period
+
+    OPEN --> CLOSED: Close Period
+
+    CLOSED --> OPEN: Reopen
+    CLOSED --> LOCKED: Lock
+
+    LOCKED --> [*]
+
+    note right of OPEN: Transactions allowed
+    note right of LOCKED: Permanent, no changes

@@ -1,0 +1,47 @@
+Type,ID,Name,OwnerModule,IntentSource,Status,ImplementationSource,Notes
+GoldenFlow,GF-001,Direct Intake,Inventory,docs/golden-flows/specs/GF-001-DIRECT-INTAKE.md,IntendedMissing,client/src/components/inventory/PurchaseModal.tsx,BLOCKED - BUG-112
+GoldenFlow,GF-002,Procure-to-Pay,Purchasing,docs/golden-flows/specs/GF-002-PROCURE-TO-PAY.md,Divergent,server/routers/purchaseOrders.ts,PARTIAL - Receiving UI missing
+GoldenFlow,GF-003,Order-to-Cash,Sales,docs/golden-flows/specs/GF-003-ORDER-TO-CASH.md,IntendedMissing,server/routers/orders.ts,BLOCKED - SQL error
+GoldenFlow,GF-004,Invoice & Payment,Accounting,docs/golden-flows/specs/GF-004-INVOICE-PAYMENT.md,Intended&Implemented,server/routers/invoices.ts,IMPLEMENTED
+GoldenFlow,GF-005,Pick & Pack,Fulfillment,docs/golden-flows/specs/GF-005-PICK-PACK.md,Intended&Implemented,client/src/pages/PickPackPage.tsx,FUNCTIONAL
+GoldenFlow,GF-006,Client Ledger,Accounting,docs/golden-flows/specs/GF-006-CLIENT-LEDGER.md,Intended&Implemented,client/src/pages/ClientLedger.tsx,FUNCTIONAL
+GoldenFlow,GF-007,Inventory Management,Inventory,docs/golden-flows/specs/GF-007-INVENTORY-MGMT.md,IntendedMissing,client/src/pages/Inventory.tsx,BLOCKED - 0 batches
+GoldenFlow,GF-008,Sample Request,Sales,docs/golden-flows/specs/GF-008-SAMPLE-REQUEST.md,Divergent,client/src/pages/SampleManagement.tsx,PARTIAL - fulfill UI gap
+Invariant,INV-001,Non-negative inventory,Inventory,GOLDEN_FLOWS_BETA_ROADMAP.md,Intended&Implemented,server/routers/inventory.ts,Enforced
+Invariant,INV-002,Order total consistency,Sales,GOLDEN_FLOWS_BETA_ROADMAP.md,Intended&Implemented,server/routers/orders.ts,Enforced
+Invariant,INV-003,Invoice balance accuracy,Accounting,GOLDEN_FLOWS_BETA_ROADMAP.md,Intended&Implemented,server/routers/invoices.ts,Enforced
+Invariant,INV-004,GL balance,Accounting,GOLDEN_FLOWS_BETA_ROADMAP.md,Intended&Implemented,server/routers/accounting.ts,Enforced
+Invariant,INV-005,Client totalOwed accuracy,Accounting,GOLDEN_FLOWS_BETA_ROADMAP.md,Divergent,server/_core/syncClientBalance.ts,5 clients need resync
+Invariant,INV-006,Batch qty tracking,Inventory,GOLDEN_FLOWS_BETA_ROADMAP.md,Intended&Implemented,server/routers/inventory.ts,Enforced
+Invariant,INV-007,Audit trail completeness,Core,GOLDEN_FLOWS_BETA_ROADMAP.md,Intended&Implemented,server/_core/trpc.ts,Enforced
+Invariant,INV-008,Valid state transitions,Core,GOLDEN_FLOWS_BETA_ROADMAP.md,Divergent,server/routers/orders.ts,Order cancel gap
+Screen,SCR-001,Dashboard,Core,FLOW_GUIDE.md,Intended&Implemented,client/src/pages/Dashboard.tsx,
+Screen,SCR-002,Orders List,Sales,GF-003,Intended&Implemented,client/src/pages/Orders.tsx,
+Screen,SCR-003,Create Order,Sales,GF-003,IntendedMissing,client/src/pages/CreateOrder.tsx,SQL error blocks
+Screen,SCR-004,Inventory List,Inventory,GF-007,IntendedMissing,client/src/pages/Inventory.tsx,Shows 0 batches
+Screen,SCR-005,Invoices,Accounting,GF-004,Intended&Implemented,client/src/pages/Invoices.tsx,
+Screen,SCR-006,PickPackPage,Fulfillment,GF-005,Intended&Implemented,client/src/pages/PickPackPage.tsx,
+Screen,SCR-007,ClientLedger,Accounting,GF-006,Intended&Implemented,client/src/pages/ClientLedger.tsx,
+Screen,SCR-008,Samples,Sales,GF-008,Divergent,client/src/pages/SampleManagement.tsx,No fulfill button
+Screen,SCR-009,PurchaseOrders,Purchasing,GF-002,Divergent,client/src/pages/PurchaseOrders.tsx,No receiving UI
+API,API-001,inventory.createIntake,Inventory,GF-001,Intended&Implemented,server/routers/inventory.ts:createIntake,
+API,API-002,orders.create,Sales,GF-003,Intended&Implemented,server/routers/orders.ts:create,
+API,API-003,orders.confirm,Sales,GF-003,Intended&Implemented,server/routers/orders.ts:confirm,
+API,API-004,invoices.generateFromOrder,Accounting,GF-004,Intended&Implemented,server/routers/invoices.ts,
+API,API-005,payments.recordPayment,Accounting,GF-004,Intended&Implemented,server/routers/payments.ts:recordPayment,
+API,API-006,pickPack.packItems,Fulfillment,GF-005,Intended&Implemented,server/routers/pickPack.ts,
+API,API-007,purchaseOrders.receive,Purchasing,GF-002,Intended&Implemented,server/routers/purchaseOrders.ts,API exists
+API,API-008,samples.fulfillRequest,Sales,GF-008,Intended&Implemented,server/routers/samples.ts,API exists
+Model,MDL-001,clients,Core,CANONICAL_DICTIONARY.md,Intended&Implemented,drizzle/schema.ts:clients,
+Model,MDL-002,orders,Sales,GF-003,Intended&Implemented,drizzle/schema.ts:orders,
+Model,MDL-003,invoices,Accounting,GF-004,Intended&Implemented,drizzle/schema.ts:invoices,
+Model,MDL-004,batches,Inventory,GF-007,Intended&Implemented,drizzle/schema.ts:batches,
+Model,MDL-005,payments,Accounting,GF-004,Intended&Implemented,drizzle/schema.ts:payments,
+Model,MDL-006,purchase_orders,Purchasing,GF-002,Intended&Implemented,drizzle/schema.ts:purchaseOrders,
+Model,MDL-007,sample_requests,Sales,GF-008,Intended&Implemented,drizzle/schema.ts:sampleRequests,
+Permission,RBAC-001,super_admin full access,Auth,QA_PLAYBOOK.md,Intended&Implemented,server/_core/permissionService.ts,
+Permission,RBAC-002,sales_manager orders,Auth,QA_PLAYBOOK.md,Intended&Implemented,server/_core/permissionService.ts,
+Permission,RBAC-003,inventory_manager batches,Auth,QA_PLAYBOOK.md,Intended&Implemented,server/_core/permissionService.ts,
+Permission,RBAC-004,accounting_manager AR/AP,Auth,QA_PLAYBOOK.md,Intended&Implemented,server/_core/permissionService.ts,
+Permission,RBAC-005,fulfillment pickpack,Auth,QA_PLAYBOOK.md,Intended&Implemented,server/_core/permissionService.ts,
+Permission,RBAC-006,auditor readonly,Auth,QA_PLAYBOOK.md,Intended&Implemented,server/_core/permissionService.ts,

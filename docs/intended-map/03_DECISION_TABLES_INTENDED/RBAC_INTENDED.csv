@@ -1,0 +1,50 @@
+Role,Resource,Action,Condition,Allow,IntentSource,ImplSource,Status
+super_admin,*,*,*,Y,QA_PLAYBOOK.md:Quick Reference,permissionService.ts,Intended&Implemented
+sales_manager,clients,read,all,Y,QA_PLAYBOOK.md,clientsRouter.ts,Intended&Implemented
+sales_manager,clients,create,all,Y,QA_PLAYBOOK.md,clientsRouter.ts,Intended&Implemented
+sales_manager,clients,update,all,Y,QA_PLAYBOOK.md,clientsRouter.ts,Intended&Implemented
+sales_manager,clients,delete,N/A,N,QA_PLAYBOOK.md:Step 4,clientsRouter.ts,Intended&Implemented
+sales_manager,orders,read,all,Y,FLOW_GUIDE.md:Domain 16,ordersRouter.ts,Intended&Implemented
+sales_manager,orders,create,all,Y,FLOW_GUIDE.md:Domain 16,ordersRouter.ts,Intended&Implemented
+sales_manager,orders,update,all,Y,FLOW_GUIDE.md:Domain 16,ordersRouter.ts,Intended&Implemented
+sales_manager,inventory,read,all,Y,FLOW_GUIDE.md:Domain 11,inventoryRouter.ts,Intended&Implemented
+sales_manager,accounting,read,limited,Y,FLOW_GUIDE.md:Domain 1,accountingRouter.ts,Intended&Implemented
+sales_manager,samples,read,all,Y,GF-008,samplesRouter.ts,Intended&Implemented
+sales_manager,samples,create,all,Y,GF-008,samplesRouter.ts,Intended&Implemented
+sales_rep,clients,read,assigned,Y,QA_PLAYBOOK.md,clientsRouter.ts,Intended&Implemented
+sales_rep,clients,create,all,Y,QA_PLAYBOOK.md,clientsRouter.ts,Intended&Implemented
+sales_rep,clients,update,assigned,Y,QA_PLAYBOOK.md,clientsRouter.ts,Intended&Implemented
+sales_rep,orders,read,own,Y,FLOW_GUIDE.md,ordersRouter.ts,Intended&Implemented
+sales_rep,orders,create,all,Y,FLOW_GUIDE.md,ordersRouter.ts,Intended&Implemented
+sales_rep,orders,update,own,Y,FLOW_GUIDE.md,ordersRouter.ts,Intended&Implemented
+sales_rep,inventory,read,all,Y,FLOW_GUIDE.md,inventoryRouter.ts,Intended&Implemented
+sales_rep,samples,read,own,Y,GF-008,samplesRouter.ts,Intended&Implemented
+sales_rep,samples,create,all,Y,GF-008,samplesRouter.ts,Intended&Implemented
+inventory_manager,inventory,read,all,Y,GF-007,inventoryRouter.ts,Intended&Implemented
+inventory_manager,inventory,create,all,Y,GF-001,inventoryRouter.ts,Intended&Implemented
+inventory_manager,inventory,update,all,Y,GF-007,inventoryRouter.ts,Intended&Implemented
+inventory_manager,inventory,delete,soft,Y,GF-007,inventoryRouter.ts,Intended&Implemented
+inventory_manager,purchaseOrders,read,all,Y,GF-002,purchaseOrdersRouter.ts,Intended&Implemented
+inventory_manager,purchaseOrders,create,all,Y,GF-002,purchaseOrdersRouter.ts,Intended&Implemented
+inventory_manager,purchaseOrders,update,all,Y,GF-002,purchaseOrdersRouter.ts,Intended&Implemented
+inventory_manager,clients,read,suppliers,Y,GF-002,clientsRouter.ts,Intended&Implemented
+accounting_manager,accounting,read,all,Y,GF-004,accountingRouter.ts,Intended&Implemented
+accounting_manager,accounting,create,all,Y,GF-004,accountingRouter.ts,Intended&Implemented
+accounting_manager,accounting,update,all,Y,GF-004,accountingRouter.ts,Intended&Implemented
+accounting_manager,invoices,read,all,Y,GF-004,invoicesRouter.ts,Intended&Implemented
+accounting_manager,invoices,create,all,Y,GF-004,invoicesRouter.ts,Intended&Implemented
+accounting_manager,invoices,update,all,Y,GF-004,invoicesRouter.ts,Intended&Implemented
+accounting_manager,invoices,void,all,Y,GF-004,invoicesRouter.ts,Intended&Implemented
+accounting_manager,payments,read,all,Y,GF-004,paymentsRouter.ts,Intended&Implemented
+accounting_manager,payments,create,all,Y,GF-004,paymentsRouter.ts,Intended&Implemented
+accounting_manager,clients,read,all,Y,GF-006,clientsRouter.ts,Intended&Implemented
+fulfillment,pickpack,read,all,Y,GF-005,pickPackRouter.ts,Intended&Implemented
+fulfillment,pickpack,update,all,Y,GF-005,pickPackRouter.ts,Intended&Implemented
+fulfillment,orders,read,confirmed,Y,GF-005,ordersRouter.ts,Intended&Implemented
+fulfillment,orders,ship,all,Y,GF-005,ordersRouter.ts,Intended&Implemented
+fulfillment,inventory,read,all,Y,GF-005,inventoryRouter.ts,Intended&Implemented
+auditor,*,read,all,Y,QA_PLAYBOOK.md,permissionService.ts,Intended&Implemented
+auditor,*,create,N/A,N,QA_PLAYBOOK.md,-,Intended&Implemented
+auditor,*,update,N/A,N,QA_PLAYBOOK.md,-,Intended&Implemented
+auditor,*,delete,N/A,N,QA_PLAYBOOK.md,-,Intended&Implemented
+auditor,audit,read,all,Y,QA_PLAYBOOK.md,auditRouter.ts,Intended&Implemented

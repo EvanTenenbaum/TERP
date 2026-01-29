@@ -1,0 +1,16 @@
+RuleID,Condition,Action,Formula,IntentSource
+RULE-INV-001,Order confirmed,Reserve inventory,batch.reservedQty += orderItem.quantity,GF-003:3.1
+RULE-INV-002,Order cancelled (before ship),Release reservation,batch.reservedQty -= orderItem.quantity,GF-005:Alternative
+RULE-INV-003,Order shipped,Decrement on-hand,batch.onHandQty -= orderItem.quantity; batch.reservedQty -= orderItem.quantity,GF-005:Primary
+RULE-INV-004,Sample fulfilled,Decrement sample qty,batch.sampleQty -= sampleRequest.quantity,GF-008:5
+RULE-INV-005,Sample returned,Restore sample qty,batch.sampleQty += sampleReturn.quantity,GF-008:Alternative
+RULE-INV-006,Batch quarantined,Move qty to quarantine bucket,batch.quarantineQty += qty; batch.onHandQty unchanged,GF-007:5
+RULE-INV-007,Batch released from quarantine,Move qty back,batch.quarantineQty -= qty,GF-007:5
+RULE-INV-008,Calculate available qty,Read-only calculation,availableQty = onHandQty - reservedQty - quarantineQty - holdQty,GF-007:Overview
+RULE-INV-009,Sample isSample order,Use sampleQty pool,batch.sampleQty -= qty (not reservedQty),GF-003:3.1 Note
+RULE-INV-010,Intake creates batch,Initialize quantities,onHandQty = intakeQty; reservedQty = 0; sampleQty = 0,GF-001:3
+RULE-INV-011,PO receipt creates batch,Initialize from receipt,onHandQty = receivedQty,GF-002:5
+RULE-INV-012,Adjustment (increase),Add to on-hand,batch.onHandQty += adjustment.amount,GF-007:4
+RULE-INV-013,Adjustment (decrease),Subtract from on-hand,batch.onHandQty -= adjustment.amount (if result >= 0),GF-007:4
+RULE-INV-014,Sample allocation limit,Monthly cap check,monthlyUsed + requestQty <= monthlyLimit (default 7.0g),GF-008:4
+RULE-INV-015,Sample batch selection,Prefer sample-only batches,ORDER BY sampleOnly DESC then sampleAvailable,GF-008:5
