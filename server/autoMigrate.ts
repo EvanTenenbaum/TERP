@@ -1347,6 +1347,127 @@ export async function runAutoMigrations() {
     }
 
     // ========================================================================
+    // BUG-123: PURCHASE ORDERS - ADD supplier_client_id COLUMN
+    // ========================================================================
+    // The purchaseOrders table may be missing the supplier_client_id column
+    // which is required for the canonical Party Model (clients table vs deprecated vendors)
+    // Error: "Failed to load purchase orders: Failed query: select ... supplier_client_id ..."
+    let purchaseOrdersTableExists = false;
+    try {
+      await db.execute(sql`SELECT 1 FROM purchaseOrders LIMIT 1`);
+      purchaseOrdersTableExists = true;
+    } catch {
+      console.info(
+        "  ℹ️  purchaseOrders table not found - skipping supplier_client_id column"
+      );
+    }
+
+    if (purchaseOrdersTableExists) {
+      // Add supplier_client_id column for canonical Party Model
+      try {
+        await db.execute(sql`
+          ALTER TABLE purchaseOrders
+          ADD COLUMN supplier_client_id INT NULL
+        `);
+        console.info("  ✅ Added supplier_client_id column to purchaseOrders");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.info(
+            "  ℹ️  purchaseOrders.supplier_client_id already exists"
+          );
+        } else {
+          console.warn("  ⚠️  purchaseOrders.supplier_client_id:", errMsg);
+        }
+      }
+
+      // Add index for the column
+      try {
+        await db.execute(sql`
+          CREATE INDEX idx_po_supplier_client_id
+          ON purchaseOrders (supplier_client_id)
+        `);
+        console.info("  ✅ Added idx_po_supplier_client_id index");
+      } catch (indexError) {
+        const indexErrMsg =
+          indexError instanceof Error ? indexError.message : String(indexError);
+        if (indexErrMsg.includes("Duplicate key name")) {
+          console.info("  ℹ️  idx_po_supplier_client_id index already exists");
+        } else {
+          console.warn("  ⚠️  idx_po_supplier_client_id index:", indexErrMsg);
+        }
+      }
+
+      // Add deletedAt column for soft delete support (ST-059)
+      try {
+        await db.execute(sql`
+          ALTER TABLE purchaseOrders
+          ADD COLUMN deletedAt TIMESTAMP NULL
+        `);
+        console.info("  ✅ Added deletedAt column to purchaseOrders");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("Duplicate column")) {
+          console.info("  ℹ️  purchaseOrders.deletedAt already exists");
+        } else {
+          console.warn("  ⚠️  purchaseOrders.deletedAt:", errMsg);
+        }
+      }
+    }
+
+    // ========================================================================
+    // BUG-124: TIME_ENTRIES TABLE - Create for Time Clock functionality
+    // ========================================================================
+    // The time_entries table is defined in schema-scheduling.ts but never migrated
+    // Error: "Error Loading Data: Failed query: select ... from time_entries ..."
+    // This table is required for the Time Clock page to function
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS time_entries (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          entry_date DATE NOT NULL,
+          clock_in TIMESTAMP NOT NULL,
+          clock_out TIMESTAMP NULL,
+          break_start TIMESTAMP NULL,
+          break_end TIMESTAMP NULL,
+          total_break_minutes INT DEFAULT 0,
+          regular_hours_minutes INT DEFAULT 0,
+          overtime_hours_minutes INT DEFAULT 0,
+          total_hours_minutes INT DEFAULT 0,
+          entry_type ENUM('regular', 'overtime', 'holiday', 'sick', 'vacation', 'training') NOT NULL DEFAULT 'regular',
+          status ENUM('active', 'completed', 'adjusted', 'approved', 'rejected') NOT NULL DEFAULT 'active',
+          shift_id INT NULL,
+          notes TEXT NULL,
+          adjustment_reason TEXT NULL,
+          adjusted_by_id INT NULL,
+          adjusted_at TIMESTAMP NULL,
+          approved_by_id INT NULL,
+          approved_at TIMESTAMP NULL,
+          clock_in_ip VARCHAR(45) NULL,
+          clock_out_ip VARCHAR(45) NULL,
+          clock_in_device VARCHAR(255) NULL,
+          clock_out_device VARCHAR(255) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_time_entries_user (user_id),
+          INDEX idx_time_entries_date (entry_date),
+          INDEX idx_time_entries_status (status),
+          INDEX idx_time_entries_type (entry_type),
+          INDEX idx_time_entries_user_date (user_id, entry_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.info("  ✅ Created time_entries table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info("  ℹ️  time_entries table already exists");
+      } else {
+        console.warn("  ⚠️  time_entries table:", errMsg);
+      }
+    }
+
+    // ========================================================================
     // PRODUCT_IMAGES TABLE (GF-PHASE0-006, WS-010)
     // ========================================================================
     // Create product_images table for photography module
