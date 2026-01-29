@@ -83,13 +83,16 @@ export async function getProducts(options: ProductFilters = {}) {
     baseConditions.push(eq(products.brandId, brandId));
   }
 
-  // Build full conditions including strainId (for primary query)
-  const fullConditions = [...baseConditions];
+  // SCHEMA-015: strainId column doesn't exist in production, so we cannot filter by it
+  // If strainId filter was requested, return empty array since no products can match
   if (strainId) {
-    fullConditions.push(eq(products.strainId, strainId));
+    logger.warn(
+      { strainId },
+      "getProducts: strainId filter requested but column doesn't exist, returning empty results"
+    );
+    return [];
   }
 
-  // SCHEMA-015: Removed strainId join - column doesn't exist in production
   // Still have try-catch for other potential schema issues
   let result;
   try {
@@ -128,16 +131,6 @@ export async function getProducts(options: ProductFilters = {}) {
       { error: queryError },
       "getProducts: Query failed, falling back to simpler query without joins"
     );
-
-    // QA-001 FIX: If strainId filter was requested but column doesn't exist,
-    // we can't filter by it - return empty array since no products can match
-    if (strainId) {
-      logger.warn(
-        { strainId },
-        "getProducts: strainId filter requested but column doesn't exist, returning empty results"
-      );
-      return [];
-    }
 
     result = await db
       .select({
