@@ -200,10 +200,7 @@ export const vendorPayablesRouter = router({
         vendorClientId: input.vendorClientId,
       });
 
-      const payableId = await payablesService.createPayable({
-        ...input,
-        createdBy: userId,
-      });
+      const payableId = await payablesService.createPayable(input, userId);
 
       return { id: payableId };
     }),

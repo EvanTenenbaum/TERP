@@ -187,7 +187,8 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
       // 6. Create batch
       // MEET-006: Determine ownership type based on payment terms if not explicitly set
-      const ownershipType = input.ownershipType ||
+      const ownershipType =
+        input.ownershipType ||
         (input.paymentTerms === "CONSIGNMENT" ? "CONSIGNED" : "OFFICE_OWNED");
 
       const [batchCreated] = await tx
@@ -262,8 +263,11 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       if (ownershipType === "CONSIGNED") {
         try {
           // Get COGS for payable calculation
-          const cogsPerUnit = parseFloat(input.unitCogs || "0") ||
-            (parseFloat(input.unitCogsMin || "0") + parseFloat(input.unitCogsMax || "0")) / 2;
+          const cogsPerUnit =
+            parseFloat(input.unitCogs || "0") ||
+            (parseFloat(input.unitCogsMin || "0") +
+              parseFloat(input.unitCogsMax || "0")) /
+              2;
 
           // Find supplier client ID for the vendor
           const { clients } = await import("../drizzle/schema");
@@ -274,13 +278,15 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             .limit(1);
 
           if (supplierClient) {
-            await payablesService.createPayable({
-              batchId: batch.id,
-              lotId: lot.id,
-              vendorClientId: supplierClient.id,
-              cogsPerUnit,
-              createdBy: input.userId,
-            });
+            await payablesService.createPayable(
+              {
+                batchId: batch.id,
+                lotId: lot.id,
+                vendorClientId: supplierClient.id,
+                cogsPerUnit,
+              },
+              input.userId
+            );
             logger.info({
               msg: "[MEET-005] Created payable for consigned batch",
               batchId: batch.id,
@@ -297,7 +303,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         } catch (payableError) {
           logger.error({
             msg: "[MEET-005] Failed to create payable (non-fatal)",
-            error: payableError instanceof Error ? payableError.message : String(payableError),
+            error:
+              payableError instanceof Error
+                ? payableError.message
+                : String(payableError),
             batchId: batch.id,
           });
         }
