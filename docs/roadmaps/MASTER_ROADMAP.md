@@ -335,28 +335,77 @@ pnpm test --run 2>&1 | tee test-results.log
 
 ---
 
-### 🔥 INITIATIVE: Golden Flows MVP (P0) - Updated Jan 28, 2026
+### 🔥 INITIATIVE: Golden Flows MVP (P0) - Updated Jan 29, 2026
 
 > **CRITICAL PRIORITY**: All 8 Golden Flows must be fully functional before any other MVP work.
 > **Source:** Golden Flow Execution Plan v1.0 + QA Protocol v3.0 Database Audit
-> **Status:** 8/8 VERIFIED ✅ - All Golden Flows passed E2E verification (2026-01-29)
-> **Target:** 8/8 WORKING within 1 week
+> **Status:** 🔴 BLOCKED - Live browser testing revealed 6 S1-Critical blockers (2026-01-29)
+> **Target:** Fix all S1 blockers before release
 
 #### Golden Flow Status Matrix
 
-> **Updated:** 2026-01-29 - Wave B agents completed: ST-051, ST-053, TERP-0019, ARCH-001 verified
-> **Status:** 8/8 READY - All blockers resolved. Ready for E2E verification.
+> **Updated:** 2026-01-29 - LIVE BROWSER TESTING RESULTS (supersedes code verification)
+> **Status:** 4/12 PASS, 1/12 FAIL, 7/12 BLOCKED - Production schema drift detected
 
-| #      | Golden Flow       | Current Status | Primary Blockers                                                 |
-| ------ | ----------------- | -------------- | ---------------------------------------------------------------- |
-| GF-001 | Direct Intake     | 🟢 READY       | ~~BUG-117~~, ~~ST-058~~, ~~INV-003~~                             |
-| GF-002 | Procure-to-Pay    | 🟢 READY       | ~~ST-059~~, ~~PARTY-001~~, ~~SCHEMA-011~~                        |
-| GF-003 | Order-to-Cash     | 🟢 READY       | ~~BUG-115~~, ~~ST-058~~, ~~ST-050~~, ~~ST-051~~, ~~ARCH-001~~    |
-| GF-004 | Invoice & Payment | 🟢 READY       | ~~FIN-001~~, ~~ST-057~~, ~~ORD-001~~, ~~ST-061~~                 |
-| GF-005 | Pick & Pack       | 🟢 READY       | ~~GF-003~~ (ST-051 + ARCH-001 complete)                          |
-| GF-006 | Client Ledger     | 🟢 READY       | ~~ST-057~~, ~~ST-061~~                                           |
-| GF-007 | Inventory Mgmt    | 🟢 READY       | ~~ST-056~~, ~~ST-058~~, ~~INV-003~~, ~~TERP-0019~~ (SQL aliases) |
-| GF-008 | Sample Request    | 🟢 READY       | ~~BUG-117~~ (all blockers resolved)                              |
+| #      | Golden Flow       | Code Status | Live Status | Primary Blockers                                    |
+| ------ | ----------------- | ----------- | ----------- | --------------------------------------------------- |
+| GF-001 | Direct Intake     | ✅ Code OK  | 🔴 BLOCKED  | BUG-002: Add Batch button non-functional            |
+| GF-002 | Procure-to-Pay    | ✅ Code OK  | 🔴 BLOCKED  | BUG-003/005/006: PO creation completely broken      |
+| GF-003 | Order-to-Cash     | ✅ Code OK  | 🔴 BLOCKED  | BUG-001: Inventory query fails (strainId + vendors) |
+| GF-004 | Invoice & Payment | ✅ Code OK  | ✅ PASS     | Working correctly                                   |
+| GF-005 | Pick & Pack       | ✅ Code OK  | 🔴 BLOCKED  | BUG-008: No orders available (data issue)           |
+| GF-006 | Client Ledger     | ✅ Code OK  | ✅ PASS     | Working correctly                                   |
+| GF-007 | Inventory Mgmt    | ✅ Code OK  | 🔴 FAIL     | BUG-007: Edit opens Archive modal                   |
+| GF-008 | Sample Request    | ✅ Code OK  | ✅ PASS     | Working correctly (via Todo workflow)               |
+
+---
+
+### 🚨 LIVE BROWSER TESTING FINDINGS (Jan 29, 2026)
+
+> **Source:** Reality Mapper Live Browser Testing (12 parallel agents)
+> **Environment:** Staging (terp-app-b9s35.ondigitalocean.app)
+> **Result:** NOT READY FOR RELEASE
+
+#### Root Cause: Production Schema Drift
+
+**Critical Issue:** The `products.strainId` column is defined in Drizzle schema but **DOES NOT EXIST** in the production database. 27+ files reference this non-existent column, causing SQL query failures at runtime.
+
+This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed during the Golden Flow initiative.
+
+#### S1-Critical Bugs (Release Blockers)
+
+| Bug ID  | Title                           | Domain          | Root Cause                                        | Est |
+| ------- | ------------------------------- | --------------- | ------------------------------------------------- | --- |
+| BUG-130 | Inventory Query Failure         | Orders          | `salesSheetsDb.ts:117-129` joins strainId+vendors | 4h  |
+| BUG-131 | Add Batch Button Non-Functional | Inventory       | Frontend click handler not bound                  | 1h  |
+| BUG-132 | Product Dropdown Empty in PO    | Purchase Orders | `productsDb.ts:117` joins strainId                | 2h  |
+| BUG-133 | RBAC Roles Non-Interactive      | Admin           | Frontend click handlers missing                   | 2h  |
+| BUG-134 | PO Add Item Button Broken       | Purchase Orders | Related to BUG-132                                | 1h  |
+| BUG-135 | Create PO Button Broken         | Purchase Orders | Related to BUG-132                                | 1h  |
+
+#### S2-High Bugs
+
+| Bug ID  | Title                      | Domain    | Root Cause             | Est |
+| ------- | -------------------------- | --------- | ---------------------- | --- |
+| BUG-136 | Edit Product Opens Archive | Inventory | Frontend modal binding | 1h  |
+| BUG-137 | No Test Data for Pick Pack | Orders    | Staging not seeded     | 2h  |
+
+#### Immediate Fix Required: SCHEMA-015
+
+**Task:** Remove all strainId joins from production queries
+
+**Files to Fix:**
+
+```
+server/salesSheetsDb.ts:117-129   - Remove strains join AND vendors join
+server/productsDb.ts:117          - Already has fallback, verify it works
+server/matchingEngine.ts          - Check for strainId references
+server/routers/photography.ts     - Has isSchemaError() fallback
+server/routers/search.ts          - Check strainId references
++ 22 more files with strainId references
+```
+
+**Priority:** P0 - Fix BEFORE any deployment
 
 ---
 
