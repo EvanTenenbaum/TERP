@@ -21,8 +21,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Plus, Check, User, Building2, Mail, Phone, MapPin, CreditCard, Tag } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  X,
+  Plus,
+  Check,
+  User,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  Tag,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -44,9 +61,12 @@ const STEP_NAMES = {
 
 const TOTAL_STEPS = 4;
 
-export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWizardProps) {
+export function AddClientWizard({
+  open,
+  onOpenChange,
+  onSuccess,
+}: AddClientWizardProps) {
   const [step, setStep] = useState(1);
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [formData, setFormData] = useState({
     teriCode: "",
     name: "",
@@ -58,7 +78,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     city: "", // FEAT-001: Added city
     state: "", // FEAT-001: Added state
     zipCode: "", // FEAT-001: Added zip code
-    businessType: "" as "" | "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER", // FEAT-001: Business type
+    businessType: "" as
+      | ""
+      | "RETAIL"
+      | "WHOLESALE"
+      | "DISPENSARY"
+      | "DELIVERY"
+      | "MANUFACTURER"
+      | "DISTRIBUTOR"
+      | "OTHER", // FEAT-001: Business type
     preferredContact: "" as "" | "EMAIL" | "PHONE" | "TEXT" | "ANY", // FEAT-001: Preferred contact method
     paymentTerms: 30, // FEAT-001: Payment terms in days
     notes: "", // FEAT-001: Added notes field
@@ -73,9 +101,16 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   const [deleteTagConfirm, setDeleteTagConfirm] = useState<string | null>(null);
 
   // UX-001: Warn before leaving with unsaved changes
-  const hasFormData = formData.name !== "" || formData.teriCode !== "" || formData.email !== "" ||
-    formData.phone !== "" || formData.address !== "" || formData.tags.length > 0 ||
-    formData.companyName !== "" || formData.secondaryPhone !== "" || formData.notes !== "";
+  const hasFormData =
+    formData.name !== "" ||
+    formData.teriCode !== "" ||
+    formData.email !== "" ||
+    formData.phone !== "" ||
+    formData.address !== "" ||
+    formData.tags.length > 0 ||
+    formData.companyName !== "" ||
+    formData.secondaryPhone !== "" ||
+    formData.notes !== "";
   useBeforeUnloadWarning(hasFormData && open);
 
   // Fetch all existing tags for autocomplete
@@ -84,34 +119,46 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   // Create client mutation
   // BUG-071 FIX: Enhanced error handling with detailed messages
   const createClientMutation = trpc.clients.create.useMutation({
-    onSuccess: (data) => {
-      toast.success('Client created successfully', {
-        description: `${formData.name} has been added to your client list`
+    onSuccess: data => {
+      toast.success("Client created successfully", {
+        description: `${formData.name} has been added to your client list`,
       });
       onOpenChange(false);
       resetForm();
       if (onSuccess && data) onSuccess(data as number);
     },
-    onError: (error) => {
+    onError: error => {
       // BUG-071 FIX: Provide clear, user-friendly error messages
-      console.error('Create client error:', error);
+      console.error("Create client error:", error);
 
       // Handle specific error types
-      if (error.message.includes('unique') || error.message.includes('duplicate')) {
-        toast.error('Client already exists', {
-          description: 'A client with this TERI code or name already exists. Please use a different identifier.'
+      if (
+        error.message.includes("unique") ||
+        error.message.includes("duplicate")
+      ) {
+        toast.error("Client already exists", {
+          description:
+            "A client with this TERI code or name already exists. Please use a different identifier.",
         });
-      } else if (error.message.includes('validation') || error.message.includes('required')) {
-        toast.error('Invalid form data', {
-          description: 'Please check all required fields and try again.'
+      } else if (
+        error.message.includes("validation") ||
+        error.message.includes("required")
+      ) {
+        toast.error("Invalid form data", {
+          description: "Please check all required fields and try again.",
         });
-      } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        toast.error('Connection error', {
-          description: 'Unable to reach the server. Please check your connection and try again.'
+      } else if (
+        error.message.includes("network") ||
+        error.message.includes("fetch")
+      ) {
+        toast.error("Connection error", {
+          description:
+            "Unable to reach the server. Please check your connection and try again.",
         });
       } else {
-        toast.error('Failed to create client', {
-          description: error.message || 'An unexpected error occurred. Please try again.'
+        toast.error("Failed to create client", {
+          description:
+            error.message || "An unexpected error occurred. Please try again.",
         });
       }
     },
@@ -152,22 +199,6 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     if (step > 1) setStep(step - 1);
   };
 
-  // Handle cancel with confirmation if there's partial progress
-  const handleCancelClick = useCallback(() => {
-    if (hasFormData) {
-      setCancelConfirmOpen(true);
-    } else {
-      onOpenChange(false);
-      resetForm();
-    }
-  }, [hasFormData, onOpenChange]);
-
-  const confirmCancel = useCallback(() => {
-    setCancelConfirmOpen(false);
-    onOpenChange(false);
-    resetForm();
-  }, [onOpenChange]);
-
   // Get client types as display strings
   const getSelectedClientTypes = useCallback(() => {
     const types: string[] = [];
@@ -177,7 +208,13 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     if (formData.isReferee) types.push("Referee");
     if (formData.isContractor) types.push("Contractor");
     return types;
-  }, [formData.isBuyer, formData.isSeller, formData.isBrand, formData.isReferee, formData.isContractor]);
+  }, [
+    formData.isBuyer,
+    formData.isSeller,
+    formData.isBrand,
+    formData.isReferee,
+    formData.isContractor,
+  ]);
 
   // Get formatted address for review
   const getFormattedAddress = useCallback(() => {
@@ -185,7 +222,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
       formData.address,
       formData.city,
       formData.state,
-      formData.zipCode
+      formData.zipCode,
     ].filter(Boolean);
     return parts.length > 0 ? parts.join(", ") : null;
   }, [formData.address, formData.city, formData.state, formData.zipCode]);
@@ -220,23 +257,29 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     try {
       // Validate required fields
       if (!formData.teriCode.trim()) {
-        toast.error('TERI Code is required', {
-          description: 'Please provide a unique TERI code for this client'
+        toast.error("TERI Code is required", {
+          description: "Please provide a unique TERI code for this client",
         });
         return;
       }
 
       if (!formData.name.trim()) {
-        toast.error('Contact name is required', {
-          description: 'Please provide a contact name for this client'
+        toast.error("Contact name is required", {
+          description: "Please provide a contact name for this client",
         });
         return;
       }
 
       // Validate at least one client type is selected
-      if (!formData.isBuyer && !formData.isSeller && !formData.isBrand && !formData.isReferee && !formData.isContractor) {
-        toast.error('Client type is required', {
-          description: 'Please select at least one client type'
+      if (
+        !formData.isBuyer &&
+        !formData.isSeller &&
+        !formData.isBrand &&
+        !formData.isReferee &&
+        !formData.isContractor
+      ) {
+        toast.error("Client type is required", {
+          description: "Please select at least one client type",
         });
         return;
       }
@@ -246,9 +289,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
         formData.address,
         formData.city,
         formData.state,
-        formData.zipCode
+        formData.zipCode,
       ].filter(Boolean);
-      const fullAddress = addressParts.join(', ');
+      const fullAddress = addressParts.join(", ");
 
       // Include company name in the name if provided
       const displayName = formData.companyName
@@ -257,7 +300,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
 
       // Combine notes and secondary phone info
       const notesWithPhone = formData.secondaryPhone
-        ? `${formData.notes ? formData.notes + '\n' : ''}Secondary Phone: ${formData.secondaryPhone}`
+        ? `${formData.notes ? formData.notes + "\n" : ""}Secondary Phone: ${formData.secondaryPhone}`
         : formData.notes;
 
       await createClientMutation.mutateAsync({
@@ -279,7 +322,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
       });
     } catch (error) {
       // Error is already handled by onError callback
-      console.error('Failed to create client:', error);
+      console.error("Failed to create client:", error);
     }
   };
 
@@ -292,12 +335,17 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   };
 
   const removeTag = (tag: string) => {
-    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tag) });
+    setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) });
   };
 
-  const canProceedStep1 = formData.teriCode.trim() !== "" && formData.name.trim() !== "";
+  const canProceedStep1 =
+    formData.teriCode.trim() !== "" && formData.name.trim() !== "";
   const canProceedStep2 =
-    formData.isBuyer || formData.isSeller || formData.isBrand || formData.isReferee || formData.isContractor;
+    formData.isBuyer ||
+    formData.isSeller ||
+    formData.isBrand ||
+    formData.isReferee ||
+    formData.isContractor;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -305,7 +353,8 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
         <DialogHeader>
           <DialogTitle>Add New Client</DialogTitle>
           <DialogDescription>
-            Step {step} of {TOTAL_STEPS}: {STEP_NAMES[step as keyof typeof STEP_NAMES]}
+            Step {step} of {TOTAL_STEPS}:{" "}
+            {STEP_NAMES[step as keyof typeof STEP_NAMES]}
           </DialogDescription>
           {/* Step progress indicator */}
           <div className="flex gap-1 mt-2">
@@ -332,7 +381,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   id="teriCode"
                   placeholder="Enter unique TERI code"
                   value={formData.teriCode}
-                  onChange={(e) => setFormData({ ...formData, teriCode: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, teriCode: e.target.value })
+                  }
                   required
                 />
                 <p className="text-xs text-muted-foreground">
@@ -346,7 +397,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   id="companyName"
                   placeholder="Enter company name"
                   value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, companyName: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -359,7 +412,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 id="name"
                 placeholder="Enter contact's full name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 required
               />
               <p className="text-xs text-muted-foreground">
@@ -374,7 +429,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 type="email"
                 placeholder="client@example.com"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
               />
             </div>
 
@@ -386,7 +443,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   type="tel"
                   placeholder="+1 (555) 123-4567"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -396,7 +455,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   type="tel"
                   placeholder="+1 (555) 987-6543"
                   value={formData.secondaryPhone}
-                  onChange={(e) => setFormData({ ...formData, secondaryPhone: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, secondaryPhone: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -406,7 +467,12 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 <Label htmlFor="businessType">Business Type</Label>
                 <Select
                   value={formData.businessType}
-                  onValueChange={(value) => setFormData({ ...formData, businessType: value as typeof formData.businessType })}
+                  onValueChange={value =>
+                    setFormData({
+                      ...formData,
+                      businessType: value as typeof formData.businessType,
+                    })
+                  }
                 >
                   <SelectTrigger id="businessType">
                     <SelectValue placeholder="Select business type" />
@@ -427,7 +493,13 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 <Label htmlFor="preferredContact">Preferred Contact</Label>
                 <Select
                   value={formData.preferredContact}
-                  onValueChange={(value) => setFormData({ ...formData, preferredContact: value as typeof formData.preferredContact })}
+                  onValueChange={value =>
+                    setFormData({
+                      ...formData,
+                      preferredContact:
+                        value as typeof formData.preferredContact,
+                    })
+                  }
                 >
                   <SelectTrigger id="preferredContact">
                     <SelectValue placeholder="Select contact method" />
@@ -450,7 +522,12 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 min="0"
                 placeholder="30"
                 value={formData.paymentTerms}
-                onChange={(e) => setFormData({ ...formData, paymentTerms: parseInt(e.target.value) || 30 })}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    paymentTerms: parseInt(e.target.value) || 30,
+                  })
+                }
               />
               <p className="text-xs text-muted-foreground">
                 Number of days for payment (e.g., Net 30)
@@ -463,7 +540,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 id="address"
                 placeholder="123 Main Street"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
               />
             </div>
 
@@ -474,7 +553,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   id="city"
                   placeholder="City"
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -483,7 +564,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   id="state"
                   placeholder="State"
                   value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, state: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -492,7 +575,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   id="zipCode"
                   placeholder="12345"
                   value={formData.zipCode}
-                  onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, zipCode: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -503,7 +588,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 id="notes"
                 placeholder="Additional notes about this client..."
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 rows={3}
               />
             </div>
@@ -525,12 +612,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isBuyer"
                     checked={formData.isBuyer}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={checked =>
                       setFormData({ ...formData, isBuyer: checked as boolean })
                     }
                   />
                   <div className="flex-1">
-                    <Label htmlFor="isBuyer" className="text-base font-medium cursor-pointer">
+                    <Label
+                      htmlFor="isBuyer"
+                      className="text-base font-medium cursor-pointer"
+                    >
                       Buyer
                     </Label>
                     <p className="text-sm text-muted-foreground">
@@ -543,12 +633,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isSeller"
                     checked={formData.isSeller}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={checked =>
                       setFormData({ ...formData, isSeller: checked as boolean })
                     }
                   />
                   <div className="flex-1">
-                    <Label htmlFor="isSeller" className="text-base font-medium cursor-pointer">
+                    <Label
+                      htmlFor="isSeller"
+                      className="text-base font-medium cursor-pointer"
+                    >
                       Seller
                     </Label>
                     <p className="text-sm text-muted-foreground">
@@ -561,12 +654,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isBrand"
                     checked={formData.isBrand}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={checked =>
                       setFormData({ ...formData, isBrand: checked as boolean })
                     }
                   />
                   <div className="flex-1">
-                    <Label htmlFor="isBrand" className="text-base font-medium cursor-pointer">
+                    <Label
+                      htmlFor="isBrand"
+                      className="text-base font-medium cursor-pointer"
+                    >
                       Brand
                     </Label>
                     <p className="text-sm text-muted-foreground">
@@ -579,12 +675,18 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isReferee"
                     checked={formData.isReferee}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isReferee: checked as boolean })
+                    onCheckedChange={checked =>
+                      setFormData({
+                        ...formData,
+                        isReferee: checked as boolean,
+                      })
                     }
                   />
                   <div className="flex-1">
-                    <Label htmlFor="isReferee" className="text-base font-medium cursor-pointer">
+                    <Label
+                      htmlFor="isReferee"
+                      className="text-base font-medium cursor-pointer"
+                    >
                       Referee
                     </Label>
                     <p className="text-sm text-muted-foreground">
@@ -597,12 +699,18 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isContractor"
                     checked={formData.isContractor}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isContractor: checked as boolean })
+                    onCheckedChange={checked =>
+                      setFormData({
+                        ...formData,
+                        isContractor: checked as boolean,
+                      })
                     }
                   />
                   <div className="flex-1">
-                    <Label htmlFor="isContractor" className="text-base font-medium cursor-pointer">
+                    <Label
+                      htmlFor="isContractor"
+                      className="text-base font-medium cursor-pointer"
+                    >
                       Contractor
                     </Label>
                     <p className="text-sm text-muted-foreground">
@@ -639,8 +747,8 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                       id="newTag"
                       placeholder="Enter a tag"
                       value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyDown={(e) => {
+                      onChange={e => setNewTag(e.target.value)}
+                      onKeyDown={e => {
                         if (e.key === "Enter") {
                           e.preventDefault();
                           addTag(newTag);
@@ -662,7 +770,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <div className="space-y-2">
                     <Label>Current Tags</Label>
                     <div className="flex flex-wrap gap-2">
-                      {formData.tags.map((tag) => (
+                      {formData.tags.map(tag => (
                         <Badge key={tag} variant="outline" className="gap-1">
                           {tag}
                           <button
@@ -684,9 +792,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                     <Label>Suggested Tags</Label>
                     <div className="flex flex-wrap gap-2">
                       {existingTags
-                        .filter((tag) => !formData.tags.includes(tag))
+                        .filter(tag => !formData.tags.includes(tag))
                         .slice(0, 10)
-                        .map((tag) => (
+                        .map(tag => (
                           <Badge
                             key={tag}
                             variant="secondary"
@@ -730,7 +838,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                       <p className="font-medium">{formData.teriCode}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Contact Name:</span>
+                      <span className="text-muted-foreground">
+                        Contact Name:
+                      </span>
                       <p className="font-medium">{formData.name}</p>
                     </div>
                     {formData.companyName && (
@@ -769,18 +879,26 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                     )}
                     {formData.secondaryPhone && (
                       <div>
-                        <span className="text-muted-foreground">Secondary Phone:</span>
+                        <span className="text-muted-foreground">
+                          Secondary Phone:
+                        </span>
                         <p className="font-medium">{formData.secondaryPhone}</p>
                       </div>
                     )}
                     {formData.preferredContact && (
                       <div>
-                        <span className="text-muted-foreground">Preferred Contact:</span>
-                        <p className="font-medium">{getPreferredContactLabel(formData.preferredContact)}</p>
+                        <span className="text-muted-foreground">
+                          Preferred Contact:
+                        </span>
+                        <p className="font-medium">
+                          {getPreferredContactLabel(formData.preferredContact)}
+                        </p>
                       </div>
                     )}
                     {!formData.email && !formData.phone && (
-                      <p className="text-muted-foreground col-span-2 italic">No contact details provided</p>
+                      <p className="text-muted-foreground col-span-2 italic">
+                        No contact details provided
+                      </p>
                     )}
                   </div>
                 </div>
@@ -795,7 +913,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         Address
                       </h4>
-                      <p className="pl-6 text-sm font-medium">{getFormattedAddress()}</p>
+                      <p className="pl-6 text-sm font-medium">
+                        {getFormattedAddress()}
+                      </p>
                     </div>
                     <Separator />
                   </>
@@ -810,13 +930,21 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <div className="grid grid-cols-2 gap-4 pl-6 text-sm">
                     {formData.businessType && (
                       <div>
-                        <span className="text-muted-foreground">Business Type:</span>
-                        <p className="font-medium">{getBusinessTypeLabel(formData.businessType)}</p>
+                        <span className="text-muted-foreground">
+                          Business Type:
+                        </span>
+                        <p className="font-medium">
+                          {getBusinessTypeLabel(formData.businessType)}
+                        </p>
                       </div>
                     )}
                     <div>
-                      <span className="text-muted-foreground">Payment Terms:</span>
-                      <p className="font-medium">Net {formData.paymentTerms} days</p>
+                      <span className="text-muted-foreground">
+                        Payment Terms:
+                      </span>
+                      <p className="font-medium">
+                        Net {formData.paymentTerms} days
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -827,7 +955,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 <div className="space-y-3">
                   <h4 className="font-medium">Client Types</h4>
                   <div className="flex flex-wrap gap-2 pl-6">
-                    {getSelectedClientTypes().map((type) => (
+                    {getSelectedClientTypes().map(type => (
                       <Badge key={type} variant="default">
                         {type}
                       </Badge>
@@ -845,7 +973,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                         Tags
                       </h4>
                       <div className="flex flex-wrap gap-2 pl-6">
-                        {formData.tags.map((tag) => (
+                        {formData.tags.map(tag => (
                           <Badge key={tag} variant="outline">
                             {tag}
                           </Badge>
@@ -905,7 +1033,9 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 onClick={handleSubmit}
                 disabled={createClientMutation.isPending}
               >
-                {createClientMutation.isPending ? "Creating..." : "Create Client"}
+                {createClientMutation.isPending
+                  ? "Creating..."
+                  : "Create Client"}
               </Button>
             )}
           </div>
@@ -913,7 +1043,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
       </DialogContent>
       <ConfirmDialog
         open={deleteTagConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteTagConfirm(null)}
+        onOpenChange={open => !open && setDeleteTagConfirm(null)}
         title="Remove Tag"
         description="Are you sure you want to remove this tag from the client?"
         confirmLabel="Remove"
@@ -928,4 +1058,3 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     </Dialog>
   );
 }
-
