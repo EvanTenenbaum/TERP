@@ -5746,29 +5746,35 @@ global.ResizeObserver = class ResizeObserver {
 
 > The following tasks were generated from the Golden Flows QA audit on Jan 26, 2026. They represent critical, blocking issues.
 
-### BUG-110: Critical SQL Error on Inventory Load
+### BUG-110: Critical SQL Error on Inventory Load - ✅ COMPLETE
 
 **Type:** Bug
-**Source:** Jan 26 QA Audit (FINDING-04, FINDING-10)
-**Status:** ready
+**Source:** Jan 26 QA Audit (FINDING-04, FINDING-10), Jan 28 Reality Map (BUG-001)
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 16h
+**Actual:** 2h
+**Completed:** 2026-01-29
+**Fixed By:** BUG-122 (commit `e381ef4`)
 **Module:** `server/routers/orders.ts`, `server/inventoryDb.ts`
 **Dependencies:** None
 
 **Problem / Goal:**
 When creating a Sales Order, the system fails to load available inventory and displays a raw SQL query error to the user. This is a system-wide blocker for all transactional flows.
 
-**Context / Evidence:**
+**Root Cause:** Query joined deprecated `vendors` table which caused failures.
 
-- See `jan-26-checkpoint/findings/all_findings.json` for the full error message.
-- The query joins `batches`, `products`, `lots`, `vendors`, and `strains` and appears to be malformed or timing out.
+**Fix Applied:**
+
+- BUG-122 removed all `vendors` table joins from `inventoryDb.ts` (lines 887, 950)
+- Updated to use `clients` table with `isSeller=true` per Party Model
+- Also fixed in `spreadsheetViewService.ts`, `inventory.ts`, `Inventory.tsx`
 
 **Acceptance Criteria:**
 
-- [ ] The inventory query in the order creation flow executes successfully without errors.
-- [ ] Available inventory batches are displayed to the user.
-- [ ] Raw SQL errors are never exposed to the frontend.
+- [x] The inventory query in the order creation flow executes successfully without errors.
+- [x] Available inventory batches are displayed to the user.
+- [ ] Raw SQL errors are never exposed to the frontend. (See SEC-042)
 
 ---
 
@@ -5938,3 +5944,159 @@ The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No o
 
 - [ ] The "Top Debtors" widget correctly lists clients with the highest outstanding balances.
 - [ ] The "Top Vendors Owed" widget correctly lists vendor names.
+
+---
+
+## 🐞 January 28 Reality Map QA Audit - New Bug Reports
+
+> **Source:** TERP Reality Map Report (January 28, 2026)
+> **Environment:** STAGING (https://terp-app-b9s35.ondigitalocean.app)
+> **Overall Health:** 91.2% (31/34 flows working, 3 bugs found)
+> **Common Root Cause:** SQL query failures with raw SQL exposed in UI
+
+### BUG-123: Purchase Orders List SQL Failure (P0 BLOCKER)
+
+**Type:** Bug
+**Source:** Jan 28 Reality Map (BUG-002)
+**Status:** ready
+**Priority:** HIGH (P0_BLOCKER)
+**Estimate:** 2h
+**Module:** `server/routers/purchaseOrders.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+The Purchase Orders page fails to load with a SQL query error. Users cannot view, create, or manage purchase orders. The error exposes raw SQL to the UI.
+
+**Error Message:**
+
+```
+Failed to load purchase orders: Failed query: select `id`, `poNumber`, `supplier_client_id`,
+`vendorId`, `intakeSessionId`, `purchaseOrderStatus`, ...
+from `purchaseOrders` order by `purchaseOrders`.`createdAt` desc limit ? params: 100
+```
+
+**Root Cause Analysis:**
+
+- The schema defines columns that may not exist in the staging database
+- `supplier_client_id` column may be missing from production tables
+- Migration may not have been applied to staging
+
+**Acceptance Criteria:**
+
+- [ ] Purchase Orders list loads without SQL errors
+- [ ] All columns referenced in query exist in database
+- [ ] Run pending migrations on staging
+
+---
+
+### BUG-124: Time Clock Data Loading SQL Failure (P1 HIGH)
+
+**Type:** Bug
+**Source:** Jan 28 Reality Map (BUG-003)
+**Status:** ready
+**Priority:** HIGH (P1)
+**Estimate:** 2h
+**Module:** `server/routers/hourTracking.ts`, `drizzle/schema-scheduling.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+The Time Clock page shows "Error Loading Data" with SQL query exposed. Time tracking functionality is broken.
+
+**Error Message:**
+
+```
+Error Loading Data: Failed query: select `id`, `user_id`, `entry_date`, `clock_in`, `clock_out`,
+... from `time_entries` where (`time_entries`.`user_id` = ? and `time_entries`.`status` = ?)
+order by `time_entries`.`clock_in` desc limit ? params: 3424,active,1
+```
+
+**Root Cause Analysis:**
+
+- `time_entries` table defined in `schema-scheduling.ts` but may not exist in staging database
+- Table may need to be created via migration or autoMigrate
+
+**Acceptance Criteria:**
+
+- [ ] Time Clock page loads without SQL errors
+- [ ] `time_entries` table exists in staging database with all columns
+- [ ] Clock In/Out functionality works
+
+---
+
+### SEC-042: Prevent Raw SQL Exposure in UI Error Messages
+
+**Type:** Security
+**Source:** Jan 28 Reality Map (Security Observation)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `server/_core/trpc.ts`, `server/_core/errorHandling.ts`
+**Dependencies:** None
+
+**Problem / Goal:**
+All SQL errors in BUG-110, BUG-123, BUG-124 exposed raw SQL queries to the UI, including:
+
+- Table names
+- Column names
+- Query parameters
+- Query structure
+
+This is an information disclosure vulnerability that could aid attackers.
+
+**Acceptance Criteria:**
+
+- [ ] Implement error boundary that catches database errors
+- [ ] Log detailed errors server-side only
+- [ ] Return generic user-friendly error messages to UI
+- [ ] Never expose raw SQL queries in frontend error messages
+- [ ] Add centralized error sanitization in tRPC error handler
+
+**Implementation Notes:**
+
+```typescript
+// In tRPC error handler or errorHandling.ts
+if (error instanceof DatabaseError) {
+  logger.error({ sql: error.sql, params: error.params }, "Database error");
+  throw new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "A database error occurred. Please try again or contact support.",
+  });
+}
+```
+
+---
+
+### DATA-027: Verify Staging Database Schema Sync
+
+**Type:** Data/Infra
+**Source:** Jan 28 Reality Map (Root Cause Analysis)
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2h
+**Module:** Database migrations, `server/autoMigrate.ts`
+**Dependencies:** BUG-123, BUG-124
+
+**Problem / Goal:**
+Multiple bugs from the Reality Map share a common root cause: schema mismatch between code and staging database. Tables/columns defined in Drizzle schema may not exist in the actual database.
+
+**Investigation Steps:**
+
+```bash
+# 1. Compare Drizzle schema to database
+npx drizzle-kit introspect
+npx drizzle-kit diff
+
+# 2. Check table existence
+DESCRIBE purchaseOrders;
+DESCRIBE time_entries;
+
+# 3. Apply pending migrations
+npx drizzle-kit push
+```
+
+**Acceptance Criteria:**
+
+- [ ] All tables in Drizzle schema exist in staging database
+- [ ] All columns referenced in queries exist
+- [ ] `autoMigrate.ts` includes critical tables (purchaseOrders, time_entries)
+- [ ] Document migration strategy for future deployments
