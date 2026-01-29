@@ -344,16 +344,16 @@ pnpm test --run 2>&1 | tee test-results.log
 
 #### Golden Flow Status Matrix
 
-> **Updated:** 2026-01-29 - Code audit verified Wave 1A/1B, Wave 2A/2B, Wave 3A/3B complete
-> **Status:** 5/8 READY, 3/8 PARTIAL (remaining: ST-051, ARCH-001, ST-053, SCHEMA-011 partial)
+> **Updated:** 2026-01-29 - Code audit verified Wave 1A/1B/1C, Wave 2A/2B, Wave 3A/3B complete
+> **Status:** 6/8 READY, 2/8 PARTIAL (remaining: ARCH-001, ST-053, SCHEMA-011 partial)
 
 | #      | Golden Flow       | Current Status | Primary Blockers                                 |
 | ------ | ----------------- | -------------- | ------------------------------------------------ |
 | GF-001 | Direct Intake     | 🟢 READY       | ~~BUG-117~~, ~~ST-058~~, ~~INV-003~~             |
 | GF-002 | Procure-to-Pay    | 🟡 PARTIAL     | ~~ST-059~~, ~~PARTY-001~~, SCHEMA-011 (partial)  |
-| GF-003 | Order-to-Cash     | 🟡 PARTIAL     | ~~BUG-115~~, ~~ST-058~~, ~~ST-050~~, ST-051      |
+| GF-003 | Order-to-Cash     | 🟢 READY       | ~~BUG-115~~, ~~ST-058~~, ~~ST-050~~, ~~ST-051~~  |
 | GF-004 | Invoice & Payment | 🟢 READY       | ~~FIN-001~~, ~~ST-057~~, ~~ORD-001~~, ~~ST-061~~ |
-| GF-005 | Pick & Pack       | 🟡 PARTIAL     | Depends on GF-003 (ST-051 needed)                |
+| GF-005 | Pick & Pack       | 🟢 READY       | Depends on GF-003 (~~ST-051~~ complete)          |
 | GF-006 | Client Ledger     | 🟢 READY       | ~~ST-057~~, ~~ST-061~~                           |
 | GF-007 | Inventory Mgmt    | 🟢 READY       | ~~ST-056~~, ~~ST-058~~, ~~INV-003~~              |
 | GF-008 | Sample Request    | 🟢 READY       | ~~BUG-117~~ (all blockers resolved)              |
@@ -423,7 +423,7 @@ pnpm build    # ✅ PASS
 #### Wave 1: Data Integrity Blockers (18h) - ✅ MOSTLY COMPLETE
 
 > **Combines:** Original Phase 1 tasks + New database constraints
-> **Status:** Wave 1A and 1B COMPLETE. Wave 1C (ST-051, ARCH-001) still ready.
+> **Status:** Wave 1A, 1B, and 1C COMPLETE (ST-051 done). Only ARCH-001 remaining in Wave 1C.
 > **Verified:** 2026-01-29 via code audit
 
 ##### Wave 1A: Concurrent Safety (4 agents parallel, 4h) - ✅ COMPLETE
@@ -464,10 +464,10 @@ ALTER TABLE ledger_entries
 
 ##### Wave 1C: Transaction Atomicity (Sequential, 16h)
 
-| Task     | Description                                       | Priority | Status | Est | Module                                           | Dependencies |
-| -------- | ------------------------------------------------- | -------- | ------ | --- | ------------------------------------------------ | ------------ |
-| ST-051   | Add transaction boundaries to critical operations | HIGH     | ready  | 8h  | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050       |
-| ARCH-001 | Create OrderOrchestrator service                  | HIGH     | ready  | 8h  | `server/services/` (new)                         | ST-051       |
+| Task     | Description                                       | Priority | Status   | Est | Module                                           | Dependencies |
+| -------- | ------------------------------------------------- | -------- | -------- | --- | ------------------------------------------------ | ------------ |
+| ST-051   | Add transaction boundaries to critical operations | HIGH     | complete | 8h  | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050       |
+| ARCH-001 | Create OrderOrchestrator service                  | HIGH     | ready    | 8h  | `server/services/` (new)                         | ST-051       |
 
 **Note:** ARCH-001 may be partially complete (commit `bb06aad`). Verify before starting.
 
@@ -619,7 +619,7 @@ pnpm mega:qa:invariants
 | Wave                           | Tasks  | Est Hours  | Status         | Remaining                                 |
 | ------------------------------ | ------ | ---------- | -------------- | ----------------------------------------- |
 | Wave 0: Pre-requisites         | 5      | 5h         | ✅ COMPLETE    | 0                                         |
-| Wave 1: Data Integrity         | 9      | 25h        | ✅ MOSTLY DONE | 2 (ST-051, ARCH-001)                      |
+| Wave 1: Data Integrity         | 9      | 25h        | ✅ MOSTLY DONE | 1 (ARCH-001)                              |
 | Wave 2: Security + safeInArray | 11     | 48h        | ✅ MOSTLY DONE | 3 (TERP-0014, TERP-0017, PARTY-002)       |
 | Wave 3: Hardening              | 8      | 34h        | ✅ MOSTLY DONE | 3 (ST-053, TERP-0019, SCHEMA-011 partial) |
 | Wave 4: Verification           | -      | 8h         | 🔴 NOT STARTED | E2E tests                                 |
@@ -4452,7 +4452,7 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 | INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
 | ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
 | ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
-| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
+| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | complete | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
 | ST-052 | Fix Fallback User ID Violations (11 instances) | HIGH | complete | 2h | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
 | ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | ready | 16h | Multiple files - see task details |
 | FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
