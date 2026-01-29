@@ -12,7 +12,14 @@
 import { z } from "zod";
 import { router, adminProcedure, vipPortalProcedure } from "../_core/trpc";
 import { db } from "../db";
-import { clients, clientNeeds, batches, products, lots, vendors, brands } from "../../drizzle/schema";
+import {
+  clients,
+  clientNeeds,
+  batches,
+  products,
+  lots,
+  brands,
+} from "../../drizzle/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 
 // Default thresholds for stock alerts
@@ -38,12 +45,14 @@ export const alertsRouter = router({
    */
   list: adminProcedure
     .input(
-      z.object({
-        limit: z.number().min(1).max(1000).optional().default(50),
-        offset: z.number().min(0).optional().default(0),
-        type: alertTypeEnum.optional(),
-        acknowledged: z.boolean().optional(),
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(1000).optional().default(50),
+          offset: z.number().min(0).optional().default(0),
+          type: alertTypeEnum.optional(),
+          acknowledged: z.boolean().optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const limit = input?.limit ?? 50;
@@ -127,7 +136,9 @@ export const alertsRouter = router({
         acknowledged: z.boolean().optional(),
         limit: z.number().default(50),
         lowStockThreshold: z.number().default(DEFAULT_THRESHOLDS.lowStock),
-        criticalStockThreshold: z.number().default(DEFAULT_THRESHOLDS.criticalStock),
+        criticalStockThreshold: z
+          .number()
+          .default(DEFAULT_THRESHOLDS.criticalStock),
       })
     )
     .query(async ({ input }) => {
@@ -146,7 +157,11 @@ export const alertsRouter = router({
       }> = [];
 
       // LOW_STOCK alerts from live batches
-      if (!input.type || input.type === "LOW_STOCK" || input.type === "OUT_OF_STOCK") {
+      if (
+        !input.type ||
+        input.type === "LOW_STOCK" ||
+        input.type === "OUT_OF_STOCK"
+      ) {
         const batchData = await db
           .select({
             id: batches.id,
@@ -265,7 +280,9 @@ export const alertsRouter = router({
 
       // Sort by severity
       const severityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
-      alerts.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+      alerts.sort(
+        (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
+      );
 
       return alerts.slice(0, input.limit);
     }),
@@ -279,13 +296,16 @@ export const alertsRouter = router({
       z.object({
         includeOutOfStock: z.boolean().default(true),
         lowStockThreshold: z.number().default(DEFAULT_THRESHOLDS.lowStock),
-        criticalStockThreshold: z.number().default(DEFAULT_THRESHOLDS.criticalStock),
+        criticalStockThreshold: z
+          .number()
+          .default(DEFAULT_THRESHOLDS.criticalStock),
         category: z.string().optional(),
         limit: z.number().default(50),
       })
     )
     .query(async ({ input }) => {
       // Get all live batches with their stock levels
+      // SCHEMA-015: Use clients table instead of deprecated vendors table
       const batchData = await db
         .select({
           id: batches.id,
@@ -294,7 +314,7 @@ export const alertsRouter = router({
           productId: batches.productId,
           productName: products.nameCanonical,
           category: products.category,
-          vendorName: vendors.name,
+          vendorName: clients.name,
           brandName: brands.name,
           onHandQty: batches.onHandQty,
           reservedQty: batches.reservedQty,
@@ -305,7 +325,10 @@ export const alertsRouter = router({
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
-        .leftJoin(vendors, eq(lots.vendorId, vendors.id))
+        .leftJoin(
+          clients,
+          and(eq(lots.supplierClientId, clients.id), eq(clients.isSeller, true))
+        )
         .leftJoin(brands, eq(products.brandId, brands.id))
         .where(
           and(
@@ -336,7 +359,11 @@ export const alertsRouter = router({
         const hold = parseFloat(batch.holdQty || "0");
         const available = Math.max(0, onHand - reserved - quarantine - hold);
 
-        let stockStatus: "LOW_STOCK" | "CRITICAL_STOCK" | "OUT_OF_STOCK" | null = null;
+        let stockStatus:
+          | "LOW_STOCK"
+          | "CRITICAL_STOCK"
+          | "OUT_OF_STOCK"
+          | null = null;
         let severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "LOW";
 
         if (available <= 0 && input.includeOutOfStock) {
@@ -369,8 +396,10 @@ export const alertsRouter = router({
 
       // Sort by severity (most critical first)
       const severityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
-      lowStockItems.sort((a, b) =>
-        severityOrder[a.severity] - severityOrder[b.severity] || a.available - b.available
+      lowStockItems.sort(
+        (a, b) =>
+          severityOrder[a.severity] - severityOrder[b.severity] ||
+          a.available - b.available
       );
 
       return lowStockItems.slice(0, input.limit);
@@ -409,7 +438,9 @@ export const alertsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Log acknowledgment for audit trail (persists in server logs)
-      console.info(`[ALERT] Alert ${input.alertId} acknowledged by user ${ctx.user.id} at ${new Date().toISOString()}`);
+      console.info(
+        `[ALERT] Alert ${input.alertId} acknowledged by user ${ctx.user.id} at ${new Date().toISOString()}`
+      );
       // NOTE: Acknowledgments are session-only. For persistence, add alert_acknowledgments table.
       return {
         success: true,
@@ -425,14 +456,20 @@ export const alertsRouter = router({
    */
   getStats: adminProcedure
     .input(
-      z.object({
-        lowStockThreshold: z.number().default(DEFAULT_THRESHOLDS.lowStock),
-        criticalStockThreshold: z.number().default(DEFAULT_THRESHOLDS.criticalStock),
-      }).optional()
+      z
+        .object({
+          lowStockThreshold: z.number().default(DEFAULT_THRESHOLDS.lowStock),
+          criticalStockThreshold: z
+            .number()
+            .default(DEFAULT_THRESHOLDS.criticalStock),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
-      const lowStockThreshold = input?.lowStockThreshold ?? DEFAULT_THRESHOLDS.lowStock;
-      const criticalStockThreshold = input?.criticalStockThreshold ?? DEFAULT_THRESHOLDS.criticalStock;
+      const lowStockThreshold =
+        input?.lowStockThreshold ?? DEFAULT_THRESHOLDS.lowStock;
+      const criticalStockThreshold =
+        input?.criticalStockThreshold ?? DEFAULT_THRESHOLDS.criticalStock;
 
       // Count active client needs (ACTIVE is the pending state)
       const activeNeedsCount = await db
@@ -478,7 +515,8 @@ export const alertsRouter = router({
         criticalStockCount,
         outOfStockCount,
         pendingNeedsCount: needsCount,
-        totalAlerts: lowStockCount + criticalStockCount + outOfStockCount + needsCount,
+        totalAlerts:
+          lowStockCount + criticalStockCount + outOfStockCount + needsCount,
         thresholds: {
           lowStock: lowStockThreshold,
           criticalStock: criticalStockThreshold,

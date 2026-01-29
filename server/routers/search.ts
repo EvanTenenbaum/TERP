@@ -7,32 +7,10 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import {
-  clients,
-  batches,
-  orders,
-  products,
-  strains,
-} from "../../drizzle/schema";
+import { clients, batches, orders, products } from "../../drizzle/schema";
 import { like, or, and, eq, sql, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
-
-/**
- * Helper to check if an error is a schema-related error (e.g., missing column)
- * QA-003: Only fallback for schema errors, re-throw others
- */
-function isSchemaError(error: unknown): boolean {
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("unknown column") ||
-      msg.includes("no such column") ||
-      (msg.includes("column") && msg.includes("does not exist"))
-    );
-  }
-  return false;
-}
 
 // Search result interface for consistent typing
 interface SearchResult {
@@ -246,95 +224,42 @@ export const searchRouter = router({
         }
       }
 
-      // Search products (via batches with product/strain join)
-      // BUG-042: Now includes product name, strain, and category
-      // BUG-111: Added fallback query for schema drift (strainId may not exist)
+      // Search products (via batches with product join)
+      // BUG-042: Now includes product name and category
+      // SCHEMA-015: Removed strains join - strainId column doesn't exist in production
       if (!types || types.includes("product") || types.includes("batch")) {
         try {
-          let batchResults;
-          try {
-            // Primary query with strains join
-            batchResults = await db
-              .select({
-                id: batches.id,
-                code: batches.code,
-                sku: batches.sku,
-                onHandQty: batches.onHandQty,
-                unitCogs: batches.unitCogs,
-                createdAt: batches.createdAt,
-                // Product info
-                productId: products.id,
-                productName: products.nameCanonical,
-                category: products.category,
-                subcategory: products.subcategory,
-                // Strain info
-                strainName: strains.name,
-                strainCategory: strains.category,
-              })
-              .from(batches)
-              .leftJoin(products, eq(batches.productId, products.id))
-              .leftJoin(strains, eq(products.strainId, strains.id))
-              .where(
-                and(
-                  isNull(batches.deletedAt),
-                  or(
-                    // Batch fields
-                    like(batches.code, searchTerm),
-                    like(batches.sku, searchTerm),
-                    // Product fields
-                    like(products.nameCanonical, searchTerm),
-                    like(products.category, searchTerm),
-                    like(products.subcategory, searchTerm),
-                    // Strain fields
-                    like(strains.name, searchTerm),
-                    like(strains.standardizedName, searchTerm),
-                    like(strains.aliases, searchTerm)
-                  )
+          // Query without strains - strainId column doesn't exist in production
+          const batchResults = await db
+            .select({
+              id: batches.id,
+              code: batches.code,
+              sku: batches.sku,
+              onHandQty: batches.onHandQty,
+              unitCogs: batches.unitCogs,
+              createdAt: batches.createdAt,
+              productId: products.id,
+              productName: products.nameCanonical,
+              category: products.category,
+              subcategory: products.subcategory,
+              strainName: sql<string | null>`NULL`.as("strainName"),
+              strainCategory: sql<string | null>`NULL`.as("strainCategory"),
+            })
+            .from(batches)
+            .leftJoin(products, eq(batches.productId, products.id))
+            .where(
+              and(
+                isNull(batches.deletedAt),
+                or(
+                  like(batches.code, searchTerm),
+                  like(batches.sku, searchTerm),
+                  like(products.nameCanonical, searchTerm),
+                  like(products.category, searchTerm),
+                  like(products.subcategory, searchTerm)
                 )
               )
-              .limit(limit);
-          } catch (strainJoinError) {
-            // QA-003: Only fallback for schema-related errors
-            if (!isSchemaError(strainJoinError)) {
-              throw strainJoinError;
-            }
-
-            // Fallback: Query without strains join if strainId column doesn't exist
-            logger.warn(
-              { error: strainJoinError },
-              "Global search: Query with strains join failed, falling back to simpler query"
-            );
-            batchResults = await db
-              .select({
-                id: batches.id,
-                code: batches.code,
-                sku: batches.sku,
-                onHandQty: batches.onHandQty,
-                unitCogs: batches.unitCogs,
-                createdAt: batches.createdAt,
-                productId: products.id,
-                productName: products.nameCanonical,
-                category: products.category,
-                subcategory: products.subcategory,
-                strainName: sql<string | null>`NULL`.as("strainName"),
-                strainCategory: sql<string | null>`NULL`.as("strainCategory"),
-              })
-              .from(batches)
-              .leftJoin(products, eq(batches.productId, products.id))
-              .where(
-                and(
-                  isNull(batches.deletedAt),
-                  or(
-                    like(batches.code, searchTerm),
-                    like(batches.sku, searchTerm),
-                    like(products.nameCanonical, searchTerm),
-                    like(products.category, searchTerm),
-                    like(products.subcategory, searchTerm)
-                  )
-                )
-              )
-              .limit(limit);
-          }
+            )
+            .limit(limit);
 
           // Add batch results if searching for batches
           if (!types || types.includes("batch")) {

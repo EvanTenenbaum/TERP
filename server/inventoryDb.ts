@@ -7,7 +7,7 @@ import { eq, and, or, like, desc, sql, isNull } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
-import { logSilentCatch, safeJsonParse } from "./_core/logger";
+import { safeJsonParse } from "./_core/logger";
 import { generateStrainULID } from "./ulid";
 import {
   vendors,
@@ -150,7 +150,9 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
       const supplierClients = await db
         .select()
         .from(clients)
-        .where(and(eq(clients.isSeller, true), sql`${clients.deletedAt} IS NULL`))
+        .where(
+          and(eq(clients.isSeller, true), sql`${clients.deletedAt} IS NULL`)
+        )
         .orderBy(asc(clients.name));
 
       // Get all supplier profiles
@@ -231,7 +233,9 @@ export async function getSupplierByLegacyVendorId(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, profile.clientId), sql`${clients.deletedAt} IS NULL`))
+    .where(
+      and(eq(clients.id, profile.clientId), sql`${clients.deletedAt} IS NULL`)
+    )
     .limit(1);
 
   if (!client) return null;
@@ -1165,7 +1169,10 @@ export async function deleteLocation(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-  await db.update(locations).set({ deletedAt: new Date() }).where(eq(locations.id, id));
+  await db
+    .update(locations)
+    .set({ deletedAt: new Date() })
+    .where(eq(locations.id, id));
   return { success: true };
 }
 
@@ -1219,8 +1226,14 @@ export async function deleteCategory(id: number) {
   if (!db) throw new Error("Database not available");
   // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
   // Soft delete associated subcategories first
-  await db.update(subcategories).set({ deletedAt: new Date() }).where(eq(subcategories.categoryId, id));
-  await db.update(categories).set({ deletedAt: new Date() }).where(eq(categories.id, id));
+  await db
+    .update(subcategories)
+    .set({ deletedAt: new Date() })
+    .where(eq(subcategories.categoryId, id));
+  await db
+    .update(categories)
+    .set({ deletedAt: new Date() })
+    .where(eq(categories.id, id));
   return { success: true };
 }
 
@@ -1262,7 +1275,10 @@ export async function deleteSubcategory(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-  await db.update(subcategories).set({ deletedAt: new Date() }).where(eq(subcategories.id, id));
+  await db
+    .update(subcategories)
+    .set({ deletedAt: new Date() })
+    .where(eq(subcategories.id, id));
   return { success: true };
 }
 
@@ -1310,7 +1326,10 @@ export async function deleteGrade(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-  await db.update(grades).set({ deletedAt: new Date() }).where(eq(grades.id, id));
+  await db
+    .update(grades)
+    .set({ deletedAt: new Date() })
+    .where(eq(grades.id, id));
   return { success: true };
 }
 
@@ -1420,7 +1439,10 @@ export async function createStrain(data: {
  * INV-CONSISTENCY-001: Unified constant to ensure all inventory queries
  * use the same status filter for sellable inventory.
  */
-export const SELLABLE_BATCH_STATUSES = ["LIVE", "PHOTOGRAPHY_COMPLETE"] as const;
+export const SELLABLE_BATCH_STATUSES = [
+  "LIVE",
+  "PHOTOGRAPHY_COMPLETE",
+] as const;
 
 /**
  * Get comprehensive dashboard statistics for inventory
@@ -1505,9 +1527,17 @@ export async function getDashboardStats() {
       // INV-CONSISTENCY-001: Only count sellable inventory for category stats
       const categoryStatsResult = await db
         .select({
-          name: sql<string>`COALESCE(${products.category}, 'Uncategorized')`.as('name'),
-          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`.as('units'),
-          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`.as('value'),
+          name: sql<string>`COALESCE(${products.category}, 'Uncategorized')`.as(
+            "name"
+          ),
+          units:
+            sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`.as(
+              "units"
+            ),
+          value:
+            sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`.as(
+              "value"
+            ),
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
@@ -1519,9 +1549,17 @@ export async function getDashboardStats() {
       // INV-CONSISTENCY-001: Only count sellable inventory for subcategory stats
       const subcategoryStatsResult = await db
         .select({
-          name: sql<string>`COALESCE(${products.subcategory}, 'None')`.as('name'),
-          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`.as('units'),
-          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`.as('value'),
+          name: sql<string>`COALESCE(${products.subcategory}, 'None')`.as(
+            "name"
+          ),
+          units:
+            sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`.as(
+              "units"
+            ),
+          value:
+            sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`.as(
+              "value"
+            ),
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
@@ -1548,7 +1586,9 @@ export async function getDashboardStats() {
 
       // PERF-004: Log performance improvement
       const duration = Date.now() - startTime;
-      console.info(`[PERF-004] getDashboardStats completed in ${duration}ms (SQL aggregation)`);
+      console.info(
+        `[PERF-004] getDashboardStats completed in ${duration}ms (SQL aggregation)`
+      );
 
       return {
         totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
@@ -1598,13 +1638,16 @@ export async function getUserInventoryViews(userId: number) {
 
 /**
  * Save a new inventory view
+ * SEC-031: Fixed to use actorId from authenticated context instead of input
  */
-export async function saveInventoryView(input: {
-  name: string;
-  filters: Record<string, unknown>;
-  createdBy: number;
-  isShared?: boolean;
-}) {
+export async function saveInventoryView(
+  input: {
+    name: string;
+    filters: Record<string, unknown>;
+    isShared?: boolean;
+  },
+  actorId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1615,7 +1658,7 @@ export async function saveInventoryView(input: {
     .values({
       name: input.name,
       filters: input.filters,
-      createdBy: input.createdBy,
+      createdBy: actorId,
       isShared: input.isShared ? 1 : 0,
     })
     .$returningId();
@@ -1662,7 +1705,12 @@ export async function bulkUpdateBatchStatus(
     | "SOLD_OUT"
     | "CLOSED",
   userId: number
-): Promise<{ success: boolean; updated: number; skipped: number; errors: string[] }> {
+): Promise<{
+  success: boolean;
+  updated: number;
+  skipped: number;
+  errors: string[];
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1854,12 +1902,14 @@ export async function calculateBatchProfitability(batchId: number) {
     if (!order.items) continue;
 
     // ST-050: Use safeJsonParse with logging instead of silent catch
-    const items = safeJsonParse<Array<{
-      batchId: number;
-      quantity: number;
-      unitPrice?: number;
-      isSample?: boolean;
-    }>>(order.items as string, [], {
+    const items = safeJsonParse<
+      Array<{
+        batchId: number;
+        quantity: number;
+        unitPrice?: number;
+        isSample?: boolean;
+      }>
+    >(order.items as string, [], {
       operation: "getBatchProfitability",
       identifier: order.id,
     });
@@ -1959,12 +2009,14 @@ export async function getProfitabilitySummary() {
     if (!order.items) continue;
 
     // ST-050: Use safeJsonParse with logging instead of silent catch
-    const items = safeJsonParse<Array<{
-      batchId: number;
-      quantity: number;
-      unitPrice?: number;
-      isSample?: boolean;
-    }>>(order.items as string, [], {
+    const items = safeJsonParse<
+      Array<{
+        batchId: number;
+        quantity: number;
+        unitPrice?: number;
+        isSample?: boolean;
+      }>
+    >(order.items as string, [], {
       operation: "getOverallProfitability",
       identifier: order.id,
     });

@@ -24,11 +24,10 @@ import {
   clients,
   users,
   InsertVendorPayable,
-  InsertPayableNotification,
   VendorPayable,
 } from "../../drizzle/schema";
 import { logger } from "../_core/logger";
-import { sendNotification, sendBulkNotification } from "./notificationService";
+import { sendBulkNotification } from "./notificationService";
 
 // ============================================================================
 // Types
@@ -42,7 +41,6 @@ interface CreatePayableInput {
   lotId: number;
   vendorClientId: number;
   cogsPerUnit: number;
-  createdBy: number;
   gracePeriodHours?: number;
 }
 
@@ -71,7 +69,9 @@ async function generatePayableNumber(): Promise<string> {
   const result = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(vendorPayables)
-    .where(sql`YEAR(created_at) = ${year} AND MONTH(created_at) = ${today.getMonth() + 1}`);
+    .where(
+      sql`YEAR(created_at) = ${year} AND MONTH(created_at) = ${today.getMonth() + 1}`
+    );
 
   const count = Number(result[0]?.count || 0) + 1;
   return `PAY-${year}${month}-${String(count).padStart(5, "0")}`;
@@ -85,7 +85,10 @@ async function generatePayableNumber(): Promise<string> {
  * Create a payable for a consigned batch
  * Called when a consigned batch is created or updated to track vendor obligation
  */
-export async function createPayable(input: CreatePayableInput): Promise<number> {
+export async function createPayable(
+  input: CreatePayableInput,
+  actorId: number
+): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -107,7 +110,10 @@ export async function createPayable(input: CreatePayableInput): Promise<number> 
     );
 
   if (existing) {
-    logger.info({ msg: "[Payables] Payable already exists", payableId: existing.id });
+    logger.info({
+      msg: "[Payables] Payable already exists",
+      payableId: existing.id,
+    });
     return existing.id;
   }
 
@@ -127,7 +133,7 @@ export async function createPayable(input: CreatePayableInput): Promise<number> 
       amountDue: "0",
       status: "PENDING",
       gracePeriodHours: input.gracePeriodHours ?? 24,
-      createdBy: input.createdBy,
+      createdBy: actorId,
     })
     .$returningId();
 
@@ -143,7 +149,9 @@ export async function createPayable(input: CreatePayableInput): Promise<number> 
 /**
  * Get payable by ID with details
  */
-export async function getPayableById(payableId: number): Promise<PayableWithDetails | null> {
+export async function getPayableById(
+  payableId: number
+): Promise<PayableWithDetails | null> {
   const db = await getDb();
   if (!db) return null;
 
@@ -159,7 +167,9 @@ export async function getPayableById(payableId: number): Promise<PayableWithDeta
     .leftJoin(clients, eq(vendorPayables.vendorClientId, clients.id))
     .leftJoin(batches, eq(vendorPayables.batchId, batches.id))
     .leftJoin(lots, eq(vendorPayables.lotId, lots.id))
-    .where(and(eq(vendorPayables.id, payableId), isNull(vendorPayables.deletedAt)));
+    .where(
+      and(eq(vendorPayables.id, payableId), isNull(vendorPayables.deletedAt))
+    );
 
   if (!result) return null;
 
@@ -175,14 +185,18 @@ export async function getPayableById(payableId: number): Promise<PayableWithDeta
 /**
  * Get payable by batch ID
  */
-export async function getPayableByBatchId(batchId: number): Promise<VendorPayable | null> {
+export async function getPayableByBatchId(
+  batchId: number
+): Promise<VendorPayable | null> {
   const db = await getDb();
   if (!db) return null;
 
   const [result] = await db
     .select()
     .from(vendorPayables)
-    .where(and(eq(vendorPayables.batchId, batchId), isNull(vendorPayables.deletedAt)));
+    .where(
+      and(eq(vendorPayables.batchId, batchId), isNull(vendorPayables.deletedAt))
+    );
 
   return result || null;
 }
@@ -328,7 +342,10 @@ export async function markPayableDue(batchId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  logger.info({ msg: "[Payables] Checking if payable should be marked due", batchId });
+  logger.info({
+    msg: "[Payables] Checking if payable should be marked due",
+    batchId,
+  });
 
   // Get batch to verify inventory is zero
   const [batch] = await db
@@ -405,7 +422,9 @@ export async function markPayableDue(batchId: number): Promise<void> {
  * Check inventory zero threshold and mark payable due if needed
  * This should be called after any inventory quantity change
  */
-export async function checkInventoryZeroThreshold(batchId: number): Promise<void> {
+export async function checkInventoryZeroThreshold(
+  batchId: number
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
@@ -474,10 +493,14 @@ export async function recordPayablePayment(
   }
 
   if (notes) {
-    updateData.notes = `${payable.notes || ""}\n[Payment ${new Date().toISOString()}]: ${notes}`.trim();
+    updateData.notes =
+      `${payable.notes || ""}\n[Payment ${new Date().toISOString()}]: ${notes}`.trim();
   }
 
-  await db.update(vendorPayables).set(updateData).where(eq(vendorPayables.id, payableId));
+  await db
+    .update(vendorPayables)
+    .set(updateData)
+    .where(eq(vendorPayables.id, payableId));
 
   logger.info({
     msg: "[Payables] Payment recorded",
@@ -497,7 +520,10 @@ export async function recordPayablePayment(
  * Schedule notification to accounting for payable due
  * Will be sent after grace period expires
  */
-async function schedulePayableNotification(payableId: number, batchSku: string): Promise<void> {
+async function schedulePayableNotification(
+  payableId: number,
+  batchSku: string
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
@@ -508,7 +534,9 @@ async function schedulePayableNotification(payableId: number, batchSku: string):
     .where(eq(users.role, "admin")); // For now, notify admins. Can be refined to accounting role
 
   if (accountingUsers.length === 0) {
-    logger.warn({ msg: "[Payables] No accounting users found for notification" });
+    logger.warn({
+      msg: "[Payables] No accounting users found for notification",
+    });
     return;
   }
 
@@ -714,10 +742,7 @@ export async function getOfficeOwnedInventoryValue(): Promise<{
     })
     .from(batches)
     .where(
-      and(
-        eq(batches.ownershipType, "OFFICE_OWNED"),
-        isNull(batches.deletedAt)
-      )
+      and(eq(batches.ownershipType, "OFFICE_OWNED"), isNull(batches.deletedAt))
     );
 
   return {

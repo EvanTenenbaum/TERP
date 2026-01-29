@@ -11,7 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -36,25 +36,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
-import { useConcurrentEditDetection, type VersionedEntity } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
   InspectorSection,
   InspectorField,
-  InspectorActions,
   useInspectorPanel,
 } from "./InspectorPanel";
+
+// Inventory Components
+import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 
 // Icons
 import {
@@ -64,19 +59,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
-  AlertCircle,
-  RefreshCw,
   Edit,
-  Trash2,
-  Download,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  CheckCircle,
-  Clock,
-  XCircle,
-  Pause,
-  Image as ImageIcon,
 } from "lucide-react";
 
 // ============================================================================
@@ -338,9 +324,10 @@ export function InventoryWorkSurface() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const pageSize = 50;
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
@@ -449,23 +436,23 @@ export function InventoryWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": (e: KeyboardEvent) => { e?.preventDefault(); searchInputRef.current?.focus(); },
-      "ctrl+k": (e: KeyboardEvent) => { e?.preventDefault(); searchInputRef.current?.focus(); },
-      arrowdown: (e: KeyboardEvent) => {
+      "cmd+k": (e?: React.KeyboardEvent) => { e?.preventDefault(); searchInputRef.current?.focus(); },
+      "ctrl+k": (e?: React.KeyboardEvent) => { e?.preventDefault(); searchInputRef.current?.focus(); },
+      arrowdown: (e?: React.KeyboardEvent) => {
         e?.preventDefault();
         const newIndex = Math.min(displayItems.length - 1, selectedIndex + 1);
         setSelectedIndex(newIndex);
         const item = displayItems[newIndex];
         if (item?.batch) setSelectedBatchId(item.batch.id);
       },
-      arrowup: (e: KeyboardEvent) => {
+      arrowup: (e?: React.KeyboardEvent) => {
         e?.preventDefault();
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const item = displayItems[newIndex];
         if (item?.batch) setSelectedBatchId(item.batch.id);
       },
-      enter: (e: KeyboardEvent) => {
+      enter: (e?: React.KeyboardEvent) => {
         if (selectedItem) { e?.preventDefault(); inspector.open(); }
       },
     },
@@ -549,7 +536,7 @@ export function InventoryWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => toast.info("Add batch modal")}>
+        <Button onClick={() => setShowPurchaseModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Batch
         </Button>
@@ -671,6 +658,16 @@ export function InventoryWorkSurface() {
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
+
+      {/* Purchase/Intake Modal */}
+      <PurchaseModal
+        open={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        onSuccess={() => {
+          setShowPurchaseModal(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }

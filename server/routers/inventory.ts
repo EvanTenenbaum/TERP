@@ -1362,12 +1362,14 @@ export const inventoryRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         try {
-          return await inventoryDb.saveInventoryView({
-            name: input.name,
-            filters: input.filters,
-            createdBy: getAuthenticatedUserId(ctx),
-            isShared: input.isShared,
-          });
+          return await inventoryDb.saveInventoryView(
+            {
+              name: input.name,
+              filters: input.filters,
+              isShared: input.isShared,
+            },
+            getAuthenticatedUserId(ctx)
+          );
         } catch (error) {
           handleError(error, "inventory.views.save");
           throw error;

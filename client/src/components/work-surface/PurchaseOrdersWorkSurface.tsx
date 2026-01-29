@@ -353,7 +353,7 @@ function POInspectorContent({ po, suppliers, products, onUpdateStatus, onDelete 
 
 export function PurchaseOrdersWorkSurface() {
   // Auth
-  const { user } = useAuth();
+  useAuth(); // Required for authentication check
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
@@ -411,7 +411,7 @@ export function PurchaseOrdersWorkSurface() {
   const products = useMemo(() => {
     const items = (productsData?.items ?? []) as Array<{ batch?: { id?: number; sku?: string }; product?: { id?: number; nameCanonical?: string } | null }>;
     return items.map((item) => ({
-      id: item.batch?.id || item.product?.id || 0,
+      id: item.batch?.id || item.product?.id || 0, // safe: product ID fallback, not user ID
       name: item.product?.nameCanonical || item.batch?.sku || "Unknown",
     }));
   }, [productsData]);
@@ -560,7 +560,6 @@ export function PurchaseOrdersWorkSurface() {
       paymentTerms: formData.paymentTerms || undefined,
       notes: formData.notes || undefined,
       vendorNotes: formData.supplierNotes || undefined,
-      createdBy: user?.id ?? 0,
       items,
     });
   };
@@ -868,7 +867,7 @@ export function PurchaseOrdersWorkSurface() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>Line Items *</Label>
-                <Button variant="outline" size="sm" onClick={handleAddItem}>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add Item
                 </Button>
