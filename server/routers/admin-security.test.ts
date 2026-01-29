@@ -111,10 +111,11 @@ describe('Admin Endpoints Security (CL-003)', () => {
 
       const content = fs.readFileSync(filePath, 'utf-8');
       
-      // Count procedure definitions (including those with .use() middleware)
-      const adminProcedureCount = (content.match(/adminProcedure\.(query|mutation|use)/g) || []).length;
-      const publicProcedureCount = (content.match(/publicProcedure\.(query|mutation|use)/g) || []).length;
-      const protectedProcedureCount = (content.match(/protectedProcedure\.(query|mutation|use)/g) || []).length;
+      // Count procedure definitions by matching 'name: procedureType' pattern
+      // This handles method chaining like adminProcedure.input(...).query(...)
+      const adminProcedureCount = (content.match(/:\s*adminProcedure/g) || []).length;
+      const publicProcedureCount = (content.match(/:\s*publicProcedure/g) || []).length;
+      const protectedProcedureCount = (content.match(/:\s*protectedProcedure/g) || []).length;
 
       if (publicProcedureCount > 0) {
         violations.push(`${filename}: Has ${publicProcedureCount} publicProcedure(s) - should be adminProcedure`);

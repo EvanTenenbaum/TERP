@@ -554,20 +554,10 @@ export async function runAutoMigrations() {
       }
     }
 
-    // GF-PHASE0-003 FIX: Add payment_terms column (FEAT-001)
-    try {
-      await db.execute(
-        sql`ALTER TABLE clients ADD COLUMN payment_terms INT DEFAULT 30`
-      );
-      console.info("  ✅ Added payment_terms column to clients");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("Duplicate column")) {
-        console.info("  ℹ️  clients.payment_terms already exists");
-      } else {
-        console.info("  ⚠️  clients.payment_terms:", errMsg);
-      }
-    }
+    // SCHEMA-013: Removed duplicate payment_terms migration
+    // The payment_terms column is already defined in drizzle/schema.ts (line 1615)
+    // and created by migration 0055_add_client_business_fields.sql
+    // This autoMigrate block was redundant and has been removed.
 
     // GF-PHASE0-003 FIX: Add referred_by_client_id column (referral tracking)
     try {

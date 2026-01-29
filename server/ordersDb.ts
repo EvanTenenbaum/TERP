@@ -1615,7 +1615,7 @@ export function isValidStatusTransition(
 /**
  * Get validation error message for invalid status transition
  */
-function getTransitionError(
+export function getTransitionError(
   statusType: "fulfillment" | "sale" | "quote",
   currentStatus: string,
   newStatus: string

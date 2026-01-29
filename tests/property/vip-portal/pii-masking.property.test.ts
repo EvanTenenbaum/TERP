@@ -23,7 +23,9 @@ describe("PII Masking Property Tests", () => {
 
   describe("piiMasker.email", () => {
     /**
-     * Property 9.1: Email masking never reveals full local part
+     * Property 9.1: Email masking never reveals more than first 2 characters
+     * Note: The test checks the REVEALED portion, not substring matching,
+     * to avoid false positives when mask chars (*) match original chars.
      */
     it("P9.1: Never reveals more than 2 characters of local part", () => {
       fc.assert(
@@ -32,13 +34,18 @@ describe("PII Masking Property Tests", () => {
           (email) => {
             const masked = piiMasker.email(email);
             const [local] = email.split("@");
+            const [maskedLocal] = masked.split("@");
 
-            // The masked output should not contain the full local part
-            // if it's longer than 2 characters
+            // The masked local part should:
+            // 1. Start with at most 2 characters from original (for long locals)
+            // 2. Be followed by mask characters (***)
             if (local.length > 2) {
-              return !masked.includes(local);
+              // Verify only first 2 chars are revealed, followed by ***
+              const revealedPart = maskedLocal.replace(/\*+$/, "");
+              return revealedPart.length <= 2 && local.startsWith(revealedPart);
             }
-            return true;
+            // For short locals (<=2 chars), should be fully masked as ***
+            return maskedLocal === "***";
           }
         ),
         { numRuns }

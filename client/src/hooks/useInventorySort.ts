@@ -45,7 +45,8 @@ export interface InventorySortableRow {
     [key: string]: unknown;
   } | null;
   brand: { id?: number; name: string; [key: string]: unknown } | null;
-  vendor: { id?: number; name: string; [key: string]: unknown } | null;
+  // BUG-122: Use supplierClient instead of deprecated vendor field
+  supplierClient: { id?: number; name: string; [key: string]: unknown } | null;
   lot?: { id?: number; [key: string]: unknown } | null;
 }
 
@@ -101,8 +102,9 @@ export function useInventorySort() {
           bVal = b.brand?.name || "";
           break;
         case "vendor":
-          aVal = a.vendor?.name || "";
-          bVal = b.vendor?.name || "";
+          // BUG-122: Use supplierClient for vendor sorting
+          aVal = a.supplierClient?.name || "";
+          bVal = b.supplierClient?.name || "";
           break;
         case "grade":
           aVal = a.batch?.grade || "";

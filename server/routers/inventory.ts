@@ -242,13 +242,8 @@ export const inventoryRouter = router({
               subcategory: item.product?.subcategory || null,
 
               // Relationships
-              // BUG-098 FIX: Use supplierClient as fallback for deprecated vendor table
-
-              vendorName:
-                item.vendor?.name ||
-                (item as { supplierClient?: { name?: string | null } | null })
-                  .supplierClient?.name ||
-                null,
+              // BUG-122: Use supplierClient (canonical supplier data from clients table)
+              vendorName: item.supplierClient?.name || null,
               brandName: item.brand?.name || null,
 
               // Quantities

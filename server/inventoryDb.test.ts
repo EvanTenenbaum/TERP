@@ -7,7 +7,7 @@ vi.mock("./db", () => ({
 }));
 
 import { getDb } from "./db";
-import { getBatchesByVendor, getDashboardStats } from "./inventoryDb";
+import { getBatchesByVendor, getDashboardStats, SELLABLE_BATCH_STATUSES } from "./inventoryDb";
 
 // Type definitions for test data
 interface MockBatch {
@@ -244,9 +244,8 @@ describe("ST-058-B: safeInArray migration for inventory", () => {
   });
 
   it("SELLABLE_BATCH_STATUSES constant should be non-empty", () => {
-    // Import and verify the constant is valid for safeInArray
+    // Verify the constant is valid for safeInArray
     // This is a defense-in-depth test to catch accidental empty array
-    const { SELLABLE_BATCH_STATUSES } = require("./inventoryDb");
     expect(SELLABLE_BATCH_STATUSES).toBeDefined();
     expect(Array.isArray(SELLABLE_BATCH_STATUSES)).toBe(true);
     expect(SELLABLE_BATCH_STATUSES.length).toBeGreaterThan(0);

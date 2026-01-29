@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "commit": "7fcf178",
-  "date": "2026-01-27",
-  "branch": "claude/debug-inventory-flow-nsPLI",
+  "commit": "511fd3a",
+  "date": "2026-01-29",
+  "branch": "fix/TEST-030-admin-setup-rate-limiter",
   "phase": "Development",
-  "buildTime": "2026-01-27T04:13:15.291Z"
+  "buildTime": "2026-01-29T00:07:29.672Z"
 }

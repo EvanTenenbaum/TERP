@@ -632,6 +632,95 @@ pnpm mega:qa:invariants
 
 ---
 
+### Code Review Remediation Wave (Jan 28, 2026)
+
+> **Combined findings from 3 parallel code reviews of Wave 1-3 commits**
+> **Review Date:** Jan 28, 2026
+> **Test Status:** 8 tests failing across 5 files
+> **Session:** `017MBBpCG5HjH3Y3nhjPKDP1`
+
+#### Critical Issues (Tests Failing - 4 agents parallel)
+
+| Task     | Description                                    | Priority | Status | Est | Module                                      | Root Cause                          |
+| -------- | ---------------------------------------------- | -------- | ------ | --- | ------------------------------------------- | ----------------------------------- |
+| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | ready  | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
+| BUG-122  | Remove vendors table join in inventory queries | HIGH     | ready  | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
+| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | ready  | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
+| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | ready  | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
+
+**BUG-121 Details (getTransitionError not exported):**
+
+```typescript
+// CURRENT - server/ordersDb.ts:1618 (NOT exported)
+function getTransitionError(statusType, currentStatus, newStatus) {...}
+
+// FIX: Add export keyword
+export function getTransitionError(statusType, currentStatus, newStatus) {...}
+```
+
+- **Impact:** 4 tests fail in ordersDb.stateMachine.test.ts (lines 213, 218, 223, 229)
+- **Tests:** "should return terminal state message for PAID/CANCELLED", "should list valid transitions"
+
+**BUG-122 Details (Inventory joins deprecated vendors table):**
+
+```typescript
+// CURRENT - server/inventoryDb.ts:887
+.leftJoin(vendors, eq(lots.vendorId, vendors.id))  // DEPRECATED
+
+// FIX: Use clients table with isSeller=true
+.leftJoin(clients, eq(lots.supplierClientId, clients.id))
+```
+
+- **Impact:** Inventory queries fail when vendors table is dropped
+- **Affected Queries:** `getAllBatches()`, `searchBatches()` - lines 887, 950
+- **Party Model:** Per CLAUDE.md, vendors table is deprecated
+
+**TEST-030 Details (Rate limiter interference):**
+
+- Tests at lines 395, 438 get "Too many requests" instead of expected errors
+- Rate limiter state persists between test runs
+- **Fix:** Reset rate limiter map before each test or use test-specific IPs
+
+#### Medium Priority (Cleanup - 2 agents parallel)
+
+| Task        | Description                             | Priority | Status | Est | Module                                                         | Impact        |
+| ----------- | --------------------------------------- | -------- | ------ | --- | -------------------------------------------------------------- | ------------- |
+| CLEANUP-002 | Remove unused cancel dialog code        | LOW      | ready  | 30m | `client/src/components/clients/AddClientWizard.tsx:49,156,165` | Dead code     |
+| SCHEMA-013  | Standardize payment_terms column naming | LOW      | ready  | 1h  | `drizzle/schema.ts`, `server/autoMigrate.ts`                   | Inconsistency |
+
+**CLEANUP-002 Details (Unused code):**
+
+```typescript
+// Lines 49, 156, 165 - unused cancel confirmation dialog
+const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);  // Line 49 - never read
+const handleCancelClick = useCallback(...);  // Line 156 - never called
+const confirmCancel = useCallback(...);  // Line 165 - never called
+```
+
+**SCHEMA-013 Details (Naming inconsistency):**
+
+- `server/autoMigrate.ts:557,560` uses `payment_terms` (snake_case)
+- `drizzle/schema.ts` uses `paymentTerms` (camelCase) in most places
+- Drizzle should auto-convert, but naming should be consistent
+
+#### Verified False Positives (No Action Required)
+
+| Issue                         | Finding                                                             |
+| ----------------------------- | ------------------------------------------------------------------- |
+| SCHEMA-010 referralSettings   | Already fixed in commit `653b2a9` - renamed exports                 |
+| Rate limiting order (SEC-012) | Actually correct - rate limit before key check prevents brute force |
+
+#### Verification Gate (Code Review Wave):
+
+```bash
+pnpm check && pnpm lint && pnpm test && pnpm build
+# All 8 failing tests now pass
+# Inventory queries work without vendors table
+# getTransitionError properly exported
+```
+
+---
+
 ### Sprint Integration QA Findings (Pre-existing Issues) - Added Jan 25, 2026
 
 > Discovered during RedHat-grade QA audit of the sprint integration release.
