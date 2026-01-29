@@ -5774,7 +5774,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 
 - [x] The inventory query in the order creation flow executes successfully without errors.
 - [x] Available inventory batches are displayed to the user.
-- [ ] Raw SQL errors are never exposed to the frontend. (See SEC-042)
+- [x] Raw SQL errors are never exposed to the frontend. (SEC-042 ✅ COMPLETE)
 
 ---
 
@@ -5947,12 +5947,21 @@ The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No o
 
 ---
 
-## 🐞 January 28 Reality Map QA Audit - New Bug Reports
+## 🐞 January 28 Reality Map QA Audit - ✅ ALL ISSUES RESOLVED
 
 > **Source:** TERP Reality Map Report (January 28, 2026)
 > **Environment:** STAGING (https://terp-app-b9s35.ondigitalocean.app)
-> **Overall Health:** 91.2% (31/34 flows working, 3 bugs found)
-> **Common Root Cause:** SQL query failures with raw SQL exposed in UI
+> **Overall Health:** 91.2% → 100% (all 3 bugs fixed)
+> **Completed:** 2026-01-29
+> **Session:** `017MBBpCG5HjH3Y3nhjPKDP1`
+
+| Issue                     | Task            | Status      | Commit    |
+| ------------------------- | --------------- | ----------- | --------- |
+| BUG-001 (Inventory Load)  | BUG-110/BUG-122 | ✅ COMPLETE | `e381ef4` |
+| BUG-002 (Purchase Orders) | BUG-123         | ✅ COMPLETE | `d9f4542` |
+| BUG-003 (Time Clock)      | BUG-124         | ✅ COMPLETE | `d9f4542` |
+| Security (SQL Exposure)   | SEC-042         | ✅ COMPLETE | `e929c99` |
+| Root Cause (Schema Sync)  | DATA-027        | ✅ COMPLETE | `d9f4542` |
 
 ### BUG-123: Purchase Orders List SQL Failure (P0 BLOCKER) - ✅ COMPLETE
 
@@ -6020,14 +6029,17 @@ The Time Clock page shows "Error Loading Data" with SQL query exposed. Time trac
 
 ---
 
-### SEC-042: Prevent Raw SQL Exposure in UI Error Messages
+### SEC-042: Prevent Raw SQL Exposure in UI Error Messages - ✅ COMPLETE
 
 **Type:** Security
 **Source:** Jan 28 Reality Map (Security Observation)
-**Status:** ready
+**Status:** complete
 **Priority:** MEDIUM
 **Estimate:** 4h
-**Module:** `server/_core/trpc.ts`, `server/_core/errorHandling.ts`
+**Actual:** 2h
+**Completed:** 2026-01-29
+**Key Commits:** `e929c99`
+**Module:** `server/_core/trpc.ts`
 **Dependencies:** None
 
 **Problem / Goal:**
@@ -6040,26 +6052,21 @@ All SQL errors in BUG-110, BUG-123, BUG-124 exposed raw SQL queries to the UI, i
 
 This is an information disclosure vulnerability that could aid attackers.
 
+**Fix Applied:**
+
+- Added `isDatabaseError()` function to detect SQL error patterns (lines 52-80)
+- Modified `errorHandlingMiddleware` to sanitize database errors (lines 83-120)
+- Log full error details server-side only
+- Return generic user-friendly message: "A database error occurred. Please try again or contact support."
+- Added 17 test cases in `server/_core/trpc.test.ts`
+
 **Acceptance Criteria:**
 
-- [ ] Implement error boundary that catches database errors
-- [ ] Log detailed errors server-side only
-- [ ] Return generic user-friendly error messages to UI
-- [ ] Never expose raw SQL queries in frontend error messages
-- [ ] Add centralized error sanitization in tRPC error handler
-
-**Implementation Notes:**
-
-```typescript
-// In tRPC error handler or errorHandling.ts
-if (error instanceof DatabaseError) {
-  logger.error({ sql: error.sql, params: error.params }, "Database error");
-  throw new TRPCError({
-    code: "INTERNAL_SERVER_ERROR",
-    message: "A database error occurred. Please try again or contact support.",
-  });
-}
-```
+- [x] Implement error boundary that catches database errors
+- [x] Log detailed errors server-side only
+- [x] Return generic user-friendly error messages to UI
+- [x] Never expose raw SQL queries in frontend error messages
+- [x] Add centralized error sanitization in tRPC error handler
 
 ---
 
