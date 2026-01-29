@@ -42,7 +42,7 @@ import { useLocation } from "wouter";
 
 export default function PurchaseOrdersPage() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  useAuth(); // Required for authentication check
   const [, _setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -214,7 +214,6 @@ export default function PurchaseOrdersPage() {
       paymentTerms: formData.paymentTerms || undefined,
       notes: formData.notes || undefined,
       vendorNotes: formData.supplierNotes || undefined,
-      createdBy: user?.id ?? 0,
       items,
     });
   };
@@ -515,7 +514,7 @@ export default function PurchaseOrdersPage() {
                         {products.map(item => (
                           <SelectItem
                             key={item.batch?.id || item.product?.id}
-                            value={(item.batch?.id || item.product?.id || 0).toString()}
+                            value={(item.batch?.id || item.product?.id || 0).toString()} // safe: product ID fallback, not user ID
                           >
                             {item.product?.nameCanonical || item.batch?.sku || "Unknown"}
                           </SelectItem>
@@ -572,7 +571,7 @@ export default function PurchaseOrdersPage() {
                   </div>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={handleAddItem}>
+              <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
               </Button>
