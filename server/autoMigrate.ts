@@ -1416,6 +1416,25 @@ export async function runAutoMigrations() {
     }
 
     // ========================================================================
+    // SCHEMA-011: Add index for pricing_rules.deleted_at
+    // ========================================================================
+    // The deleted_at column was added in migration 0039, but no index was created
+    // This ensures query performance when filtering soft-deleted pricing rules
+    try {
+      await db.execute(sql`
+        CREATE INDEX idx_pricing_rules_deleted_at ON pricing_rules (deleted_at)
+      `);
+      console.info("  ✅ Added idx_pricing_rules_deleted_at index");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate key name")) {
+        console.info("  ℹ️  idx_pricing_rules_deleted_at index already exists");
+      } else {
+        console.warn("  ⚠️  idx_pricing_rules_deleted_at index:", errMsg);
+      }
+    }
+
+    // ========================================================================
     // BUG-124: TIME_ENTRIES TABLE - Create for Time Clock functionality
     // ========================================================================
     // The time_entries table is defined in schema-scheduling.ts but never migrated
