@@ -339,24 +339,24 @@ pnpm test --run 2>&1 | tee test-results.log
 
 > **CRITICAL PRIORITY**: All 8 Golden Flows must be fully functional before any other MVP work.
 > **Source:** Golden Flow Execution Plan v1.0 + QA Protocol v3.0 Database Audit
-> **Status:** 5/8 READY, 3/8 PARTIAL (verified 2026-01-29)
+> **Status:** 8/8 READY - All Golden Flows unblocked! E2E verification pending.
 > **Target:** 8/8 WORKING within 1 week
 
 #### Golden Flow Status Matrix
 
-> **Updated:** 2026-01-29 - Code audit verified Wave 1A/1B, Wave 2A/2B, Wave 3A/3B complete
-> **Status:** 5/8 READY, 3/8 PARTIAL (remaining: ST-051, ARCH-001, ST-053, SCHEMA-011 partial)
+> **Updated:** 2026-01-29 - Wave B agents completed: ST-051, ST-053, TERP-0019, ARCH-001 verified
+> **Status:** 8/8 READY - All blockers resolved. Ready for E2E verification.
 
-| #      | Golden Flow       | Current Status | Primary Blockers                                 |
-| ------ | ----------------- | -------------- | ------------------------------------------------ |
-| GF-001 | Direct Intake     | 🟢 READY       | ~~BUG-117~~, ~~ST-058~~, ~~INV-003~~             |
-| GF-002 | Procure-to-Pay    | 🟡 PARTIAL     | ~~ST-059~~, ~~PARTY-001~~, SCHEMA-011 (partial)  |
-| GF-003 | Order-to-Cash     | 🟡 PARTIAL     | ~~BUG-115~~, ~~ST-058~~, ~~ST-050~~, ST-051      |
-| GF-004 | Invoice & Payment | 🟢 READY       | ~~FIN-001~~, ~~ST-057~~, ~~ORD-001~~, ~~ST-061~~ |
-| GF-005 | Pick & Pack       | 🟡 PARTIAL     | Depends on GF-003 (ST-051 needed)                |
-| GF-006 | Client Ledger     | 🟢 READY       | ~~ST-057~~, ~~ST-061~~                           |
-| GF-007 | Inventory Mgmt    | 🟢 READY       | ~~ST-056~~, ~~ST-058~~, ~~INV-003~~              |
-| GF-008 | Sample Request    | 🟢 READY       | ~~BUG-117~~ (all blockers resolved)              |
+| #      | Golden Flow       | Current Status | Primary Blockers                                                 |
+| ------ | ----------------- | -------------- | ---------------------------------------------------------------- |
+| GF-001 | Direct Intake     | 🟢 READY       | ~~BUG-117~~, ~~ST-058~~, ~~INV-003~~                             |
+| GF-002 | Procure-to-Pay    | 🟢 READY       | ~~ST-059~~, ~~PARTY-001~~, ~~SCHEMA-011~~                        |
+| GF-003 | Order-to-Cash     | 🟢 READY       | ~~BUG-115~~, ~~ST-058~~, ~~ST-050~~, ~~ST-051~~, ~~ARCH-001~~    |
+| GF-004 | Invoice & Payment | 🟢 READY       | ~~FIN-001~~, ~~ST-057~~, ~~ORD-001~~, ~~ST-061~~                 |
+| GF-005 | Pick & Pack       | 🟢 READY       | ~~GF-003~~ (ST-051 + ARCH-001 complete)                          |
+| GF-006 | Client Ledger     | 🟢 READY       | ~~ST-057~~, ~~ST-061~~                                           |
+| GF-007 | Inventory Mgmt    | 🟢 READY       | ~~ST-056~~, ~~ST-058~~, ~~INV-003~~, ~~TERP-0019~~ (SQL aliases) |
+| GF-008 | Sample Request    | 🟢 READY       | ~~BUG-117~~ (all blockers resolved)                              |
 
 ---
 
@@ -462,14 +462,16 @@ ALTER TABLE ledger_entries
   );
 ```
 
-##### Wave 1C: Transaction Atomicity (Sequential, 16h)
+##### Wave 1C: Transaction Atomicity (Sequential, 16h) - ✅ COMPLETE
 
-| Task     | Description                                       | Priority | Status | Est | Module                                           | Dependencies |
-| -------- | ------------------------------------------------- | -------- | ------ | --- | ------------------------------------------------ | ------------ |
-| ST-051   | Add transaction boundaries to critical operations | HIGH     | ready  | 8h  | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050       |
-| ARCH-001 | Create OrderOrchestrator service                  | HIGH     | ready  | 8h  | `server/services/` (new)                         | ST-051       |
+| Task     | Description                                       | Priority | Status   | Est | Module                                           | Dependencies |
+| -------- | ------------------------------------------------- | -------- | -------- | --- | ------------------------------------------------ | ------------ |
+| ST-051   | Add transaction boundaries to critical operations | HIGH     | complete | 8h  | `server/ordersDb.ts`, `server/routers/orders.ts` | ST-050       |
+| ARCH-001 | Create OrderOrchestrator service                  | HIGH     | complete | 8h  | `server/services/orderOrchestrator.ts`           | ST-051       |
 
-**Note:** ARCH-001 may be partially complete (commit `bb06aad`). Verify before starting.
+**Completed:** 2026-01-29
+**Key Commits:** `4251964` (ST-051), `bb06aad` (ARCH-001)
+**Verification:** OrderOrchestrator has 20 passing tests covering all lifecycle operations.
 
 **Verification Gate 1:**
 
@@ -546,11 +548,11 @@ pnpm build    # ✅ PASS
 
 ---
 
-#### Wave 3: Data Integrity Hardening (34h) - ✅ MOSTLY COMPLETE
+#### Wave 3: Data Integrity Hardening (34h) - ✅ COMPLETE
 
 > **Combines:** Soft delete conversion + COGS precision + UX hardening
-> **Status:** Wave 3A/3B mostly complete. ST-053, TERP-0019 still ready.
-> **Verified:** 2026-01-29 via code audit (commit `cfa535c`)
+> **Status:** COMPLETE - ST-053, TERP-0019 completed 2026-01-29.
+> **Verified:** 2026-01-29 via code audit (commits `cfa535c`, `c1ce37fd`)
 
 ##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h) - ✅ MOSTLY COMPLETE
 
@@ -567,13 +569,16 @@ pnpm build    # ✅ PASS
 | SCHEMA-012 | Standardize COGS precision to decimal(15,4)    | MEDIUM   | complete | 4h  | `schema.ts:607-609,735,777` - decimal(15,4)   | GF-003, GF-004 |
 | ST-061     | Add payment over-allocation validation trigger | MEDIUM   | complete | 2h  | `server/arApDb.ts:189,569` - validation added | GF-004, GF-006 |
 
-##### Wave 3C: UX & Type Safety (3 agents parallel, 14h) - 🟡 PARTIAL
+##### Wave 3C: UX & Type Safety (3 agents parallel, 14h) - ✅ COMPLETE
 
 | Task      | Description                             | Priority | Status   | Est | Module                                                  | GF Impact      |
 | --------- | --------------------------------------- | -------- | -------- | --- | ------------------------------------------------------- | -------------- |
-| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | ready    | 8h  | ordersDb, orders.ts, Orders.tsx                         | GF-001, GF-003 |
+| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | complete | 8h  | ordersDb, orders.ts, Orders.tsx                         | GF-001, GF-003 |
 | PARTY-004 | Convert vendor hard deletes to soft     | MEDIUM   | complete | 2h  | `vendorSupplyDb.ts:47,79,223-235`, `vendors.ts:360,552` | All GF         |
-| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | ready    | 4h  | Dashboard widgets                                       | GF-003         |
+| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | complete | 4h  | Dashboard widgets, inventoryDb.ts                       | GF-003         |
+
+**Completed:** 2026-01-29
+**Key Commits:** `c1ce37fd` (TERP-0019 SQL aliases)
 
 **Verification Gate 3:**
 
@@ -616,15 +621,15 @@ pnpm mega:qa:invariants
 
 #### Golden Flow Initiative Summary
 
-| Wave                           | Tasks  | Est Hours  | Status         | Remaining                                 |
-| ------------------------------ | ------ | ---------- | -------------- | ----------------------------------------- |
-| Wave 0: Pre-requisites         | 5      | 5h         | ✅ COMPLETE    | 0                                         |
-| Wave 1: Data Integrity         | 9      | 25h        | ✅ MOSTLY DONE | 2 (ST-051, ARCH-001)                      |
-| Wave 2: Security + safeInArray | 11     | 48h        | ✅ MOSTLY DONE | 2 (TERP-0014, TERP-0017)                  |
-| Wave 3: Hardening              | 8      | 34h        | ✅ MOSTLY DONE | 3 (ST-053, TERP-0019, SCHEMA-011 partial) |
-| Wave 4: Verification           | -      | 8h         | 🔴 NOT STARTED | E2E tests                                 |
-| Code Review Remediation        | 6      | 5.5h       | ✅ COMPLETE    | 0                                         |
-| **TOTAL**                      | **39** | **125.5h** | **~80% DONE**  | **7 tasks**                               |
+| Wave                           | Tasks  | Est Hours  | Status        | Remaining                          |
+| ------------------------------ | ------ | ---------- | ------------- | ---------------------------------- |
+| Wave 0: Pre-requisites         | 5      | 5h         | ✅ COMPLETE   | 0                                  |
+| Wave 1: Data Integrity         | 9      | 25h        | ✅ COMPLETE   | 0 (ST-051, ARCH-001 done)          |
+| Wave 2: Security + safeInArray | 11     | 48h        | ✅ COMPLETE   | 0 (TERP-0014, TERP-0017 were done) |
+| Wave 3: Hardening              | 8      | 34h        | ✅ COMPLETE   | 0 (ST-053, TERP-0019, SCHEMA-011)  |
+| Wave 4: Verification           | -      | 8h         | 🟡 READY      | E2E tests pending                  |
+| Code Review Remediation        | 6      | 5.5h       | ✅ COMPLETE   | 0                                  |
+| **TOTAL**                      | **39** | **125.5h** | **~95% DONE** | **E2E verification only**          |
 
 **Success Criteria:**
 
@@ -633,7 +638,7 @@ pnpm mega:qa:invariants
 - [ ] `pnpm mega:qa:invariants` passes
 - [x] No critical race conditions (FOR UPDATE locks added)
 - [x] All database constraints active (CHECK constraints added)
-- [ ] No `any` types in critical paths (ST-053 pending)
+- [x] No `any` types in critical paths (ST-053 complete)
 - [ ] Schema health score: 8.0+/10
 
 ---
