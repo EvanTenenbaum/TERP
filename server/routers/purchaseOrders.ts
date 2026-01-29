@@ -1,8 +1,18 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { getDb } from "../db";
-import { purchaseOrders, purchaseOrderItems, supplierProfiles, products, clients } from "../../drizzle/schema";
-import { eq, desc, sql, and, or } from "drizzle-orm";
+import {
+  purchaseOrders,
+  purchaseOrderItems,
+  supplierProfiles,
+  products,
+  clients,
+} from "../../drizzle/schema";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { logger } from "../_core/logger";
@@ -13,13 +23,24 @@ export const purchaseOrdersRouter = router({
   // BUG-034: Standardized .list procedure for API consistency
   list: protectedProcedure
     .input(
-      z.object({
-        limit: z.number().min(1).max(1000).optional().default(50),
-        offset: z.number().min(0).optional().default(0),
-        supplierClientId: z.number().optional(),
-        status: z.enum(["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"]).optional(),
-        search: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(1000).optional().default(50),
+          offset: z.number().min(0).optional().default(0),
+          supplierClientId: z.number().optional(),
+          status: z
+            .enum([
+              "DRAFT",
+              "SENT",
+              "CONFIRMED",
+              "RECEIVING",
+              "RECEIVED",
+              "CANCELLED",
+            ])
+            .optional(),
+          search: z.string().optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const db = await getDb();
@@ -33,7 +54,9 @@ export const purchaseOrdersRouter = router({
 
       // Filter by supplier
       if (input?.supplierClientId) {
-        conditions.push(eq(purchaseOrders.supplierClientId, input.supplierClientId));
+        conditions.push(
+          eq(purchaseOrders.supplierClientId, input.supplierClientId)
+        );
       }
 
       // Filter by status
@@ -43,16 +66,22 @@ export const purchaseOrdersRouter = router({
 
       // Execute query with conditions
       const baseQuery = db.select().from(purchaseOrders);
-      const query = conditions.length > 0
-        ? baseQuery.where(and(...conditions))
-        : baseQuery;
+      const query =
+        conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-      const pos = await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
+      const pos = await query
+        .orderBy(desc(purchaseOrders.createdAt))
+        .limit(limit)
+        .offset(offset);
 
       // Get total count for pagination
-      const countQuery = conditions.length > 0
-        ? db.select({ count: sql<number>`COUNT(*)` }).from(purchaseOrders).where(and(...conditions))
-        : db.select({ count: sql<number>`COUNT(*)` }).from(purchaseOrders);
+      const countQuery =
+        conditions.length > 0
+          ? db
+              .select({ count: sql<number>`COUNT(*)` })
+              .from(purchaseOrders)
+              .where(and(...conditions))
+          : db.select({ count: sql<number>`COUNT(*)` }).from(purchaseOrders);
 
       const [countResult] = await countQuery;
       const total = countResult?.count ?? pos.length;
@@ -64,31 +93,38 @@ export const purchaseOrdersRouter = router({
   // Supports both supplierClientId (canonical) and vendorId (deprecated, for backward compat)
   create: protectedProcedure
     .input(
-      z.object({
-        // Canonical: supplier client ID (preferred)
-        supplierClientId: z.number().optional(),
-        // Deprecated: vendor ID (for backward compatibility)
-        vendorId: z.number().optional(),
-        intakeSessionId: z.number().optional(),
-        orderDate: z.string(),
-        expectedDeliveryDate: z.string().optional(),
-        paymentTerms: z.string().optional(),
-        notes: z.string().optional(),
-        vendorNotes: z.string().optional(),
-        createdBy: z.number(),
-        items: z.array(
-          z.object({
-            productId: z.number().int().positive("Product ID must be a positive integer"),
-            quantityOrdered: z.number().positive("Quantity must be greater than 0"),
-            unitCost: z.number().min(0, "Unit cost cannot be negative"),
-          })
-        ),
-      }).refine(
-        (data) => data.supplierClientId !== undefined || data.vendorId !== undefined,
-        { message: "Either supplierClientId or vendorId must be provided" }
-      )
+      z
+        .object({
+          // Canonical: supplier client ID (preferred)
+          supplierClientId: z.number().optional(),
+          // Deprecated: vendor ID (for backward compatibility)
+          vendorId: z.number().optional(),
+          intakeSessionId: z.number().optional(),
+          orderDate: z.string(),
+          expectedDeliveryDate: z.string().optional(),
+          paymentTerms: z.string().optional(),
+          notes: z.string().optional(),
+          vendorNotes: z.string().optional(),
+          items: z.array(
+            z.object({
+              productId: z
+                .number()
+                .int()
+                .positive("Product ID must be a positive integer"),
+              quantityOrdered: z
+                .number()
+                .positive("Quantity must be greater than 0"),
+              unitCost: z.number().min(0, "Unit cost cannot be negative"),
+            })
+          ),
+        })
+        .refine(
+          data =>
+            data.supplierClientId !== undefined || data.vendorId !== undefined,
+          { message: "Either supplierClientId or vendorId must be provided" }
+        )
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -123,7 +159,9 @@ export const purchaseOrdersRouter = router({
 
       // If only vendorId provided, resolve to supplierClientId via supplier_profiles
       if (!resolvedSupplierClientId && resolvedVendorId) {
-        console.warn('[DEPRECATED] purchaseOrders.create called with vendorId - use supplierClientId instead');
+        console.warn(
+          "[DEPRECATED] purchaseOrders.create called with vendorId - use supplierClientId instead"
+        );
         const supplier = await getSupplierByLegacyVendorId(resolvedVendorId);
         if (supplier) {
           resolvedSupplierClientId = supplier.id;
@@ -144,14 +182,22 @@ export const purchaseOrdersRouter = router({
 
       // Validate that we have at least vendorId (required by schema for now)
       if (!resolvedVendorId) {
-        throw new Error("Unable to resolve vendor ID for purchase order. Supplier may not have a legacy vendor mapping.");
+        throw new Error(
+          "Unable to resolve vendor ID for purchase order. Supplier may not have a legacy vendor mapping."
+        );
       }
 
       // Generate PO number
       const poNumber = await generatePONumber(db);
 
       // Calculate totals
-      const subtotal = items.reduce((sum, item) => sum + item.quantityOrdered * item.unitCost, 0);
+      const subtotal = items.reduce(
+        (sum, item) => sum + item.quantityOrdered * item.unitCost,
+        0
+      );
+
+      // Get authenticated user ID from context (BUG-135)
+      const createdBy = getAuthenticatedUserId(ctx);
 
       // Create PO with both IDs
       const [po] = await db.insert(purchaseOrders).values({
@@ -159,11 +205,13 @@ export const purchaseOrdersRouter = router({
         supplierClientId: resolvedSupplierClientId || null,
         intakeSessionId: poData.intakeSessionId,
         orderDate: new Date(poData.orderDate),
-        expectedDeliveryDate: poData.expectedDeliveryDate ? new Date(poData.expectedDeliveryDate) : null,
+        expectedDeliveryDate: poData.expectedDeliveryDate
+          ? new Date(poData.expectedDeliveryDate)
+          : null,
         paymentTerms: poData.paymentTerms,
         notes: poData.notes,
         vendorNotes: poData.vendorNotes,
-        createdBy: poData.createdBy,
+        createdBy,
         poNumber,
         subtotal: subtotal.toString(),
         total: subtotal.toString(), // tax and shipping can be added later
@@ -175,7 +223,7 @@ export const purchaseOrdersRouter = router({
       // Create PO items
       if (items.length > 0) {
         await db.insert(purchaseOrderItems).values(
-          items.map((item) => ({
+          items.map(item => ({
             purchaseOrderId: poId,
             productId: item.productId,
             quantityOrdered: item.quantityOrdered.toString(),
@@ -208,15 +256,19 @@ export const purchaseOrdersRouter = router({
 
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
-      
+
       // Build conditions array
       const conditions = [];
 
       // Filter by supplier (canonical) or vendor (deprecated)
       if (input?.supplierClientId) {
-        conditions.push(eq(purchaseOrders.supplierClientId, input.supplierClientId));
+        conditions.push(
+          eq(purchaseOrders.supplierClientId, input.supplierClientId)
+        );
       } else if (input?.vendorId) {
-        console.warn('[DEPRECATED] purchaseOrders.getAll called with vendorId filter - use supplierClientId instead');
+        console.warn(
+          "[DEPRECATED] purchaseOrders.getAll called with vendorId filter - use supplierClientId instead"
+        );
         conditions.push(eq(purchaseOrders.vendorId, input.vendorId));
       }
 
@@ -224,83 +276,101 @@ export const purchaseOrdersRouter = router({
       if (input?.status) {
         // Map PARTIALLY_RECEIVED to RECEIVING for schema compatibility
         const statusMap: Record<string, string> = {
-          "PARTIALLY_RECEIVED": "RECEIVING"
+          PARTIALLY_RECEIVED: "RECEIVING",
         };
         const mappedStatus = statusMap[input.status] || input.status;
-        const validStatuses = ["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"] as const;
-        if (validStatuses.includes(mappedStatus as typeof validStatuses[number])) {
-          conditions.push(eq(purchaseOrders.purchaseOrderStatus, mappedStatus as typeof validStatuses[number]));
+        const validStatuses = [
+          "DRAFT",
+          "SENT",
+          "CONFIRMED",
+          "RECEIVING",
+          "RECEIVED",
+          "CANCELLED",
+        ] as const;
+        if (
+          validStatuses.includes(mappedStatus as (typeof validStatuses)[number])
+        ) {
+          conditions.push(
+            eq(
+              purchaseOrders.purchaseOrderStatus,
+              mappedStatus as (typeof validStatuses)[number]
+            )
+          );
         }
       }
 
       // Execute query with conditions
       const baseQuery = db.select().from(purchaseOrders);
-      const query = conditions.length > 0 
-        ? baseQuery.where(and(...conditions))
-        : baseQuery;
-      
-      const pos = await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
+      const query =
+        conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+
+      const pos = await query
+        .orderBy(desc(purchaseOrders.createdAt))
+        .limit(limit)
+        .offset(offset);
       // BUG-034: Standardized pagination response
       return createSafeUnifiedResponse(pos, -1, limit, offset);
     }),
 
   // Get purchase order by ID with items and supplier details
   // PARTY-001: Include supplierClientId with supplier details from clients table
-  getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const [po] = await db
-      .select()
-      .from(purchaseOrders)
-      .where(eq(purchaseOrders.id, input.id));
+      const [po] = await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, input.id));
 
-    if (!po) {
-      throw new Error("Purchase order not found");
-    }
+      if (!po) {
+        throw new Error("Purchase order not found");
+      }
 
-    // Get items with product details
-    const itemsResult = await db
-      .select({
-        id: purchaseOrderItems.id,
-        purchaseOrderId: purchaseOrderItems.purchaseOrderId,
-        productId: purchaseOrderItems.productId,
-        productName: products.nameCanonical,
-        category: products.category,
-        quantityOrdered: purchaseOrderItems.quantityOrdered,
-        quantityReceived: purchaseOrderItems.quantityReceived,
-        unitCost: purchaseOrderItems.unitCost,
-        totalCost: purchaseOrderItems.totalCost,
-        notes: purchaseOrderItems.notes,
-      })
-      .from(purchaseOrderItems)
-      .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
-      .where(eq(purchaseOrderItems.purchaseOrderId, input.id));
-
-    // PARTY-001: Get supplier details from clients table if supplierClientId exists
-    let supplier = null;
-    if (po.supplierClientId) {
-      const [supplierResult] = await db
+      // Get items with product details
+      const itemsResult = await db
         .select({
-          id: clients.id,
-          name: clients.name,
-          teriCode: clients.teriCode,
-          email: clients.email,
-          phone: clients.phone,
+          id: purchaseOrderItems.id,
+          purchaseOrderId: purchaseOrderItems.purchaseOrderId,
+          productId: purchaseOrderItems.productId,
+          productName: products.nameCanonical,
+          category: products.category,
+          quantityOrdered: purchaseOrderItems.quantityOrdered,
+          quantityReceived: purchaseOrderItems.quantityReceived,
+          unitCost: purchaseOrderItems.unitCost,
+          totalCost: purchaseOrderItems.totalCost,
+          notes: purchaseOrderItems.notes,
         })
-        .from(clients)
-        .where(eq(clients.id, po.supplierClientId))
-        .limit(1);
+        .from(purchaseOrderItems)
+        .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+        .where(eq(purchaseOrderItems.purchaseOrderId, input.id));
 
-      supplier = supplierResult || null;
-    }
+      // PARTY-001: Get supplier details from clients table if supplierClientId exists
+      let supplier = null;
+      if (po.supplierClientId) {
+        const [supplierResult] = await db
+          .select({
+            id: clients.id,
+            name: clients.name,
+            teriCode: clients.teriCode,
+            email: clients.email,
+            phone: clients.phone,
+          })
+          .from(clients)
+          .where(eq(clients.id, po.supplierClientId))
+          .limit(1);
 
-    return {
-      ...po,
-      items: itemsResult,
-      supplier, // PARTY-001: Include supplier details
-    };
-  }),
+        supplier = supplierResult || null;
+      }
+
+      return {
+        ...po,
+        items: itemsResult,
+        supplier, // PARTY-001: Include supplier details
+      };
+    }),
 
   // Update purchase order
   update: protectedProcedure
@@ -336,28 +406,42 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Delete purchase order
-  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-    await db.update(purchaseOrders).set({ deletedAt: new Date() }).where(eq(purchaseOrders.id, input.id));
-    return { success: true };
-  }),
+      // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+      await db
+        .update(purchaseOrders)
+        .set({ deletedAt: new Date() })
+        .where(eq(purchaseOrders.id, input.id));
+      return { success: true };
+    }),
 
   // Update PO status
   updateStatus: protectedProcedure
     .input(
       z.object({
         id: z.number(),
-        status: z.enum(["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"]),
+        status: z.enum([
+          "DRAFT",
+          "SENT",
+          "CONFIRMED",
+          "RECEIVING",
+          "RECEIVED",
+          "CANCELLED",
+        ]),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const updateData: Record<string, unknown> = { purchaseOrderStatus: input.status };
+      const updateData: Record<string, unknown> = {
+        purchaseOrderStatus: input.status,
+      };
 
       if (input.status === "SENT") {
         updateData.sentAt = new Date();
@@ -367,7 +451,10 @@ export const purchaseOrdersRouter = router({
         updateData.actualDeliveryDate = new Date();
       }
 
-      await db.update(purchaseOrders).set(updateData).where(eq(purchaseOrders.id, input.id));
+      await db
+        .update(purchaseOrders)
+        .set(updateData)
+        .where(eq(purchaseOrders.id, input.id));
 
       return { success: true };
     }),
@@ -376,8 +463,14 @@ export const purchaseOrdersRouter = router({
   addItem: protectedProcedure
     .input(
       z.object({
-        purchaseOrderId: z.number().int().positive("Purchase order ID must be a positive integer"),
-        productId: z.number().int().positive("Product ID must be a positive integer"),
+        purchaseOrderId: z
+          .number()
+          .int()
+          .positive("Purchase order ID must be a positive integer"),
+        productId: z
+          .number()
+          .int()
+          .positive("Product ID must be a positive integer"),
         quantityOrdered: z.number().positive("Quantity must be greater than 0"),
         unitCost: z.number().min(0, "Unit cost cannot be negative"),
         notes: z.string().optional(),
@@ -409,7 +502,10 @@ export const purchaseOrdersRouter = router({
     .input(
       z.object({
         id: z.number().int().positive("Item ID must be a positive integer"),
-        quantityOrdered: z.number().positive("Quantity must be greater than 0").optional(),
+        quantityOrdered: z
+          .number()
+          .positive("Quantity must be greater than 0")
+          .optional(),
         unitCost: z.number().min(0, "Unit cost cannot be negative").optional(),
         notes: z.string().optional(),
       })
@@ -430,7 +526,8 @@ export const purchaseOrdersRouter = router({
         throw new Error("Purchase order item not found");
       }
 
-      const quantityOrdered = data.quantityOrdered ?? parseFloat(item.quantityOrdered);
+      const quantityOrdered =
+        data.quantityOrdered ?? parseFloat(item.quantityOrdered);
       const unitCost = data.unitCost ?? parseFloat(item.unitCost);
       const totalCost = quantityOrdered * unitCost;
 
@@ -451,27 +548,32 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Delete PO item
-  deleteItem: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+  deleteItem: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const [item] = await db
-      .select()
-      .from(purchaseOrderItems)
-      .where(eq(purchaseOrderItems.id, input.id));
+      const [item] = await db
+        .select()
+        .from(purchaseOrderItems)
+        .where(eq(purchaseOrderItems.id, input.id));
 
-    if (!item) {
-      throw new Error("Purchase order item not found");
-    }
+      if (!item) {
+        throw new Error("Purchase order item not found");
+      }
 
-    // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
-    await db.update(purchaseOrderItems).set({ deletedAt: new Date() }).where(eq(purchaseOrderItems.id, input.id));
+      // Soft delete - set deletedAt timestamp instead of hard delete (ST-059)
+      await db
+        .update(purchaseOrderItems)
+        .set({ deletedAt: new Date() })
+        .where(eq(purchaseOrderItems.id, input.id));
 
-    // Recalculate PO totals
-    await recalculatePOTotals(db, item.purchaseOrderId);
+      // Recalculate PO totals
+      await recalculatePOTotals(db, item.purchaseOrderId);
 
-    return { success: true };
-  }),
+      return { success: true };
+    }),
 
   // Get PO history for a supplier (canonical)
   getBySupplier: protectedProcedure
@@ -491,7 +593,9 @@ export const purchaseOrdersRouter = router({
   getByVendor: protectedProcedure
     .input(z.object({ vendorId: z.number() }))
     .query(async ({ input }) => {
-      console.warn('[DEPRECATED] purchaseOrders.getByVendor - use getBySupplier with supplierClientId instead');
+      console.warn(
+        "[DEPRECATED] purchaseOrders.getByVendor - use getBySupplier with supplierClientId instead"
+      );
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -503,34 +607,39 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Get PO history for a product
-  getByProduct: protectedProcedure.input(z.object({ productId: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+  getByProduct: protectedProcedure
+    .input(z.object({ productId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const items = await db
-      .select({
-        poId: purchaseOrders.id,
-        poNumber: purchaseOrders.poNumber,
-        supplierClientId: purchaseOrders.supplierClientId, // Canonical
-        vendorId: purchaseOrders.vendorId, // Deprecated but included for backward compat
-        purchaseOrderStatus: purchaseOrders.purchaseOrderStatus,
-        orderDate: purchaseOrders.orderDate,
-        quantityOrdered: purchaseOrderItems.quantityOrdered,
-        unitCost: purchaseOrderItems.unitCost,
-        totalCost: purchaseOrderItems.totalCost,
-      })
-      .from(purchaseOrderItems)
-      .innerJoin(purchaseOrders, eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id))
-      .where(eq(purchaseOrderItems.productId, input.productId))
-      .orderBy(desc(purchaseOrders.createdAt));
+      const items = await db
+        .select({
+          poId: purchaseOrders.id,
+          poNumber: purchaseOrders.poNumber,
+          supplierClientId: purchaseOrders.supplierClientId, // Canonical
+          vendorId: purchaseOrders.vendorId, // Deprecated but included for backward compat
+          purchaseOrderStatus: purchaseOrders.purchaseOrderStatus,
+          orderDate: purchaseOrders.orderDate,
+          quantityOrdered: purchaseOrderItems.quantityOrdered,
+          unitCost: purchaseOrderItems.unitCost,
+          totalCost: purchaseOrderItems.totalCost,
+        })
+        .from(purchaseOrderItems)
+        .innerJoin(
+          purchaseOrders,
+          eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id)
+        )
+        .where(eq(purchaseOrderItems.productId, input.productId))
+        .orderBy(desc(purchaseOrders.createdAt));
 
-    return items;
-  }),
+      return items;
+    }),
 
   // Submit PO to vendor (changes status from DRAFT to SENT)
   submit: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -541,7 +650,10 @@ export const purchaseOrdersRouter = router({
         .where(eq(purchaseOrders.id, input.id));
 
       if (!po) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Purchase order not found",
+        });
       }
 
       if (po.purchaseOrderStatus !== "DRAFT") {
@@ -560,7 +672,10 @@ export const purchaseOrdersRouter = router({
         })
         .where(eq(purchaseOrders.id, input.id));
 
-      logger.info({ poId: input.id, poNumber: po.poNumber }, "[PO] Purchase order submitted");
+      logger.info(
+        { poId: input.id, poNumber: po.poNumber },
+        "[PO] Purchase order submitted"
+      );
 
       return { success: true, poNumber: po.poNumber };
     }),
@@ -585,7 +700,10 @@ export const purchaseOrdersRouter = router({
         .where(eq(purchaseOrders.id, input.id));
 
       if (!po) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Purchase order not found",
+        });
       }
 
       if (po.purchaseOrderStatus !== "SENT") {
@@ -613,10 +731,17 @@ export const purchaseOrdersRouter = router({
         updateData.expectedDeliveryDate = new Date(input.confirmedDeliveryDate);
       }
 
-      await db.update(purchaseOrders).set(updateData).where(eq(purchaseOrders.id, input.id));
+      await db
+        .update(purchaseOrders)
+        .set(updateData)
+        .where(eq(purchaseOrders.id, input.id));
 
       logger.info(
-        { poId: input.id, poNumber: po.poNumber, vendorConfirmation: input.vendorConfirmationNumber },
+        {
+          poId: input.id,
+          poNumber: po.poNumber,
+          vendorConfirmation: input.vendorConfirmationNumber,
+        },
         "[PO] Purchase order confirmed"
       );
 
@@ -636,7 +761,10 @@ export const purchaseOrdersRouter = router({
         .where(eq(purchaseOrders.id, input.id));
 
       if (!po) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Purchase order not found",
+        });
       }
 
       // Get items with product details
@@ -661,7 +789,12 @@ export const purchaseOrdersRouter = router({
       let supplierInfo = null;
       if (po.supplierClientId) {
         const [supplier] = await db
-          .select({ id: clients.id, name: clients.name, email: clients.email, phone: clients.phone })
+          .select({
+            id: clients.id,
+            name: clients.name,
+            email: clients.email,
+            phone: clients.phone,
+          })
           .from(clients)
           .where(eq(clients.id, po.supplierClientId));
         supplierInfo = supplier || null;
@@ -676,7 +809,9 @@ export const purchaseOrdersRouter = router({
 });
 
 // Helper function to generate PO number
-async function generatePONumber(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<string> {
+async function generatePONumber(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>
+): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `PO-${year}-`;
 
@@ -693,13 +828,19 @@ async function generatePONumber(db: NonNullable<Awaited<ReturnType<typeof getDb>
 }
 
 // Helper function to recalculate PO totals
-async function recalculatePOTotals(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, purchaseOrderId: number): Promise<void> {
+async function recalculatePOTotals(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  purchaseOrderId: number
+): Promise<void> {
   const items = await db
     .select()
     .from(purchaseOrderItems)
     .where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
 
-  const subtotal = items.reduce((sum, item) => sum + parseFloat(item.totalCost), 0);
+  const subtotal = items.reduce(
+    (sum, item) => sum + parseFloat(item.totalCost),
+    0
+  );
 
   await db
     .update(purchaseOrders)
