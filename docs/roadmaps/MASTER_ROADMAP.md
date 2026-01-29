@@ -339,23 +339,24 @@ pnpm test --run 2>&1 | tee test-results.log
 
 > **CRITICAL PRIORITY**: All 8 Golden Flows must be fully functional before any other MVP work.
 > **Source:** Golden Flow Execution Plan v1.0 + QA Protocol v3.0 Database Audit
-> **Status:** 6/8 BLOCKED, 2/8 PARTIAL
-> **Target:** 8/8 WORKING within 2 weeks
+> **Status:** 5/8 READY, 3/8 PARTIAL (verified 2026-01-29)
+> **Target:** 8/8 WORKING within 1 week
 
 #### Golden Flow Status Matrix
 
-> **Updated:** 2026-01-28 - Wave 0, 1, 2A/2B complete. 3 Golden Flows READY (GF-004, GF-006, GF-008)
+> **Updated:** 2026-01-29 - Code audit verified Wave 1A/1B, Wave 2A/2B, Wave 3A/3B complete
+> **Status:** 5/8 READY, 3/8 PARTIAL (remaining: ST-051, ARCH-001, ST-053, SCHEMA-011 partial)
 
-| #      | Golden Flow       | Current Status | Primary Blockers                        |
-| ------ | ----------------- | -------------- | --------------------------------------- |
-| GF-001 | Direct Intake     | 🟡 PARTIAL     | ~~BUG-117~~, ~~ST-058~~, INV-003        |
-| GF-002 | Procure-to-Pay    | 🟡 PARTIAL     | ST-059, ~~PARTY-001~~, SCHEMA-011       |
-| GF-003 | Order-to-Cash     | 🟡 PARTIAL     | ~~BUG-115~~, ~~ST-058~~, ST-050, ST-051 |
-| GF-004 | Invoice & Payment | 🟢 READY       | ~~FIN-001~~, ~~ST-057~~, ~~ORD-001~~    |
-| GF-005 | Pick & Pack       | 🟡 PARTIAL     | Depends on GF-003 (partial)             |
-| GF-006 | Client Ledger     | 🟢 READY       | ~~ST-057~~                              |
-| GF-007 | Inventory Mgmt    | 🟡 PARTIAL     | ~~ST-056~~, ~~ST-058~~, INV-003         |
-| GF-008 | Sample Request    | 🟢 READY       | ~~BUG-117~~ (all blockers resolved)     |
+| #      | Golden Flow       | Current Status | Primary Blockers                                 |
+| ------ | ----------------- | -------------- | ------------------------------------------------ |
+| GF-001 | Direct Intake     | 🟢 READY       | ~~BUG-117~~, ~~ST-058~~, ~~INV-003~~             |
+| GF-002 | Procure-to-Pay    | 🟡 PARTIAL     | ~~ST-059~~, ~~PARTY-001~~, SCHEMA-011 (partial)  |
+| GF-003 | Order-to-Cash     | 🟡 PARTIAL     | ~~BUG-115~~, ~~ST-058~~, ~~ST-050~~, ST-051      |
+| GF-004 | Invoice & Payment | 🟢 READY       | ~~FIN-001~~, ~~ST-057~~, ~~ORD-001~~, ~~ST-061~~ |
+| GF-005 | Pick & Pack       | 🟡 PARTIAL     | Depends on GF-003 (ST-051 needed)                |
+| GF-006 | Client Ledger     | 🟢 READY       | ~~ST-057~~, ~~ST-061~~                           |
+| GF-007 | Inventory Mgmt    | 🟢 READY       | ~~ST-056~~, ~~ST-058~~, ~~INV-003~~              |
+| GF-008 | Sample Request    | 🟢 READY       | ~~BUG-117~~ (all blockers resolved)              |
 
 ---
 
@@ -419,27 +420,28 @@ pnpm build    # ✅ PASS
 
 ---
 
-#### Wave 1: Data Integrity Blockers (18h) - Critical Path
+#### Wave 1: Data Integrity Blockers (18h) - ✅ MOSTLY COMPLETE
 
 > **Combines:** Original Phase 1 tasks + New database constraints
-> **Parallel Execution:** 4 agents in Wave 1A, 3 agents in Wave 1B
+> **Status:** Wave 1A and 1B COMPLETE. Wave 1C (ST-051, ARCH-001) still ready.
+> **Verified:** 2026-01-29 via code audit
 
-##### Wave 1A: Concurrent Safety (4 agents parallel, 4h)
+##### Wave 1A: Concurrent Safety (4 agents parallel, 4h) - ✅ COMPLETE
 
-| Task    | Description                             | Priority | Status | Est | Module                                    | GF Impact              |
-| ------- | --------------------------------------- | -------- | ------ | --- | ----------------------------------------- | ---------------------- |
-| INV-003 | Add FOR UPDATE lock in batch allocation | HIGH     | ready  | 2h  | `server/routers/orders.ts`                | GF-001, GF-003, GF-007 |
-| FIN-001 | Fix invoice number race condition       | HIGH     | ready  | 2h  | `server/arApDb.ts`                        | GF-004                 |
-| ST-050  | Fix silent error handling in RED mode   | HIGH     | ready  | 4h  | `server/ordersDb.ts`, `server/services/*` | GF-001, GF-003, GF-004 |
-| ORD-001 | Fix invoice creation timing             | HIGH     | ready  | 2h  | `server/ordersDb.ts`                      | GF-004                 |
+| Task    | Description                             | Priority | Status   | Est | Module                               | GF Impact              |
+| ------- | --------------------------------------- | -------- | -------- | --- | ------------------------------------ | ---------------------- |
+| INV-003 | Add FOR UPDATE lock in batch allocation | HIGH     | complete | 2h  | `server/routers/orders.ts:1053-1213` | GF-001, GF-003, GF-007 |
+| FIN-001 | Fix invoice number race condition       | HIGH     | complete | 2h  | `server/arApDb.ts:326,706,887`       | GF-004                 |
+| ST-050  | Fix silent error handling in RED mode   | HIGH     | complete | 4h  | `server/ordersDb.ts:386,991`         | GF-001, GF-003, GF-004 |
+| ORD-001 | Fix invoice creation timing             | HIGH     | complete | 2h  | `server/ordersDb.ts:397,1753`        | GF-004                 |
 
-##### Wave 1B: Database Constraints (3 agents parallel, 3h)
+##### Wave 1B: Database Constraints (3 agents parallel, 3h) - ✅ COMPLETE
 
-| Task    | Description                                         | Priority | Status   | Est | Module                    | GF Impact                      |
-| ------- | --------------------------------------------------- | -------- | -------- | --- | ------------------------- | ------------------------------ |
-| ST-056  | Add CHECK constraints on batch quantities           | HIGH     | ready    | 2h  | `drizzle/schema.ts`       | GF-001, GF-003, GF-007, GF-008 |
-| ST-057  | Add GL entry single-direction constraint            | HIGH     | ready    | 1h  | `drizzle/schema.ts`       | GF-004, GF-006                 |
-| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH     | complete | 1h  | `server/ordersDb.ts:1239` | GF-003, GF-005                 |
+| Task    | Description                                         | Priority | Status   | Est | Module                                                     | GF Impact                      |
+| ------- | --------------------------------------------------- | -------- | -------- | --- | ---------------------------------------------------------- | ------------------------------ |
+| ST-056  | Add CHECK constraints on batch quantities           | HIGH     | complete | 2h  | `migrations/0060_add_batch_quantity_check_constraints.sql` | GF-001, GF-003, GF-007, GF-008 |
+| ST-057  | Add GL entry single-direction constraint            | HIGH     | complete | 1h  | `server/accountingDb.ts:267-273`                           | GF-004, GF-006                 |
+| BUG-115 | Fix empty array crash in ordersDb confirmDraftOrder | HIGH     | complete | 1h  | `server/ordersDb.ts:1239`                                  | GF-003, GF-005                 |
 
 **ST-056 Migration SQL:**
 
@@ -544,32 +546,34 @@ pnpm build    # ✅ PASS
 
 ---
 
-#### Wave 3: Data Integrity Hardening (34h)
+#### Wave 3: Data Integrity Hardening (34h) - ✅ MOSTLY COMPLETE
 
 > **Combines:** Soft delete conversion + COGS precision + UX hardening
+> **Status:** Wave 3A/3B mostly complete. ST-053, TERP-0019 still ready.
+> **Verified:** 2026-01-29 via code audit (commit `cfa535c`)
 
-##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h)
+##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h) - ✅ MOSTLY COMPLETE
 
-| Task       | Description                                | Priority | Status | Est | Module                                                     | GF Impact              |
-| ---------- | ------------------------------------------ | -------- | ------ | --- | ---------------------------------------------------------- | ---------------------- |
-| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM   | ready  | 2h  | Schema migration                                           | GF-002                 |
-| ST-059     | Convert hard deletes to soft deletes       | MEDIUM   | ready  | 8h  | inventoryDb, pricingEngine, purchaseOrders, vendorSupplyDb | GF-001, GF-002, GF-007 |
-| ST-060     | Add deletedAt query filters (50+ queries)  | MEDIUM   | ready  | 4h  | pricingEngine, poReceiving, matchingEngine                 | GF-002                 |
+| Task       | Description                                | Priority | Status   | Est | Module                                                                          | GF Impact              |
+| ---------- | ------------------------------------------ | -------- | -------- | --- | ------------------------------------------------------------------------------- | ---------------------- |
+| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM   | partial  | 2h  | vendorSupply has it, pricingRules missing                                       | GF-002                 |
+| ST-059     | Convert hard deletes to soft deletes       | MEDIUM   | complete | 8h  | `pricingEngine.ts:150,231`, `inventoryDb.ts:1167+`, `purchaseOrders.ts:343,467` | GF-001, GF-002, GF-007 |
+| ST-060     | Add deletedAt query filters (50+ queries)  | MEDIUM   | complete | 4h  | `matchingEngine.ts`, `pricingEngine.ts` - isNull(deletedAt) filters added       | GF-002                 |
 
-##### Wave 3B: COGS & Payment Validation (2 agents parallel, 6h)
+##### Wave 3B: COGS & Payment Validation (2 agents parallel, 6h) - ✅ COMPLETE
 
-| Task       | Description                                    | Priority | Status | Est | Module                                   | GF Impact      |
-| ---------- | ---------------------------------------------- | -------- | ------ | --- | ---------------------------------------- | -------------- |
-| SCHEMA-012 | Standardize COGS precision to decimal(15,4)    | MEDIUM   | ready  | 4h  | orders, orderLineItems, invoiceLineItems | GF-003, GF-004 |
-| ST-061     | Add payment over-allocation validation trigger | MEDIUM   | ready  | 2h  | `drizzle/schema.ts`                      | GF-004, GF-006 |
+| Task       | Description                                    | Priority | Status   | Est | Module                                        | GF Impact      |
+| ---------- | ---------------------------------------------- | -------- | -------- | --- | --------------------------------------------- | -------------- |
+| SCHEMA-012 | Standardize COGS precision to decimal(15,4)    | MEDIUM   | complete | 4h  | `schema.ts:607-609,735,777` - decimal(15,4)   | GF-003, GF-004 |
+| ST-061     | Add payment over-allocation validation trigger | MEDIUM   | complete | 2h  | `server/arApDb.ts:189,569` - validation added | GF-004, GF-006 |
 
-##### Wave 3C: UX & Type Safety (3 agents parallel, 14h)
+##### Wave 3C: UX & Type Safety (3 agents parallel, 14h) - 🟡 PARTIAL
 
-| Task      | Description                             | Priority | Status | Est | Module                          | GF Impact      |
-| --------- | --------------------------------------- | -------- | ------ | --- | ------------------------------- | -------------- |
-| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | ready  | 8h  | ordersDb, orders.ts, Orders.tsx | GF-001, GF-003 |
-| PARTY-004 | Convert vendor hard deletes to soft     | MEDIUM   | ready  | 2h  | Vendor services                 | All GF         |
-| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | ready  | 4h  | Dashboard widgets               | GF-003         |
+| Task      | Description                             | Priority | Status   | Est | Module                                                  | GF Impact      |
+| --------- | --------------------------------------- | -------- | -------- | --- | ------------------------------------------------------- | -------------- |
+| ST-053    | Eliminate `any` types in critical paths | MEDIUM   | ready    | 8h  | ordersDb, orders.ts, Orders.tsx                         | GF-001, GF-003 |
+| PARTY-004 | Convert vendor hard deletes to soft     | MEDIUM   | complete | 2h  | `vendorSupplyDb.ts:47,79,223-235`, `vendors.ts:360,552` | All GF         |
+| TERP-0019 | Verify inventory snapshot widget SQL    | MEDIUM   | ready    | 4h  | Dashboard widgets                                       | GF-003         |
 
 **Verification Gate 3:**
 
@@ -612,22 +616,24 @@ pnpm mega:qa:invariants
 
 #### Golden Flow Initiative Summary
 
-| Wave                           | Tasks  | Est Hours | Wall-Clock (Parallel) | Agents  |
-| ------------------------------ | ------ | --------- | --------------------- | ------- |
-| Wave 0: Pre-requisites         | 5      | 5h        | 2h                    | 4       |
-| Wave 1: Data Integrity         | 9      | 25h       | 8h                    | 4→3→1   |
-| Wave 2: Security + safeInArray | 11     | 48h       | 14h                   | 4→3→3→2 |
-| Wave 3: Hardening              | 8      | 34h       | 10h                   | 3→2→3   |
-| Wave 4: Verification           | -      | 8h        | 4h                    | 2       |
-| **TOTAL**                      | **33** | **120h**  | **38h**               | -       |
+| Wave                           | Tasks  | Est Hours  | Status         | Remaining                                 |
+| ------------------------------ | ------ | ---------- | -------------- | ----------------------------------------- |
+| Wave 0: Pre-requisites         | 5      | 5h         | ✅ COMPLETE    | 0                                         |
+| Wave 1: Data Integrity         | 9      | 25h        | ✅ MOSTLY DONE | 2 (ST-051, ARCH-001)                      |
+| Wave 2: Security + safeInArray | 11     | 48h        | ✅ MOSTLY DONE | 3 (TERP-0014, TERP-0017, PARTY-002)       |
+| Wave 3: Hardening              | 8      | 34h        | ✅ MOSTLY DONE | 3 (ST-053, TERP-0019, SCHEMA-011 partial) |
+| Wave 4: Verification           | -      | 8h         | 🔴 NOT STARTED | E2E tests                                 |
+| Code Review Remediation        | 6      | 5.5h       | ✅ COMPLETE    | 0                                         |
+| **TOTAL**                      | **39** | **125.5h** | **~75% DONE**  | **8 tasks**                               |
 
 **Success Criteria:**
 
 - [ ] All 8 Golden Flows pass E2E testing
 - [ ] `pnpm gate:invariants` passes
 - [ ] `pnpm mega:qa:invariants` passes
-- [ ] No `any` types in critical paths
-- [ ] All database constraints active
+- [x] No critical race conditions (FOR UPDATE locks added)
+- [x] All database constraints active (CHECK constraints added)
+- [ ] No `any` types in critical paths (ST-053 pending)
 - [ ] Schema health score: 8.0+/10
 
 ---
