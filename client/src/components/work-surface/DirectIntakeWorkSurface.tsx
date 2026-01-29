@@ -941,9 +941,9 @@ export function DirectIntakeWorkSurface() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Grid Area */}
-        <div className={cn("flex-1 transition-all duration-200", inspector.isOpen && "mr-96")}>
+        <div className={cn("flex-1 transition-all duration-200 min-h-0", inspector.isOpen && "mr-96")}>
           {isLoadingData ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
