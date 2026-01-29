@@ -41,13 +41,72 @@ const t = initTRPC.context<TrpcContext>().create({
 export const router = t.router;
 export const middleware = t.middleware;
 
+/**
+ * SEC-042: Detect if an error is a database error that should not be exposed to the client
+ * Database errors may contain sensitive information like:
+ * - SQL queries and query structure
+ * - Table names and column names
+ * - Query parameters
+ * - Database schema details
+ */
+function isDatabaseError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+
+  // Check for common database error patterns
+  return (
+    // SQL error messages
+    message.includes("unknown column") ||
+    message.includes("no such column") ||
+    message.includes("failed query:") ||
+    message.includes("sql syntax") ||
+    message.includes("table") && (message.includes("doesn't exist") || message.includes("does not exist")) ||
+    message.includes("column") && message.includes("does not exist") ||
+    // MySQL error codes
+    message.includes("er_") ||
+    // Drizzle ORM errors
+    message.includes("drizzle") ||
+    // mysql2 errors
+    message.includes("mysql") && message.includes("error") ||
+    // Query-related errors
+    message.includes("query failed") ||
+    message.includes("database error") ||
+    // Connection errors (may expose host/port)
+    message.includes("econnrefused") && message.includes("3306")
+  );
+}
+
 // Global error handling middleware applied to all procedures
 const errorHandlingMiddleware = t.middleware(async opts => {
   const { ctx, next, path } = opts;
   try {
     return await next();
   } catch (error) {
-    // Log error with context
+    // SEC-042: Detect and sanitize database errors before exposing to client
+    if (isDatabaseError(error)) {
+      // Log full error details server-side for debugging
+      logger.error(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          path,
+          userId: ctx.user?.id,
+          errorType: "database",
+        },
+        "Database error occurred in tRPC procedure"
+      );
+
+      // Return generic error to client without SQL details
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "A database error occurred. Please try again or contact support if the problem persists.",
+      });
+    }
+
+    // Log error with context for non-database errors
     logger.error(
       {
         error: error instanceof Error ? error.message : String(error),
