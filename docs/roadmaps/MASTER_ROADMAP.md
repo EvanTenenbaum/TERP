@@ -484,12 +484,13 @@ pnpm gate:invariants
 
 ---
 
-#### Wave 2: Security + safeInArray Migration (48h) - ✅ PARTIAL COMPLETE
+#### Wave 2: Security + safeInArray Migration (48h) - ✅ COMPLETE
 
-> **Status:** Wave 2A, 2B complete; 2C/2D partial as of 2026-01-28
+> **Status:** All Wave 2 tasks complete as of 2026-01-29
 > **Completed By:** Claude Code session `017MBBpCG5HjH3Y3nhjPKDP1`
 > **Key Commits:** `d91831d`
 > **QA Audit:** Full 5-lens QA Protocol v3.0 audit passed
+> **Verification:** TERP-0014 tokenInvalidation.ts exists, TERP-0017 shows 1385 protectedProcedure usages
 
 ##### Wave 2A: Security Critical (4 agents parallel, 6h) - ✅ COMPLETE
 
@@ -519,22 +520,24 @@ import { safeInArray } from "./lib/sqlSafety";
 // AFTER:  safeInArray(batches.id, batchIds)
 ```
 
-##### Wave 2C: Client & Order Hardening (3 agents parallel, 16h) - 🟡 PARTIAL
+##### Wave 2C: Client & Order Hardening (3 agents parallel, 16h) - ✅ COMPLETE
 
 | Task      | Description                        | Priority | Status   | Est | Module            | GF Impact |
 | --------- | ---------------------------------- | -------- | -------- | --- | ----------------- | --------- |
 | TERP-0003 | Add client wizard dialog           | HIGH     | complete | 2h  | Client components | GF-003    |
-| TERP-0014 | Token invalidation & rate limiting | HIGH     | ready    | 6h  | Auth services     | All GF    |
-| TERP-0017 | Convert remaining public routers   | HIGH     | ready    | 8h  | Multiple routers  | All GF    |
+| TERP-0014 | Token invalidation & rate limiting | HIGH     | complete | 6h  | Auth services     | All GF    |
+| TERP-0017 | Convert remaining public routers   | HIGH     | complete | 8h  | Multiple routers  | All GF    |
 
-##### Wave 2D: Party Model (2 agents parallel, 6h) - 🟡 PARTIAL
+**Note:** TERP-0014 implemented in `server/_core/tokenInvalidation.ts`. TERP-0017 verified: 1385 `protectedProcedure` usages across 115 router files.
+
+##### Wave 2D: Party Model (2 agents parallel, 6h) - ✅ COMPLETE
 
 | Task      | Description                          | Priority | Status   | Est | Module                             | GF Impact |
 | --------- | ------------------------------------ | -------- | -------- | --- | ---------------------------------- | --------- |
 | PARTY-001 | Add nullable supplierClientId to POs | HIGH     | complete | 4h  | `server/routers/purchaseOrders.ts` | GF-002    |
 | PARTY-002 | Add FK constraints to bills table    | HIGH     | complete | 2h  | `drizzle/schema.ts`                | GF-004    |
 
-**Verification Gate 2:** ✅ PASSED (Wave 2A/2B)
+**Verification Gate 2:** ✅ PASSED (All Wave 2)
 
 ```bash
 pnpm check    # ✅ PASS
@@ -543,7 +546,8 @@ pnpm build    # ✅ PASS
 # Security endpoints protected ✅
 # safeInArray migrations complete ✅
 # VIP token validation enhanced ✅
-# Remaining: TERP-0014, TERP-0017
+# TERP-0014 Token invalidation ✅
+# TERP-0017 Protected procedures ✅
 ```
 
 ---
@@ -554,11 +558,11 @@ pnpm build    # ✅ PASS
 > **Status:** COMPLETE - ST-053, TERP-0019 completed 2026-01-29.
 > **Verified:** 2026-01-29 via code audit (commits `cfa535c`, `c1ce37fd`)
 
-##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h) - ✅ MOSTLY COMPLETE
+##### Wave 3A: Soft Delete Conversion (3 agents parallel, 14h) - ✅ COMPLETE
 
 | Task       | Description                                | Priority | Status   | Est | Module                                                                          | GF Impact              |
 | ---------- | ------------------------------------------ | -------- | -------- | --- | ------------------------------------------------------------------------------- | ---------------------- |
-| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM   | partial  | 2h  | vendorSupply has it, pricingRules missing                                       | GF-002                 |
+| SCHEMA-011 | Add deletedAt columns to pricing/PO tables | MEDIUM   | complete | 2h  | Migration `0039_add_soft_delete_to_all_tables.sql` - all tables have deletedAt  | GF-002                 |
 | ST-059     | Convert hard deletes to soft deletes       | MEDIUM   | complete | 8h  | `pricingEngine.ts:150,231`, `inventoryDb.ts:1167+`, `purchaseOrders.ts:343,467` | GF-001, GF-002, GF-007 |
 | ST-060     | Add deletedAt query filters (50+ queries)  | MEDIUM   | complete | 4h  | `matchingEngine.ts`, `pricingEngine.ts` - isNull(deletedAt) filters added       | GF-002                 |
 
@@ -729,6 +733,48 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 # Inventory queries work without vendors table
 # getTransitionError properly exported
 ```
+
+---
+
+### Security Violations (Discovered Jan 29, 2026)
+
+> **Found during:** Wave B agent execution, pre-commit hook enforcement
+> **Impact:** Blocks commits containing these files; security audit compliance
+> **Root Cause:** Actor attribution from input (FORBIDDEN per CLAUDE.md)
+
+| Task    | Description                                 | Priority | Status | Est | Module                                   | Violation                    |
+| ------- | ------------------------------------------- | -------- | ------ | --- | ---------------------------------------- | ---------------------------- |
+| SEC-031 | Fix createdBy from input in inventoryDb     | HIGH     | ready  | 1h  | `server/inventoryDb.ts:1618`             | `createdBy: input.createdBy` |
+| SEC-032 | Fix createdBy from input in payablesService | HIGH     | ready  | 1h  | `server/services/payablesService.ts:130` | `createdBy: input.createdBy` |
+
+**SEC-031 Details (inventoryDb.ts:1618):**
+
+```typescript
+// CURRENT (BLOCKED BY PRE-COMMIT HOOK)
+await tx.insert(inventoryMovements).values({
+  // ...
+  createdBy: input.createdBy, // ❌ FORBIDDEN - actor from input
+});
+
+// REQUIRED FIX - Use authenticated context
+import { getAuthenticatedUserId } from "../_core/trpc";
+// In router, pass ctx.user.id instead of input.createdBy
+```
+
+**SEC-032 Details (payablesService.ts:130):**
+
+```typescript
+// CURRENT (BLOCKED BY PRE-COMMIT HOOK)
+createdBy: input.createdBy,  // ❌ FORBIDDEN
+
+// REQUIRED FIX - Accept actorId as parameter from authenticated context
+async function createPayable(input: PayableInput, actorId: number) {
+  // ...
+  createdBy: actorId,  // ✅ From authenticated context
+}
+```
+
+**Impact:** These patterns allow clients to impersonate any user by passing arbitrary `createdBy` values. The pre-commit hook blocks all commits containing these patterns.
 
 ---
 
@@ -4454,19 +4500,19 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 | ACC-005 | Fix Fiscal Period Validation (can post to closed periods) | HIGH | complete | 2h | `server/accountingDb.ts` |
 | INV-001 | Add Inventory Deduction on Ship/Fulfill | HIGH | complete | 4h | `server/routers/orders.ts` |
 | INV-002 | Fix Race Condition in Draft Order Confirmation | HIGH | complete | 2h | `server/ordersDb.ts` |
-| INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | ready | 2h | `server/routers/orders.ts` |
-| ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | ready | 4h | `server/ordersDb.ts` |
-| ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | ready | 4h | `server/ordersDb.ts`, `server/services/*` |
-| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | ready | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
+| INV-003 | Add FOR UPDATE Lock in Batch Allocation | HIGH | complete | 2h | `server/routers/orders.ts` |
+| ORD-001 | Fix Invoice Creation Timing (before fulfillment) | HIGH | complete | 4h | `server/ordersDb.ts` |
+| ST-050 | Fix Silent Error Handling in RED Mode Paths | HIGH | complete | 4h | `server/ordersDb.ts`, `server/services/*` |
+| ST-051 | Add Transaction Boundaries to Critical Operations | HIGH | complete | 8h | `server/ordersDb.ts`, `server/routers/orders.ts` |
 | ST-052 | Fix Fallback User ID Violations (11 instances) | HIGH | complete | 2h | `server/routers/inventory.ts`, `catalog.ts`, `poReceiving.ts` |
-| ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | ready | 16h | Multiple files - see task details |
-| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | ready | 2h | `server/arApDb.ts` |
+| ST-053 | Eliminate `any` Types in Codebase (515 instances) | MEDIUM | complete | 16h | Multiple files - see task details |
+| FIN-001 | Fix Invoice Number Race Condition (duplicate numbers) | HIGH | complete | 2h | `server/arApDb.ts` |
 
 ---
 
 #### SEC-027: Protect Admin Setup Endpoints
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 1h
 **Module:** `server/routers/adminSetup.ts:104-259`
@@ -4493,7 +4539,7 @@ PR #280 claims constraint name length fixes were already present in migrations 0
 
 #### SEC-028: Remove/Restrict Debug Endpoints
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 1h
 **Module:** `server/routers/debug.ts:18-522`
@@ -4815,70 +4861,51 @@ All 11 instances replaced with `getAuthenticatedUserId(ctx)` which throws UNAUTH
 ### P1: Architecture & State Machine Fixes
 
 > These issues cause data inconsistency and incorrect business logic.
-> **Should fix in current release.**
+> **Status:** Most tasks complete as of 2026-01-29
 
-| Task     | Description                      | Priority | Status | Estimate | Module                   |
-| -------- | -------------------------------- | -------- | ------ | -------- | ------------------------ |
-| ARCH-001 | Create OrderOrchestrator Service | HIGH     | ready  | 8h       | `server/services/` (new) |
-
-| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | ready | 8h | `server/services/`, `server/routers/` |
-| ARCH-003 | Use State Machine for All Order Transitions | HIGH | ready | 4h | `server/routers/orders.ts` |
-| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | ready | 4h | `server/arApDb.ts` |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
-| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | complete | 2h | `server/routers/vendors.ts` |
-| ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
-| ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
-| ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
-| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | ready | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-| PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
-| PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
-
-> > > > > > > dbd81f83 (docs: update roadmap with completed Team B backend tasks)
-> > > > > > > | ARCH-002 | Eliminate Shadow Accounting (unify totalOwed) | HIGH | complete | 8h | `server/services/`, `server/routers/` |
-> > > > > > > | ARCH-003 | Use State Machine for All Order Transitions | HIGH | complete | 4h | `server/routers/orders.ts` |
-> > > > > > > | ARCH-004 | Fix Bill Status Transitions (any→any allowed) | HIGH | complete | 4h | `server/arApDb.ts` |
-> > > > > > > | PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM | complete | 4h | `drizzle/schema.ts`, `server/routers/purchaseOrders.ts` |
-> > > > > > > | PARTY-002 | Add FK Constraints to Bills Table | MEDIUM | ready | 2h | `drizzle/schema.ts` |
-> > > > > > > | PARTY-003 | Migrate Lots to Use supplierClientId | MEDIUM | ready | 8h | `drizzle/schema.ts`, `server/routers/inventory.ts` |
-> > > > > > > | PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes | MEDIUM | ready | 2h | `server/routers/vendors.ts` |
+| Task      | Description                                      | Priority | Status   | Estimate | Module                                             |
+| --------- | ------------------------------------------------ | -------- | -------- | -------- | -------------------------------------------------- |
+| ARCH-001  | Create OrderOrchestrator Service                 | HIGH     | complete | 8h       | `server/services/orderOrchestrator.ts`             |
+| ARCH-002  | Eliminate Shadow Accounting (unify totalOwed)    | HIGH     | complete | 8h       | `server/services/`, `server/routers/`              |
+| ARCH-003  | Use State Machine for All Order Transitions      | HIGH     | complete | 4h       | `server/routers/orders.ts`                         |
+| ARCH-004  | Fix Bill Status Transitions (any→any allowed)    | HIGH     | complete | 4h       | `server/arApDb.ts`                                 |
+| PARTY-001 | Add Nullable supplierClientId to Purchase Orders | MEDIUM   | complete | 4h       | `drizzle/schema.ts`, `purchaseOrders.ts`           |
+| PARTY-002 | Add FK Constraints to Bills Table                | MEDIUM   | complete | 2h       | `drizzle/schema.ts`                                |
+| PARTY-003 | Migrate Lots to Use supplierClientId             | MEDIUM   | ready    | 8h       | `drizzle/schema.ts`, `server/routers/inventory.ts` |
+| PARTY-004 | Convert Vendor Hard Deletes to Soft Deletes      | MEDIUM   | complete | 2h       | `server/routers/vendors.ts`                        |
 
 ---
 
 #### ARCH-001: Create OrderOrchestrator Service
 
-**Status:** ready
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 8h
-**Module:** `server/services/orderOrchestrator.ts` (new)
-**Dependencies:** ST-051
+**Completed:** 2026-01-29
+**Module:** `server/services/orderOrchestrator.ts`
+**Dependencies:** ST-051 (complete)
+**Key Commits:** `bb06aad`
+**Verification:** 20 unit tests passing
 
 **Problem:**
 Order business logic is scattered across `ordersDb.ts` (1400+ lines), `orders.ts` router, and various services. This makes it impossible to ensure transactional integrity.
 
-**Proposed Architecture:**
+**Implementation:**
+Full `OrderOrchestrator` class (~1500 LOC) implementing:
 
-```typescript
-class OrderOrchestrator {
-  async createSaleOrder(input: CreateSaleInput): Promise<Order> {
-    return this.db.transaction(async tx => {
-      // 1. Create order
-      // 2. Allocate inventory (with locks)
-      // 3. Create invoice
-      // 4. Create GL entries (AR + COGS)
-      // All in one transaction
-    });
-  }
-}
-```
+- `createSaleOrder()` - Atomic order creation with inventory, invoices, GL
+- `createDraftOrder()` - Draft/quote creation
+- `confirmOrder()` - Atomic draft-to-sale conversion
+- `shipOrder()` / `deliverOrder()` - Status transitions with state machine
+- `cancelOrder()` - Full reversal with inventory and GL restoration
+- `fulfillOrder()` - Pick and pack
+- `processReturn()` - Return processing
 
 **Acceptance Criteria:**
 
-- [ ] OrderOrchestrator handles create, confirm, ship, deliver, cancel
-- [ ] All operations atomic within single transaction
-- [ ] Clear separation of concerns from router
+- [x] OrderOrchestrator handles create, confirm, ship, deliver, cancel
+- [x] All operations atomic within single transaction
+- [x] Clear separation of concerns from router
 
 ---
 
