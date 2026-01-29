@@ -638,22 +638,21 @@ pnpm mega:qa:invariants
 
 ---
 
-### Code Review Remediation Wave (Jan 28, 2026) - ✅ COMPLETE
+### Code Review Remediation Wave (Jan 28, 2026)
 
 > **Combined findings from 3 parallel code reviews of Wave 1-3 commits**
 > **Review Date:** Jan 28, 2026
-> **Test Status:** 8 failures → 0 failures (2497 tests passing)
+> **Test Status:** 8 tests failing across 5 files
 > **Session:** `017MBBpCG5HjH3Y3nhjPKDP1`
-> **Completed:** 2026-01-29
 
-#### Critical Issues (Tests Failing - 4 agents parallel) - ✅ COMPLETE
+#### Critical Issues (Tests Failing - 4 agents parallel)
 
-| Task     | Description                                    | Priority | Status   | Est | Module                                      | Root Cause                          |
-| -------- | ---------------------------------------------- | -------- | -------- | --- | ------------------------------------------- | ----------------------------------- |
-| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | complete | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
-| BUG-122  | Remove vendors table join in inventory queries | HIGH     | complete | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
-| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | complete | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
-| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | complete | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
+| Task     | Description                                    | Priority | Status | Est | Module                                      | Root Cause                          |
+| -------- | ---------------------------------------------- | -------- | ------ | --- | ------------------------------------------- | ----------------------------------- |
+| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | ready  | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
+| BUG-122  | Remove vendors table join in inventory queries | HIGH     | ready  | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
+| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | ready  | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
+| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | ready  | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
 
 **BUG-121 Details (getTransitionError not exported):**
 
@@ -688,12 +687,12 @@ export function getTransitionError(statusType, currentStatus, newStatus) {...}
 - Rate limiter state persists between test runs
 - **Fix:** Reset rate limiter map before each test or use test-specific IPs
 
-#### Medium Priority (Cleanup - 2 agents parallel) - ✅ COMPLETE
+#### Medium Priority (Cleanup - 2 agents parallel)
 
-| Task        | Description                             | Priority | Status   | Est | Module                                                         | Impact        |
-| ----------- | --------------------------------------- | -------- | -------- | --- | -------------------------------------------------------------- | ------------- |
-| CLEANUP-002 | Remove unused cancel dialog code        | LOW      | complete | 30m | `client/src/components/clients/AddClientWizard.tsx:49,156,165` | Dead code     |
-| SCHEMA-013  | Standardize payment_terms column naming | LOW      | complete | 1h  | `drizzle/schema.ts`, `server/autoMigrate.ts`                   | Inconsistency |
+| Task        | Description                             | Priority | Status | Est | Module                                                         | Impact        |
+| ----------- | --------------------------------------- | -------- | ------ | --- | -------------------------------------------------------------- | ------------- |
+| CLEANUP-002 | Remove unused cancel dialog code        | LOW      | ready  | 30m | `client/src/components/clients/AddClientWizard.tsx:49,156,165` | Dead code     |
+| SCHEMA-013  | Standardize payment_terms column naming | LOW      | ready  | 1h  | `drizzle/schema.ts`, `server/autoMigrate.ts`                   | Inconsistency |
 
 **CLEANUP-002 Details (Unused code):**
 
