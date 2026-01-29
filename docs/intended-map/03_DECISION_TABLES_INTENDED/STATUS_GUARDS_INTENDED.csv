@@ -1,0 +1,42 @@
+Entity,CurrentStatus,Action,NextStatus,Guard,IntentSource
+order,draft,confirm,confirmed,items valid AND inventory available,GF-003:3.1
+order,draft,cancel,cancelled,none,GF-003:2.2
+order,confirmed,generateInvoice,invoiced,none,GF-003:2.1
+order,confirmed,cancel,cancelled,before ship,GF-005:Alternative
+order,invoiced,ship,shipped,all items packed,GF-005:Primary
+order,shipped,deliver,delivered,none,GF-005:Primary
+invoice,DRAFT,markSent,SENT,none,GF-004:Primary
+invoice,DRAFT,void,VOID,none,GF-004:Primary
+invoice,SENT,customerView,VIEWED,none,GF-004:Primary
+invoice,SENT,recordPayment,PARTIAL,amount < amountDue,GF-004:Primary
+invoice,SENT,recordPayment,PAID,amount >= amountDue,GF-004:Primary
+invoice,SENT,void,VOID,none,GF-004:Primary
+invoice,VIEWED,recordPayment,PARTIAL,amount < amountDue,GF-004:Primary
+invoice,VIEWED,recordPayment,PAID,amount >= amountDue,GF-004:Primary
+invoice,VIEWED,void,VOID,none,GF-004:Primary
+invoice,PARTIAL,recordPayment,PAID,amount >= remaining,GF-004:Primary
+invoice,PARTIAL,void,VOID,none,GF-004:Primary
+invoice,*,checkOverdue,OVERDUE,dueDate < NOW AND status NOT IN (PAID;VOID),GF-004:Primary
+invoice,OVERDUE,recordPayment,PAID,amount >= amountDue,GF-004:Primary
+batch,AWAITING_INTAKE,verify,LIVE,verification complete (FEAT-008),GF-001:4
+batch,LIVE,hold,ON_HOLD,reason required,GF-007:5
+batch,LIVE,quarantine,QUARANTINED,reason required,GF-007:5
+batch,LIVE,sellout,SOLD_OUT,availableQty = 0,GF-007
+batch,ON_HOLD,release,LIVE,none,GF-007
+batch,QUARANTINED,release,LIVE,none,GF-007
+batch,*,close,CLOSED,admin only,GF-007
+purchaseOrder,DRAFT,submit,SENT,valid line items,GF-002:4
+purchaseOrder,DRAFT,cancel,CANCELLED,none,GF-002
+purchaseOrder,SENT,confirm,CONFIRMED,vendor action,GF-002:4
+purchaseOrder,SENT,cancel,CANCELLED,none,GF-002
+purchaseOrder,CONFIRMED,partialReceive,RECEIVING,receivedQty < orderedQty,GF-002:5
+purchaseOrder,CONFIRMED,fullReceive,RECEIVED,receivedQty >= orderedQty,GF-002:5
+purchaseOrder,RECEIVING,fullReceive,RECEIVED,receivedQty >= orderedQty,GF-002:5
+sampleRequest,PENDING,fulfill,FULFILLED,sampleQty available AND allocation ok,GF-008:5
+sampleRequest,PENDING,cancel,CANCELLED,none,GF-008:Alternative
+sampleRequest,FULFILLED,requestReturn,RETURN_REQUESTED,reason required,GF-008:SAMPLE-006
+sampleRequest,FULFILLED,vendorReturn,VENDOR_RETURN_REQUESTED,none,GF-008
+sampleRequest,RETURN_REQUESTED,completeReturn,RETURNED,none,GF-008
+fiscalPeriod,OPEN,close,CLOSED,none,FLOW_GUIDE:1.6
+fiscalPeriod,CLOSED,reopen,OPEN,none,FLOW_GUIDE:1.6
+fiscalPeriod,CLOSED,lock,LOCKED,none,FLOW_GUIDE:1.6

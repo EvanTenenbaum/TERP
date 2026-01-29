@@ -1,0 +1,36 @@
+Object,Field,Rule,ErrorMessage,IntentSource
+Order,customerId,required AND exists in clients,Customer is required,GF-003:2.1
+Order,orderType,in [QUOTE;SALE],Invalid order type,GF-003:2.1
+Order,lineItems,length > 0,At least one item required,GF-003:2.1
+OrderItem,batchId,required AND exists in batches,Valid batch required,GF-003:2.1
+OrderItem,quantity,> 0,Quantity must be positive,GF-003:2.1
+OrderItem,quantity,<= batch.availableQty,Insufficient inventory,GF-003:3.1
+OrderItem,unitPrice,>= 0,Price cannot be negative,GF-003
+Intake,vendorId,required AND exists in clients with isSeller=true,Valid supplier required,GF-001:2
+Intake,brandId,required,Brand is required,GF-001:2
+Intake,category,required,Category is required,GF-001:2
+Intake,productName,required if category != Flower,Product name required,GF-001:2
+Intake,strainName,required if category = Flower,Strain name required for flower,GF-001:2
+Intake,quantity,> 0,Quantity must be positive,GF-001:2
+Intake,unitCogs,>= 0 if cogsMode = FIXED,COGS cannot be negative,GF-001:2
+Intake,minCogs,< maxCogs if cogsMode = RANGE,Min COGS must be less than Max,GF-001:2
+Intake,paymentTerms,in [COD;NET_7;NET_15;NET_30;CONSIGNMENT;PARTIAL],Invalid payment terms,GF-001:2
+Intake,amountPaid,required if paymentTerms in [COD;PARTIAL],Amount paid required for COD/Partial,GF-001:2
+Payment,amount,> 0,Payment amount must be positive,GF-004:Primary
+Payment,amount,<= invoice.amountDue,Payment cannot exceed amount due,GF-004:Primary
+Payment,method,required,Payment method required,GF-004:Primary
+Payment,invoiceId,required AND exists AND status NOT IN [VOID;PAID],Valid unpaid invoice required,GF-004:Primary
+Client,name,required,Client name is required,FLOW-002
+Client,name,unique (warning only),Client name may already exist,FLOW-002
+PurchaseOrder,supplierId,required AND exists in clients with isSeller=true,Valid supplier required,GF-002:2
+PurchaseOrder,lineItems,length > 0,At least one item required,GF-002:3
+POItem,productId,required,Product is required,GF-002:3
+POItem,quantity,> 0,Quantity must be positive,GF-002:3
+POItem,unitCost,>= 0,Cost cannot be negative,GF-002:3
+SampleRequest,clientId,required,Client is required,GF-008:3
+SampleRequest,productId,required,Product is required,GF-008:3
+SampleRequest,quantity,> 0,Quantity must be positive,GF-008:3
+SampleRequest,quantity,<= monthlyAllocation.remaining,Exceeds monthly allocation,GF-008:4
+BatchAdjustment,amount,!= 0,Adjustment amount required,GF-007:4
+BatchAdjustment,reason,required,Reason required for adjustment,GF-007:4
+BatchAdjustment,resultQty,>= 0,Cannot adjust to negative quantity,GF-007:4
