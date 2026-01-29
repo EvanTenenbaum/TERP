@@ -530,7 +530,7 @@ import { safeInArray } from "./lib/sqlSafety";
 | Task      | Description                          | Priority | Status   | Est | Module                             | GF Impact |
 | --------- | ------------------------------------ | -------- | -------- | --- | ---------------------------------- | --------- |
 | PARTY-001 | Add nullable supplierClientId to POs | HIGH     | complete | 4h  | `server/routers/purchaseOrders.ts` | GF-002    |
-| PARTY-002 | Add FK constraints to bills table    | HIGH     | ready    | 2h  | `drizzle/schema.ts`                | GF-004    |
+| PARTY-002 | Add FK constraints to bills table    | HIGH     | complete | 2h  | `drizzle/schema.ts`                | GF-004    |
 
 **Verification Gate 2:** ✅ PASSED (Wave 2A/2B)
 
@@ -541,7 +541,7 @@ pnpm build    # ✅ PASS
 # Security endpoints protected ✅
 # safeInArray migrations complete ✅
 # VIP token validation enhanced ✅
-# Remaining: TERP-0014, TERP-0017, PARTY-002
+# Remaining: TERP-0014, TERP-0017
 ```
 
 ---
@@ -620,11 +620,11 @@ pnpm mega:qa:invariants
 | ------------------------------ | ------ | ---------- | -------------- | ----------------------------------------- |
 | Wave 0: Pre-requisites         | 5      | 5h         | ✅ COMPLETE    | 0                                         |
 | Wave 1: Data Integrity         | 9      | 25h        | ✅ MOSTLY DONE | 2 (ST-051, ARCH-001)                      |
-| Wave 2: Security + safeInArray | 11     | 48h        | ✅ MOSTLY DONE | 3 (TERP-0014, TERP-0017, PARTY-002)       |
+| Wave 2: Security + safeInArray | 11     | 48h        | ✅ MOSTLY DONE | 2 (TERP-0014, TERP-0017)                  |
 | Wave 3: Hardening              | 8      | 34h        | ✅ MOSTLY DONE | 3 (ST-053, TERP-0019, SCHEMA-011 partial) |
 | Wave 4: Verification           | -      | 8h         | 🔴 NOT STARTED | E2E tests                                 |
 | Code Review Remediation        | 6      | 5.5h       | ✅ COMPLETE    | 0                                         |
-| **TOTAL**                      | **39** | **125.5h** | **~75% DONE**  | **8 tasks**                               |
+| **TOTAL**                      | **39** | **125.5h** | **~80% DONE**  | **7 tasks**                               |
 
 **Success Criteria:**
 
@@ -645,14 +645,14 @@ pnpm mega:qa:invariants
 > **Test Status:** 8 tests failing across 5 files
 > **Session:** `017MBBpCG5HjH3Y3nhjPKDP1`
 
-#### Critical Issues (Tests Failing - 4 agents parallel)
+#### Critical Issues (Tests Failing - 4 agents parallel) - ✅ COMPLETE
 
-| Task     | Description                                    | Priority | Status | Est | Module                                      | Root Cause                          |
-| -------- | ---------------------------------------------- | -------- | ------ | --- | ------------------------------------------- | ----------------------------------- |
-| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | ready  | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
-| BUG-122  | Remove vendors table join in inventory queries | HIGH     | ready  | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
-| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | ready  | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
-| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | ready  | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
+| Task     | Description                                    | Priority | Status   | Est | Module                                      | Root Cause                          |
+| -------- | ---------------------------------------------- | -------- | -------- | --- | ------------------------------------------- | ----------------------------------- |
+| BUG-121  | Export getTransitionError from ordersDb.ts     | HIGH     | complete | 30m | `server/ordersDb.ts:1618`                   | Function not exported, 4 tests fail |
+| BUG-122  | Remove vendors table join in inventory queries | HIGH     | complete | 2h  | `server/inventoryDb.ts:887,950`             | Deprecated table causes query fail  |
+| TEST-030 | Fix adminSetup test rate limiter interference  | MEDIUM   | complete | 1h  | `server/routers/adminSetup.test.ts`         | Rate limit triggered in test suite  |
+| TEST-031 | Fix admin-security.test.ts failure             | MEDIUM   | complete | 30m | `server/routers/admin-security.test.ts:140` | Missing test isolation              |
 
 **BUG-121 Details (getTransitionError not exported):**
 
