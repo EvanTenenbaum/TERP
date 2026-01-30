@@ -107,6 +107,8 @@
     "roadmap:execute": "tsx scripts/roadmap-strategic-executor.ts execute",
     "roadmap:go": "tsx scripts/roadmap-strategic-executor.ts go",
     "pre-commit:review": "tsx scripts/pre-commit-review.ts",
+    "test:schema": "vitest run tests/integration/schema-verification.test.ts",
+    "test:schema:ci": "pnpm test:env:up && pnpm test:db:reset && vitest run tests/integration/schema-verification.test.ts && pnpm test:env:down",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

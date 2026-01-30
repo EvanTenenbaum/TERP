@@ -96,3 +96,16 @@ jobs:
             cat SCHEMA_VALIDATION_REPORT.md
             exit 1
           fi
+
+      - name: Run real database schema verification tests
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+        run: |
+          echo "Running schema verification tests against real database..."
+          pnpm vitest run tests/integration/schema-verification.test.ts --reporter=verbose || {
+            echo "❌ Schema verification tests FAILED!"
+            echo "This means the database schema does not match what the code expects."
+            echo "Check the test output above for specific column/table mismatches."
+            exit 1
+          }
+          echo "✅ Schema verification tests passed"
