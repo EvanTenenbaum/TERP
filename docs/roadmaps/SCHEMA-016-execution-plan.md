@@ -289,6 +289,71 @@ if (await featureFlags.isEnabled("STRAINS_FEATURE")) {
 
 ---
 
+## Blast Radius Analysis
+
+### Executive Summary
+
+**Overall Risk: LOW** - The fix is safe because:
+
+- Frontend already handles null strainId (optional chaining, conditional rendering)
+- Core business paths (orders, payments, COGS) don't use strainId
+- Strain features degrade gracefully to no-ops, not crashes
+
+### Impact by Layer
+
+| Layer               | Risk Level | Notes                                                  |
+| ------------------- | ---------- | ------------------------------------------------------ |
+| Frontend            | ✅ LOW     | All components use `{product?.strainId && ...}` guards |
+| API Contracts       | ✅ LOW     | All strainId inputs already optional in Zod schemas    |
+| Core Business Logic | ✅ LOW     | Orders, invoicing, payments don't use strainId         |
+| Strain Features     | ⚠️ MEDIUM  | Become no-ops (graceful degradation)                   |
+| Matching Engine     | ⚠️ MEDIUM  | Falls back to text matching                            |
+
+### Critical Functions Requiring Graceful Degradation
+
+These `strainService.ts` functions will crash without guards:
+
+| Function                | Query Pattern                      | Fix Required  |
+| ----------------------- | ---------------------------------- | ------------- |
+| `suggestAlternatives()` | `products.strainId IN (...)`       | Add try-catch |
+| `getProductsByFamily()` | `INNER JOIN strains ON p.strainId` | Add try-catch |
+| `getTopFamilies()`      | Same join pattern                  | Add try-catch |
+| `getFamilyTrends()`     | Same join pattern                  | Add try-catch |
+
+**Required Pattern:**
+
+```typescript
+try {
+  // existing query
+} catch (error) {
+  if (isSchemaError(error)) {
+    logger.warn({ msg: "Strain features disabled - strainId column missing" });
+    return [];
+  }
+  throw error;
+}
+```
+
+### Unaffected Critical Paths
+
+| Domain               | Uses strainId? | Status  |
+| -------------------- | -------------- | ------- |
+| Orders (GF-003)      | ❌ No          | ✅ Safe |
+| Invoicing (GF-004)   | ❌ No          | ✅ Safe |
+| Payments             | ❌ No          | ✅ Safe |
+| COGS/Valuation       | ❌ No          | ✅ Safe |
+| Inventory Quantities | ❌ No          | ✅ Safe |
+| VIP Portal           | ❌ No          | ✅ Safe |
+
+### Recommended Execution Order (Updated)
+
+1. **First:** Add isSchemaError() guards to `strainService.ts` (prevents crashes)
+2. **Then:** Apply NULL placeholder pattern to critical path files
+3. **Then:** Fix remaining service/router files
+4. **Optional:** Add feature flag for clean disable/enable
+
+---
+
 ## References
 
 - **Diagnosis Report:** 5th-Failure Bug Diagnosis Protocol (2026-01-30)
@@ -296,3 +361,4 @@ if (await featureFlags.isEnabled("STRAINS_FEATURE")) {
 - **Previous Fixes:** SCHEMA-015, BUG-112, BUG-131, SEC-031, PR #352
 - **Pattern Reference:** `server/salesSheetsDb.ts` (working implementation)
 - **Schema Verification:** `tests/integration/schema-verification.test.ts`
+- **Blast Radius Analysis:** Added 2026-01-30
