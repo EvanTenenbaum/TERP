@@ -71,6 +71,68 @@ function getAgeBracket(
   return "CRITICAL";
 }
 
+const enhancedInventoryInputSchema = z
+  .object({
+    // Pagination
+    page: z.number().min(1).default(1),
+    pageSize: z.number().min(1).max(100).default(50),
+    cursor: z.number().optional(),
+
+    // Sorting
+    sortBy: z
+      .enum([
+        "sku",
+        "productName",
+        "vendor",
+        "brand",
+        "status",
+        "onHand",
+        "available",
+        "age",
+        "receivedDate",
+        "lastMovement",
+        "stockStatus",
+      ])
+      .default("sku"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+
+    // Filtering
+    search: z.string().optional(),
+    status: z.array(z.string()).optional(),
+    category: z.string().optional(),
+    subcategory: z.string().optional(),
+    vendor: z.array(z.string()).optional(),
+    brand: z.array(z.string()).optional(),
+    grade: z.array(z.string()).optional(),
+    stockStatus: z
+      .enum(["ALL", "CRITICAL", "LOW", "OPTIMAL", "OUT_OF_STOCK"])
+      .optional(),
+    ageBracket: z
+      .enum(["ALL", "FRESH", "MODERATE", "AGING", "CRITICAL"])
+      .optional(),
+    minAge: z.number().optional(),
+    maxAge: z.number().optional(),
+    batchId: z.string().optional(),
+
+    // Stock thresholds
+    lowStockThreshold: z.number().default(50),
+    criticalStockThreshold: z.number().default(10),
+
+    // Include options
+    includeMovementHistory: z.boolean().default(false),
+    movementHistoryLimit: z.number().default(10),
+  })
+  .default({
+    page: 1,
+    pageSize: 50,
+    sortBy: "sku",
+    sortOrder: "desc",
+    lowStockThreshold: 50,
+    criticalStockThreshold: 10,
+    includeMovementHistory: false,
+    movementHistoryLimit: 10,
+  });
+
 export const inventoryRouter = router({
   // ==========================================================================
   // 4.A.1: FEAT-001-BE - Enhanced Inventory Data API
@@ -82,58 +144,7 @@ export const inventoryRouter = router({
    */
   getEnhanced: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(
-      z.object({
-        // Pagination
-        page: z.number().min(1).default(1),
-        pageSize: z.number().min(1).max(100).default(50),
-        cursor: z.number().optional(),
-
-        // Sorting
-        sortBy: z
-          .enum([
-            "sku",
-            "productName",
-            "vendor",
-            "brand",
-            "status",
-            "onHand",
-            "available",
-            "age",
-            "receivedDate",
-            "lastMovement",
-            "stockStatus",
-          ])
-          .default("sku"),
-        sortOrder: z.enum(["asc", "desc"]).default("desc"),
-
-        // Filtering
-        search: z.string().optional(),
-        status: z.array(z.string()).optional(),
-        category: z.string().optional(),
-        subcategory: z.string().optional(),
-        vendor: z.array(z.string()).optional(),
-        brand: z.array(z.string()).optional(),
-        grade: z.array(z.string()).optional(),
-        stockStatus: z
-          .enum(["ALL", "CRITICAL", "LOW", "OPTIMAL", "OUT_OF_STOCK"])
-          .optional(),
-        ageBracket: z
-          .enum(["ALL", "FRESH", "MODERATE", "AGING", "CRITICAL"])
-          .optional(),
-        minAge: z.number().optional(),
-        maxAge: z.number().optional(),
-        batchId: z.string().optional(),
-
-        // Stock thresholds
-        lowStockThreshold: z.number().default(50),
-        criticalStockThreshold: z.number().default(10),
-
-        // Include options
-        includeMovementHistory: z.boolean().default(false),
-        movementHistoryLimit: z.number().default(10),
-      })
-    )
+    .input(enhancedInventoryInputSchema)
     .query(async ({ input }) => {
       try {
         inventoryLogger.operationStart("getEnhanced", { input });
@@ -693,7 +704,7 @@ export const inventoryRouter = router({
   // ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
   list: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(listQuerySchema)
+    .input(listQuerySchema.default({ limit: 100, offset: 0 }))
     .query(async ({ input }) => {
       try {
         inventoryLogger.operationStart("list", {

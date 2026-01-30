@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
+import type { Request, Response } from "express";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
 
@@ -27,9 +28,11 @@ const mockUser = {
 
 // Create a test caller with mock context
 const createCaller = async () => {
+  const req = { headers: {}, cookies: {} } as Request;
+  const res = {} as Response;
   const ctx = await createContext({
-    req: { headers: {} } as any,
-    res: {} as any,
+    req,
+    res,
   });
 
   return appRouter.createCaller({
@@ -46,6 +49,27 @@ describe("Inventory Router", () => {
   });
 
   describe("list", () => {
+    it("should use defaults when no input is provided", async () => {
+      const mockBatches = {
+        items: [],
+        hasMore: false,
+        nextCursor: null,
+      };
+
+      vi.mocked(inventoryDb.getBatchesWithDetails).mockResolvedValue(
+        mockBatches
+      );
+
+      const result = await caller.inventory.list();
+
+      expect(result).toEqual(mockBatches);
+      expect(inventoryDb.getBatchesWithDetails).toHaveBeenCalledWith(
+        100,
+        undefined,
+        { status: undefined, category: undefined }
+      );
+    });
+
     it("should list batches with pagination", async () => {
       // Arrange
       const mockBatches = {
