@@ -796,10 +796,29 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 > **Impact:** Blocks commits containing these files; security audit compliance
 > **Root Cause:** Actor attribution from input (FORBIDDEN per CLAUDE.md)
 
-| Task    | Description                                 | Priority | Status | Est | Module                                   | Violation                    |
-| ------- | ------------------------------------------- | -------- | ------ | --- | ---------------------------------------- | ---------------------------- |
-| SEC-031 | Fix createdBy from input in inventoryDb     | HIGH     | ready  | 1h  | `server/inventoryDb.ts:1618`             | `createdBy: input.createdBy` |
-| SEC-032 | Fix createdBy from input in payablesService | HIGH     | ready  | 1h  | `server/services/payablesService.ts:130` | `createdBy: input.createdBy` |
+| Task    | Description                                     | Priority | Status   | Est | Module                                     | Violation                    |
+| ------- | ----------------------------------------------- | -------- | -------- | --- | ------------------------------------------ | ---------------------------- |
+| SEC-031 | Fix createdBy from input in inventoryDb         | HIGH     | complete | 1h  | `server/inventoryDb.ts:1618`               | `createdBy: input.createdBy` |
+| SEC-032 | Fix createdBy from input in payablesService     | HIGH     | complete | 1h  | `server/services/payablesService.ts:130`   | `createdBy: input.createdBy` |
+| SEC-033 | Fix createdBy from input in advancedTagFeatures | MEDIUM   | ready    | 2h  | `server/routers/advancedTagFeatures.ts:70` | `createdBy: input.createdBy` |
+
+**SEC-031 Completed:** 2026-01-29
+**Key Commits:** `6f301fa`
+**Actual Time:** 1h
+
+**SEC-032 Completed:** 2026-01-29
+**Key Commits:** `6f301fa`
+**Actual Time:** 1h
+
+**SEC-033 Details (advancedTagFeatures.ts:70):**
+
+```typescript
+// CURRENT (NEEDS FIX)
+createdBy: input.createdBy,  // ❌ FORBIDDEN - actor from input
+
+// REQUIRED FIX - Use authenticated context
+const createdBy = getAuthenticatedUserId(ctx);
+```
 
 **SEC-031 Details (inventoryDb.ts:1618):**
 
@@ -886,6 +905,47 @@ async function createPayable(input: PayableInput, actorId: number) {
 - **Impact:** Idempotency cache only works for single-instance deployments
 - **Current Status:** Documented in code comments with migration path
 - **Fix:** Migrate to Redis-backed or database-backed idempotency when scaling
+
+---
+
+### QA Infrastructure Improvements (Added Jan 30, 2026)
+
+> Discovered during comprehensive QA review addressing database mocking gaps.
+> **Audit Date:** Jan 30, 2026
+> **Report:** `docs/audits/QA_REVIEW_2026-01-30.md`
+
+| Task         | Description                                    | Priority | Status  | Est | Impact                      |
+| ------------ | ---------------------------------------------- | -------- | ------- | --- | --------------------------- |
+| QA-INFRA-001 | Create Database Integration Test Suite         | MEDIUM   | ready   | 16h | Catch schema drift at CI    |
+| QA-INFRA-002 | Enable Schema Drift Detection in PR Workflow   | MEDIUM   | ready   | 4h  | Prevent drift reaching main |
+| QA-INFRA-003 | Document or Remove getLowStock Dead Code       | LOW      | ready   | 4h  | Code hygiene                |
+| QA-INFRA-004 | Re-enable Data Seeding (Post Schema Drift Fix) | MEDIUM   | blocked | 8h  | Seeding disabled workaround |
+
+**QA-INFRA-001: Create Database Integration Test Suite**
+
+- **Problem:** Unit tests mock the database, don't catch schema drift
+- **Solution:** Add integration tests using test database in CI
+- **Scope:** High-value endpoints (inventory, orders, payables)
+- **Dependencies:** TEST-INFRA-02 (DATABASE_URL configuration)
+
+**QA-INFRA-002: Enable Schema Drift Detection in PR Workflow**
+
+- **Problem:** Schema drift only checked nightly, not on PR
+- **Solution:** Add `pnpm audit:schema-drift` to PR workflow (fast mode)
+- **Location:** `.github/workflows/pr-validation.yml`
+
+**QA-INFRA-003: Document or Remove getLowStock Dead Code**
+
+- **Problem:** `alerts.getLowStock` has no consumers
+- **Solution:** Either integrate into AlertsPanel.tsx or mark for deprecation
+- **Location:** `server/routers/alerts.ts:294`
+
+**QA-INFRA-004: Re-enable Data Seeding**
+
+- **Problem:** Seeding disabled due to schema drift (SKIP_DEFAULT_SEED=true)
+- **Solution:** Fix remaining schema drift issues and remove workaround
+- **Blocker:** Requires QA-INFRA-001 and QA-INFRA-002 first
+- **Location:** `server/_core/index.ts:161`
 
 ---
 
