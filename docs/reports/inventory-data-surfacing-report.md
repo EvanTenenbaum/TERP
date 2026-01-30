@@ -193,3 +193,26 @@ Use this checklist to ensure inventory list data surfaces correctly across modul
    - Product selection list is populated from inventory list response
 
 Each of the above surfaces is wired to one of the key APIs: `inventory.list`, `inventory.getEnhanced`, `salesSheets.getInventory`, or `spreadsheet.getInventoryGridData`.【F:client/src/pages/Inventory.tsx†L54-L520】【F:client/src/components/work-surface/InventoryWorkSurface.tsx†L330-L420】【F:client/src/components/spreadsheet/InventoryGrid.tsx†L28-L200】【F:client/src/pages/SalesSheetCreatorPage.tsx†L44-L120】【F:client/src/pages/OrderCreatorPage.tsx†L144-L220】【F:client/src/components/work-surface/golden-flows/OrderCreationFlow.tsx†L562-L640】【F:client/src/pages/PurchaseOrdersPage.tsx†L60-L120】
+
+## 6) Troubleshooting Playbook (When Inventory Appears Missing)
+
+Use this quick flow when inventory list surfaces appear empty or incomplete.
+
+1. **Confirm the right API is returning items.**
+   - `inventory.getEnhanced` should return `items` plus a `summary` payload for the Inventory module.【F:server/routers/inventory.ts†L74-L336】
+   - `inventory.list` should return `items` with `batch`, `product`, `lot`, and `supplierClient` data for work-surface and purchase orders views.【F:server/routers/inventory.ts†L694-L771】
+   - `salesSheets.getInventory` should return priced items for sales sheet/order creation flows.【F:server/routers/salesSheets.ts†L75-L117】
+   - `spreadsheet.getInventoryGridData` should return grid rows for the spreadsheet view.【F:server/routers/spreadsheet.ts†L35-L68】
+
+2. **Check frontend filters that can hide inventory.**
+   - Inventory module filters are applied client-side (status, category, vendor, brand, grade, stock level, COGS range). If inventory data loads but the table is empty, validate the active filters and search parameters.【F:client/src/pages/Inventory.tsx†L472-L553】
+   - Inventory Work Surface status filter defaults to `ALL`, so an empty list here usually indicates the backend list or search payload is empty rather than a client-side filter issue.【F:client/src/components/work-surface/InventoryWorkSurface.tsx†L319-L360】
+
+3. **Verify availability math for sellable inventory.**
+   - If `available = onHand - reserved - quarantine - hold` calculates to `<= 0`, inventory will appear as out of stock in list views that filter for availability (e.g., sales sheet inventory list).【F:server/routers/inventory.ts†L117-L279】【F:server/salesSheetsDb.ts†L65-L140】
+
+4. **Validate supplier joins for list display.**
+   - Supplier names come from `lots.supplier_client_id` → `clients.id`; missing joins can result in empty vendor columns and may affect vendor filters.【F:server/inventoryDb.ts†L881-L909】
+
+5. **Confirm pricing engine output for sales flows.**
+   - Sales sheet and order creation inventory lists depend on `getInventoryWithPricing`. If pricing rules yield no priced items, those lists will appear empty even if inventory exists.【F:server/salesSheetsDb.ts†L65-L220】
