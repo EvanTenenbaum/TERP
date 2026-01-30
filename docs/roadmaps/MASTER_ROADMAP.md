@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.2
-**Last Updated:** 2026-01-27 (Added INFRA-020 through INFRA-024 - Pick & Pack Consolidation)
+**Version:** 7.3
+**Last Updated:** 2026-01-30 (QA-INFRA-001/002 complete, schema verification tests added)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -914,25 +914,36 @@ async function createPayable(input: PayableInput, actorId: number) {
 > **Audit Date:** Jan 30, 2026
 > **Report:** `docs/audits/QA_REVIEW_2026-01-30.md`
 
-| Task         | Description                                    | Priority | Status  | Est | Impact                      |
-| ------------ | ---------------------------------------------- | -------- | ------- | --- | --------------------------- |
-| QA-INFRA-001 | Create Database Integration Test Suite         | MEDIUM   | ready   | 16h | Catch schema drift at CI    |
-| QA-INFRA-002 | Enable Schema Drift Detection in PR Workflow   | MEDIUM   | ready   | 4h  | Prevent drift reaching main |
-| QA-INFRA-003 | Document or Remove getLowStock Dead Code       | LOW      | ready   | 4h  | Code hygiene                |
-| QA-INFRA-004 | Re-enable Data Seeding (Post Schema Drift Fix) | MEDIUM   | blocked | 8h  | Seeding disabled workaround |
+| Task         | Description                                    | Priority | Status      | Est | Impact                      |
+| ------------ | ---------------------------------------------- | -------- | ----------- | --- | --------------------------- |
+| QA-INFRA-001 | Create Database Integration Test Suite         | MEDIUM   | ✅ COMPLETE | 16h | Catch schema drift at CI    |
+| QA-INFRA-002 | Enable Schema Drift Detection in PR Workflow   | MEDIUM   | ✅ COMPLETE | 4h  | Prevent drift reaching main |
+| QA-INFRA-003 | Document or Remove getLowStock Dead Code       | LOW      | ready       | 4h  | Code hygiene                |
+| QA-INFRA-004 | Re-enable Data Seeding (Post Schema Drift Fix) | MEDIUM   | ready       | 8h  | Seeding disabled workaround |
+| QA-INFRA-005 | Remove safeProductSelect After strainId Migration | LOW   | blocked     | 2h  | Tech debt cleanup           |
 
 **QA-INFRA-001: Create Database Integration Test Suite**
 
+- **Status:** ✅ COMPLETE (Jan 30, 2026)
 - **Problem:** Unit tests mock the database, don't catch schema drift
-- **Solution:** Add integration tests using test database in CI
-- **Scope:** High-value endpoints (inventory, orders, payables)
-- **Dependencies:** TEST-INFRA-02 (DATABASE_URL configuration)
+- **Solution:** Created `tests/integration/schema-verification.test.ts` with real database tests
+- **Key Features:**
+  - Auto-validates ALL tables from drizzle/schema.ts exports
+  - `TABLES_PENDING_MIGRATION` and `COLUMNS_PENDING_MIGRATION` for graceful handling
+  - Verifies critical query patterns (batches+lots+clients joins, strainId joins, etc.)
+  - Skips gracefully when no DATABASE_URL configured
+- **CI Integration:** `.github/workflows/schema-validation.yml`
+- **Scripts:** `pnpm test:schema`, `pnpm test:schema:ci`
+- **Key Commits:** `9c43912`, `711d1d8`
+- **Session:** `claude/qa-tests-database-mocking-RUAIL`
 
 **QA-INFRA-002: Enable Schema Drift Detection in PR Workflow**
 
+- **Status:** ✅ COMPLETE (Jan 30, 2026)
 - **Problem:** Schema drift only checked nightly, not on PR
-- **Solution:** Add `pnpm audit:schema-drift` to PR workflow (fast mode)
-- **Location:** `.github/workflows/pr-validation.yml`
+- **Solution:** Added `.github/workflows/schema-validation.yml` to run on every PR
+- **Implementation:** Uses `pnpm vitest run tests/integration/schema-verification.test.ts`
+- **Key Commits:** `9c43912`
 
 **QA-INFRA-003: Document or Remove getLowStock Dead Code**
 
@@ -942,10 +953,22 @@ async function createPayable(input: PayableInput, actorId: number) {
 
 **QA-INFRA-004: Re-enable Data Seeding**
 
+- **Status:** ready (blockers resolved)
 - **Problem:** Seeding disabled due to schema drift (SKIP_DEFAULT_SEED=true)
 - **Solution:** Fix remaining schema drift issues and remove workaround
-- **Blocker:** Requires QA-INFRA-001 and QA-INFRA-002 first
+- **Note:** QA-INFRA-001 and QA-INFRA-002 now complete; strainId columns still pending migration
 - **Location:** `server/_core/index.ts:161`
+
+**QA-INFRA-005: Remove safeProductSelect After strainId Migration**
+
+- **Status:** blocked (awaiting strainId migration)
+- **Problem:** `safeProductSelect` in `server/inventoryDb.ts` projects strainId as NULL
+- **Solution:** After strainId column is migrated to production:
+  1. Remove strainId from `COLUMNS_PENDING_MIGRATION` in schema tests
+  2. Remove `safeProductSelect` workaround from `inventoryDb.ts`
+  3. Update queries to use actual strainId column
+- **Reference:** `docs/audits/PR-351-QA-REVIEW.md`
+- **Tech Debt Created By:** PR #352
 
 ---
 
@@ -3361,6 +3384,35 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 # 📋 POST-BETA BACKLOG
 
 > Features that are fully specified and ready for implementation after Beta milestone.
+
+---
+
+## 🎯 Customer Feedback (Jan 29, 2026 Meeting)
+
+> **Source:** `docs/meeting-analysis/2026-01-29/TERP_Customer_Meeting_Analysis_CLEANED.md`
+> **Status:** 15 actionable items identified after codebase cross-reference (17 removed as already implemented)
+> **Priority Focus:** Dashboard enhancements are customer's top priority
+
+### NOW Priority Items
+
+| Task ID  | Description                                     | Domain    | Status | Est |
+| -------- | ----------------------------------------------- | --------- | ------ | --- |
+| MEET-002 | Dashboard inventory snapshot by category        | Dashboard | ready  | 8h  |
+| MEET-004 | Dashboard payables summary (verify/enhance)     | Dashboard | ready  | 4h  |
+| MEET-008 | Debt warning system for at-risk clients (NEW)   | Clients   | ready  | 16h |
+| MEET-026 | Payment permission levels (RBAC enhancement)    | Payments  | ready  | 4h  |
+
+### NEXT Priority Items
+
+| Task ID  | Description                                 | Domain    | Status | Est |
+| -------- | ------------------------------------------- | --------- | ------ | --- |
+| MEET-006 | Cash on hand display (verify AvailableCash) | Dashboard | ready  | 2h  |
+| MEET-013 | Store client Metrc/login names              | Clients   | ready  | 4h  |
+| MEET-020 | Metric explanations for leaderboard         | UI/UX     | ready  | 4h  |
+| MEET-029 | Default landing page user preference        | Settings  | ready  | 4h  |
+| MEET-031 | Simplified price category filtering         | Inventory | ready  | 8h  |
+
+> **Note:** Full details including acceptance criteria and evidence in the source document.
 
 ---
 
