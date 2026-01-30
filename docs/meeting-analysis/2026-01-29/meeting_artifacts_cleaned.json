@@ -1,0 +1,288 @@
+{
+  "meeting_metadata": {
+    "date": "2026-01-29",
+    "duration_seconds": 1087,
+    "participants": ["Developer (Evan)", "Customer (Business Operator)"],
+    "analysis_date": "2026-01-29",
+    "version": "cleaned",
+    "original_item_count": 32,
+    "cleaned_item_count": 15,
+    "items_removed": 17
+  },
+  "removed_items_summary": {
+    "already_implemented": [
+      "MEET-001: Inventory loading (BUG-040)",
+      "MEET-003: Spreadsheet View (feature flagged)",
+      "MEET-005: Aging inventory widget",
+      "MEET-011: Hide contact fields (QuickCreateClient)",
+      "MEET-014: Minimal client creation (WS-011)",
+      "MEET-017: Master Score customizable (WeightCustomizer)",
+      "MEET-018: Dual = Supplier + Buyer",
+      "MEET-019: Financial + Reliability important",
+      "MEET-022: Engagement = Frequency + Recency",
+      "MEET-023: Master Score weights"
+    ],
+    "already_specced": [
+      "MEET-010: Client last order (FEAT-009)",
+      "MEET-024: AR/AP command center (WS-001/002)",
+      "MEET-028: Inventory unblocks all",
+      "MEET-032: Order Creator inventory bug"
+    ],
+    "context_only": [
+      "MEET-030: Daily workflow like Tetris"
+    ]
+  },
+  "new_items": [
+    {
+      "id": "MEET-002",
+      "timestamp": "04:28 - 04:50",
+      "category": "Feature Request",
+      "domain": "Dashboard",
+      "priority": "Now",
+      "title": "Dashboard inventory snapshot by category",
+      "description": "Enhance InventorySnapshotWidget to show inventory grouped by flower categories (Deps, Indoor, Outdoor, Smalls, Candy Ends) with price bracket breakdown",
+      "current_state": "InventorySnapshotWidget.tsx exists but lacks category grouping",
+      "work_type": "Enhancement",
+      "acceptance_criteria": [
+        "Dashboard displays inventory counts grouped by category",
+        "Categories include: Deps, Indoor, Outdoor, Smalls, Candy Ends",
+        "Each category shows price bracket breakdown ($100-200, $200-300, $300-400)",
+        "Counts update in real-time with inventory changes"
+      ],
+      "evidence": "And it'd be cool to see like depths, indoor, out, smalls, um, candy ends in various price brackets",
+      "ui_reference": "/client/src/components/dashboard/widgets-v2/InventorySnapshotWidget.tsx"
+    },
+    {
+      "id": "MEET-004",
+      "timestamp": "04:16 - 04:27",
+      "category": "Feature Request",
+      "domain": "Dashboard",
+      "priority": "Now",
+      "title": "Dashboard payables summary",
+      "description": "Display payables due and scheduled payments on dashboard",
+      "current_state": "TotalDebtWidget exists - verify if covers vendor payables",
+      "work_type": "Verify/Enhancement",
+      "acceptance_criteria": [
+        "Dashboard shows 'Payables Due' section",
+        "Displays total amount owed to vendors",
+        "Shows scheduled payment dates",
+        "Links to full AR/AP for details"
+      ],
+      "evidence": "On dashboard, on dashboard, I go to dashboard and I can see payables, due payables, scheduled"
+    },
+    {
+      "id": "MEET-006",
+      "timestamp": "04:51 - 04:55",
+      "category": "Feature Request",
+      "domain": "Dashboard",
+      "priority": "Next",
+      "title": "Cash on hand display",
+      "description": "Display current cash balance on dashboard",
+      "current_state": "AvailableCashWidget.tsx exists - verify functionality",
+      "work_type": "Verify/Enhancement",
+      "acceptance_criteria": [
+        "Dashboard displays current cash balance",
+        "Value updates with payment transactions",
+        "Clearly labeled as 'Cash on Hand'"
+      ],
+      "evidence": "And then, you know, like how much money's on hand"
+    },
+    {
+      "id": "MEET-008",
+      "timestamp": "11:21 - 11:27",
+      "category": "Feature Request",
+      "domain": "Clients",
+      "priority": "Now",
+      "severity": "HIGH",
+      "title": "Debt warning system for at-risk clients",
+      "description": "Automated alert system that warns when client debt is going bad and recommends stopping credit extension",
+      "current_state": "No existing implementation found",
+      "work_type": "New Feature",
+      "acceptance_criteria": [
+        "System monitors client debt aging",
+        "Triggers alert when debt exceeds threshold (configurable)",
+        "Alert displays on client profile",
+        "Optional notification to user",
+        "Recommendation to pause credit extension"
+      ],
+      "evidence": "you said you were gonna have some kind of tool that would like warn us when clients debts are going bad and to stop loaning the money kind of thing",
+      "suggested_approach": "Add to Client360 or Leaderboard with debt aging calculation",
+      "open_questions": ["What threshold triggers warning? Days overdue or percentage of credit limit?"]
+    },
+    {
+      "id": "MEET-013",
+      "timestamp": "06:00 - 06:30",
+      "category": "Feature Request",
+      "domain": "Clients",
+      "priority": "Next",
+      "title": "Store client login names",
+      "description": "Add field to store client's Metrc/system login names",
+      "current_state": "No existing field found in client schema",
+      "work_type": "New Feature",
+      "acceptance_criteria": [
+        "Client profile has field for login name",
+        "Searchable/filterable",
+        "Displayed in client detail view"
+      ]
+    },
+    {
+      "id": "MEET-020",
+      "timestamp": "12:34 - 12:38",
+      "category": "UI/UX Feedback",
+      "domain": "Clients",
+      "priority": "Next",
+      "title": "Add metric explanations to leaderboard",
+      "description": "Add tooltips/help text explaining what each leaderboard metric measures",
+      "current_state": "METRIC_CATEGORIES has brief descriptions but may need more detail",
+      "work_type": "Enhancement",
+      "acceptance_criteria": [
+        "Each metric column has info icon",
+        "Tooltip explains what metric measures",
+        "Shows formula or factors considered"
+      ],
+      "evidence": "We'll need a little explanation on these",
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-021",
+      "timestamp": "12:41 - 12:49",
+      "category": "UI/UX Feedback",
+      "domain": "Clients",
+      "priority": "Later",
+      "title": "Consider consolidating metrics",
+      "description": "Review and potentially combine related leaderboard metrics to reduce complexity",
+      "current_state": "Multiple separate metrics may be overwhelming",
+      "work_type": "UX Review",
+      "acceptance_criteria": [
+        "Review metric overlap",
+        "Propose consolidated view",
+        "Maintain detail access for power users"
+      ],
+      "evidence": "maybe we can just combine them into, into less things"
+    },
+    {
+      "id": "MEET-026",
+      "timestamp": "15:46 - 16:03",
+      "category": "Business Rule",
+      "domain": "Payments",
+      "priority": "Now",
+      "title": "Payment permission levels",
+      "description": "Receiving payments from clients should require elevated permissions vs paying vendors",
+      "current_state": "WS-001-SPEC mentions RBAC but may not be fully implemented",
+      "work_type": "Verify/Enhancement",
+      "acceptance_criteria": [
+        "'Receive Payment' action requires elevated permissions",
+        "Role-based access control for payment functions",
+        "Accounting role can 'Pay Vendor' but not 'Receive Payment'"
+      ],
+      "evidence": "she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk",
+      "ui_reference": "/client/src/components/accounting/ReceivePaymentModal.tsx"
+    },
+    {
+      "id": "MEET-029",
+      "timestamp": "01:52 - 02:00",
+      "category": "Feature Request",
+      "domain": "General",
+      "priority": "Next",
+      "title": "Set Inventory as default landing page",
+      "description": "User preference to set default page on login",
+      "current_state": "DashboardPreferencesContext exists but may not include landing page preference",
+      "work_type": "New Feature",
+      "acceptance_criteria": [
+        "User preference for default landing page",
+        "Inventory option available",
+        "Setting persists across sessions"
+      ],
+      "evidence": "It doesn't really matter what I probably inventory would be where I'd like it to pop up"
+    },
+    {
+      "id": "MEET-031",
+      "timestamp": "03:44 - 03:52",
+      "category": "UI/UX Feedback",
+      "domain": "Inventory",
+      "priority": "Next",
+      "title": "Simplify price category filtering",
+      "description": "Current price category system has too many options, needs simplified brackets",
+      "current_state": "Current system has many granular price categories",
+      "work_type": "Enhancement",
+      "acceptance_criteria": [
+        "Simplified price bracket options",
+        "Configurable bracket ranges",
+        "Quick filter presets",
+        "Summary view by bracket"
+      ],
+      "evidence": "it's a little complicated because there's so many price categories"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "MEET-007",
+      "timestamp": "05:16 - 05:46",
+      "category": "Decision Made",
+      "title": "Calendar integration deprioritized",
+      "decision": "Customer explicitly stated calendar integration is not needed for MVP",
+      "rationale": "Prefers phone calendar for mobile convenience",
+      "evidence": "I think it's just mostly, I think that's a later version thing",
+      "action": "Remove from near-term roadmap"
+    },
+    {
+      "id": "MEET-027",
+      "timestamp": "16:22 - 16:28",
+      "category": "Decision Made",
+      "title": "Dashboard requirements most important",
+      "decision": "Customer confirmed dashboard configuration is top priority",
+      "evidence": "my question about the dashboards and what we just talked about was probably the most important one",
+      "action": "Prioritize dashboard enhancements"
+    }
+  ],
+  "business_rules": [
+    {
+      "id": "MEET-015",
+      "category": "Business Rule",
+      "title": "Client creation is infrequent",
+      "rule": "Customer creates approximately 4 new clients per year",
+      "implication": "Client creation UX is low priority vs daily workflows"
+    },
+    {
+      "id": "MEET-016",
+      "category": "Business Rule",
+      "title": "One-time visitors use existing client tab",
+      "rule": "For one-time visitors, use an existing 'walk-in' or generic client record",
+      "implication": "No need for anonymous order capability"
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "Q-001",
+      "question": "What threshold should trigger the debt warning system?",
+      "context": "Days overdue? Percentage of credit limit?",
+      "priority": "High",
+      "related_item": "MEET-008"
+    },
+    {
+      "id": "Q-002",
+      "question": "What is the desired aging threshold for inventory alerts?",
+      "context": "30 days? 60 days? Configurable?",
+      "priority": "High"
+    },
+    {
+      "id": "Q-003",
+      "question": "Should 'Receive Payment' be completely restricted or just require approval?",
+      "context": "Role-based access discussion",
+      "priority": "Medium",
+      "related_item": "MEET-026"
+    }
+  ],
+  "summary_by_priority": {
+    "now": ["MEET-002", "MEET-004", "MEET-008", "MEET-026"],
+    "next": ["MEET-006", "MEET-013", "MEET-020", "MEET-029", "MEET-031"],
+    "later": ["MEET-007", "MEET-021"]
+  },
+  "summary_by_work_type": {
+    "new_feature": ["MEET-008", "MEET-013", "MEET-029"],
+    "enhancement": ["MEET-002", "MEET-020", "MEET-031"],
+    "verify_enhancement": ["MEET-004", "MEET-006", "MEET-026"],
+    "ux_review": ["MEET-021"],
+    "decision": ["MEET-007", "MEET-027"]
+  }
+}
