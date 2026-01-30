@@ -25,13 +25,14 @@ function isSchemaError(error: unknown): boolean {
   const errorMessage = error instanceof Error ? error.message : String(error);
 
   // Check for common schema error patterns
+  // Note: "strainId" pattern removed - too broad, could mask legitimate errors
+  // The existing patterns are sufficient to catch schema errors
   const schemaPatterns = [
     "Unknown column",
     "no such column",
     "column.*does not exist",
     "ER_BAD_FIELD_ERROR",
     "SQLITE_ERROR",
-    "strainId",
   ];
 
   return schemaPatterns.some(
