@@ -35,6 +35,20 @@ import {
 } from "../drizzle/schema";
 import { isValidStatusTransition, type BatchStatus } from "./inventoryUtils";
 
+const safeProductSelect = {
+  id: products.id,
+  brandId: products.brandId,
+  strainId: sql<number | null>`NULL`,
+  nameCanonical: products.nameCanonical,
+  deletedAt: products.deletedAt,
+  category: products.category,
+  subcategory: products.subcategory,
+  uomSellable: products.uomSellable,
+  description: products.description,
+  createdAt: products.createdAt,
+  updatedAt: products.updatedAt,
+};
+
 // ============================================================================
 // VENDOR QUERIES (DEPRECATED - Use Supplier functions below)
 // ============================================================================
@@ -877,7 +891,7 @@ export async function getBatchesWithDetails(
   const query = db
     .select({
       batch: batches,
-      product: products,
+      product: safeProductSelect,
       brand: brands,
       lot: lots,
       // BUG-122: Removed deprecated vendor field - use supplierClient instead
@@ -940,7 +954,7 @@ export async function searchBatches(
   const result = await db
     .select({
       batch: batches,
-      product: products,
+      product: safeProductSelect,
       brand: brands,
       lot: lots,
       supplierClient: clients,

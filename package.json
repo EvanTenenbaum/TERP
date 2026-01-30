@@ -11,6 +11,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "start:production": "NODE_ENV=production node --max-old-space-size=896 dist/index.js",
     "check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint client/src server --ext .ts,.tsx",
     "lint:fix": "eslint client/src server --ext .ts,.tsx --fix",
     "check:dashboard": "tsx scripts/check-dashboard-data.ts",
