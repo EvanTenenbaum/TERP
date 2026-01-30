@@ -3,9 +3,33 @@
 **Task:** Systematic strainId Schema Drift Fix
 **Estimate:** 8h
 **Created:** 2026-01-30
-**Status:** ready
+**Status:** in-progress (graceful degradation complete, migration pending)
 **Priority:** P0 (Release Blocker)
 **Blocks:** GF-001, GF-002, GF-003, GF-007
+
+---
+
+## 🎯 PROGRESS UPDATE (Jan 30, 2026)
+
+**PR #356 Merged:** Graceful degradation and admin migration endpoints added.
+
+### Completed Work:
+
+| Commit    | Description                                                        | Files Modified                                                          |
+| --------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `01e463c` | Graceful degradation + admin migration for strainId                | inventoryIntakeService.ts, strainService.ts, adminQuickFix.ts, adminSchemaPush.ts, analytics.ts |
+| `89e18f5` | Remove overly broad strainId pattern from isSchemaError (QA fix)   | strainService.ts                                                        |
+
+### What's Now Working:
+- ✅ `strainService.ts`: 4 functions have `isSchemaError()` guards (suggestAlternatives, getProductsByFamily, getTopFamilies, getFamilyTrends)
+- ✅ `inventoryIntakeService.ts`: strainId removed from INSERT operations
+- ✅ `adminQuickFix.ts`: `addStrainIdToProducts` endpoint available for DB admins
+- ✅ `adminSchemaPush.ts`: strainId included in batch schema push
+
+### Remaining Work:
+- 🔴 **Run the actual migration** on production (requires DB admin)
+- ⚠️ Other files still need NULL placeholder pattern (see Files Requiring Fix below)
+- 📋 See `docs/roadmaps/SCHEMA-016-migration-required.md` for migration instructions
 
 ---
 

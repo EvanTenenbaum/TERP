@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.3
-**Last Updated:** 2026-01-30 (QA-INFRA-001/002 complete, schema verification tests added)
+**Version:** 7.4
+**Last Updated:** 2026-01-30 (SCHEMA-016 graceful degradation merged via PR #356)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -396,7 +396,14 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 
 | Task       | Description                                      | Priority | Status | Estimate | Module              | Blocks                         |
 | ---------- | ------------------------------------------------ | -------- | ------ | -------- | ------------------- | ------------------------------ |
-| SCHEMA-016 | Systematic strainId schema drift fix (27+ files) | HIGH     | ready  | 8h       | Multiple (see plan) | GF-001, GF-002, GF-003, GF-007 |
+| SCHEMA-016 | Systematic strainId schema drift fix (27+ files) | HIGH     | in-progress  | 8h       | Multiple (see plan) | GF-001, GF-002, GF-003, GF-007 |
+
+> **SCHEMA-016 Progress (Jan 30, 2026):**
+> - **PR #356 Merged:** Graceful degradation and admin migration endpoints added
+> - **Commits:** `01e463c`, `89e18f5`
+> - **Files Fixed:** strainService.ts (4 functions), inventoryIntakeService.ts, adminQuickFix.ts, adminSchemaPush.ts
+> - **Remaining:** DB admin must run `ALTER TABLE products ADD COLUMN strainId INT NULL` on production
+> - **Details:** `docs/roadmaps/SCHEMA-016-migration-required.md`
 
 **Root Cause:** The `products.strainId` column is defined in Drizzle ORM schema (`drizzle/schema.ts`) but **DOES NOT EXIST** in the production MySQL database. This causes `Unknown column 'products.strainId'` SQL errors in 27+ files at runtime.
 
