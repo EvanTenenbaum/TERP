@@ -374,41 +374,82 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 
 #### S1-Critical Bugs (Release Blockers)
 
-| Bug ID  | Title                           | Domain          | Root Cause                                        | Est |
-| ------- | ------------------------------- | --------------- | ------------------------------------------------- | --- |
-| BUG-130 | Inventory Query Failure         | Orders          | `salesSheetsDb.ts:117-129` joins strainId+vendors | 4h  |
-| BUG-131 | Add Batch Button Non-Functional | Inventory       | Frontend click handler not bound                  | 1h  |
-| BUG-132 | Product Dropdown Empty in PO    | Purchase Orders | `productsDb.ts:117` joins strainId                | 2h  |
-| BUG-133 | RBAC Roles Non-Interactive      | Admin           | Frontend click handlers missing                   | 2h  |
-| BUG-134 | PO Add Item Button Broken       | Purchase Orders | Related to BUG-132                                | 1h  |
-| BUG-135 | Create PO Button Broken         | Purchase Orders | Related to BUG-132                                | 1h  |
-| BUG-138 | Alerts Router Uses Deprecated vendors Table | Alerts | `alerts.ts:15,308` joins deprecated vendors table | 2h  |
+| Bug ID  | Title                                       | Domain          | Root Cause                                        | Est |
+| ------- | ------------------------------------------- | --------------- | ------------------------------------------------- | --- |
+| BUG-130 | Inventory Query Failure                     | Orders          | `salesSheetsDb.ts:117-129` joins strainId+vendors | 4h  |
+| BUG-131 | Add Batch Button Non-Functional             | Inventory       | Frontend click handler not bound                  | 1h  |
+| BUG-132 | Product Dropdown Empty in PO                | Purchase Orders | `productsDb.ts:117` joins strainId                | 2h  |
+| BUG-133 | RBAC Roles Non-Interactive                  | Admin           | Frontend click handlers missing                   | 2h  |
+| BUG-134 | PO Add Item Button Broken                   | Purchase Orders | Related to BUG-132                                | 1h  |
+| BUG-135 | Create PO Button Broken                     | Purchase Orders | Related to BUG-132                                | 1h  |
+| BUG-138 | Alerts Router Uses Deprecated vendors Table | Alerts          | `alerts.ts:15,308` joins deprecated vendors table | 2h  |
 
 #### S2-High Bugs
 
-| Bug ID  | Title                           | Domain    | Root Cause                                      | Est |
-| ------- | ------------------------------- | --------- | ----------------------------------------------- | --- |
-| BUG-136 | Edit Product Opens Archive      | Inventory | Frontend modal binding                          | 1h  |
-| BUG-137 | No Test Data for Pick Pack      | Orders    | Staging not seeded                              | 2h  |
-| BUG-139 | Hard Delete on Inventory Views  | Inventory | `inventoryDb.ts:1637` uses DELETE not soft delete | 1h  |
+| Bug ID  | Title                          | Domain    | Root Cause                                        | Est |
+| ------- | ------------------------------ | --------- | ------------------------------------------------- | --- |
+| BUG-136 | Edit Product Opens Archive     | Inventory | Frontend modal binding                            | 1h  |
+| BUG-137 | No Test Data for Pick Pack     | Orders    | Staging not seeded                                | 2h  |
+| BUG-139 | Hard Delete on Inventory Views | Inventory | `inventoryDb.ts:1637` uses DELETE not soft delete | 1h  |
 
-#### Immediate Fix Required: SCHEMA-015
+#### 🚨 ROOT CAUSE FIX: SCHEMA-016 (Supersedes BUG-110, BUG-111, BUG-113, BUG-114)
 
-**Task:** Remove all strainId joins from production queries
+| Task       | Description                                      | Priority | Status | Estimate | Module              | Blocks                         |
+| ---------- | ------------------------------------------------ | -------- | ------ | -------- | ------------------- | ------------------------------ |
+| SCHEMA-016 | Systematic strainId schema drift fix (27+ files) | HIGH     | ready  | 8h       | Multiple (see plan) | GF-001, GF-002, GF-003, GF-007 |
 
-**Files to Fix:**
+**Root Cause:** The `products.strainId` column is defined in Drizzle ORM schema (`drizzle/schema.ts`) but **DOES NOT EXIST** in the production MySQL database. This causes `Unknown column 'products.strainId'` SQL errors in 27+ files at runtime.
 
+**Why Previous Fixes Failed:**
+| Attempt | What Was Done | Why It Failed |
+| ------- | ------------- | ------------- |
+| SCHEMA-015 (alerts.ts) | Removed vendors join from 1 file | Only fixed 1 of 27+ affected files |
+| BUG-131 | Fixed Add Batch button binding | Frontend fix, backend queries still fail |
+| SEC-031 | Fixed auth context in inventoryDb | Unrelated to schema drift |
+| PR #352 | Centralized safeProductSelect | Partial fix, not applied to all files |
+| BUG-112 | Fixed photography.ts | Only 1 file, 26+ remain |
+
+**Systematic Fix Required:** Apply `sql<number | null>\`NULL\`.as("strainId")`pattern to ALL files that reference`products.strainId`.
+
+**Files Requiring Fix (27 total):**
+
+| Category                        | File                                          | Lines                             | Status                              |
+| ------------------------------- | --------------------------------------------- | --------------------------------- | ----------------------------------- |
+| **Critical Path (GF Blockers)** |                                               |                                   |                                     |
+| Orders                          | `server/salesSheetsDb.ts`                     | 102, 230                          | ✅ Fixed (SCHEMA-015)               |
+| Products                        | `server/productsDb.ts`                        | 103, 139, 240                     | ⚠️ Has fallback, needs verification |
+| Search                          | `server/routers/search.ts`                    | 229, 232                          | 🔴 Needs fix                        |
+| Photography                     | `server/routers/photography.ts`               | 254, 507, 967                     | ✅ Has isSchemaError()              |
+| **Service Layer**               |                                               |                                   |                                     |
+| Strain Service                  | `server/services/strainService.ts`            | 161, 213, 262, 310                | 🔴 Needs graceful degradation       |
+| Strain Matching                 | `server/services/strainMatchingService.ts`    | 155, 170, 173, 187, 191           | ⚠️ Has BUG-114 fallback             |
+| Catalog Publishing              | `server/services/catalogPublishingService.ts` | 317                               | 🔴 Needs fix                        |
+| **Router Layer**                |                                               |                                   |                                     |
+| Product Catalogue               | `server/routers/productCatalogue.ts`          | 19, 35, 52, 62, 112, 219, 237     | 🔴 Needs fix                        |
+| Matching Enhanced               | `server/routers/matchingEnhanced.ts`          | 489, 499, 553, 561                | 🔴 Needs fix                        |
+| Strains                         | `server/routers/strains.ts`                   | 44, 47                            | 🔴 Needs graceful degradation       |
+| Client Needs                    | `server/routers/clientNeedsEnhanced.ts`       | 22, 69                            | 🔴 Needs fix                        |
+| Admin                           | `server/routers/admin*.ts`                    | Multiple                          | 🔴 Needs fix                        |
+| **Data Layer**                  |                                               |                                   |                                     |
+| Inventory Intake                | `server/inventoryIntakeService.ts`            | 41, 142                           | 🔴 Make strainId optional           |
+| Matching Engine                 | `server/matchingEngineEnhanced.ts`            | 55, 100, 112, 152-167             | 🔴 Needs graceful degradation       |
+| Matching Engine                 | `server/matchingEngine.ts`                    | 43                                | 🔴 Needs fix                        |
+| Strain Matcher                  | `server/strainMatcher.ts`                     | 360, 367, 378, 388, 415, 474, 480 | 🔴 Needs graceful degradation       |
+
+**Execution Plan:** `docs/roadmaps/SCHEMA-016-execution-plan.md`
+
+**Verification Gate:**
+
+```bash
+# All must pass BEFORE marking complete
+pnpm check                    # TypeScript - no strainId errors
+pnpm lint                     # ESLint clean
+pnpm test                     # All tests pass
+pnpm build                    # Build succeeds
+grep -r "products\.strainId" server/ --include="*.ts" | grep -v "NULL\|test\|\.d\.ts" | wc -l  # Must be 0
 ```
-server/salesSheetsDb.ts:117-129   - Remove strains join AND vendors join
-server/productsDb.ts:117          - Already has fallback, verify it works
-server/matchingEngine.ts          - Check for strainId references
-server/routers/photography.ts     - Has isSchemaError() fallback
-server/routers/search.ts          - Check strainId references
-server/routers/alerts.ts:15,308   - Remove vendors join (BUG-138, Party Model violation)
-+ 22 more files with strainId references
-```
 
-**Priority:** P0 - Fix BEFORE any deployment
+**Priority:** P0 - Fix ALL files BEFORE any deployment
 
 ---
 
@@ -917,13 +958,13 @@ async function createPayable(input: PayableInput, actorId: number) {
 > **Audit Date:** Jan 30, 2026
 > **Report:** `docs/audits/QA_REVIEW_2026-01-30.md`
 
-| Task         | Description                                    | Priority | Status      | Est | Impact                      |
-| ------------ | ---------------------------------------------- | -------- | ----------- | --- | --------------------------- |
-| QA-INFRA-001 | Create Database Integration Test Suite         | MEDIUM   | ✅ COMPLETE | 16h | Catch schema drift at CI    |
-| QA-INFRA-002 | Enable Schema Drift Detection in PR Workflow   | MEDIUM   | ✅ COMPLETE | 4h  | Prevent drift reaching main |
-| QA-INFRA-003 | Document or Remove getLowStock Dead Code       | LOW      | ready       | 4h  | Code hygiene                |
-| QA-INFRA-004 | Re-enable Data Seeding (Post Schema Drift Fix) | MEDIUM   | ready       | 8h  | Seeding disabled workaround |
-| QA-INFRA-005 | Remove safeProductSelect After strainId Migration | LOW   | blocked     | 2h  | Tech debt cleanup           |
+| Task         | Description                                       | Priority | Status      | Est | Impact                      |
+| ------------ | ------------------------------------------------- | -------- | ----------- | --- | --------------------------- |
+| QA-INFRA-001 | Create Database Integration Test Suite            | MEDIUM   | ✅ COMPLETE | 16h | Catch schema drift at CI    |
+| QA-INFRA-002 | Enable Schema Drift Detection in PR Workflow      | MEDIUM   | ✅ COMPLETE | 4h  | Prevent drift reaching main |
+| QA-INFRA-003 | Document or Remove getLowStock Dead Code          | LOW      | ready       | 4h  | Code hygiene                |
+| QA-INFRA-004 | Re-enable Data Seeding (Post Schema Drift Fix)    | MEDIUM   | ready       | 8h  | Seeding disabled workaround |
+| QA-INFRA-005 | Remove safeProductSelect After strainId Migration | LOW      | blocked     | 2h  | Tech debt cleanup           |
 
 **QA-INFRA-001: Create Database Integration Test Suite**
 
@@ -964,7 +1005,7 @@ async function createPayable(input: PayableInput, actorId: number) {
 
 **QA-INFRA-005: Remove safeProductSelect After strainId Migration**
 
-- **Status:** blocked (awaiting strainId migration)
+- **Status:** blocked (awaiting SCHEMA-016 completion OR actual strainId column migration)
 - **Problem:** `safeProductSelect` in `server/inventoryDb.ts` projects strainId as NULL
 - **Solution:** After strainId column is migrated to production:
   1. Remove strainId from `COLUMNS_PENDING_MIGRATION` in schema tests
@@ -1286,16 +1327,18 @@ async function createPayable(input: PayableInput, actorId: number) {
 > Root Cause: Drizzle schema defines `products.strainId` column that may not exist in production database.
 > See: `docs/jan-26-checkpoint/INVENTORY_FLOW_ANALYSIS.md` for full analysis.
 
-| Task    | Description                                          | Priority | Status  | Estimate | Location                                           |
-| ------- | ---------------------------------------------------- | -------- | ------- | -------- | -------------------------------------------------- |
-| BUG-110 | Schema drift: strainId joins in productsDb.ts        | HIGH     | ready   | 2h       | `server/productsDb.ts:92,179`                      |
-| BUG-111 | Schema drift: strainId joins in search.ts            | HIGH     | ready   | 1h       | `server/routers/search.ts:260`                     |
-| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ✅ DONE | 1h       | Fixed: commit e6e47cdd (2026-01-27)                |
-| BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ready   | 1h       | `server/services/catalogPublishingService.ts:310`  |
-| BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ready   | 2h       | `server/services/strainMatchingService.ts:136,234` |
-| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ✅ DONE | 1h       | Fixed: safeInArray + early return check            |
-| BUG-116 | Systemic: 127 unsafe inArray() calls across codebase | MEDIUM   | ready   | 8h       | Multiple files                                     |
-| ST-055  | Adopt safeInArray/safeNotInArray across codebase     | MEDIUM   | ready   | 16h      | See sqlSafety.ts utilities                         |
+| Task    | Description                                          | Priority | Status                      | Estimate | Location                                           |
+| ------- | ---------------------------------------------------- | -------- | --------------------------- | -------- | -------------------------------------------------- |
+| BUG-110 | Schema drift: strainId joins in productsDb.ts        | HIGH     | ⏸️ SUPERSEDED by SCHEMA-016 | 2h       | `server/productsDb.ts:92,179`                      |
+| BUG-111 | Schema drift: strainId joins in search.ts            | HIGH     | ⏸️ SUPERSEDED by SCHEMA-016 | 1h       | `server/routers/search.ts:260`                     |
+| BUG-112 | Schema drift: strainId joins in photography.ts       | HIGH     | ✅ DONE                     | 1h       | Fixed: commit e6e47cdd (2026-01-27)                |
+| BUG-113 | Schema drift: strainId joins in catalogPublishing    | HIGH     | ⏸️ SUPERSEDED by SCHEMA-016 | 1h       | `server/services/catalogPublishingService.ts:310`  |
+| BUG-114 | Schema drift: strainId joins in strainMatching       | HIGH     | ⏸️ SUPERSEDED by SCHEMA-016 | 2h       | `server/services/strainMatchingService.ts:136,234` |
+| BUG-115 | Empty array crash in ordersDb.ts confirmDraftOrder   | HIGH     | ✅ DONE                     | 1h       | Fixed: safeInArray + early return check            |
+| BUG-116 | Systemic: 127 unsafe inArray() calls across codebase | MEDIUM   | ready                       | 8h       | Multiple files                                     |
+| ST-055  | Adopt safeInArray/safeNotInArray across codebase     | MEDIUM   | ready                       | 16h      | See sqlSafety.ts utilities                         |
+
+> **⚠️ IMPORTANT:** BUG-110, BUG-111, BUG-113, BUG-114 are now superseded by **SCHEMA-016** which addresses the root cause systematically across all 27+ affected files. Do NOT work on these individually - implement SCHEMA-016 instead.
 
 **BUG-110 Details (Schema Drift - productsDb.ts):**
 
@@ -2639,15 +2682,15 @@ Hypothesis: `viewUrl` in email template may not be fully escaped. If viewUrl con
 
 #### P2 - Medium Priority (Type Safety + Stubs)
 
-| Task     | Description                                     | Priority | Status      | Estimate | Module                                        |
-| -------- | ----------------------------------------------- | -------- | ----------- | -------- | --------------------------------------------- |
-| TYPE-001 | Fix `as any` Casts in Work Surface Golden Flows | MEDIUM   | NOT STARTED | 4h       | OrderCreationFlow, InvoiceToPaymentFlow, etc. |
+| Task     | Description                                     | Priority | Status      | Estimate | Module                                                               |
+| -------- | ----------------------------------------------- | -------- | ----------- | -------- | -------------------------------------------------------------------- |
+| TYPE-001 | Fix `as any` Casts in Work Surface Golden Flows | MEDIUM   | NOT STARTED | 4h       | OrderCreationFlow, InvoiceToPaymentFlow, etc.                        |
 | TYPE-002 | Fix `any` Types in RBAC Admin Components        | MEDIUM   | NOT STARTED | 2h       | RoleManagement.tsx, UserRoleManagement.tsx, PermissionAssignment.tsx |
-| STUB-001 | Implement Live Catalog Brand Extraction         | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:357                     |
-| STUB-002 | Implement Live Catalog Price Range              | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:367                     |
-| SEC-025  | Implement Session Extension Limit               | MEDIUM   | NOT STARTED | 1h       | sessionTimeoutService.ts:382                  |
-| RBAC-002 | Verify Time Clock Route Permission Gate         | MEDIUM   | NOT STARTED | 30 min   | TimeClockPage.tsx, hourTracking.ts            |
-| SEC-026  | Validate Cron Leader Election Race Condition    | MEDIUM   | NOT STARTED | 2h       | cronLeaderElection.ts                         |
+| STUB-001 | Implement Live Catalog Brand Extraction         | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:357                                            |
+| STUB-002 | Implement Live Catalog Price Range              | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:367                                            |
+| SEC-025  | Implement Session Extension Limit               | MEDIUM   | NOT STARTED | 1h       | sessionTimeoutService.ts:382                                         |
+| RBAC-002 | Verify Time Clock Route Permission Gate         | MEDIUM   | NOT STARTED | 30 min   | TimeClockPage.tsx, hourTracking.ts                                   |
+| SEC-026  | Validate Cron Leader Election Race Condition    | MEDIUM   | NOT STARTED | 2h       | cronLeaderElection.ts                                                |
 
 ##### TYPE-001: Fix `as any` Casts in Work Surface Golden Flows
 
@@ -3430,12 +3473,12 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 
 ### NOW Priority Items
 
-| Task ID  | Description                                     | Domain    | Status | Est |
-| -------- | ----------------------------------------------- | --------- | ------ | --- |
-| MEET-002 | Dashboard inventory snapshot by category        | Dashboard | ready  | 8h  |
-| MEET-004 | Dashboard payables summary (verify/enhance)     | Dashboard | ready  | 4h  |
-| MEET-008 | Debt warning system for at-risk clients (NEW)   | Clients   | ready  | 16h |
-| MEET-026 | Payment permission levels (RBAC enhancement)    | Payments  | ready  | 4h  |
+| Task ID  | Description                                   | Domain    | Status | Est |
+| -------- | --------------------------------------------- | --------- | ------ | --- |
+| MEET-002 | Dashboard inventory snapshot by category      | Dashboard | ready  | 8h  |
+| MEET-004 | Dashboard payables summary (verify/enhance)   | Dashboard | ready  | 4h  |
+| MEET-008 | Debt warning system for at-risk clients (NEW) | Clients   | ready  | 16h |
+| MEET-026 | Payment permission levels (RBAC enhancement)  | Payments  | ready  | 4h  |
 
 ### NEXT Priority Items
 
