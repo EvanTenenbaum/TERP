@@ -216,3 +216,23 @@ Use this quick flow when inventory list surfaces appear empty or incomplete.
 
 5. **Confirm pricing engine output for sales flows.**
    - Sales sheet and order creation inventory lists depend on `getInventoryWithPricing`. If pricing rules yield no priced items, those lists will appear empty even if inventory exists.【F:server/salesSheetsDb.ts†L65-L220】
+
+### 6.1) Playbook Execution Log (2026-01-30)
+
+**Environment:** Production URL (`https://terp-app-b9s35.ondigitalocean.app`)
+
+**Results summary:**
+
+- ✅ **Health check** (`/health`) returned 200 with database + transaction checks OK, confirming the app is reachable.
+- ⚠️ **tRPC health** (`/api/trpc/health`) returned 404 (`No procedure found`), so this endpoint is not registered.
+- ⚠️ **Protected inventory endpoints** returned request validation errors when called unauthenticated:
+  - `inventory.getEnhanced` → 400 (`Invalid input: expected object, received undefined`)
+  - `inventory.list` → 400 (`Invalid input: expected object, received undefined`)
+  - `salesSheets.getInventory` → 400 (`Invalid input: expected object, received undefined`)
+- ❌ **Spreadsheet inventory grid** (`spreadsheet.getInventoryGridData`) returned 500 with a failed SQL query that referenced `products.strainId`, indicating the live instance still emits raw SQL errors for this path and may be impacted by schema drift.
+
+**Follow-up actions required to complete the playbook:**
+
+1. Re-run the protected endpoint checks with authenticated headers + valid tRPC input payloads to confirm item counts.
+2. Confirm whether the `products.strainId` column exists in the live database or remove the join from the spreadsheet inventory grid query if it does not.
+3. Verify SQL error sanitization is applied for the spreadsheet inventory grid path to prevent raw SQL exposure.
