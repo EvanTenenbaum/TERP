@@ -13,6 +13,8 @@
 | Session ID                      | Task                                       | Branch | Module | Status      | Started    | ETA |
 | ------------------------------- | ------------------------------------------ | ------ | ------ | ----------- | ---------- | --- |
 | Session-20260130-TASK-ID-a20d2e | Execute Inventory Troubleshooting Playbook | work   | docs   | In Progress | 2026-01-30 | -   |
+| Session-20260130-TASK-ID-757025 | Fix inventory playbook issues + tests      | work   | core   | In Progress | 2026-01-30 | -   |
+| Session-20260130-TASK-ID-425fd9 | Address inventory playbook PR feedback     | work   | core   | In Progress | 2026-01-30 | -   |
 
 > **Note:** All parallel team sessions (Teams A-F) completed as part of the Golden Flow Wave execution (Jan 26-28, 2026). Work was consolidated into PRs #341-346.
 

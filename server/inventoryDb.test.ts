@@ -7,38 +7,27 @@ vi.mock("./db", () => ({
 }));
 
 import { getDb } from "./db";
-import { getBatchesByVendor, getDashboardStats, SELLABLE_BATCH_STATUSES } from "./inventoryDb";
+import {
+  getBatchesByVendor,
+  getBatchesWithDetails,
+  getDashboardStats,
+  searchBatches,
+  SELLABLE_BATCH_STATUSES,
+} from "./inventoryDb";
+import { products } from "../drizzle/schema";
 
 // Type definitions for test data
-interface MockBatch {
-  id: number;
-  code: string;
-  sku: string;
-  productId: number;
-  lotId: number;
-  batchStatus: string;
-  onHandQty: string;
-  createdAt: Date;
-}
+type QueryRow = Record<string, string | number | null>;
+type QueryResult = QueryRow[];
 
-interface MockLot {
-  id: number;
-  code: string;
-  vendorId: number;
-  date: Date;
-}
-
-interface MockProduct {
-  id: number;
-  nameCanonical: string;
-  brandId: number;
-  category: string;
-}
-
-interface MockBrand {
-  id: number;
-  name: string;
-}
+type QueryBuilder = {
+  from: () => QueryBuilder;
+  leftJoin: () => QueryBuilder;
+  groupBy: () => QueryBuilder;
+  orderBy: () => QueryBuilder;
+  where: () => QueryBuilder;
+  then: (resolve: (value: QueryResult) => void) => void;
+};
 
 describe("getBatchesByVendor", () => {
   describe("Property 6: Vendor Batch Query Completeness", () => {
@@ -56,7 +45,10 @@ describe("getBatchesByVendor", () => {
       await fc.assert(
         fc.asyncProperty(
           fc.integer({ min: 1, max: 100 }),
-          fc.array(fc.integer({ min: 1, max: 100 }), { minLength: 1, maxLength: 5 }),
+          fc.array(fc.integer({ min: 1, max: 100 }), {
+            minLength: 1,
+            maxLength: 5,
+          }),
           fc.array(
             fc.record({
               id: fc.integer({ min: 1, max: 1000 }),
@@ -73,24 +65,32 @@ describe("getBatchesByVendor", () => {
               sku: fc.string({ minLength: 5, maxLength: 20 }),
               productId: fc.integer({ min: 1, max: 100 }),
               lotId: fc.integer({ min: 1, max: 1000 }),
-              batchStatus: fc.constantFrom("LIVE", "AWAITING_INTAKE", "SOLD_OUT"),
+              batchStatus: fc.constantFrom(
+                "LIVE",
+                "AWAITING_INTAKE",
+                "SOLD_OUT"
+              ),
               onHandQty: fc.string({ minLength: 1, maxLength: 10 }),
               createdAt: fc.date(),
             }),
             { minLength: 0, maxLength: 20 }
           ),
           async (targetVendorId, _vendorIds, lots, batches) => {
-            const uniqueLots = lots.reduce((acc, lot, idx) => {
-              acc.push({ ...lot, id: idx + 1 });
-              return acc;
-            }, [] as typeof lots);
+            const uniqueLots = lots.reduce(
+              (acc, lot, idx) => {
+                acc.push({ ...lot, id: idx + 1 });
+                return acc;
+              },
+              [] as typeof lots
+            );
 
             const validBatches = batches.map((batch, idx) => ({
               ...batch,
               id: idx + 1,
-              lotId: uniqueLots.length > 0 
-                ? uniqueLots[idx % uniqueLots.length].id 
-                : 1,
+              lotId:
+                uniqueLots.length > 0
+                  ? uniqueLots[idx % uniqueLots.length].id
+                  : 1,
             }));
 
             const expectedBatchIds = new Set<number>();
@@ -111,7 +111,12 @@ describe("getBatchesByVendor", () => {
                 return {
                   batch,
                   lot: lot || null,
-                  product: { id: batch.productId, nameCanonical: "Test Product", brandId: 1, category: "Test" },
+                  product: {
+                    id: batch.productId,
+                    nameCanonical: "Test Product",
+                    brandId: 1,
+                    category: "Test",
+                  },
                   brand: { id: 1, name: "Test Brand" },
                 };
               });
@@ -125,12 +130,14 @@ describe("getBatchesByVendor", () => {
               orderBy: vi.fn().mockResolvedValue(mockQueryResult),
             };
 
-            vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+            vi.mocked(getDb).mockResolvedValue(
+              mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+            );
 
             const result = await getBatchesByVendor(targetVendorId);
 
             const returnedBatchIds = new Set(result.map(r => r.batch.id));
-            
+
             for (const batchId of returnedBatchIds) {
               expect(expectedBatchIds.has(batchId)).toBe(true);
             }
@@ -156,7 +163,9 @@ describe("getBatchesByVendor", () => {
         orderBy: vi.fn().mockResolvedValue([]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+      );
 
       const result = await getBatchesByVendor(999);
 
@@ -166,9 +175,22 @@ describe("getBatchesByVendor", () => {
     it("should include batch, lot, product, and brand data in results", async () => {
       const mockResult = [
         {
-          batch: { id: 1, code: "BATCH-001", sku: "SKU-001", lotId: 1, productId: 1, batchStatus: "LIVE", onHandQty: "100" },
+          batch: {
+            id: 1,
+            code: "BATCH-001",
+            sku: "SKU-001",
+            lotId: 1,
+            productId: 1,
+            batchStatus: "LIVE",
+            onHandQty: "100",
+          },
           lot: { id: 1, code: "LOT-001", vendorId: 1, date: new Date() },
-          product: { id: 1, nameCanonical: "Test Product", brandId: 1, category: "Flower" },
+          product: {
+            id: 1,
+            nameCanonical: "Test Product",
+            brandId: 1,
+            category: "Flower",
+          },
           brand: { id: 1, name: "Test Brand" },
         },
       ];
@@ -182,7 +204,9 @@ describe("getBatchesByVendor", () => {
         orderBy: vi.fn().mockResolvedValue(mockResult),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+      );
 
       const result = await getBatchesByVendor(1);
 
@@ -194,6 +218,86 @@ describe("getBatchesByVendor", () => {
       expect(result[0].batch.id).toBe(1);
       expect(result[0].lot?.vendorId).toBe(1);
     });
+  });
+});
+
+describe("getBatchesWithDetails", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should select product fields without strainId column", async () => {
+    const mockResult = [
+      {
+        batch: { id: 1 },
+        product: { id: 1 },
+        brand: { id: 1 },
+        lot: { id: 1 },
+        supplierClient: { id: 1 },
+      },
+    ];
+
+    const mockQuery = {
+      from: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue(mockResult),
+    };
+
+    const mockDb = {
+      select: vi.fn().mockReturnValue(mockQuery),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
+
+    await getBatchesWithDetails(10, 5);
+
+    const selectArgs = mockDb.select.mock.calls[0][0];
+    expect(selectArgs.product.strainId).toBeDefined();
+    expect(selectArgs.product.strainId).not.toEqual(products.strainId);
+  });
+});
+
+describe("searchBatches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should select product fields without strainId column", async () => {
+    const mockResult = [
+      {
+        batch: { id: 1 },
+        product: { id: 1 },
+        brand: { id: 1 },
+        lot: { id: 1 },
+        supplierClient: { id: 1 },
+      },
+    ];
+
+    const mockQuery = {
+      from: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue(mockResult),
+    };
+
+    const mockDb = {
+      select: vi.fn().mockReturnValue(mockQuery),
+    };
+
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
+
+    await searchBatches("search", 10, 5);
+
+    const selectArgs = mockDb.select.mock.calls[0][0];
+    expect(selectArgs.product.strainId).toBeDefined();
+    expect(selectArgs.product.strainId).not.toEqual(products.strainId);
   });
 });
 
@@ -225,19 +329,21 @@ describe("ST-058-B: safeInArray migration for inventory", () => {
     // This test verifies the safeInArray integration doesn't cause issues
     const mockDb = {
       select: vi.fn().mockImplementation(() => {
-        const builder: any = {
+        const builder: QueryBuilder = {
           from: vi.fn().mockReturnThis(),
           leftJoin: vi.fn().mockReturnThis(),
           groupBy: vi.fn().mockReturnThis(),
           orderBy: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnThis(),
-          then: (resolve: any) => resolve([{ totalUnits: "0", totalValue: "0" }]),
+          then: resolve => resolve([{ totalUnits: "0", totalValue: "0" }]),
         };
         return builder;
       }),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
 
     // Should not throw - safeInArray handles the status array correctly
     await expect(getDashboardStats()).resolves.not.toThrow();
@@ -255,7 +361,7 @@ describe("ST-058-B: safeInArray migration for inventory", () => {
 });
 
 describe("getDashboardStats (Gold Standard for PERF-004)", () => {
-  let mockDb: any;
+  let mockDb: { select: () => QueryBuilder };
   let queryCallCount: number;
 
   beforeEach(() => {
@@ -267,16 +373,18 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
         queryCallCount++;
         const currentQuery = queryCallCount;
 
-        const builder: any = {
+        const builder: QueryBuilder = {
           from: vi.fn().mockReturnThis(),
           leftJoin: vi.fn().mockReturnThis(),
           groupBy: vi.fn().mockReturnThis(),
           orderBy: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnThis(),
-          then: (resolve: any) => {
+          then: resolve => {
             switch (currentQuery) {
               case 1:
-                return resolve([{ totalUnits: "460.00", totalValue: "1050.00" }]);
+                return resolve([
+                  { totalUnits: "460.00", totalValue: "1050.00" },
+                ]);
               case 2:
                 return resolve([
                   { status: "LIVE", count: 3 },
@@ -305,7 +413,9 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
       }),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
   });
 
   it("should return null when database is not available", async () => {
@@ -317,8 +427,8 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
   it("should correctly calculate total inventory value and total units", async () => {
     const result = await getDashboardStats();
 
-    expect(result?.totalInventoryValue).toBe(1050.00);
-    expect(result?.totalUnits).toBe(460.00);
+    expect(result?.totalInventoryValue).toBe(1050.0);
+    expect(result?.totalUnits).toBe(460.0);
     expect(result?.avgValuePerUnit).toBeCloseTo(1050 / 460, 2);
   });
 
@@ -341,16 +451,16 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
 
     expect(result?.categoryStats).toHaveLength(3);
     expect(result?.categoryStats[0].name).toBe("Flower");
-    expect(result?.categoryStats[0].value).toBe(650.00);
-    expect(result?.categoryStats[0].units).toBe(150.00);
+    expect(result?.categoryStats[0].value).toBe(650.0);
+    expect(result?.categoryStats[0].units).toBe(150.0);
 
     expect(result?.categoryStats[1].name).toBe("Edible");
-    expect(result?.categoryStats[1].value).toBe(400.00);
-    expect(result?.categoryStats[1].units).toBe(300.00);
+    expect(result?.categoryStats[1].value).toBe(400.0);
+    expect(result?.categoryStats[1].units).toBe(300.0);
 
     expect(result?.categoryStats[2].name).toBe("Concentrate");
-    expect(result?.categoryStats[2].value).toBe(0.00);
-    expect(result?.categoryStats[2].units).toBe(10.00);
+    expect(result?.categoryStats[2].value).toBe(0.0);
+    expect(result?.categoryStats[2].units).toBe(10.0);
   });
 
   it("should correctly calculate and sort subcategory stats", async () => {
@@ -358,15 +468,15 @@ describe("getDashboardStats (Gold Standard for PERF-004)", () => {
 
     expect(result?.subcategoryStats).toHaveLength(3);
     expect(result?.subcategoryStats[0].name).toBe("Indica");
-    expect(result?.subcategoryStats[0].value).toBe(650.00);
-    expect(result?.subcategoryStats[0].units).toBe(150.00);
+    expect(result?.subcategoryStats[0].value).toBe(650.0);
+    expect(result?.subcategoryStats[0].units).toBe(150.0);
 
     expect(result?.subcategoryStats[1].name).toBe("Gummies");
-    expect(result?.subcategoryStats[1].value).toBe(400.00);
-    expect(result?.subcategoryStats[1].units).toBe(300.00);
+    expect(result?.subcategoryStats[1].value).toBe(400.0);
+    expect(result?.subcategoryStats[1].units).toBe(300.0);
 
     expect(result?.subcategoryStats[2].name).toBe("Vape Cart");
-    expect(result?.subcategoryStats[2].value).toBe(0.00);
-    expect(result?.subcategoryStats[2].units).toBe(10.00);
+    expect(result?.subcategoryStats[2].value).toBe(0.0);
+    expect(result?.subcategoryStats[2].units).toBe(10.0);
   });
 });
