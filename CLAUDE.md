@@ -120,12 +120,22 @@ pnpm build          # Build verification
 pnpm roadmap:validate
 pnpm validate:sessions
 
+# Schema verification (runs in CI, optional locally)
+pnpm test:schema    # Requires DATABASE_URL - verifies schema matches DB
+
 # Deployment verification
 ./scripts/watch-deploy.sh
 ./scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
 curl https://terp-app-b9s35.ondigitalocean.app/health
 ./scripts/terp-logs.sh run 100 | grep -i "error"
 ```
+
+**Schema Verification Notes:**
+- `pnpm test:schema` runs integration tests against a real database
+- Tests auto-validate ALL tables/columns from `drizzle/schema.ts`
+- Uses `COLUMNS_PENDING_MIGRATION` array for known pending migrations (e.g., `products.strainId`)
+- Runs automatically on PRs via `.github/workflows/schema-validation.yml`
+- See `tests/integration/schema-verification.test.ts` for implementation
 
 ### Output Template
 
