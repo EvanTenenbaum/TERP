@@ -382,13 +382,15 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 | BUG-133 | RBAC Roles Non-Interactive      | Admin           | Frontend click handlers missing                   | 2h  |
 | BUG-134 | PO Add Item Button Broken       | Purchase Orders | Related to BUG-132                                | 1h  |
 | BUG-135 | Create PO Button Broken         | Purchase Orders | Related to BUG-132                                | 1h  |
+| BUG-138 | Alerts Router Uses Deprecated vendors Table | Alerts | `alerts.ts:15,308` joins deprecated vendors table | 2h  |
 
 #### S2-High Bugs
 
-| Bug ID  | Title                      | Domain    | Root Cause             | Est |
-| ------- | -------------------------- | --------- | ---------------------- | --- |
-| BUG-136 | Edit Product Opens Archive | Inventory | Frontend modal binding | 1h  |
-| BUG-137 | No Test Data for Pick Pack | Orders    | Staging not seeded     | 2h  |
+| Bug ID  | Title                           | Domain    | Root Cause                                      | Est |
+| ------- | ------------------------------- | --------- | ----------------------------------------------- | --- |
+| BUG-136 | Edit Product Opens Archive      | Inventory | Frontend modal binding                          | 1h  |
+| BUG-137 | No Test Data for Pick Pack      | Orders    | Staging not seeded                              | 2h  |
+| BUG-139 | Hard Delete on Inventory Views  | Inventory | `inventoryDb.ts:1637` uses DELETE not soft delete | 1h  |
 
 #### Immediate Fix Required: SCHEMA-015
 
@@ -402,6 +404,7 @@ server/productsDb.ts:117          - Already has fallback, verify it works
 server/matchingEngine.ts          - Check for strainId references
 server/routers/photography.ts     - Has isSchemaError() fallback
 server/routers/search.ts          - Check strainId references
+server/routers/alerts.ts:15,308   - Remove vendors join (BUG-138, Party Model violation)
 + 22 more files with strainId references
 ```
 
@@ -2555,6 +2558,7 @@ Hypothesis: `viewUrl` in email template may not be fully escaped. If viewUrl con
 | Task     | Description                                     | Priority | Status      | Estimate | Module                                        |
 | -------- | ----------------------------------------------- | -------- | ----------- | -------- | --------------------------------------------- |
 | TYPE-001 | Fix `as any` Casts in Work Surface Golden Flows | MEDIUM   | NOT STARTED | 4h       | OrderCreationFlow, InvoiceToPaymentFlow, etc. |
+| TYPE-002 | Fix `any` Types in RBAC Admin Components        | MEDIUM   | NOT STARTED | 2h       | RoleManagement.tsx, UserRoleManagement.tsx, PermissionAssignment.tsx |
 | STUB-001 | Implement Live Catalog Brand Extraction         | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:357                     |
 | STUB-002 | Implement Live Catalog Price Range              | MEDIUM   | NOT STARTED | 2h       | liveCatalogService.ts:367                     |
 | SEC-025  | Implement Session Extension Limit               | MEDIUM   | NOT STARTED | 1h       | sessionTimeoutService.ts:382                  |
@@ -2587,6 +2591,37 @@ Hypothesis: `viewUrl` in email template may not be fully escaped. If viewUrl con
 - [ ] Replace `as any` with proper type assertions
 - [ ] TypeScript compilation still passes
 - [ ] No runtime behavior changes
+
+---
+
+##### TYPE-002: Fix `any` Types in RBAC Admin Components
+
+**Status:** NOT STARTED
+**Priority:** MEDIUM (P2)
+**Estimate:** 2h
+**Module:** `client/src/components/settings/rbac/`
+
+**Problem:**
+11 instances of explicit `any` types in RBAC admin components reduce type safety in security-critical UI:
+
+- `RoleManagement.tsx:252,378` - role and permission mapping
+- `UserRoleManagement.tsx:164,284,312` - role and override mapping
+- `PermissionAssignment.tsx:172,227,264,279,383,471` - permission and role mapping
+
+**Objectives:**
+
+1. Define proper TypeScript interfaces for Role, Permission, and Override types
+2. Replace all `any` type annotations with proper types
+3. Ensure type errors surface at compile time for RBAC data
+
+**Deliverables:**
+
+- [ ] Define `Role`, `Permission`, `PermissionOverride` interfaces
+- [ ] Replace 11 `any` type annotations in RBAC components
+- [ ] TypeScript compilation passes
+- [ ] No runtime behavior changes
+
+**QA Finding:** Identified in PR #349 V3 QA review (Jan 30, 2026)
 
 ---
 
