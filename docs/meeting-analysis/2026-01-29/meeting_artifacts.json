@@ -1,0 +1,828 @@
+{
+  "meeting_metadata": {
+    "date": "2026-01-29",
+    "duration_seconds": 1087,
+    "duration_formatted": "18:07",
+    "participants": [
+      {
+        "role": "developer",
+        "name": "Evan"
+      },
+      {
+        "role": "customer",
+        "name": "Business Operator"
+      }
+    ],
+    "meeting_type": "Product Feedback & Walkthrough Session",
+    "video_file": "CleanShot 2026-01-29 at 15.43.16.mp4",
+    "analysis_date": "2026-01-29"
+  },
+  "statistics": {
+    "total_items": 32,
+    "by_category": {
+      "feature_request": 12,
+      "business_rule": 8,
+      "ui_ux_feedback": 5,
+      "decision_made": 4,
+      "bug_broken_flow": 3,
+      "terminology_change": 1,
+      "constraint": 1
+    },
+    "by_priority": {
+      "now": 22,
+      "next": 7,
+      "later": 3
+    },
+    "by_domain": {
+      "clients": 14,
+      "dashboard": 5,
+      "inventory": 5,
+      "payments": 3,
+      "orders": 2,
+      "admin": 1,
+      "general": 2
+    }
+  },
+  "items": [
+    {
+      "id": "MEET-001",
+      "timestamp_start": "00:00",
+      "timestamp_end": "01:35",
+      "category": "bug_broken_flow",
+      "domain": "inventory",
+      "priority": "now",
+      "severity": "P1-Critical",
+      "title": "Inventory page shows loading spinner indefinitely",
+      "meaning": "When navigating to the Inventory page, the system displays a loading spinner but never loads the inventory data. This blocks the customer's primary workflow of reviewing and managing inventory.",
+      "acceptance_criteria": [
+        "Inventory page loads within 3 seconds",
+        "All batches display with correct counts",
+        "Filters (Status, Category) function correctly",
+        "Batch count and value totals display accurately"
+      ],
+      "evidence": "Visual context from video frame shows Inventory page with spinner, 'Batches: 0, Live: 0, Value: $0.00'",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/Inventory.tsx"
+    },
+    {
+      "id": "MEET-002",
+      "timestamp_start": "04:28",
+      "timestamp_end": "04:50",
+      "category": "feature_request",
+      "domain": "dashboard",
+      "priority": "now",
+      "severity": null,
+      "title": "Display inventory counts by flower category on dashboard",
+      "meaning": "Customer wants to see inventory broken down by product categories (deps, indoor, outdoor, smalls, candy ends) with price bracket groupings directly on the dashboard for quick daily assessment.",
+      "acceptance_criteria": [
+        "Dashboard displays inventory counts grouped by category",
+        "Categories include: Deps, Indoor, Outdoor, Smalls, Candy Ends",
+        "Each category shows price bracket breakdown (e.g., $100-200, $200-300, $300-400)",
+        "Counts update in real-time with inventory changes"
+      ],
+      "evidence": "And it'd be cool to see like depths, indoor, out, smalls, um, candy ends in various price brackets, you know, kind of like, that'd be cool. You know, depths from one to 200, from two to 300, from three to four, you know, just like some basic flower categories that we could create.",
+      "dependencies": ["MEET-001"],
+      "ui_reference": "/client/src/pages/Dashboard.tsx"
+    },
+    {
+      "id": "MEET-003",
+      "timestamp_start": "16:43",
+      "timestamp_end": "16:55",
+      "category": "bug_broken_flow",
+      "domain": "inventory",
+      "priority": "now",
+      "severity": "P2-High",
+      "title": "Spreadsheet View page not working",
+      "meaning": "The Spreadsheet View feature, which would allow Excel-like interaction with inventory data, is not yet functional. Developer acknowledged this is pending while focusing on core inventory functionality.",
+      "acceptance_criteria": [
+        "Spreadsheet View page loads successfully",
+        "Inventory data displays in tabular format",
+        "Inline editing capabilities function",
+        "Sort and filter operations work correctly"
+      ],
+      "evidence": "spread your spreadsheet view. I assume isn't working yet. Not yet. It's coming. It really is.",
+      "dependencies": ["MEET-001"],
+      "ui_reference": "/client/src/pages/SpreadsheetViewPage.tsx"
+    },
+    {
+      "id": "MEET-004",
+      "timestamp_start": "04:16",
+      "timestamp_end": "04:27",
+      "category": "feature_request",
+      "domain": "dashboard",
+      "priority": "now",
+      "severity": null,
+      "title": "Display payables due and scheduled on dashboard",
+      "meaning": "Customer wants quick visibility into who needs to be paid, with due payables and scheduled payments shown on the main dashboard.",
+      "acceptance_criteria": [
+        "Dashboard shows 'Payables Due' section",
+        "Displays total amount owed",
+        "Shows scheduled payment dates",
+        "Links to full AR/AP for details"
+      ],
+      "evidence": "On dashboard, on dashboard, I go to dashboard and I can see payables, due payables, scheduled office owned total units on hand.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/Dashboard.tsx"
+    },
+    {
+      "id": "MEET-005",
+      "timestamp_start": "05:02",
+      "timestamp_end": "05:14",
+      "category": "feature_request",
+      "domain": "dashboard",
+      "priority": "now",
+      "severity": null,
+      "title": "Highlight 5-10 oldest inventory items on dashboard",
+      "meaning": "Customer needs quick visibility into aging inventory that requires attention. A 'focus on me' section showing the oldest items would help prioritize daily activities.",
+      "acceptance_criteria": [
+        "Dashboard displays 'Aging Inventory' section",
+        "Shows 5-10 oldest items by date received",
+        "Displays age in days",
+        "Includes product name and quantity",
+        "Links to inventory detail"
+      ],
+      "evidence": "highlight of like a window of like the five, 10 oldest things, you know, kind of like focus on me. Great.",
+      "dependencies": ["MEET-001"],
+      "ui_reference": "/client/src/pages/Dashboard.tsx"
+    },
+    {
+      "id": "MEET-006",
+      "timestamp_start": "04:51",
+      "timestamp_end": "04:55",
+      "category": "feature_request",
+      "domain": "dashboard",
+      "priority": "next",
+      "severity": null,
+      "title": "Display cash on hand on dashboard",
+      "meaning": "Customer wants to see current cash balance/cash on hand directly on the dashboard for quick financial overview.",
+      "acceptance_criteria": [
+        "Dashboard displays current cash balance",
+        "Value updates with payment transactions",
+        "Clearly labeled as 'Cash on Hand'"
+      ],
+      "evidence": "And then, you know, like how much money's on hand, you know, that kind of stuff.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/Dashboard.tsx"
+    },
+    {
+      "id": "MEET-007",
+      "timestamp_start": "05:16",
+      "timestamp_end": "05:46",
+      "category": "decision_made",
+      "domain": "admin",
+      "priority": "later",
+      "severity": null,
+      "title": "Calendar integration is a later version feature",
+      "meaning": "Customer explicitly stated that calendar integration is not needed for MVP. They prefer using their phone calendar for scheduling as it's more convenient for mobile use.",
+      "acceptance_criteria": [],
+      "evidence": "I mean, I think it's just mostly, I think that's a later version thing. I think that's, it's just so easy to open my phone and confirm everyone and drag an appointment around or make it bigger or smaller. All with the touch of a finger.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/SchedulingPage.tsx"
+    },
+    {
+      "id": "MEET-008",
+      "timestamp_start": "11:21",
+      "timestamp_end": "11:27",
+      "category": "feature_request",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Alert system when client debt becomes risky",
+      "meaning": "Customer wants an automated warning system that alerts when a client's debt is going bad, recommending to stop extending credit. This is a risk management feature to prevent bad debt accumulation.",
+      "acceptance_criteria": [
+        "System monitors client debt aging",
+        "Triggers alert when debt exceeds threshold (configurable)",
+        "Alert displays on client profile",
+        "Optional notification to user",
+        "Recommendation to pause credit extension"
+      ],
+      "evidence": "you said you were gonna have some kind of tool that would like warn us when clients debts are going bad and to stop loaning the money kind of thing.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-009",
+      "timestamp_start": "06:31",
+      "timestamp_end": "07:00",
+      "category": "feature_request",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Track clients who haven't ordered recently",
+      "meaning": "Customer wants to easily identify clients who haven't been seen in a while or are overdue for an order, enabling proactive outreach.",
+      "acceptance_criteria": [
+        "Clients page shows 'Days Since Last Order' column",
+        "Sortable by recency",
+        "Visual indicator for clients overdue (configurable threshold)",
+        "Filter option for 'Needs Outreach'"
+      ],
+      "evidence": "I think it would be useful to know how often, um, you could kinda, you know, like who we haven't seen in a while, who do I need to reach out to? Nice. You know, so that, that'd be valuable. Um, um, maybe who's, um, they're kind of overdue for an order or overdue for a drop, you know, I should reach out to them kind of thing.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/ClientsPage.tsx"
+    },
+    {
+      "id": "MEET-010",
+      "timestamp_start": "07:11",
+      "timestamp_end": "07:26",
+      "category": "feature_request",
+      "domain": "clients",
+      "priority": "next",
+      "severity": null,
+      "title": "Click into client to see last order details",
+      "meaning": "Customer expects to click on a client row and see their last order details, or sort the client list by last order date.",
+      "acceptance_criteria": [
+        "Client row is clickable",
+        "Client detail view shows last order summary",
+        "Client list sortable by 'Last Order Date'",
+        "Last order shows date, items, and total"
+      ],
+      "evidence": "yeah, I mean, I'm going to be able to click in, I'm assuming I can click on this and see their last order and what it was, or I can organize by when they were last there so I can see their recent order or something.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/ClientsPage.tsx"
+    },
+    {
+      "id": "MEET-011",
+      "timestamp_start": "07:46",
+      "timestamp_end": "07:58",
+      "category": "ui_ux_feedback",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Use feature flags to hide address/contact fields",
+      "meaning": "Developer confirmed that unnecessary fields (address, email, etc.) can be hidden using feature flags. Customer doesn't need contact information displayed.",
+      "acceptance_criteria": [
+        "Feature flag exists for contact info visibility",
+        "When disabled, address/email fields hidden from client forms",
+        "Existing data preserved but not displayed"
+      ],
+      "evidence": "Um, all that stuff also, like most of that stuff is on a feature flag. So, um, we just click it and it does like we turn off the flag and it disappears.",
+      "dependencies": [],
+      "ui_reference": "/client/src/components/feature-flags/"
+    },
+    {
+      "id": "MEET-012",
+      "timestamp_start": "08:02",
+      "timestamp_end": "08:06",
+      "category": "constraint",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Email field not required for clients",
+      "meaning": "Customer explicitly stated they don't know client emails and shouldn't need to. Email should not be a required field.",
+      "acceptance_criteria": [
+        "Email field is optional on client creation",
+        "No validation requiring email",
+        "Client can be created with name only"
+      ],
+      "evidence": "I just like, I don't know any of my clients emails. Yeah. Nor should you need to.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/ClientsPage.tsx"
+    },
+    {
+      "id": "MEET-013",
+      "timestamp_start": "08:09",
+      "timestamp_end": "08:16",
+      "category": "feature_request",
+      "domain": "clients",
+      "priority": "next",
+      "severity": null,
+      "title": "Store client login names for backend access",
+      "meaning": "Customer needs to track login usernames for clients who access the backend system (VIP portal or similar).",
+      "acceptance_criteria": [
+        "Client profile includes 'Login Username' field",
+        "Field is optional",
+        "Displays on client detail page"
+      ],
+      "evidence": "in terms of maybe I need their login names, is this where their login names would be so they can log into the backend? Yeah, exactly.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/ClientsPage.tsx"
+    },
+    {
+      "id": "MEET-014",
+      "timestamp_start": "08:17",
+      "timestamp_end": "08:43",
+      "category": "business_rule",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Client creation requires only payment terms and credit settings",
+      "meaning": "When adding a new client, the only required business information is payment terms and initial credit settings. Contact information is not needed.",
+      "acceptance_criteria": [
+        "Client creation form has minimal required fields",
+        "Payment terms field present",
+        "Credit limit/settings field present",
+        "Contact info fields optional or hidden"
+      ],
+      "evidence": "in terms of adding clients, there's not, you know, you're not going to need to put any of this contact information, um, other than certain things like, yeah, payment terms. This will also be the area that, um, initial like credit settings go or things like that.",
+      "dependencies": ["MEET-011"],
+      "ui_reference": "/client/src/pages/ClientsPage.tsx"
+    },
+    {
+      "id": "MEET-015",
+      "timestamp_start": "09:14",
+      "timestamp_end": "09:21",
+      "category": "business_rule",
+      "domain": "clients",
+      "priority": "later",
+      "severity": null,
+      "title": "New clients added approximately 4 times per year",
+      "meaning": "Client creation is an infrequent operation (roughly quarterly), so the workflow doesn't need to be optimized for speed.",
+      "acceptance_criteria": [],
+      "evidence": "we rarely add plants. So it's going to happen like four times a year, you know?",
+      "dependencies": [],
+      "ui_reference": null
+    },
+    {
+      "id": "MEET-016",
+      "timestamp_start": "09:26",
+      "timestamp_end": "09:40",
+      "category": "business_rule",
+      "domain": "orders",
+      "priority": "now",
+      "severity": null,
+      "title": "One-time visitors can be added to regular client's tab",
+      "meaning": "When a one-time visitor comes with a regular client, their order can be placed under the regular client's account rather than creating a new client entity.",
+      "acceptance_criteria": [
+        "Orders can be created for existing clients",
+        "Notes field available to indicate guest/referral",
+        "No requirement to create new client for one-time transactions"
+      ],
+      "evidence": "And if someone's coming in once, we can just put it on somebody else's tab, you know, like if I see Bob every week and Bob brings his buddy Tony one time, then yeah, yeah. Right. Right. You can just go on Bob's tab.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/OrderCreatorPage.tsx"
+    },
+    {
+      "id": "MEET-017",
+      "timestamp_start": "10:23",
+      "timestamp_end": "10:32",
+      "category": "business_rule",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Master Score formula is configurable",
+      "meaning": "The Master Score ranking system uses a weighted formula that can be customized by the business to prioritize different metrics.",
+      "acceptance_criteria": [
+        "Customize Weights modal accessible",
+        "Sliders for each metric weight",
+        "Weights sum to 100%",
+        "Changes apply to rankings immediately",
+        "Reset to defaults option available"
+      ],
+      "evidence": "master score is like a combination of how quickly they're turning over their debt and how, how, I don't know, I'm assuming it's some combination of things. Exactly. Which, which is also like kind of like a recipe or formula thing that we can control. I love it.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-018",
+      "timestamp_start": "10:32",
+      "timestamp_end": "10:41",
+      "category": "terminology_change",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Dual client type means both supplier and buyer",
+      "meaning": "The 'DUAL' type designation in the client system indicates an entity that acts as both a supplier (vendor) and a buyer (customer).",
+      "acceptance_criteria": [
+        "Client type 'DUAL' clearly labeled",
+        "Tooltip or help text explains meaning",
+        "Dual clients appear in both vendor and customer contexts"
+      ],
+      "evidence": "so a dual, I love it. I love it. It's dual is basically a supplier and a, and a yep. A buyer",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-019",
+      "timestamp_start": "11:56",
+      "timestamp_end": "12:07",
+      "category": "decision_made",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Financial and Reliability are the most important leaderboard metrics",
+      "meaning": "Customer indicated that combining Financial ranking with Reliability (payment behavior) is the most important metric combination for evaluating clients.",
+      "acceptance_criteria": [
+        "Default weight configuration emphasizes Financial and Reliability",
+        "These metrics prominently displayed",
+        "Consider combining into single 'Creditworthiness' view"
+      ],
+      "evidence": "But combining that with financial sounds like that is the most important, like that actually is more important.",
+      "dependencies": ["MEET-017"],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-020",
+      "timestamp_start": "12:30",
+      "timestamp_end": "12:49",
+      "category": "ui_ux_feedback",
+      "domain": "clients",
+      "priority": "next",
+      "severity": null,
+      "title": "Add explanations for leaderboard metrics",
+      "meaning": "Customer found the distinction between metrics (Trend vs Growth, etc.) confusing and requested clearer explanations.",
+      "acceptance_criteria": [
+        "Each metric has tooltip with explanation",
+        "Help icon next to metric names",
+        "Explanations use plain language",
+        "Consider info modal with all definitions"
+      ],
+      "evidence": "Got it. Yeah. We'll need a little explanation on these.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-021",
+      "timestamp_start": "12:38",
+      "timestamp_end": "12:46",
+      "category": "ui_ux_feedback",
+      "domain": "clients",
+      "priority": "later",
+      "severity": null,
+      "title": "Simplify leaderboard by combining metrics",
+      "meaning": "Customer suggested that the leaderboard might have too many separate metrics and could benefit from consolidation into fewer, more meaningful categories.",
+      "acceptance_criteria": [
+        "Review metric overlap",
+        "Identify candidates for consolidation",
+        "Maintain detailed view option",
+        "Simplified default view"
+      ],
+      "evidence": "I mean maybe we can just combine them into, into less things, um, but not, not very important as long as I, I don't grasp it now, but I, I'm sure I will grasp it eventually.",
+      "dependencies": ["MEET-020"],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-022",
+      "timestamp_start": "12:53",
+      "timestamp_end": "13:05",
+      "category": "business_rule",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Engagement metric combines frequency and recency",
+      "meaning": "The Engagement ranking metric is calculated from order frequency (how often they order) and recency (how recently they ordered).",
+      "acceptance_criteria": [
+        "Engagement score visible on leaderboard",
+        "Calculated from frequency + recency",
+        "Label clearly states components"
+      ],
+      "evidence": "engagement and what's engagement again? Um, this one is frequency and recency. Oh, it says it right there. Order frequency and recency. Okay. So like how, how engaged are they? How often are they coming? Exactly.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-023",
+      "timestamp_start": "13:26",
+      "timestamp_end": "13:45",
+      "category": "business_rule",
+      "domain": "clients",
+      "priority": "now",
+      "severity": null,
+      "title": "Master Score calculated from 7 weighted components",
+      "meaning": "The Master Score is a weighted combination of: YTD Revenue (25%), On-Time Payment (20%), Order Frequency (15%), Profit Margin (15%), Credit Utilization (10%), YoY Growth (10%), and Recency (5%).",
+      "acceptance_criteria": [
+        "All 7 components contribute to Master Score",
+        "Default weights as specified",
+        "Weights adjustable via Customize Weights modal",
+        "Total always equals 100%"
+      ],
+      "evidence": "So how much revenue they've done on time payments, how quickly, how much they're ordering, what your margin is, how much of their credit they're using, um, year over year growth. So we could change that to a different sort of growth and then days since last order.",
+      "dependencies": ["MEET-017"],
+      "ui_reference": "/client/src/pages/LeaderboardPage.tsx"
+    },
+    {
+      "id": "MEET-024",
+      "timestamp_start": "14:41",
+      "timestamp_end": "14:48",
+      "category": "business_rule",
+      "domain": "payments",
+      "priority": "now",
+      "severity": null,
+      "title": "AR/AP page serves as accounting team's command center",
+      "meaning": "The AR/AP (Accounts Receivable/Accounts Payable) page is designed to be the primary workspace for accounting staff, providing quick access to all payment-related actions.",
+      "acceptance_criteria": [
+        "AR/AP page shows key financial metrics",
+        "Quick Actions for common tasks",
+        "Overdue invoices/bills prominently displayed",
+        "Recent activity visible"
+      ],
+      "evidence": "so this is like your payment office. Like this is going to be their command center basically.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/accounting/ARAPPage.tsx"
+    },
+    {
+      "id": "MEET-025",
+      "timestamp_start": "15:21",
+      "timestamp_end": "15:35",
+      "category": "business_rule",
+      "domain": "payments",
+      "priority": "next",
+      "severity": null,
+      "title": "Cash distributed in bulk to accounting staff",
+      "meaning": "The business workflow involves giving accounting staff (Z) a bulk cash amount, which they then allocate to individual payments. This is different from receiving individual payments.",
+      "acceptance_criteria": [
+        "Support for bulk cash allocation",
+        "Track cash pool balance",
+        "Record individual disbursements from pool",
+        "Reconciliation capability"
+      ],
+      "evidence": "Like for Z, I just, I just occasionally give her a big chunk and then she just writes down how much is coming out of that chunk.",
+      "dependencies": [],
+      "ui_reference": "/client/src/components/accounting/"
+    },
+    {
+      "id": "MEET-026",
+      "timestamp_start": "15:46",
+      "timestamp_end": "16:03",
+      "category": "business_rule",
+      "domain": "payments",
+      "priority": "now",
+      "severity": null,
+      "title": "Payment receiving restricted to owner/higher permission level",
+      "meaning": "Receiving payments from clients is considered a higher-risk activity that should be restricted to the owner, while accounting staff handles lower-risk vendor payments.",
+      "acceptance_criteria": [
+        "'Receive Payment' action requires elevated permissions",
+        "Role-based access control for payment functions",
+        "Accounting role can 'Pay Vendor' but not 'Receive Payment'"
+      ],
+      "evidence": "she only needs like low risk farmers. I feel like receiving payments is a little bit higher risk. Yep. That makes sense. Okay. That's good to know.",
+      "dependencies": [],
+      "ui_reference": "/client/src/components/accounting/ReceivePaymentModal.tsx"
+    },
+    {
+      "id": "MEET-027",
+      "timestamp_start": "16:22",
+      "timestamp_end": "16:28",
+      "category": "decision_made",
+      "domain": "dashboard",
+      "priority": "now",
+      "severity": null,
+      "title": "Dashboard configuration is the most important topic",
+      "meaning": "Customer confirmed that the dashboard discussion and requirements were the most important part of the meeting.",
+      "acceptance_criteria": [],
+      "evidence": "like my question about the dashboards and what we just talked about was probably the most important one.",
+      "dependencies": [],
+      "ui_reference": "/client/src/pages/Dashboard.tsx"
+    },
+    {
+      "id": "MEET-028",
+      "timestamp_start": "16:36",
+      "timestamp_end": "16:43",
+      "category": "decision_made",
+      "domain": "inventory",
+      "priority": "now",
+      "severity": null,
+      "title": "Inventory functionality unblocks all other features",
+      "meaning": "Developer acknowledged that getting inventory to work properly is the key blocker that, once resolved, will enable all other features to function correctly.",
+      "acceptance_criteria": [
+        "Inventory page loads successfully",
+        "All inventory data displays",
+        "Dependent features (Orders, Dashboard) can access inventory data"
+      ],
+      "evidence": "once all the inventory that I know is in the system is listed here, it kind of unblocks everything else.",
+      "dependencies": ["MEET-001"],
+      "ui_reference": "/client/src/pages/Inventory.tsx"
+    },
+    {
+      "id": "MEET-029",
+      "timestamp_start": "01:52",
+      "timestamp_end": "02:00",
+      "category": "feature_request",
+      "domain": "general",
+      "priority": "next",
+      "severity": null,
+      "title": "Set Inventory as default landing page",
+      "meaning": "Customer prefers Inventory page as the default landing page when logging in, as it's the most frequently used view for daily operations.",
+      "acceptance_criteria": [
+        "User preference for default landing page",
+        "Inventory option available",
+        "Setting persists across sessions"
+      ],
+      "evidence": "It doesn't really matter what I probably inventory would be where I'd like it to pop up, you know, just because that's the thing we scroll through the most",
+      "dependencies": ["MEET-001"],
+      "ui_reference": "/client/src/App.tsx"
+    },
+    {
+      "id": "MEET-030",
+      "timestamp_start": "02:10",
+      "timestamp_end": "02:18",
+      "category": "business_rule",
+      "domain": "general",
+      "priority": "now",
+      "severity": null,
+      "title": "Daily operations require balancing multiple inventory factors",
+      "meaning": "Customer describes their daily workflow as 'Tetris' - constantly balancing what's out of stock, what's overstocked, what's aging, and what might lose money. Dashboard should support this mental model.",
+      "acceptance_criteria": [
+        "Dashboard provides at-a-glance status",
+        "Highlights items needing attention",
+        "Supports quick decision-making",
+        "Prioritizes actionable information"
+      ],
+      "evidence": "Because it's basically this job is like Tetris and it's like, what are you out of? What do you have too much of what's about to go bad? What am I going to lose money on?",
+      "dependencies": ["MEET-002", "MEET-005"],
+      "ui_reference": "/client/src/pages/Dashboard.tsx"
+    },
+    {
+      "id": "MEET-031",
+      "timestamp_start": "03:44",
+      "timestamp_end": "03:52",
+      "category": "ui_ux_feedback",
+      "domain": "inventory",
+      "priority": "next",
+      "severity": null,
+      "title": "Too many price categories makes filtering complicated",
+      "meaning": "Customer noted that the current price category system has too many options, making it difficult to quickly see inventory counts by price range. Simpler brackets would be more useful.",
+      "acceptance_criteria": [
+        "Simplified price bracket options",
+        "Configurable bracket ranges",
+        "Quick filter presets",
+        "Summary view by bracket"
+      ],
+      "evidence": "And then I can't even tell like how many I have in each price category, unless I use that feature you gave me, but then it's a little complicated because there's so many price categories. So it's not just like five to 700 or something.",
+      "dependencies": ["MEET-002"],
+      "ui_reference": "/client/src/pages/Inventory.tsx"
+    },
+    {
+      "id": "MEET-032",
+      "timestamp_start": "09:00",
+      "timestamp_end": "09:00",
+      "category": "bug_broken_flow",
+      "domain": "orders",
+      "priority": "now",
+      "severity": "P1-Critical",
+      "title": "Create Sales Order fails to load inventory",
+      "meaning": "When creating a new sales order, the system displays 'Failed to load inventory' error with a SQL query error, preventing order creation.",
+      "acceptance_criteria": [
+        "Order creation page loads inventory successfully",
+        "Products available for selection",
+        "No SQL errors displayed to user",
+        "Order can be created and saved"
+      ],
+      "evidence": "Visual context from video frame shows 'Failed to load inventory' error with SQL query details on Orders > Create page",
+      "dependencies": ["MEET-001"],
+      "ui_reference": "/client/src/pages/OrderCreatorPage.tsx"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "MEET-001",
+      "title": "Inventory page shows loading spinner indefinitely",
+      "severity": "P1-Critical",
+      "domain": "inventory",
+      "status": "open"
+    },
+    {
+      "id": "MEET-003",
+      "title": "Spreadsheet View page not working",
+      "severity": "P2-High",
+      "domain": "inventory",
+      "status": "open"
+    },
+    {
+      "id": "MEET-032",
+      "title": "Create Sales Order fails to load inventory",
+      "severity": "P1-Critical",
+      "domain": "orders",
+      "status": "open"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "MEET-007",
+      "decision": "Calendar integration is a later version feature",
+      "timestamp": "05:34",
+      "impact": "Deprioritizes calendar work"
+    },
+    {
+      "id": "MEET-019",
+      "decision": "Financial + Reliability are most important metrics",
+      "timestamp": "12:01",
+      "impact": "Guides leaderboard defaults"
+    },
+    {
+      "id": "MEET-027",
+      "decision": "Dashboard configuration is most important topic",
+      "timestamp": "16:25",
+      "impact": "Prioritizes dashboard work"
+    },
+    {
+      "id": "MEET-028",
+      "decision": "Inventory functionality unblocks all features",
+      "timestamp": "16:40",
+      "impact": "Establishes critical path"
+    }
+  ],
+  "follow_up_questions": [
+    {
+      "id": "Q-001",
+      "question": "What specific price brackets should be used for dashboard inventory display?",
+      "context": "Customer mentioned $100-200, $200-300, etc. but needs confirmation",
+      "priority": "high"
+    },
+    {
+      "id": "Q-002",
+      "question": "What threshold should trigger the debt warning system?",
+      "context": "Days overdue? Percentage of credit limit?",
+      "priority": "high"
+    },
+    {
+      "id": "Q-003",
+      "question": "How many accounting staff members need access to AR/AP?",
+      "context": "Mentioned 'Z' but unclear if others",
+      "priority": "medium"
+    },
+    {
+      "id": "Q-004",
+      "question": "Should 'Receive Payment' be completely restricted or just require approval?",
+      "context": "Role-based access discussion",
+      "priority": "medium"
+    },
+    {
+      "id": "Q-005",
+      "question": "What is the desired aging threshold for inventory alerts?",
+      "context": "30 days? 60 days? Configurable?",
+      "priority": "high"
+    },
+    {
+      "id": "Q-006",
+      "question": "Who is 'Tigger' and should they be included in future meetings?",
+      "context": "Mentioned but not present",
+      "priority": "low"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-001",
+      "description": "Inventory issues may delay MVP launch",
+      "trigger": "Continued backend issues",
+      "likelihood": "high",
+      "impact": "critical",
+      "mitigation": "Focus development resources on inventory"
+    },
+    {
+      "id": "R-002",
+      "description": "Complex price categories may confuse users",
+      "trigger": "Too many filter options",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "Implement simplified bracket presets"
+    },
+    {
+      "id": "R-003",
+      "description": "Debt warning thresholds may need tuning",
+      "trigger": "False positives/negatives",
+      "likelihood": "medium",
+      "impact": "low",
+      "mitigation": "Make thresholds configurable"
+    }
+  ],
+  "topic_index": [
+    {
+      "timestamp_start": "00:00",
+      "timestamp_end": "01:35",
+      "topic": "Meeting Introduction & Objectives",
+      "domain": "general"
+    },
+    {
+      "timestamp_start": "01:35",
+      "timestamp_end": "05:15",
+      "topic": "Dashboard & Homepage Requirements",
+      "domain": "dashboard"
+    },
+    {
+      "timestamp_start": "05:16",
+      "timestamp_end": "05:50",
+      "topic": "Calendar Integration Discussion",
+      "domain": "admin"
+    },
+    {
+      "timestamp_start": "05:50",
+      "timestamp_end": "09:40",
+      "topic": "Clients Page Review",
+      "domain": "clients"
+    },
+    {
+      "timestamp_start": "09:42",
+      "timestamp_end": "14:15",
+      "topic": "Leaderboard & Client Scoring",
+      "domain": "clients"
+    },
+    {
+      "timestamp_start": "14:18",
+      "timestamp_end": "16:10",
+      "topic": "Photography Module & AR/AP",
+      "domain": "payments"
+    },
+    {
+      "timestamp_start": "16:07",
+      "timestamp_end": "17:05",
+      "topic": "Inventory & Spreadsheet View",
+      "domain": "inventory"
+    },
+    {
+      "timestamp_start": "17:05",
+      "timestamp_end": "18:07",
+      "topic": "Meeting Closing",
+      "domain": "general"
+    }
+  ]
+}

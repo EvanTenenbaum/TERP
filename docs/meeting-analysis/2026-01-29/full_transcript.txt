@@ -1,0 +1,303 @@
+[00:00.0 - 00:04.8] days or a week, like, I don't mind, um, uh, waiting buddy.
+[00:04.8 - 00:08.1] Like, like there's no point in spinning your wheels if you need a
+[00:08.1 - 00:09.5] couple more hours or whatever.
+[00:10.0 - 00:13.2] Well, I mean, I think the fact is like, it could just a couple more
+[00:13.2 - 00:15.8] hours would always be useful.
+[00:15.9 - 00:22.8] And, um, that I still need kind of, I need this feedback.
+[00:23.0 - 00:24.2] Um, okay, great.
+[00:24.3 - 00:26.0] I love giving feedback, so I'm ready.
+[00:26.5 - 00:26.8] Cool.
+[00:26.9 - 00:28.9] I, yeah, I appreciate that.
+[00:29.9 - 00:32.4] I feel your patience and, uh, I'm feeling it.
+[00:32.5 - 00:35.7] I feel actually like pretty good about it now.
+[00:35.8 - 00:40.6] Um, that I've kind of validated that I'm not just being a total
+[00:40.6 - 00:42.4] dummy about some of this stuff.
+[00:42.6 - 00:49.0] Um, but really what I want to do is just go through these, go
+[00:49.0 - 00:50.1] through all the sidebar things.
+[00:50.2 - 00:56.2] You tell me actually what feels helpful versus what is just like, get rid of
+[00:56.2 - 00:59.6] it completely or like stash it for far later.
+[01:00.0 - 01:04.6] Uh, and also some of the like nomenclature stuff, like I'm still
+[01:04.6 - 01:06.7] kind of trying to figure out.
+[01:08.2 - 01:12.7] The, I can also add, add, uh, I can have Tigger over or we can do a, I
+[01:12.7 - 01:14.8] don't know, can you do a three way signal call?
+[01:16.6 - 01:17.2] I don't know.
+[01:17.4 - 01:18.4] No, I don't think so.
+[01:19.1 - 01:21.5] I mean, maybe, I think you can.
+[01:21.6 - 01:25.1] I mean, I've done, I've done four way signal video calls before.
+[01:26.2 - 01:27.3] Oh, I guess you have a group.
+[01:27.8 - 01:28.1] Yeah.
+[01:28.2 - 01:28.7] That makes sense.
+[01:30.1 - 01:32.4] Well, I don't want to freak Tigger out with a half done thing.
+[01:32.4 - 01:33.5] Like I already did once.
+[01:35.2 - 01:36.8] So we already talked about the dashboard.
+[01:37.2 - 01:43.0] Um, when you log in to this application, what's the first thing that you want to
+[01:43.0 - 01:43.3] see?
+[01:44.8 - 01:48.2] Inventory, dashboard, cash.
+[01:49.1 - 01:52.2] Uh, I was just going to open up my current laptop.
+[01:52.4 - 01:56.8] It doesn't really matter what I probably inventory would be where I'd like it to
+[01:56.8 - 02:00.7] pop up, you know, just because that's the thing we scroll through the most, like
+[02:01.1 - 02:03.7] just understanding who we need to pay.
+[02:03.7 - 02:05.6] And, and, um, yeah.
+[02:06.3 - 02:10.8] Um, and what's aging and like, what do I need to focus on with my day?
+[02:10.9 - 02:14.8] Because it's basically this job is like Tetris and it's like, what are you out
+[02:14.8 - 02:14.9] of?
+[02:14.9 - 02:17.6] What do you have too much of what's about to go bad?
+[02:17.7 - 02:18.9] What am I going to lose money on?
+[02:19.6 - 02:20.0] Yeah.
+[02:20.2 - 02:25.2] So that can we actually unpack that for a second that this actually feels really
+[02:25.2 - 02:25.6] helpful.
+[02:25.7 - 02:26.0] Okay.
+[02:26.1 - 02:31.7] So inventory right now is kind of your like homepage because of all the things
+[02:31.7 - 02:33.3] that you just mentioned.
+[02:33.3 - 02:33.6] Right.
+[02:34.5 - 02:39.7] Um, but conceptually here, like you aren't going to have to scroll through
+[02:39.7 - 02:41.4] inventory to figure out who you're going to have to pay.
+[02:41.6 - 02:42.0] Right.
+[02:42.5 - 02:50.0] Or yeah, I can conceptually like organize it by what is old or what I
+[02:50.0 - 02:59.8] own or what, um, uh, I'm low on, like I'm low on candy ends from five to
+[02:59.8 - 03:00.2] seven.
+[03:00.5 - 03:00.7] Okay.
+[03:00.7 - 03:09.3] So, um, what I hear low on patch feature is not actually in inventory that might
+[03:09.3 - 03:11.6] be in needs or something, but yeah.
+[03:11.7 - 03:12.0] Right.
+[03:12.0 - 03:14.6] So that's what, I guess I'm trying to figure out like whether a dashboard would
+[03:14.6 - 03:19.7] be helpful if it gave you a better, just quick snapshot of the things that right
+[03:19.7 - 03:22.8] now, you know, you're still very good at fat and fast at, because you've been
+[03:22.8 - 03:25.6] doing a long time, but like you scroll through inventory to look for, it sounds
+[03:25.6 - 03:27.1] like aging inventory.
+[03:27.6 - 03:28.4] Yeah.
+[03:28.4 - 03:32.3] Like, like I can't like, like the only way I can find out how many candies I have
+[03:32.3 - 03:38.8] right now is by using your list generator, selecting for candies and then selecting
+[03:38.8 - 03:39.4] the column.
+[03:40.7 - 03:44.1] And then I can't even tell like how many I have in each price category, unless I
+[03:44.1 - 03:48.0] use that feature you gave me, but then it's a little complicated because there's
+[03:48.0 - 03:49.2] so many price categories.
+[03:49.2 - 03:52.0] So it's not just like five to 700 or something.
+[03:52.2 - 03:53.1] Okay, cool.
+[03:53.2 - 03:53.9] That's helpful.
+[03:54.2 - 03:56.7] Um, some of this will probably be in the MVP.
+[03:56.7 - 03:59.7] Some of it might not be, but, um, yeah, this is great.
+[03:59.8 - 04:00.0] Okay.
+[04:00.0 - 04:07.7] So, um, you want inventory snapshot, like you just discussed, you want who you owe
+[04:07.7 - 04:09.5] money to or like, yeah.
+[04:09.5 - 04:12.4] Who needs to get paid or do you need to know that?
+[04:12.4 - 04:15.6] Or is that something that you would be comfy with?
+[04:16.2 - 04:21.1] On dashboard, on dashboard, I go to dashboard and I can see payables, due
+[04:22.6 - 04:27.8] payables, scheduled office owned total units on hand.
+[04:28.4 - 04:35.4] And it'd be cool to see like depths, indoor, out, smalls, um, candy ends in
+[04:35.4 - 04:39.9] various price brackets, you know, kind of like, that'd be cool.
+[04:40.0 - 04:45.4] You know, depths from one to 200, from two to 300, from three to four, you know,
+[04:45.4 - 04:49.0] just like some basic flower categories that we could create.
+[04:49.0 - 04:50.4] That would be, that'd be cool.
+[04:50.7 - 04:51.0] Okay.
+[04:51.1 - 04:55.8] And then, you know, like how much money's on hand, you know, that kind of stuff.
+[04:56.7 - 04:60.0] And aging, uh, inventory.
+[04:60.0 - 05:02.1] Does that feel like, okay, got it.
+[05:02.4 - 05:07.2] Um, how do you deal with
+[05:07.5 - 05:13.2] highlight of like a window of like the five, 10 oldest things, you know,
+[05:13.4 - 05:14.7] kind of like focus on me.
+[05:15.1 - 05:15.5] Great.
+[05:16.7 - 05:22.1] In terms of your schedule, I imagine that like before you cop in the car, whatever
+[05:22.1 - 05:27.0] you just like, look at the, um, the calendar, your calendar, um, does that
+[05:27.0 - 05:34.8] feel like an important thing to have quick access to, I don't think so.
+[05:34.8 - 05:38.5] I mean, I think it's just mostly, I think that's a later version thing.
+[05:38.5 - 05:42.8] I think that's, it's just so easy to open my phone and confirm everyone
+[05:42.8 - 05:45.3] and drag an appointment around or make it bigger or smaller.
+[05:45.3 - 05:46.6] All with the touch of a finger.
+[05:46.6 - 05:46.9] Yeah.
+[05:47.2 - 05:47.6] Okay.
+[05:47.6 - 05:47.9] Great.
+[05:48.8 - 05:49.1] Yeah.
+[05:50.4 - 05:51.5] Um, all right.
+[05:51.5 - 05:57.7] So this is a new concept that you probably, I mean, yeah, I'm not sure how
+[05:57.7 - 06:02.4] much you'll need it, but you might want to be able to quickly just click into
+[06:02.4 - 06:05.8] your clients and, you know, sort by certain things, like see who has the
+[06:05.8 - 06:08.6] highest debt or who has the most orders or things like that.
+[06:08.6 - 06:10.6] And this is separate from like the leaderboard stuff.
+[06:10.6 - 06:18.0] But I'm curious when you look at, um, just an overview page like that, like
+[06:18.2 - 06:21.8] are there specific columns that would just be like contact doesn't seem like
+[06:21.8 - 06:23.2] an important column to have it at all.
+[06:23.4 - 06:25.8] Are there certain things that you would just love to be able to just
+[06:25.8 - 06:28.9] like quickly just like sort by.
+[06:29.0 - 06:29.6] Yeah.
+[06:29.6 - 06:31.2] That's a great, that's a great question.
+[06:31.3 - 06:40.0] Um, I think it would be useful to know how often, um, you could kinda, you
+[06:40.0 - 06:42.4] know, like who we haven't seen in a while, who do I need to reach out to?
+[06:42.4 - 06:42.8] Nice.
+[06:42.8 - 06:45.6] You know, so that, that'd be valuable.
+[06:45.8 - 06:56.6] Um, um, maybe who's, um, they're kind of overdue for an order or overdue for a
+[06:56.6 - 06:59.9] drop, you know, I should reach out to them kind of thing.
+[07:00.4 - 07:01.3] That would be really good.
+[07:01.9 - 07:06.2] And does it feel important to be able to star certain clients?
+[07:06.2 - 07:09.8] So they're like always at the top or something like, um,
+[07:10.5 - 07:11.2] you know, it seems like,
+[07:11.2 - 07:14.5] yeah, I mean, I'm going to be able to click in, I'm assuming I can click on
+[07:14.5 - 07:20.8] this and see their last order and what it was, or I can organize by when they
+[07:20.8 - 07:26.2] were last there so I can see their recent order or something.
+[07:26.2 - 07:26.6] Great.
+[07:26.9 - 07:27.2] Yeah.
+[07:27.4 - 07:31.3] Um, I'm just guessing, I'm just guessing what is the purpose of this sheet?
+[07:31.8 - 07:34.7] Well, I mean, the real purpose of the sheet is also just to be able to like,
+[07:34.7 - 07:36.2] this is where you come to add clients.
+[07:36.9 - 07:37.3] Okay.
+[07:37.4 - 07:38.2] Um,
+[07:41.1 - 07:42.4] it's a pretty simple process.
+[07:42.5 - 07:46.0] Um, and we just, we need one place basically where it's just like,
+[07:46.6 - 07:48.4] we don't need address information.
+[07:48.4 - 07:49.0] Oh yeah, I know.
+[07:49.5 - 07:52.8] Um, all that stuff also, like most of that stuff is on a feature flag.
+[07:52.8 - 07:58.7] So, um, we just click it and it does like we turn off the flag and it disappears.
+[07:59.4 - 07:59.9] Okay, cool.
+[08:00.0 - 08:00.2] Yeah.
+[08:00.2 - 08:00.6] Love it.
+[08:02.7 - 08:04.7] I just like, I don't know any of my clients emails.
+[08:05.6 - 08:05.8] Yeah.
+[08:05.8 - 08:06.7] Nor should you need to.
+[08:07.0 - 08:07.4] Um,
+[08:09.9 - 08:13.4] in terms of maybe I need their login names, is this where their login names
+[08:13.4 - 08:15.2] would be so they can log into the backend?
+[08:15.2 - 08:16.0] Yeah, exactly.
+[08:16.2 - 08:16.6] Mm hmm.
+[08:17.2 - 08:28.3] Um, do you, in terms of adding clients, there's not, you know, you're not going
+[08:28.3 - 08:34.5] to need to put any of this contact information, um, other than certain
+[08:34.5 - 08:36.6] things like, yeah, payment terms.
+[08:36.6 - 08:41.8] This will also be the area that, um, initial like credit settings
+[08:41.8 - 08:43.0] go or things like that.
+[08:43.8 - 08:47.2] Are you able to, or do you create client?
+[08:48.4 - 08:49.5] I guess you don't really have this concept.
+[08:49.6 - 08:52.4] I'm trying to figure out when you're going to create a client because you
+[08:52.4 - 09:00.4] need to be able, like a client, either like a buyer or a vendor, there's a
+[09:00.4 - 09:03.7] concept that like, you're going to need to add them as an entity before you
+[09:03.7 - 09:04.0] transfer.
+[09:04.0 - 09:09.6] act with them. Okay. Um, does that,
+[09:10.1 - 09:11.5] I don't want it to be overburdened some,
+[09:11.5 - 09:14.0] but it's just kind of a reality of like a, of a system like
+[09:14.4 - 09:18.8] we rarely add plants. So it's going to happen like four times a year,
+[09:19.0 - 09:21.6] you know? Yeah. Okay. Yeah.
+[09:26.3 - 09:27.9] Yeah. And if someone's coming in once,
+[09:27.9 - 09:31.0] we can just put it on somebody else's tab, you know,
+[09:31.3 - 09:35.9] like if I see Bob every week and Bob brings his buddy Tony one time,
+[09:35.9 - 09:40.6] then yeah, yeah. Right. Right. You can just go on Bob's tab. Okay.
+[09:42.0 - 09:42.8] Um,
+[09:48.4 - 09:53.4] this is something that's gotten, uh, improved a fair amount.
+[09:54.2 - 09:55.0] Um,
+[09:57.0 - 10:00.9] because you, I think gave some specific feedback last time that it was pretty,
+[10:01.5 - 10:04.6] easy to take action on. Um,
+[10:06.7 - 10:10.8] do these tabs look interesting to you?
+[10:12.8 - 10:17.4] Um, master score is like a combination of how quickly they're turning over their
+[10:18.8 - 10:23.4] debt and how, how, I don't know, I'm assuming it's some combination of things.
+[10:23.5 - 10:27.9] Exactly. Which, which is also like kind of like a recipe or formula thing that we
+[10:28.0 - 10:32.4] can control. I love it. I figured. Yeah. Okay. Um,
+[10:32.4 - 10:37.3] so a dual, I love it. I love it. It's dual is basically a supplier and a,
+[10:37.9 - 10:41.4] and a yep. A buyer, um,
+[10:41.5 - 10:45.6] percentile, uh, trend is up or down,
+[10:46.8 - 10:49.2] up or down. And then, uh, uh,
+[10:49.3 - 10:53.5] I'm assuming we can see like the quality of their debt somehow.
+[10:53.5 - 10:54.3] Okay.
+[10:57.0 - 10:58.6] Yeah. So, um,
+[11:00.2 - 11:04.7] I'll make this so it's more visible in terms of like how it works, but right now,
+[11:04.7 - 11:08.7] yeah. So this, the financial ranking rankings, um,
+[11:09.2 - 11:14.0] weight revenue, lifetime value margins. Uh,
+[11:14.0 - 11:17.8] and I believe it does have a debt turnover, but
+[11:18.6 - 11:21.0] yeah, I was mostly, I was also really excited about,
+[11:21.4 - 11:24.0] you said you were gonna have some kind of tool that would like warn us when
+[11:24.0 - 11:27.5] clients debts are going bad and to stop loaning the money kind of thing.
+[11:27.5 - 11:29.5] Oh yeah. Yeah. Um,
+[11:33.3 - 11:35.2] because you know, like that could be, um,
+[11:35.6 - 11:39.8] there could be even far less options on that sheet, you know,
+[11:40.2 - 11:44.5] on the, um, on the, it has, it has a lot of information. Like,
+[11:46.0 - 11:49.8] I love, I love it, but we'll almost need like a, like what's reliability,
+[11:49.9 - 11:53.3] like how often they show up or this is their payment behavior actually.
+[11:53.4 - 11:56.3] So this is the, how quickly they repaid debts.
+[11:56.8 - 12:01.0] But combining that with financial sounds like that
+[12:03.1 - 12:07.4] is the most important, like that actually is more important. Um,
+[12:09.0 - 12:12.6] trend is kind of growth, right? Yeah, exactly. Um,
+[12:12.8 - 12:17.4] well trend is their ranking. Like if they're doing better or worse,
+[12:17.4 - 12:20.6] basically. Um,
+[12:20.8 - 12:24.7] growth is like actually how much they're spending with you is growing.
+[12:25.4 - 12:28.3] So it's kind of like, um, velocity.
+[12:30.4 - 12:34.7] Got it. Yeah. We'll need a little explanation on these.
+[12:34.8 - 12:38.6] And then, um, uh, yeah,
+[12:38.6 - 12:41.5] I mean maybe we can just combine them into, into less things,
+[12:41.5 - 12:46.1] um, but not, not very important as long as I,
+[12:46.4 - 12:49.8] I don't grasp it now, but I, I'm sure I will grasp it eventually.
+[12:50.6 - 12:52.1] Yeah. Um,
+[12:53.0 - 12:54.8] engagement and what's engagement again?
+[12:57.0 - 13:01.0] Um, this one is frequency and recency. Oh, it says it right there.
+[13:01.3 - 13:05.8] Order frequency and recency. Okay. So like how, how engaged are they?
+[13:05.9 - 13:10.6] How often are they coming? Exactly. Okay, cool. Um,
+[13:12.4 - 13:15.4] and you can see up here this one and then his master score,
+[13:15.4 - 13:18.6] a combination of financial engagement, reliability and growth. Yeah.
+[13:18.6 - 13:22.2] So the thing that you see up here at the top, which is these customized weights,
+[13:22.7 - 13:26.8] yeah. Um, this contributes to the master score basically.
+[13:26.9 - 13:31.9] So how much revenue they've done on time payments,
+[13:33.3 - 13:37.0] how quickly, how much they're ordering, what your margin is,
+[13:37.2 - 13:41.6] how much of their credit they're using, um, year over year growth.
+[13:41.6 - 13:44.6] So we could change that to a different sort of growth and then days since last
+[13:44.6 - 13:45.5] order. Like,
+[13:46.2 - 13:49.0] nice. That's cool. I love that.
+[13:49.0 - 13:52.5] And so a master score is just a combination of all of them. Yeah.
+[13:52.5 - 13:57.0] I mean you can rank them or weight them differently. Um, these are,
+[13:58.0 - 14:01.9] yeah. Also things that I think we'll customize further,
+[14:01.9 - 14:06.3] but I want to make sure that we're at least sparking up the right tree. Um,
+[14:07.6 - 14:11.5] okay. There's like two other things that I want.
+[14:14.4 - 14:15.3] I can work for me.
+[14:18.6 - 14:20.9] Well, here's Momo's photography module.
+[14:22.7 - 14:24.2] Yep. Um,
+[14:27.5 - 14:30.6] invoices in ARAP. Um,
+[14:31.2 - 14:35.4] this has gotten a lot more accurate since we last spoke.
+[14:36.1 - 14:39.8] What is ARAP again? Um, accounts receivable and accounts payable.
+[14:41.2 - 14:45.6] Okay. Um, so this is like your payment office.
+[14:45.7 - 14:48.1] Like this is going to be their command center basically.
+[14:49.5 - 14:52.2] So with that in mind,
+[14:52.3 - 14:57.3] I guess thinking about what somebody who's working in your accounting
+[14:57.8 - 14:59.5] divisions, um,
+[15:00.2 - 15:05.6] dashboard or just like command center would look like, I imagine,
+[15:05.6 - 15:08.8] you know, this sort of stuff is interesting for you,
+[15:09.0 - 15:12.0] but really what they're going to want is just like this,
+[15:12.0 - 15:15.8] which is basically just like, here are all the actions I can receive a payment.
+[15:15.9 - 15:20.4] I can pay somebody journal entries, um, expenses.
+[15:21.2 - 15:24.0] She never, Oh, I guess if I give her a bag of money,
+[15:24.0 - 15:25.0] that's receiving the payment.
+[15:25.9 - 15:26.8] Okay.
+[15:28.1 - 15:32.7] Like for Z, I just, I just occasionally give her a big chunk and then she just
+[15:32.7 - 15:35.3] writes down how much is coming out of that chunk.
+[15:36.2 - 15:38.8] Does she not ever, she doesn't receive payments from,
+[15:40.4 - 15:42.2] okay. You do.
+[15:44.0 - 15:46.3] And then she comes and picks them up. Cool.
+[15:46.4 - 15:48.8] So this is going to be important for you actually, cause this is
+[15:48.8 - 15:49.7] just,
+[15:53.0 - 15:54.6] just a really quick way of you being able to,
+[15:55.4 - 15:57.4] she only needs like low risk farmers.
+[15:57.5 - 16:00.1] I feel like receiving payments is a little bit higher risk.
+[16:00.6 - 16:03.4] Yep. That makes sense. Okay. That's good to know.
+[16:07.4 - 16:08.3] Um,
+[16:08.9 - 16:09.7] okay.
+[16:18.6 - 16:21.6] yeah, there's a bunch of other stuff that's much smaller,
+[16:21.6 - 16:22.8] but I think that honestly,
+[16:22.8 - 16:26.1] like my question about the dashboards and what we just talked about was probably
+[16:26.1 - 16:28.3] the most important one. Okay.
+[16:28.6 - 16:32.1] I'm pretty disappointed that this isn't working yet, but, um,
+[16:32.6 - 16:36.2] I feel pretty close on it. Honestly, like once,
+[16:36.5 - 16:40.6] once all the inventory that I know is in the system is listed here,
+[16:40.9 - 16:43.2] it kind of unblocks everything else. This is like kind of,
+[16:43.6 - 16:47.0] I would say the final thing to get us to, um,
+[16:47.2 - 16:49.6] spread your spreadsheet view. I assume isn't working yet.
+[16:50.8 - 16:55.1] Not yet. It's coming. It really is.
+[16:55.2 - 16:57.8] Um, though I haven't worked on that since our last time,
+[16:57.8 - 17:00.4] because I've been focused on getting inventory to work,
+[17:01.0 - 17:05.4] which is a whole bunch of backend shit. Um, yeah.
+[17:05.8 - 17:09.6] So sounds good, buddy. Well, I really appreciate your, your efforts.
+[17:09.6 - 17:13.1] And I love being engaged with this project.
+[17:13.1 - 17:17.6] So whenever there's anything or any reason you want, just let me know. Okay,
+[17:17.8 - 17:22.8] cool. Um, you, uh, going to a comic to stand up tonight?
+[17:24.8 - 17:25.7] I was going to,
+[17:25.7 - 17:30.3] but event bright blocked my account because I apparently tried to log in or buy
+[17:30.3 - 17:34.4] too many tickets or something. I don't know. I don't have tickets.
+[17:36.4 - 17:40.7] Well, uh, I can't, I contacted their customer support, so I got,
+[17:40.7 - 17:45.2] I got nothing weird. Well, I hope that one way or another you get some laughs.
+[17:45.7 - 17:50.7] And then when do you leave tomorrow? Uh, Saturday morning. Cool.
+[17:51.4 - 17:54.0] But I love to talk while on vacation. So great.
+[17:54.4 - 17:57.9] I can't wait to hear about all the worms, all the worms.
+[17:59.0 - 18:03.2] All right. Love you, bud. Thank you. Talk to you soon. Bye.
+[18:05.4 - 18:06.9] Okay.
