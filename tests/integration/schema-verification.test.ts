@@ -35,9 +35,19 @@ const TABLES_PENDING_MIGRATION: string[] = [
 /**
  * Columns that are known to not exist in production yet
  * Format: "table_name.column_name"
+ *
+ * NOTE: strainId columns are pending migration. PR #351 uses safeProductSelect
+ * to project NULL for strainId until migration is complete. Once migrated,
+ * remove these entries and update safeProductSelect in inventoryDb.ts.
+ *
+ * See: docs/audits/PR-351-QA-REVIEW.md for alignment details
  */
 const COLUMNS_PENDING_MIGRATION: string[] = [
-  // Example: "products.newColumn"
+  // strainId columns - pending migration (PR #351 workaround)
+  "products.strainId",
+  "client_needs.strainId",
+  "strains.parentStrainId",
+  "strains.baseStrainName",
 ];
 
 // ============================================================================
