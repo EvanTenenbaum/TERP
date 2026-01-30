@@ -1635,6 +1635,7 @@ async function createPayable(input: PayableInput, actorId: number) {
 | DOCS-001         | QA run sheet summary cleanup     | LOW      | ✅ COMPLETE |
 | DOCS-UX-STRATEGY | Atomic UX strategy package       | LOW      | ✅ COMPLETE |
 | DOCS-UX-REDHAT   | Redhat QA update to UX strategy  | LOW      | ✅ COMPLETE |
+| DOCS-002         | Inventory data surfacing report  | LOW      | ✅ COMPLETE |
 
 ---
 
