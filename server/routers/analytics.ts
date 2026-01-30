@@ -300,7 +300,7 @@ export const analyticsRouter = router({
     .input(clientStrainPreferencesInput)
     .query(async ({ input }): Promise<ClientStrainPreference[]> => {
       const result = await strainService.getClientPreferences(input.clientId);
-      return result as ClientStrainPreference[];
+      return result as unknown as ClientStrainPreference[];
     }),
 
   topStrainFamilies: protectedProcedure

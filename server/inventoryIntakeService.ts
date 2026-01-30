@@ -127,6 +127,8 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       const normalizedProductName = inventoryUtils.normalizeProductName(
         input.productName
       );
+      // SCHEMA-016: Removed strainId from insert - column doesn't exist in production
+      // strainId will be added when migration is run
       const product = await findOrCreate<typeof products, Product>(
         tx,
         products,
@@ -139,7 +141,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           nameCanonical: normalizedProductName,
           category: input.category,
           subcategory: input.subcategory,
-          strainId: input.strainId || null,
+          // Note: strainId omitted - column pending migration (SCHEMA-016)
         }
       );
 
