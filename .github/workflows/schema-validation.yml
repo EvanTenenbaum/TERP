@@ -102,7 +102,7 @@ jobs:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
         run: |
           echo "Running schema verification tests against real database..."
-          npx jest tests/integration/schema-verification.test.ts --passWithNoTests || {
+          pnpm vitest run tests/integration/schema-verification.test.ts --reporter=verbose || {
             echo "❌ Schema verification tests FAILED!"
             echo "This means the database schema does not match what the code expects."
             echo "Check the test output above for specific column/table mismatches."

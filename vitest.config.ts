@@ -19,6 +19,7 @@ export default defineConfig({
       "tests/contracts/**/*.test.ts",
       "tests/unit/**/*.test.{ts,tsx}",
       "tests/security/**/*.test.ts",
+      "tests/integration/**/*.test.ts",
     ],
     environmentMatchGlobs: [
       ["server/**/*.test.ts", "node"],
@@ -30,6 +31,7 @@ export default defineConfig({
       ["tests/security/**/*.test.ts", "node"],
       ["tests/unit/server/**/*.test.ts", "node"],
       ["tests/unit/client/**/*.test.ts", "jsdom"],
+      ["tests/integration/**/*.test.ts", "node"],
     ],
     setupFiles: ["./tests/setup.ts", "./tests/unit/setup.ts"],
     coverage: {
