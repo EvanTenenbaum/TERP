@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.3
-**Last Updated:** 2026-01-30 (QA-INFRA-001/002 complete, schema verification tests added)
+**Version:** 7.4
+**Last Updated:** 2026-01-31 (REL Sprint tasks added - 16 reliability tasks from deep systemic analysis)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -3000,6 +3000,448 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 > See `docs/roadmaps/QA_STRATEGIC_FIX_PLAN_WAVE2.md` for fix strategy.
 
 ---
+
+
+---
+
+## 🛡️ RELIABILITY: Systemic Root Cause Fixes (REL Sprint)
+
+> **Source:** Deep Systemic Analysis - 2026-01-31
+> **Analysis:** `.audit/deep-systemic-analysis-2026-01-31.md`
+> **Execution Plan:** `docs/roadmaps/REL-sprint-execution-plan.md`
+> **Agent Prompt:** `docs/prompts/REL-sprint-agent-prompt.md`
+> **Total Issues:** 250+ across 17 categories
+
+### Priority Matrix
+
+| Priority | Description | Tasks | Impact |
+|----------|-------------|-------|--------|
+| P0 | Critical - Fix immediately | REL-001 to REL-004 | $0 display, crashes, data corruption |
+| P1 | High - Fix this sprint | REL-005 to REL-010 | Lost updates, inconsistent state |
+| P2 | Medium - Fix in Beta | REL-011 to REL-016 | Technical debt, maintenance |
+
+---
+
+### REL-001: Standardize Null Money Handling
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/inventory.ts`, `server/routers/orders.ts`
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** Same null DB value displays as $0.00 in some views and blank in others.
+
+**Root Cause:**
+- Line 268: `unitCogs: batch.unitCogs ? parseFloat(...) : null` → Returns null
+- Line 537: `unitCogs = batch.unitCogs ? parseFloat(...) : 0` → Returns 0
+
+**Deliverables:**
+- [ ] Create `server/utils/money.ts` with `parseMoneyOrNull()` utility
+- [ ] Replace all 30+ unsafe parseFloat calls with utility
+- [ ] Add unit tests for null/0/valid number cases
+- [ ] Frontend displays "—" for null, "$0.00" for explicit zero
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] Manual: View inventory with null unitCogs - should show "—"
+
+---
+
+### REL-002: Fix Unsafe toFixed Calls
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/pages/Inventory.tsx`, `client/src/pages/Orders.tsx`
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** 11 toFixed() calls can crash on null/undefined values.
+
+**Affected Lines:**
+- Inventory.tsx: 186-190, 1139, 1148, 1158
+- Orders.tsx: 621, 625, 1156
+
+**Deliverables:**
+- [ ] Create `client/src/utils/formatters.ts` with `formatDecimal()` utility
+- [ ] Replace all 11 unsafe toFixed calls
+- [ ] Handle null → "—", NaN → "—", number → formatted
+- [ ] Add Jest tests for edge cases
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] No "NaN" displayed in UI
+- [ ] Manual: Test with batches that have null quantities
+
+---
+
+### REL-003: Add Transaction Rollback to Payments
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/payments.ts`
+**Dependencies:** None
+**Mode:** RED
+
+**Problem:** 3 transactions at lines 300, 692, 892 lack explicit rollback handling.
+
+**Deliverables:**
+- [ ] Add try/catch with explicit rollback to line 300 transaction
+- [ ] Add try/catch with explicit rollback to line 692 transaction
+- [ ] Add try/catch with explicit rollback to line 892 transaction
+- [ ] Log transaction failures to Sentry
+- [ ] Add integration tests for rollback scenarios
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] Manual: Simulate payment failure - verify no partial state
+
+---
+
+### REL-004: Add Financial Calculation Precision
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/routers/orders.ts`, `server/routers/payments.ts`, `server/routers/invoices.ts`
+**Dependencies:** None
+**Mode:** RED
+
+**Problem:** 28 financial calculations use JavaScript floats, causing penny-level errors.
+
+**Key Lines:**
+- orders.ts:755 - `lineTotal = unitPrice * item.quantity`
+- orders.ts:2344 - `totalCost += alloc.quantity * unitCost`
+- payments.ts:329 - `newPaid = currentPaid + effectiveAmount`
+
+**Deliverables:**
+- [ ] Install decimal.js: `pnpm add decimal.js`
+- [ ] Create `server/utils/decimal.ts` with money math helpers
+- [ ] Replace 28 arithmetic operations with Decimal.js
+- [ ] Add tests comparing float vs Decimal results
+- [ ] Document which operations require precision
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] Test: Create order with 100 line items, verify total is exact
+
+---
+
+### REL-005: Add Optimistic Locking to Critical Tables
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `drizzle/schema.ts`, `server/routers/*.ts`
+**Dependencies:** REL-001
+**Mode:** RED
+
+**Problem:** 0 of 39 tables have version fields - concurrent edits silently overwrite.
+
+**Target Tables:** orders, batches, invoices, payments, clients
+
+**Deliverables:**
+- [ ] Add `version` column to 5 critical tables (migration)
+- [ ] Create `server/utils/optimisticLock.ts` helper
+- [ ] Update all update operations to check version
+- [ ] Return 409 Conflict on version mismatch
+- [ ] Frontend: Handle 409 with "Data changed, please refresh"
+
+**Verification:**
+- [ ] Migration runs successfully
+- [ ] pnpm test:schema passes
+- [ ] Manual: Open same order in 2 tabs, edit both, verify conflict detected
+
+---
+
+### REL-006: Wrap Order Confirmation in Transaction
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts`
+**Dependencies:** REL-003
+**Mode:** RED
+
+**Problem:** Order confirmation has no transaction wrapper - partial state possible.
+
+**Deliverables:**
+- [ ] Wrap confirm procedure in db.transaction()
+- [ ] Include: status update, inventory reservation, GL entries
+- [ ] Add explicit rollback on any failure
+- [ ] Log complete transaction to audit trail
+- [ ] Add integration test for partial failure recovery
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] Manual: Simulate failure mid-confirm, verify clean rollback
+
+---
+
+### REL-007: Add NotNull to Critical Money Fields
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REL-001
+**Mode:** RED
+
+**Problem:** 38 money fields allow NULL, requiring defensive handling everywhere.
+
+**Target Fields:** batches.unitCogs, orderLineItems.unitPrice, orderLineItems.cogsPerUnit, payments.amount, invoices.totalAmount
+
+**Deliverables:**
+- [ ] Write migration to UPDATE NULL to '0' for each field
+- [ ] Add .notNull().default('0') to schema
+- [ ] Run migration in staging first
+- [ ] Verify no NULL values remain
+- [ ] Remove defensive null checks from router code
+
+**Verification:**
+- [ ] Migration completes without data loss
+- [ ] pnpm test:schema passes
+- [ ] Query: `SELECT COUNT(*) FROM batches WHERE unitCogs IS NULL` = 0
+
+---
+
+### REL-008: Add Range Validation to Zod Schemas
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts`, `server/routers/inventory.ts`
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** 20+ Zod schemas allow negative numbers - potential for invalid data.
+
+**Deliverables:**
+- [ ] Audit all z.number() schemas in routers
+- [ ] Add .min(0) to quantities, amounts, prices
+- [ ] Add .int().positive() to all ID fields
+- [ ] Add tests attempting negative values
+- [ ] Document validation rules
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] API rejects negative quantity with clear error
+
+---
+
+### REL-009: Add Relation Loading to Orders Queries
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `server/routers/orders.ts`
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** 8 queries missing `with:` clause return incomplete data.
+
+**Affected Lines:** 697, 706, 887, 898, 908, 1236, 1244, 1330
+
+**Deliverables:**
+- [ ] Add `with: { client: true, lineItems: true }` to each query
+- [ ] Verify N+1 queries eliminated
+- [ ] Add query performance logging
+- [ ] Update TypeScript types for included relations
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] Query log shows single query with joins
+- [ ] Order detail page loads without additional requests
+
+---
+
+### REL-010: Standardize Raw SQL Usage
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `server/routers/orders.ts`, `server/routers/payments.ts`
+**Dependencies:** REL-004
+**Mode:** STRICT
+
+**Problem:** 14 raw SQL queries bypass ORM type safety.
+
+**Deliverables:**
+- [ ] Document each raw SQL query's purpose
+- [ ] Convert safe queries to Drizzle ORM
+- [ ] For necessary raw SQL, add type wrappers
+- [ ] Add eslint rule to flag new raw SQL
+- [ ] Create review checklist for raw SQL PRs
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm lint passes (new rule)
+- [ ] Raw SQL count reduced by at least 50%
+
+---
+
+### REL-011: Add Soft Delete to Critical Tables
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** None
+**Mode:** RED
+
+**Problem:** 38 tables lack deletedAt - no audit trail for deletions.
+
+**Target Tables:** orders, invoices, payments, products, brands, strains
+
+**Deliverables:**
+- [ ] Add `deletedAt` column to 6 critical tables
+- [ ] Update all delete operations to soft delete
+- [ ] Add index on deletedAt for each table
+- [ ] Update queries to filter deletedAt IS NULL
+- [ ] Add restore functionality for each entity
+
+**Verification:**
+- [ ] Migration completes successfully
+- [ ] pnpm test:schema passes
+- [ ] Manual: Delete order, verify still in DB with deletedAt set
+
+---
+
+### REL-012: Standardize Decimal Precision
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 16h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REL-007
+**Mode:** RED
+
+**Problem:** 8 different decimal precision formats cause aggregation inconsistencies.
+
+**Target State:**
+- Monetary amounts: (15,2)
+- Quantities: (15,4)
+- Percentages: (5,4)
+
+**Deliverables:**
+- [ ] Document current precision per field
+- [ ] Create migration plan with data preservation
+- [ ] Migrate in phases: staging → production
+- [ ] Update application code for new precision
+- [ ] Add schema validation test for precision standards
+
+**Verification:**
+- [ ] No data truncation during migration
+- [ ] All precision tests pass
+- [ ] Aggregations across tables produce correct results
+
+---
+
+### REL-013: Complete Vendor Table Deprecation
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 1w
+**Module:** Multiple (79 files)
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** 79 files still reference deprecated vendors table.
+
+**Deliverables:**
+- [ ] Inventory all vendorId references
+- [ ] Create migration plan per module
+- [ ] Replace with clients.isSeller queries
+- [ ] Update all foreign keys to supplierClientId
+- [ ] Add CI check blocking new vendor references
+- [ ] Remove vendors table from schema (final step)
+
+**Verification:**
+- [ ] `grep -r "vendorId" server/` returns 0 results
+- [ ] `grep -r "vendors" server/` returns 0 results (except deprecated comments)
+- [ ] All supplier queries use clients table
+
+---
+
+### REL-014: Add localStorage Error Handling
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `client/src/pages/Orders.tsx`, `client/src/pages/Inventory.tsx`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** 6 localStorage operations lack try/catch - fail in private browsing.
+
+**Deliverables:**
+- [ ] Create `client/src/utils/storage.ts` with safe wrappers
+- [ ] Replace all direct localStorage calls
+- [ ] Fallback to sessionStorage then memory
+- [ ] Add tests for storage unavailable scenario
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] Manual: Test in Safari private mode - no errors
+
+---
+
+### REL-015: Add Query Enabled Checks
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `client/src/pages/Inventory.tsx`, `client/src/pages/Orders.tsx`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** 6 useQuery calls lack `enabled` check - unnecessary requests.
+
+**Affected Lines:**
+- Inventory.tsx: 349, 389, 469
+- Orders.tsx: 141, 153, 159
+
+**Deliverables:**
+- [ ] Add `enabled: !!dependencyValue` to each query
+- [ ] Prevent queries until dependencies ready
+- [ ] Add loading states for dependent queries
+- [ ] Reduce unnecessary network traffic
+
+**Verification:**
+- [ ] Network tab shows no wasted requests
+- [ ] Pages load without flash of loading states
+
+---
+
+### REL-016: Fix Map on Undefined Arrays
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 4h
+**Module:** `client/src/pages/Inventory.tsx`, `client/src/pages/Orders.tsx`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** 6 .map() calls on potentially undefined arrays can crash.
+
+**Deliverables:**
+- [ ] Add optional chaining to all 6 map calls
+- [ ] Add fallback empty arrays
+- [ ] Add TypeScript strict null checks
+- [ ] Test with empty/undefined data states
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] Manual: Test pages with no data - no crashes
+
 
 # 🚀 BETA MILESTONE
 
