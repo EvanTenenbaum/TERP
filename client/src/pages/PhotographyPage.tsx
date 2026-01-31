@@ -26,9 +26,13 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Camera, Search, CheckCircle, Clock, Image } from "lucide-react";
+import { Camera, Search, CheckCircle, Clock } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
-import { EmptyState, ErrorState, emptyStateConfigs } from "@/components/ui/empty-state";
+import {
+  EmptyState,
+  ErrorState,
+  emptyStateConfigs,
+} from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 
 export default function PhotographyPage() {
@@ -237,14 +241,14 @@ export default function PhotographyPage() {
           ) : isError ? (
             <ErrorState
               title="Failed to load photography queue"
-              description={error?.message || "An error occurred while loading the photography queue."}
+              description={
+                error?.message ||
+                "An error occurred while loading the photography queue."
+              }
               onRetry={() => refetch()}
             />
           ) : !queue?.items?.length ? (
-            <EmptyState
-              {...emptyStateConfigs.photography}
-              size="sm"
-            />
+            <EmptyState {...emptyStateConfigs.photography} size="sm" />
           ) : (
             <Table>
               <TableHeader>

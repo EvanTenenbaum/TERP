@@ -11,7 +11,13 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -69,6 +75,7 @@ export interface ProductPhoto {
 }
 
 export interface UploadProgress {
+  id: string;
   filename: string;
   progress: number;
   status: "pending" | "uploading" | "processing" | "complete" | "error";
@@ -173,6 +180,7 @@ export function PhotographyModule({
       setUploading(true);
       setUploadProgress(
         validFiles.map(f => ({
+          id: `${f.name}-${Date.now()}-${Math.random()}`,
           filename: f.name,
           progress: 0,
           status: "pending",
@@ -228,25 +236,19 @@ export function PhotographyModule({
   const simulateUpload = async (files: File[]) => {
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(prev =>
-        prev.map((p, idx) =>
-          idx === i ? { ...p, status: "uploading" } : p
-        )
+        prev.map((p, idx) => (idx === i ? { ...p, status: "uploading" } : p))
       );
 
       // Simulate progress
       for (let progress = 0; progress <= 100; progress += 20) {
         await new Promise(resolve => setTimeout(resolve, 100));
         setUploadProgress(prev =>
-          prev.map((p, idx) =>
-            idx === i ? { ...p, progress } : p
-          )
+          prev.map((p, idx) => (idx === i ? { ...p, progress } : p))
         );
       }
 
       setUploadProgress(prev =>
-        prev.map((p, idx) =>
-          idx === i ? { ...p, status: "complete" } : p
-        )
+        prev.map((p, idx) => (idx === i ? { ...p, status: "complete" } : p))
       );
     }
   };
@@ -377,10 +379,7 @@ export function PhotographyModule({
 
       {/* Primary badge */}
       {photo.isPrimary && (
-        <Badge
-          className="absolute top-2 left-2 bg-primary"
-          variant="default"
-        >
+        <Badge className="absolute top-2 left-2 bg-primary" variant="default">
           <Star className="h-3 w-3 mr-1" />
           Primary
         </Badge>
@@ -425,9 +424,7 @@ export function PhotographyModule({
                 Set as Primary
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem
-              onClick={() => window.open(photo.url, "_blank")}
-            >
+            <DropdownMenuItem onClick={() => window.open(photo.url, "_blank")}>
               <Download className="h-4 w-4 mr-2" />
               Download
             </DropdownMenuItem>
@@ -513,8 +510,8 @@ export function PhotographyModule({
         {/* Upload progress */}
         {uploadProgress.length > 0 && (
           <div className="space-y-2 p-3 rounded-lg bg-muted">
-            {uploadProgress.map((item, idx) => (
-              <div key={`${item.filename}-${idx}`} className="space-y-1">
+            {uploadProgress.map(item => (
+              <div key={item.id} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="truncate">{item.filename}</span>
                   <span className="text-muted-foreground">
@@ -609,7 +606,10 @@ export function PhotographyModule({
                 </>
               ) : (
                 <>
-                  <Button variant="outline" onClick={() => setCapturedImage(null)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCapturedImage(null)}
+                  >
                     <RotateCw className="h-4 w-4 mr-2" />
                     Retake
                   </Button>
