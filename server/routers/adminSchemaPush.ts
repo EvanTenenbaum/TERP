@@ -653,6 +653,59 @@ export const adminSchemaPushRouter = router({
       );
 
       // ============================================================================
+      // MIGRATION 0024: Add lots.supplier_client_id (CRITICAL for inventory)
+      // Risk: LOW | This column is required for inventory queries to work
+      // ============================================================================
+      await safeExecute(
+        "0024_add_lots_supplier_client_id",
+        sql`
+        ALTER TABLE lots ADD COLUMN supplier_client_id INT NULL
+      `
+      );
+
+      await safeExecute(
+        "0024_add_lots_supplier_client_id_index",
+        sql`
+        CREATE INDEX idx_lots_supplier_client_id ON lots (supplier_client_id)
+      `
+      );
+
+      await safeExecute(
+        "0024_add_lots_supplier_client_id_fk",
+        sql`
+        ALTER TABLE lots
+        ADD CONSTRAINT lots_supplier_client_id_clients_id_fk
+        FOREIGN KEY (supplier_client_id) REFERENCES clients(id)
+        ON DELETE RESTRICT
+      `
+      );
+
+      // Also add supplier_client_id to purchaseOrders if missing
+      await safeExecute(
+        "0024_add_purchaseOrders_supplier_client_id",
+        sql`
+        ALTER TABLE purchaseOrders ADD COLUMN supplier_client_id INT NULL
+      `
+      );
+
+      await safeExecute(
+        "0024_add_purchaseOrders_supplier_client_id_index",
+        sql`
+        CREATE INDEX idx_po_supplier_client_id ON purchaseOrders (supplier_client_id)
+      `
+      );
+
+      await safeExecute(
+        "0024_add_purchaseOrders_supplier_client_id_fk",
+        sql`
+        ALTER TABLE purchaseOrders
+        ADD CONSTRAINT purchaseOrders_supplier_client_id_clients_id_fk
+        FOREIGN KEY (supplier_client_id) REFERENCES clients(id)
+        ON DELETE RESTRICT
+      `
+      );
+
+      // ============================================================================
       // MIGRATION 0043: Add USP (Unified Sales Portal) columns
       // Risk: MEDIUM | Reversibility: HIGH
       // Adds bidirectional linking between sales_sheet_history and orders
