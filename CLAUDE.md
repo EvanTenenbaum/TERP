@@ -817,3 +817,60 @@ When updating protocols, update both this file AND the source files to maintain 
 ---
 
 **Remember**: Verification over persuasion. Prove it works, don't convince yourself it works.
+
+
+---
+
+## 13. Audit System
+
+TERP has a systematic audit system to catch recurring bugs before they reach production.
+
+### Running Audits
+
+From Claude Code, use these slash commands:
+
+```bash
+# Full system audit (run all checks)
+/project:audit/full
+
+# Individual audits
+/project:audit/schema       # Forbidden patterns, enum alignment
+/project:audit/inventory    # Known $0 bugs, filter issues
+/project:audit/golden-flows # Critical business path verification
+```
+
+### Audit Files
+
+| File | Purpose |
+| ---- | ------- |
+| `.claude/known-bug-patterns.md` | Catalog of recurring bugs with detection commands |
+| `.claude/audit-history.json` | Tracks issues found across sessions |
+| `.claude/commands/audit/*.md` | Audit command implementations |
+
+### Known Bug Patterns
+
+Before investigating any bug, CHECK `.claude/known-bug-patterns.md` first. It contains:
+
+1. **Inventory $0 Display** - Status filter enum mismatch
+2. **"No Inventory Found"** - localStorage filter persistence
+3. **mysqlEnum Naming** - First arg must match DB column name
+4. **Unresponsive Buttons** - CSS/z-index issues
+5. **Actor From Input** - Security: never trust client-provided actor
+6. **Vendors Table** - Deprecated, use clients with isSeller=true
+
+### When to Run Audits
+
+- **Before any release** - Run `/project:audit/full`
+- **After major refactors** - Run relevant individual audit
+- **When bugs recur** - Something is escaping detection
+- **Weekly during active dev** - Catch drift early
+
+### Recording Findings
+
+All audits should append to `.claude/audit-history.log`:
+
+```bash
+echo "[$(date -Iseconds)] [AUDIT_TYPE] [SUMMARY]" >> .claude/audit-history.log
+```
+
+For recurring patterns, update `.claude/known-bug-patterns.md`.
