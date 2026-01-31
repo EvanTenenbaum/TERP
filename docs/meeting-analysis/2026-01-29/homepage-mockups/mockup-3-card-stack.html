@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TERP Homepage - Mockup 3: Card Stack</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1d4ed8',
+            'primary-foreground': '#eff6ff',
+            muted: '#f4f4f5',
+            'muted-foreground': '#71717a',
+            card: '#ffffff',
+            border: '#e4e4e7',
+            destructive: '#ef4444',
+            warning: '#f59e0b',
+            success: '#22c55e',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .card { background: white; border: 1px solid #e4e4e7; border-radius: 0.75rem; }
+    .scroll-snap { scroll-snap-type: x mandatory; }
+    .scroll-snap > * { scroll-snap-align: start; }
+    .gradient-mask { 
+      mask-image: linear-gradient(to right, black 90%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header - Simplified for mobile -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-14">
+        <div class="text-xl font-bold text-primary">TERP</div>
+        <div class="flex items-center gap-2">
+          <button class="relative p-2 rounded-lg hover:bg-gray-100">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">E</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto">
+    <!-- Hero Stats - Swipeable on mobile -->
+    <div class="px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex gap-3 overflow-x-auto scroll-snap pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible">
+        <!-- Cash Available -->
+        <div class="card p-4 min-w-[160px] md:min-w-0 flex-shrink-0">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <span class="text-xs text-muted-foreground">Available</span>
+          </div>
+          <p class="text-xl font-bold text-green-600">$34,450</p>
+        </div>
+
+        <!-- Payables Due -->
+        <div class="card p-4 min-w-[160px] md:min-w-0 flex-shrink-0">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-6 h-6 rounded bg-amber-100 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <span class="text-xs text-muted-foreground">Due Soon</span>
+          </div>
+          <p class="text-xl font-bold text-amber-600">$12,800</p>
+        </div>
+
+        <!-- Owed to You -->
+        <div class="card p-4 min-w-[160px] md:min-w-0 flex-shrink-0">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-6 h-6 rounded bg-primary/10 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+            <span class="text-xs text-muted-foreground">Owed</span>
+          </div>
+          <p class="text-xl font-bold text-primary">$28,600</p>
+        </div>
+
+        <!-- Inventory -->
+        <div class="card p-4 min-w-[160px] md:min-w-0 flex-shrink-0">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+              </svg>
+            </div>
+            <span class="text-xs text-muted-foreground">Inventory</span>
+          </div>
+          <p class="text-xl font-bold text-gray-900">364 <span class="text-sm font-normal text-muted-foreground">units</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <div class="px-4 sm:px-6 lg:px-8 mb-6">
+      <div class="card overflow-hidden">
+        <div class="bg-red-50 border-b border-red-100 px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+            <span class="font-medium text-red-800">3 items need attention</span>
+          </div>
+          <button class="text-sm text-red-600 font-medium">View all</button>
+        </div>
+        
+        <div class="divide-y">
+          <!-- Alert 1 -->
+          <div class="p-4 flex items-center gap-4 hover:bg-gray-50 cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate">5 items aging over 30 days</p>
+              <p class="text-sm text-muted-foreground">$12,450 at risk • Oldest: 47 days</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </div>
+
+          <!-- Alert 2 -->
+          <div class="p-4 flex items-center gap-4 hover:bg-gray-50 cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate">2 clients with overdue payments</p>
+              <p class="text-sm text-muted-foreground">$8,200 outstanding • Consider credit pause</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </div>
+
+          <!-- Alert 3 -->
+          <div class="p-4 flex items-center gap-4 hover:bg-gray-50 cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate">Candy Ends running low</p>
+              <p class="text-sm text-muted-foreground">12 units left in $500-700 range</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Categories - Collapsible Cards -->
+    <div class="px-4 sm:px-6 lg:px-8 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-gray-900">Inventory by Category</h2>
+        <button class="text-sm text-primary font-medium">Full View →</button>
+      </div>
+      
+      <div class="space-y-3">
+        <!-- Deps -->
+        <details class="card group" open>
+          <summary class="p-4 flex items-center justify-between cursor-pointer list-none">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+              <span class="font-medium text-gray-900">Deps</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="font-mono font-medium">142</span>
+                <span class="text-sm text-muted-foreground ml-1">units</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </summary>
+          <div class="px-4 pb-4 pt-0">
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$100-200</p>
+                <p class="font-mono font-medium">45</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$200-300</p>
+                <p class="font-mono font-medium">52</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$300-400</p>
+                <p class="font-mono font-medium">32</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$400+</p>
+                <p class="font-mono font-medium">13</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Indoor -->
+        <details class="card group">
+          <summary class="p-4 flex items-center justify-between cursor-pointer list-none">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+              <span class="font-medium text-gray-900">Indoor</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="font-mono font-medium">89</span>
+                <span class="text-sm text-muted-foreground ml-1">units</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </summary>
+          <div class="px-4 pb-4 pt-0">
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$100-200</p>
+                <p class="font-mono font-medium">12</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$200-300</p>
+                <p class="font-mono font-medium">28</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$300-400</p>
+                <p class="font-mono font-medium">31</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$400+</p>
+                <p class="font-mono font-medium">18</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Outdoor -->
+        <details class="card group">
+          <summary class="p-4 flex items-center justify-between cursor-pointer list-none">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+              <span class="font-medium text-gray-900">Outdoor</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="font-mono font-medium">67</span>
+                <span class="text-sm text-muted-foreground ml-1">units</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </summary>
+          <div class="px-4 pb-4 pt-0">
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$100-200</p>
+                <p class="font-mono font-medium">42</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$200-300</p>
+                <p class="font-mono font-medium">18</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$300-400</p>
+                <p class="font-mono font-medium">7</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$400+</p>
+                <p class="font-mono font-medium">0</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Smalls -->
+        <details class="card group">
+          <summary class="p-4 flex items-center justify-between cursor-pointer list-none">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span class="font-medium text-gray-900">Smalls</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="font-mono font-medium">54</span>
+                <span class="text-sm text-muted-foreground ml-1">units</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </summary>
+          <div class="px-4 pb-4 pt-0">
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$100-200</p>
+                <p class="font-mono font-medium">38</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$200-300</p>
+                <p class="font-mono font-medium">16</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$300-400</p>
+                <p class="font-mono font-medium">0</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-2">
+                <p class="text-xs text-muted-foreground">$400+</p>
+                <p class="font-mono font-medium">0</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Candy Ends - Low Stock Warning -->
+        <details class="card group border-amber-200 bg-amber-50/30">
+          <summary class="p-4 flex items-center justify-between cursor-pointer list-none">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-pink-500"></div>
+              <span class="font-medium text-gray-900">Candy Ends</span>
+              <span class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Low Stock</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="font-mono font-medium text-amber-700">12</span>
+                <span class="text-sm text-muted-foreground ml-1">units</span>
+              </div>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </summary>
+          <div class="px-4 pb-4 pt-0">
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-white rounded-lg p-2 border border-gray-200">
+                <p class="text-xs text-muted-foreground">$100-200</p>
+                <p class="font-mono font-medium">0</p>
+              </div>
+              <div class="bg-white rounded-lg p-2 border border-gray-200">
+                <p class="text-xs text-muted-foreground">$200-300</p>
+                <p class="font-mono font-medium">4</p>
+              </div>
+              <div class="bg-white rounded-lg p-2 border border-gray-200">
+                <p class="text-xs text-muted-foreground">$300-400</p>
+                <p class="font-mono font-medium">5</p>
+              </div>
+              <div class="bg-white rounded-lg p-2 border border-gray-200">
+                <p class="text-xs text-muted-foreground">$400+</p>
+                <p class="font-mono font-medium">3</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Clients to Contact -->
+    <div class="px-4 sm:px-6 lg:px-8 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-gray-900">Reach Out</h2>
+        <button class="text-sm text-primary font-medium">All Clients →</button>
+      </div>
+      
+      <div class="flex gap-3 overflow-x-auto scroll-snap pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
+        <div class="card p-4 min-w-[280px] md:min-w-0 flex-shrink-0 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-medium text-gray-900">Green Valley Farms</span>
+            <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">21d overdue</span>
+          </div>
+          <p class="text-sm text-muted-foreground mb-3">Usually orders every 7 days</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Last: $2,400</span>
+            <button class="text-sm bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary/90">Contact</button>
+          </div>
+        </div>
+
+        <div class="card p-4 min-w-[280px] md:min-w-0 flex-shrink-0 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-medium text-gray-900">Sunset Collective</span>
+            <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">14d overdue</span>
+          </div>
+          <p class="text-sm text-muted-foreground mb-3">Usually orders every 10 days</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Last: $1,850</span>
+            <button class="text-sm bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary/90">Contact</button>
+          </div>
+        </div>
+
+        <div class="card p-4 min-w-[280px] md:min-w-0 flex-shrink-0 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-medium text-gray-900">Mountain High</span>
+            <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">12d overdue</span>
+          </div>
+          <p class="text-sm text-muted-foreground mb-3">Usually orders every 7 days</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Last: $3,200</span>
+            <button class="text-sm bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary/90">Contact</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions FAB (Mobile) -->
+    <div class="fixed bottom-20 right-4 md:hidden">
+      <button class="w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-transform">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+      </button>
+    </div>
+  </main>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden safe-area-inset-bottom">
+    <div class="flex justify-around py-2">
+      <button class="flex flex-col items-center px-3 py-2 text-primary">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        <span class="text-xs mt-1">Home</span>
+      </button>
+      <button class="flex flex-col items-center px-3 py-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+        </svg>
+        <span class="text-xs mt-1">Inventory</span>
+      </button>
+      <button class="flex flex-col items-center px-3 py-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+        <span class="text-xs mt-1">Clients</span>
+      </button>
+      <button class="flex flex-col items-center px-3 py-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="text-xs mt-1">Money</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="h-20 md:hidden"></div>
+</body>
+</html>
