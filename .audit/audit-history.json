@@ -1,55 +1,104 @@
 {
-  "lastAudit": "2026-01-31T20:27:22.192825Z",
-  "version": "1.0",
-  "issues": [],
-  "patterns": {
-    "recurringIssues": [
-      {
-        "pattern": "inventory-$0",
-        "occurrences": 3,
-        "lastSeen": "2026-01-31",
-        "rootCause": "Status filter enum mismatch between schema and UI",
-        "searchTerms": ["inventoryStatus", "batchStatus", "status filter"]
-      },
-      {
-        "pattern": "no-inventory-found",
-        "occurrences": 2,
-        "lastSeen": "2026-01-31",
-        "rootCause": "Restrictive filters persisted in localStorage",
-        "searchTerms": ["localStorage", "defaultFilter", "filter persist"]
-      },
-      {
-        "pattern": "unresponsive-buttons",
-        "occurrences": 5,
-        "lastSeen": "2026-01-31",
-        "rootCause": "CSS pointer-events, z-index, or onClick early return",
-        "searchTerms": ["pointer-events", "z-index", "onClick"]
-      },
-      {
-        "pattern": "vendors-deprecated",
-        "occurrences": 79,
-        "lastSeen": "2026-01-31",
-        "rootCause": "Legacy vendorId references still in codebase",
-        "searchTerms": ["vendorId", "db.query.vendors", "vendors table"]
-      }
-    ]
+  "version": "1.1",
+  "lastUpdated": "2026-01-31T21:00:00Z",
+  "auditType": "systemic-deep-dive",
+  
+  "recurringPatterns": {
+    "inventory-$0": {
+      "occurrences": 4,
+      "rootCause": "Multiple: unsafe parseFloat (30+), nullable money fields (38), inconsistent null handling",
+      "status": "root-cause-confirmed",
+      "affectedFiles": ["server/routers/inventory.ts", "server/routers/orders.ts", "client/src/pages/Inventory.tsx"]
+    },
+    "no-inventory-found": {
+      "occurrences": 2,
+      "rootCause": "localStorage filter persistence without clear mechanism",
+      "status": "documented",
+      "affectedFiles": ["client/src/pages/Inventory.tsx", "client/src/pages/Orders.tsx"]
+    },
+    "unresponsive-buttons": {
+      "occurrences": 5,
+      "rootCause": "CSS z-index, pointer-events, or overlay issues - requires runtime verification",
+      "status": "needs-browser-testing",
+      "affectedFiles": ["various"]
+    },
+    "vendors-deprecated": {
+      "occurrences": 79,
+      "rootCause": "Legacy vendorId references should use clients.isSeller",
+      "status": "in-progress",
+      "affectedFiles": ["79 files with vendorId references"]
+    }
   },
+  
+  "systemicIssues": {
+    "category1_decimal_handling": {
+      "severity": "CRITICAL",
+      "issues": [
+        {"name": "unsafe_parseFloat", "count": 30, "priority": "P0"},
+        {"name": "inconsistent_zero_null_defaults", "count": 17, "priority": "P1"},
+        {"name": "nullable_money_fields", "count": 38, "priority": "P1"}
+      ]
+    },
+    "category2_frontend_display": {
+      "severity": "HIGH",
+      "issues": [
+        {"name": "unsafe_toFixed", "count": 11, "priority": "P0"},
+        {"name": "jsx_unsafe_access", "count": 56, "priority": "P1"},
+        {"name": "map_on_undefined", "count": 6, "priority": "P1"}
+      ]
+    },
+    "category3_query_safety": {
+      "severity": "MEDIUM",
+      "issues": [
+        {"name": "queries_missing_relations", "count": 8, "priority": "P1"},
+        {"name": "queries_no_enabled", "count": 6, "priority": "P2"}
+      ]
+    },
+    "category4_data_integrity": {
+      "severity": "HIGH",
+      "issues": [
+        {"name": "transactions_no_rollback", "count": 3, "priority": "P0", "file": "payments.ts", "lines": [300, 692, 892]},
+        {"name": "hardcoded_status", "count": 19, "priority": "P1"},
+        {"name": "quantity_no_precision", "count": 2, "priority": "P2"}
+      ]
+    },
+    "category5_deprecated": {
+      "severity": "MEDIUM",
+      "issues": [
+        {"name": "vendor_references", "count": 79, "priority": "P2"}
+      ]
+    },
+    "category6_state_management": {
+      "severity": "MEDIUM",
+      "issues": [
+        {"name": "localstorage_no_try", "count": 6, "priority": "P2"}
+      ]
+    },
+    "category7_schema": {
+      "severity": "LOW",
+      "issues": [
+        {"name": "decimal_precision_inconsistent", "count": 8, "priority": "P2", "note": "8 different precision/scale combos"}
+      ]
+    }
+  },
+  
+  "p0Fixes": [
+    "Add null guards to 30+ parseFloat calls in server routers",
+    "Fix 11 unsafe toFixed calls in Inventory.tsx and Orders.tsx",
+    "Add rollback handling to 3 payment transactions (payments.ts lines 300, 692, 892)"
+  ],
+  
   "searchQueries": {
-    "forbiddenPatterns": [
-      "\"|| 1\" repo:EvanTenenbaum/TERP path:server",
-      "\"?? 1\" repo:EvanTenenbaum/TERP path:server",
-      "\"input.createdBy\" repo:EvanTenenbaum/TERP",
-      "\"db.query.vendors\" repo:EvanTenenbaum/TERP"
-    ],
-    "inventoryAudit": [
-      "\"inventoryStatus\" repo:EvanTenenbaum/TERP",
-      "\"batchStatus\" repo:EvanTenenbaum/TERP",
-      "\"defaultFilter\" repo:EvanTenenbaum/TERP path:client"
-    ],
-    "goldenFlows": [
-      "\"confirmOrder\" repo:EvanTenenbaum/TERP",
-      "\"applyPayment\" repo:EvanTenenbaum/TERP",
-      "\"reserveInventory\" repo:EvanTenenbaum/TERP"
-    ]
-  }
+    "parseFloat_unsafe": "parseFloat null repo:EvanTenenbaum/TERP path:server",
+    "toFixed_unsafe": "toFixed repo:EvanTenenbaum/TERP path:client",
+    "transactions": "transaction repo:EvanTenenbaum/TERP path:server/routers",
+    "hardcoded_status": "PENDING CONFIRMED DRAFT repo:EvanTenenbaum/TERP path:server",
+    "vendor_deprecated": "vendorId repo:EvanTenenbaum/TERP"
+  },
+  
+  "limitations": [
+    "Cannot detect runtime CSS issues (z-index, pointer-events)",
+    "Cannot verify actual database NULL values",
+    "Cannot test browser behavior without automation"
+  ]
 }
