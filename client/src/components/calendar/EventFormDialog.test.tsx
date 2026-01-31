@@ -77,6 +77,17 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// BUG-109: Mock Radix presence to prevent infinite loop in tests
+vi.mock("@radix-ui/react-presence", () => ({
+  Presence: ({
+    children,
+    present,
+  }: {
+    children: React.ReactNode;
+    present?: boolean;
+  }) => (present ? children : null),
+}));
+
 vi.mock("@/components/ui/input", () => {
   const React = require("react");
   return {
@@ -189,9 +200,8 @@ vi.mock("../../lib/trpc", () => ({
 
 import EventFormDialog from "./EventFormDialog";
 
-// Skip the entire test suite due to Radix UI + jsdom infinite loop issue
-// TODO: Re-enable when Radix UI fixes jsdom compatibility or move to E2E tests
-describe.skip("EventFormDialog", () => {
+// BUG-109: Fixed by mocking @radix-ui/react-presence to prevent infinite loop
+describe("EventFormDialog", () => {
   const mockOnClose = vi.fn();
   const mockOnSaved = vi.fn();
 
