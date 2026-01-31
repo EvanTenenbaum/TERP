@@ -394,9 +394,23 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 
 #### 🚨 ROOT CAUSE FIX: SCHEMA-016 (Supersedes BUG-110, BUG-111, BUG-113, BUG-114)
 
-| Task       | Description                                      | Priority | Status | Estimate | Module              | Blocks                         |
-| ---------- | ------------------------------------------------ | -------- | ------ | -------- | ------------------- | ------------------------------ |
-| SCHEMA-016 | Systematic strainId schema drift fix (27+ files) | HIGH     | ready  | 8h       | Multiple (see plan) | GF-001, GF-002, GF-003, GF-007 |
+| Task       | Description                                      | Priority | Status      | Estimate | Module              | Blocks                         |
+| ---------- | ------------------------------------------------ | -------- | ----------- | -------- | ------------------- | ------------------------------ |
+| SCHEMA-016 | Systematic strainId schema drift fix (27+ files) | HIGH     | in-progress | 8h       | Multiple (see plan) | GF-001, GF-002, GF-003, GF-007 |
+
+**Status Update (2026-01-31):**
+
+- ✅ Graceful degradation added to `strainService.ts` (4 functions with `isSchemaError()`)
+- ✅ Admin migration endpoint added: `admin.addStrainIdToProducts`
+- ✅ Batch migration added to `adminSchemaPush.pushSchema`
+- ✅ `inventoryIntakeService.ts` updated to omit strainId from INSERT
+- ⚠️ Awaiting merge of PR from branch `claude/fix-inventory-schema-024-HJvh5`
+- ⚠️ After merge, run `POST /api/trpc/adminSchemaPush.pushSchema` to apply migrations
+
+**Key Commits:**
+
+- `89e18f5` - fix(SCHEMA-016): remove overly broad strainId pattern from isSchemaError
+- `01e463c` - fix(SCHEMA-016): add graceful degradation and admin migration for strainId
 
 **Root Cause:** The `products.strainId` column is defined in Drizzle ORM schema (`drizzle/schema.ts`) but **DOES NOT EXIST** in the production MySQL database. This causes `Unknown column 'products.strainId'` SQL errors in 27+ files at runtime.
 
@@ -421,7 +435,7 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 | Search                          | `server/routers/search.ts`                    | 229, 232                          | 🔴 Needs fix                        |
 | Photography                     | `server/routers/photography.ts`               | 254, 507, 967                     | ✅ Has isSchemaError()              |
 | **Service Layer**               |                                               |                                   |                                     |
-| Strain Service                  | `server/services/strainService.ts`            | 161, 213, 262, 310                | 🔴 Needs graceful degradation       |
+| Strain Service                  | `server/services/strainService.ts`            | 161, 213, 262, 310                | ✅ Has isSchemaError() (SCHEMA-016) |
 | Strain Matching                 | `server/services/strainMatchingService.ts`    | 155, 170, 173, 187, 191           | ⚠️ Has BUG-114 fallback             |
 | Catalog Publishing              | `server/services/catalogPublishingService.ts` | 317                               | 🔴 Needs fix                        |
 | **Router Layer**                |                                               |                                   |                                     |
@@ -429,9 +443,9 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 | Matching Enhanced               | `server/routers/matchingEnhanced.ts`          | 489, 499, 553, 561                | 🔴 Needs fix                        |
 | Strains                         | `server/routers/strains.ts`                   | 44, 47                            | 🔴 Needs graceful degradation       |
 | Client Needs                    | `server/routers/clientNeedsEnhanced.ts`       | 22, 69                            | 🔴 Needs fix                        |
-| Admin                           | `server/routers/admin*.ts`                    | Multiple                          | 🔴 Needs fix                        |
+| Admin                           | `server/routers/admin*.ts`                    | Multiple                          | ✅ Has migration endpoints          |
 | **Data Layer**                  |                                               |                                   |                                     |
-| Inventory Intake                | `server/inventoryIntakeService.ts`            | 41, 142                           | 🔴 Make strainId optional           |
+| Inventory Intake                | `server/inventoryIntakeService.ts`            | 41, 142                           | ✅ strainId omitted (SCHEMA-016)    |
 | Matching Engine                 | `server/matchingEngineEnhanced.ts`            | 55, 100, 112, 152-167             | 🔴 Needs graceful degradation       |
 | Matching Engine                 | `server/matchingEngine.ts`                    | 43                                | 🔴 Needs fix                        |
 | Strain Matcher                  | `server/strainMatcher.ts`                     | 360, 367, 378, 388, 415, 474, 480 | 🔴 Needs graceful degradation       |
@@ -909,6 +923,85 @@ async function createPayable(input: PayableInput, actorId: number) {
 | TEST-INFRA-09 | Fix comments.test.ts database connection requirement    | P2       | NOT STARTED | RC-DB-REQUIRED   | 1 test      |
 | TEST-020      | Fix Vitest mock hoisting for permissionMiddleware tests | P2       | BLOCKED     | RC-MOCK-HOIST    | 8 tests     |
 | INFRA-015     | Migrate idempotency cache to Redis for multi-instance   | P3       | NOT STARTED | SINGLE-INSTANCE  | N/A         |
+| INFRA-017     | Fix migration architecture (drizzle-kit never runs)     | P1       | ready       | ROOT-CAUSE       | All schema  |
+
+---
+
+#### 🚨 INFRA-017: Migration Architecture Overhaul (ROOT CAUSE of Schema Drift)
+
+| Task      | Description                                            | Priority | Status | Estimate | Module                     |
+| --------- | ------------------------------------------------------ | -------- | ------ | -------- | -------------------------- |
+| INFRA-017 | Fix broken migration pipeline - drizzle-kit never runs | HIGH     | ready  | 26h      | Dockerfile, autoMigrate.ts |
+
+**Root Cause Identified (2026-01-31):**
+
+The deployment pipeline **NEVER** runs `drizzle-kit migrate`. Production was created with `drizzle-kit push` (no tracking table).
+
+```
+Schema.ts → drizzle-kit generate → *.sql files → NEVER EXECUTED ON PRODUCTION
+                                                      ↓
+                                            autoMigrate.ts (incomplete fallback)
+                                            adminSchemaPush.ts (incomplete fallback)
+```
+
+**Evidence:**
+
+- `server/autoMigrate.ts:666-667`: "We check for the roles table instead of \_\_drizzle_migrations because Railway uses drizzle-kit push which doesn't create the migrations table"
+- No `__drizzle_migrations` table exists in production
+- 58+ migration files in `drizzle/*.sql` never applied
+- Two incomplete manual workarounds exist and keep getting out of sync
+
+**Why This Keeps Breaking:**
+
+1. Developer adds column to `drizzle/schema.ts`
+2. `drizzle-kit generate` creates migration file (e.g., `0024_misty_rogue.sql`)
+3. **Migration is NEVER applied to production**
+4. Code references the new column → 500 error
+5. Someone manually adds workaround to `autoMigrate.ts` or `adminSchemaPush.ts`
+6. Workarounds are incomplete → more 500 errors
+7. Repeat for next column...
+
+**5-Phase Fix Plan:**
+
+| Phase | Action                                                           | Effort | Risk   |
+| ----- | ---------------------------------------------------------------- | ------ | ------ |
+| 1     | Create `__drizzle_migrations` table with all 58 migration hashes | 2h     | LOW    |
+| 2     | Add `drizzle-kit migrate` to Dockerfile startup                  | 4h     | MEDIUM |
+| 3     | Add migration status to health checks                            | 4h     | LOW    |
+| 4     | Monitor 4 weeks, verify stability                                | 8h     | LOW    |
+| 5     | Deprecate and remove `autoMigrate.ts` + `adminSchemaPush.ts`     | 8h     | MEDIUM |
+
+**Dockerfile Change (Phase 2):**
+
+```dockerfile
+# Replace current CMD with:
+CMD sh -c 'pnpm drizzle-kit migrate 2>&1 | tee /tmp/migrations.log; exec node --expose-gc --max-old-space-size=384 dist/index.js'
+```
+
+**Columns Currently Missing from Production (discovered 2026-01-31):**
+| Table | Column | Migration File | Currently In |
+|-------|--------|----------------|--------------|
+| `lots` | `supplier_client_id` | 0024_misty_rogue.sql | autoMigrate ✅, adminSchemaPush ✅ |
+| `products` | `strainId` | 0002_many_kat_farrell.sql | autoMigrate ✅, adminSchemaPush ✅ |
+| `strains` | `parentStrainId` | 0020_flimsy_makkari.sql | autoMigrate ✅, adminSchemaPush ✅ |
+| `strains` | `baseStrainName` | 0020_flimsy_makkari.sql | autoMigrate ✅, adminSchemaPush ✅ |
+| `client_needs` | `strainId` | migrations/add_strainId_to_client_needs.sql | adminSchemaPush ✅ |
+| `client_needs` | `product_name` | 0020 | autoMigrate ✅ |
+| `client_needs` | `strain_type` | 0020 | autoMigrate ✅ |
+| `lots` | `deleted_at` | - | autoMigrate ✅, adminSchemaPush ✅ |
+| `batches` | `statusId` | - | adminSchemaPush ✅ |
+| `calendar_events` | `calendar_id` | - | adminSchemaPush ✅ |
+
+**Immediate Workaround (until INFRA-017 complete):**
+After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
+
+**Reference Commits:**
+
+- `51d58da` - fix(SCHEMA-024): add missing lots.supplier_client_id migration
+- `f71281b` - fix(schema-sync): add missing columns to autoMigrate and adminSchemaPush
+- `6dbec9a` - fix(QA): add lots.supplier_client_id to autoMigrate, fix table name casing
+
+---
 
 #### Root Cause Analysis
 
