@@ -290,6 +290,11 @@ export const alertsRouter = router({
   /**
    * Get low stock products
    * Sprint 4 Track A: 4.A.7 WS-008 - Uses batch data with configurable thresholds
+   *
+   * QA-INFRA-003: REDUNDANT ENDPOINT - Not used by frontend
+   * Frontend uses alerts.getAll() which provides same functionality with type filter
+   * Consider removing in future cleanup if no external API consumers exist
+   * @deprecated Use alerts.getAll({ type: "LOW_STOCK" }) instead
    */
   getLowStock: adminProcedure
     .input(

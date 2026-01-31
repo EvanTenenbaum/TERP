@@ -262,6 +262,16 @@ function Router() {
                   path="/accounting/cash-locations"
                   component={withErrorBoundary(CashLocations)}
                 />
+                {/* BUG-105: Redirect /accounting/reports to analytics */}
+                <Route
+                  path="/accounting/reports"
+                  component={RedirectWithSearch("/analytics")}
+                />
+                {/* BUG-106: Redirect /accounting/arap to accounting dashboard */}
+                <Route
+                  path="/accounting/arap"
+                  component={RedirectWithSearch("/accounting")}
+                />
                 <Route
                   path="/clients"
                   component={withErrorBoundary(() => (
