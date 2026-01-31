@@ -1,0 +1,55 @@
+{
+  "lastAudit": "2026-01-31T20:27:22.192825Z",
+  "version": "1.0",
+  "issues": [],
+  "patterns": {
+    "recurringIssues": [
+      {
+        "pattern": "inventory-$0",
+        "occurrences": 3,
+        "lastSeen": "2026-01-31",
+        "rootCause": "Status filter enum mismatch between schema and UI",
+        "searchTerms": ["inventoryStatus", "batchStatus", "status filter"]
+      },
+      {
+        "pattern": "no-inventory-found",
+        "occurrences": 2,
+        "lastSeen": "2026-01-31",
+        "rootCause": "Restrictive filters persisted in localStorage",
+        "searchTerms": ["localStorage", "defaultFilter", "filter persist"]
+      },
+      {
+        "pattern": "unresponsive-buttons",
+        "occurrences": 5,
+        "lastSeen": "2026-01-31",
+        "rootCause": "CSS pointer-events, z-index, or onClick early return",
+        "searchTerms": ["pointer-events", "z-index", "onClick"]
+      },
+      {
+        "pattern": "vendors-deprecated",
+        "occurrences": 79,
+        "lastSeen": "2026-01-31",
+        "rootCause": "Legacy vendorId references still in codebase",
+        "searchTerms": ["vendorId", "db.query.vendors", "vendors table"]
+      }
+    ]
+  },
+  "searchQueries": {
+    "forbiddenPatterns": [
+      "\"|| 1\" repo:EvanTenenbaum/TERP path:server",
+      "\"?? 1\" repo:EvanTenenbaum/TERP path:server",
+      "\"input.createdBy\" repo:EvanTenenbaum/TERP",
+      "\"db.query.vendors\" repo:EvanTenenbaum/TERP"
+    ],
+    "inventoryAudit": [
+      "\"inventoryStatus\" repo:EvanTenenbaum/TERP",
+      "\"batchStatus\" repo:EvanTenenbaum/TERP",
+      "\"defaultFilter\" repo:EvanTenenbaum/TERP path:client"
+    ],
+    "goldenFlows": [
+      "\"confirmOrder\" repo:EvanTenenbaum/TERP",
+      "\"applyPayment\" repo:EvanTenenbaum/TERP",
+      "\"reserveInventory\" repo:EvanTenenbaum/TERP"
+    ]
+  }
+}
