@@ -1,0 +1,13 @@
+{
+  "auditSystem": {
+    "enabled": true,
+    "knownPatterns": ".claude/known-bug-patterns.md",
+    "historyFile": ".claude/audit-history.json",
+    "commands": {
+      "schema": ".claude/commands/audit/schema.md",
+      "inventory": ".claude/commands/audit/inventory.md",
+      "goldenFlows": ".claude/commands/audit/golden-flows.md",
+      "full": ".claude/commands/audit/full.md"
+    }
+  }
+}
