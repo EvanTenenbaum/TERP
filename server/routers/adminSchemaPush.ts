@@ -786,10 +786,63 @@ export const adminSchemaPushRouter = router({
       await safeExecute(
         "0043_fk_order_to_sales_sheet",
         sql`
-        ALTER TABLE orders 
-        ADD CONSTRAINT fk_order_to_sales_sheet 
-        FOREIGN KEY (converted_from_sales_sheet_id) REFERENCES sales_sheet_history(id) 
+        ALTER TABLE orders
+        ADD CONSTRAINT fk_order_to_sales_sheet
+        FOREIGN KEY (converted_from_sales_sheet_id) REFERENCES sales_sheet_history(id)
         ON DELETE SET NULL
+      `
+      );
+
+      // ============================================================================
+      // SCHEMA-SYNC: Add missing columns from schema.ts
+      // Risk: LOW | These columns exist in schema but are missing from production
+      // ============================================================================
+
+      // Add lots.deleted_at for soft delete support
+      await safeExecute(
+        "add_lots_deleted_at",
+        sql`
+        ALTER TABLE lots ADD COLUMN deleted_at TIMESTAMP NULL
+      `
+      );
+
+      // Add batches.statusId for workflow queue integration
+      await safeExecute(
+        "add_batches_statusId",
+        sql`
+        ALTER TABLE batches ADD COLUMN statusId INT NULL
+      `
+      );
+
+      await safeExecute(
+        "add_batches_statusId_index",
+        sql`
+        CREATE INDEX idx_batches_statusId ON batches (statusId)
+      `
+      );
+
+      await safeExecute(
+        "add_batches_statusId_fk",
+        sql`
+        ALTER TABLE batches
+        ADD CONSTRAINT fk_batches_statusId
+        FOREIGN KEY (statusId) REFERENCES workflow_statuses(id)
+        ON DELETE SET NULL
+      `
+      );
+
+      // Add calendar_events.calendar_id for multi-calendar support (CAL-001)
+      await safeExecute(
+        "add_calendar_events_calendar_id",
+        sql`
+        ALTER TABLE calendar_events ADD COLUMN calendar_id INT NULL
+      `
+      );
+
+      await safeExecute(
+        "add_calendar_events_calendar_id_index",
+        sql`
+        CREATE INDEX idx_calendar_events_calendar_id ON calendar_events (calendar_id)
       `
       );
 

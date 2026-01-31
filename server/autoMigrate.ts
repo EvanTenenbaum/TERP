@@ -1501,6 +1501,145 @@ export async function runAutoMigrations() {
       }
     }
 
+    // ========================================================================
+    // SCHEMA-024: ADD MISSING COLUMNS FROM drizzle/schema.ts
+    // ========================================================================
+    // Add products.strainId column (FK to strains table)
+    try {
+      await db.execute(sql`ALTER TABLE products ADD COLUMN strainId INT NULL`);
+      console.info("  ✅ Added strainId column to products");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  products.strainId already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "products.strainId migration failed"
+        );
+      }
+    }
+
+    // Add foreign key constraint for products.strainId
+    try {
+      await db.execute(sql`
+        ALTER TABLE products
+        ADD CONSTRAINT fk_products_strain
+        FOREIGN KEY (strainId) REFERENCES strains(id) ON DELETE SET NULL
+      `);
+      console.info("  ✅ Added foreign key fk_products_strain");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info("  ℹ️  Foreign key fk_products_strain already exists");
+      } else {
+        console.info("  ⚠️  Foreign key fk_products_strain:", errMsg);
+      }
+    }
+
+    // Add lots.deleted_at column for soft delete support (ST-013)
+    try {
+      await db.execute(
+        sql`ALTER TABLE lots ADD COLUMN deleted_at TIMESTAMP NULL`
+      );
+      console.info("  ✅ Added deleted_at column to lots");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  lots.deleted_at already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "lots.deleted_at migration failed"
+        );
+      }
+    }
+
+    // Add lots.supplier_client_id column (SCHEMA-024 - critical for inventory)
+    try {
+      await db.execute(
+        sql`ALTER TABLE lots ADD COLUMN supplier_client_id INT NULL`
+      );
+      console.info("  ✅ Added supplier_client_id column to lots");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  lots.supplier_client_id already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "lots.supplier_client_id migration failed"
+        );
+      }
+    }
+
+    // Add lots.supplier_client_id index
+    try {
+      await db.execute(
+        sql`CREATE INDEX idx_lots_supplier_client_id ON lots (supplier_client_id)`
+      );
+      console.info("  ✅ Added idx_lots_supplier_client_id index");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate")) {
+        console.info("  ℹ️  idx_lots_supplier_client_id already exists");
+      }
+    }
+
+    // Add lots.supplier_client_id FK constraint
+    try {
+      await db.execute(sql`
+        ALTER TABLE lots
+        ADD CONSTRAINT lots_supplier_client_id_clients_id_fk
+        FOREIGN KEY (supplier_client_id) REFERENCES clients(id)
+        ON DELETE RESTRICT
+      `);
+      console.info("  ✅ Added lots_supplier_client_id_clients_id_fk FK");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  FK lots_supplier_client_id_clients_id_fk already exists"
+        );
+      }
+    }
+
+    // Add client_needs.product_name column
+    try {
+      await db.execute(
+        sql`ALTER TABLE client_needs ADD COLUMN product_name VARCHAR(255) NULL`
+      );
+      console.info("  ✅ Added product_name column to client_needs");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  client_needs.product_name already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "client_needs.product_name migration failed"
+        );
+      }
+    }
+
+    // Add client_needs.strain_type column (ENUM)
+    try {
+      await db.execute(
+        sql`ALTER TABLE client_needs ADD COLUMN strain_type ENUM('INDICA', 'SATIVA', 'HYBRID', 'CBD', 'ANY') NULL`
+      );
+      console.info("  ✅ Added strain_type column to client_needs");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  client_needs.strain_type already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "client_needs.strain_type migration failed"
+        );
+      }
+    }
+
     const duration = Date.now() - startTime;
     console.info(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
