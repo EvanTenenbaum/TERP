@@ -1555,6 +1555,55 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add lots.supplier_client_id column (SCHEMA-024 - critical for inventory)
+    try {
+      await db.execute(
+        sql`ALTER TABLE lots ADD COLUMN supplier_client_id INT NULL`
+      );
+      console.info("  ✅ Added supplier_client_id column to lots");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  lots.supplier_client_id already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "lots.supplier_client_id migration failed"
+        );
+      }
+    }
+
+    // Add lots.supplier_client_id index
+    try {
+      await db.execute(
+        sql`CREATE INDEX idx_lots_supplier_client_id ON lots (supplier_client_id)`
+      );
+      console.info("  ✅ Added idx_lots_supplier_client_id index");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate")) {
+        console.info("  ℹ️  idx_lots_supplier_client_id already exists");
+      }
+    }
+
+    // Add lots.supplier_client_id FK constraint
+    try {
+      await db.execute(sql`
+        ALTER TABLE lots
+        ADD CONSTRAINT lots_supplier_client_id_clients_id_fk
+        FOREIGN KEY (supplier_client_id) REFERENCES clients(id)
+        ON DELETE RESTRICT
+      `);
+      console.info("  ✅ Added lots_supplier_client_id_clients_id_fk FK");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  FK lots_supplier_client_id_clients_id_fk already exists"
+        );
+      }
+    }
+
     // Add client_needs.product_name column
     try {
       await db.execute(

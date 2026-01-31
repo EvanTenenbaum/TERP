@@ -826,7 +826,7 @@ export const adminSchemaPushRouter = router({
         sql`
         ALTER TABLE batches
         ADD CONSTRAINT fk_batches_statusId
-        FOREIGN KEY (statusId) REFERENCES workflowStatuses(id)
+        FOREIGN KEY (statusId) REFERENCES workflow_statuses(id)
         ON DELETE SET NULL
       `
       );
