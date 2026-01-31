@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "lastFullAudit": null,
+  "issues": [],
+  "patterns": {
+    "recurringIssues": [
+      {
+        "pattern": "inventory-$0-display",
+        "occurrences": 3,
+        "lastSeen": "2026-01-15",
+        "rootCause": "Status filter enum mismatch",
+        "status": "monitoring"
+      },
+      {
+        "pattern": "no-inventory-found",
+        "occurrences": 2,
+        "lastSeen": "2026-01-10",
+        "rootCause": "localStorage filter persistence",
+        "status": "monitoring"
+      },
+      {
+        "pattern": "unresponsive-buttons",
+        "occurrences": 5,
+        "lastSeen": "2026-01-28",
+        "rootCause": "CSS/z-index issues",
+        "status": "investigating"
+      }
+    ]
+  },
+  "sessions": []
+}
