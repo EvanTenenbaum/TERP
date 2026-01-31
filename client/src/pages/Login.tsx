@@ -3,7 +3,13 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { QaRoleSwitcher } from "@/components/qa/QaRoleSwitcher";
@@ -50,9 +56,7 @@ export default function Login() {
             <CardTitle className="text-3xl font-bold tracking-tight">
               TERP
             </CardTitle>
-            <CardDescription>
-              Sign in to your account
-            </CardDescription>
+            <CardDescription>Sign in to your account</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
@@ -70,7 +74,7 @@ export default function Login() {
                   type="text"
                   required
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={e => setUsername(e.target.value)}
                   placeholder="Enter your username"
                   autoComplete="username"
                   disabled={loading}
@@ -84,17 +88,13 @@ export default function Login() {
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   disabled={loading}
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -108,10 +108,9 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* QA Role Switcher - only visible when QA_AUTH_ENABLED=true */}
-        <QaRoleSwitcher />
+        {/* QA Role Switcher - only visible in development/staging */}
+        {import.meta.env.DEV && <QaRoleSwitcher />}
       </div>
     </div>
   );
 }
-

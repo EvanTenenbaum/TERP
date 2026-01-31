@@ -17,7 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, FlaskConical, Shield, User } from "lucide-react";
@@ -120,7 +126,10 @@ export function QaRoleSwitcher() {
         <div className="flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-amber-500" />
           <CardTitle className="text-lg">QA Role Switcher</CardTitle>
-          <Badge variant="outline" className="text-amber-600 border-amber-500/50">
+          <Badge
+            variant="outline"
+            className="text-amber-600 border-amber-500/50"
+          >
             Testing Mode
           </Badge>
         </div>
@@ -141,7 +150,7 @@ export function QaRoleSwitcher() {
               <SelectValue placeholder="Select a QA role..." />
             </SelectTrigger>
             <SelectContent>
-              {qaStatus.roles.map((role) => (
+              {qaStatus.roles.map(role => (
                 <SelectItem key={role.email} value={role.email}>
                   <div className="flex items-center gap-2">
                     {role.role === "Super Admin" ? (
@@ -177,15 +186,9 @@ export function QaRoleSwitcher() {
             <p className="font-medium text-foreground">
               {qaStatus.roles.find(r => r.email === selectedRole)?.description}
             </p>
-            <p className="text-xs mt-1 font-mono">
-              {selectedRole}
-            </p>
+            <p className="text-xs mt-1 font-mono">{selectedRole}</p>
           </div>
         )}
-
-        <p className="text-xs text-muted-foreground">
-          Password: <code className="bg-muted px-1 rounded">{qaStatus.password}</code>
-        </p>
       </CardContent>
     </Card>
   );
@@ -203,7 +206,10 @@ export function QaRoleBadge({ email }: { email?: string | null }) {
   }
 
   return (
-    <Badge variant="outline" className="text-amber-600 border-amber-500/50 text-xs">
+    <Badge
+      variant="outline"
+      className="text-amber-600 border-amber-500/50 text-xs"
+    >
       <FlaskConical className="h-3 w-3 mr-1" />
       QA Mode
     </Badge>
