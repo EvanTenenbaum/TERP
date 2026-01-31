@@ -14,7 +14,7 @@
 
 /* global performance, PerformanceObserver, PerformanceEntry, PerformanceObserverInit */
 
-import { useCallback, useRef, useEffect, useMemo } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from "react";
 
 // ============================================================================
 // Types
@@ -69,7 +69,11 @@ export interface UsePerformanceMonitorReturn {
   /** Measure a function execution time */
   measure: <T>(name: string, fn: () => T, type?: keyof PerformanceBudget) => T;
   /** Measure an async function execution time */
-  measureAsync: <T>(name: string, fn: () => Promise<T>, type?: keyof PerformanceBudget) => Promise<T>;
+  measureAsync: <T>(
+    name: string,
+    fn: () => Promise<T>,
+    type?: keyof PerformanceBudget
+  ) => Promise<T>;
   /** Get current marks */
   getMarks: () => PerformanceMark[];
   /** Get violations */
@@ -113,7 +117,7 @@ const DEFAULT_BUDGETS: PerformanceBudget = {
   searchResponse: 200,
 };
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === "development";
 
 // ============================================================================
 // Main Hook
@@ -146,14 +150,17 @@ export function usePerformanceMonitor(
     budgets: customBudgets,
     onViolation,
     logViolations = isDev,
-    surfaceName = 'WorkSurface',
+    surfaceName = "WorkSurface",
   } = options;
 
   // Memoize budgets to prevent unnecessary re-renders (LINT-010)
-  const budgets = useMemo<PerformanceBudget>(() => ({
-    ...DEFAULT_BUDGETS,
-    ...customBudgets,
-  }), [customBudgets]);
+  const budgets = useMemo<PerformanceBudget>(
+    () => ({
+      ...DEFAULT_BUDGETS,
+      ...customBudgets,
+    }),
+    [customBudgets]
+  );
 
   const marksRef = useRef<Map<string, PerformanceMark>>(new Map());
   const completedMarksRef = useRef<PerformanceMark[]>([]);
@@ -161,7 +168,11 @@ export function usePerformanceMonitor(
 
   // Check if duration violates budget
   const checkBudget = useCallback(
-    (duration: number, type: keyof PerformanceBudget, metadata?: Record<string, unknown>) => {
+    (
+      duration: number,
+      type: keyof PerformanceBudget,
+      metadata?: Record<string, unknown>
+    ) => {
       const budget = budgets[type];
 
       if (duration > budget) {
@@ -178,7 +189,7 @@ export function usePerformanceMonitor(
         if (logViolations) {
           console.warn(
             `[${surfaceName}] Performance budget exceeded for ${type}: ` +
-            `${Math.round(duration)}ms > ${budget}ms`,
+              `${Math.round(duration)}ms > ${budget}ms`,
             metadata
           );
         }
@@ -203,12 +214,18 @@ export function usePerformanceMonitor(
       marksRef.current.set(name, mark);
 
       // Also use Performance API if available
-      if (typeof performance !== 'undefined' && performance.mark) {
+      if (typeof performance !== "undefined" && performance.mark) {
         try {
           performance.mark(`${surfaceName}-${name}-start`);
-        } catch {
+        } catch (e) {
           // Performance API may not support marking in some environments
-          // Silently ignore - this is optional performance instrumentation
+          // Log error in dev mode for debugging, but don't throw as this is optional
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[PerformanceMonitor] Failed to mark ${surfaceName}-${name}-start:`,
+              e
+            );
+          }
         }
       }
     },
@@ -243,7 +260,11 @@ export function usePerformanceMonitor(
       }
 
       // Use Performance API if available
-      if (typeof performance !== 'undefined' && performance.mark && performance.measure) {
+      if (
+        typeof performance !== "undefined" &&
+        performance.mark &&
+        performance.measure
+      ) {
         try {
           performance.mark(`${surfaceName}-${name}-end`);
           performance.measure(
@@ -251,9 +272,15 @@ export function usePerformanceMonitor(
             `${surfaceName}-${name}-start`,
             `${surfaceName}-${name}-end`
           );
-        } catch {
+        } catch (e) {
           // Performance API may fail if start mark doesn't exist or isn't supported
-          // Silently ignore - this is optional performance instrumentation
+          // Log error in dev mode for debugging, but don't throw as this is optional
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[PerformanceMonitor] Failed to measure ${surfaceName}-${name}:`,
+              e
+            );
+          }
         }
       }
 
@@ -277,7 +304,11 @@ export function usePerformanceMonitor(
 
   // Measure async function
   const measureAsync = useCallback(
-    async <T>(name: string, fn: () => Promise<T>, type?: keyof PerformanceBudget): Promise<T> => {
+    async <T>(
+      name: string,
+      fn: () => Promise<T>,
+      type?: keyof PerformanceBudget
+    ): Promise<T> => {
       if (!enabled) return fn();
 
       startMark(name);
@@ -331,19 +362,30 @@ export interface UsePerformanceObserverOptions {
   filter?: (entry: PerformanceEntry) => boolean;
 }
 
-type PerformanceEntryType = 'mark' | 'measure' | 'navigation' | 'resource' | 'longtask' | 'paint' | 'largest-contentful-paint' | 'first-input' | 'layout-shift';
+type PerformanceEntryType =
+  | "mark"
+  | "measure"
+  | "navigation"
+  | "resource"
+  | "longtask"
+  | "paint"
+  | "largest-contentful-paint"
+  | "first-input"
+  | "layout-shift";
 
 /**
  * Hook for observing Performance API entries
  */
-export function usePerformanceObserver(options: UsePerformanceObserverOptions = {}) {
-  const { entryTypes = ['measure'], onEntry, filter } = options;
+export function usePerformanceObserver(
+  options: UsePerformanceObserverOptions = {}
+) {
+  const { entryTypes = ["measure"], onEntry, filter } = options;
 
   useEffect(() => {
-    if (typeof PerformanceObserver === 'undefined') return;
+    if (typeof PerformanceObserver === "undefined") return;
 
     try {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           if (filter && !filter(entry)) continue;
           onEntry?.(entry);
@@ -353,8 +395,16 @@ export function usePerformanceObserver(options: UsePerformanceObserverOptions = 
       observer.observe({ entryTypes: entryTypes as string[] });
 
       return () => observer.disconnect();
-    } catch {
-      // Browser doesn't support this entry type - silently ignore
+    } catch (e) {
+      // Browser doesn't support this entry type
+      // Log error in dev mode for debugging
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "[PerformanceObserver] Entry types not supported:",
+          entryTypes,
+          e
+        );
+      }
       return;
     }
   }, [entryTypes, onEntry, filter]);
@@ -384,48 +434,55 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
   const vitalsRef = useRef<WebVitals>({});
 
   useEffect(() => {
-    if (typeof PerformanceObserver === 'undefined') return;
+    if (typeof PerformanceObserver === "undefined") return;
 
     const observers: PerformanceObserver[] = [];
 
     // LCP
     try {
-      const lcpObserver = new PerformanceObserver((list) => {
+      const lcpObserver = new PerformanceObserver(list => {
         const entries = list.getEntries();
         if (entries.length === 0) return;
         const lastEntry = entries[entries.length - 1];
         vitalsRef.current.lcp = lastEntry.startTime;
         onReport?.({ ...vitalsRef.current });
       });
-      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true } as PerformanceObserverInitExtended);
+      lcpObserver.observe({
+        type: "largest-contentful-paint",
+        buffered: true,
+      } as PerformanceObserverInitExtended);
       observers.push(lcpObserver);
     } catch (e) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[WebVitals] LCP observer not supported:', e);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[WebVitals] LCP observer not supported:", e);
       }
     }
 
     // FID
     try {
-      const fidObserver = new PerformanceObserver((list) => {
+      const fidObserver = new PerformanceObserver(list => {
         const entries = list.getEntries();
         if (entries.length === 0) return;
         const firstEntry = entries[0] as FirstInputEntry;
-        vitalsRef.current.fid = firstEntry.processingStart - firstEntry.startTime;
+        vitalsRef.current.fid =
+          firstEntry.processingStart - firstEntry.startTime;
         onReport?.({ ...vitalsRef.current });
       });
-      fidObserver.observe({ type: 'first-input', buffered: true } as PerformanceObserverInitExtended);
+      fidObserver.observe({
+        type: "first-input",
+        buffered: true,
+      } as PerformanceObserverInitExtended);
       observers.push(fidObserver);
     } catch (e) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[WebVitals] FID observer not supported:', e);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[WebVitals] FID observer not supported:", e);
       }
     }
 
     // CLS
     try {
       let clsValue = 0;
-      const clsObserver = new PerformanceObserver((list) => {
+      const clsObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries() as LayoutShiftEntry[]) {
           if (!entry.hadRecentInput) {
             clsValue += entry.value;
@@ -434,16 +491,19 @@ export function useWebVitals(onReport?: (vitals: WebVitals) => void) {
         vitalsRef.current.cls = clsValue;
         onReport?.({ ...vitalsRef.current });
       });
-      clsObserver.observe({ type: 'layout-shift', buffered: true } as PerformanceObserverInitExtended);
+      clsObserver.observe({
+        type: "layout-shift",
+        buffered: true,
+      } as PerformanceObserverInitExtended);
       observers.push(clsObserver);
     } catch (e) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[WebVitals] CLS observer not supported:', e);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[WebVitals] CLS observer not supported:", e);
       }
     }
 
     return () => {
-      observers.forEach((o) => o.disconnect());
+      observers.forEach(o => o.disconnect());
     };
   }, [onReport]);
 

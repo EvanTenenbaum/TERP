@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import {
@@ -14,7 +18,7 @@ import { sessionPricingService } from "../services/live-shopping/sessionPricingS
 import { sessionOrderService } from "../services/live-shopping/sessionOrderService";
 import { sessionCreditService } from "../services/live-shopping/sessionCreditService";
 import { sessionTimeoutService } from "../services/live-shopping/sessionTimeoutService";
-import { sessionPickListService, warehouseEventManager } from "../services/live-shopping/sessionPickListService";
+import { sessionPickListService } from "../services/live-shopping/sessionPickListService";
 // ordersDb available for future direct order operations
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 import { randomUUID } from "crypto";
@@ -39,7 +43,11 @@ export const liveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "DB not available",
+        });
 
       // BUG-094 FIX: Validate that client exists before inserting
       const clientExists = await db.query.clients.findFirst({
@@ -78,7 +86,16 @@ export const liveShoppingRouter = router({
     .use(requirePermission("orders:read"))
     .input(
       z.object({
-        status: z.enum(["SCHEDULED", "ACTIVE", "PAUSED", "ENDED", "CONVERTED", "CANCELLED"]).optional(),
+        status: z
+          .enum([
+            "SCHEDULED",
+            "ACTIVE",
+            "PAUSED",
+            "ENDED",
+            "CONVERTED",
+            "CANCELLED",
+          ])
+          .optional(),
         clientId: z.number().optional(),
         limit: z.number().default(20),
         offset: z.number().default(0),
@@ -86,11 +103,17 @@ export const liveShoppingRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "DB not available",
+        });
 
       const conditions = [];
-      if (input.status) conditions.push(eq(liveShoppingSessions.status, input.status));
-      if (input.clientId) conditions.push(eq(liveShoppingSessions.clientId, input.clientId));
+      if (input.status)
+        conditions.push(eq(liveShoppingSessions.status, input.status));
+      if (input.clientId)
+        conditions.push(eq(liveShoppingSessions.clientId, input.clientId));
 
       const sessions = await db
         .select({
@@ -123,7 +146,11 @@ export const liveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "DB not available",
+        });
 
       const session = await db.query.liveShoppingSessions.findFirst({
         where: eq(liveShoppingSessions.id, input.sessionId),
@@ -134,7 +161,10 @@ export const liveShoppingRouter = router({
       });
 
       if (!session) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
       }
 
       // Get Cart Details via Service
@@ -156,10 +186,14 @@ export const liveShoppingRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "DB not available",
+        });
 
-      const updates: any = { status: input.status };
-      
+      const updates: Record<string, unknown> = { status: input.status };
+
       // Set timestamps based on status transition
       if (input.status === "ACTIVE") {
         // Only set startedAt if it wasn't set before (resuming shouldn't reset start time ideally, but simpler for now)
@@ -205,10 +239,11 @@ export const liveShoppingRouter = router({
           addedByRole: "HOST",
         });
         return { success: true };
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to add item to cart",
+          message:
+            e instanceof Error ? e.message : "Failed to add item to cart",
         });
       }
     }),
@@ -249,10 +284,10 @@ export const liveShoppingRouter = router({
           input.quantity
         );
         return { success: true };
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to update quantity",
+          message: e instanceof Error ? e.message : "Failed to update quantity",
         });
       }
     }),
@@ -280,16 +315,19 @@ export const liveShoppingRouter = router({
         input.productId,
         input.price
       );
-      
+
       // 2. Update existing cart items with new price in a single query
       const db = await getDb();
       if (db) {
-        await db.update(sessionCartItems)
+        await db
+          .update(sessionCartItems)
           .set({ unitPrice: input.price.toString() })
-          .where(and(
-            eq(sessionCartItems.sessionId, input.sessionId),
-            eq(sessionCartItems.productId, input.productId)
-          ));
+          .where(
+            and(
+              eq(sessionCartItems.sessionId, input.sessionId),
+              eq(sessionCartItems.productId, input.productId)
+            )
+          );
       }
 
       // 3. Emit cart update to notify all connected clients
@@ -326,19 +364,21 @@ export const liveShoppingRouter = router({
       await db
         .update(sessionCartItems)
         .set({ isHighlighted: input.isHighlighted })
-        .where(and(
-          eq(sessionCartItems.sessionId, input.sessionId),
-          eq(sessionCartItems.batchId, input.batchId)
-        ));
+        .where(
+          and(
+            eq(sessionCartItems.sessionId, input.sessionId),
+            eq(sessionCartItems.batchId, input.batchId)
+          )
+        );
 
       // Emit highlight event
       if (input.isHighlighted) {
         sessionEventManager.emitHighlight(input.sessionId, input.batchId);
       }
-      
+
       // Also update cart view
       await sessionCartService.emitCartUpdate(input.sessionId);
-      
+
       return { success: true };
     }),
 
@@ -347,7 +387,9 @@ export const liveShoppingRouter = router({
    */
   searchProducts: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({ query: z.string().min(1, "Search query cannot be empty") }))
+    .input(
+      z.object({ query: z.string().min(1, "Search query cannot be empty") })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -446,10 +488,11 @@ export const liveShoppingRouter = router({
           userId
         );
         return { success: true, salesSheetId: sheetId };
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to generate sales sheet",
+          message:
+            e instanceof Error ? e.message : "Failed to generate sales sheet",
         });
       }
     }),
@@ -500,10 +543,13 @@ export const liveShoppingRouter = router({
         });
 
         return result;
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to convert session to order",
+          message:
+            e instanceof Error
+              ? e.message
+              : "Failed to convert session to order",
         });
       }
     }),
@@ -542,7 +588,7 @@ export const liveShoppingRouter = router({
       // Emit status change event for real-time updates
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "ITEM_STATUS_CHANGED",
-        payload: {
+        data: {
           cartItemId: input.cartItemId,
           newStatus: input.status,
           timestamp: new Date().toISOString(),
@@ -579,10 +625,11 @@ export const liveShoppingRouter = router({
           itemStatus: input.status,
         });
         return { success: true, cartItemId };
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to add item to cart",
+          message:
+            e instanceof Error ? e.message : "Failed to add item to cart",
         });
       }
     }),
@@ -596,7 +643,9 @@ export const liveShoppingRouter = router({
     .query(async ({ input }) => {
       const cart = await sessionCartService.getCart(input.sessionId);
 
-      const sampleRequests = cart.items.filter(i => i.itemStatus === "SAMPLE_REQUEST");
+      const sampleRequests = cart.items.filter(
+        i => i.itemStatus === "SAMPLE_REQUEST"
+      );
       const interested = cart.items.filter(i => i.itemStatus === "INTERESTED");
       const toPurchase = cart.items.filter(i => i.itemStatus === "TO_PURCHASE");
 
@@ -609,7 +658,10 @@ export const liveShoppingRouter = router({
           interestedCount: interested.length,
           toPurchaseCount: toPurchase.length,
           toPurchaseValue: toPurchase.reduce(
-            (sum, i) => sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+            (sum, i) =>
+              sum +
+              parseFloat(i.quantity.toString()) *
+                parseFloat(i.unitPrice.toString()),
             0
           ),
         },
@@ -650,7 +702,10 @@ export const liveShoppingRouter = router({
       });
 
       if (!cartItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cart item not found",
+        });
       }
 
       const currentPrice = parseFloat(cartItem.unitPrice?.toString() || "0");
@@ -688,7 +743,7 @@ export const liveShoppingRouter = router({
       // Emit negotiation event for real-time updates
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "NEGOTIATION_REQUESTED",
-        payload: {
+        data: {
           cartItemId: input.cartItemId,
           proposedPrice: input.proposedPrice,
           originalPrice: currentPrice,
@@ -730,16 +785,23 @@ export const liveShoppingRouter = router({
       });
 
       if (!cartItem || !cartItem.negotiationData) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Negotiation not found",
+        });
       }
 
       // Drizzle returns JSON as parsed object, but handle string case for safety
-      const negotiationData = typeof cartItem.negotiationData === "string"
-        ? JSON.parse(cartItem.negotiationData)
-        : cartItem.negotiationData;
+      const negotiationData =
+        typeof cartItem.negotiationData === "string"
+          ? JSON.parse(cartItem.negotiationData)
+          : cartItem.negotiationData;
 
       if (!negotiationData || !negotiationData.history) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid negotiation data" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Invalid negotiation data",
+        });
       }
 
       // Add response to history
@@ -770,7 +832,10 @@ export const liveShoppingRouter = router({
         negotiationData.rejectionReason = input.reason;
       } else if (input.response === "COUNTER") {
         if (!input.counterPrice) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Counter price is required" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Counter price is required",
+          });
         }
         updates.negotiationStatus = "COUNTER_OFFERED";
         negotiationData.status = "COUNTER_OFFERED";
@@ -788,7 +853,7 @@ export const liveShoppingRouter = router({
       // Emit negotiation response event
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "NEGOTIATION_RESPONSE",
-        payload: {
+        data: {
           cartItemId: input.cartItemId,
           response: input.response,
           counterPrice: input.counterPrice,
@@ -829,16 +894,23 @@ export const liveShoppingRouter = router({
       });
 
       if (!cartItem || !cartItem.negotiationData) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Negotiation not found",
+        });
       }
 
       // Drizzle returns JSON as parsed object, but handle string case for safety
-      const negotiationData = typeof cartItem.negotiationData === "string"
-        ? JSON.parse(cartItem.negotiationData)
-        : cartItem.negotiationData;
+      const negotiationData =
+        typeof cartItem.negotiationData === "string"
+          ? JSON.parse(cartItem.negotiationData)
+          : cartItem.negotiationData;
 
       if (!negotiationData || negotiationData.status !== "COUNTER_OFFERED") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No counter-offer to accept" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No counter-offer to accept",
+        });
       }
 
       // Add acceptance to history
@@ -858,7 +930,8 @@ export const liveShoppingRouter = router({
         .update(sessionCartItems)
         .set({
           unitPrice: negotiationData.counterPrice.toString(),
-          quantity: negotiationData.counterQuantity?.toString() || cartItem.quantity,
+          quantity:
+            negotiationData.counterQuantity?.toString() || cartItem.quantity,
           negotiationStatus: "ACCEPTED",
           negotiationData: negotiationData, // Drizzle handles JSON serialization
         })
@@ -867,7 +940,7 @@ export const liveShoppingRouter = router({
       // Emit acceptance event
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "COUNTER_OFFER_ACCEPTED",
-        payload: {
+        data: {
           cartItemId: input.cartItemId,
           finalPrice: negotiationData.counterPrice,
           timestamp: new Date().toISOString(),
@@ -903,7 +976,10 @@ export const liveShoppingRouter = router({
       });
 
       if (!cartItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cart item not found",
+        });
       }
 
       if (!cartItem.negotiationData) {
@@ -911,9 +987,10 @@ export const liveShoppingRouter = router({
       }
 
       // Drizzle returns JSON as parsed object, but handle string case for safety
-      const negotiationData = typeof cartItem.negotiationData === "string"
-        ? JSON.parse(cartItem.negotiationData)
-        : cartItem.negotiationData;
+      const negotiationData =
+        typeof cartItem.negotiationData === "string"
+          ? JSON.parse(cartItem.negotiationData)
+          : cartItem.negotiationData;
 
       if (!negotiationData) {
         return { hasNegotiation: false, history: [] };
@@ -960,13 +1037,14 @@ export const liveShoppingRouter = router({
           )
         );
 
-      return items.map((item) => {
+      return items.map(item => {
         let negotiation = null;
         if (item.negotiationData) {
           // Drizzle returns JSON as parsed object, but handle string case for safety
-          negotiation = typeof item.negotiationData === "string"
-            ? JSON.parse(item.negotiationData)
-            : item.negotiationData;
+          negotiation =
+            typeof item.negotiationData === "string"
+              ? JSON.parse(item.negotiationData)
+              : item.negotiationData;
         }
         return {
           ...item,
@@ -1012,13 +1090,17 @@ export const liveShoppingRouter = router({
         .orderBy(desc(liveShoppingSessions.startedAt));
 
       const now = new Date();
-      return sessions.map((session) => ({
+      return sessions.map(session => ({
         ...session,
         remainingSeconds: session.expiresAt
-          ? Math.max(0, Math.floor((session.expiresAt.getTime() - now.getTime()) / 1000))
+          ? Math.max(
+              0,
+              Math.floor((session.expiresAt.getTime() - now.getTime()) / 1000)
+            )
           : -1,
         isNearingTimeout:
-          session.expiresAt && session.expiresAt.getTime() - now.getTime() < 300000,
+          session.expiresAt &&
+          session.expiresAt.getTime() - now.getTime() < 300000,
       }));
     }),
 
@@ -1043,7 +1125,10 @@ export const liveShoppingRouter = router({
     )
     .mutation(async ({ input }) => {
       const additionalSeconds = input.additionalMinutes * 60;
-      return await sessionTimeoutService.extendTimeout(input.sessionId, additionalSeconds);
+      return await sessionTimeoutService.extendTimeout(
+        input.sessionId,
+        additionalSeconds
+      );
     }),
 
   configureTimeout: protectedProcedure
@@ -1057,7 +1142,10 @@ export const liveShoppingRouter = router({
     )
     .mutation(async ({ input }) => {
       const timeoutSeconds = input.timeoutMinutes * 60;
-      await sessionTimeoutService.initializeTimeout(input.sessionId, timeoutSeconds);
+      await sessionTimeoutService.initializeTimeout(
+        input.sessionId,
+        timeoutSeconds
+      );
       return await sessionTimeoutService.getTimeoutStatus(input.sessionId);
     }),
 
@@ -1066,9 +1154,14 @@ export const liveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "DB not available",
+        });
       // Disable timeout by setting expiresAt to null
-      await db.update(liveShoppingSessions)
+      await db
+        .update(liveShoppingSessions)
         .set({ expiresAt: null, timeoutSeconds: 0 })
         .where(eq(liveShoppingSessions.id, input.sessionId));
       return { success: true };
@@ -1116,7 +1209,8 @@ export const liveShoppingRouter = router({
       const userId = getAuthenticatedUserId(ctx);
       const timestamp = new Date().toISOString();
 
-      await db.update(liveShoppingSessions)
+      await db
+        .update(liveShoppingSessions)
         .set({
           internalNotes: input.notes,
           lastActivityAt: new Date(),
@@ -1125,7 +1219,7 @@ export const liveShoppingRouter = router({
 
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "NOTES_UPDATED",
-        payload: {
+        data: {
           sessionId: input.sessionId,
           notes: input.notes,
           updatedBy: userId,
@@ -1152,7 +1246,10 @@ export const liveShoppingRouter = router({
       });
 
       if (!session) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
       }
 
       return {
@@ -1185,7 +1282,10 @@ export const liveShoppingRouter = router({
       });
 
       if (!session) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
       }
 
       if (session.status === "CONVERTED" || session.status === "CANCELLED") {
@@ -1208,7 +1308,8 @@ export const liveShoppingRouter = router({
         ? `[CANCELLED] ${now.toISOString()} by user ${userId}: ${input.reason}`
         : `[CANCELLED] ${now.toISOString()} by user ${userId}`;
 
-      await db.update(liveShoppingSessions)
+      await db
+        .update(liveShoppingSessions)
         .set({
           status: "CANCELLED",
           endedAt: now,
@@ -1229,7 +1330,10 @@ export const liveShoppingRouter = router({
         },
       });
 
-      await sessionPickListService.notifyPickListUpdate(input.sessionId, "ITEM_REMOVED");
+      await sessionPickListService.notifyPickListUpdate(
+        input.sessionId,
+        "ITEM_REMOVED"
+      );
 
       return {
         success: true,
@@ -1260,12 +1364,19 @@ export const liveShoppingRouter = router({
         session.clientId
       );
 
-      const exposure = await sessionCreditService.getDraftExposure(input.sessionId);
+      const exposure = await sessionCreditService.getDraftExposure(
+        input.sessionId
+      );
 
       const cart = await sessionCartService.getCart(input.sessionId);
-      const toPurchaseItems = cart.items.filter((i) => i.itemStatus === "TO_PURCHASE");
+      const toPurchaseItems = cart.items.filter(
+        i => i.itemStatus === "TO_PURCHASE"
+      );
       const toPurchaseValue = toPurchaseItems.reduce(
-        (sum, i) => sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+        (sum, i) =>
+          sum +
+          parseFloat(i.quantity.toString()) *
+            parseFloat(i.unitPrice.toString()),
         0
       );
 
@@ -1273,15 +1384,20 @@ export const liveShoppingRouter = router({
         ...creditResult,
         breakdown: {
           toPurchaseValue,
-          interestedValue: exposure.totalCartValue - toPurchaseValue - exposure.sampleValue,
+          interestedValue:
+            exposure.totalCartValue - toPurchaseValue - exposure.sampleValue,
           sampleValue: exposure.sampleValue,
           totalCartValue: exposure.totalCartValue,
           toPurchaseCount: toPurchaseItems.length,
           totalItemCount: cart.itemCount,
         },
-        percentUtilized: creditResult.creditLimit > 0
-          ? ((creditResult.projectedExposure / creditResult.creditLimit) * 100).toFixed(1)
-          : "N/A",
+        percentUtilized:
+          creditResult.creditLimit > 0
+            ? (
+                (creditResult.projectedExposure / creditResult.creditLimit) *
+                100
+              ).toFixed(1)
+            : "N/A",
       };
     }),
 });
