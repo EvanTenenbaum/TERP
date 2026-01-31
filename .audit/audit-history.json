@@ -1,14 +1,19 @@
 {
-  "version": "1.1",
-  "lastUpdated": "2026-01-31T21:00:00Z",
-  "auditType": "systemic-deep-dive",
-  
+  "version": "1.2",
+  "lastUpdated": "2026-01-31T20:42:00Z",
+  "auditType": "systemic-deep-dive-v2",
   "recurringPatterns": {
     "inventory-$0": {
-      "occurrences": 4,
-      "rootCause": "Multiple: unsafe parseFloat (30+), nullable money fields (38), inconsistent null handling",
+      "occurrences": 5,
+      "rootCause": "Schema: 108 nullable decimal fields (unitCogs, onHandQty, etc.) without defaults. Router: parseFloat on null returns NaN. Frontend: ternary checks treat 0/NaN as falsy.",
       "status": "root-cause-confirmed",
-      "affectedFiles": ["server/routers/inventory.ts", "server/routers/orders.ts", "client/src/pages/Inventory.tsx"]
+      "affectedFiles": [
+        "drizzle/schema.ts",
+        "server/routers/inventory.ts",
+        "server/inventoryDb.ts",
+        "client/src/pages/Inventory.tsx"
+      ],
+      "fixPattern": "Add .notNull().default('0') to schema; use ?? 0 in router; use !== null checks in frontend"
     },
     "no-inventory-found": {
       "occurrences": 2,
@@ -23,82 +28,117 @@
       "affectedFiles": ["various"]
     },
     "vendors-deprecated": {
-      "occurrences": 79,
-      "rootCause": "Legacy vendorId references should use clients.isSeller",
+      "occurrences": 46,
+      "rootCause": "Legacy vendorId references should use clients.isSeller with supplierClientId",
       "status": "in-progress",
-      "affectedFiles": ["79 files with vendorId references"]
+      "affectedFiles": [
+        "server/routers/inventory.ts (8)",
+        "server/routers/orders.ts (2)",
+        "server/routers/accounting.ts (20)",
+        "server/inventoryDb.ts (16 + 2 vendor inserts)"
+      ]
     }
   },
-  
   "systemicIssues": {
-    "category1_decimal_handling": {
+    "SYS-001_nullable_decimals": {
       "severity": "CRITICAL",
-      "issues": [
-        {"name": "unsafe_parseFloat", "count": 30, "priority": "P0"},
-        {"name": "inconsistent_zero_null_defaults", "count": 17, "priority": "P1"},
-        {"name": "nullable_money_fields", "count": 38, "priority": "P1"}
-      ]
+      "count": 108,
+      "description": "Schema has 108 nullable decimal fields vs 77 NOT NULL. Key fields (unitCogs, onHandQty, reservedQty, etc.) can be NULL causing $0 display.",
+      "affectedFiles": ["drizzle/schema.ts"],
+      "fixPattern": "Add .notNull().default('0') to monetary/quantity fields"
     },
-    "category2_frontend_display": {
+    "SYS-002_forbidden_pattern_violations": {
+      "severity": "CRITICAL",
+      "count": 3,
+      "description": "|| 1 actor attribution bypass in orderService.ts violates CLAUDE.md rules",
+      "affectedFiles": ["server/services/orderService.ts"],
+      "fixPattern": "Replace || 1 with ctx.user.id"
+    },
+    "SYS-003_leftjoin_null_access": {
       "severity": "HIGH",
-      "issues": [
-        {"name": "unsafe_toFixed", "count": 11, "priority": "P0"},
-        {"name": "jsx_unsafe_access", "count": 56, "priority": "P1"},
-        {"name": "map_on_undefined", "count": 6, "priority": "P1"}
-      ]
+      "count": 13,
+      "description": "inventoryDb.ts uses 13 leftJoins but accesses products/brands/lots/clients fields without null checks",
+      "affectedFiles": ["server/inventoryDb.ts"],
+      "affectedRelations": ["products", "brands", "lots", "clients"],
+      "fixPattern": "Add ?. optional chaining for all leftJoin field access"
     },
-    "category3_query_safety": {
-      "severity": "MEDIUM",
-      "issues": [
-        {"name": "queries_missing_relations", "count": 8, "priority": "P1"},
-        {"name": "queries_no_enabled", "count": 6, "priority": "P2"}
-      ]
-    },
-    "category4_data_integrity": {
+    "SYS-004_no_gl_integration": {
       "severity": "HIGH",
-      "issues": [
-        {"name": "transactions_no_rollback", "count": 3, "priority": "P0", "file": "payments.ts", "lines": [300, 692, 892]},
-        {"name": "hardcoded_status", "count": 19, "priority": "P1"},
-        {"name": "quantity_no_precision", "count": 2, "priority": "P2"}
-      ]
+      "count": 0,
+      "description": "Inventory router has 0 calls to GL/accounting services. Inventory value changes don't create journal entries.",
+      "affectedFiles": ["server/routers/inventory.ts"],
+      "fixPattern": "Call glService.createJournalEntry() on inventory value changes"
     },
-    "category5_deprecated": {
+    "SYS-005_missing_transactions": {
+      "severity": "HIGH",
+      "count": 6,
+      "description": "6 multi-table update/insert sequences with only 1 transaction pattern. Partial failures leave inconsistent state.",
+      "affectedFiles": ["server/routers/inventory.ts"],
+      "fixPattern": "Wrap multi-table operations in db.transaction()"
+    },
+    "SYS-006_inconsistent_null_handling": {
       "severity": "MEDIUM",
-      "issues": [
-        {"name": "vendor_references", "count": 79, "priority": "P2"}
-      ]
+      "description": "Mixed || 0 and ?? 0 patterns across routers (inventory: 8x || 0, purchaseOrders: 3x ?? 0)",
+      "affectedFiles": ["server/routers/inventory.ts", "server/routers/accounting.ts"],
+      "fixPattern": "Standardize on ?? 0 for nullish coalescing"
     },
-    "category6_state_management": {
+    "SYS-007_zero_as_falsy_react": {
       "severity": "MEDIUM",
-      "issues": [
-        {"name": "localstorage_no_try", "count": 6, "priority": "P2"}
-      ]
+      "description": "Ternary conditions on numeric fields (batch.onHandQty, batch.reservedQty, etc.) hide content when value is 0",
+      "affectedFields": ["batch.reservedQty", "batch.holdQty", "batch.onHandQty", "batch.quarantineQty"],
+      "affectedFiles": ["client/src/pages/Inventory.tsx"],
+      "fixPattern": "Use !== null/undefined checks instead of truthy checks"
     },
-    "category7_schema": {
+    "SYS-008_mixed_pagination": {
       "severity": "LOW",
-      "issues": [
-        {"name": "decimal_precision_inconsistent", "count": 8, "priority": "P2", "note": "8 different precision/scale combos"}
-      ]
+      "description": "Mixed pagination styles: cursor (15), offset (1), page (3) in inventory router",
+      "affectedFiles": ["server/routers/inventory.ts"],
+      "fixPattern": "Standardize on cursor-based pagination"
+    },
+    "SYS-009_no_cache_invalidation": {
+      "severity": "LOW",
+      "description": "Inventory.tsx has 0 refetch/invalidate calls, uses default staleTime",
+      "affectedFiles": ["client/src/pages/Inventory.tsx"],
+      "fixPattern": "Add queryClient.invalidateQueries() after mutations"
     }
   },
-  
-  "p0Fixes": [
-    "Add null guards to 30+ parseFloat calls in server routers",
-    "Fix 11 unsafe toFixed calls in Inventory.tsx and Orders.tsx",
-    "Add rollback handling to 3 payment transactions (payments.ts lines 300, 692, 892)"
-  ],
-  
-  "searchQueries": {
-    "parseFloat_unsafe": "parseFloat null repo:EvanTenenbaum/TERP path:server",
-    "toFixed_unsafe": "toFixed repo:EvanTenenbaum/TERP path:client",
-    "transactions": "transaction repo:EvanTenenbaum/TERP path:server/routers",
-    "hardcoded_status": "PENDING CONFIRMED DRAFT repo:EvanTenenbaum/TERP path:server",
-    "vendor_deprecated": "vendorId repo:EvanTenenbaum/TERP"
+  "prioritizedFixes": {
+    "P0_critical": [
+      "Add null guards to parseFloat calls in inventory/orders routers",
+      "Fix || 1 violations in orderService.ts (audit trail broken)",
+      "Add optional chaining to leftJoin field access in inventoryDb.ts"
+    ],
+    "P1_high": [
+      "Wrap multi-table operations in db.transaction()",
+      "Integrate GL journal entries with inventory value changes",
+      "Fix zero-as-falsy display bugs in Inventory.tsx"
+    ],
+    "P2_medium": [
+      "Migrate vendorId references to supplierClientId (46 files)",
+      "Standardize null coalescing patterns (|| vs ??)",
+      "Add cache invalidation strategy"
+    ]
   },
-  
+  "searchQueries": {
+    "nullable_decimals": "decimal repo:EvanTenenbaum/TERP path:drizzle -notNull",
+    "parseFloat_unsafe": "parseFloat repo:EvanTenenbaum/TERP path:server",
+    "leftjoin_access": "leftJoin repo:EvanTenenbaum/TERP path:server",
+    "or_one_pattern": "|| 1 repo:EvanTenenbaum/TERP path:server",
+    "vendor_deprecated": "vendorId repo:EvanTenenbaum/TERP",
+    "transaction_usage": "transaction repo:EvanTenenbaum/TERP path:server/routers"
+  },
+  "auditMetrics": {
+    "filesAnalyzed": 12,
+    "totalIssuesFound": 9,
+    "critical": 2,
+    "high": 3,
+    "medium": 3,
+    "low": 2
+  },
   "limitations": [
-    "Cannot detect runtime CSS issues (z-index, pointer-events)",
-    "Cannot verify actual database NULL values",
-    "Cannot test browser behavior without automation"
+    "Cannot detect runtime CSS issues (z-index, pointer-events, visibility)",
+    "Cannot verify actual database NULL values without DB access",
+    "Cannot test browser behavior without automation",
+    "Keyword search only - no semantic/conceptual search"
   ]
 }
