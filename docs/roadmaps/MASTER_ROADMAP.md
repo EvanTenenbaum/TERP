@@ -909,6 +909,104 @@ async function createPayable(input: PayableInput, actorId: number) {
 
 ---
 
+### Actor Attribution Security Audit - Added Feb 1, 2026
+
+> **Audit Type:** Adversarial QA Codebase Scrub
+> **Audit Date:** Feb 1, 2026
+> **Finding Count:** 35 new issues across routers, services, and Db layers
+> **Root Cause:** Missing or incomplete actor tracking on mutations
+
+#### SEC-033 Expanded Scope (advancedTagFeatures.ts)
+
+The original SEC-033 only covered `createGroup`. Full audit reveals 5 additional mutations needing actor attribution:
+
+| Procedure         | Operation     | Has Tracking? | Severity | Notes                                            |
+| ----------------- | ------------- | ------------- | -------- | ------------------------------------------------ |
+| `createGroup`     | CREATE        | ✅ YES        | PASS     | Already fixed with `getAuthenticatedUserId(ctx)` |
+| `mergeTags`       | DELETE+UPDATE | ❌ NO         | **HIGH** | Destroys data without audit trail                |
+| `bulkRemoveTags`  | DELETE        | ❌ NO         | **HIGH** | Bulk destructive, no attribution                 |
+| `bulkAddTags`     | CREATE        | ❌ NO         | HIGH     | Bulk mutation, no attribution                    |
+| `createHierarchy` | CREATE        | ❌ NO         | MEDIUM   | Structural change, no tracking                   |
+| `addToGroup`      | CREATE        | ❌ NO         | LOW      | Minor, but incomplete trail                      |
+
+#### New Security Tasks: Routers (SEC-036 to SEC-041)
+
+| Task    | Description                                       | Priority | Status | Est | Module                                  | Issue                       |
+| ------- | ------------------------------------------------- | -------- | ------ | --- | --------------------------------------- | --------------------------- |
+| SEC-036 | Add actor tracking to tags.ts mutations           | MEDIUM   | ready  | 2h  | `server/routers/tags.ts`                | 3 mutations lack ctx        |
+| SEC-037 | Add actor tracking to locations.ts mutations      | MEDIUM   | ready  | 2h  | `server/routers/locations.ts`           | 4 mutations lack ctx        |
+| SEC-038 | Add actor tracking to settings.ts admin mutations | HIGH     | ready  | 4h  | `server/routers/settings.ts`            | 11 admin mutations lack ctx |
+| SEC-039 | Complete SEC-033 (advancedTagFeatures remaining)  | HIGH     | ready  | 2h  | `server/routers/advancedTagFeatures.ts` | 5 mutations lack ctx        |
+| SEC-040 | Fix SSE-001 remaining instance                    | MEDIUM   | ready  | 1h  | `server/routers/liveShopping.ts:1324`   | `payload` should be `data`  |
+| SEC-041 | Delete dangerous backup files                     | HIGH     | ready  | 1h  | `server/routers/*.backup*`              | Contain vuln patterns       |
+
+**SEC-038 Details (settings.ts - 11 admin mutations):**
+
+- `gradesRouter`: create (L18), update (L26), delete (L35)
+- `categoriesRouter`: create (L52), update (L60), delete (L69)
+- `subcategoriesRouter`: create (L91), update (L103), delete (L112)
+- `locationsSettingsRouter`: create (L155), update (L163), delete (L172)
+
+#### New Security Tasks: Services Layer (SEC-042 to SEC-048)
+
+| Task    | Description                                   | Priority | Status | Est | Module                                            | Issue                       |
+| ------- | --------------------------------------------- | -------- | ------ | --- | ------------------------------------------------- | --------------------------- |
+| SEC-042 | Fix hardcoded userId=1 in orderService        | **HIGH** | ready  | 2h  | `server/services/orderService.ts:86`              | Financial critical path     |
+| SEC-043 | Add actor tracking to clientBalanceService    | **HIGH** | ready  | 2h  | `server/services/clientBalanceService.ts:113`     | AR balance updates          |
+| SEC-044 | Fix actor storage in catalogPublishingService | MEDIUM   | ready  | 2h  | `server/services/catalogPublishingService.ts:52`  | Actor only in JSON metadata |
+| SEC-045 | Add actor tracking to vipPortalAdminService   | MEDIUM   | ready  | 2h  | `server/services/vipPortalAdminService.ts:80`     | 3 mutations no tracking     |
+| SEC-046 | Add actor tracking to weightService           | MEDIUM   | ready  | 1h  | `server/services/leaderboard/weightService.ts:98` | Config changes no tracking  |
+| SEC-047 | Add actor tracking to priceAlertsService      | MEDIUM   | ready  | 1h  | `server/services/priceAlertsService.ts:45`        | No createdBy on alerts      |
+| SEC-048 | Fix BUG-103 backend password exposure         | **HIGH** | ready  | 1h  | `server/_core/qaAuth.ts:374`                      | Password in API response    |
+
+**SEC-042 Details (CRITICAL - orderService.ts:86):**
+
+```typescript
+// CURRENT (FORBIDDEN)
+createdBy: 1, // System user - should be passed from context in production
+
+// REQUIRED FIX
+createdBy: actorId, // Pass from authenticated context
+```
+
+**SEC-048 Details (BUG-103 Backend - qaAuth.ts:374):**
+
+```typescript
+// CURRENT (EXPOSES PASSWORD)
+res.json({
+  enabled: true,
+  roles: qaAuth.getAvailableRoles(),
+  password: QA_PASSWORD, // ❌ EXPOSED TO CLIENT
+});
+
+// REQUIRED FIX - Remove password from response
+res.json({
+  enabled: true,
+  roles: qaAuth.getAvailableRoles(),
+  // password removed - client should not receive this
+});
+```
+
+#### Hard Delete Audit (ST-059 Expansion)
+
+ST-059 was marked complete but many locations were missed:
+
+| File                   | Line             | Table                                    | Has deletedAt?                     |
+| ---------------------- | ---------------- | ---------------------------------------- | ---------------------------------- |
+| photography.ts         | 396, 924         | productImages                            | Unknown                            |
+| vipPortal.ts           | 2097, 2112, 2348 | clientDraftInterests, clientCatalogViews | Unknown                            |
+| calendarsManagement.ts | 635, 874         | appointmentTypes, calendarBlockedDates   | Unknown                            |
+| freeformNotesDb.ts     | 160              | freeformNotes                            | **YES** (uses hard delete anyway!) |
+| clientNeedsDb.ts       | 245              | clientNeeds                              | Unknown                            |
+| commentsDb.ts          | 164              | comments                                 | Unknown                            |
+| inboxDb.ts             | 285              | inboxItems                               | Unknown                            |
+| todoListsDb.ts         | 116              | todoLists                                | Unknown                            |
+| todoTasksDb.ts         | 231              | todoTasks                                | Unknown                            |
+
+**Recommended:** Create ST-059B to complete soft delete migration for all tables.
+
+---
+
 ### Sprint Integration QA Findings (Pre-existing Issues) - Added Jan 25, 2026
 
 > Discovered during RedHat-grade QA audit of the sprint integration release.
@@ -3001,7 +3099,6 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ---
 
-
 ---
 
 ## 🛡️ RELIABILITY: Systemic Root Cause Fixes (REL Sprint)
@@ -3014,11 +3111,11 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ### Priority Matrix
 
-| Priority | Description | Tasks | Impact |
-|----------|-------------|-------|--------|
-| P0 | Critical - Fix immediately | REL-001 to REL-004 | $0 display, crashes, data corruption |
-| P1 | High - Fix this sprint | REL-005 to REL-010 | Lost updates, inconsistent state |
-| P2 | Medium - Fix in Beta | REL-011 to REL-016 | Technical debt, maintenance |
+| Priority | Description                | Tasks              | Impact                               |
+| -------- | -------------------------- | ------------------ | ------------------------------------ |
+| P0       | Critical - Fix immediately | REL-001 to REL-004 | $0 display, crashes, data corruption |
+| P1       | High - Fix this sprint     | REL-005 to REL-010 | Lost updates, inconsistent state     |
+| P2       | Medium - Fix in Beta       | REL-011 to REL-016 | Technical debt, maintenance          |
 
 ---
 
@@ -3034,16 +3131,19 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** Same null DB value displays as $0.00 in some views and blank in others.
 
 **Root Cause:**
+
 - Line 268: `unitCogs: batch.unitCogs ? parseFloat(...) : null` → Returns null
 - Line 537: `unitCogs = batch.unitCogs ? parseFloat(...) : 0` → Returns 0
 
 **Deliverables:**
+
 - [ ] Create `server/utils/money.ts` with `parseMoneyOrNull()` utility
 - [ ] Replace all 30+ unsafe parseFloat calls with utility
 - [ ] Add unit tests for null/0/valid number cases
 - [ ] Frontend displays "—" for null, "$0.00" for explicit zero
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Manual: View inventory with null unitCogs - should show "—"
@@ -3062,16 +3162,19 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 11 toFixed() calls can crash on null/undefined values.
 
 **Affected Lines:**
+
 - Inventory.tsx: 186-190, 1139, 1148, 1158
 - Orders.tsx: 621, 625, 1156
 
 **Deliverables:**
+
 - [ ] Create `client/src/utils/formatters.ts` with `formatDecimal()` utility
 - [ ] Replace all 11 unsafe toFixed calls
 - [ ] Handle null → "—", NaN → "—", number → formatted
 - [ ] Add Jest tests for edge cases
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] No "NaN" displayed in UI
 - [ ] Manual: Test with batches that have null quantities
@@ -3090,6 +3193,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 3 transactions at lines 300, 692, 892 lack explicit rollback handling.
 
 **Deliverables:**
+
 - [ ] Add try/catch with explicit rollback to line 300 transaction
 - [ ] Add try/catch with explicit rollback to line 692 transaction
 - [ ] Add try/catch with explicit rollback to line 892 transaction
@@ -3097,6 +3201,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add integration tests for rollback scenarios
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Manual: Simulate payment failure - verify no partial state
@@ -3115,11 +3220,13 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 28 financial calculations use JavaScript floats, causing penny-level errors.
 
 **Key Lines:**
+
 - orders.ts:755 - `lineTotal = unitPrice * item.quantity`
 - orders.ts:2344 - `totalCost += alloc.quantity * unitCost`
 - payments.ts:329 - `newPaid = currentPaid + effectiveAmount`
 
 **Deliverables:**
+
 - [ ] Install decimal.js: `pnpm add decimal.js`
 - [ ] Create `server/utils/decimal.ts` with money math helpers
 - [ ] Replace 28 arithmetic operations with Decimal.js
@@ -3127,6 +3234,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Document which operations require precision
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Test: Create order with 100 line items, verify total is exact
@@ -3147,6 +3255,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Target Tables:** orders, batches, invoices, payments, clients
 
 **Deliverables:**
+
 - [ ] Add `version` column to 5 critical tables (migration)
 - [ ] Create `server/utils/optimisticLock.ts` helper
 - [ ] Update all update operations to check version
@@ -3154,6 +3263,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Frontend: Handle 409 with "Data changed, please refresh"
 
 **Verification:**
+
 - [ ] Migration runs successfully
 - [ ] pnpm test:schema passes
 - [ ] Manual: Open same order in 2 tabs, edit both, verify conflict detected
@@ -3172,6 +3282,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** Order confirmation has no transaction wrapper - partial state possible.
 
 **Deliverables:**
+
 - [ ] Wrap confirm procedure in db.transaction()
 - [ ] Include: status update, inventory reservation, GL entries
 - [ ] Add explicit rollback on any failure
@@ -3179,6 +3290,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add integration test for partial failure recovery
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Manual: Simulate failure mid-confirm, verify clean rollback
@@ -3199,6 +3311,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Target Fields:** batches.unitCogs, orderLineItems.unitPrice, orderLineItems.cogsPerUnit, payments.amount, invoices.totalAmount
 
 **Deliverables:**
+
 - [ ] Write migration to UPDATE NULL to '0' for each field
 - [ ] Add .notNull().default('0') to schema
 - [ ] Run migration in staging first
@@ -3206,6 +3319,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Remove defensive null checks from router code
 
 **Verification:**
+
 - [ ] Migration completes without data loss
 - [ ] pnpm test:schema passes
 - [ ] Query: `SELECT COUNT(*) FROM batches WHERE unitCogs IS NULL` = 0
@@ -3224,6 +3338,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 20+ Zod schemas allow negative numbers - potential for invalid data.
 
 **Deliverables:**
+
 - [ ] Audit all z.number() schemas in routers
 - [ ] Add .min(0) to quantities, amounts, prices
 - [ ] Add .int().positive() to all ID fields
@@ -3231,6 +3346,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Document validation rules
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] API rejects negative quantity with clear error
@@ -3251,12 +3367,14 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Affected Lines:** 697, 706, 887, 898, 908, 1236, 1244, 1330
 
 **Deliverables:**
+
 - [ ] Add `with: { client: true, lineItems: true }` to each query
 - [ ] Verify N+1 queries eliminated
 - [ ] Add query performance logging
 - [ ] Update TypeScript types for included relations
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] Query log shows single query with joins
 - [ ] Order detail page loads without additional requests
@@ -3275,6 +3393,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 14 raw SQL queries bypass ORM type safety.
 
 **Deliverables:**
+
 - [ ] Document each raw SQL query's purpose
 - [ ] Convert safe queries to Drizzle ORM
 - [ ] For necessary raw SQL, add type wrappers
@@ -3282,6 +3401,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Create review checklist for raw SQL PRs
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm lint passes (new rule)
 - [ ] Raw SQL count reduced by at least 50%
@@ -3302,6 +3422,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Target Tables:** orders, invoices, payments, products, brands, strains
 
 **Deliverables:**
+
 - [ ] Add `deletedAt` column to 6 critical tables
 - [ ] Update all delete operations to soft delete
 - [ ] Add index on deletedAt for each table
@@ -3309,6 +3430,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add restore functionality for each entity
 
 **Verification:**
+
 - [ ] Migration completes successfully
 - [ ] pnpm test:schema passes
 - [ ] Manual: Delete order, verify still in DB with deletedAt set
@@ -3327,11 +3449,13 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 8 different decimal precision formats cause aggregation inconsistencies.
 
 **Target State:**
+
 - Monetary amounts: (15,2)
 - Quantities: (15,4)
 - Percentages: (5,4)
 
 **Deliverables:**
+
 - [ ] Document current precision per field
 - [ ] Create migration plan with data preservation
 - [ ] Migrate in phases: staging → production
@@ -3339,6 +3463,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add schema validation test for precision standards
 
 **Verification:**
+
 - [ ] No data truncation during migration
 - [ ] All precision tests pass
 - [ ] Aggregations across tables produce correct results
@@ -3357,6 +3482,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 79 files still reference deprecated vendors table.
 
 **Deliverables:**
+
 - [ ] Inventory all vendorId references
 - [ ] Create migration plan per module
 - [ ] Replace with clients.isSeller queries
@@ -3365,6 +3491,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Remove vendors table from schema (final step)
 
 **Verification:**
+
 - [ ] `grep -r "vendorId" server/` returns 0 results
 - [ ] `grep -r "vendors" server/` returns 0 results (except deprecated comments)
 - [ ] All supplier queries use clients table
@@ -3383,12 +3510,14 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 6 localStorage operations lack try/catch - fail in private browsing.
 
 **Deliverables:**
+
 - [ ] Create `client/src/utils/storage.ts` with safe wrappers
 - [ ] Replace all direct localStorage calls
 - [ ] Fallback to sessionStorage then memory
 - [ ] Add tests for storage unavailable scenario
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] Manual: Test in Safari private mode - no errors
 
@@ -3406,16 +3535,19 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 6 useQuery calls lack `enabled` check - unnecessary requests.
 
 **Affected Lines:**
+
 - Inventory.tsx: 349, 389, 469
 - Orders.tsx: 141, 153, 159
 
 **Deliverables:**
+
 - [ ] Add `enabled: !!dependencyValue` to each query
 - [ ] Prevent queries until dependencies ready
 - [ ] Add loading states for dependent queries
 - [ ] Reduce unnecessary network traffic
 
 **Verification:**
+
 - [ ] Network tab shows no wasted requests
 - [ ] Pages load without flash of loading states
 
@@ -3433,15 +3565,16 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 6 .map() calls on potentially undefined arrays can crash.
 
 **Deliverables:**
+
 - [ ] Add optional chaining to all 6 map calls
 - [ ] Add fallback empty arrays
 - [ ] Add TypeScript strict null checks
 - [ ] Test with empty/undefined data states
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] Manual: Test pages with no data - no crashes
-
 
 # 🚀 BETA MILESTONE
 
