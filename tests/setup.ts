@@ -1,5 +1,6 @@
 import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import type { ReactNode } from "react";
 import "@testing-library/jest-dom/vitest";
 
 // Mock ResizeObserver for jsdom (browser global not available in test environment)
@@ -62,6 +63,18 @@ global.console = {
   error: vi.fn(),
   warn: vi.fn(),
 };
+
+// TEST-INFRA-03, BUG-109: Mock Radix UI Presence to prevent infinite loops in jsdom
+// This is a known issue with Radix UI + jsdom: https://github.com/radix-ui/primitives/issues/1822
+vi.mock("@radix-ui/react-presence", () => ({
+  Presence: ({
+    children,
+    present,
+  }: {
+    children: ReactNode;
+    present?: boolean;
+  }) => (present ? children : null),
+}));
 
 // Mock localStorage for browser-dependent tests
 const localStorageMock = (() => {

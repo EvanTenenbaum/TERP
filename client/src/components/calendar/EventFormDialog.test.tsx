@@ -77,17 +77,6 @@ vi.mock("sonner", () => ({
   },
 }));
 
-// BUG-109: Mock Radix presence to prevent infinite loop in tests
-vi.mock("@radix-ui/react-presence", () => ({
-  Presence: ({
-    children,
-    present,
-  }: {
-    children: React.ReactNode;
-    present?: boolean;
-  }) => (present ? children : null),
-}));
-
 vi.mock("@/components/ui/input", () => {
   const React = require("react");
   return {
