@@ -32,11 +32,11 @@ services:
     # Server startup takes ~55s including migrations, so 60s delay is safe with margin
     health_check:
       http_path: /health/live
-      initial_delay_seconds: 60 # Reduced from 180s - server ready in ~55s
+      initial_delay_seconds: 120 # Reduced from 180s - server ready in ~55s
       period_seconds: 15 # Reduced probe frequency to minimize noise
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 5
+      failure_threshold: 8
 
     # HTTP configuration
     http_port: 3000

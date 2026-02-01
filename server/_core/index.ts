@@ -12,6 +12,13 @@ process.on("unhandledRejection", (reason, promise) => {
   process.exit(1);
 });
 
+// === Startup timing instrumentation ===
+const __startupTs = Date.now();
+function logStartupPhase(phase: string) {
+  const elapsed = ((Date.now() - __startupTs) / 1000).toFixed(1);
+  console.info(\`[STARTUP +\${elapsed}s] \${phase}\`);
+}
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
@@ -107,7 +114,8 @@ async function startServer() {
 
   // This ensures the database schema matches what the code expects
   // Add retry mechanism for auto-migrations (reduced delays for faster deployment)
-  const runMigrationsWithRetry = async (maxRetries = 2) => {
+  logStartupPhase("Beginning migrations");
+    const runMigrationsWithRetry = async (maxRetries = 2) => {
     for (let i = 0; i < maxRetries; i++) {
       try {
         logger.info(
@@ -136,6 +144,7 @@ async function startServer() {
 
   try {
     await runMigrationsWithRetry();
+    logStartupPhase("Migrations complete");
   } catch (error) {
     logger.warn({
       msg: "Auto-migration failed after all retries (non-fatal) - app may still work",
@@ -185,6 +194,7 @@ async function startServer() {
       );
       await seedAllDefaults();
       logger.info("✅ Default data seeding completed");
+      logStartupPhase("Seeds complete");
     }
 
     // Create initial admin user if environment variables are provided
@@ -473,9 +483,11 @@ async function startServer() {
       // Continue - graceful shutdown is nice-to-have
     }
 
+    logStartupPhase("Express setup complete, starting listener");
     logger.info(`✅ All setup complete, starting server on port ${port}...`);
 
     server.listen(port, "0.0.0.0", async () => {
+      logStartupPhase("Server listening - health checks now available");
       logger.info(`Server running on http://0.0.0.0:${port}/`);
       logger.info(`Health check available at http://localhost:${port}/health`);
 
