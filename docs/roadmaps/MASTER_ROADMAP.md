@@ -965,6 +965,7 @@ async function createPayable(input: PayableInput, actorId: number) {
 | QA-INFRA-003 | Document or Remove getLowStock Dead Code          | LOW      | ready       | 4h  | Code hygiene                |
 | QA-INFRA-004 | Re-enable Data Seeding (Post Schema Drift Fix)    | MEDIUM   | ready       | 8h  | Seeding disabled workaround |
 | QA-INFRA-005 | Remove safeProductSelect After strainId Migration | LOW      | blocked     | 2h  | Tech debt cleanup           |
+| QA-INFRA-006 | Inventory Surfacing E2E Plan                      | MEDIUM   | ✅ COMPLETE | 4h  | Golden flow coverage        |
 
 **QA-INFRA-001: Create Database Integration Test Suite**
 
@@ -1013,6 +1014,20 @@ async function createPayable(input: PayableInput, actorId: number) {
   3. Update queries to use actual strainId column
 - **Reference:** `docs/audits/PR-351-QA-REVIEW.md`
 - **Tech Debt Created By:** PR #352
+
+**QA-INFRA-006: Inventory Surfacing E2E Plan**
+
+- **Status:** complete
+- **Completed:** 2026-01-31
+- **Key Commits:** `be0888a`
+- **Actual Time:** 1h
+- **Problem:** Inventory data surfaces in multiple UI workflows but lacks a single, end-to-end verification plan tying those surfaces to shared inventory sources and cache consistency.
+- **Solution:** Create a consolidated E2E plan covering all inventory surfacing locations (dashboard, inventory module, sales sheets, orders, analytics, spreadsheet view, and VIP portal).
+- **Deliverables:**
+  - [ ] Documented test matrix with data setup, API assertions, and UI assertions
+  - [ ] Identification of minimal required code touches (tests/fixtures only unless inventory data service fixes are needed)
+  - [ ] Risk register and rollback plan for inventory visibility regressions
+- **Location:** `docs/plans/inventory-surfacing-e2e-plan.md`
 
 ---
 
