@@ -95,4 +95,4 @@ EXPOSE 3000
 #
 # NOTE: If upgrading to basic-s or larger, update NODE_MEMORY_LIMIT env var
 # in .do/app.yaml and increase --max-old-space-size accordingly.
-CMD ["node", "--expose-gc", "--max-old-space-size=384", "dist/index.js"]
+CMD ["node", "--expose-gc", "--max-old-space-size=1536", "dist/index.js"]
