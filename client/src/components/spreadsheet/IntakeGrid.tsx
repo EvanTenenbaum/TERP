@@ -448,7 +448,12 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
             </span>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleAddRow}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddRow}
+              disabled={vendorsLoading || locationsLoading || strainsLoading}
+            >
               <Plus className="mr-1 h-4 w-4" />
               Add Row
             </Button>
@@ -465,28 +470,30 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
               onClick={handleSubmitIntake}
               disabled={
                 isSubmitting ||
+                vendorsLoading ||
+                locationsLoading ||
+                strainsLoading ||
                 rows.filter(r => r.status === "pending").length === 0
               }
             >
-              <Send className="mr-1 h-4 w-4" />
-              {isSubmitting ? "Submitting..." : "Submit Intake"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-1 h-4 w-4" />
+                  Submit Intake
+                </>
+              )}
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {/* QA-FIX: Add loading/error state handling for reference data */}
-        {(vendorsLoading || locationsLoading || strainsLoading) && (
-          <div className="flex items-center justify-center h-[600px]">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Loading reference data...
-              </p>
-            </div>
-          </div>
-        )}
-        {(vendorsError || locationsError || strainsError) && !(vendorsLoading || locationsLoading || strainsLoading) && (
+        {/* BUG-112 FIX: Always render grid, show loading/error as inline message */}
+        {(vendorsError || locationsError || strainsError) && (
           <div className="mb-3 p-4 text-sm text-destructive bg-destructive/10 rounded-md">
             <p className="font-medium">Unable to load reference data</p>
             <p className="text-muted-foreground mt-1">
@@ -507,7 +514,12 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
             </Button>
           </div>
         )}
-        {!vendorsLoading && !locationsLoading && !strainsLoading && !vendorsError && !locationsError && !strainsError && (
+        {(vendorsLoading || locationsLoading || strainsLoading) && (
+          <div className="mb-3 p-3 text-sm bg-muted/50 rounded-md flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading reference data (vendors, locations, strains)...</span>
+          </div>
+        )}
         <div className="ag-theme-alpine h-[600px] w-full">
           <AgGridReact<IntakeGridRow>
             rowData={rows}
@@ -522,7 +534,6 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
             }}
           />
         </div>
-        )}
       </CardContent>
     </Card>
   );

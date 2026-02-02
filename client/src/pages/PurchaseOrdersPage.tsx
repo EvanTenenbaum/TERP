@@ -75,7 +75,9 @@ export default function PurchaseOrdersPage() {
       paymentTerms: null, // Payment terms are in supplier_profile, fetched separately if needed
     }));
   }, [suppliersData]);
-  const { data: productsData } = trpc.inventory.list.useQuery({});
+
+  // BUG-114 FIX: Use product catalogue instead of inventory batches for PO creation
+  const { data: productsData } = trpc.productCatalogue.list.useQuery({ limit: 500 });
   const products = productsData?.items ?? [];
 
   // Mutations
@@ -511,12 +513,12 @@ export default function PurchaseOrdersPage() {
                         <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map(item => (
+                        {products.map(product => (
                           <SelectItem
-                            key={item.batch?.id || item.product?.id}
-                            value={(item.batch?.id || item.product?.id || 0).toString()} // safe: product ID fallback, not user ID
+                            key={product.id}
+                            value={product.id.toString()}
                           >
-                            {item.product?.nameCanonical || item.batch?.sku || "Unknown"}
+                            {product.nameCanonical}
                           </SelectItem>
                         ))}
                       </SelectContent>

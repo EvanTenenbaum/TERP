@@ -17,7 +17,7 @@
 
 import bcrypt from "bcrypt";
 import { drizzle } from "drizzle-orm/mysql2";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import mysql from "mysql2/promise";
 import * as schema from "../../../drizzle/schema";
 import { roles, userRoles } from "../../../drizzle/schema-rbac";
@@ -109,6 +109,7 @@ const QA_ACCOUNTS: QaAccount[] = [
 
 /**
  * Seed QA accounts with RBAC role assignments
+ * BUG-111 FIX: Now assigns roles to existing users if missing
  */
 async function seedQaAccounts(): Promise<void> {
   console.info("=".repeat(80));
@@ -145,6 +146,7 @@ async function seedQaAccounts(): Promise<void> {
     let created = 0;
     let skipped = 0;
     let roleAssigned = 0;
+    let roleUpdated = 0;
 
     for (const account of QA_ACCOUNTS) {
       process.stdout.write(`  ${account.email.padEnd(35)}`);
@@ -156,9 +158,39 @@ async function seedQaAccounts(): Promise<void> {
         .where(eq(schema.users.email, account.email))
         .limit(1);
 
+      let openId: string;
+
       if (existing.length > 0) {
-        console.info("[SKIP] Already exists");
+        // User exists - use existing openId
+        openId = existing[0].openId;
         skipped++;
+
+        // BUG-111 FIX: Check if user already has the RBAC role assigned
+        const rbacRole = allRoles.find(r => r.name === account.rbacRoleName);
+
+        if (rbacRole) {
+          // Check if role is already assigned
+          const existingRoleAssignment = await db
+            .select()
+            .from(userRoles)
+            .where(and(eq(userRoles.userId, openId), eq(userRoles.roleId, rbacRole.id)))
+            .limit(1);
+
+          if (existingRoleAssignment.length === 0) {
+            // Role not assigned - assign it now
+            await db.insert(userRoles).values({
+              userId: openId,
+              roleId: rbacRole.id,
+              assignedBy: "qa-seeder",
+            });
+            console.info(`[UPDATED] Assigned ${account.rbacRoleName} to existing user`);
+            roleUpdated++;
+          } else {
+            console.info(`[SKIP] Already has ${account.rbacRoleName} role`);
+          }
+        } else {
+          console.info(`[SKIP] (RBAC role "${account.rbacRoleName}" not found)`);
+        }
         continue;
       }
 
@@ -166,7 +198,7 @@ async function seedQaAccounts(): Promise<void> {
       const passwordHash = await bcrypt.hash(QA_PASSWORD, 10);
 
       // Create user with unique openId
-      const openId = `qa-${account.rbacRoleName.toLowerCase().replace(/[\s/]+/g, "-")}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      openId = `qa-${account.rbacRoleName.toLowerCase().replace(/[\s/]+/g, "-")}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
       await db.insert(schema.users).values({
         openId,
@@ -199,9 +231,10 @@ async function seedQaAccounts(): Promise<void> {
     console.info("=".repeat(80));
     console.info("SUMMARY");
     console.info("=".repeat(80));
-    console.info(`  Created:       ${created}`);
-    console.info(`  Skipped:       ${skipped}`);
-    console.info(`  Role Assigned: ${roleAssigned}`);
+    console.info(`  Created:         ${created}`);
+    console.info(`  Skipped:         ${skipped}`);
+    console.info(`  Roles Assigned:  ${roleAssigned} (new users)`);
+    console.info(`  Roles Updated:   ${roleUpdated} (existing users)`);
     console.info("");
 
     // Print account table

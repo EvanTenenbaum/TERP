@@ -407,12 +407,13 @@ export function PurchaseOrdersWorkSurface() {
     }));
   }, [suppliersRawData]);
 
-  const { data: productsData } = trpc.inventory.list.useQuery({});
+  // BUG-114 FIX: Use product catalogue instead of inventory batches for PO creation
+  const { data: productsData } = trpc.productCatalogue.list.useQuery({ limit: 500 });
   const products = useMemo(() => {
-    const items = (productsData?.items ?? []) as Array<{ batch?: { id?: number; sku?: string }; product?: { id?: number; nameCanonical?: string } | null }>;
-    return items.map((item) => ({
-      id: item.batch?.id || item.product?.id || 0, // safe: product ID fallback, not user ID
-      name: item.product?.nameCanonical || item.batch?.sku || "Unknown",
+    const items = productsData?.items ?? [];
+    return items.map((product: { id: number; nameCanonical: string }) => ({
+      id: product.id,
+      name: product.nameCanonical,
     }));
   }, [productsData]);
 
