@@ -29,46 +29,60 @@ export async function runAutoMigrations() {
   }
 
 
-    // === FAST PATH: Schema fingerprint check ===
+    // === FAST PATH: Schema fingerprint check with DB warmup ===
     // Check 7 canary tables/columns representing latest schema state.
     // If all present, skip all 80 sequential migration operations.
-    // Reduces normal startup from ~80 DB calls to 1 check query.
-    try {
-      const [fpResult] = await db.execute(sql`
-        SELECT COUNT(*) as cnt FROM (
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
-          UNION ALL
-          SELECT 1 FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_needs' AND COLUMN_NAME = 'strain_type'
-          UNION ALL
-          SELECT 1 FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_name'
-          UNION ALL
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
-          UNION ALL
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
-          UNION ALL
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
-          UNION ALL
-          SELECT 1 FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lots' AND COLUMN_NAME = 'supplier_client_id'
-        ) AS checks
-      `);
-      const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
-      const count = Number(row?.cnt ?? 0);
-      if (count === 7) {
-        const fpDuration = Date.now() - startTime;
-        console.info(`✅ Schema fingerprint OK (7/7 canary checks passed) - skipping migrations (${fpDuration}ms)`);
-        migrationRun = true;
-        return;
+    // Retries up to 3 times with backoff to handle cold DB connections.
+    for (let fpAttempt = 1; fpAttempt <= 3; fpAttempt++) {
+      try {
+        // Warm up the DB connection with a simple query first
+        if (fpAttempt === 1) {
+          await db.execute(sql`SELECT 1`);
+        }
+        const [fpResult] = await db.execute(sql`
+          SELECT COUNT(*) as cnt FROM (
+            SELECT 1 FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
+            UNION ALL
+            SELECT 1 FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_needs' AND COLUMN_NAME = 'strain_type'
+            UNION ALL
+            SELECT 1 FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_name'
+            UNION ALL
+            SELECT 1 FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
+            UNION ALL
+            SELECT 1 FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
+            UNION ALL
+            SELECT 1 FROM information_schema.TABLES
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
+            UNION ALL
+            SELECT 1 FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lots' AND COLUMN_NAME = 'supplier_client_id'
+          ) AS checks
+        `);
+        const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
+        const count = Number(row?.cnt ?? 0);
+        if (count === 7) {
+          const fpDuration = Date.now() - startTime;
+          console.info(`✅ Schema fingerprint OK (7/7 canary checks passed) - skipping migrations (${fpDuration}ms)`);
+          migrationRun = true;
+          return;
+        }
+        console.info(`  ℹ️  Schema fingerprint: ${count}/7 canary checks passed - running full migrations`);
+        break; // Query succeeded but schema incomplete - run full migrations
+      } catch (fpError) {
+        const fpMsg = fpError instanceof Error ? fpError.message : String(fpError);
+        if (fpAttempt < 3) {
+          const delay = fpAttempt * 3000; // 3s, 6s backoff
+          console.info(`  ℹ️  Schema fingerprint attempt ${fpAttempt}/3 failed (${fpMsg}) - retrying in ${delay/1000}s`);
+          await new Promise(r => setTimeout(r, delay));
+        } else {
+          console.info(`  ℹ️  Schema fingerprint check failed after 3 attempts - running full migrations: ${fpMsg}`);
+        }
       }
-      console.info(`  ℹ️  Schema fingerprint: ${count}/7 canary checks passed - running full migrations`);
-    } catch (fpError) {
-      console.info("  ℹ️  Schema fingerprint check failed - running full migrations:", fpError instanceof Error ? fpError.message : String(fpError));
     }
 
   try {

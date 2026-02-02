@@ -114,6 +114,7 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
     uri: cleanDatabaseUrl,
     ...poolConfig,
     ...sslConfig,
+    connectTimeout: 10000, // 10s connect timeout - fail fast rather than hang indefinitely
     // FIX-006: TiDB ENUM compatibility fix
     // TiDB returns ENUM columns with type code 0xf7 (247) in binary protocol
     // instead of STRING type with ENUM flag like MySQL does.
