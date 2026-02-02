@@ -38,7 +38,8 @@ describe("financialMath", () => {
     });
 
     it("should round to 2 decimal places", () => {
-      expect(financialMath.add(10.555, 20.444)).toBe("30.00");
+      // 10.555 + 20.444 = 30.999, rounds to 31.00 with ROUND_HALF_UP
+      expect(financialMath.add(10.555, 20.444)).toBe("31.00");
     });
   });
 
@@ -70,7 +71,8 @@ describe("financialMath", () => {
     });
 
     it("should round to 2 decimal places", () => {
-      expect(financialMath.subtract(50.999, 20.001)).toBe("30.00");
+      // 50.999 - 20.001 = 30.998, rounds to 31.00 with ROUND_HALF_UP
+      expect(financialMath.subtract(50.999, 20.001)).toBe("31.00");
     });
   });
 
@@ -284,7 +286,7 @@ describe("financialMath", () => {
 
     it("should calculate new payment balance correctly", () => {
       // Scenario: currentPaid + effectiveAmount
-      const currentPaid = 150.50;
+      const currentPaid = 150.5;
       const effectiveAmount = 75.25;
       const newPaid = financialMath.add(currentPaid, effectiveAmount);
       expect(newPaid).toBe("225.75");
@@ -303,7 +305,7 @@ describe("financialMath", () => {
       // Each item: $0.10 * 1 quantity
       let total = "0";
       for (let i = 0; i < 100; i++) {
-        const lineTotal = financialMath.multiply(0.10, 1);
+        const lineTotal = financialMath.multiply(0.1, 1);
         total = financialMath.add(total, lineTotal);
       }
       expect(total).toBe("10.00");
@@ -311,10 +313,10 @@ describe("financialMath", () => {
       // Contrast with JavaScript float arithmetic
       let floatTotal = 0;
       for (let i = 0; i < 100; i++) {
-        floatTotal += 0.10 * 1;
+        floatTotal += 0.1 * 1;
       }
       // This would likely be 9.999999999999998 or similar
-      expect(floatTotal).not.toBe(10.00); // Demonstrates the problem
+      expect(floatTotal).not.toBe(10.0); // Demonstrates the problem
     });
 
     it("should calculate percentage discount correctly", () => {
@@ -331,7 +333,7 @@ describe("financialMath", () => {
     it("should calculate margin dollar correctly", () => {
       // Scenario: pricePerUnit - cogsPerUnit
       const pricePerUnit = 14.29;
-      const cogsPerUnit = 10.00;
+      const cogsPerUnit = 10.0;
       const marginDollar = financialMath.subtract(pricePerUnit, cogsPerUnit);
       expect(marginDollar).toBe("4.29");
     });

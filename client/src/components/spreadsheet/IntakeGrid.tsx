@@ -11,7 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { IntakeGridRow, IntakeGridSummary } from "@/types/spreadsheet";
-import { Plus, Send, Trash2, AlertCircle, CheckCircle2, Loader2, RefreshCw, Package } from "lucide-react";
+import {
+  Plus,
+  Send,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
@@ -111,7 +119,12 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
 
   // Fetch vendors for autocomplete
   // QA-FIX: Added isLoading and error states for proper state handling
-  const { data: vendorsData, isLoading: vendorsLoading, error: vendorsError, refetch: refetchVendors } = trpc.vendors.getAll.useQuery();
+  const {
+    data: vendorsData,
+    isLoading: vendorsLoading,
+    error: vendorsError,
+    refetch: refetchVendors,
+  } = trpc.vendors.getAll.useQuery();
   const vendors: VendorItem[] = useMemo(() => {
     if (!vendorsData || !vendorsData.success) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,7 +134,12 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
 
   // Fetch locations for dropdown
   // QA-FIX: Added isLoading and error states for proper state handling
-  const { data: locationsData, isLoading: locationsLoading, error: locationsError, refetch: refetchLocations } = trpc.locations.getAll.useQuery();
+  const {
+    data: locationsData,
+    isLoading: locationsLoading,
+    error: locationsError,
+    refetch: refetchLocations,
+  } = trpc.locations.getAll.useQuery();
   const locations: LocationItem[] = useMemo(
     () => (Array.isArray(locationsData) ? locationsData : []),
     [locationsData]
@@ -129,7 +147,12 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
 
   // Fetch strains for item autocomplete
   // QA-FIX: Added isLoading and error states for proper state handling
-  const { data: strainsData, isLoading: strainsLoading, error: strainsError, refetch: refetchStrains } = trpc.strains.list.useQuery({});
+  const {
+    data: strainsData,
+    isLoading: strainsLoading,
+    error: strainsError,
+    refetch: refetchStrains,
+  } = trpc.strains.list.useQuery({});
   const strains: StrainItem[] = useMemo(
     () => strainsData?.items ?? [],
     [strainsData?.items]
@@ -497,7 +520,10 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
           <div className="mb-3 p-4 text-sm text-destructive bg-destructive/10 rounded-md">
             <p className="font-medium">Unable to load reference data</p>
             <p className="text-muted-foreground mt-1">
-              {vendorsError?.message || locationsError?.message || strainsError?.message || "Please try again."}
+              {vendorsError?.message ||
+                locationsError?.message ||
+                strainsError?.message ||
+                "Please try again."}
             </p>
             <Button
               variant="outline"
