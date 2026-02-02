@@ -412,6 +412,12 @@ This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed durin
 - `89e18f5` - fix(SCHEMA-016): remove overly broad strainId pattern from isSchemaError
 - `01e463c` - fix(SCHEMA-016): add graceful degradation and admin migration for strainId
 
+**Detailed Progress (from PR #356):**
+
+> - **Files Fixed:** strainService.ts (4 functions with isSchemaError guards), inventoryIntakeService.ts (strainId omitted from INSERT), adminQuickFix.ts (addStrainIdToProducts endpoint), adminSchemaPush.ts (strainId in batch push)
+> - **Remaining Work:** DB admin must run `ALTER TABLE products ADD COLUMN strainId INT NULL` on production
+> - **Full Details:** `docs/roadmaps/SCHEMA-016-execution-plan.md`
+
 **Root Cause:** The `products.strainId` column is defined in Drizzle ORM schema (`drizzle/schema.ts`) but **DOES NOT EXIST** in the production MySQL database. This causes `Unknown column 'products.strainId'` SQL errors in 27+ files at runtime.
 
 **Why Previous Fixes Failed:**
