@@ -29,6 +29,7 @@ import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
 import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
+import { captureException } from "../_core/monitoring";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -296,122 +297,141 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
-      // Use transaction for atomicity
-      const txResult = await db.transaction(async tx => {
-        // Generate payment number
-        const paymentNumber = await generatePaymentNumber();
+      const txResult = await (async () => {
+        try {
+          return await db.transaction(async tx => {
+            // Generate payment number
+            const paymentNumber = await generatePaymentNumber();
 
-        // Create payment record
-        // TERP-0016: Use effectiveAmount which is capped at amountDue
-        const [payment] = await tx
-          .insert(payments)
-          .values({
-            paymentNumber,
-            paymentType: "RECEIVED",
-            invoiceId: input.invoiceId,
-            customerId: invoice.customerId,
-            paymentDate: input.paymentDate
-              ? new Date(input.paymentDate)
-              : new Date(),
-            amount: effectiveAmount.toFixed(2),
-            paymentMethod: input.paymentMethod,
-            referenceNumber: input.referenceNumber,
-            notes: input.notes,
-            createdBy: userId,
-          })
-          .$returningId();
+            // Create payment record
+            // TERP-0016: Use effectiveAmount which is capped at amountDue
+            const [payment] = await tx
+              .insert(payments)
+              .values({
+                paymentNumber,
+                paymentType: "RECEIVED",
+                invoiceId: input.invoiceId,
+                customerId: invoice.customerId,
+                paymentDate: input.paymentDate
+                  ? new Date(input.paymentDate)
+                  : new Date(),
+                amount: effectiveAmount.toFixed(2),
+                paymentMethod: input.paymentMethod,
+                referenceNumber: input.referenceNumber,
+                notes: input.notes,
+                createdBy: userId,
+              })
+              .$returningId();
 
-        const paymentId = payment.id;
+            const paymentId = payment.id;
 
-        // Update invoice amounts
-        // TERP-0016: Use effectiveAmount for calculations
-        const currentPaid = parseFloat(invoice.amountPaid || "0");
-        const newPaid = currentPaid + effectiveAmount;
-        const totalAmount = parseFloat(invoice.totalAmount || "0");
-        const newDue = Math.max(0, totalAmount - newPaid);
+            // Update invoice amounts
+            // TERP-0016: Use effectiveAmount for calculations
+            const currentPaid = parseFloat(invoice.amountPaid || "0");
+            const newPaid = currentPaid + effectiveAmount;
+            const totalAmount = parseFloat(invoice.totalAmount || "0");
+            const newDue = Math.max(0, totalAmount - newPaid);
 
-        // Determine new status
-        let newStatus: "PARTIAL" | "PAID";
-        if (newDue <= 0.01) {
-          // Allow for rounding
-          newStatus = "PAID";
-        } else {
-          newStatus = "PARTIAL";
+            // Determine new status
+            let newStatus: "PARTIAL" | "PAID";
+            if (newDue <= 0.01) {
+              // Allow for rounding
+              newStatus = "PAID";
+            } else {
+              newStatus = "PARTIAL";
+            }
+
+            await tx
+              .update(invoices)
+              .set({
+                amountPaid: newPaid.toFixed(2),
+                amountDue: newDue.toFixed(2),
+                status: newStatus,
+              })
+              .where(eq(invoices.id, input.invoiceId));
+
+            // Create GL entries (Cash debit, AR credit)
+            const entryNumber = `PMT-${paymentId}`;
+
+            // Debit Cash
+            // TERP-0016: Use effectiveAmount for GL entries
+            await tx.insert(ledgerEntries).values({
+              entryNumber: `${entryNumber}-DR`,
+              entryDate: new Date(),
+              accountId: cashAccountId,
+              debit: effectiveAmount.toFixed(2),
+              credit: "0.00",
+              description: `Payment received - Invoice #${invoice.invoiceNumber}`,
+              referenceType: "PAYMENT",
+              referenceId: paymentId,
+              fiscalPeriodId,
+              isManual: false,
+              createdBy: userId,
+            });
+
+            // Credit AR
+            await tx.insert(ledgerEntries).values({
+              entryNumber: `${entryNumber}-CR`,
+              entryDate: new Date(),
+              accountId: arAccountId,
+              debit: "0.00",
+              credit: effectiveAmount.toFixed(2),
+              description: `Payment received - Invoice #${invoice.invoiceNumber}`,
+              referenceType: "PAYMENT",
+              referenceId: paymentId,
+              fiscalPeriodId,
+              isManual: false,
+              createdBy: userId,
+            });
+
+            // ARCH-002: Update client totalOwed within transaction for atomicity
+            // Note: This is kept for transactional consistency.
+            // After the transaction, we sync from invoices to ensure accuracy.
+            await tx
+              .update(clients)
+              .set({
+                totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${effectiveAmount}`,
+              })
+              .where(eq(clients.id, invoice.customerId));
+
+            logger.info({
+              msg: "[Payments] Payment recorded successfully",
+              paymentId,
+              paymentNumber,
+              invoiceId: input.invoiceId,
+              amount: effectiveAmount,
+              newInvoiceStatus: newStatus,
+              newAmountDue: newDue,
+            });
+
+            return {
+              paymentId,
+              paymentNumber,
+              invoiceId: input.invoiceId,
+              customerId: invoice.customerId,
+              amount: effectiveAmount,
+              invoiceStatus: newStatus,
+              amountDue: newDue,
+            };
+          });
+        } catch (error) {
+          captureException(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              operation: "payment_record",
+              invoiceId: input.invoiceId,
+              amount: input.amount,
+              paymentMethod: input.paymentMethod,
+              userId,
+            }
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Payment operation failed - transaction rolled back",
+            cause: error,
+          });
         }
-
-        await tx
-          .update(invoices)
-          .set({
-            amountPaid: newPaid.toFixed(2),
-            amountDue: newDue.toFixed(2),
-            status: newStatus,
-          })
-          .where(eq(invoices.id, input.invoiceId));
-
-        // Create GL entries (Cash debit, AR credit)
-        const entryNumber = `PMT-${paymentId}`;
-
-        // Debit Cash
-        // TERP-0016: Use effectiveAmount for GL entries
-        await tx.insert(ledgerEntries).values({
-          entryNumber: `${entryNumber}-DR`,
-          entryDate: new Date(),
-          accountId: cashAccountId,
-          debit: effectiveAmount.toFixed(2),
-          credit: "0.00",
-          description: `Payment received - Invoice #${invoice.invoiceNumber}`,
-          referenceType: "PAYMENT",
-          referenceId: paymentId,
-          fiscalPeriodId,
-          isManual: false,
-          createdBy: userId,
-        });
-
-        // Credit AR
-        await tx.insert(ledgerEntries).values({
-          entryNumber: `${entryNumber}-CR`,
-          entryDate: new Date(),
-          accountId: arAccountId,
-          debit: "0.00",
-          credit: effectiveAmount.toFixed(2),
-          description: `Payment received - Invoice #${invoice.invoiceNumber}`,
-          referenceType: "PAYMENT",
-          referenceId: paymentId,
-          fiscalPeriodId,
-          isManual: false,
-          createdBy: userId,
-        });
-
-        // ARCH-002: Update client totalOwed within transaction for atomicity
-        // Note: This is kept for transactional consistency.
-        // After the transaction, we sync from invoices to ensure accuracy.
-        await tx
-          .update(clients)
-          .set({
-            totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${effectiveAmount}`,
-          })
-          .where(eq(clients.id, invoice.customerId));
-
-        logger.info({
-          msg: "[Payments] Payment recorded successfully",
-          paymentId,
-          paymentNumber,
-          invoiceId: input.invoiceId,
-          amount: effectiveAmount,
-          newInvoiceStatus: newStatus,
-          newAmountDue: newDue,
-        });
-
-        return {
-          paymentId,
-          paymentNumber,
-          invoiceId: input.invoiceId,
-          customerId: invoice.customerId,
-          amount: effectiveAmount,
-          invoiceStatus: newStatus,
-          amountDue: newDue,
-        };
-      });
+      })();
 
       // ARCH-002: Sync client balance after transaction to ensure consistency
       // This derives totalOwed from SUM(invoices.amountDue)
@@ -689,156 +709,178 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
-      const txResult = await db.transaction(async tx => {
-        // Generate payment number
-        const paymentNumber = await generatePaymentNumber();
+      const txResult = await (async () => {
+        try {
+          return await db.transaction(async tx => {
+            // Generate payment number
+            const paymentNumber = await generatePaymentNumber();
 
-        // Create main payment record
-        const [payment] = await tx
-          .insert(payments)
-          .values({
-            paymentNumber,
-            paymentType: "RECEIVED",
-            customerId: input.clientId,
-            paymentDate: new Date(),
-            amount: input.totalAmount.toFixed(2),
-            paymentMethod:
-              input.paymentMethod === "CRYPTO" ? "OTHER" : input.paymentMethod,
-            referenceNumber: input.referenceNumber,
-            notes: input.notes,
-            createdBy: userId,
-          })
-          .$returningId();
+            // Create main payment record
+            const [payment] = await tx
+              .insert(payments)
+              .values({
+                paymentNumber,
+                paymentType: "RECEIVED",
+                customerId: input.clientId,
+                paymentDate: new Date(),
+                amount: input.totalAmount.toFixed(2),
+                paymentMethod:
+                  input.paymentMethod === "CRYPTO"
+                    ? "OTHER"
+                    : input.paymentMethod,
+                referenceNumber: input.referenceNumber,
+                notes: input.notes,
+                createdBy: userId,
+              })
+              .$returningId();
 
-        const paymentId = payment.id;
+            const paymentId = payment.id;
 
-        // Process each invoice allocation
-        const invoiceAllocations: {
-          invoiceId: number;
-          amount: number;
-          newStatus: string;
-        }[] = [];
+            // Process each invoice allocation
+            const invoiceAllocations: {
+              invoiceId: number;
+              amount: number;
+              newStatus: string;
+            }[] = [];
 
-        for (const allocation of input.allocations) {
-          // Get invoice
-          const [invoice] = await tx
-            .select()
-            .from(invoices)
-            .where(eq(invoices.id, allocation.invoiceId))
-            .limit(1);
+            for (const allocation of input.allocations) {
+              // Get invoice
+              const [invoice] = await tx
+                .select()
+                .from(invoices)
+                .where(eq(invoices.id, allocation.invoiceId))
+                .limit(1);
 
-          if (!invoice) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: `Invoice ${allocation.invoiceId} not found`,
+              if (!invoice) {
+                throw new TRPCError({
+                  code: "NOT_FOUND",
+                  message: `Invoice ${allocation.invoiceId} not found`,
+                });
+              }
+
+              const amountDue = parseFloat(String(invoice.amountDue) || "0");
+              if (allocation.amount > amountDue + 0.01) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: `Allocation for invoice #${invoice.invoiceNumber} exceeds amount due`,
+                });
+              }
+
+              // Create invoice_payments record
+              await tx.insert(invoicePayments).values({
+                paymentId,
+                invoiceId: allocation.invoiceId,
+                allocatedAmount: allocation.amount.toFixed(2),
+                allocatedBy: userId,
+              });
+
+              // Update invoice amounts
+              const currentPaid = parseFloat(String(invoice.amountPaid) || "0");
+              const newPaid = currentPaid + allocation.amount;
+              const totalAmount = parseFloat(String(invoice.totalAmount) || "0");
+              const newDue = Math.max(0, totalAmount - newPaid);
+
+              let newStatus: string;
+              if (newDue <= 0.01) {
+                newStatus = "PAID";
+              } else if (newPaid > 0) {
+                newStatus = "PARTIAL";
+              } else {
+                newStatus = invoice.status;
+              }
+
+              await tx
+                .update(invoices)
+                .set({
+                  amountPaid: newPaid.toFixed(2),
+                  amountDue: newDue.toFixed(2),
+                  status: newStatus as "PAID" | "PARTIAL",
+                })
+                .where(eq(invoices.id, allocation.invoiceId));
+
+              invoiceAllocations.push({
+                invoiceId: allocation.invoiceId,
+                amount: allocation.amount,
+                newStatus,
+              });
+            }
+
+            // Create GL entries
+            const entryNumber = `PMT-${paymentId}`;
+
+            // Debit Cash
+            await tx.insert(ledgerEntries).values({
+              entryNumber: `${entryNumber}-DR`,
+              entryDate: new Date(),
+              accountId: cashAccountId,
+              debit: input.totalAmount.toFixed(2),
+              credit: "0.00",
+              description: `Multi-invoice payment - ${input.allocations.length} invoices`,
+              referenceType: "PAYMENT",
+              referenceId: paymentId,
+              fiscalPeriodId,
+              isManual: false,
+              createdBy: userId,
             });
-          }
 
-          const amountDue = parseFloat(String(invoice.amountDue) || "0");
-          if (allocation.amount > amountDue + 0.01) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Allocation for invoice #${invoice.invoiceNumber} exceeds amount due`,
+            // Credit AR
+            await tx.insert(ledgerEntries).values({
+              entryNumber: `${entryNumber}-CR`,
+              entryDate: new Date(),
+              accountId: arAccountId,
+              debit: "0.00",
+              credit: input.totalAmount.toFixed(2),
+              description: `Multi-invoice payment - ${input.allocations.length} invoices`,
+              referenceType: "PAYMENT",
+              referenceId: paymentId,
+              fiscalPeriodId,
+              isManual: false,
+              createdBy: userId,
             });
-          }
 
-          // Create invoice_payments record
-          await tx.insert(invoicePayments).values({
-            paymentId,
-            invoiceId: allocation.invoiceId,
-            allocatedAmount: allocation.amount.toFixed(2),
-            allocatedBy: userId,
+            // ARCH-002: Update client totalOwed within transaction for atomicity
+            await tx
+              .update(clients)
+              .set({
+                totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${input.totalAmount}`,
+              })
+              .where(eq(clients.id, input.clientId));
+
+            logger.info({
+              msg: "[Payments] Multi-invoice payment recorded",
+              paymentId,
+              paymentNumber,
+              clientId: input.clientId,
+              totalAmount: input.totalAmount,
+              invoiceCount: input.allocations.length,
+            });
+
+            return {
+              paymentId,
+              paymentNumber,
+              clientId: input.clientId,
+              totalAmount: input.totalAmount,
+              invoiceAllocations,
+            };
           });
-
-          // Update invoice amounts
-          const currentPaid = parseFloat(String(invoice.amountPaid) || "0");
-          const newPaid = currentPaid + allocation.amount;
-          const totalAmount = parseFloat(String(invoice.totalAmount) || "0");
-          const newDue = Math.max(0, totalAmount - newPaid);
-
-          let newStatus: string;
-          if (newDue <= 0.01) {
-            newStatus = "PAID";
-          } else if (newPaid > 0) {
-            newStatus = "PARTIAL";
-          } else {
-            newStatus = invoice.status;
-          }
-
-          await tx
-            .update(invoices)
-            .set({
-              amountPaid: newPaid.toFixed(2),
-              amountDue: newDue.toFixed(2),
-              status: newStatus as "PAID" | "PARTIAL",
-            })
-            .where(eq(invoices.id, allocation.invoiceId));
-
-          invoiceAllocations.push({
-            invoiceId: allocation.invoiceId,
-            amount: allocation.amount,
-            newStatus,
+        } catch (error) {
+          captureException(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              operation: "multi_invoice_payment",
+              clientId: input.clientId,
+              totalAmount: input.totalAmount,
+              allocationCount: input.allocations.length,
+              userId,
+            }
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Payment operation failed - transaction rolled back",
+            cause: error,
           });
         }
-
-        // Create GL entries
-        const entryNumber = `PMT-${paymentId}`;
-
-        // Debit Cash
-        await tx.insert(ledgerEntries).values({
-          entryNumber: `${entryNumber}-DR`,
-          entryDate: new Date(),
-          accountId: cashAccountId,
-          debit: input.totalAmount.toFixed(2),
-          credit: "0.00",
-          description: `Multi-invoice payment - ${input.allocations.length} invoices`,
-          referenceType: "PAYMENT",
-          referenceId: paymentId,
-          fiscalPeriodId,
-          isManual: false,
-          createdBy: userId,
-        });
-
-        // Credit AR
-        await tx.insert(ledgerEntries).values({
-          entryNumber: `${entryNumber}-CR`,
-          entryDate: new Date(),
-          accountId: arAccountId,
-          debit: "0.00",
-          credit: input.totalAmount.toFixed(2),
-          description: `Multi-invoice payment - ${input.allocations.length} invoices`,
-          referenceType: "PAYMENT",
-          referenceId: paymentId,
-          fiscalPeriodId,
-          isManual: false,
-          createdBy: userId,
-        });
-
-        // ARCH-002: Update client totalOwed within transaction for atomicity
-        await tx
-          .update(clients)
-          .set({
-            totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${input.totalAmount}`,
-          })
-          .where(eq(clients.id, input.clientId));
-
-        logger.info({
-          msg: "[Payments] Multi-invoice payment recorded",
-          paymentId,
-          paymentNumber,
-          clientId: input.clientId,
-          totalAmount: input.totalAmount,
-          invoiceCount: input.allocations.length,
-        });
-
-        return {
-          paymentId,
-          paymentNumber,
-          clientId: input.clientId,
-          totalAmount: input.totalAmount,
-          invoiceAllocations,
-        };
-      });
+      })();
 
       // ARCH-002: Sync client balance after transaction
       const { syncClientBalance } = await import(
@@ -889,152 +931,178 @@ export const paymentsRouter = router({
 
       const paymentAmount = parseFloat(payment.amount || "0");
 
-      const txResult = await db.transaction(async tx => {
-        // Soft delete the payment
-        await tx
-          .update(payments)
-          .set({
-            deletedAt: new Date(),
-            notes:
-              `${payment.notes || ""}\n[VOIDED]: ${input.reason} on ${new Date().toISOString()}`.trim(),
-          })
-          .where(eq(payments.id, input.id));
-
-        // FEAT-007: Check for multi-invoice allocations first
-        const allocations = await tx
-          .select({
-            invoiceId: invoicePayments.invoiceId,
-            allocatedAmount: invoicePayments.allocatedAmount,
-          })
-          .from(invoicePayments)
-          .where(eq(invoicePayments.paymentId, input.id));
-
-        if (allocations.length > 0) {
-          // Handle multi-invoice payment: reverse each allocation
-          for (const allocation of allocations) {
-            const allocatedAmount = parseFloat(
-              allocation.allocatedAmount || "0"
-            );
-
-            const [invoice] = await tx
-              .select()
-              .from(invoices)
-              .where(eq(invoices.id, allocation.invoiceId))
-              .limit(1);
-
-            if (invoice) {
-              const currentPaid = parseFloat(invoice.amountPaid || "0");
-              const newPaid = Math.max(0, currentPaid - allocatedAmount);
-              const totalAmount = parseFloat(invoice.totalAmount || "0");
-              const newDue = totalAmount - newPaid;
-
-              // Determine new status
-              const newStatus: "SENT" | "PARTIAL" =
-                newPaid > 0 ? "PARTIAL" : "SENT";
-
-              await tx
-                .update(invoices)
-                .set({
-                  amountPaid: newPaid.toFixed(2),
-                  amountDue: newDue.toFixed(2),
-                  status: newStatus,
-                })
-                .where(eq(invoices.id, allocation.invoiceId));
-            }
-          }
-
-          // Soft delete the invoice_payments records
-          await tx
-            .update(invoicePayments)
-            .set({ deletedAt: new Date() })
-            .where(eq(invoicePayments.paymentId, input.id));
-        } else if (payment.invoiceId) {
-          // Handle legacy single-invoice payment
-          const [invoice] = await tx
-            .select()
-            .from(invoices)
-            .where(eq(invoices.id, payment.invoiceId))
-            .limit(1);
-
-          if (invoice) {
-            const currentPaid = parseFloat(invoice.amountPaid || "0");
-            const newPaid = Math.max(0, currentPaid - paymentAmount);
-            const totalAmount = parseFloat(invoice.totalAmount || "0");
-            const newDue = totalAmount - newPaid;
-
-            // Determine new status
-            const newStatus: "SENT" | "PARTIAL" =
-              newPaid > 0 ? "PARTIAL" : "SENT";
-
+      const txResult = await (async () => {
+        try {
+          return await db.transaction(async tx => {
+            // Soft delete the payment
             await tx
-              .update(invoices)
+              .update(payments)
               .set({
-                amountPaid: newPaid.toFixed(2),
-                amountDue: newDue.toFixed(2),
-                status: newStatus,
+                deletedAt: new Date(),
+                notes:
+                  `${payment.notes || ""}\n[VOIDED]: ${input.reason} on ${new Date().toISOString()}`.trim(),
               })
-              .where(eq(invoices.id, payment.invoiceId));
-          }
+              .where(eq(payments.id, input.id));
+
+            // FEAT-007: Check for multi-invoice allocations first
+            const allocations = await tx
+              .select({
+                invoiceId: invoicePayments.invoiceId,
+                allocatedAmount: invoicePayments.allocatedAmount,
+              })
+              .from(invoicePayments)
+              .where(eq(invoicePayments.paymentId, input.id));
+
+            if (allocations.length > 0) {
+              // Handle multi-invoice payment: reverse each allocation
+              for (const allocation of allocations) {
+                const allocatedAmount = parseFloat(
+                  allocation.allocatedAmount || "0"
+                );
+
+                const [invoice] = await tx
+                  .select()
+                  .from(invoices)
+                  .where(eq(invoices.id, allocation.invoiceId))
+                  .limit(1);
+
+                if (invoice) {
+                  const currentPaid = parseFloat(invoice.amountPaid || "0");
+                  const newPaid = Math.max(0, currentPaid - allocatedAmount);
+                  const totalAmount = parseFloat(invoice.totalAmount || "0");
+                  const newDue = totalAmount - newPaid;
+
+                  // Determine new status
+                  const newStatus: "SENT" | "PARTIAL" =
+                    newPaid > 0 ? "PARTIAL" : "SENT";
+
+                  await tx
+                    .update(invoices)
+                    .set({
+                      amountPaid: newPaid.toFixed(2),
+                      amountDue: newDue.toFixed(2),
+                      status: newStatus,
+                    })
+                    .where(eq(invoices.id, allocation.invoiceId));
+                }
+              }
+
+              // Soft delete the invoice_payments records
+              await tx
+                .update(invoicePayments)
+                .set({ deletedAt: new Date() })
+                .where(eq(invoicePayments.paymentId, input.id));
+            } else if (payment.invoiceId) {
+              // Handle legacy single-invoice payment
+              const [invoice] = await tx
+                .select()
+                .from(invoices)
+                .where(eq(invoices.id, payment.invoiceId))
+                .limit(1);
+
+              if (invoice) {
+                const currentPaid = parseFloat(invoice.amountPaid || "0");
+                const newPaid = Math.max(0, currentPaid - paymentAmount);
+                const totalAmount = parseFloat(invoice.totalAmount || "0");
+                const newDue = totalAmount - newPaid;
+
+                // Determine new status
+                const newStatus: "SENT" | "PARTIAL" =
+                  newPaid > 0 ? "PARTIAL" : "SENT";
+
+                await tx
+                  .update(invoices)
+                  .set({
+                    amountPaid: newPaid.toFixed(2),
+                    amountDue: newDue.toFixed(2),
+                    status: newStatus,
+                  })
+                  .where(eq(invoices.id, payment.invoiceId));
+              }
+            }
+
+            // ARCH-002: Update client totalOwed within transaction for atomicity
+            if (payment.customerId) {
+              await tx
+                .update(clients)
+                .set({
+                  totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
+                })
+                .where(eq(clients.id, payment.customerId));
+            }
+
+            // Create reversing GL entries
+            const fiscalPeriodId = await getFiscalPeriodIdOrDefault(
+              new Date(),
+              1
+            );
+            const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+            const arAccountId = await getAccountIdByName(
+              ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+            );
+            const reversalNumber = `PMT-REV-${input.id}`;
+
+            // Credit Cash (reverse debit)
+            await tx.insert(ledgerEntries).values({
+              entryNumber: `${reversalNumber}-CR`,
+              entryDate: new Date(),
+              accountId: cashAccountId,
+              debit: "0.00",
+              credit: paymentAmount.toFixed(2),
+              description: `Payment void reversal - ${input.reason}`,
+              referenceType: "PAYMENT_VOID",
+              referenceId: input.id,
+              fiscalPeriodId,
+              isManual: false,
+              createdBy: userId,
+            });
+
+            // Debit AR (reverse credit)
+            await tx.insert(ledgerEntries).values({
+              entryNumber: `${reversalNumber}-DR`,
+              entryDate: new Date(),
+              accountId: arAccountId,
+              debit: paymentAmount.toFixed(2),
+              credit: "0.00",
+              description: `Payment void reversal - ${input.reason}`,
+              referenceType: "PAYMENT_VOID",
+              referenceId: input.id,
+              fiscalPeriodId,
+              isManual: false,
+              createdBy: userId,
+            });
+
+            logger.info({
+              msg: "[Payments] Payment voided",
+              paymentId: input.id,
+              reason: input.reason,
+              amount: paymentAmount,
+              allocationsReversed: allocations.length,
+            });
+
+            return {
+              success: true,
+              paymentId: input.id,
+              customerId: payment.customerId,
+            };
+          });
+        } catch (error) {
+          captureException(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              operation: "payment_void",
+              paymentId: input.id,
+              reason: input.reason,
+              userId,
+            }
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Payment operation failed - transaction rolled back",
+            cause: error,
+          });
         }
-
-        // ARCH-002: Update client totalOwed within transaction for atomicity
-        if (payment.customerId) {
-          await tx
-            .update(clients)
-            .set({
-              totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
-            })
-            .where(eq(clients.id, payment.customerId));
-        }
-
-        // Create reversing GL entries
-        const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
-        const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
-        const arAccountId = await getAccountIdByName(
-          ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
-        );
-        const reversalNumber = `PMT-REV-${input.id}`;
-
-        // Credit Cash (reverse debit)
-        await tx.insert(ledgerEntries).values({
-          entryNumber: `${reversalNumber}-CR`,
-          entryDate: new Date(),
-          accountId: cashAccountId,
-          debit: "0.00",
-          credit: paymentAmount.toFixed(2),
-          description: `Payment void reversal - ${input.reason}`,
-          referenceType: "PAYMENT_VOID",
-          referenceId: input.id,
-          fiscalPeriodId,
-          isManual: false,
-          createdBy: userId,
-        });
-
-        // Debit AR (reverse credit)
-        await tx.insert(ledgerEntries).values({
-          entryNumber: `${reversalNumber}-DR`,
-          entryDate: new Date(),
-          accountId: arAccountId,
-          debit: paymentAmount.toFixed(2),
-          credit: "0.00",
-          description: `Payment void reversal - ${input.reason}`,
-          referenceType: "PAYMENT_VOID",
-          referenceId: input.id,
-          fiscalPeriodId,
-          isManual: false,
-          createdBy: userId,
-        });
-
-        logger.info({
-          msg: "[Payments] Payment voided",
-          paymentId: input.id,
-          reason: input.reason,
-          amount: paymentAmount,
-          allocationsReversed: allocations.length,
-        });
-
-        return { success: true, paymentId: input.id, customerId: payment.customerId };
-      });
+      })();
 
       // ARCH-002: Sync client balance after transaction
       if (txResult.customerId) {

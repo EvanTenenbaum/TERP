@@ -1314,6 +1314,7 @@ export const payments = mysqlTable(
       .references(() => users.id, { onDelete: "restrict" }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    version: int("version").notNull().default(1), // Optimistic locking (DATA-005)
   },
   table => ({
     customerIdIdx: index("idx_payments_customer_id").on(table.customerId),
