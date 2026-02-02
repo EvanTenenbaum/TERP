@@ -3,7 +3,7 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import {
@@ -18,13 +18,9 @@ import {
 import { calculateCogs, calculateDueDate } from "./cogsCalculator";
 import {
   createInvoiceFromOrder,
-  createInvoiceFromOrderTx,
   recordOrderCashPayment,
-  recordOrderCashPaymentTx,
   updateClientCreditExposure,
-  restoreInventoryFromOrder,
   restoreInventoryFromOrderTx,
-  reverseOrderAccountingEntries,
   reverseOrderAccountingEntriesTx,
 } from "./services/orderAccountingService";
 import { calculateAvailableQty } from "./inventoryUtils";
@@ -430,6 +426,8 @@ export async function getOrderById(id: number): Promise<Order | null> {
   if (!order) return null;
 
   // Parse items JSON string to array
+  // ST-050: Error propagation - JSON parsing errors now throw instead of silently returning empty array
+  // This surfaces data corruption issues immediately rather than masking them
   let parsedItems: OrderItem[] = [];
   if (order.items) {
     try {
@@ -437,7 +435,10 @@ export async function getOrderById(id: number): Promise<Order | null> {
         typeof order.items === "string" ? JSON.parse(order.items) : order.items;
     } catch (e) {
       console.error(`Failed to parse items for order ${order.id}:`, e);
-      parsedItems = [];
+      throw new Error(
+        `Data corruption detected: Cannot parse items for order ${order.id}. ` +
+          `This order requires data remediation. Original error: ${e instanceof Error ? e.message : String(e)}`
+      );
     }
   }
 
@@ -478,6 +479,7 @@ export async function getOrdersByClient(
     .limit(safeLimit);
 
   // Parse items JSON string to array for each order
+  // ST-050: Error propagation - JSON parsing errors now throw instead of silently returning empty array
   return results.map(order => {
     let parsedItems: OrderItem[] = [];
     if (order.items) {
@@ -488,7 +490,10 @@ export async function getOrdersByClient(
             : order.items;
       } catch (e) {
         console.error(`Failed to parse items for order ${order.id}:`, e);
-        parsedItems = [];
+        throw new Error(
+          `Data corruption detected: Cannot parse items for order ${order.id}. ` +
+            `This order requires data remediation. Original error: ${e instanceof Error ? e.message : String(e)}`
+        );
       }
     }
     return {
@@ -630,6 +635,7 @@ export async function getAllOrders(filters?: {
   }
 
   // Transform results to include client data and parse JSON items
+  // ST-050: Error propagation - JSON parsing errors now throw instead of silently returning empty array
   const transformed: Order[] = results.map(row => {
     // Parse items JSON string to array
     let parsedItems: OrderItem[] = [];
@@ -641,7 +647,10 @@ export async function getAllOrders(filters?: {
             : row.orders.items;
       } catch (e) {
         console.error(`Failed to parse items for order ${row.orders.id}:`, e);
-        parsedItems = [];
+        throw new Error(
+          `Data corruption detected: Cannot parse items for order ${row.orders.id}. ` +
+            `This order requires data remediation. Original error: ${e instanceof Error ? e.message : String(e)}`
+        );
       }
     }
 
@@ -991,10 +1000,7 @@ export async function convertQuoteToSale(
         // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
         // If payables update fails, the entire quote-to-sale conversion is rolled back
         // This ensures financial consistency between orders and payables
-        await payablesService.updatePayableOnSale(
-          item.batchId,
-          item.quantity
-        );
+        await payablesService.updatePayableOnSale(item.batchId, item.quantity);
         await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
@@ -1254,10 +1260,7 @@ export async function confirmDraftOrder(input: {
         // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
         // If payables update fails, the entire order confirmation is rolled back
         // This ensures financial consistency between orders and payables
-        await payablesService.updatePayableOnSale(
-          item.batchId,
-          item.quantity
-        );
+        await payablesService.updatePayableOnSale(item.batchId, item.quantity);
         await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
@@ -1752,52 +1755,47 @@ export async function updateOrderStatus(input: {
 
       // ORD-001: Create invoice AFTER fulfillment is complete
       // This ensures invoice amounts match actual fulfilled quantities
-      try {
-        // Calculate totals from fulfilled items
-        const fulfilledItems = orderItemsForDecrement.filter(
-          item => !item.isSample
-        );
-        const subtotal = fulfilledItems.reduce(
-          (sum, item) => sum + (item.lineTotal || 0),
-          0
-        );
-        const tax = parseFloat(order.tax ?? "0");
-        const total = subtotal + tax;
+      // ST-050: Accounting errors now propagate and fail the transaction
+      // This prevents "shipped but not invoiced" scenarios that break financial consistency
+      // If invoice creation fails, the entire SHIPPED status update is rolled back
+      // Calculate totals from fulfilled items
+      const fulfilledItems = orderItemsForDecrement.filter(
+        item => !item.isSample
+      );
+      const subtotal = fulfilledItems.reduce(
+        (sum, item) => sum + (item.lineTotal || 0),
+        0
+      );
+      const tax = parseFloat(order.tax ?? "0");
+      const total = subtotal + tax;
 
-        const invoiceId = await createInvoiceFromOrder({
-          orderId: orderId,
-          orderNumber: order.orderNumber,
-          clientId: order.clientId,
-          items: orderItemsForDecrement,
-          subtotal,
-          tax,
-          total,
-          dueDate: order.dueDate ? new Date(order.dueDate) : undefined,
+      const invoiceId = await createInvoiceFromOrder({
+        orderId: orderId,
+        orderNumber: order.orderNumber,
+        clientId: order.clientId,
+        items: orderItemsForDecrement,
+        subtotal,
+        tax,
+        total,
+        dueDate: order.dueDate ? new Date(order.dueDate) : undefined,
+        createdBy: userId,
+      });
+
+      // Update order with invoice reference
+      updateData.invoiceId = invoiceId;
+
+      // Record cash payment if applicable
+      const cashPayment = parseFloat(order.cashPayment ?? "0");
+      if (cashPayment > 0) {
+        await recordOrderCashPayment({
+          invoiceId,
+          amount: cashPayment,
           createdBy: userId,
         });
-
-        // Update order with invoice reference
-        updateData.invoiceId = invoiceId;
-
-        // Record cash payment if applicable
-        const cashPayment = parseFloat(order.cashPayment ?? "0");
-        if (cashPayment > 0) {
-          await recordOrderCashPayment({
-            invoiceId,
-            amount: cashPayment,
-            createdBy: userId,
-          });
-        }
-
-        // Update credit exposure
-        await updateClientCreditExposure(order.clientId);
-      } catch (accountingError) {
-        // Log but don't fail the fulfillment - accounting can be reconciled later
-        console.error(
-          "[ORD-001] Accounting integration error during fulfillment (non-fatal):",
-          accountingError
-        );
       }
+
+      // Update credit exposure
+      await updateClientCreditExposure(order.clientId);
     }
 
     // Update order status with version increment (DATA-005)

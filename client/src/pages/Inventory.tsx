@@ -57,6 +57,7 @@ import {
 import { useInventorySort } from "@/hooks/useInventorySort";
 import { SortControls } from "@/components/inventory/SortControls";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
+import { formatDecimal } from "@/utils/formatters";
 import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { SaveViewModal } from "@/components/inventory/SaveViewModal";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
@@ -65,6 +66,7 @@ import { BulkActionsBar } from "@/components/inventory/BulkActionsBar";
 import { BulkConfirmDialog } from "@/components/inventory/BulkConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AuditIcon } from "@/components/audit";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Inventory() {
   const [, setLocation] = useLocation();
@@ -183,14 +185,14 @@ export default function Inventory() {
           brand: brand?.name || "",
           grade: batch?.grade || "",
           status: batch?.batchStatus || "",
-          onHand: onHand.toFixed(2),
-          reserved: reserved.toFixed(2),
-          quarantine: quarantine.toFixed(2),
-          hold: hold.toFixed(2),
-          available: available.toFixed(2),
+          onHand: formatDecimal(onHand),
+          reserved: formatDecimal(reserved),
+          quarantine: formatDecimal(quarantine),
+          hold: formatDecimal(hold),
+          available: formatDecimal(available),
           unitCogs: batch?.unitCogs || "",
           totalValue: batch?.unitCogs
-            ? (parseFloat(batch.unitCogs) * onHand).toFixed(2)
+            ? formatDecimal(parseFloat(batch.unitCogs) * onHand)
             : "",
           purchaseDate: batch?.createdAt
             ? new Date(batch.createdAt).toISOString().split("T")[0]
@@ -1136,7 +1138,7 @@ export default function Inventory() {
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           <div className="flex items-center justify-end gap-1">
-                            {parseFloat(batch.onHandQty).toFixed(2)}
+                            {formatDecimal(parseFloat(batch.onHandQty))}
                             <AuditIcon
                               type="inventory"
                               entityId={batch.id}
@@ -1145,7 +1147,7 @@ export default function Inventory() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {parseFloat(batch.reservedQty).toFixed(2)}
+                          {formatDecimal(parseFloat(batch.reservedQty))}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           <span
@@ -1155,7 +1157,7 @@ export default function Inventory() {
                                 : ""
                             }
                           >
-                            {available.toFixed(2)}
+                            {formatDecimal(available)}
                           </span>
                         </TableCell>
                         {/* Sprint 4 Track A: 4.A.2 ENH-001 - Stock Status */}

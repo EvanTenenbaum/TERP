@@ -4,9 +4,39 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
+// Type definitions
+interface PurchaseOrder {
+  id: number;
+  poNumber: string;
+  supplierClientId?: number;
+  vendorId?: number;
+  orderDate: string;
+  expectedDeliveryDate?: string;
+  purchaseOrderStatus: string;
+  total: string;
+}
+
+interface Client {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+}
+
+interface LineItem {
+  tempId: string;
+  productId: string;
+  quantityOrdered: string;
+  unitCost: string;
+}
+
+const generateTempId = () =>
+  `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
 // FEAT-014: Hook to get display settings for conditional field visibility
 const useDisplaySettings = () => {
-  const { data: settings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  const { data: settings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   return {
     showExpectedDelivery: settings?.display?.showExpectedDelivery ?? true,
   };
@@ -48,25 +78,49 @@ export default function PurchaseOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPO, setSelectedPO] = useState<any>(null);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
 
   // FEAT-014: Get display settings for conditional field visibility
   const { showExpectedDelivery } = useDisplaySettings();
 
   // Fetch data - handle paginated responses with error handling
-  const { data: posData, refetch, isLoading: posLoading, error: posError } = trpc.purchaseOrders.getAll.useQuery();
-  const pos = Array.isArray(posData) ? posData : (posData?.items ?? []);
-  
+  const {
+    data: posData,
+    refetch,
+    isLoading: posLoading,
+    error: posError,
+  } = trpc.purchaseOrders.getAll.useQuery();
+  const pos = useMemo(
+    () =>
+      Array.isArray(posData)
+        ? posData
+        : ((posData as unknown as { items?: PurchaseOrder[] })?.items ?? []),
+    [posData]
+  );
+
   // Use clients with isSeller=true (suppliers) instead of deprecated vendors
-  const { data: suppliersRawData } = trpc.clients.list.useQuery({ 
-    clientTypes: ['seller'],
+  const { data: suppliersRawData } = trpc.clients.list.useQuery({
+    clientTypes: ["seller"],
     limit: 1000,
   });
-  const suppliersData = Array.isArray(suppliersRawData) ? suppliersRawData : (suppliersRawData?.items ?? []);
-  
-  const suppliers: Array<{ id: number; name: string; contactName: string | null; contactEmail: string | null; contactPhone: string | null; paymentTerms: string | null }> = useMemo(() => {
+  const suppliersData = useMemo(
+    () =>
+      Array.isArray(suppliersRawData)
+        ? suppliersRawData
+        : ((suppliersRawData as { items?: Client[] })?.items ?? []),
+    [suppliersRawData]
+  );
+
+  const suppliers: Array<{
+    id: number;
+    name: string;
+    contactName: string | null;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    paymentTerms: string | null;
+  }> = useMemo(() => {
     if (!suppliersData || suppliersData.length === 0) return [];
-    return suppliersData.map((client: any) => ({
+    return suppliersData.map((client: Client) => ({
       id: client.id,
       name: client.name,
       contactName: null, // Contact name not in clients table
@@ -75,7 +129,11 @@ export default function PurchaseOrdersPage() {
       paymentTerms: null, // Payment terms are in supplier_profile, fetched separately if needed
     }));
   }, [suppliersData]);
-  const { data: productsData } = trpc.inventory.list.useQuery({});
+
+  // BUG-114 FIX: Use product catalogue instead of inventory batches for PO creation
+  const { data: productsData } = trpc.productCatalogue.list.useQuery({
+    limit: 500,
+  });
   const products = productsData?.items ?? [];
 
   // Mutations
@@ -126,14 +184,29 @@ export default function PurchaseOrdersPage() {
   });
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    supplierClientId: string;
+    orderDate: string;
+    expectedDeliveryDate: string;
+    paymentTerms: string;
+    notes: string;
+    supplierNotes: string;
+    items: LineItem[];
+  }>({
     supplierClientId: "",
     orderDate: new Date().toISOString().split("T")[0],
     expectedDeliveryDate: "",
     paymentTerms: "",
     notes: "",
     supplierNotes: "",
-    items: [{ productId: "", quantityOrdered: "", unitCost: "" }],
+    items: [
+      {
+        tempId: generateTempId(),
+        productId: "",
+        quantityOrdered: "",
+        unitCost: "",
+      },
+    ],
   });
 
   const resetForm = () => {
@@ -144,7 +217,14 @@ export default function PurchaseOrdersPage() {
       paymentTerms: "",
       notes: "",
       supplierNotes: "",
-      items: [{ productId: "", quantityOrdered: "", unitCost: "" }],
+      items: [
+        {
+          tempId: generateTempId(),
+          productId: "",
+          quantityOrdered: "",
+          unitCost: "",
+        },
+      ],
     });
   };
 
@@ -162,7 +242,7 @@ export default function PurchaseOrdersPage() {
   // Filter and search
   const filteredPOs = useMemo(() => {
     if (!pos || pos.length === 0) return [];
-    return pos.filter((po: any) => {
+    return pos.filter((po: PurchaseOrder) => {
       // Search by PO number or supplier name (check both supplierClientId and legacy vendorId)
       const supplierId = po.supplierClientId ?? po.vendorId;
       const matchesSearch =
@@ -197,11 +277,14 @@ export default function PurchaseOrdersPage() {
     }
 
     // Validate quantities are positive
-    const invalidItems = items.filter(item => item.quantityOrdered <= 0 || item.unitCost < 0);
+    const invalidItems = items.filter(
+      item => item.quantityOrdered <= 0 || item.unitCost < 0
+    );
     if (invalidItems.length > 0) {
       toast({
         title: "Invalid item values",
-        description: "Quantity must be greater than 0 and unit cost cannot be negative",
+        description:
+          "Quantity must be greater than 0 and unit cost cannot be negative",
         variant: "destructive",
       });
       return;
@@ -223,7 +306,12 @@ export default function PurchaseOrdersPage() {
       ...formData,
       items: [
         ...formData.items,
-        { productId: "", quantityOrdered: "", unitCost: "" },
+        {
+          tempId: generateTempId(),
+          productId: "",
+          quantityOrdered: "",
+          unitCost: "",
+        },
       ],
     });
   };
@@ -243,7 +331,10 @@ export default function PurchaseOrdersPage() {
 
   const getSupplierName = (supplierId: number | null | undefined) => {
     if (!supplierId) return "Unknown";
-    return suppliers.find((s: { id: number; name: string }) => s.id === supplierId)?.name || "Unknown";
+    return (
+      suppliers.find((s: { id: number; name: string }) => s.id === supplierId)
+        ?.name || "Unknown"
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -369,19 +460,25 @@ export default function PurchaseOrdersPage() {
 
                 return (
                   <TableRow key={po.id}>
-                    <TableCell className="font-medium">{po.poNumber || '-'}</TableCell>
-                    <TableCell>{getSupplierName(po.supplierClientId ?? po.vendorId)}</TableCell>
-                    <TableCell>
-                      {formatDate(po.orderDate)}
+                    <TableCell className="font-medium">
+                      {po.poNumber || "-"}
                     </TableCell>
+                    <TableCell>
+                      {getSupplierName(po.supplierClientId ?? po.vendorId)}
+                    </TableCell>
+                    <TableCell>{formatDate(po.orderDate)}</TableCell>
                     {/* FEAT-014: Conditionally show expected delivery cell */}
                     {showExpectedDelivery && (
                       <TableCell>
                         {formatDate(po.expectedDeliveryDate)}
                       </TableCell>
                     )}
-                    <TableCell>{getStatusBadge(po.purchaseOrderStatus || 'DRAFT')}</TableCell>
-                    <TableCell>${parseFloat(po.total || '0').toFixed(2)}</TableCell>
+                    <TableCell>
+                      {getStatusBadge(po.purchaseOrderStatus || "DRAFT")}
+                    </TableCell>
+                    <TableCell>
+                      ${parseFloat(po.total || "0").toFixed(2)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -434,7 +531,10 @@ export default function PurchaseOrdersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {suppliers.map(supplier => (
-                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                    <SelectItem
+                      key={supplier.id}
+                      value={supplier.id.toString()}
+                    >
                       {supplier.name}
                     </SelectItem>
                   ))}
@@ -442,7 +542,9 @@ export default function PurchaseOrdersPage() {
               </Select>
             </div>
 
-            <div className={`grid gap-4 ${showExpectedDelivery ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div
+              className={`grid gap-4 ${showExpectedDelivery ? "grid-cols-2" : "grid-cols-1"}`}
+            >
               <div>
                 <Label htmlFor="orderDate">Order Date *</Label>
                 <Input
@@ -458,7 +560,9 @@ export default function PurchaseOrdersPage() {
               {/* FEAT-014: Conditionally show expected delivery input */}
               {showExpectedDelivery && (
                 <div>
-                  <Label htmlFor="expectedDeliveryDate">Expected Delivery</Label>
+                  <Label htmlFor="expectedDeliveryDate">
+                    Expected Delivery
+                  </Label>
                   <Input
                     id="expectedDeliveryDate"
                     type="date"
@@ -499,7 +603,7 @@ export default function PurchaseOrdersPage() {
             <div>
               <Label>Line Items *</Label>
               {formData.items.map((item, index) => (
-                <div key={`page-item-${index}`} className="grid grid-cols-12 gap-2 mb-2">
+                <div key={item.tempId} className="grid grid-cols-12 gap-2 mb-2">
                   <div className="col-span-5">
                     <Select
                       value={item.productId}
@@ -511,12 +615,12 @@ export default function PurchaseOrdersPage() {
                         <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map(item => (
+                        {products.map(product => (
                           <SelectItem
-                            key={item.batch?.id || item.product?.id}
-                            value={(item.batch?.id || item.product?.id || 0).toString()} // safe: product ID fallback, not user ID
+                            key={product.id}
+                            value={product.id.toString()}
                           >
-                            {item.product?.nameCanonical || item.batch?.sku || "Unknown"}
+                            {product.nameCanonical}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -532,12 +636,8 @@ export default function PurchaseOrdersPage() {
                       onChange={e => {
                         const value = e.target.value;
                         // Allow empty for typing, or positive values only (quantity must be > 0)
-                        if (value === '' || parseFloat(value) > 0) {
-                          handleItemChange(
-                            index,
-                            "quantityOrdered",
-                            value
-                          );
+                        if (value === "" || parseFloat(value) > 0) {
+                          handleItemChange(index, "quantityOrdered", value);
                         }
                       }}
                     />
@@ -552,7 +652,7 @@ export default function PurchaseOrdersPage() {
                       onChange={e => {
                         const value = e.target.value;
                         // Prevent negative values
-                        if (value === '' || parseFloat(value) >= 0) {
+                        if (value === "" || parseFloat(value) >= 0) {
                           handleItemChange(index, "unitCost", value);
                         }
                       }}
@@ -571,7 +671,12 @@ export default function PurchaseOrdersPage() {
                   </div>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddItem}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
               </Button>

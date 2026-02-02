@@ -42,6 +42,7 @@ import {
 import { format } from 'date-fns';
 import { useLocation } from 'wouter';
 import { exportToCSVWithLabels } from '@/utils/exportToCSV';
+import { formatDecimal } from '@/utils/formatters';
 import { toast } from 'sonner';
 import { DataCardSection } from '@/components/data-cards';
 import { TableSkeleton } from '@/components/ui/skeleton-loaders';
@@ -618,11 +619,11 @@ export default function Orders() {
                       <div>
                         <div className="font-medium">{item.displayName}</div>
                         <div className="text-muted-foreground">
-                          Qty: {item.quantity} × ${item.unitPrice.toFixed(2)}
+                          Qty: {item.quantity} × ${formatDecimal(item.unitPrice)}
                         </div>
                       </div>
                       <div className="font-medium">
-                        ${item.lineTotal.toFixed(2)}
+                        ${formatDecimal(item.lineTotal)}
                       </div>
                     </div>
                   ))}
@@ -635,7 +636,7 @@ export default function Orders() {
               <div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${parseFloat(selectedOrder.total).toFixed(2)}</span>
+                  <span>${formatDecimal(parseFloat(selectedOrder.total))}</span>
                 </div>
               </div>
 

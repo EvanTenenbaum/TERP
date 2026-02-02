@@ -11,7 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -45,13 +45,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
-import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
   InspectorPanel,
@@ -65,7 +63,6 @@ import {
 import {
   Plus,
   Search,
-  FileText,
   Trash2,
   ShoppingCart,
   ChevronRight,
@@ -74,7 +71,6 @@ import {
   RefreshCw,
   Package,
   Calendar,
-  DollarSign,
   Building,
 } from "lucide-react";
 
@@ -82,7 +78,7 @@ import {
 // TYPES & SCHEMAS
 // ============================================================================
 
-const purchaseOrderSchema = z.object({
+const _purchaseOrderSchema = z.object({
   supplierClientId: z.number().min(1, "Supplier is required"),
   orderDate: z.string().min(1, "Order date is required"),
   expectedDeliveryDate: z.string().optional(),
@@ -92,6 +88,7 @@ const purchaseOrderSchema = z.object({
 });
 
 interface LineItem {
+  tempId: string; // Unique identifier for React keys
   productId: string;
   quantityOrdered: string;
   unitCost: string;
@@ -151,7 +148,15 @@ const PO_STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
-const PO_STATUSES = ["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"];
+const PO_STATUSES = [
+  "DRAFT",
+  "SENT",
+  "CONFIRMED",
+  "RECEIVING",
+  "RECEIVED",
+  "CANCELLED",
+] as const;
+type POStatus = (typeof PO_STATUSES)[number];
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -173,6 +178,9 @@ const formatCurrency = (amount: string | number | null | undefined): string => {
   return `$${(num || 0).toFixed(2)}`;
 };
 
+const generateTempId = () =>
+  `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
 const createEmptyForm = (): POFormData => ({
   supplierClientId: "",
   orderDate: new Date().toISOString().split("T")[0],
@@ -180,7 +188,14 @@ const createEmptyForm = (): POFormData => ({
   paymentTerms: "",
   notes: "",
   supplierNotes: "",
-  items: [{ productId: "", quantityOrdered: "", unitCost: "" }],
+  items: [
+    {
+      tempId: generateTempId(),
+      productId: "",
+      quantityOrdered: "",
+      unitCost: "",
+    },
+  ],
 });
 
 // ============================================================================
@@ -191,7 +206,10 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <Badge
       variant="outline"
-      className={cn("text-xs font-medium", PO_STATUS_COLORS[status] || PO_STATUS_COLORS.DRAFT)}
+      className={cn(
+        "text-xs font-medium",
+        PO_STATUS_COLORS[status] || PO_STATUS_COLORS.DRAFT
+      )}
     >
       {status}
     </Badge>
@@ -210,7 +228,13 @@ interface POInspectorProps {
   onDelete: (poId: number) => void;
 }
 
-function POInspectorContent({ po, suppliers, products, onUpdateStatus, onDelete }: POInspectorProps) {
+function POInspectorContent({
+  po,
+  suppliers,
+  products,
+  onUpdateStatus,
+  onDelete: _onDelete,
+}: POInspectorProps) {
   if (!po) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -220,9 +244,9 @@ function POInspectorContent({ po, suppliers, products, onUpdateStatus, onDelete 
     );
   }
 
-  const supplierName = suppliers.find(
-    (s) => s.id === (po.supplierClientId || po.vendorId)
-  )?.name || "Unknown Supplier";
+  const supplierName =
+    suppliers.find(s => s.id === (po.supplierClientId || po.vendorId))?.name ||
+    "Unknown Supplier";
 
   const lineItems = po.items || [];
   const lineItemsTotal = lineItems.reduce(
@@ -280,7 +304,8 @@ function POInspectorContent({ po, suppliers, products, onUpdateStatus, onDelete 
           <div className="space-y-2">
             {lineItems.map((item, index) => {
               const productName =
-                products.find((p) => p.id === item.productId)?.name || `Product #${item.productId}`;
+                products.find(p => p.id === item.productId)?.name ||
+                `Product #${item.productId}`;
               return (
                 <div
                   key={item.id || index}
@@ -290,24 +315,28 @@ function POInspectorContent({ po, suppliers, products, onUpdateStatus, onDelete 
                     <div>
                       <p className="font-medium">{productName}</p>
                       <p className="text-sm text-muted-foreground">
-                        Qty: {item.quantityOrdered} @ {formatCurrency(item.unitCost)}
+                        Qty: {item.quantityOrdered} @{" "}
+                        {formatCurrency(item.unitCost)}
                       </p>
                     </div>
                     <p className="font-semibold">
                       {formatCurrency(item.quantityOrdered * item.unitCost)}
                     </p>
                   </div>
-                  {item.quantityReceived !== undefined && item.quantityReceived > 0 && (
-                    <p className="text-xs text-green-600 mt-1">
-                      Received: {item.quantityReceived}
-                    </p>
-                  )}
+                  {item.quantityReceived !== undefined &&
+                    item.quantityReceived > 0 && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Received: {item.quantityReceived}
+                      </p>
+                    )}
                 </div>
               );
             })}
             <div className="pt-2 border-t flex justify-between items-center">
               <span className="font-medium">Total</span>
-              <span className="text-lg font-bold">{formatCurrency(po.total || lineItemsTotal)}</span>
+              <span className="text-lg font-bold">
+                {formatCurrency(po.total || lineItemsTotal)}
+              </span>
             </div>
           </div>
         )}
@@ -330,7 +359,7 @@ function POInspectorContent({ po, suppliers, products, onUpdateStatus, onDelete 
 
       <InspectorSection title="Update Status">
         <div className="grid grid-cols-2 gap-2">
-          {PO_STATUSES.filter((s) => s !== po.purchaseOrderStatus).map((status) => (
+          {PO_STATUSES.filter(s => s !== po.purchaseOrderStatus).map(status => (
             <Button
               key={status}
               variant="outline"
@@ -365,7 +394,14 @@ export function PurchaseOrdersWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null); // WS-KB-001: Ref for Cmd+K focus
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator, isDirty } = useSaveState();
+  const {
+    saveState: _saveState,
+    setSaving,
+    setSaved,
+    setError,
+    SaveStateIndicator,
+    isDirty: _isDirty,
+  } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
@@ -381,8 +417,10 @@ export function PurchaseOrdersWorkSurface() {
   });
 
   // Display settings
-  const { data: settingsData } = trpc.organizationSettings.getDisplaySettings.useQuery();
-  const showExpectedDelivery = settingsData?.display?.showExpectedDelivery ?? true;
+  const { data: settingsData } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
+  const showExpectedDelivery =
+    settingsData?.display?.showExpectedDelivery ?? true;
 
   // Data queries
   const {
@@ -391,7 +429,13 @@ export function PurchaseOrdersWorkSurface() {
     isLoading: posLoading,
     error: posError,
   } = trpc.purchaseOrders.getAll.useQuery();
-  const pos = Array.isArray(posData) ? posData : (posData as any)?.items ?? [];
+  const pos = useMemo(
+    () =>
+      Array.isArray(posData)
+        ? posData
+        : ((posData as unknown as { items?: PurchaseOrder[] })?.items ?? []),
+    [posData]
+  );
 
   const { data: suppliersRawData } = trpc.clients.list.useQuery({
     clientTypes: ["seller"],
@@ -400,25 +444,29 @@ export function PurchaseOrdersWorkSurface() {
   const suppliers = useMemo(() => {
     const items = Array.isArray(suppliersRawData)
       ? suppliersRawData
-      : (suppliersRawData as { items?: Array<{ id: number; name: string }> })?.items ?? [];
+      : ((suppliersRawData as { items?: Array<{ id: number; name: string }> })
+          ?.items ?? []);
     return items.map((client: { id: number; name: string }) => ({
       id: client.id,
       name: client.name,
     }));
   }, [suppliersRawData]);
 
-  const { data: productsData } = trpc.inventory.list.useQuery({});
+  // BUG-114 FIX: Use product catalogue instead of inventory batches for PO creation
+  const { data: productsData } = trpc.productCatalogue.list.useQuery({
+    limit: 500,
+  });
   const products = useMemo(() => {
-    const items = (productsData?.items ?? []) as Array<{ batch?: { id?: number; sku?: string }; product?: { id?: number; nameCanonical?: string } | null }>;
-    return items.map((item) => ({
-      id: item.batch?.id || item.product?.id || 0, // safe: product ID fallback, not user ID
-      name: item.product?.nameCanonical || item.batch?.sku || "Unknown",
+    const items = productsData?.items ?? [];
+    return items.map((product: { id: number; nameCanonical: string }) => ({
+      id: product.id,
+      name: product.nameCanonical,
     }));
   }, [productsData]);
 
   // Selected PO
   const selectedPO = useMemo(
-    () => (pos as PurchaseOrder[]).find((po) => po.id === selectedPOId) || null,
+    () => (pos as PurchaseOrder[]).find(po => po.id === selectedPOId) || null,
     [pos, selectedPOId]
   );
 
@@ -432,7 +480,7 @@ export function PurchaseOrdersWorkSurface() {
       setIsCreateDialogOpen(false);
       setFormData(createEmptyForm());
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to create purchase order");
       setError(error.message);
     },
@@ -448,7 +496,7 @@ export function PurchaseOrdersWorkSurface() {
       setSelectedPOId(null);
       if (inspector.isOpen) inspector.close();
     },
-    onError: (error) => {
+    onError: error => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(error)) {
         toast.error(error.message || "Failed to delete purchase order");
@@ -464,7 +512,7 @@ export function PurchaseOrdersWorkSurface() {
       setSaved();
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(error)) {
         toast.error(error.message || "Failed to update status");
@@ -487,8 +535,14 @@ export function PurchaseOrdersWorkSurface() {
     onInspectorClose: inspector.close,
     // WS-KB-001: Add Cmd+K to focus search
     customHandlers: {
-      "cmd+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
-      "ctrl+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
+      "cmd+k": e => {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      },
+      "ctrl+k": e => {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      },
     },
     onCancel: () => {
       if (isCreateDialogOpen) {
@@ -503,9 +557,9 @@ export function PurchaseOrdersWorkSurface() {
 
   // Filter POs
   const filteredPOs = useMemo(() => {
-    return (pos as PurchaseOrder[]).filter((po) => {
+    return (pos as PurchaseOrder[]).filter(po => {
       const supplierId = po.supplierClientId ?? po.vendorId;
-      const supplierName = suppliers.find((s) => s.id === supplierId)?.name || "";
+      const supplierName = suppliers.find(s => s.id === supplierId)?.name || "";
       const matchesSearch =
         (po.poNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         supplierName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -520,9 +574,11 @@ export function PurchaseOrdersWorkSurface() {
     const all = pos as PurchaseOrder[];
     return {
       total: all.length,
-      draft: all.filter((p) => p.purchaseOrderStatus === "DRAFT").length,
-      pending: all.filter((p) => ["SENT", "CONFIRMED"].includes(p.purchaseOrderStatus)).length,
-      receiving: all.filter((p) => p.purchaseOrderStatus === "RECEIVING").length,
+      draft: all.filter(p => p.purchaseOrderStatus === "DRAFT").length,
+      pending: all.filter(p =>
+        ["SENT", "CONFIRMED"].includes(p.purchaseOrderStatus)
+      ).length,
+      receiving: all.filter(p => p.purchaseOrderStatus === "RECEIVING").length,
       totalValue: all.reduce((sum, p) => sum + parseFloat(p.total || "0"), 0),
     };
   }, [pos]);
@@ -530,13 +586,13 @@ export function PurchaseOrdersWorkSurface() {
   // Handlers
   const getSupplierName = (supplierId: number | null | undefined) => {
     if (!supplierId) return "Unknown";
-    return suppliers.find((s) => s.id === supplierId)?.name || "Unknown";
+    return suppliers.find(s => s.id === supplierId)?.name || "Unknown";
   };
 
   const handleCreatePO = () => {
     const items = formData.items
-      .filter((item) => item.productId && item.quantityOrdered && item.unitCost)
-      .map((item) => ({
+      .filter(item => item.productId && item.quantityOrdered && item.unitCost)
+      .map(item => ({
         productId: parseInt(item.productId),
         quantityOrdered: parseFloat(item.quantityOrdered),
         unitCost: parseFloat(item.unitCost),
@@ -547,7 +603,9 @@ export function PurchaseOrdersWorkSurface() {
       return;
     }
 
-    const invalidItems = items.filter((item) => item.quantityOrdered <= 0 || item.unitCost < 0);
+    const invalidItems = items.filter(
+      item => item.quantityOrdered <= 0 || item.unitCost < 0
+    );
     if (invalidItems.length > 0) {
       toast.error("Quantity must be > 0 and cost cannot be negative");
       return;
@@ -567,7 +625,15 @@ export function PurchaseOrdersWorkSurface() {
   const handleAddItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { productId: "", quantityOrdered: "", unitCost: "" }],
+      items: [
+        ...formData.items,
+        {
+          tempId: generateTempId(),
+          productId: "",
+          quantityOrdered: "",
+          unitCost: "",
+        },
+      ],
     });
   };
 
@@ -580,14 +646,18 @@ export function PurchaseOrdersWorkSurface() {
     }
   };
 
-  const handleItemChange = (index: number, field: keyof LineItem, value: string) => {
+  const handleItemChange = (
+    index: number,
+    field: keyof LineItem,
+    value: string
+  ) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
     setFormData({ ...formData, items: newItems });
   };
 
   const handleUpdateStatus = (poId: number, status: string) => {
-    updateStatus.mutate({ id: poId, status: status as any });
+    updateStatus.mutate({ id: poId, status: status as POStatus });
   };
 
   const handleDelete = (poId: number) => {
@@ -613,13 +683,22 @@ export function PurchaseOrdersWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Total: <span className="font-semibold text-foreground">{stats.total}</span>
+              Total:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.total}
+              </span>
             </span>
             <span>
-              Pending: <span className="font-semibold text-foreground">{stats.pending}</span>
+              Pending:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.pending}
+              </span>
             </span>
             <span>
-              Value: <span className="font-semibold text-foreground">{formatCurrency(stats.totalValue)}</span>
+              Value:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(stats.totalValue)}
+              </span>
             </span>
           </div>
         </div>
@@ -634,7 +713,7 @@ export function PurchaseOrdersWorkSurface() {
               ref={searchInputRef}
               placeholder="Search by PO number or supplier... (Cmd+K)"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -644,7 +723,7 @@ export function PurchaseOrdersWorkSurface() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              {PO_STATUSES.map((status) => (
+              {PO_STATUSES.map(status => (
                 <SelectItem key={status} value={status}>
                   {status}
                 </SelectItem>
@@ -661,7 +740,12 @@ export function PurchaseOrdersWorkSurface() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Table Area */}
-        <div className={cn("flex-1 overflow-auto transition-all duration-200", inspector.isOpen && "mr-96")}>
+        <div
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-200",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {posLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -671,8 +755,14 @@ export function PurchaseOrdersWorkSurface() {
               <div className="text-center">
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <p className="font-medium">Failed to load purchase orders</p>
-                <p className="text-sm text-muted-foreground mt-1">{posError.message}</p>
-                <Button variant="outline" onClick={() => refetch()} className="mt-4">
+                <p className="text-sm text-muted-foreground mt-1">
+                  {posError.message}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => refetch()}
+                  className="mt-4"
+                >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry
                 </Button>
@@ -689,7 +779,10 @@ export function PurchaseOrdersWorkSurface() {
                     : "Create your first purchase order"}
                 </p>
                 {!searchQuery && statusFilter === "all" && (
-                  <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4">
+                  <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="mt-4"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Create PO
                   </Button>
@@ -703,14 +796,16 @@ export function PurchaseOrdersWorkSurface() {
                   <TableHead>PO Number</TableHead>
                   <TableHead>Supplier</TableHead>
                   <TableHead>Order Date</TableHead>
-                  {showExpectedDelivery && <TableHead>Expected Delivery</TableHead>}
+                  {showExpectedDelivery && (
+                    <TableHead>Expected Delivery</TableHead>
+                  )}
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPOs.map((po) => (
+                {filteredPOs.map(po => (
                   <TableRow
                     key={po.id}
                     className={cn(
@@ -722,11 +817,17 @@ export function PurchaseOrdersWorkSurface() {
                       inspector.open();
                     }}
                   >
-                    <TableCell className="font-medium">{po.poNumber || "-"}</TableCell>
-                    <TableCell>{getSupplierName(po.supplierClientId ?? po.vendorId)}</TableCell>
+                    <TableCell className="font-medium">
+                      {po.poNumber || "-"}
+                    </TableCell>
+                    <TableCell>
+                      {getSupplierName(po.supplierClientId ?? po.vendorId)}
+                    </TableCell>
                     <TableCell>{formatDate(po.orderDate)}</TableCell>
                     {showExpectedDelivery && (
-                      <TableCell>{formatDate(po.expectedDeliveryDate)}</TableCell>
+                      <TableCell>
+                        {formatDate(po.expectedDeliveryDate)}
+                      </TableCell>
                     )}
                     <TableCell>
                       <StatusBadge status={po.purchaseOrderStatus || "DRAFT"} />
@@ -740,7 +841,7 @@ export function PurchaseOrdersWorkSurface() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             setSelectedPOId(po.id);
                             inspector.open();
@@ -752,7 +853,7 @@ export function PurchaseOrdersWorkSurface() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             handleDelete(po.id);
                           }}
@@ -773,7 +874,13 @@ export function PurchaseOrdersWorkSurface() {
           isOpen={inspector.isOpen}
           onClose={inspector.close}
           title={selectedPO?.poNumber || "Purchase Order"}
-          subtitle={selectedPO ? getSupplierName(selectedPO.supplierClientId ?? selectedPO.vendorId) : ""}
+          subtitle={
+            selectedPO
+              ? getSupplierName(
+                  selectedPO.supplierClientId ?? selectedPO.vendorId
+                )
+              : ""
+          }
         >
           <POInspectorContent
             po={selectedPO}
@@ -784,7 +891,10 @@ export function PurchaseOrdersWorkSurface() {
           />
           {selectedPO && (
             <InspectorActions>
-              <Button variant="outline" onClick={() => handleDelete(selectedPO.id)}>
+              <Button
+                variant="outline"
+                onClick={() => handleDelete(selectedPO.id)}
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete PO
               </Button>
@@ -805,14 +915,19 @@ export function PurchaseOrdersWorkSurface() {
               <Label htmlFor="supplier">Supplier *</Label>
               <Select
                 value={formData.supplierClientId}
-                onValueChange={(value) => setFormData({ ...formData, supplierClientId: value })}
+                onValueChange={value =>
+                  setFormData({ ...formData, supplierClientId: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                  {suppliers.map(supplier => (
+                    <SelectItem
+                      key={supplier.id}
+                      value={supplier.id.toString()}
+                    >
                       {supplier.name}
                     </SelectItem>
                   ))}
@@ -820,25 +935,37 @@ export function PurchaseOrdersWorkSurface() {
               </Select>
             </div>
 
-            <div className={cn("grid gap-4", showExpectedDelivery ? "grid-cols-2" : "grid-cols-1")}>
+            <div
+              className={cn(
+                "grid gap-4",
+                showExpectedDelivery ? "grid-cols-2" : "grid-cols-1"
+              )}
+            >
               <div>
                 <Label htmlFor="orderDate">Order Date *</Label>
                 <Input
                   id="orderDate"
                   type="date"
                   value={formData.orderDate}
-                  onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, orderDate: e.target.value })
+                  }
                 />
               </div>
               {showExpectedDelivery && (
                 <div>
-                  <Label htmlFor="expectedDeliveryDate">Expected Delivery</Label>
+                  <Label htmlFor="expectedDeliveryDate">
+                    Expected Delivery
+                  </Label>
                   <Input
                     id="expectedDeliveryDate"
                     type="date"
                     value={formData.expectedDeliveryDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, expectedDeliveryDate: e.target.value })
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        expectedDeliveryDate: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -849,13 +976,15 @@ export function PurchaseOrdersWorkSurface() {
               <Label htmlFor="paymentTerms">Payment Terms</Label>
               <Select
                 value={formData.paymentTerms}
-                onValueChange={(value) => setFormData({ ...formData, paymentTerms: value })}
+                onValueChange={value =>
+                  setFormData({ ...formData, paymentTerms: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select payment terms" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PAYMENT_TERMS_OPTIONS.map((opt) => (
+                  {PAYMENT_TERMS_OPTIONS.map(opt => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -867,23 +996,30 @@ export function PurchaseOrdersWorkSurface() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>Line Items *</Label>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddItem}
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Item
                 </Button>
               </div>
               {formData.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 mb-2">
+                <div key={item.tempId} className="grid grid-cols-12 gap-2 mb-2">
                   <div className="col-span-5">
                     <Select
                       value={item.productId}
-                      onValueChange={(value) => handleItemChange(index, "productId", value)}
+                      onValueChange={value =>
+                        handleItemChange(index, "productId", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map((p) => (
+                        {products.map(p => (
                           <SelectItem key={p.id} value={p.id.toString()}>
                             {p.name}
                           </SelectItem>
@@ -898,7 +1034,13 @@ export function PurchaseOrdersWorkSurface() {
                       min="0.01"
                       step="0.01"
                       value={item.quantityOrdered}
-                      onChange={(e) => handleItemChange(index, "quantityOrdered", e.target.value)}
+                      onChange={e =>
+                        handleItemChange(
+                          index,
+                          "quantityOrdered",
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
                   <div className="col-span-3">
@@ -908,12 +1050,18 @@ export function PurchaseOrdersWorkSurface() {
                       min="0"
                       step="0.01"
                       value={item.unitCost}
-                      onChange={(e) => handleItemChange(index, "unitCost", e.target.value)}
+                      onChange={e =>
+                        handleItemChange(index, "unitCost", e.target.value)
+                      }
                     />
                   </div>
                   <div className="col-span-1 flex items-center">
                     {formData.items.length > 1 && (
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(index)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveItem(index)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
@@ -927,7 +1075,9 @@ export function PurchaseOrdersWorkSurface() {
               <Textarea
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 rows={2}
               />
             </div>
@@ -937,14 +1087,19 @@ export function PurchaseOrdersWorkSurface() {
               <Textarea
                 id="supplierNotes"
                 value={formData.supplierNotes}
-                onChange={(e) => setFormData({ ...formData, supplierNotes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, supplierNotes: e.target.value })
+                }
                 rows={2}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreatePO} disabled={createPO.isPending}>
@@ -961,15 +1116,21 @@ export function PurchaseOrdersWorkSurface() {
             <DialogTitle>Delete Purchase Order</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to delete PO {selectedPO?.poNumber}? This action cannot be undone.
+            Are you sure you want to delete PO {selectedPO?.poNumber}? This
+            action cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedPO && deletePO.mutate({ id: selectedPO.id })}
+              onClick={() =>
+                selectedPO && deletePO.mutate({ id: selectedPO.id })
+              }
               disabled={deletePO.isPending}
             >
               {deletePO.isPending ? "Deleting..." : "Delete"}
