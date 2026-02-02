@@ -1332,6 +1332,60 @@ After each deploy, run: `POST /api/trpc/adminSchemaPush.pushSchema`
 - **Fix:** Require `createdBy` in function signature, throw error if not provided
 - **Discovered:** QA Bug Pattern Analysis (Jan 26, 2026)
 
+#### 🚨 P0 CRITICAL: Inventory Filter Chain (Feb 2, 2026)
+
+> **BUSINESS BLOCKER:** When inventory filters don't work, the wholesale operation cannot function.
+> This causes DATA LOSS, not just performance degradation.
+> **Reference:** `docs/roadmaps/PARALLEL_EXECUTION_PLAN_2026-02-01.md` (Wave 0)
+
+| Task    | Description                                          | Priority | Status | Estimate | Files                                           |
+| ------- | ---------------------------------------------------- | -------- | ------ | -------- | ----------------------------------------------- |
+| BUG-140 | Reconnect status/category filters to DB (1-line fix) | P0       | ready  | 30m      | `server/routers/inventory.ts:153`               |
+| BUG-141 | Surface active filter indicator in UI                | P1       | ready  | 1h       | `client/src/pages/Inventory.tsx`                |
+| BUG-142 | Extend DB layer for full filter support              | P1       | ready  | 3h       | `server/inventoryDb.ts`, `inventory.ts`         |
+| BUG-143 | Party model: vendorId → supplierClientId             | P1       | ready  | 2h       | `server/routers/inventory.ts`, `inventoryDb.ts` |
+
+**BUG-140 Details (IMMEDIATE - One-Line Fix):**
+
+- **Location:** `server/routers/inventory.ts:153`
+- **Issue:** `getEnhanced` tRPC procedure accepts 12 filter parameters but passes NONE to the database. All filtering happens client-side after fetching an unfiltered page.
+- **Impact:** Filters "work" on small datasets but break at production scale (300+ batches). Pagination advances through unfiltered results → filtered views return empty/wrong data. This is DATA LOSS.
+- **Root Cause:** `getBatchesWithDetails(input.pageSize + 1, input.cursor)` - filters not passed
+- **Fix:** Pass status and category filters to DB call:
+  ```typescript
+  const result = await inventoryDb.getBatchesWithDetails(
+    input.pageSize + 1,
+    input.cursor,
+    { status: input.status?.[0], category: input.category }
+  );
+  ```
+- **Discovered:** Adversarial QA Review (Feb 2, 2026)
+
+**BUG-141 Details (UI Filter Indicator):**
+
+- **Location:** `client/src/pages/Inventory.tsx`
+- **Issue:** When filters are active but return empty results due to pagination issues, users have no visual indication that filters are limiting results
+- **Impact:** Users think there's no inventory when actually filters are active from localStorage
+- **Fix:** The `useInventoryFilters` hook already has `hasActiveFilters`, `activeFilterCount`, and `clearAllFilters`. Add a visible banner when filters are active.
+
+**BUG-142 Details (Full DB Filter Support):**
+
+- **Location:** `server/inventoryDb.ts`, `server/routers/inventory.ts`
+- **Issue:** DB layer `getBatchesWithDetails` only supports basic status/category; needs full filter support
+- **Fix:** Extend function to support:
+  - `status: string | string[]` (array support)
+  - `subcategory: string`
+  - `vendor: string[]` (match against clients.businessName)
+  - `brand: string[]` (match against brands.name)
+  - `grade: string[]` (match against batches.grade)
+
+**BUG-143 Details (Party Model Violation):**
+
+- **Location:** `server/routers/inventory.ts`, `server/inventoryDb.ts`
+- **Issue:** Uses deprecated `vendorId` terminology instead of `supplierClientId`
+- **Fix:** Rename `getBatchesByVendor` → `getBatchesBySupplier`, change `vendorId` → `supplierClientId`
+- **Related:** BUG-122 (vendors table joins removed from inventoryDb.ts)
+
 **BUG-103 Details:**
 
 - **Location:** `/login` page

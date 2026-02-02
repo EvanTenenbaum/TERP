@@ -2,22 +2,119 @@
 
 **Created:** 2026-02-01
 **Revised:** 2026-02-01 (QA review - trimmed scope to verified issues only)
+**Revised:** 2026-02-02 (P0 Inventory Filter Chain bug added)
 **Purpose:** Fix verified security issues while continuing roadmap execution
 **Strategy:** Lean execution - only verified issues, schema-first for actor tracking
 
 ---
 
-## QA Review Summary
+## 🚨 P0 CRITICAL: Inventory Filter Chain Bug (NEW)
+
+> **This bug BLOCKS the business.** When inventory filters don't work, the wholesale operation cannot function.
+
+### Summary
+
+The `getEnhanced` tRPC procedure accepts 12 filter parameters but **passes NONE to the database**. All filtering happens client-side after fetching an unfiltered page. This causes:
+
+- Filters "work" on small datasets but break at production scale (300+ batches)
+- Pagination advances through unfiltered results → filtered views return empty/wrong data
+- **This is DATA LOSS, not a performance issue**
+
+### Wave 0: Inventory Filter Fix (IMMEDIATE PRIORITY)
+
+| Phase | Task    | Description                                          | Est | Files                            |
+| ----- | ------- | ---------------------------------------------------- | --- | -------------------------------- |
+| 0A    | BUG-140 | Reconnect status/category filters to DB (1-line fix) | 30m | `inventory.ts:153`               |
+| 0B    | BUG-141 | Surface active filter indicator in UI                | 1h  | `Inventory.tsx`                  |
+| 0C    | BUG-142 | Extend DB layer for vendor/brand/grade/array-status  | 3h  | `inventoryDb.ts`, `inventory.ts` |
+| 0D    | BUG-143 | Party model: vendorId → supplierClientId             | 2h  | `inventory.ts`, `inventoryDb.ts` |
+
+**Phase 0A is a ONE-LINE FIX that immediately unblocks the most critical behavior.**
+
+### BUG-140: The One-Line Fix (Reconnect Filters to DB)
+
+**File:** `server/routers/inventory.ts` line ~153
+
+```typescript
+// CURRENT (BROKEN)
+const result = await inventoryDb.getBatchesWithDetails(
+  input.pageSize + 1,
+  input.cursor
+  // ← filters NOT passed
+);
+
+// FIX
+const result = await inventoryDb.getBatchesWithDetails(
+  input.pageSize + 1,
+  input.cursor,
+  {
+    status: input.status?.[0], // DB expects string, frontend sends array
+    category: input.category,
+  }
+);
+```
+
+### BUG-141: Silent Filter Persistence UI Indicator
+
+**File:** `client/src/pages/Inventory.tsx`
+
+The `useInventoryFilters` hook already has `hasActiveFilters`, `activeFilterCount`, and `clearAllFilters`. The UI just doesn't use them prominently. Add a visible banner when filters are active.
+
+### BUG-142: Full Filter Support in DB Layer
+
+Extend `inventoryDb.getBatchesWithDetails` to support:
+
+- `status: string | string[]` (array support)
+- `subcategory: string`
+- `vendor: string[]` (match against clients.businessName)
+- `brand: string[]` (match against brands.name)
+- `grade: string[]` (match against batches.grade)
+
+### BUG-143: Party Model Violation (vendorId → supplierClientId)
+
+Rename `getBatchesByVendor` → `getBatchesBySupplier`, change `vendorId` → `supplierClientId`.
+
+### Conflicts with Existing Roadmap
+
+| Existing Item           | Conflict?   | Resolution                                                                         |
+| ----------------------- | ----------- | ---------------------------------------------------------------------------------- |
+| SCHEMA-016 (strainId)   | ⚠️ Related  | SCHEMA-016 already handles strainId guards; BUG-140 is separate filter chain issue |
+| BUG-098 (Inventory $0)  | ⚠️ Related  | BUG-098 was data source mismatch; BUG-140 is filter chain - different root cause   |
+| GF-003 (Order-to-Cash)  | ✅ Unblocks | Fixing inventory filters helps Order-to-Cash flow                                  |
+| BUG-122 (vendors table) | ⚠️ Related  | BUG-143 addresses similar party model issues in inventory filters specifically     |
+
+### Previous Work Impact Analysis (Feb 2, 2026)
+
+**Wave 1 Security Fixes (commit `90ae6850`) have NO conflicts with inventory filter chain bugs.**
+
+| Wave 1 Work | Files Modified                         | Overlaps with BUG-140-143? |
+| ----------- | -------------------------------------- | -------------------------- |
+| SEC-042     | `orderService.ts`, `vipPortalAdmin.ts` | ❌ No overlap              |
+| SEC-048     | `qaAuth.ts`                            | ❌ No overlap              |
+| SEC-041     | `.gitignore`, deleted backup files     | ❌ No overlap              |
+| SEC-040     | `liveShopping.ts`                      | ❌ No overlap              |
+
+**Inventory Filter Chain Bugs affect:**
+
+- `server/routers/inventory.ts` - NOT modified by Wave 1
+- `server/inventoryDb.ts` - NOT modified by Wave 1
+- `client/src/pages/Inventory.tsx` - NOT modified by Wave 1
+
+**Conclusion:** Wave 0 (inventory fixes) can proceed independently without any risk of conflicts with completed Wave 1 work.
+
+---
+
+## QA Review Summary (Security Fixes)
 
 Original plan had 35 tasks. After verification:
 
-- **4 confirmed critical issues** (Wave 1)
+- **4 confirmed critical issues** (Wave 1) - ✅ COMPLETE
 - **1 confirmed soft delete issue** (Wave 2)
 - **~30 false positives** - tables lack `createdBy` columns, need schema migration first
 
 ---
 
-## Wave 1: Verified Critical Fixes (Est: 2-3h)
+## Wave 1: Verified Critical Fixes (Est: 2-3h) - ✅ COMPLETE
 
 | Track | Task    | Description                                 | Verified? | Est |
 | ----- | ------- | ------------------------------------------- | --------- | --- |
@@ -138,7 +235,13 @@ Based on audit results, create tasks for:
 ## Execution Schedule
 
 ```
-Wave 1 (Critical Security)     ──→ 2-3h
+Wave 0 (P0 INVENTORY)          ──→ 6-7h (DO THIS FIRST)
+    │
+    ├──→ Phase 0A (1-line fix)  ──→ 30m (SHIP IMMEDIATELY)
+    │
+    └──→ Phases 0B-0D (parallel) ──→ 6h
+              │
+Wave 1 (Critical Security)     ──→ ✅ COMPLETE
     │
     └──→ Wave 2 (Audit + 1 Fix) ──→ 2h
               │
@@ -149,7 +252,7 @@ Wave 1 (Critical Security)     ──→ 2-3h
                         └──→ Wave 5 (Schema-Dependent) ──→ TBD based on audit
 ```
 
-**Total Verified Work:** ~16h (vs 48h original estimate)
+**Total Verified Work:** ~22h (Wave 0: 6h + remaining: 16h)
 
 ---
 
