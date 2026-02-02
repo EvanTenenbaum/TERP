@@ -661,6 +661,21 @@ export async function runAutoMigrations() {
       }
     }
 
+    // REL-005: Add version column to payments table for optimistic locking (DATA-005)
+    try {
+      await db.execute(
+        sql`ALTER TABLE payments ADD COLUMN version INT NOT NULL DEFAULT 1`
+      );
+      console.info("  ✅ Added version column to payments");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  payments.version already exists");
+      } else {
+        console.info("  ⚠️  payments.version:", errMsg);
+      }
+    }
+
     // Add statusId column to batches table (Workflow Queue feature)
     // NOTE: Schema uses camelCase "statusId" not snake_case
     try {
