@@ -16,7 +16,7 @@ process.on("unhandledRejection", (reason, promise) => {
 const __startupTs = Date.now();
 function logStartupPhase(phase: string) {
   const elapsed = ((Date.now() - __startupTs) / 1000).toFixed(1);
-  console.info(\`[STARTUP +\${elapsed}s] \${phase}\`);
+  console.info(`[STARTUP +${elapsed}s] ${phase}`);
 }
 
 import express from "express";
