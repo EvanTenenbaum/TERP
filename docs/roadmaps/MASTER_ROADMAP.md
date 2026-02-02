@@ -3097,7 +3097,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ### REL-003: Add Transaction Rollback to Payments
 
-**Status:** in-progress
+**Status:** 🔄 WAVE-2026-02-02-A
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `server/routers/payments.ts`
@@ -3162,7 +3162,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ### REL-005: Add Optimistic Locking to Critical Tables
 
-**Status:** ready
+**Status:** 🔄 WAVE-2026-02-02-A
 **Priority:** HIGH
 **Estimate:** 8h
 **Module:** `drizzle/schema.ts`, `server/routers/*.ts`
@@ -3191,7 +3191,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ### REL-006: Wrap Order Confirmation in Transaction
 
-**Status:** ready
+**Status:** 🔄 WAVE-2026-02-02-A
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `server/routers/orders.ts`
@@ -3499,7 +3499,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ### REL-017: Add Tests for Fingerprint Retry Logic
 
-**Status:** ready
+**Status:** 🔄 WAVE-2026-02-02-A
 **Priority:** HIGH
 **Estimate:** 4h
 **Module:** `server/autoMigrate.ts`
