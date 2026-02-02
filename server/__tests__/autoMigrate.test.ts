@@ -4,6 +4,18 @@
  * Tests the retry behavior of the schema fingerprint check in autoMigrate.ts.
  * The fingerprint check runs up to 3 times with backoff delays (3s, 6s) to handle
  * cold database connections during deployment.
+ *
+ * NOTE: These tests use a helper function that mirrors the production logic rather
+ * than testing runAutoMigrations() directly. This is because:
+ * 1. runAutoMigrations() has side effects (module-level state, console output)
+ * 2. It's tightly coupled to the database connection
+ * 3. Extracting the retry logic into a separate function would require production refactoring
+ *
+ * The tests verify the BEHAVIOR patterns (retry count, backoff delays, success conditions)
+ * which should remain consistent with the production implementation.
+ *
+ * TODO: Consider refactoring autoMigrate.ts to extract the fingerprint check into a
+ * separate, injectable function for better testability.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";

@@ -297,27 +297,28 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
-      const txResult = await (async () => {
-        try {
-          return await db.transaction(async tx => {
-            // Generate payment number
-            const paymentNumber = await generatePaymentNumber();
+      // REL-003: Wrap transaction in try/catch for Sentry logging
+      let txResult;
+      try {
+        txResult = await db.transaction(async tx => {
+          // Generate payment number
+          const paymentNumber = await generatePaymentNumber();
 
-            // Create payment record
-            // TERP-0016: Use effectiveAmount which is capped at amountDue
-            const [payment] = await tx
-              .insert(payments)
-              .values({
-                paymentNumber,
-                paymentType: "RECEIVED",
-                invoiceId: input.invoiceId,
-                customerId: invoice.customerId,
-                paymentDate: input.paymentDate
-                  ? new Date(input.paymentDate)
-                  : new Date(),
-                amount: effectiveAmount.toFixed(2),
-                paymentMethod: input.paymentMethod,
-                referenceNumber: input.referenceNumber,
+          // Create payment record
+          // TERP-0016: Use effectiveAmount which is capped at amountDue
+          const [payment] = await tx
+            .insert(payments)
+            .values({
+              paymentNumber,
+              paymentType: "RECEIVED",
+              invoiceId: input.invoiceId,
+              customerId: invoice.customerId,
+              paymentDate: input.paymentDate
+                ? new Date(input.paymentDate)
+                : new Date(),
+              amount: effectiveAmount.toFixed(2),
+              paymentMethod: input.paymentMethod,
+              referenceNumber: input.referenceNumber,
                 notes: input.notes,
                 createdBy: userId,
               })
@@ -404,34 +405,37 @@ export const paymentsRouter = router({
               newAmountDue: newDue,
             });
 
-            return {
-              paymentId,
-              paymentNumber,
-              invoiceId: input.invoiceId,
-              customerId: invoice.customerId,
-              amount: effectiveAmount,
-              invoiceStatus: newStatus,
-              amountDue: newDue,
-            };
-          });
-        } catch (error) {
-          captureException(
-            error instanceof Error ? error : new Error(String(error)),
-            {
-              operation: "payment_record",
-              invoiceId: input.invoiceId,
-              amount: input.amount,
-              paymentMethod: input.paymentMethod,
-              userId,
-            }
-          );
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Payment operation failed - transaction rolled back",
-            cause: error,
-          });
+          return {
+            paymentId,
+            paymentNumber,
+            invoiceId: input.invoiceId,
+            customerId: invoice.customerId,
+            amount: effectiveAmount,
+            invoiceStatus: newStatus,
+            amountDue: newDue,
+          };
+        });
+      } catch (error) {
+        // REL-003: Preserve TRPCErrors (validation errors), only wrap unexpected errors
+        if (error instanceof TRPCError) {
+          throw error;
         }
-      })();
+        captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            operation: "payment_record",
+            invoiceId: input.invoiceId,
+            amount: input.amount,
+            paymentMethod: input.paymentMethod,
+            userId,
+          }
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Payment recording failed - transaction rolled back",
+          cause: error,
+        });
+      }
 
       // ARCH-002: Sync client balance after transaction to ensure consistency
       // This derives totalOwed from SUM(invoices.amountDue)
@@ -709,30 +713,31 @@ export const paymentsRouter = router({
       );
       const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
-      const txResult = await (async () => {
-        try {
-          return await db.transaction(async tx => {
-            // Generate payment number
-            const paymentNumber = await generatePaymentNumber();
+      // REL-003: Wrap transaction in try/catch for Sentry logging
+      let txResult;
+      try {
+        txResult = await db.transaction(async tx => {
+          // Generate payment number
+          const paymentNumber = await generatePaymentNumber();
 
-            // Create main payment record
-            const [payment] = await tx
-              .insert(payments)
-              .values({
-                paymentNumber,
-                paymentType: "RECEIVED",
-                customerId: input.clientId,
-                paymentDate: new Date(),
-                amount: input.totalAmount.toFixed(2),
-                paymentMethod:
-                  input.paymentMethod === "CRYPTO"
-                    ? "OTHER"
-                    : input.paymentMethod,
-                referenceNumber: input.referenceNumber,
-                notes: input.notes,
-                createdBy: userId,
-              })
-              .$returningId();
+          // Create main payment record
+          const [payment] = await tx
+            .insert(payments)
+            .values({
+              paymentNumber,
+              paymentType: "RECEIVED",
+              customerId: input.clientId,
+              paymentDate: new Date(),
+              amount: input.totalAmount.toFixed(2),
+              paymentMethod:
+                input.paymentMethod === "CRYPTO"
+                  ? "OTHER"
+                  : input.paymentMethod,
+              referenceNumber: input.referenceNumber,
+              notes: input.notes,
+              createdBy: userId,
+            })
+            .$returningId();
 
             const paymentId = payment.id;
 
@@ -855,32 +860,35 @@ export const paymentsRouter = router({
               invoiceCount: input.allocations.length,
             });
 
-            return {
-              paymentId,
-              paymentNumber,
-              clientId: input.clientId,
-              totalAmount: input.totalAmount,
-              invoiceAllocations,
-            };
-          });
-        } catch (error) {
-          captureException(
-            error instanceof Error ? error : new Error(String(error)),
-            {
-              operation: "multi_invoice_payment",
-              clientId: input.clientId,
-              totalAmount: input.totalAmount,
-              allocationCount: input.allocations.length,
-              userId,
-            }
-          );
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Payment operation failed - transaction rolled back",
-            cause: error,
-          });
+          return {
+            paymentId,
+            paymentNumber,
+            clientId: input.clientId,
+            totalAmount: input.totalAmount,
+            invoiceAllocations,
+          };
+        });
+      } catch (error) {
+        // REL-003: Preserve TRPCErrors (validation errors), only wrap unexpected errors
+        if (error instanceof TRPCError) {
+          throw error;
         }
-      })();
+        captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            operation: "multi_invoice_payment",
+            clientId: input.clientId,
+            totalAmount: input.totalAmount,
+            allocationCount: input.allocations.length,
+            userId,
+          }
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Multi-invoice payment failed - transaction rolled back",
+          cause: error,
+        });
+      }
 
       // ARCH-002: Sync client balance after transaction
       const { syncClientBalance } = await import(
@@ -931,18 +939,19 @@ export const paymentsRouter = router({
 
       const paymentAmount = parseFloat(payment.amount || "0");
 
-      const txResult = await (async () => {
-        try {
-          return await db.transaction(async tx => {
-            // Soft delete the payment
-            await tx
-              .update(payments)
-              .set({
-                deletedAt: new Date(),
-                notes:
-                  `${payment.notes || ""}\n[VOIDED]: ${input.reason} on ${new Date().toISOString()}`.trim(),
-              })
-              .where(eq(payments.id, input.id));
+      // REL-003: Wrap transaction in try/catch for Sentry logging
+      let txResult;
+      try {
+        txResult = await db.transaction(async tx => {
+          // Soft delete the payment
+          await tx
+            .update(payments)
+            .set({
+              deletedAt: new Date(),
+              notes:
+                `${payment.notes || ""}\n[VOIDED]: ${input.reason} on ${new Date().toISOString()}`.trim(),
+            })
+            .where(eq(payments.id, input.id));
 
             // FEAT-007: Check for multi-invoice allocations first
             const allocations = await tx
@@ -1080,29 +1089,32 @@ export const paymentsRouter = router({
               allocationsReversed: allocations.length,
             });
 
-            return {
-              success: true,
-              paymentId: input.id,
-              customerId: payment.customerId,
-            };
-          });
-        } catch (error) {
-          captureException(
-            error instanceof Error ? error : new Error(String(error)),
-            {
-              operation: "payment_void",
-              paymentId: input.id,
-              reason: input.reason,
-              userId,
-            }
-          );
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Payment operation failed - transaction rolled back",
-            cause: error,
-          });
+          return {
+            success: true,
+            paymentId: input.id,
+            customerId: payment.customerId,
+          };
+        });
+      } catch (error) {
+        // REL-003: Preserve TRPCErrors (validation errors), only wrap unexpected errors
+        if (error instanceof TRPCError) {
+          throw error;
         }
-      })();
+        captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            operation: "payment_void",
+            paymentId: input.id,
+            reason: input.reason,
+            userId,
+          }
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Payment void failed - transaction rolled back",
+          cause: error,
+        });
+      }
 
       // ARCH-002: Sync client balance after transaction
       if (txResult.customerId) {
