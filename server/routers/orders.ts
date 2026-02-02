@@ -15,6 +15,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { parseMoneyOrZero } from "../utils/money";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
 import {
@@ -152,8 +153,14 @@ export const ordersRouter = router({
             quantity: z.number().positive("Quantity must be greater than 0"),
             unitPrice: z.number().nonnegative("Unit price cannot be negative"),
             isSample: z.boolean(),
-            overridePrice: z.number().nonnegative("Override price cannot be negative").optional(),
-            overrideCogs: z.number().nonnegative("Override COGS cannot be negative").optional(),
+            overridePrice: z
+              .number()
+              .nonnegative("Override price cannot be negative")
+              .optional(),
+            overrideCogs: z
+              .number()
+              .nonnegative("Override COGS cannot be negative")
+              .optional(),
           })
         ),
         validUntil: z.string().optional(),
@@ -420,7 +427,7 @@ export const ordersRouter = router({
 
         // BUG-317: Validate individual line item quantities
         for (const item of lineItems) {
-          const qty = parseFloat(String(item.quantity));
+          const qty = parseMoneyOrZero(item.quantity);
           if (Number.isNaN(qty) || qty <= 0) {
             throw new TRPCError({
               code: "BAD_REQUEST",
@@ -431,7 +438,9 @@ export const ordersRouter = router({
 
         // BUG-301, BUG-304: SELECT FOR UPDATE to lock batches and prevent race conditions
         // ST-053: Properly typed - lineItems is OrderLineItem[]
-        const batchIds = lineItems.map((item: OrderLineItem) => item.batchId as number);
+        const batchIds = lineItems.map(
+          (item: OrderLineItem) => item.batchId as number
+        );
         const batchRecords = await tx
           .select()
           .from(batches)
@@ -460,12 +469,12 @@ export const ordersRouter = router({
           }
 
           // BUG-315: Handle NaN from parseFloat with explicit checks
-          const onHand = parseFloat(String(batch.onHandQty || "0"));
-          const reserved = parseFloat(String(batch.reservedQty || "0"));
-          const quarantine = parseFloat(String(batch.quarantineQty || "0"));
-          const hold = parseFloat(String(batch.holdQty || "0"));
+          const onHand = parseMoneyOrZero(batch.onHandQty);
+          const reserved = parseMoneyOrZero(batch.reservedQty);
+          const quarantine = parseMoneyOrZero(batch.quarantineQty);
+          const hold = parseMoneyOrZero(batch.holdQty);
           // BUG-501: Parse sampleQty for sample order validation
-          const sampleQty = parseFloat(String(batch.sampleQty || "0"));
+          const sampleQty = parseMoneyOrZero(batch.sampleQty);
 
           if (
             Number.isNaN(onHand) ||
@@ -492,7 +501,7 @@ export const ordersRouter = router({
             });
           }
 
-          const requestedQty = parseFloat(String(item.quantity));
+          const requestedQty = parseMoneyOrZero(item.quantity);
 
           // BUG-315: Check for NaN in requested quantity
           if (Number.isNaN(requestedQty)) {
@@ -555,7 +564,7 @@ export const ordersRouter = router({
         // BUG-501: Decrement sampleQty for sample orders, reservedQty for regular orders
         // BUG-403: Use parsed value consistently for both validation and update
         for (const item of lineItems) {
-          const parsedQty = parseFloat(String(item.quantity));
+          const parsedQty = parseMoneyOrZero(item.quantity);
           if (item.isSample) {
             // For sample orders, decrement sampleQty directly
             await tx.execute(sql`
@@ -640,10 +649,18 @@ export const ordersRouter = router({
               displayName: z.string().optional(),
               // ORD-002: Quantity and prices must be positive/non-negative
               quantity: z.number().positive("Quantity must be greater than 0"),
-              unitPrice: z.number().nonnegative("Unit price cannot be negative"),
+              unitPrice: z
+                .number()
+                .nonnegative("Unit price cannot be negative"),
               isSample: z.boolean(),
-              overridePrice: z.number().nonnegative("Override price cannot be negative").optional(),
-              overrideCogs: z.number().nonnegative("Override COGS cannot be negative").optional(),
+              overridePrice: z
+                .number()
+                .nonnegative("Override price cannot be negative")
+                .optional(),
+              overrideCogs: z
+                .number()
+                .nonnegative("Override COGS cannot be negative")
+                .optional(),
             })
           )
           .optional(),
@@ -708,7 +725,7 @@ export const ordersRouter = router({
             columns: { category: true },
           });
 
-          const originalCogs = parseFloat(batch.unitCogs || "0");
+          const originalCogs = parseMoneyOrZero(batch.unitCogs);
           const cogsPerUnit = item.isCogsOverridden
             ? item.cogsPerUnit
             : originalCogs;
@@ -911,7 +928,7 @@ export const ordersRouter = router({
               })
             : null;
 
-          const originalCogs = parseFloat(batch.unitCogs || "0");
+          const originalCogs = parseMoneyOrZero(batch.unitCogs);
           const cogsPerUnit = item.isCogsOverridden
             ? item.cogsPerUnit
             : originalCogs;
@@ -1064,163 +1081,168 @@ export const ordersRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // INV-003: Wrap entire finalization in a retryable transaction
-      return await withRetryableTransaction(async tx => {
-        // INV-003: Lock the order row first
-        const [existingOrder] = await tx
-          .select()
-          .from(orders)
-          .where(eq(orders.id, input.orderId))
-          .for("update")
-          .limit(1);
+      return await withRetryableTransaction(
+        async tx => {
+          // INV-003: Lock the order row first
+          const [existingOrder] = await tx
+            .select()
+            .from(orders)
+            .where(eq(orders.id, input.orderId))
+            .for("update")
+            .limit(1);
 
-        if (!existingOrder) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Order not found",
-          });
-        }
-
-        // ST-026: Check version for concurrent edit detection
-        if (existingOrder.version !== input.version) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: `Order was modified by another user. Please refresh and try again.`,
-          });
-        }
-
-        if (!existingOrder.isDraft) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Order is already finalized",
-          });
-        }
-
-        // INV-003: Lock line items to prevent modification during finalization
-        const lineItems = await tx
-          .select()
-          .from(orderLineItems)
-          .where(eq(orderLineItems.orderId, input.orderId))
-          .for("update");
-
-        if (lineItems.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Cannot finalize order with no line items",
-          });
-        }
-
-        // INV-003: Extract unique batch IDs and lock all batches
-        const batchIds = [...new Set(lineItems.map(item => item.batchId))];
-        const batchRecords = await tx
-          .select()
-          .from(batches)
-          .where(safeInArray(batches.id, batchIds))
-          .for("update");
-
-        const batchMap = new Map(batchRecords.map(b => [b.id, b]));
-
-        // INV-003: Verify inventory availability AFTER acquiring locks
-        for (const item of lineItems) {
-          const batch = batchMap.get(item.batchId);
-          if (!batch) {
+          if (!existingOrder) {
             throw new TRPCError({
               code: "NOT_FOUND",
-              message: `Batch ${item.batchId} not found`,
+              message: "Order not found",
             });
           }
 
-          const requestedQty = parseFloat(item.quantity);
-          const onHand = parseFloat(batch.onHandQty || "0");
-          const reserved = parseFloat(batch.reservedQty || "0");
-          const quarantine = parseFloat(batch.quarantineQty || "0");
-          const hold = parseFloat(batch.holdQty || "0");
-          const sampleQty = parseFloat(batch.sampleQty || "0");
+          // ST-026: Check version for concurrent edit detection
+          if (existingOrder.version !== input.version) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Order was modified by another user. Please refresh and try again.`,
+            });
+          }
 
-          const availableQty = item.isSample
-            ? sampleQty
-            : Math.max(0, onHand - reserved - quarantine - hold);
-
-          if (availableQty < requestedQty) {
+          if (!existingOrder.isDraft) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Required: ${requestedQty}`,
+              message: "Order is already finalized",
             });
           }
-        }
 
-        // Final validation
-        const validation = orderValidationService.validateOrder({
-          orderType: existingOrder.orderType as "QUOTE" | "SALE",
-          clientId: existingOrder.clientId,
-          lineItems: lineItems.map(item => ({
-            batchId: item.batchId,
-            quantity: parseFloat(item.quantity),
-            cogsPerUnit: parseFloat(item.cogsPerUnit),
-            pricePerUnit: parseFloat(item.unitPrice),
-            marginPercent: parseFloat(item.marginPercent),
-            isSample: item.isSample,
-          })),
-          finalTotal: parseFloat(existingOrder.total),
-          overallMarginPercent: parseFloat(existingOrder.avgMarginPercent || "0"),
-        });
+          // INV-003: Lock line items to prevent modification during finalization
+          const lineItems = await tx
+            .select()
+            .from(orderLineItems)
+            .where(eq(orderLineItems.orderId, input.orderId))
+            .for("update");
 
-        if (!validation.isValid) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Cannot finalize: ${validation.errors.join(", ")}`,
+          if (lineItems.length === 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Cannot finalize order with no line items",
+            });
+          }
+
+          // INV-003: Extract unique batch IDs and lock all batches
+          const batchIds = [...new Set(lineItems.map(item => item.batchId))];
+          const batchRecords = await tx
+            .select()
+            .from(batches)
+            .where(safeInArray(batches.id, batchIds))
+            .for("update");
+
+          const batchMap = new Map(batchRecords.map(b => [b.id, b]));
+
+          // INV-003: Verify inventory availability AFTER acquiring locks
+          for (const item of lineItems) {
+            const batch = batchMap.get(item.batchId);
+            if (!batch) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: `Batch ${item.batchId} not found`,
+              });
+            }
+
+            const requestedQty = parseMoneyOrZero(item.quantity);
+            const onHand = parseMoneyOrZero(batch.onHandQty);
+            const reserved = parseMoneyOrZero(batch.reservedQty);
+            const quarantine = parseMoneyOrZero(batch.quarantineQty);
+            const hold = parseMoneyOrZero(batch.holdQty);
+            const sampleQty = parseMoneyOrZero(batch.sampleQty);
+
+            const availableQty = item.isSample
+              ? sampleQty
+              : Math.max(0, onHand - reserved - quarantine - hold);
+
+            if (availableQty < requestedQty) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Insufficient inventory for batch ${batch.sku || batch.id}. Available: ${availableQty}, Required: ${requestedQty}`,
+              });
+            }
+          }
+
+          // Final validation
+          const validation = orderValidationService.validateOrder({
+            orderType: existingOrder.orderType as "QUOTE" | "SALE",
+            clientId: existingOrder.clientId,
+            lineItems: lineItems.map(item => ({
+              batchId: item.batchId,
+              quantity: parseMoneyOrZero(item.quantity),
+              cogsPerUnit: parseMoneyOrZero(item.cogsPerUnit),
+              pricePerUnit: parseMoneyOrZero(item.unitPrice),
+              marginPercent: parseMoneyOrZero(item.marginPercent),
+              isSample: item.isSample,
+            })),
+            finalTotal: parseMoneyOrZero(existingOrder.total),
+            overallMarginPercent: parseMoneyOrZero(
+              existingOrder.avgMarginPercent
+            ),
           });
-        }
 
-        // INV-003: Reserve inventory by incrementing reservedQty
-        const { sql: sqlFn } = await import("drizzle-orm");
-        for (const item of lineItems) {
-          const qty = parseFloat(item.quantity);
-          if (item.isSample) {
-            // Decrement sample quantity directly
-            await tx.execute(sqlFn`
+          if (!validation.isValid) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Cannot finalize: ${validation.errors.join(", ")}`,
+            });
+          }
+
+          // INV-003: Reserve inventory by incrementing reservedQty
+          const { sql: sqlFn } = await import("drizzle-orm");
+          for (const item of lineItems) {
+            const qty = parseMoneyOrZero(item.quantity);
+            if (item.isSample) {
+              // Decrement sample quantity directly
+              await tx.execute(sqlFn`
               UPDATE batches
               SET sampleQty = CAST(sampleQty AS DECIMAL(15,4)) - ${qty}
               WHERE id = ${item.batchId}
             `);
-          } else {
-            // Increment reserved quantity to prevent overselling
-            await tx.execute(sqlFn`
+            } else {
+              // Increment reserved quantity to prevent overselling
+              await tx.execute(sqlFn`
               UPDATE batches
               SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${qty}
               WHERE id = ${item.batchId}
             `);
+            }
           }
-        }
 
-        // ST-026: Update order to finalized with version increment
-        await tx
-          .update(orders)
-          .set({
-            isDraft: false,
-            confirmedAt: new Date(),
-            fulfillmentStatus: "PENDING",
-            version: sqlFn`version + 1`,
-          })
-          .where(eq(orders.id, input.orderId));
+          // ST-026: Update order to finalized with version increment
+          await tx
+            .update(orders)
+            .set({
+              isDraft: false,
+              confirmedAt: new Date(),
+              fulfillmentStatus: "PENDING",
+              version: sqlFn`version + 1`,
+            })
+            .where(eq(orders.id, input.orderId));
 
-        // Log audit entry (outside transaction is fine - non-critical)
-        await orderAuditService.logOrderFinalization(input.orderId, userId, {
-          finalTotal: parseFloat(existingOrder.total),
-          finalizedAt: new Date(),
-        });
+          // Log audit entry (outside transaction is fine - non-critical)
+          await orderAuditService.logOrderFinalization(input.orderId, userId, {
+            finalTotal: parseMoneyOrZero(existingOrder.total),
+            finalizedAt: new Date(),
+          });
 
-        logger.info({
-          msg: "INV-003: Draft order finalized with inventory reservation",
-          orderId: input.orderId,
-          lineItemCount: lineItems.length,
-        });
+          logger.info({
+            msg: "INV-003: Draft order finalized with inventory reservation",
+            orderId: input.orderId,
+            lineItemCount: lineItems.length,
+          });
 
-        return {
-          orderId: input.orderId,
-          orderNumber: existingOrder.orderNumber,
-          validation,
-        };
-      }, { maxRetries: 3 });
+          return {
+            orderId: input.orderId,
+            orderNumber: existingOrder.orderNumber,
+            validation,
+          };
+        },
+        { maxRetries: 3 }
+      );
     }),
 
   /**
@@ -1335,7 +1357,7 @@ export const ordersRouter = router({
         throw new Error("Line item not found");
       }
 
-      const oldCOGS = parseFloat(lineItem.cogsPerUnit);
+      const oldCOGS = parseMoneyOrZero(lineItem.cogsPerUnit);
 
       // Validate COGS value
       const validation = cogsChangeIntegrationService.validateCOGS(
@@ -1450,9 +1472,8 @@ export const ordersRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // ARCH-001: Delegate to OrderOrchestrator for transactional integrity
-      const { orderOrchestrator } = await import(
-        "../services/orderOrchestrator"
-      );
+      const { orderOrchestrator } =
+        await import("../services/orderOrchestrator");
 
       const result = await orderOrchestrator.processReturn({
         orderId: input.orderId,
@@ -1579,144 +1600,151 @@ export const ordersRouter = router({
     .mutation(async ({ input }) => {
       // INV-003: Wrap entire confirm logic in a retryable transaction
       // This prevents race conditions when multiple users confirm orders simultaneously
-      return await withRetryableTransaction(async tx => {
-        // INV-003: Lock the order row first to prevent concurrent confirmations
-        const [order] = await tx
-          .select()
-          .from(orders)
-          .where(eq(orders.id, input.id))
-          .for("update")
-          .limit(1);
+      return await withRetryableTransaction(
+        async tx => {
+          // INV-003: Lock the order row first to prevent concurrent confirmations
+          const [order] = await tx
+            .select()
+            .from(orders)
+            .where(eq(orders.id, input.id))
+            .for("update")
+            .limit(1);
 
-        if (!order) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Order not found",
-          });
-        }
-
-        if (order.orderType !== "SALE") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Only SALE orders can be confirmed",
-          });
-        }
-
-        if (
-          order.saleStatus !== "PENDING" &&
-          order.fulfillmentStatus !== "PENDING"
-        ) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Order cannot be confirmed. Current status: ${order.saleStatus || order.fulfillmentStatus}`,
-          });
-        }
-
-        // Parse and verify inventory
-        let orderItems: Array<{ batchId: number; quantity: number; isSample?: boolean }>;
-        try {
-          orderItems =
-            typeof order.items === "string"
-              ? JSON.parse(order.items)
-              : order.items;
-        } catch {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to parse order items - data may be corrupted",
-          });
-        }
-
-        // INV-003: Extract unique batch IDs
-        const batchIds = [...new Set(orderItems.map(item => item.batchId))];
-
-        if (batchIds.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Order has no items to confirm",
-          });
-        }
-
-        // INV-003: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
-        const batchRecords = await tx
-          .select()
-          .from(batches)
-          .where(safeInArray(batches.id, batchIds))
-          .for("update");
-
-        const batchMap = new Map(batchRecords.map(b => [b.id, b]));
-
-        // INV-003: Verify quantity is still available AFTER acquiring locks
-        for (const item of orderItems) {
-          const batch = batchMap.get(item.batchId);
-
-          if (!batch) {
+          if (!order) {
             throw new TRPCError({
               code: "NOT_FOUND",
-              message: `Batch ${item.batchId} not found`,
+              message: "Order not found",
             });
           }
 
-          // Calculate available quantity accounting for all allocations
-          const onHand = parseFloat(batch.onHandQty || "0");
-          const reserved = parseFloat(batch.reservedQty || "0");
-          const quarantine = parseFloat(batch.quarantineQty || "0");
-          const hold = parseFloat(batch.holdQty || "0");
-          const sampleQty = parseFloat(batch.sampleQty || "0");
-
-          const availableQty = item.isSample
-            ? sampleQty
-            : Math.max(0, onHand - reserved - quarantine - hold);
-
-          if (availableQty < item.quantity) {
+          if (order.orderType !== "SALE") {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message:
-                `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
-                `Available: ${availableQty}, Required: ${item.quantity}`,
+              message: "Only SALE orders can be confirmed",
             });
           }
-        }
 
-        // INV-003: Reserve inventory by incrementing reservedQty
-        const { sql: sqlFn } = await import("drizzle-orm");
-        for (const item of orderItems) {
-          if (item.isSample) {
-            // Decrement sample quantity directly
-            await tx.execute(sqlFn`
+          if (
+            order.saleStatus !== "PENDING" &&
+            order.fulfillmentStatus !== "PENDING"
+          ) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Order cannot be confirmed. Current status: ${order.saleStatus || order.fulfillmentStatus}`,
+            });
+          }
+
+          // Parse and verify inventory
+          let orderItems: Array<{
+            batchId: number;
+            quantity: number;
+            isSample?: boolean;
+          }>;
+          try {
+            orderItems =
+              typeof order.items === "string"
+                ? JSON.parse(order.items)
+                : order.items;
+          } catch {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to parse order items - data may be corrupted",
+            });
+          }
+
+          // INV-003: Extract unique batch IDs
+          const batchIds = [...new Set(orderItems.map(item => item.batchId))];
+
+          if (batchIds.length === 0) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Order has no items to confirm",
+            });
+          }
+
+          // INV-003: Lock all batch rows with FOR UPDATE to prevent concurrent modifications
+          const batchRecords = await tx
+            .select()
+            .from(batches)
+            .where(safeInArray(batches.id, batchIds))
+            .for("update");
+
+          const batchMap = new Map(batchRecords.map(b => [b.id, b]));
+
+          // INV-003: Verify quantity is still available AFTER acquiring locks
+          for (const item of orderItems) {
+            const batch = batchMap.get(item.batchId);
+
+            if (!batch) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: `Batch ${item.batchId} not found`,
+              });
+            }
+
+            // Calculate available quantity accounting for all allocations
+            const onHand = parseMoneyOrZero(batch.onHandQty);
+            const reserved = parseMoneyOrZero(batch.reservedQty);
+            const quarantine = parseMoneyOrZero(batch.quarantineQty);
+            const hold = parseMoneyOrZero(batch.holdQty);
+            const sampleQty = parseMoneyOrZero(batch.sampleQty);
+
+            const availableQty = item.isSample
+              ? sampleQty
+              : Math.max(0, onHand - reserved - quarantine - hold);
+
+            if (availableQty < item.quantity) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message:
+                  `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
+                  `Available: ${availableQty}, Required: ${item.quantity}`,
+              });
+            }
+          }
+
+          // INV-003: Reserve inventory by incrementing reservedQty
+          const { sql: sqlFn } = await import("drizzle-orm");
+          for (const item of orderItems) {
+            if (item.isSample) {
+              // Decrement sample quantity directly
+              await tx.execute(sqlFn`
               UPDATE batches
               SET sampleQty = CAST(sampleQty AS DECIMAL(15,4)) - ${item.quantity}
               WHERE id = ${item.batchId}
             `);
-          } else {
-            // Increment reserved quantity to prevent overselling
-            await tx.execute(sqlFn`
+            } else {
+              // Increment reserved quantity to prevent overselling
+              await tx.execute(sqlFn`
               UPDATE batches
               SET reservedQty = CAST(reservedQty AS DECIMAL(15,4)) + ${item.quantity}
               WHERE id = ${item.batchId}
             `);
+            }
           }
-        }
 
-        // Update order to confirmed
-        await tx
-          .update(orders)
-          .set({
-            confirmedAt: new Date(),
-            fulfillmentStatus: "PENDING",
-            notes: input.notes
-              ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
-              : order.notes,
-          })
-          .where(eq(orders.id, input.id));
+          // Update order to confirmed
+          await tx
+            .update(orders)
+            .set({
+              confirmedAt: new Date(),
+              fulfillmentStatus: "PENDING",
+              notes: input.notes
+                ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
+                : order.notes,
+            })
+            .where(eq(orders.id, input.id));
 
-        logger.info({
-          msg: "INV-003: Order confirmed with inventory reservation",
-          orderId: input.id,
-          itemCount: orderItems.length,
-        });
+          logger.info({
+            msg: "INV-003: Order confirmed with inventory reservation",
+            orderId: input.id,
+            itemCount: orderItems.length,
+          });
 
-        return { success: true, orderId: input.id };
-      }, { maxRetries: 3 });
+          return { success: true, orderId: input.id };
+        },
+        { maxRetries: 3 }
+      );
     }),
 
   /**
@@ -1743,9 +1771,8 @@ export const ordersRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // ARCH-001: Delegate to OrderOrchestrator for transactional integrity
-      const { orderOrchestrator } = await import(
-        "../services/orderOrchestrator"
-      );
+      const { orderOrchestrator } =
+        await import("../services/orderOrchestrator");
 
       const result = await orderOrchestrator.fulfillOrder({
         orderId: input.id,
@@ -1796,12 +1823,10 @@ export const ordersRouter = router({
           });
         }
 
-// ARCH-003: Use state machine for transition validation
-      const { validateTransition } = await import(
-        "../services/orderStateMachine"
-      );
-      validateTransition(order.fulfillmentStatus, "SHIPPED", input.id);
-
+        // ARCH-003: Use state machine for transition validation
+        const { validateTransition } =
+          await import("../services/orderStateMachine");
+        validateTransition(order.fulfillmentStatus, "SHIPPED", input.id);
 
         // INV-001: Get all line items for this order
         const lineItems = await tx
@@ -1840,7 +1865,7 @@ export const ordersRouter = router({
         }> = [];
 
         for (const allocation of allocations) {
-          const allocatedQty = parseFloat(allocation.quantityAllocated || "0");
+          const allocatedQty = parseMoneyOrZero(allocation.quantityAllocated);
           if (allocatedQty <= 0) continue;
 
           // Lock the batch row for update
@@ -1860,8 +1885,8 @@ export const ordersRouter = router({
             continue;
           }
 
-          const currentReserved = parseFloat(batch.reservedQty || "0");
-          const currentOnHand = parseFloat(batch.onHandQty || "0");
+          const currentReserved = parseMoneyOrZero(batch.reservedQty);
+          const currentOnHand = parseMoneyOrZero(batch.onHandQty);
 
           // INV-001: Release reserved quantity
           const newReserved = Math.max(0, currentReserved - allocatedQty);
@@ -1980,9 +2005,8 @@ export const ordersRouter = router({
         }
 
         // ARCH-003: Use state machine for transition validation
-        const { validateTransition } = await import(
-          "../services/orderStateMachine"
-        );
+        const { validateTransition } =
+          await import("../services/orderStateMachine");
         validateTransition(order.fulfillmentStatus, "DELIVERED", input.id);
 
         // Build delivery notes
@@ -2047,11 +2071,14 @@ export const ordersRouter = router({
         }
 
         // ARCH-003: Use state machine for transition validation
-        const { validateTransition } = await import(
-          "../services/orderStateMachine"
-        );
+        const { validateTransition } =
+          await import("../services/orderStateMachine");
         try {
-          validateTransition(order.fulfillmentStatus, "RETURNED", input.orderId);
+          validateTransition(
+            order.fulfillmentStatus,
+            "RETURNED",
+            input.orderId
+          );
         } catch (err) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -2240,12 +2267,8 @@ export const ordersRouter = router({
             .limit(1);
 
           if (batch) {
-            const currentReserved = parseFloat(
-              String(batch.reservedQty || "0")
-            );
-            const allocatedQty = parseFloat(
-              String(existing.quantityAllocated || "0")
-            );
+            const currentReserved = parseMoneyOrZero(batch.reservedQty);
+            const allocatedQty = parseMoneyOrZero(existing.quantityAllocated);
             const newReserved = Math.max(0, currentReserved - allocatedQty);
 
             await tx
@@ -2267,7 +2290,7 @@ export const ordersRouter = router({
           (sum, a) => sum + a.quantity,
           0
         );
-        const lineItemQty = parseFloat(String(lineItem.quantity || "0"));
+        const lineItemQty = parseMoneyOrZero(lineItem.quantity);
 
         if (Math.abs(totalAllocated - lineItemQty) > 0.01) {
           throw new TRPCError({
@@ -2297,10 +2320,10 @@ export const ordersRouter = router({
           }
 
           // Calculate available quantity
-          const onHand = parseFloat(String(batch.onHandQty || "0"));
-          const reserved = parseFloat(String(batch.reservedQty || "0"));
-          const quarantine = parseFloat(String(batch.quarantineQty || "0"));
-          const hold = parseFloat(String(batch.holdQty || "0"));
+          const onHand = parseMoneyOrZero(batch.onHandQty);
+          const reserved = parseMoneyOrZero(batch.reservedQty);
+          const quarantine = parseMoneyOrZero(batch.quarantineQty);
+          const hold = parseMoneyOrZero(batch.holdQty);
           const availableQty = Math.max(
             0,
             onHand - reserved - quarantine - hold
@@ -2313,9 +2336,7 @@ export const ordersRouter = router({
             });
           }
 
-          const unitCost = batch.unitCogs
-            ? parseFloat(String(batch.unitCogs))
-            : 0;
+          const unitCost = parseMoneyOrZero(batch.unitCogs);
 
           // Insert allocation record
           await tx.insert(orderLineItemAllocations).values({
@@ -2407,8 +2428,8 @@ export const ordersRouter = router({
         batchSku: alloc.batchSku,
         batchCode: alloc.batchCode,
         batchGrade: alloc.batchGrade,
-        quantity: parseFloat(String(alloc.quantityAllocated || "0")),
-        unitCost: parseFloat(String(alloc.unitCost || "0")),
+        quantity: parseMoneyOrZero(alloc.quantityAllocated),
+        unitCost: parseMoneyOrZero(alloc.unitCost),
         allocatedAt: alloc.allocatedAt,
       }));
     }),
