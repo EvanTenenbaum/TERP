@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.4
-**Last Updated:** 2026-01-31 (REL Sprint tasks added - 16 reliability tasks from deep systemic analysis)
+**Version:** 7.5
+**Last Updated:** 2026-02-02 (REL-017 to REL-021 added - deployment reliability tasks from PR #362 review)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -3023,8 +3023,8 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 | Priority | Description | Tasks | Impact |
 |----------|-------------|-------|--------|
 | P0 | Critical - Fix immediately | REL-001 to REL-004 | $0 display, crashes, data corruption |
-| P1 | High - Fix this sprint | REL-005 to REL-010 | Lost updates, inconsistent state |
-| P2 | Medium - Fix in Beta | REL-011 to REL-016 | Technical debt, maintenance |
+| P1 | High - Fix this sprint | REL-005 to REL-010, REL-017 | Lost updates, inconsistent state, deployment reliability |
+| P2 | Medium - Fix in Beta | REL-011 to REL-016, REL-018 to REL-021 | Technical debt, maintenance, code quality |
 
 ---
 
@@ -3448,6 +3448,148 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] pnpm check passes
 - [ ] Manual: Test pages with no data - no crashes
 
+---
+
+### REL-017: Add Tests for Fingerprint Retry Logic
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** PR #362 added critical retry logic for schema fingerprint checks but includes no tests. This is infrastructure code that affects every deployment.
+
+**Root Cause:**
+- `autoMigrate.ts` lines 36-86 have retry/backoff logic with no test coverage
+- Deployment failures are hard to debug without knowing if retry logic works
+
+**Deliverables:**
+- [ ] Create `tests/unit/autoMigrate.test.ts`
+- [ ] Test: Fingerprint succeeds on first attempt - skips migrations
+- [ ] Test: Fingerprint fails once, succeeds on retry - skips migrations
+- [ ] Test: Fingerprint fails 3 times - falls through to full migrations
+- [ ] Test: Backoff delays are correct (3s, 6s)
+- [ ] Mock db.execute to simulate ETIMEDOUT errors
+
+**Verification:**
+- [ ] pnpm test passes with new tests
+- [ ] Coverage report shows autoMigrate.ts covered
+
+---
+
+### REL-018: Fix Warmup Query to Run on Every Retry Attempt
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 1h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** REL-017
+**Mode:** SAFE
+
+**Problem:** DB warmup query (`SELECT 1`) only runs on first attempt. If warmup itself times out, subsequent attempts skip warmup entirely.
+
+**Root Cause:**
+```typescript
+// Line 39: Only warms up on first attempt
+if (fpAttempt === 1) {
+  await db.execute(sql`SELECT 1`);
+}
+```
+
+**Deliverables:**
+- [ ] Move warmup query outside the `if (fpAttempt === 1)` block
+- [ ] Run warmup before every fingerprint attempt
+- [ ] Add test case verifying warmup runs on each retry
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm test passes
+- [ ] Manual: Verify logs show warmup on each attempt
+
+---
+
+### REL-019: Extract Retry Constants in autoMigrate
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 1h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** Retry logic uses magic numbers that are hard to tune and understand.
+
+**Affected Lines:**
+- Line 36: `fpAttempt <= 3` - max retries
+- Line 79: `fpAttempt * 3000` - backoff multiplier
+
+**Deliverables:**
+- [ ] Add constants at top of file:
+  - `const MAX_FINGERPRINT_RETRIES = 3`
+  - `const RETRY_BASE_DELAY_MS = 3000`
+- [ ] Replace magic numbers with constants
+- [ ] Add JSDoc explaining the retry strategy
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] Code review confirms no magic numbers remain
+
+---
+
+### REL-020: Add Retry Metrics for Schema Fingerprint
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** REL-017
+**Mode:** SAFE
+
+**Problem:** No observability into how often fingerprint retries occur in production. Cannot detect degradation patterns.
+
+**Deliverables:**
+- [ ] Add counter metric: `schema_fingerprint_attempts_total`
+- [ ] Add counter metric: `schema_fingerprint_failures_total`
+- [ ] Add histogram: `schema_fingerprint_duration_seconds`
+- [ ] Log structured event on each retry with attempt number
+- [ ] Consider Sentry breadcrumb for retry events
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] Metrics appear in monitoring dashboard
+- [ ] Manual: Force retry and verify metrics increment
+
+---
+
+### REL-021: Fix Indentation in Server Startup Code
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 15m
+**Module:** `server/_core/index.ts`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** PR #360 introduced incorrect indentation at line 117.
+
+**Affected Line:**
+```typescript
+logStartupPhase("Beginning migrations");
+    const runMigrationsWithRetry = async (maxRetries = 2) => {  // Wrong indent
+```
+
+**Deliverables:**
+- [ ] Fix indentation of `runMigrationsWithRetry` function declaration
+- [ ] Verify surrounding code indentation is consistent
+
+**Verification:**
+- [ ] pnpm check passes
+- [ ] pnpm lint passes
+- [ ] Visual inspection confirms consistent indentation
+
+---
 
 # 🚀 BETA MILESTONE
 
