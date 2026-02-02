@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.4
-**Last Updated:** 2026-01-31 (REL Sprint tasks added - 16 reliability tasks from deep systemic analysis)
+**Version:** 7.5
+**Last Updated:** 2026-02-02 (REL-017 to REL-021 deployment reliability tasks added from PR #363)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -3007,7 +3007,6 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ---
 
-
 ---
 
 ## 🛡️ RELIABILITY: Systemic Root Cause Fixes (REL Sprint)
@@ -3020,11 +3019,11 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 
 ### Priority Matrix
 
-| Priority | Description | Tasks | Impact |
-|----------|-------------|-------|--------|
-| P0 | Critical - Fix immediately | REL-001 to REL-004 | $0 display, crashes, data corruption |
-| P1 | High - Fix this sprint | REL-005 to REL-010 | Lost updates, inconsistent state |
-| P2 | Medium - Fix in Beta | REL-011 to REL-016 | Technical debt, maintenance |
+| Priority | Description                | Tasks              | Impact                               |
+| -------- | -------------------------- | ------------------ | ------------------------------------ |
+| P0       | Critical - Fix immediately | REL-001 to REL-004 | $0 display, crashes, data corruption |
+| P1       | High - Fix this sprint     | REL-005 to REL-010 | Lost updates, inconsistent state     |
+| P2       | Medium - Fix in Beta       | REL-011 to REL-016 | Technical debt, maintenance          |
 
 ---
 
@@ -3040,16 +3039,19 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** Same null DB value displays as $0.00 in some views and blank in others.
 
 **Root Cause:**
+
 - Line 268: `unitCogs: batch.unitCogs ? parseFloat(...) : null` → Returns null
 - Line 537: `unitCogs = batch.unitCogs ? parseFloat(...) : 0` → Returns 0
 
 **Deliverables:**
+
 - [ ] Create `server/utils/money.ts` with `parseMoneyOrNull()` utility
 - [ ] Replace all 30+ unsafe parseFloat calls with utility
 - [ ] Add unit tests for null/0/valid number cases
 - [ ] Frontend displays "—" for null, "$0.00" for explicit zero
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Manual: View inventory with null unitCogs - should show "—"
@@ -3068,16 +3070,19 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 11 toFixed() calls can crash on null/undefined values.
 
 **Affected Lines:**
+
 - Inventory.tsx: 186-190, 1139, 1148, 1158
 - Orders.tsx: 621, 625, 1156
 
 **Deliverables:**
+
 - [ ] Create `client/src/utils/formatters.ts` with `formatDecimal()` utility
 - [ ] Replace all 11 unsafe toFixed calls
 - [ ] Handle null → "—", NaN → "—", number → formatted
 - [ ] Add Jest tests for edge cases
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] No "NaN" displayed in UI
 - [ ] Manual: Test with batches that have null quantities
@@ -3096,6 +3101,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 3 transactions at lines 300, 692, 892 lack explicit rollback handling.
 
 **Deliverables:**
+
 - [ ] Add try/catch with explicit rollback to line 300 transaction
 - [ ] Add try/catch with explicit rollback to line 692 transaction
 - [ ] Add try/catch with explicit rollback to line 892 transaction
@@ -3103,6 +3109,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add integration tests for rollback scenarios
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Manual: Simulate payment failure - verify no partial state
@@ -3121,11 +3128,13 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 28 financial calculations use JavaScript floats, causing penny-level errors.
 
 **Key Lines:**
+
 - orders.ts:755 - `lineTotal = unitPrice * item.quantity`
 - orders.ts:2344 - `totalCost += alloc.quantity * unitCost`
 - payments.ts:329 - `newPaid = currentPaid + effectiveAmount`
 
 **Deliverables:**
+
 - [ ] Install decimal.js: `pnpm add decimal.js`
 - [ ] Create `server/utils/decimal.ts` with money math helpers
 - [ ] Replace 28 arithmetic operations with Decimal.js
@@ -3133,6 +3142,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Document which operations require precision
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Test: Create order with 100 line items, verify total is exact
@@ -3153,6 +3163,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Target Tables:** orders, batches, invoices, payments, clients
 
 **Deliverables:**
+
 - [ ] Add `version` column to 5 critical tables (migration)
 - [ ] Create `server/utils/optimisticLock.ts` helper
 - [ ] Update all update operations to check version
@@ -3160,6 +3171,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Frontend: Handle 409 with "Data changed, please refresh"
 
 **Verification:**
+
 - [ ] Migration runs successfully
 - [ ] pnpm test:schema passes
 - [ ] Manual: Open same order in 2 tabs, edit both, verify conflict detected
@@ -3178,6 +3190,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** Order confirmation has no transaction wrapper - partial state possible.
 
 **Deliverables:**
+
 - [ ] Wrap confirm procedure in db.transaction()
 - [ ] Include: status update, inventory reservation, GL entries
 - [ ] Add explicit rollback on any failure
@@ -3185,6 +3198,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add integration test for partial failure recovery
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] Manual: Simulate failure mid-confirm, verify clean rollback
@@ -3205,6 +3219,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Target Fields:** batches.unitCogs, orderLineItems.unitPrice, orderLineItems.cogsPerUnit, payments.amount, invoices.totalAmount
 
 **Deliverables:**
+
 - [ ] Write migration to UPDATE NULL to '0' for each field
 - [ ] Add .notNull().default('0') to schema
 - [ ] Run migration in staging first
@@ -3212,6 +3227,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Remove defensive null checks from router code
 
 **Verification:**
+
 - [ ] Migration completes without data loss
 - [ ] pnpm test:schema passes
 - [ ] Query: `SELECT COUNT(*) FROM batches WHERE unitCogs IS NULL` = 0
@@ -3230,6 +3246,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 20+ Zod schemas allow negative numbers - potential for invalid data.
 
 **Deliverables:**
+
 - [ ] Audit all z.number() schemas in routers
 - [ ] Add .min(0) to quantities, amounts, prices
 - [ ] Add .int().positive() to all ID fields
@@ -3237,6 +3254,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Document validation rules
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm test passes
 - [ ] API rejects negative quantity with clear error
@@ -3257,12 +3275,14 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Affected Lines:** 697, 706, 887, 898, 908, 1236, 1244, 1330
 
 **Deliverables:**
+
 - [ ] Add `with: { client: true, lineItems: true }` to each query
 - [ ] Verify N+1 queries eliminated
 - [ ] Add query performance logging
 - [ ] Update TypeScript types for included relations
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] Query log shows single query with joins
 - [ ] Order detail page loads without additional requests
@@ -3281,6 +3301,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 14 raw SQL queries bypass ORM type safety.
 
 **Deliverables:**
+
 - [ ] Document each raw SQL query's purpose
 - [ ] Convert safe queries to Drizzle ORM
 - [ ] For necessary raw SQL, add type wrappers
@@ -3288,6 +3309,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Create review checklist for raw SQL PRs
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] pnpm lint passes (new rule)
 - [ ] Raw SQL count reduced by at least 50%
@@ -3308,6 +3330,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Target Tables:** orders, invoices, payments, products, brands, strains
 
 **Deliverables:**
+
 - [ ] Add `deletedAt` column to 6 critical tables
 - [ ] Update all delete operations to soft delete
 - [ ] Add index on deletedAt for each table
@@ -3315,6 +3338,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add restore functionality for each entity
 
 **Verification:**
+
 - [ ] Migration completes successfully
 - [ ] pnpm test:schema passes
 - [ ] Manual: Delete order, verify still in DB with deletedAt set
@@ -3333,11 +3357,13 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 8 different decimal precision formats cause aggregation inconsistencies.
 
 **Target State:**
+
 - Monetary amounts: (15,2)
 - Quantities: (15,4)
 - Percentages: (5,4)
 
 **Deliverables:**
+
 - [ ] Document current precision per field
 - [ ] Create migration plan with data preservation
 - [ ] Migrate in phases: staging → production
@@ -3345,6 +3371,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Add schema validation test for precision standards
 
 **Verification:**
+
 - [ ] No data truncation during migration
 - [ ] All precision tests pass
 - [ ] Aggregations across tables produce correct results
@@ -3363,6 +3390,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 79 files still reference deprecated vendors table.
 
 **Deliverables:**
+
 - [ ] Inventory all vendorId references
 - [ ] Create migration plan per module
 - [ ] Replace with clients.isSeller queries
@@ -3371,6 +3399,7 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 - [ ] Remove vendors table from schema (final step)
 
 **Verification:**
+
 - [ ] `grep -r "vendorId" server/` returns 0 results
 - [ ] `grep -r "vendors" server/` returns 0 results (except deprecated comments)
 - [ ] All supplier queries use clients table
@@ -3389,12 +3418,14 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 6 localStorage operations lack try/catch - fail in private browsing.
 
 **Deliverables:**
+
 - [ ] Create `client/src/utils/storage.ts` with safe wrappers
 - [ ] Replace all direct localStorage calls
 - [ ] Fallback to sessionStorage then memory
 - [ ] Add tests for storage unavailable scenario
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] Manual: Test in Safari private mode - no errors
 
@@ -3412,16 +3443,19 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 6 useQuery calls lack `enabled` check - unnecessary requests.
 
 **Affected Lines:**
+
 - Inventory.tsx: 349, 389, 469
 - Orders.tsx: 141, 153, 159
 
 **Deliverables:**
+
 - [ ] Add `enabled: !!dependencyValue` to each query
 - [ ] Prevent queries until dependencies ready
 - [ ] Add loading states for dependent queries
 - [ ] Reduce unnecessary network traffic
 
 **Verification:**
+
 - [ ] Network tab shows no wasted requests
 - [ ] Pages load without flash of loading states
 
@@ -3439,15 +3473,138 @@ Hypothesis: Two instances could acquire leader lock simultaneously due to race c
 **Problem:** 6 .map() calls on potentially undefined arrays can crash.
 
 **Deliverables:**
+
 - [ ] Add optional chaining to all 6 map calls
 - [ ] Add fallback empty arrays
 - [ ] Add TypeScript strict null checks
 - [ ] Test with empty/undefined data states
 
 **Verification:**
+
 - [ ] pnpm check passes
 - [ ] Manual: Test pages with no data - no crashes
 
+---
+
+### REL-017: Add Tests for Fingerprint Retry Logic
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** None
+**Mode:** STRICT
+
+**Problem:** Critical retry logic for schema fingerprint checks lacks test coverage, making deployment failures difficult to debug.
+
+**Deliverables:**
+
+- [ ] Create unit tests for `verifySchemaFingerprint` retry logic
+- [ ] Test first-attempt success scenario
+- [ ] Test single retry success scenario
+- [ ] Test three failures (max retries exceeded)
+- [ ] Verify correct backoff delays (3s, 6s)
+
+**Verification:**
+
+- [ ] pnpm test passes with new tests
+- [ ] Tests cover all retry branches
+
+---
+
+### REL-018: Fix Warmup Query to Run on Every Retry Attempt
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 1h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** REL-017
+**Mode:** STRICT
+
+**Problem:** Database warmup query only executes on first attempt; if warmup times out, subsequent retries skip it entirely, leaving the connection pool cold.
+
+**Deliverables:**
+
+- [ ] Relocate warmup query outside the first-attempt conditional block
+- [ ] Ensure warmup runs before each fingerprint check attempt
+- [ ] Add logging to confirm warmup execution on retries
+
+**Verification:**
+
+- [ ] pnpm check passes
+- [ ] Manual: Verify logs show warmup on retry attempts
+
+---
+
+### REL-019: Extract Retry Constants in autoMigrate
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 1h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** Magic numbers (max retries = 3, backoff multiplier = 3000ms) obscure the retry strategy and make tuning difficult.
+
+**Deliverables:**
+
+- [ ] Create named constants: `MAX_FINGERPRINT_RETRIES`, `FINGERPRINT_BACKOFF_MS`
+- [ ] Replace all hardcoded values with constants
+- [ ] Add JSDoc comments explaining retry strategy
+
+**Verification:**
+
+- [ ] pnpm check passes
+- [ ] No magic numbers remain in retry logic
+
+---
+
+### REL-020: Add Retry Metrics for Schema Fingerprint
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 2h
+**Module:** `server/autoMigrate.ts`
+**Dependencies:** REL-017
+**Mode:** SAFE
+
+**Problem:** No production observability into fingerprint retry frequency or patterns, making it difficult to detect systematic deployment issues.
+
+**Deliverables:**
+
+- [ ] Add counter metric for fingerprint check attempts
+- [ ] Add histogram for retry attempt counts per deployment
+- [ ] Add structured logging for retry events
+- [ ] Add Sentry breadcrumbs for retry context
+
+**Verification:**
+
+- [ ] pnpm check passes
+- [ ] Metrics visible in monitoring dashboard
+
+---
+
+### REL-021: Fix Indentation in Server Startup Code
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 15m
+**Module:** `server/_core/index.ts`
+**Dependencies:** None
+**Mode:** SAFE
+
+**Problem:** Incorrect indentation at line 117 introduced in PR #360 affects code readability.
+
+**Deliverables:**
+
+- [ ] Correct the `runMigrationsWithRetry` function declaration formatting
+- [ ] Ensure consistent indentation throughout file
+
+**Verification:**
+
+- [ ] pnpm lint passes
+- [ ] Code review confirms proper formatting
 
 # 🚀 BETA MILESTONE
 
