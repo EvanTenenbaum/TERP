@@ -1321,7 +1321,7 @@ export const liveShoppingRouter = router({
 
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "SESSION_CANCELLED",
-        payload: {
+        data: {
           sessionId: input.sessionId,
           reason: input.reason,
           cancelledBy: userId,

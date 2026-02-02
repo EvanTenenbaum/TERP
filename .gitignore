@@ -49,7 +49,10 @@ pids
 *.pid
 *.seed
 *.pid.lock
+# Backup files (may contain outdated security vulnerabilities)
 *.bak
+*.backup
+*.backup-*
 
 # Coverage directory used by tools like istanbul
 coverage/

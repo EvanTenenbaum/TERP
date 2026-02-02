@@ -23,6 +23,7 @@ interface CreateOrderFromInterestListInput {
   clientId: number;
   items: InterestListItem[];
   source?: string;
+  actorId: number;
 }
 
 interface AddItemsToOrderInput {
@@ -49,18 +50,25 @@ export async function createOrderFromInterestList(
   // ORD-002: Validate positive quantities and non-negative prices
   for (const item of input.items) {
     if (item.quantity !== undefined && item.quantity <= 0) {
-      throw new Error(`Invalid quantity ${item.quantity} for item ${item.id}. Quantity must be greater than 0.`);
+      throw new Error(
+        `Invalid quantity ${item.quantity} for item ${item.id}. Quantity must be greater than 0.`
+      );
     }
     if (item.price !== undefined && item.price < 0) {
-      throw new Error(`Invalid price ${item.price} for item ${item.id}. Price cannot be negative.`);
+      throw new Error(
+        `Invalid price ${item.price} for item ${item.id}. Price cannot be negative.`
+      );
     }
   }
+
+  // SEC-042: Extract actorId (caller must pass from getAuthenticatedUserId(ctx))
+  const { actorId } = input;
 
   // Generate order number
   const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
   // Convert interest list items to order items format
-  const orderItemsJson = input.items.map((item) => ({
+  const orderItemsJson = input.items.map(item => ({
     batchId: item.batchId || null,
     productId: item.productId || null,
     quantity: item.quantity || 1,
@@ -69,7 +77,7 @@ export async function createOrderFromInterestList(
 
   // Calculate totals
   const subtotal = orderItemsJson.reduce(
-    (sum, item) => sum + (item.unitPrice * item.quantity),
+    (sum, item) => sum + item.unitPrice * item.quantity,
     0
   );
 
@@ -83,7 +91,7 @@ export async function createOrderFromInterestList(
     subtotal: subtotal.toFixed(2),
     total: subtotal.toFixed(2),
     notes: input.source ? `Created from ${input.source}` : null,
-    createdBy: 1, // System user - should be passed from context in production
+    createdBy: actorId,
   });
 
   const orderId = result.insertId;
@@ -99,7 +107,9 @@ export async function createOrderFromInterestList(
 /**
  * Adds items to an existing order
  */
-export async function addItemsToOrder(input: AddItemsToOrderInput): Promise<void> {
+export async function addItemsToOrder(
+  input: AddItemsToOrderInput
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -108,10 +118,14 @@ export async function addItemsToOrder(input: AddItemsToOrderInput): Promise<void
   // ORD-002: Validate positive quantities and non-negative prices
   for (const item of input.items) {
     if (item.quantity !== undefined && item.quantity <= 0) {
-      throw new Error(`Invalid quantity ${item.quantity} for item ${item.id}. Quantity must be greater than 0.`);
+      throw new Error(
+        `Invalid quantity ${item.quantity} for item ${item.id}. Quantity must be greater than 0.`
+      );
     }
     if (item.price !== undefined && item.price < 0) {
-      throw new Error(`Invalid price ${item.price} for item ${item.id}. Price cannot be negative.`);
+      throw new Error(
+        `Invalid price ${item.price} for item ${item.id}. Price cannot be negative.`
+      );
     }
   }
 
@@ -125,10 +139,12 @@ export async function addItemsToOrder(input: AddItemsToOrderInput): Promise<void
   }
 
   // Parse existing items
-  const existingItems = (existingOrder.items as Array<{ unitPrice?: number; quantity?: number }>) || [];
+  const existingItems =
+    (existingOrder.items as Array<{ unitPrice?: number; quantity?: number }>) ||
+    [];
 
   // Add new items
-  const newItems = input.items.map((item) => ({
+  const newItems = input.items.map(item => ({
     batchId: item.batchId || null,
     productId: item.productId || null,
     quantity: item.quantity || 1,
@@ -139,8 +155,7 @@ export async function addItemsToOrder(input: AddItemsToOrderInput): Promise<void
 
   // Recalculate totals
   const subtotal = allItems.reduce(
-    (sum: number, item) =>
-      sum + ((item.unitPrice || 0) * (item.quantity || 1)),
+    (sum: number, item) => sum + (item.unitPrice || 0) * (item.quantity || 1),
     0
   );
 

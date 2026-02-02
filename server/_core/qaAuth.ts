@@ -368,10 +368,10 @@ export function registerQaAuthRoutes(app: import("express").Express): void {
       });
     }
 
+    // Password intentionally not returned - clients should not receive credentials
     res.json({
       enabled: true,
       roles: qaAuth.getAvailableRoles(),
-      password: QA_PASSWORD, // Safe to expose in dev/staging
     });
   });
 
