@@ -2609,18 +2609,21 @@ pnpm test && pnpm test:e2e
 
 | Phase     | Focus                     | Tasks         | Est. Duration | Buffer                   | Status                   |
 | --------- | ------------------------- | ------------- | ------------- | ------------------------ | ------------------------ |
-| 0.A       | Golden Flow Specification | 8             | 2 days        | -                        | ready                    |
-| 0         | Foundation Unblocking     | 5 (+1 verify) | 3 days        | +1 day                   | **2 complete (PR #318)** |
-| 1         | Flow Restoration          | 6             | 4 days        | -                        | ready                    |
-| 2         | Flow Completion           | 4             | 5 days        | +1 day                   | ready                    |
-| 3         | RBAC Verification         | 5             | 5 days        | +1 day                   | ready                    |
+| 0.A       | Golden Flow Specification | 8             | 2 days        | -                        | complete                 |
+| 0         | Foundation Unblocking     | 8             | 3 days        | +1 day                   | mostly complete          |
+| 1         | Flow Restoration          | 6             | 4 days        | -                        | verified                 |
+| 2         | Flow Completion           | 6             | 5 days        | +1 day                   | verified                 |
+| 3         | RBAC Verification         | 5             | 5 days        | +1 day                   | verified                 |
+| **3.5**   | **Test/Lint Signal Recovery** | **4**     | **2-3 days**  | -                        | **NEW (PR #366)**        |
 | 4         | E2E Automation            | 4             | 7 days        | +1 day                   | ready                    |
-| 5         | Beta Hardening + Security | 6             | 6 days        | +1 day                   | ready                    |
-| **Total** |                           | **39**        | **36 days**   | **+6 days (20% buffer)** |                          |
+| 5         | Beta Hardening + Security | 7 (+1)        | 6 days        | +1 day                   | ready                    |
+| **Total** |                           | **48**        | **38-39 days**| **+6 days (20% buffer)** |                          |
 
 > **Protocol QA Analysis Note:** Phase 0.A added per QA Protocol v3.0 requirement that all golden flows be "fully defined on a UX, UI, backend, frontend, logic, and business logic standpoint." This adds 2 days but significantly reduces risk of discovering undefined behaviors during implementation.
 
 > **PR #318 Progress:** GF-PHASE0-001a and GF-PHASE0-001b are complete pending merge of PR #318. This addresses the critical SQL error (BUG-110) that blocks 4+ Golden Flows. Once merged, only post-merge verification (GF-PHASE0-001c) remains for these tasks. **Estimated time saved: ~16h.**
+
+> **PR #366 Integration (2026-02-02):** Phase 3.5 added to address test infrastructure instability (P0) and targeted lint cleanup (P1) identified in CTO triage report. This is prerequisite for Phase 4 E2E automation. See `docs/roadmaps/PR366_INTEGRATION_TASKS.md` for detailed task definitions.
 
 ---
 
