@@ -14,7 +14,7 @@ import { eq } from "drizzle-orm";
 vi.mock("../db", () => setupDbMock());
 
 // Provide lightweight drizzle-orm operators for the mock database
-vi.mock("drizzle-orm", async (importOriginal) => {
+vi.mock("drizzle-orm", async importOriginal => {
   const actual = await importOriginal<typeof import("drizzle-orm")>();
   return {
     ...actual,
@@ -24,17 +24,24 @@ vi.mock("drizzle-orm", async (importOriginal) => {
     gte: (col: unknown, val: unknown) => ({ op: "gte", col, val }),
     lte: (col: unknown, val: unknown) => ({ op: "lte", col, val }),
     gt: (col: unknown, val: unknown) => ({ op: "gt", col, val }),
-    inArray: (col: unknown, values: unknown[]) => ({ op: "inArray", col, values }),
+    inArray: (col: unknown, values: unknown[]) => ({
+      op: "inArray",
+      col,
+      values,
+    }),
     isNull: (col: unknown) => ({ op: "isNull", col }),
     desc: (col: unknown) => ({ op: "desc", col }),
-    sql: <T>(strings: TemplateStringsArray) => ({ op: "sql", sql: strings.join(""), type: null as T }),
+    sql: <T>(strings: TemplateStringsArray) => ({
+      op: "sql",
+      sql: strings.join(""),
+      type: null as T,
+    }),
   };
 });
 
 import { appRouter } from "../routers";
 import { db, getDb } from "../db";
 import {
-  appointmentRequests,
   appointmentTypes,
   billLineItems,
   bills,
@@ -113,7 +120,7 @@ describe("VIP Portal appointments and notifications (TDD)", () => {
       })
       .$returningId();
 
-    const [{ id: appointmentTypeId }] = await database
+    const [{ id: _appointmentTypeId }] = await database
       .insert(appointmentTypes)
       .values({
         calendarId,
@@ -129,12 +136,14 @@ describe("VIP Portal appointments and notifications (TDD)", () => {
       })
       .$returningId();
 
-    await database.insert(calendarAvailability).values({
+    // Add availability for all days of the week to make test date-agnostic
+    const availabilityRecords = [0, 1, 2, 3, 4, 5, 6].map(dayOfWeek => ({
       calendarId,
-      dayOfWeek: appointmentDate.getDay(),
+      dayOfWeek,
       startTime: "09:00:00",
       endTime: "11:00:00",
-    });
+    }));
+    await database.insert(calendarAvailability).values(availabilityRecords);
 
     // Notification seed
     await database.insert(notifications).values({
@@ -208,11 +217,14 @@ describe("VIP Portal appointments and notifications (TDD)", () => {
 
   it("returns available calendars with appointment types for VIP clients", async () => {
     const caller = createCaller();
-    const calendarsResponse = await caller.vipPortal.appointments.listCalendars();
+    const calendarsResponse =
+      await caller.vipPortal.appointments.listCalendars();
 
     expect(calendarsResponse).toHaveLength(1);
     expect(calendarsResponse[0]?.appointmentTypes).toHaveLength(1);
-    expect(calendarsResponse[0]?.appointmentTypes[0]?.name).toBe("Payment Pickup");
+    expect(calendarsResponse[0]?.appointmentTypes[0]?.name).toBe(
+      "Payment Pickup"
+    );
   });
 
   it("provides available slots for the configured calendar and type", async () => {
@@ -250,7 +262,9 @@ describe("VIP Portal appointments and notifications (TDD)", () => {
   it("lists notifications and marks them as read", async () => {
     const caller = createCaller();
 
-    const notificationList = await caller.vipPortal.notifications.list({ limit: 5 });
+    const notificationList = await caller.vipPortal.notifications.list({
+      limit: 5,
+    });
     expect(notificationList.items.length).toBeGreaterThan(0);
     const firstNotificationId = notificationList.items[0]?.id;
 
@@ -265,11 +279,15 @@ describe("VIP Portal appointments and notifications (TDD)", () => {
   it("generates invoice and bill PDFs for the VIP client", async () => {
     const caller = createCaller();
 
-    const invoicePdf = await caller.vipPortal.documents.downloadInvoicePdf({ invoiceId: 1 });
+    const invoicePdf = await caller.vipPortal.documents.downloadInvoicePdf({
+      invoiceId: 1,
+    });
     expect(invoicePdf.pdf.length).toBeGreaterThan(50);
     expect(invoicePdf.fileName).toContain("INV-100");
 
-    const billPdf = await caller.vipPortal.documents.downloadBillPdf({ billId: 1 });
+    const billPdf = await caller.vipPortal.documents.downloadBillPdf({
+      billId: 1,
+    });
     expect(billPdf.pdf.length).toBeGreaterThan(50);
     expect(billPdf.fileName).toContain("BILL-200");
   });
@@ -310,7 +328,9 @@ describe("VIP Portal appointments and notifications (TDD)", () => {
       .$returningId();
 
     await expect(
-      caller.vipPortal.documents.downloadInvoicePdf({ invoiceId: otherInvoiceId })
+      caller.vipPortal.documents.downloadInvoicePdf({
+        invoiceId: otherInvoiceId,
+      })
     ).rejects.toThrow();
   });
 });
