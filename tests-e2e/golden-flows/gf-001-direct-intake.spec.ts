@@ -1,0 +1,62 @@
+/**
+ * Golden Flow Test: GF-001 Direct Intake
+ *
+ * Flow: /intake → add row → submit → verify batch created → cleanup
+ */
+
+import { expect, test } from "@playwright/test";
+import { loginAsInventoryManager } from "../fixtures/auth";
+import {
+  cleanupBatchesByBrandName,
+  fillAgGridTextCell,
+  readAgGridCellText,
+  selectAgGridFirstOption,
+  waitForToast,
+} from "../utils/golden-flow-helpers";
+
+const createBrandName = (): string => `E2E Brand ${new Date().toISOString()}`;
+
+test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
+  let brandName: string | null = null;
+
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await loginAsInventoryManager(page);
+  });
+
+  test.afterEach(async ({ page }): Promise<void> => {
+    if (!brandName) return;
+    await cleanupBatchesByBrandName(page, brandName);
+    brandName = null;
+  });
+
+  test("should submit intake row and create a batch", async ({
+    page,
+  }): Promise<void> => {
+    brandName = createBrandName();
+
+    await page.goto("/intake");
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("button", { name: "Add Row" }).click();
+
+    const rows = page.locator(".ag-center-cols-container .ag-row");
+    await expect(rows).toHaveCount(2);
+
+    const rowIndex = 1;
+
+    await selectAgGridFirstOption(page, rowIndex, "vendorName");
+    await fillAgGridTextCell(page, rowIndex, "brandName", brandName);
+    await selectAgGridFirstOption(page, rowIndex, "category");
+    await selectAgGridFirstOption(page, rowIndex, "item");
+    await fillAgGridTextCell(page, rowIndex, "qty", "10");
+    await fillAgGridTextCell(page, rowIndex, "cogs", "125");
+    await selectAgGridFirstOption(page, rowIndex, "site");
+
+    await page.getByRole("button", { name: "Submit All" }).click();
+
+    await waitForToast(page, "Successfully submitted");
+
+    const statusCellText = await readAgGridCellText(page, rowIndex, "status");
+    expect(statusCellText).toContain("Submitted");
+  });
+});

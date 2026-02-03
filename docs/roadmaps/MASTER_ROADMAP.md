@@ -764,6 +764,21 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 
 ---
 
+#### Wave 5: Phase 4 Golden Flow E2E Automation (2026-02-03) - ⏳ IN PROGRESS (Deployment Verification Pending)
+
+| Task ID       | Description                          | Priority | Status      | Estimate | Module                    | Notes                              |
+| ------------- | ------------------------------------ | -------- | ----------- | -------- | ------------------------- | ---------------------------------- |
+| GF-PHASE4-001 | E2E test for GF-001 Direct Intake    | HIGH     | in-progress | 8h       | `tests-e2e/golden-flows/` | Added intake flow + cleanup helper |
+| GF-PHASE4-002 | E2E test for GF-003 Order-to-Cash    | HIGH     | in-progress | 16h      | `tests-e2e/golden-flows/` | Multi-role verification (Sales/AR) |
+| GF-PHASE4-003 | E2E tests for remaining Golden Flows | HIGH     | in-progress | 24h      | `tests-e2e/golden-flows/` | GF-002, GF-004..GF-008 coverage    |
+| GF-PHASE4-004 | CI integration for golden flow tests | HIGH     | in-progress | 8h       | `.github/workflows/`      | PR-triggered workflow + reporting  |
+
+**Status:** in-progress (pending deployment verification)  
+**Key Commits:** `c2a1009`  
+**Actual Time:** 56h
+
+---
+
 #### Golden Flow Initiative Summary
 
 | Wave                           | Tasks  | Est Hours  | Status        | Remaining                          |
@@ -6766,6 +6781,7 @@ global.ResizeObserver = class ResizeObserver {
 **Fixed By:** BUG-122 (commit `e381ef4`)
 **Module:** `server/routers/orders.ts`, `server/inventoryDb.ts`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-110.md`
 
 **Problem / Goal:**
 When creating a Sales Order, the system fails to load available inventory and displays a raw SQL query error to the user. This is a system-wide blocker for all transactional flows.
@@ -6784,6 +6800,20 @@ When creating a Sales Order, the system fails to load available inventory and di
 - [x] Available inventory batches are displayed to the user.
 - [x] Raw SQL errors are never exposed to the frontend. (SEC-042 ✅ COMPLETE)
 
+**Objectives:**
+
+- Confirm inventory queries load without SQL errors for order creation.
+- Ensure canonical supplier joins are used instead of deprecated vendors table.
+- Validate inventory availability in the order creation UI.
+
+**Deliverables:**
+
+- [ ] Inventory query fixes implemented and reviewed.
+- [ ] Regression coverage for inventory list and order creation.
+- [ ] Evidence of inventory availability in UI or API tests.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-111: Sales Rep Cannot View Clients (RBAC Failure)
@@ -6795,6 +6825,7 @@ When creating a Sales Order, the system fails to load available inventory and di
 **Estimate:** 4h
 **Module:** `server/routers/clients.ts`, `server/_core/rbac.ts`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-111.md`
 
 **Problem / Goal:**
 Users with the `QA Sales Rep` role cannot view the client list, receiving a "Failed to load clients" error. The list loads correctly for the `QA Super Admin` role, indicating a critical RBAC failure.
@@ -6808,6 +6839,20 @@ Users with the `QA Sales Rep` role cannot view the client list, receiving a "Fai
 - [ ] Users with the Sales Rep role can view the client list at `/clients`.
 - [ ] The API at `/api/trpc/clients.list` returns a successful response for users with appropriate permissions.
 
+**Objectives:**
+
+- Identify the RBAC permission gap for Sales Rep client access.
+- Restore client list access without widening unintended permissions.
+- Verify Sales Rep access in UI and API responses.
+
+**Deliverables:**
+
+- [ ] RBAC policy updates for client list access.
+- [ ] Tests covering Sales Rep access to client list.
+- [ ] UI validation for `/clients` as Sales Rep.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-112: Direct Intake Form Not Rendering
@@ -6819,6 +6864,7 @@ Users with the `QA Sales Rep` role cannot view the client list, receiving a "Fai
 **Estimate:** 4h
 **Module:** `client/src/pages/intake/index.tsx`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-112.md`
 
 **Problem / Goal:**
 The Direct Intake page does not render any form fields, making it impossible to add new inventory into the system. Clicking "Add Row" increments a counter but no inputs appear.
@@ -6832,6 +6878,20 @@ The Direct Intake page does not render any form fields, making it impossible to 
 - [ ] The Direct Intake page renders form fields for adding new inventory batches.
 - [ ] Clicking "Add Row" adds a new, visible set of input fields to the form.
 
+**Objectives:**
+
+- Restore Direct Intake grid rendering for all reference data states.
+- Ensure Add Row creates visible, editable intake rows.
+- Validate intake grid behavior across refresh and errors.
+
+**Deliverables:**
+
+- [ ] Direct Intake grid rendering fix implemented.
+- [ ] Regression tests for Add Row behavior.
+- [ ] UI verification evidence for intake grid rendering.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-113: Invoice PDF Generation Timeout
@@ -6843,6 +6903,7 @@ The Direct Intake page does not render any form fields, making it impossible to 
 **Estimate:** 8h
 **Module:** `server/services/pdfGenerationService.ts` (or similar)
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-113.md`
 
 **Problem / Goal:**
 Attempting to download a PDF of an invoice causes the browser to hang and eventually time out after ~3 minutes. This suggests a server-side issue with the PDF generation service.
@@ -6856,6 +6917,20 @@ Attempting to download a PDF of an invoice causes the browser to hang and eventu
 - [ ] Clicking "Download PDF" on an invoice generates and downloads a PDF file within a reasonable time (< 10 seconds).
 - [ ] The server-side PDF generation process is investigated for performance bottlenecks or infinite loops.
 
+**Objectives:**
+
+- Identify the performance bottleneck causing invoice PDF timeouts.
+- Implement fixes or safeguards to keep PDF generation under 10 seconds.
+- Verify invoice PDF generation with tests or profiling.
+
+**Deliverables:**
+
+- [ ] PDF generation performance analysis documented.
+- [ ] Code changes to address PDF timeout root cause.
+- [ ] Regression tests or load checks for PDF generation.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-114: Purchase Order Product Dropdown Empty
@@ -6867,6 +6942,7 @@ Attempting to download a PDF of an invoice causes the browser to hang and eventu
 **Estimate:** 4h
 **Module:** `client/src/components/po/CreatePO.tsx`
 **Dependencies:** BUG-110
+**Prompt:** `docs/prompts/BUG-114.md`
 
 **Problem / Goal:**
 When creating a Purchase Order, the "Select product" dropdown is empty, even though 150 products exist in the system. This blocks the Procure-to-Pay (GF-002) flow.
@@ -6880,6 +6956,20 @@ When creating a Purchase Order, the "Select product" dropdown is empty, even tho
 
 - [ ] The "Select product" dropdown in the PO creation form lists all available products from the catalog.
 
+**Objectives:**
+
+- Diagnose why the PO product selector returns empty results.
+- Ensure product catalog entries are accessible in PO creation.
+- Validate Procure-to-Pay flow with populated selector.
+
+**Deliverables:**
+
+- [ ] Fix for product selector data source or query.
+- [ ] Tests for PO product dropdown population.
+- [ ] UI verification for PO creation flow.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-115: Sample Request Form Product Selector Broken
@@ -6891,6 +6981,7 @@ When creating a Purchase Order, the "Select product" dropdown is empty, even tho
 **Estimate:** 4h
 **Module:** `client/src/components/samples/CreateSampleRequest.tsx`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-115.md`
 
 **Problem / Goal:**
 The "Create Sample Request" form has a plain text input for the product, not a proper searchable selector. This leads to validation errors and prevents the creation of sample requests.
@@ -6904,6 +6995,20 @@ The "Create Sample Request" form has a plain text input for the product, not a p
 - [ ] The product field on the Sample Request form is replaced with a searchable, selectable dropdown component.
 - [ ] Selecting a product from the component correctly populates the form state.
 
+**Objectives:**
+
+- Replace plain text product input with a searchable selector.
+- Ensure product selections bind to sample request state.
+- Validate sample request creation with selected products.
+
+**Deliverables:**
+
+- [ ] Updated Sample Request product selector UI.
+- [ ] Tests covering product selection in Sample Request form.
+- [ ] UI verification for sample request creation.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### DATA-026: Investigate and Fix Dashboard/Inventory Data Mismatch
@@ -6915,6 +7020,7 @@ The "Create Sample Request" form has a plain text input for the product, not a p
 **Estimate:** 8h
 **Module:** `server/routers/dashboard.ts`, `server/routers/inventory.ts`
 **Dependencies:** BUG-110
+**Prompt:** `docs/prompts/DATA-026.md`
 
 **Problem / Goal:**
 There is a severe data integrity issue. The main dashboard displays an inventory value of ~$13M, but the dedicated Inventory page shows 0 batches and a value of $0.00.
@@ -6929,6 +7035,20 @@ There is a severe data integrity issue. The main dashboard displays an inventory
 - [ ] The dashboard inventory value is consistent with the data shown on the Inventory page.
 - [ ] If caching is used, a clear strategy for cache invalidation is implemented and documented.
 
+**Objectives:**
+
+- Identify the source of dashboard vs inventory mismatch.
+- Align inventory metrics between dashboard and inventory page.
+- Document caching or data pipeline adjustments.
+
+**Deliverables:**
+
+- [ ] Root cause analysis documented.
+- [ ] Data consistency fix implemented.
+- [ ] Validation evidence comparing dashboard and inventory values.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-116: AR/AP Dashboard Data Inconsistencies
@@ -6940,6 +7060,7 @@ There is a severe data integrity issue. The main dashboard displays an inventory
 **Estimate:** 4h
 **Module:** `server/routers/accounting.ts`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-116.md`
 
 **Problem / Goal:**
 The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No outstanding balances" despite $2.5M in AR, and "Top Vendors Owed" shows "Unknown Vendor" for all entries.
@@ -6952,6 +7073,20 @@ The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No o
 
 - [ ] The "Top Debtors" widget correctly lists clients with the highest outstanding balances.
 - [ ] The "Top Vendors Owed" widget correctly lists vendor names.
+
+**Objectives:**
+
+- Fix AR/AP dashboard data joins for client and vendor names.
+- Validate widgets show accurate balances.
+- Ensure no regressions in accounting dashboard queries.
+
+**Deliverables:**
+
+- [ ] Query fixes for AR/AP dashboard widgets.
+- [ ] Tests or validation for top debtors/vendors output.
+- [ ] UI verification for accounting dashboard widgets.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
 
 ---
 
@@ -6976,13 +7111,14 @@ The AR/AP dashboard loads but has data quality issues. "Top Debtors" shows "No o
 **Type:** Bug
 **Source:** Jan 28 Reality Map (BUG-002)
 **Status:** complete
-**Priority:** HIGH (P0_BLOCKER)
+**Priority:** HIGH
 **Estimate:** 2h
 **Actual:** 30m
 **Completed:** 2026-01-29
 **Key Commits:** `d9f4542`
 **Module:** `server/autoMigrate.ts`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-123.md`
 
 **Problem / Goal:**
 The Purchase Orders page fails to load with a SQL query error. Users cannot view, create, or manage purchase orders. The error exposes raw SQL to the UI.
@@ -7001,6 +7137,20 @@ The Purchase Orders page fails to load with a SQL query error. Users cannot view
 - [x] All columns referenced in query exist in database
 - [x] autoMigrate creates missing columns on app startup
 
+**Objectives:**
+
+- Ensure purchase orders queries run without schema errors.
+- Add missing schema elements for supplier linkage.
+- Validate purchase orders list in staging.
+
+**Deliverables:**
+
+- [ ] Auto-migration for missing PO columns.
+- [ ] Indexes for supplier client lookup.
+- [ ] Validation evidence for PO list load.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
+
 ---
 
 ### BUG-124: Time Clock Data Loading SQL Failure (P1 HIGH) - ✅ COMPLETE
@@ -7008,13 +7158,14 @@ The Purchase Orders page fails to load with a SQL query error. Users cannot view
 **Type:** Bug
 **Source:** Jan 28 Reality Map (BUG-003)
 **Status:** complete
-**Priority:** HIGH (P1)
+**Priority:** HIGH
 **Estimate:** 2h
 **Actual:** 30m
 **Completed:** 2026-01-29
 **Key Commits:** `d9f4542`
 **Module:** `server/autoMigrate.ts`
 **Dependencies:** None
+**Prompt:** `docs/prompts/BUG-124.md`
 
 **Problem / Goal:**
 The Time Clock page shows "Error Loading Data" with SQL query exposed. Time tracking functionality is broken.
@@ -7034,6 +7185,20 @@ The Time Clock page shows "Error Loading Data" with SQL query exposed. Time trac
 - [x] Time Clock page loads without SQL errors
 - [x] `time_entries` table exists in staging database with all columns
 - [x] autoMigrate creates table on app startup
+
+**Objectives:**
+
+- Restore Time Clock data loading in staging.
+- Ensure `time_entries` schema matches Drizzle definitions.
+- Validate time clock UI after migration.
+
+**Deliverables:**
+
+- [ ] Auto-migration for `time_entries` table.
+- [ ] Indexes for time_entries query performance.
+- [ ] Validation evidence for Time Clock page load.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.
 
 ---
 
@@ -7090,6 +7255,7 @@ This is an information disclosure vulnerability that could aid attackers.
 **Key Commits:** `d9f4542`
 **Module:** Database migrations, `server/autoMigrate.ts`
 **Dependencies:** BUG-123, BUG-124
+**Prompt:** `docs/prompts/DATA-027.md`
 
 **Problem / Goal:**
 Multiple bugs from the Reality Map share a common root cause: schema mismatch between code and staging database. Tables/columns defined in Drizzle schema may not exist in the actual database.
@@ -7127,3 +7293,17 @@ npx drizzle-kit push
 - [ ] All columns referenced in queries exist
 - [ ] `autoMigrate.ts` includes critical tables (purchaseOrders, time_entries)
 - [ ] Document migration strategy for future deployments
+
+**Objectives:**
+
+- Audit staging schema against Drizzle definitions.
+- Backfill missing tables/columns in staging.
+- Document schema sync strategy for deployments.
+
+**Deliverables:**
+
+- [ ] Schema audit report for staging database.
+- [ ] Auto-migration updates for missing schema elements.
+- [ ] Validation evidence for schema alignment.
+- [ ] Roadmap completion details recorded.
+- [ ] Deployment verification documented.

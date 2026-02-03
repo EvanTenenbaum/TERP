@@ -125,7 +125,7 @@ export async function loginViaApi(
   email: string,
   password: string
 ): Promise<boolean> {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 
   try {
     const response = await page.request.post(
@@ -233,6 +233,21 @@ export async function loginAsSalesManager(page: Page): Promise<void> {
 }
 
 /**
+ * Helper to login as Sales Rep (Customer Service)
+ */
+export async function loginAsSalesRep(page: Page): Promise<void> {
+  const { email, password } = TEST_USERS.salesRep;
+  const apiSuccess = await loginViaApi(page, email, password);
+
+  if (apiSuccess) {
+    await page.goto("/dashboard");
+    await page.waitForURL(/\/($|dashboard)(\?.*)?/, { timeout: 10000 });
+  } else {
+    await loginViaForm(page, email, password);
+  }
+}
+
+/**
  * Helper to login as Inventory Manager
  */
 export async function loginAsInventoryManager(page: Page): Promise<void> {
@@ -275,6 +290,13 @@ export async function loginAsWarehouseStaff(page: Page): Promise<void> {
   } else {
     await loginViaForm(page, email, password);
   }
+}
+
+/**
+ * Helper to login as Fulfillment (alias for Warehouse Staff)
+ */
+export async function loginAsFulfillment(page: Page): Promise<void> {
+  await loginAsWarehouseStaff(page);
 }
 
 /**
@@ -352,7 +374,7 @@ export async function loginAsVipClient(page: Page): Promise<void> {
  * Logout the current user
  */
 export async function logout(page: Page): Promise<void> {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 
   await page.request.post(`${baseUrl}${AUTH_ROUTES.apiLogout}`);
   await page.goto("/login");
@@ -362,7 +384,7 @@ export async function logout(page: Page): Promise<void> {
  * Check if the current session is authenticated
  */
 export async function isAuthenticated(page: Page): Promise<boolean> {
-  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 
   try {
     const response = await page.request.get(`${baseUrl}${AUTH_ROUTES.apiMe}`);
@@ -376,7 +398,7 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
  * Playwright test fixture with pre-authenticated admin session
  */
 export const authenticatedTest = base.extend<{ authedPage: Page }>({
-  authedPage: async ({ page }, _use) => {
+  authedPage: async ({ page }, _use): Promise<void> => {
     await loginAsAdmin(page);
     await _use(page);
   },
@@ -390,7 +412,7 @@ export const roleBasedTest = base.extend<{
   authedPage: Page;
 }>({
   role: ["admin", { option: true }],
-  authedPage: async ({ page, role }, _use) => {
+  authedPage: async ({ page, role }, _use): Promise<void> => {
     await loginAsRole(page, role);
     await _use(page);
   },
