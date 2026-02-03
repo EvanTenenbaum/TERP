@@ -96,7 +96,7 @@ This roadmap provides a comprehensive, phase-by-phase plan to restore all 8 Gold
 | GF-004: Invoice & Payment    | **PARTIAL**    | PDF generation timeout      |
 | GF-005: Pick & Pack          | **NOT TESTED** | Blocked by order creation   |
 | GF-006: Client Ledger Review | **PARTIAL**    | Data inconsistencies        |
-| GF-007: Inventory Management | **BLOCKED**    | Shows 0 batches             |
+| GF-007: Inventory Management | **✅ WORKING** | Fixed (PR #374, #376, #382) |
 | GF-008: Sample Request       | **BLOCKED**    | Product selector broken     |
 
 ### Target State (End of Phase 5)
@@ -2638,6 +2638,14 @@ pnpm test && pnpm test:e2e
 > - **Phase 3.5 Status:** ✅ ALL TASKS COMPLETE - Ready for Phase 4
 >
 > **HOTFIX (2026-02-02):** PR #374 merged - Added `ownership_type` column to `batches` table. Production database was missing migrations 0020-0060. Inventory API now returns 300 batches.
+>
+> **CRITICAL FIX (2026-02-03):**
+>
+> - ✅ **PR #376** - Removed broken WorkSurfaceGate, wired InventoryWorkSurface directly
+> - ✅ **PR #382** - Fixed cursor validation (`positiveInt` → `nonNegativeInt`) - Root cause of "No inventory found" bug
+> - **Inventory page now fully functional** - Displays 50 batches, 10 live, $2.6M value
+>
+> **GF-007 Inventory Management: ✅ UNBLOCKED**
 
 ---
 

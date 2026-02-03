@@ -3,7 +3,8 @@
 **Source:** PR #366 - CTO Triage Report for Lint/Test Sweep (2026-02-02)
 **Analysis:** Codex API analysis prioritizing inventory (GF-007) and golden flow unblocking
 **Integration Date:** 2026-02-02
-**Status:** IN PROGRESS (WAVE-2026-02-02-A)
+**Status:** PHASE 3.5 P0 COMPLETE (WAVE-2026-02-02-A)
+**Last Updated:** 2026-02-03
 
 ---
 
@@ -351,12 +352,14 @@ Excess unused variables and console usage warnings create noise that hides real 
 
 ## Next Work Recommendation
 
-**Immediate Priority (Do Now):**
+**Completed (2026-02-02/03):**
 
-1. **INFRA-P0-001 + INFRA-P0-002** - Restore test signal
-   - These are blocking tasks for Phase 4 (E2E Automation)
-   - Without reliable tests, CI cannot gate golden flow verification
-   - Estimated: 1-2 days combined
+1. ✅ **INFRA-P0-001 + INFRA-P0-002** - Test signal restored (PR #375)
+2. ✅ **HOTFIX: ownership_type column** - Database migration applied (PR #374)
+3. ✅ **WorkSurfaceGate removal** - Direct wiring for InventoryWorkSurface (PR #376)
+4. ✅ **Cursor validation fix** - Changed positiveInt to nonNegativeInt (PR #382)
+
+**Immediate Priority (Do Now):**
 
 **Parallel Work (Can Start Now):**
 
