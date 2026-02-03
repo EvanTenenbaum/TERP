@@ -2628,13 +2628,14 @@ pnpm test && pnpm test:e2e
 
 > **PR #366 Integration (2026-02-02):** Phase 3.5 added to address test infrastructure instability (P0) and targeted lint cleanup (P1) identified in CTO triage report. This is prerequisite for Phase 4 E2E automation. See `docs/roadmaps/PR366_INTEGRATION_TASKS.md` for detailed task definitions.
 >
-> **Phase 3.5 Progress (2026-02-02):**
+> **Phase 3.5 Progress (2026-02-03):**
 >
 > - ✅ **INFRA-P0-001** (Vitest normalization): COMPLETE (PR #375)
 > - ✅ **INFRA-P0-002** (DB isolation): COMPLETE (PR #375) - Fixed inventoryDb.test.ts and vipPortal.appointments.test.ts
-> - 🔄 **GF-007-LINT-P1-001** (Type safety): IN PROGRESS (PR #378)
-> - 🔄 **GF-CORE-REACT-P1-001** (React lint): IN PROGRESS (PR #378)
-> - **Test suite status:** 177 passed, 0 failed (was 2 failed before fix)
+> - ✅ **GF-007-LINT-P1-001** (Type safety): COMPLETE (PR #378) - Replaced `any` types in inventory modules
+> - ✅ **GF-CORE-REACT-P1-001** (React lint): COMPLETE (PR #378) - Fixed array-index-key in DataTable
+> - **Test suite status:** 177 passed, 0 failed
+> - **Phase 3.5 Status:** ✅ ALL TASKS COMPLETE - Ready for Phase 4
 >
 > **HOTFIX (2026-02-02):** PR #374 merged - Added `ownership_type` column to `batches` table. Production database was missing migrations 0020-0060. Inventory API now returns 300 batches.
 
