@@ -2377,13 +2377,13 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 
 #### P1 - High Priority (Feature Completeness)
 
-| Task     | Description                            | Priority | Status      | Estimate | Module                                         |
-| -------- | -------------------------------------- | -------- | ----------- | -------- | ---------------------------------------------- |
-| SSE-001  | Fix Live Shopping SSE Event Naming     | HIGH     | COMPLETE    | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
-| MEET-048 | Create Hour Tracking Frontend          | HIGH     | COMPLETE    | 16h      | client/src/pages/                              |
-| WS-010A  | Integrate Photography Module into Page | HIGH     | IN_PROGRESS | 4h       | PhotographyPage.tsx                            |
-| NAV-017  | Route CreditsPage in App.tsx           | HIGH     | COMPLETE    | 1h       | App.tsx                                        |
-| API-016  | Implement Quote Email Sending          | HIGH     | COMPLETE    | 4h       | server/routers/quotes.ts:294                   |
+| Task     | Description                            | Priority | Status   | Estimate | Module                                         |
+| -------- | -------------------------------------- | -------- | -------- | -------- | ---------------------------------------------- |
+| SSE-001  | Fix Live Shopping SSE Event Naming     | HIGH     | COMPLETE | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
+| MEET-048 | Create Hour Tracking Frontend          | HIGH     | COMPLETE | 16h      | client/src/pages/                              |
+| WS-010A  | Integrate Photography Module into Page | HIGH     | COMPLETE | 4h       | PhotographyPage.tsx                            |
+| NAV-017  | Route CreditsPage in App.tsx           | HIGH     | COMPLETE | 1h       | App.tsx                                        |
+| API-016  | Implement Quote Email Sending          | HIGH     | COMPLETE | 4h       | server/routers/quotes.ts:294                   |
 
 ##### SSE-001: Fix Live Shopping SSE Event Naming Mismatch
 
@@ -2427,7 +2427,7 @@ Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBr
 
 ##### WS-010A: Integrate Photography Module into PhotographyPage
 
-**Status:** IN_PROGRESS (PR #373 open)
+**Status:** COMPLETE (merged 2026-02-02, PR #373)
 **Priority:** HIGH (P1)
 **Estimate:** 4h
 **Module:** `client/src/pages/PhotographyPage.tsx`, `client/src/components/inventory/PhotographyModule.tsx`
