@@ -88,16 +88,16 @@ This roadmap provides a comprehensive, phase-by-phase plan to restore all 8 Gold
 
 ### Current State (Jan 26, 2026 QA Checkpoint)
 
-| Flow                         | Status         | Primary Blocker             |
-| ---------------------------- | -------------- | --------------------------- |
-| GF-001: Direct Intake        | **BLOCKED**    | Form fields not rendering   |
-| GF-002: Procure-to-Pay       | **BLOCKED**    | Product dropdown empty      |
-| GF-003: Order-to-Cash        | **BLOCKED**    | SQL error on inventory load |
-| GF-004: Invoice & Payment    | **PARTIAL**    | PDF generation timeout      |
-| GF-005: Pick & Pack          | **NOT TESTED** | Blocked by order creation   |
-| GF-006: Client Ledger Review | **PARTIAL**    | Data inconsistencies        |
-| GF-007: Inventory Management | **✅ WORKING** | Fixed (PR #374, #376, #382) |
-| GF-008: Sample Request       | **BLOCKED**    | Product selector broken     |
+| Flow                         | Status         | Primary Blocker                 |
+| ---------------------------- | -------------- | ------------------------------- |
+| GF-001: Direct Intake        | **BLOCKED**    | Form fields not rendering       |
+| GF-002: Procure-to-Pay       | **BLOCKED**    | Product dropdown empty          |
+| GF-003: Order-to-Cash        | **BLOCKED**    | SQL error on inventory load     |
+| GF-004: Invoice & Payment    | **PARTIAL**    | PDF generation timeout          |
+| GF-005: Pick & Pack          | **NOT TESTED** | Blocked by order creation       |
+| GF-006: Client Ledger Review | **PARTIAL**    | Data inconsistencies            |
+| GF-007: Inventory Management | ✅ PASS        | Verified in staging build #5149 |
+| GF-008: Sample Request       | **BLOCKED**    | Product selector broken         |
 
 ### Target State (End of Phase 5)
 
@@ -2609,18 +2609,18 @@ pnpm test && pnpm test:e2e
 
 ## Summary: Task Breakdown by Phase (Post-Protocol QA Analysis)
 
-| Phase     | Focus                         | Tasks  | Est. Duration  | Buffer                   | Status            |
-| --------- | ----------------------------- | ------ | -------------- | ------------------------ | ----------------- |
-| 0.A       | Golden Flow Specification     | 8      | 2 days         | -                        | complete          |
-| 0         | Foundation Unblocking         | 8      | 3 days         | +1 day                   | mostly complete   |
-| 1         | Flow Restoration              | 6      | 4 days         | -                        | verified          |
-| 2         | Flow Completion               | 6      | 5 days         | +1 day                   | verified          |
-| 3         | RBAC Verification             | 5      | 5 days         | +1 day                   | verified          |
-| **3.5**   | **Test/Lint Signal Recovery** | **4**  | **2-3 days**   | -                        | **NEW (PR #366)** |
-| 4         | E2E Automation                | 4      | 7 days         | +1 day                   | ready             |
-| 5         | Beta Hardening + Security     | 7 (+1) | 6 days         | +1 day                   | ready             |
-| **6**     | **Legacy UI Deprecation**     | **11** | **3 days**     | **+1 day**               | **NEW (PR #376)** |
-| **Total** |                               | **59** | **41-42 days** | **+7 days (20% buffer)** |                   |
+| Phase     | Focus                         | Tasks  | Est. Duration  | Buffer                   | Status                              |
+| --------- | ----------------------------- | ------ | -------------- | ------------------------ | ----------------------------------- |
+| 0.A       | Golden Flow Specification     | 8      | 2 days         | -                        | complete                            |
+| 0         | Foundation Unblocking         | 8      | 3 days         | +1 day                   | mostly complete                     |
+| 1         | Flow Restoration              | 6      | 4 days         | -                        | verified                            |
+| 2         | Flow Completion               | 6      | 5 days         | +1 day                   | verified                            |
+| 3         | RBAC Verification             | 5      | 5 days         | +1 day                   | verified                            |
+| **3.5**   | **Test/Lint Signal Recovery** | **4**  | **2-3 days**   | -                        | ✅ COMPLETE (Feb 3)                 |
+| 4         | E2E Automation                | 4      | 7 days         | +1 day                   | ready                               |
+| 5         | Beta Hardening + Security     | 7 (+1) | 6 days         | +1 day                   | ready                               |
+| **6**     | **Legacy UI Deprecation**     | **11** | **3 days**     | **+1 day**               | 🟡 IN PROGRESS (8/11 done, PR #380) |
+| **Total** |                               | **59** | **41-42 days** | **+7 days (20% buffer)** |                                     |
 
 > **Protocol QA Analysis Note:** Phase 0.A added per QA Protocol v3.0 requirement that all golden flows be "fully defined on a UX, UI, backend, frontend, logic, and business logic standpoint." This adds 2 days but significantly reduces risk of discovering undefined behaviors during implementation.
 
@@ -2635,9 +2635,8 @@ pnpm test && pnpm test:e2e
 > - ✅ **GF-007-LINT-P1-001** (Type safety): COMPLETE (PR #378) - Replaced `any` types in inventory modules
 > - ✅ **GF-CORE-REACT-P1-001** (React lint): COMPLETE (PR #378) - Fixed array-index-key in DataTable
 > - **Test suite status:** 177 passed, 0 failed
-> - **Phase 3.5 Status:** ✅ ALL TASKS COMPLETE - Ready for Phase 4
->
-> **HOTFIX (2026-02-02):** PR #374 merged - Added `ownership_type` column to `batches` table. Production database was missing migrations 0020-0060. Inventory API now returns 300 batches.
+>   -> **Phase 3.5 Status:** ✅ ALL TASKS COMPLETE (Feb 3) - Ready for Phase 4>
+>   **HOTFIX (2026-02-02):** PR #374 merged - Added `ownership_type` column to `batches` table. Production database was missing migrations 0020-0060. Inventory API now returns 300 batches.
 >
 > **CRITICAL FIX (2026-02-03):**
 >
@@ -2645,7 +2644,7 @@ pnpm test && pnpm test:e2e
 > - ✅ **PR #382** - Fixed cursor validation (`positiveInt` → `nonNegativeInt`) - Root cause of "No inventory found" bug
 > - **Inventory page now fully functional** - Displays 50 batches, 10 live, $2.6M value
 >
-> **GF-007 Inventory Management: ✅ UNBLOCKED**
+> **GF-007 Inventory Management: ✅ PASS (Verified in staging build #5149)**
 
 ---
 
@@ -2796,7 +2795,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-001: Remove WorkSurfaceGate from Orders routes
 
 **Task ID:** DEPRECATE-UI-001
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2841,7 +2840,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-002: Remove WorkSurfaceGate from Quotes routes
 
 **Task ID:** DEPRECATE-UI-002
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2886,7 +2885,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-003: Remove WorkSurfaceGate from Clients routes
 
 **Task ID:** DEPRECATE-UI-003
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2931,7 +2930,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-004: Remove WorkSurfaceGate from Invoices routes
 
 **Task ID:** DEPRECATE-UI-004
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2979,7 +2978,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-005: Remove WorkSurfaceGate from ClientLedger routes
 
 **Task ID:** DEPRECATE-UI-005
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3027,7 +3026,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-006: Remove WorkSurfaceGate from PurchaseOrders routes
 
 **Task ID:** DEPRECATE-UI-006
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3078,7 +3077,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-007: Remove WorkSurfaceGate from PickPack routes
 
 **Task ID:** DEPRECATE-UI-007
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3123,7 +3122,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-008: Remove WorkSurfaceGate from DirectIntake routes
 
 **Task ID:** DEPRECATE-UI-008
-**Status:** [✅]
+**Status:** ✅ COMPLETE
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
