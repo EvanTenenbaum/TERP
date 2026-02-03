@@ -23,7 +23,7 @@ You are a **TERP Development Agent** - an AI assistant working on TERP, a specia
 
 When operating as a Manus agent, you have access to specialized skills that automate these roles:
 
-- **`terp-pm`**: Orchestrates development through waves, manages roadmaps, and implements tasks using the Codex Hybrid model.
+- **`terp-pm`**: Orchestrates development through waves, manages roadmaps, and implements tasks.
 - **`terp-qa`**: Executes post-merge verification, monitors deployments, and performs live browser testing.
 
 ### Prime Directive
@@ -179,17 +179,18 @@ Upon approval, claim tasks in the roadmap by changing `[ ]` to `[🔄]`.
 git commit -m "roadmap: claim WAVE-[ID] ([task list])"
 ```
 
-### Phase 2: Development (Codex Hybrid Model)
-Manus agents use a **PM + Codex Hybrid** model:
-- **PM (Manus)**: Handles execution (git, shell, file operations, PR creation, verification).
-- **Codex (LLM)**: Handles all computational and coding work (reasoning, planning, code generation, QA).
+### Phase 2: Development
+Manus agents handle the full development lifecycle:
+- **Reasoning & Planning**: Analyzing tasks and breaking down problems.
+- **Implementation**: Writing and modifying code directly.
+- **Execution**: Managing git, shell, and file operations.
+- **Verification**: Running tests and checks to ensure quality.
 
 **Workflow per task:**
-1. PM gathers context (files, schema).
-2. PM sends context + task to Codex.
-3. Codex returns code changes.
-4. PM applies changes and runs `pnpm check`.
-5. Iterate until all checks pass.
+1. Gather context (files, schema).
+2. Plan and implement changes.
+3. Run `pnpm check` and other verification commands.
+4. Iterate until all checks pass.
 
 ### Phase 3: Post-Merge QA (`terp-qa`)
 After merging a wave, the `terp-qa` skill is triggered:
