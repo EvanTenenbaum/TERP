@@ -668,6 +668,7 @@ pnpm check && pnpm lint && pnpm test && pnpm build
 Dashboard shows $13M inventory value, but Inventory page shows 0 batches and $0.00.
 
 **Database Verification (2026-01-28):**
+
 ```
 ✅ LIVE batches: 216
 ✅ Batches with qty > 0: 237
@@ -680,6 +681,7 @@ Dashboard shows $13M inventory value, but Inventory page shows 0 batches and $0.
 The Inventory page query is filtering out valid data or using different logic than Dashboard.
 
 **Likely causes:**
+
 1. Different `deleted_at` filtering between Dashboard and Inventory queries
 2. Different `batchStatus` filtering
 3. Different join logic or missing joins
@@ -2607,23 +2609,33 @@ pnpm test && pnpm test:e2e
 
 ## Summary: Task Breakdown by Phase (Post-Protocol QA Analysis)
 
-| Phase     | Focus                     | Tasks         | Est. Duration | Buffer                   | Status                   |
-| --------- | ------------------------- | ------------- | ------------- | ------------------------ | ------------------------ |
-| 0.A       | Golden Flow Specification | 8             | 2 days        | -                        | complete                 |
-| 0         | Foundation Unblocking     | 8             | 3 days        | +1 day                   | mostly complete          |
-| 1         | Flow Restoration          | 6             | 4 days        | -                        | verified                 |
-| 2         | Flow Completion           | 6             | 5 days        | +1 day                   | verified                 |
-| 3         | RBAC Verification         | 5             | 5 days        | +1 day                   | verified                 |
-| **3.5**   | **Test/Lint Signal Recovery** | **4**     | **2-3 days**  | -                        | **NEW (PR #366)**        |
-| 4         | E2E Automation            | 4             | 7 days        | +1 day                   | ready                    |
-| 5         | Beta Hardening + Security | 7 (+1)        | 6 days        | +1 day                   | ready                    |
-| **Total** |                           | **48**        | **38-39 days**| **+6 days (20% buffer)** |                          |
+| Phase     | Focus                         | Tasks  | Est. Duration  | Buffer                   | Status            |
+| --------- | ----------------------------- | ------ | -------------- | ------------------------ | ----------------- |
+| 0.A       | Golden Flow Specification     | 8      | 2 days         | -                        | complete          |
+| 0         | Foundation Unblocking         | 8      | 3 days         | +1 day                   | mostly complete   |
+| 1         | Flow Restoration              | 6      | 4 days         | -                        | verified          |
+| 2         | Flow Completion               | 6      | 5 days         | +1 day                   | verified          |
+| 3         | RBAC Verification             | 5      | 5 days         | +1 day                   | verified          |
+| **3.5**   | **Test/Lint Signal Recovery** | **4**  | **2-3 days**   | -                        | **NEW (PR #366)** |
+| 4         | E2E Automation                | 4      | 7 days         | +1 day                   | ready             |
+| 5         | Beta Hardening + Security     | 7 (+1) | 6 days         | +1 day                   | ready             |
+| **Total** |                               | **48** | **38-39 days** | **+6 days (20% buffer)** |                   |
 
 > **Protocol QA Analysis Note:** Phase 0.A added per QA Protocol v3.0 requirement that all golden flows be "fully defined on a UX, UI, backend, frontend, logic, and business logic standpoint." This adds 2 days but significantly reduces risk of discovering undefined behaviors during implementation.
 
 > **PR #318 Progress:** GF-PHASE0-001a and GF-PHASE0-001b are complete pending merge of PR #318. This addresses the critical SQL error (BUG-110) that blocks 4+ Golden Flows. Once merged, only post-merge verification (GF-PHASE0-001c) remains for these tasks. **Estimated time saved: ~16h.**
 
 > **PR #366 Integration (2026-02-02):** Phase 3.5 added to address test infrastructure instability (P0) and targeted lint cleanup (P1) identified in CTO triage report. This is prerequisite for Phase 4 E2E automation. See `docs/roadmaps/PR366_INTEGRATION_TASKS.md` for detailed task definitions.
+>
+> **Phase 3.5 Progress (2026-02-02):**
+>
+> - ✅ **INFRA-P0-001** (Vitest normalization): COMPLETE (PR #375)
+> - ✅ **INFRA-P0-002** (DB isolation): COMPLETE (PR #375) - Fixed inventoryDb.test.ts and vipPortal.appointments.test.ts
+> - ⬜ **GF-007-LINT-P1-001** (Type safety): Not started
+> - ⬜ **GF-CORE-REACT-P1-001** (React lint): Not started
+> - **Test suite status:** 177 passed, 0 failed (was 2 failed before fix)
+>
+> **HOTFIX (2026-02-02):** PR #374 merged - Added `ownership_type` column to `batches` table. Production database was missing migrations 0020-0060. Inventory API now returns 300 batches.
 
 ---
 

@@ -3,7 +3,7 @@
 **Source:** PR #366 - CTO Triage Report for Lint/Test Sweep (2026-02-02)
 **Analysis:** Codex API analysis prioritizing inventory (GF-007) and golden flow unblocking
 **Integration Date:** 2026-02-02
-**Status:** PENDING APPROVAL
+**Status:** IN PROGRESS (WAVE-2026-02-02-A)
 
 ---
 
@@ -12,11 +12,13 @@
 PR #366 identified critical test infrastructure and lint issues that must be addressed to ensure reliable CI/CD gates and support golden flow verification. This document defines tasks to integrate these findings into the roadmap.
 
 **Key Findings:**
+
 - **1842 lint errors** and **264 warnings** across the codebase
 - **2 test failures** due to infrastructure issues (not code bugs)
 - Test infrastructure instability blocks CI trust and golden flow verification
 
 **Integration Strategy:**
+
 - Insert **Test/Lint Signal Recovery** track as Phase 3.5 (between RBAC Verification and E2E Automation)
 - P0 tasks restore test signal (prerequisite for Phase 4 E2E work)
 - P1 tasks target inventory/product modules to support GF-007
@@ -39,7 +41,8 @@ PR #366 identified critical test infrastructure and lint issues that must be add
 
 **Task ID:** INFRA-P0-001
 **Source:** PR #366 CTO Triage Report, TEST-INFRA-09
-**Status:** [🔄] in progress
+**Status:** [✅] COMPLETE (PR #375)
+**Completed:** 2026-02-02
 **Priority:** P0 (CRITICAL)
 **Estimate:** 4-8h
 **Mode:** RED
@@ -85,7 +88,9 @@ pnpm test 2>&1 | grep -i "jest"
 
 **Task ID:** INFRA-P0-002
 **Source:** PR #366 CTO Triage Report, TEST-INFRA-09
-**Status:** [🔄] in progress
+**Status:** [✅] COMPLETE (PR #375)
+**Completed:** 2026-02-02
+**Note:** Test failures were due to inventoryDb.test.ts (party model migration) and vipPortal.appointments.test.ts (date-sensitive test), not comments router. Both fixed.
 **Priority:** P0 (CRITICAL)
 **Estimate:** 8-12h
 **Mode:** RED
@@ -148,7 +153,7 @@ pnpm test 2>&1 | grep -i "ECONNREFUSED"
 
 **Task ID:** GF-007-LINT-P1-001
 **Source:** PR #366 CTO Triage Report (Type-safety regressions P1)
-**Status:** [🔄] in progress
+**Status:** [ ] not started
 **Priority:** P1 (HIGH)
 **Estimate:** 12-16h
 **Mode:** STRICT
@@ -159,6 +164,7 @@ pnpm test 2>&1 | grep -i "ECONNREFUSED"
 Large volume of `@typescript-eslint/no-explicit-any` violations in inventory and product modules. These type-safety gaps can mask runtime errors in the inventory path, which is critical for GF-007.
 
 **Scope (Inventory-Related Files Only):**
+
 - `server/routers/inventory.ts`
 - `server/routers/products.ts`
 - `server/inventoryDb.ts`
@@ -208,7 +214,7 @@ pnpm check
 
 **Task ID:** GF-CORE-REACT-P1-001
 **Source:** PR #366 CTO Triage Report (React correctness P1)
-**Status:** [🔄] in progress
+**Status:** [ ] not started
 **Priority:** P1 (HIGH)
 **Estimate:** 8h
 **Mode:** STRICT
@@ -216,11 +222,13 @@ pnpm check
 **Supports:** GF-001, GF-002, GF-007, GF-008 (all flows using list/selector components)
 
 **Problem:**
+
 - `react/no-array-index-key` violations in list components cause reconciliation issues
 - `React` undefined errors in JSX files due to missing imports or incorrect runtime config
 - These affect product selectors and inventory lists used by multiple golden flows
 
 **Scope (Shared Components):**
+
 - `client/src/components/shared/ProductSelector.tsx`
 - `client/src/components/shared/BatchSelector.tsx`
 - `client/src/components/shared/ClientSelector.tsx`
@@ -329,13 +337,13 @@ Excess unused variables and console usage warnings create noise that hides real 
 
 ## Integration Summary
 
-| Task ID | Phase | Priority | Est. | Status | Blocks |
-|---------|-------|----------|------|--------|--------|
-| INFRA-P0-001 | 3.5 | P0 | 4-8h | not started | Phase 4 |
-| INFRA-P0-002 | 3.5 | P0 | 8-12h | not started | Phase 4 |
-| GF-007-LINT-P1-001 | 3.5 | P1 | 12-16h | not started | GF-007 |
-| GF-CORE-REACT-P1-001 | 3.5 | P1 | 8h | not started | GF-001/002/007/008 |
-| LINT-P2-001 | 5 | P2 | 8-16h | not started | None |
+| Task ID              | Phase | Priority | Est.   | Status      | Blocks             |
+| -------------------- | ----- | -------- | ------ | ----------- | ------------------ |
+| INFRA-P0-001         | 3.5   | P0       | 4-8h   | ✅ COMPLETE | Phase 4            |
+| INFRA-P0-002         | 3.5   | P0       | 8-12h  | ✅ COMPLETE | Phase 4            |
+| GF-007-LINT-P1-001   | 3.5   | P1       | 12-16h | not started | GF-007             |
+| GF-CORE-REACT-P1-001 | 3.5   | P1       | 8h     | not started | GF-001/002/007/008 |
+| LINT-P2-001          | 5     | P2       | 8-16h  | not started | None               |
 
 **Total New Effort:** 40-60 hours (2-3 days for P0/P1, additional 1-2 days for P2)
 
@@ -374,7 +382,7 @@ Excess unused variables and console usage warnings create noise that hides real 
 To begin the test/lint signal recovery work, use this prompt:
 
 ```
-/terp-pm Execute INFRA-P0-001 and INFRA-P0-002 to restore test signal. 
+/terp-pm Execute INFRA-P0-001 and INFRA-P0-002 to restore test signal.
 Normalize the Vitest/Jest usage and mock the database in comments router tests.
 This is prerequisite for Phase 4 E2E automation and reliable CI gates.
 ```
