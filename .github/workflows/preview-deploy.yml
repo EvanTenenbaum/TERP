@@ -1,0 +1,129 @@
+name: PR Preview Deploy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    # Skip preview for dependabot PRs to save resources
+    if: github.actor != 'dependabot[bot]'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy PR Preview to DigitalOcean
+        id: deploy
+        uses: digitalocean/app_action/deploy@v2
+        with:
+          deploy_pr_preview: "true"
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          print_build_logs: "true"
+          print_deploy_logs: "true"
+
+      - name: Comment on PR with preview URL
+        uses: actions/github-script@v7
+        if: success()
+        with:
+          script: |
+            const app = ${{ steps.deploy.outputs.app }};
+            const liveUrl = app.live_url;
+            
+            // Find existing bot comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Preview Deployment')
+            );
+            
+            const body = `## 🚀 Preview Deployment
+
+| Status | URL |
+|--------|-----|
+| ✅ **Live** | [${liveUrl}](${liveUrl}) |
+
+### Details
+- **App Name:** \`${app.spec.name}\`
+- **Commit:** \`${context.sha.substring(0, 7)}\`
+- **Updated:** ${new Date().toISOString()}
+
+---
+<details>
+<summary>QA Checklist</summary>
+
+- [ ] Routes load correctly
+- [ ] No console errors
+- [ ] Forms submit properly
+- [ ] Data displays correctly
+
+</details>`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Comment on PR with failure details
+        uses: actions/github-script@v7
+        if: failure()
+        env:
+          BUILD_LOGS: ${{ steps.deploy.outputs.build_logs }}
+          DEPLOY_LOGS: ${{ steps.deploy.outputs.deploy_logs }}
+        with:
+          script: |
+            const { BUILD_LOGS, DEPLOY_LOGS } = process.env;
+            
+            const body = `## ❌ Preview Deployment Failed
+
+The preview deployment failed. Check the logs below for details.
+
+**Action Run:** [View Logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+
+<details>
+<summary>Build Logs</summary>
+
+\`\`\`
+${BUILD_LOGS || 'No build logs available'}
+\`\`\`
+
+</details>
+
+<details>
+<summary>Deploy Logs</summary>
+
+\`\`\`
+${DEPLOY_LOGS || 'No deploy logs available'}
+\`\`\`
+
+</details>`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
