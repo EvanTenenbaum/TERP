@@ -527,8 +527,9 @@ function DataTableComponent<T>({
                 {columns.map(column => {
                   const columnId = String(column.id);
                   if (!visibleColumns[columnId]) return null;
+                  const rowId = getRowIdentifier(row, rowIndex, getRowId);
                   return (
-                    <TableCell key={`${columnId}-${rowIndex}`}>
+                    <TableCell key={`${columnId}-${rowId}`}>
                       {column.accessor(row)}
                     </TableCell>
                   );
@@ -551,7 +552,9 @@ function DataTableComponent<T>({
                     />
                   ) : emptyState ? (
                     <EmptyState
-                      icon={<InboxIcon className="h-12 w-12 text-muted-foreground/50" />}
+                      icon={
+                        <InboxIcon className="h-12 w-12 text-muted-foreground/50" />
+                      }
                       title={emptyState.title}
                       description={emptyState.description}
                       action={emptyState.action}
