@@ -13,9 +13,8 @@ jobs:
   preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
-    # Skip preview for dependabot PRs to save resources
     if: github.actor != 'dependabot[bot]'
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,38 +35,29 @@ jobs:
           script: |
             const app = ${{ steps.deploy.outputs.app }};
             const liveUrl = app.live_url;
-            
+
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
               comment.body.includes('Preview Deployment')
             );
-            
-            const body = `## 🚀 Preview Deployment
 
-**Status:** ✅ Live
-**URL:** [${liveUrl}](${liveUrl})
-
-### Details
-- **App Name:** \`${app.spec.name}\`
-- **Commit:** \`${context.sha.substring(0, 7)}\`
-- **Updated:** ${new Date().toISOString()}
-
----
-<details>
-<summary>QA Checklist</summary>
-
-- [ ] Routes load correctly
-- [ ] No console errors
-- [ ] Forms submit properly
-- [ ] Data displays correctly
-
-</details>`;
+            const body = [
+              '## Preview Deployment',
+              '',
+              'Status: Live',
+              'URL: ' + liveUrl,
+              '',
+              '### Details',
+              '- App Name: ' + app.spec.name,
+              '- Commit: ' + context.sha.substring(0, 7),
+              '- Updated: ' + new Date().toISOString(),
+            ].join('\n');
 
             if (botComment) {
               await github.rest.issues.updateComment({
@@ -94,30 +84,24 @@ jobs:
         with:
           script: |
             const { BUILD_LOGS, DEPLOY_LOGS } = process.env;
-            
-            const body = `## ❌ Preview Deployment Failed
 
-The preview deployment failed. Check the logs below for details.
-
-**Action Run:** [View Logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-
-<details>
-<summary>Build Logs</summary>
-
-\`\`\`
-${BUILD_LOGS || 'No build logs available'}
-\`\`\`
-
-</details>
-
-<details>
-<summary>Deploy Logs</summary>
-
-\`\`\`
-${DEPLOY_LOGS || 'No deploy logs available'}
-\`\`\`
-
-</details>`;
+            const body = [
+              '## Preview Deployment Failed',
+              '',
+              'The preview deployment failed. Check the logs below for details.',
+              '',
+              'Action Run: https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
+              '',
+              '### Build Logs',
+              '```',
+              BUILD_LOGS || 'No build logs available',
+              '```',
+              '',
+              '### Deploy Logs',
+              '```',
+              DEPLOY_LOGS || 'No deploy logs available',
+              '```',
+            ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
