@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 7.7
-**Last Updated:** 2026-02-02 (INV-FILTER PRs #368-#372 created, awaiting merge)
+**Version:** 7.8
+**Last Updated:** 2026-02-02 (INV-FILTER PRs #368-#372 merged - inventory filter chain RESOLVED)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -372,21 +372,22 @@ pnpm test --run 2>&1 | tee test-results.log
 
 This was identified in the DATABASE_TABLE_AUDIT (T1-001) but was not fixed during the Golden Flow initiative.
 
-#### S0-CRITICAL: Inventory Filter Chain (P0 - ACTIVE EXECUTION)
+#### S0-CRITICAL: Inventory Filter Chain (P0 - RESOLVED)
 
-> **Status:** ✅ PRs CREATED - AWAITING MERGE (2026-02-02)
+> **Status:** ✅ ALL MERGED (2026-02-02)
 > **Orchestrator:** Manus PM
 > **Priority:** P0 - Blocks all inventory operations
+> **Resolution:** All 5 PRs merged to main
 
 | Task ID        | Description                                       | Priority | Status      | PR   | Module                             |
 | :------------- | :------------------------------------------------ | :------- | :---------- | :--- | :--------------------------------- |
-| INV-FILTER-001 | Reconnect status/category filters to DB           | P0       | 🟡 PR READY | #368 | `server/routers/inventory.ts`      |
-| INV-FILTER-002 | Extend DB layer for full filter support           | P1       | 🟡 PR READY | #369 | `server/inventoryDb.ts`            |
-| INV-PARTY-001  | Rename getBatchesByVendor to getBatchesBySupplier | P1       | 🟡 PR READY | #370 | `server/routers/inventory.ts`      |
-| INV-FILTER-003 | Remove redundant client-side filters              | P2       | 🟡 PR READY | #371 | `server/routers/inventory.ts`      |
-| INV-FILTER-004 | Surface active filter indicator prominently       | P2       | 🟡 PR READY | #372 | `client/src/components/inventory/` |
+| INV-FILTER-001 | Reconnect status/category filters to DB           | P0       | ✅ COMPLETE | #368 | `server/routers/inventory.ts`      |
+| INV-FILTER-002 | Extend DB layer for full filter support           | P1       | ✅ COMPLETE | #369 | `server/inventoryDb.ts`            |
+| INV-PARTY-001  | Rename getBatchesByVendor to getBatchesBySupplier | P1       | ✅ COMPLETE | #370 | `server/routers/inventory.ts`      |
+| INV-FILTER-003 | Remove redundant client-side filters              | P2       | ✅ COMPLETE | #371 | `server/routers/inventory.ts`      |
+| INV-FILTER-004 | Surface active filter indicator prominently       | P2       | ✅ COMPLETE | #372 | `client/src/components/inventory/` |
 
-**Root Cause:** The `getEnhanced` tRPC procedure accepts 12 filter parameters but passes NONE to the database. All filtering happens client-side after fetching an unfiltered page, causing data loss at production scale (300+ batches).
+**Root Cause (Fixed):** The `getEnhanced` tRPC procedure was accepting 12 filter parameters but passing NONE to the database. All filtering happened client-side after fetching an unfiltered page, causing data loss at production scale (300+ batches). Now all filters are passed to the database layer.
 
 **Execution Plan:** See `docs/roadmaps/INVENTORY_FIX_EXECUTION_PLAN.md`
 
