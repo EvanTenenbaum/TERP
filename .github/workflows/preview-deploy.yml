@@ -37,7 +37,6 @@ jobs:
             const app = ${{ steps.deploy.outputs.app }};
             const liveUrl = app.live_url;
             
-            // Find existing bot comment to update
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -51,9 +50,8 @@ jobs:
             
             const body = `## 🚀 Preview Deployment
 
-| Status | URL |
-|--------|-----|
-| ✅ **Live** | [${liveUrl}](${liveUrl}) |
+**Status:** ✅ Live
+**URL:** [${liveUrl}](${liveUrl})
 
 ### Details
 - **App Name:** \`${app.spec.name}\`
