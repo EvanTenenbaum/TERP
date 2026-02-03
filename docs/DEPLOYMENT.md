@@ -269,12 +269,21 @@ curl -s https://your-app.com/api/health | jq
 Error: Cannot connect to MySQL
 ```
 
+or
+
+```
+❌ CRITICAL: Database health check failed - Cannot establish connection
+error: {"errorno":"ETIMEDOUT","code":"ETIMEDOUT","syscall":"connect"}
+```
+
 **Solutions:**
 
-1. Verify `DATABASE_URL` is correct
-2. Check database server is running
-3. Verify network/firewall rules
-4. Check connection pool exhaustion
+1. **Check database firewall rules** - The App Platform must be in the database's trusted sources
+   - See [DIGITALOCEAN_DATABASE_FIREWALL.md](deployment/DIGITALOCEAN_DATABASE_FIREWALL.md) for details
+2. Verify `DATABASE_URL` is correct
+3. Check database server is running
+4. Verify network/firewall rules
+5. Check connection pool exhaustion
 
 #### Build Fails with Type Errors
 

@@ -9,14 +9,15 @@
 
 ## Completion Summary
 
-| Task | Status | Notes |
-|------|--------|-------|
-| REL-003 | ✅ Complete | Transaction rollback with Sentry logging added to 3 payment transactions |
-| REL-005 | ✅ Complete | Version column added to payments table (others already had it) |
-| REL-006 | ✅ Already Done | Order confirmation was already wrapped in `withTransaction()` |
-| REL-017 | ✅ Complete | 17 tests added for fingerprint retry logic |
+| Task    | Status          | Notes                                                                    |
+| ------- | --------------- | ------------------------------------------------------------------------ |
+| REL-003 | ✅ Complete     | Transaction rollback with Sentry logging added to 3 payment transactions |
+| REL-005 | ✅ Complete     | Version column added to payments table (others already had it)           |
+| REL-006 | ✅ Already Done | Order confirmation was already wrapped in `withTransaction()`            |
+| REL-017 | ✅ Complete     | 17 tests added for fingerprint retry logic                               |
 
 ### Additional Fixes
+
 - Fixed `tests/integration/data-integrity.test.ts` - replaced Jest globals with Vitest, added database connectivity check
 
 ---
@@ -25,28 +26,31 @@
 
 Complete 4 reliability tasks that harden TERP's financial and database operations against partial failures and concurrent edit conflicts.
 
-| Field | Value |
-|-------|-------|
-| Risk Level | 🔴 HIGH |
-| Total Estimate | 20h |
-| Depends On | REL-001 ✅ (complete) |
-| Blocks | Beta release reliability |
+| Field          | Value                    |
+| -------------- | ------------------------ |
+| Risk Level     | 🔴 HIGH                  |
+| Total Estimate | 20h                      |
+| Depends On     | REL-001 ✅ (complete)    |
+| Blocks         | Beta release reliability |
 
 ---
 
 ## Task 1: REL-003 - Add Transaction Rollback to Payments ✅
 
 ### Problem
+
 3 transactions in `server/routers/payments.ts` at lines ~300, ~692, ~892 lack explicit rollback handling.
 
 ### Deliverables
+
 - [x] Add try/catch with explicit rollback to line ~300 transaction
-- [x] Add try/catch with explicit rollback to line ~692 transaction  
+- [x] Add try/catch with explicit rollback to line ~692 transaction
 - [x] Add try/catch with explicit rollback to line ~892 transaction
 - [x] Log transaction failures to Sentry
 - [ ] Enable the skipped tests in `payments.test.ts` if possible (N/A - no skipped tests found)
 
 ### Implementation Notes
+
 - Wrapped all 3 transactions with try/catch blocks
 - Added `captureException()` from monitoring module for Sentry logging
 - Preserved TRPCErrors (validation errors) without re-wrapping
@@ -65,9 +69,11 @@ The order confirmation procedure in `server/routers/orders.ts` was already wrapp
 ## Task 3: REL-005 - Add Optimistic Locking to Critical Tables ✅
 
 ### Problem
+
 0 of 39 tables have version fields - concurrent edits silently overwrite.
 
 ### Target Tables
+
 - orders ✅ (already had version column)
 - batches ✅ (already had version column)
 - invoices ✅ (already had version column)
@@ -75,6 +81,7 @@ The order confirmation procedure in `server/routers/orders.ts` was already wrapp
 - clients ✅ (already had version column)
 
 ### Deliverables
+
 - [x] Add `version` column to payments table (others already had it)
 - [x] `server/_core/optimisticLocking.ts` utility already exists
 - [ ] Update all update operations to check version (future work - no current edit payment endpoint)
@@ -82,6 +89,7 @@ The order confirmation procedure in `server/routers/orders.ts` was already wrapp
 - [ ] Frontend: Handle 409 with "Data changed, please refresh" (future work)
 
 ### Implementation Notes
+
 - Added `version` column to `payments` table in `drizzle/schema.ts`
 - Added migration for `payments.version` in `server/autoMigrate.ts`
 - The `optimisticLocking.ts` utility with `checkVersion()` and `updateWithVersion()` already exists
@@ -92,9 +100,11 @@ The order confirmation procedure in `server/routers/orders.ts` was already wrapp
 ## Task 4: REL-017 - Add Tests for Fingerprint Retry Logic ✅
 
 ### Problem
+
 Critical retry logic for schema fingerprint checks lacks test coverage.
 
 ### Deliverables
+
 - [x] Create unit tests for fingerprint retry logic
 - [x] Test first-attempt success scenario
 - [x] Test single retry success scenario
@@ -102,6 +112,7 @@ Critical retry logic for schema fingerprint checks lacks test coverage.
 - [x] Verify correct backoff delays (3s, 6s)
 
 ### Test Results
+
 ```
 ✓ server/__tests__/autoMigrate.test.ts (17 tests) 38ms
    ✓ Schema Fingerprint Retry Logic (17)
@@ -116,6 +127,7 @@ Critical retry logic for schema fingerprint checks lacks test coverage.
 ```
 
 ### Implementation Notes
+
 - Tests use a helper function that mirrors the production logic
 - Added comprehensive documentation explaining the testing approach
 - TODO: Consider refactoring `autoMigrate.ts` to extract fingerprint check for better testability
@@ -124,20 +136,60 @@ Critical retry logic for schema fingerprint checks lacks test coverage.
 
 ## Files Changed
 
-| File | Changes |
-|------|---------|
-| `server/routers/payments.ts` | Added try/catch with Sentry logging to 3 transactions |
-| `drizzle/schema.ts` | Added `version` column to payments table |
-| `server/autoMigrate.ts` | Added migration for `payments.version` column |
-| `server/__tests__/autoMigrate.test.ts` | New file with 17 fingerprint retry tests |
-| `tests/integration/data-integrity.test.ts` | Fixed Jest import, added db connectivity check |
+| File                                       | Changes                                               |
+| ------------------------------------------ | ----------------------------------------------------- |
+| `server/routers/payments.ts`               | Added try/catch with Sentry logging to 3 transactions |
+| `drizzle/schema.ts`                        | Added `version` column to payments table              |
+| `server/autoMigrate.ts`                    | Added migration for `payments.version` column         |
+| `server/__tests__/autoMigrate.test.ts`     | New file with 17 fingerprint retry tests              |
+| `tests/integration/data-integrity.test.ts` | Fixed Jest import, added db connectivity check        |
 
 ---
 
 ## Verification
 
 All checks passed:
+
 - ✅ ESLint: No errors in changed files
 - ✅ Forbidden patterns: No violations in new code
 - ✅ Unit tests: 17/17 passing for fingerprint retry logic
 - ✅ Full test suite: 5,334 tests passed (2 pre-existing failures unrelated to this wave)
+- ✅ Deployment: ACTIVE & HEALTHY
+
+---
+
+## Deployment Issue & Resolution
+
+### Initial Deployment Failure
+
+After merging PR #365, deployment failed with:
+
+```
+❌ CRITICAL: Database health check failed - Cannot establish connection
+error: {"errorno":"ETIMEDOUT","code":"ETIMEDOUT","syscall":"connect"}
+```
+
+### Root Cause
+
+The DigitalOcean managed MySQL database firewall only allowed one developer IP address (`78.82.199.23`). The App Platform containers were blocked from connecting to the database.
+
+### Resolution
+
+Added the TERP App Platform (`1fd40be5-b9af-4e71-ab1d-3af0864a7da4`) to the database firewall's trusted sources using the DigitalOcean MCP:
+
+```bash
+manus-mcp-cli tool call db-cluster-update-firewall-rules --server digitalocean \
+  --input '{
+    "id": "03cd0216-a4df-42c6-9bff-d9dc7dadec83",
+    "rules": [
+      {"type": "ip_addr", "value": "78.82.199.23"},
+      {"type": "app", "value": "1fd40be5-b9af-4e71-ab1d-3af0864a7da4"}
+    ]
+  }'
+```
+
+### Lesson Learned
+
+- When troubleshooting deployment failures, **always check database firewall rules first**
+- The error message "health check failed" can be misleading - the actual issue may be database connectivity
+- See [DIGITALOCEAN_DATABASE_FIREWALL.md](../deployment/DIGITALOCEAN_DATABASE_FIREWALL.md) for full documentation
