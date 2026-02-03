@@ -355,7 +355,12 @@ export function InventoryWorkSurface() {
     cursor: page * pageSize,
   });
 
+  // DEBUG: Log what we receive from the API
+  console.info('[InventoryWorkSurface] inventoryData:', inventoryData);
+  console.info('[InventoryWorkSurface] isLoading:', isLoading);
+  
   const rawItems = inventoryData?.items ?? [];
+  console.info('[InventoryWorkSurface] rawItems length:', rawItems.length);
   // Cast to our local interface type for easier manipulation
   const items = rawItems as unknown as InventoryItem[];
   // Note: inventory.list returns { items, hasMore, nextCursor }, not pagination.total
