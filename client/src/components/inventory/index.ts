@@ -7,8 +7,15 @@
 export { BatchMediaUpload } from "./BatchMediaUpload";
 // Sprint 4 Track A exports
 export { StockStatusBadge, type StockStatus } from "./StockStatusBadge";
-export { AgingBadge, getAgeBracket, getAgingRowClass, type AgeBracket } from "./AgingBadge";
+export {
+  AgingBadge,
+  getAgeBracket,
+  getAgingRowClass,
+  type AgeBracket,
+} from "./AgingBadge";
 export { BatchInfoPanel } from "./BatchInfoPanel";
 // Sprint 4 Track A: 4.A.8 WS-009 - Movement & Shrinkage Tracking
 export { MovementHistoryPanel } from "./MovementHistoryPanel";
 export { ShrinkageReport } from "./ShrinkageReport";
+// INV-FILTER-004: Active filter indicator
+export { default as ActiveFiltersIndicator } from "./ActiveFiltersIndicator";
