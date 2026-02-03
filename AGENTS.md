@@ -1,0 +1,500 @@
+# TERP - Agent Development Guide
+
+> **For AI Coding Agents:** This document contains essential information about the TERP project architecture, development conventions, and workflows. Read this before making any changes.
+
+---
+
+## Project Overview
+
+**TERP (Task-driven Execution and Resolution Protocol)** is a modern, production-ready ERP system with comprehensive inventory management, accounting, client management, and needs-matching intelligence. It is a full-stack TypeScript application designed for the cannabis industry.
+
+**Key Characteristics:**
+
+- Production deployment on DigitalOcean App Platform
+- Auto-deploy on push to `main` branch
+- 80+ tRPC API endpoints
+- 20+ database tables
+- Mobile-first responsive design (100% mobile-optimized)
+- Zero TypeScript errors policy
+- Comprehensive test coverage
+
+---
+
+## Technology Stack
+
+### Frontend
+
+- **Framework:** React 19 with TypeScript
+- **Build Tool:** Vite 7 with custom manual chunking
+- **Styling:** Tailwind CSS 4
+- **UI Components:** shadcn/ui (55+ components) + Radix UI primitives
+- **State Management:** React Query (@tanstack/react-query) + tRPC
+- **Routing:** Wouter (lightweight React router)
+- **Forms:** React Hook Form + Zod validation
+- **Rich Text:** TipTap editor
+- **Charts:** Recharts
+- **Authentication:** Custom JWT-based auth (Clerk integration available)
+
+### Backend
+
+- **Runtime:** Node.js with Express
+- **API:** tRPC v11 with superjson transformer
+- **Database:** MySQL 8.0 with Drizzle ORM
+- **Migrations:** Drizzle Kit
+- **Authentication:** JWT tokens via `jsonwebtoken`
+- **Validation:** Zod schemas throughout
+- **Logging:** Pino structured logging
+- **Security:** Express rate limiting, XSS sanitization middleware
+
+### Testing
+
+- **Unit/Integration:** Vitest 4 with jsdom/node environments
+- **E2E:** Playwright with Argos visual testing
+- **Coverage:** V8 coverage provider
+
+### Infrastructure
+
+- **Deployment:** DigitalOcean App Platform
+- **Package Manager:** pnpm 10.4.1
+- **CI/CD:** GitHub webhooks + post-push hooks
+
+---
+
+## Project Structure
+
+```
+TERP/
+├── client/src/               # Frontend React application
+│   ├── components/           # Reusable UI components
+│   │   ├── ui/              # shadcn/ui base components (55+)
+│   │   ├── accounting/      # Accounting-specific components
+│   │   ├── dashboard/       # Dashboard widgets
+│   │   └── layout/          # Layout components (AppShell, etc.)
+│   ├── pages/               # Page components (routes)
+│   │   ├── accounting/      # Accounting module pages
+│   │   └── vip-portal/      # VIP portal pages
+│   ├── hooks/               # Custom React hooks
+│   ├── lib/                 # Utilities and helpers
+│   ├── contexts/            # React context providers
+│   └── types/               # TypeScript type definitions
+├── server/                   # Backend tRPC API
+│   ├── _core/               # Core server functionality
+│   │   ├── index.ts         # Express server entry
+│   │   ├── trpc.ts          # tRPC initialization
+│   │   ├── context.ts       # Request context with auth
+│   │   ├── authProvider.ts  # Authentication logic
+│   │   └── env.ts           # Environment validation
+│   ├── routers/             # 70+ tRPC routers (API endpoints)
+│   ├── services/            # Business logic services
+│   ├── db/                  # Database queries
+│   └── test-utils/          # Test utilities
+├── drizzle/                  # Database schema and migrations
+│   ├── schema.ts            # Main MySQL schema (100+ tables)
+│   ├── schema-vip-portal.ts # VIP portal schema
+│   ├── schema-rbac.ts       # RBAC schema
+│   └── migrations/          # SQL migration files
+├── shared/                   # Shared types and utilities
+├── scripts/                  # Automation scripts (50+)
+├── tests/                    # Test setup and utilities
+├── tests-e2e/               # Playwright E2E tests
+├── docs/                     # Documentation
+└── testing/                  # Test environment utilities
+```
+
+---
+
+## Build and Development Commands
+
+### Essential Commands
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server (uses tsx watch)
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Start production server
+pnpm start
+
+# Type check without emitting
+pnpm check
+```
+
+### Testing Commands
+
+```bash
+# Run all tests (Vitest)
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with UI
+pnpm test:ui
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Run E2E tests (Playwright)
+pnpm test:e2e
+
+# Run E2E with UI
+pnpm test:e2e:ui
+```
+
+### Database Commands
+
+```bash
+# Generate and run migrations
+pnpm db:push
+
+# Seed database with realistic data
+pnpm seed
+
+# Light seed (minimal data)
+pnpm seed:light
+
+# Full seed (comprehensive data)
+pnpm seed:full
+
+# Seed specific scenarios
+pnpm seed:edge      # Edge cases
+pnpm seed:chaos     # Chaos/random data
+```
+
+### Test Environment Commands
+
+```bash
+# Start test database environment
+pnpm test:env:up
+
+# Stop test database environment
+pnpm test:env:down
+
+# Reset test database (light)
+pnpm test:db:reset
+
+# Reset test database (full)
+pnpm test:db:reset:full
+
+# Run migrations on test DB
+pnpm test:db:migrate
+```
+
+---
+
+## Code Style Guidelines
+
+### TypeScript Conventions
+
+1. **Strict TypeScript:** The project uses strict mode. Zero TypeScript errors is enforced.
+
+2. **Naming Conventions:**
+   - Components: PascalCase (e.g., `Button.tsx`, `UserProfile.tsx`)
+   - Hooks: camelCase starting with `use` (e.g., `useAuth.ts`)
+   - Utilities: camelCase (e.g., `formatDate.ts`)
+   - Database tables: camelCase in schema definitions
+   - tRPC routers: camelCase with `Router` suffix (e.g., `inventoryRouter`)
+
+3. **Import Path Aliases:**
+   - `@/*` maps to `client/src/*`
+   - `@shared/*` maps to `shared/*`
+
+4. **Type Exports:**
+   - Database types: `export type User = typeof users.$inferSelect`
+   - Use `type` keyword for type-only exports to avoid runtime overhead
+
+### React Conventions
+
+1. **Functional Components:** All components are functional with hooks
+2. **Props Interface:** Define props interface for each component
+3. **Error Boundaries:** Use ErrorBoundary component for error handling
+4. **Loading States:** Use Suspense patterns where appropriate
+
+### Database Schema Conventions
+
+1. **Table Names:** camelCase (e.g., `userDashboardPreferences`)
+2. **Column Names:** camelCase (e.g., `createdAt`, `updatedAt`)
+3. **Soft Deletes:** All tables include `deletedAt` timestamp
+4. **Timestamps:** All tables have `createdAt` and `updatedAt`
+5. **Enums:** Use `mysqlEnum` for status fields with descriptive names
+
+### tRPC Conventions
+
+1. **Router Organization:** One router per domain/feature
+2. **Procedure Types:**
+   - `publicProcedure` - Unauthenticated access
+   - `protectedProcedure` - Requires authenticated user
+   - `adminProcedure` - Requires admin role
+3. **Input Validation:** All inputs validated with Zod schemas
+4. **Error Handling:** Use `TRPCError` with appropriate codes
+
+---
+
+## Testing Strategy
+
+### Test Organization
+
+```
+server/**/*.test.ts        # Server-side unit/integration tests
+client/**/*.test.tsx       # Client-side component tests
+scripts/**/*.test.ts       # Script tests
+tests-e2e/*.spec.ts        # Playwright E2E tests
+```
+
+### Test Environments
+
+- **Server tests:** Node environment
+- **Client tests:** jsdom environment
+- **E2E tests:** Real browser (Chromium)
+
+### Writing Tests
+
+1. **Test Files:** Co-locate with source files using `.test.ts` suffix
+2. **Mock External Services:** Use vi.fn() for API calls
+3. **Database Tests:** Use test-utils/testDb.ts for isolated test DB
+4. **E2E Tests:** Use page objects pattern (see `tests-e2e/page-objects/`)
+
+### Running Tests
+
+```bash
+# Quick test run (CI mode)
+pnpm test
+
+# Watch mode for development
+pnpm test:watch
+
+# Specific test file
+pnpm test server/routers/accounting.test.ts
+
+# E2E tests
+pnpm test:e2e
+
+# Specific E2E spec
+pnpm test:e2e tests-e2e/auth.spec.ts
+```
+
+---
+
+## QA & Verification
+
+When asked to verify a feature, test a change, or conduct QA, use the **terp-qa** skill. This skill provides:
+
+- The **5 Lenses** framework for comprehensive verification (static analysis → unit tests → API/DB → browser → deployment)
+- Decision matrix for what to test based on change type
+- Golden Flows testing (the 8 critical business processes)
+- RBAC testing with standard QA accounts
+- Structured QA report templates
+
+**Location:** `~/.config/agents/skills/terp-qa/`
+
+**Core Principle:** _Verify, Don't Trust_ - Every claim must be backed by evidence (screenshots, logs, query results).
+
+---
+
+## Security Considerations
+
+### Authentication & Authorization
+
+1. **JWT Tokens:** All protected routes require valid JWT token
+2. **Middleware Chain:** tRPC uses middleware for auth checks
+3. **Role-Based Access:** Admin vs User roles enforced at procedure level
+4. **Public User Fallback:** System provisions a public demo user for fallback
+
+### Input Sanitization
+
+1. **XSS Prevention:** All string inputs sanitized via `sanitizationMiddleware`
+2. **Zod Validation:** All API inputs validated with Zod schemas
+3. **Rate Limiting:** Express rate limiting on auth and API endpoints
+
+### Environment Variables
+
+**Required for Production:**
+
+- `DATABASE_URL` - MySQL connection string
+- `JWT_SECRET` - Secret for JWT signing (min 32 chars)
+- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk public key (optional)
+- `CLERK_SECRET_KEY` - Clerk secret (optional)
+- `SENTRY_DSN` - Error tracking (optional)
+
+**Security Rules:**
+
+- NEVER commit `.env` file
+- Use strong, random secrets in production
+- Rotate secrets regularly
+
+### Sensitive Files
+
+These files should NEVER be modified without explicit user approval:
+
+- `.do/app.yaml` - DigitalOcean configuration
+- `Dockerfile` - Production build configuration
+- Database migration files in `drizzle/`
+
+---
+
+## Deployment Process
+
+### Auto-Deploy Workflow
+
+1. Push to `main` branch triggers deployment
+2. DigitalOcean App Platform builds and deploys automatically
+3. Post-push hook monitors deployment status
+4. Health checks verify deployment success
+
+### Deployment Commands
+
+```bash
+# Deploy to production (push to main)
+git add .
+git commit -m "feat: your feature description"
+git push origin main
+
+# Check deployment status
+bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
+
+# Monitor deployment
+pnpm swarm:status
+```
+
+### Pre-Commit Hooks
+
+The project has extensive pre-commit validation:
+
+1. QA standards check
+2. AI-powered code review
+3. Lint-staged formatting
+4. Roadmap validation (if changed)
+5. Session cleanup validation
+
+---
+
+## Key Architecture Patterns
+
+### Frontend State Management
+
+- **Server State:** React Query + tRPC for server data
+- **Client State:** React useState/useReducer for local UI state
+- **URL State:** Wouter for routing state
+- **Form State:** React Hook Form for form management
+
+### Backend Architecture
+
+- **tRPC Router Pattern:** Domain-based routers (inventory, accounting, etc.)
+- **Middleware Stack:** Error handling → Sanitization → Auth → Procedure
+- **Database Layer:** Drizzle ORM with raw SQL fallbacks for complex queries
+- **Service Layer:** Business logic separated from route handlers
+
+### Database Patterns
+
+- **Soft Deletes:** All entities use `deletedAt` for soft deletion
+- **Relations:** Defined in `drizzle/relations.ts`
+- **Migrations:** Handled via Drizzle Kit with SQL files
+
+---
+
+## Common Development Tasks
+
+### Adding a New API Endpoint
+
+1. Define input/output schemas with Zod
+2. Add procedure to appropriate router in `server/routers/`
+3. Use `protectedProcedure` or `adminProcedure` as needed
+4. Add test file with `.test.ts` suffix
+
+### Adding a New Database Table
+
+1. Define table in `drizzle/schema.ts`
+2. Export types: `export type MyTable = typeof myTable.$inferSelect`
+3. Run `pnpm db:push` to generate migration
+4. Update shared types if needed
+
+### Adding a New Page
+
+1. Create page component in `client/src/pages/`
+2. Add route in `client/src/App.tsx`
+3. Wrap in AppShell for protected routes
+4. Add navigation link in sidebar
+
+### Adding a New Component
+
+1. For UI primitives: Add to `client/src/components/ui/`
+2. For feature components: Add to `client/src/components/{feature}/`
+3. Use shadcn/ui patterns (class-variance-authority for variants)
+4. Export from index.ts for clean imports
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Database Connection Errors:**
+
+- Check `DATABASE_URL` format: `mysql://user:pass@host:port/db`
+- Verify MySQL is running and accessible
+- Check SSL settings for production databases
+
+**Build Errors:**
+
+- Run `pnpm check` for TypeScript errors
+- Ensure all dependencies installed: `pnpm install`
+- Check for circular imports
+
+**Test Failures:**
+
+- Ensure test database is running: `pnpm test:env:up`
+- Check JWT_SECRET is set in test environment
+- Review mock setups in test files
+
+**Authentication Issues:**
+
+- Verify `JWT_SECRET` is set and valid
+- Check token expiration in browser dev tools
+- Ensure user exists in database
+
+---
+
+## External Integrations
+
+### Clerk Authentication (Optional)
+
+- Configurable via environment variables
+- Provides social login and MFA
+- Falls back to custom JWT if not configured
+
+### Sentry Error Tracking
+
+- Configured via `SENTRY_DSN`
+- Auto-instrumented on server and client
+- Captures errors and performance data
+
+### Slack Integration
+
+- Bot commands for deployment status
+- Health check notifications
+- Configured via Slack Bot tokens
+
+---
+
+## Development Notes
+
+1. **Mobile-First:** All UI must be responsive. Test at 320px width minimum.
+2. **Zero TypeScript Errors:** The project enforces strict TypeScript. Fix all errors before committing.
+3. **Production Code Only:** No placeholders or TODOs in production code.
+4. **Error Handling:** All procedures must have proper error handling with meaningful messages.
+5. **Logging:** Use structured logging via Pino. Never use console.log in production code.
+
+---
+
+## Resources
+
+- **README.md** - General project overview
+- **AGENT_ONBOARDING.md** - Detailed agent workflow guide
+- **docs/** - Architecture and feature documentation
+- **Testing_Guide.md** - Testing procedures
+- **terp-qa skill** (`~/.config/agents/skills/terp-qa/`) - QA verification framework for testing features and deployments
