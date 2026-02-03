@@ -1,5 +1,6 @@
 /**
  * Photography Module Page (WS-010)
+ * WS-010A: Integrated PhotographyModule for upload functionality
  * Simple image upload and management for product photography
  */
 
@@ -26,15 +27,63 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Camera, Search, CheckCircle, Clock, Image } from "lucide-react";
+import { Camera, Search, CheckCircle, Clock, Upload } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
-import { EmptyState, ErrorState, emptyStateConfigs } from "@/components/ui/empty-state";
+import {
+  EmptyState,
+  ErrorState,
+  emptyStateConfigs,
+} from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  PhotographyModule,
+  ProductPhoto,
+} from "@/components/inventory/PhotographyModule";
+
+interface SelectedBatch {
+  batchId: number;
+  productName: string;
+  strainName: string | null;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  addedAt?: Date | string | null;
+}
+
+/**
+ * Convert a File to base64 string (without the data URL prefix)
+ */
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+        const base64String = reader.result.split(",")[1];
+        resolve(base64String || "");
+      } else {
+        reject(new Error("Unable to read file"));
+      }
+    };
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
 
 export default function PhotographyPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<SelectedBatch | null>(
+    null
+  );
+  const [modulePhotos, setModulePhotos] = useState<ProductPhoto[]>([]);
 
   // Queries
   const {
@@ -58,8 +107,15 @@ export default function PhotographyPage() {
       refetch();
       setSelectedItems([]);
     },
-    onError: error => {
-      toast.error(error.message);
+    onError: mutationError => {
+      toast.error(mutationError.message);
+    },
+  });
+
+  // WS-010A: Use inventory.uploadMedia for file uploads (base64 pattern)
+  const uploadMedia = trpc.inventory.uploadMedia.useMutation({
+    onError: mutationError => {
+      toast.error(mutationError.message);
     },
   });
 
@@ -114,6 +170,89 @@ export default function PhotographyPage() {
           </Badge>
         );
     }
+  };
+
+  const handleOpenUploadDialog = (item: SelectedBatch) => {
+    setSelectedBatch(item);
+    setModulePhotos([]);
+    setUploadDialogOpen(true);
+  };
+
+  const handleCloseUploadDialog = (open: boolean) => {
+    setUploadDialogOpen(open);
+    if (!open) {
+      setSelectedBatch(null);
+      setModulePhotos([]);
+    }
+  };
+
+  /**
+   * WS-010A: Handle photo uploads via PhotographyModule
+   * Converts files to base64 and uploads via inventory.uploadMedia
+   * Then marks the batch as complete with the uploaded URLs
+   */
+  const handleUploadPhotos = async (files: File[]): Promise<ProductPhoto[]> => {
+    if (!selectedBatch) {
+      throw new Error("No batch selected for upload");
+    }
+
+    const uploadedUrls: string[] = [];
+
+    // Upload each file individually using the existing uploadMedia mutation
+    for (const file of files) {
+      try {
+        const base64Data = await fileToBase64(file);
+
+        const result = await uploadMedia.mutateAsync({
+          fileData: base64Data,
+          fileName: file.name,
+          fileType: file.type,
+          batchId: selectedBatch.batchId,
+        });
+
+        if (result.url) {
+          uploadedUrls.push(result.url);
+        }
+      } catch (uploadError) {
+        console.error(`Failed to upload ${file.name}:`, uploadError);
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+
+    if (uploadedUrls.length === 0) {
+      throw new Error("No files were uploaded successfully");
+    }
+
+    // Mark the batch as complete with the uploaded image URLs
+    await markComplete.mutateAsync({
+      batchId: selectedBatch.batchId,
+      imageUrls: uploadedUrls,
+    });
+
+    // Create ProductPhoto objects for the PhotographyModule
+    const uploadedPhotos: ProductPhoto[] = uploadedUrls.map((url, index) => ({
+      id: `${selectedBatch.batchId}-${Date.now()}-${index}`,
+      url,
+      thumbnailUrl: url,
+      filename: files[index]?.name ?? `photo-${index + 1}.jpg`,
+      isPrimary:
+        index === 0 &&
+        (modulePhotos.length === 0 ||
+          modulePhotos.every(photo => !photo.isPrimary)),
+      order: modulePhotos.length + index,
+      uploadedAt: new Date(),
+      size: files[index]?.size ?? 0,
+    }));
+
+    setModulePhotos(prev => [...prev, ...uploadedPhotos]);
+
+    toast.success(`Uploaded ${uploadedUrls.length} photo(s) successfully`);
+
+    // Close dialog after successful upload
+    setUploadDialogOpen(false);
+    setSelectedBatch(null);
+
+    return uploadedPhotos;
   };
 
   return (
@@ -237,14 +376,14 @@ export default function PhotographyPage() {
           ) : isError ? (
             <ErrorState
               title="Failed to load photography queue"
-              description={error?.message || "An error occurred while loading the photography queue."}
+              description={
+                error?.message ||
+                "An error occurred while loading the photography queue."
+              }
               onRetry={() => refetch()}
             />
           ) : !queue?.items?.length ? (
-            <EmptyState
-              {...emptyStateConfigs.photography}
-              size="sm"
-            />
+            <EmptyState {...emptyStateConfigs.photography} size="sm" />
           ) : (
             <Table>
               <TableHeader>
@@ -295,17 +434,35 @@ export default function PhotographyPage() {
                         ? new Date(item.addedAt).toLocaleDateString()
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
                       {item.status !== "COMPLETED" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMarkComplete(item.batchId)}
-                          disabled={markComplete.isPending}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Done
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleOpenUploadDialog({
+                                batchId: item.batchId,
+                                productName: item.productName,
+                                strainName: item.strainName ?? null,
+                                status: item.status,
+                                addedAt: item.addedAt,
+                              })
+                            }
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            Upload Photos
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMarkComplete(item.batchId)}
+                            disabled={markComplete.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Done
+                          </Button>
+                        </>
                       )}
                     </TableCell>
                   </TableRow>
@@ -315,6 +472,30 @@ export default function PhotographyPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* WS-010A: Upload Dialog with PhotographyModule */}
+      <Dialog open={uploadDialogOpen} onOpenChange={handleCloseUploadDialog}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Upload Photos</DialogTitle>
+            <DialogDescription>
+              {selectedBatch
+                ? `Add photos for ${selectedBatch.productName} (Batch #${selectedBatch.batchId})`
+                : "Select a batch to upload photos"}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBatch && (
+            <PhotographyModule
+              productId={selectedBatch.batchId}
+              productName={selectedBatch.productName}
+              photos={modulePhotos}
+              onPhotosChange={setModulePhotos}
+              onUpload={handleUploadPhotos}
+              maxPhotos={10}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
