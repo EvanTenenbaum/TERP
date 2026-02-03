@@ -2632,8 +2632,8 @@ pnpm test && pnpm test:e2e
 >
 > - ✅ **INFRA-P0-001** (Vitest normalization): COMPLETE (PR #375)
 > - ✅ **INFRA-P0-002** (DB isolation): COMPLETE (PR #375) - Fixed inventoryDb.test.ts and vipPortal.appointments.test.ts
-> - ⬜ **GF-007-LINT-P1-001** (Type safety): Not started
-> - ⬜ **GF-CORE-REACT-P1-001** (React lint): Not started
+> - 🔄 **GF-007-LINT-P1-001** (Type safety): IN PROGRESS (PR #378)
+> - 🔄 **GF-CORE-REACT-P1-001** (React lint): IN PROGRESS (PR #378)
 > - **Test suite status:** 177 passed, 0 failed (was 2 failed before fix)
 >
 > **HOTFIX (2026-02-02):** PR #374 merged - Added `ownership_type` column to `batches` table. Production database was missing migrations 0020-0060. Inventory API now returns 300 batches.
@@ -2752,7 +2752,6 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Author:** Claude Code Agent
 **Next Review:** After Phase 0 completion
 
-
 ---
 
 ## Phase 6: Legacy UI Deprecation (Days 40-44)
@@ -2768,6 +2767,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ### Pattern to Follow (from PR #376)
 
 **BEFORE:**
+
 ```tsx
 <WorkSurfaceGate flag="FLAG" fallback={<LegacyPage />}>
   <WorkSurfaceComponent />
@@ -2775,6 +2775,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **AFTER:**
+
 ```tsx
 <WorkSurfaceComponent />
 ```
@@ -2793,14 +2794,12 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/orders"
   component={withErrorBoundary(() => (
-    <WorkSurfaceGate
-      flag="WORK_SURFACE_ORDERS"
-      fallback={<Orders />}
-    >
+    <WorkSurfaceGate flag="WORK_SURFACE_ORDERS" fallback={<Orders />}>
       <OrdersWorkSurface />
     </WorkSurfaceGate>
   ))}
@@ -2808,14 +2807,13 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
-<Route
-  path="/orders"
-  component={withErrorBoundary(OrdersWorkSurface)}
-/>
+<Route path="/orders" component={withErrorBoundary(OrdersWorkSurface)} />
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/orders` route in App.tsx to use OrdersWorkSurface directly
 - [ ] Verify OrdersWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -2823,6 +2821,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius (affected components/routes)
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: OrdersWorkSurface
 - Routes affected: `/orders`
@@ -2840,14 +2839,12 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/quotes"
   component={withErrorBoundary(() => (
-    <WorkSurfaceGate
-      flag="WORK_SURFACE_ORDERS"
-      fallback={<Quotes />}
-    >
+    <WorkSurfaceGate flag="WORK_SURFACE_ORDERS" fallback={<Quotes />}>
       <QuotesWorkSurface />
     </WorkSurfaceGate>
   ))}
@@ -2855,14 +2852,13 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
-<Route
-  path="/quotes"
-  component={withErrorBoundary(QuotesWorkSurface)}
-/>
+<Route path="/quotes" component={withErrorBoundary(QuotesWorkSurface)} />
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/quotes` route in App.tsx to use QuotesWorkSurface directly
 - [ ] Verify QuotesWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -2870,6 +2866,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: QuotesWorkSurface
 - Routes affected: `/quotes`
@@ -2887,14 +2884,12 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/clients"
   component={withErrorBoundary(() => (
-    <WorkSurfaceGate
-      flag="WORK_SURFACE_ORDERS"
-      fallback={<ClientsListPage />}
-    >
+    <WorkSurfaceGate flag="WORK_SURFACE_ORDERS" fallback={<ClientsListPage />}>
       <ClientsWorkSurface />
     </WorkSurfaceGate>
   ))}
@@ -2902,14 +2897,13 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
-<Route
-  path="/clients"
-  component={withErrorBoundary(ClientsWorkSurface)}
-/>
+<Route path="/clients" component={withErrorBoundary(ClientsWorkSurface)} />
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/clients` route in App.tsx to use ClientsWorkSurface directly
 - [ ] Verify ClientsWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -2917,6 +2911,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: ClientsWorkSurface
 - Routes affected: `/clients`
@@ -2934,14 +2929,12 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/accounting/invoices"
   component={withErrorBoundary(() => (
-    <WorkSurfaceGate
-      flag="WORK_SURFACE_ACCOUNTING"
-      fallback={<Invoices />}
-    >
+    <WorkSurfaceGate flag="WORK_SURFACE_ACCOUNTING" fallback={<Invoices />}>
       <InvoicesWorkSurface />
     </WorkSurfaceGate>
   ))}
@@ -2949,6 +2942,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
 <Route
   path="/accounting/invoices"
@@ -2957,6 +2951,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/accounting/invoices` route in App.tsx to use InvoicesWorkSurface directly
 - [ ] Verify InvoicesWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -2964,6 +2959,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: InvoicesWorkSurface
 - Routes affected: `/accounting/invoices`
@@ -2981,14 +2977,12 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/clients/:clientId/ledger"
   component={withErrorBoundary(() => (
-    <WorkSurfaceGate
-      flag="WORK_SURFACE_ACCOUNTING"
-      fallback={<ClientLedger />}
-    >
+    <WorkSurfaceGate flag="WORK_SURFACE_ACCOUNTING" fallback={<ClientLedger />}>
       <ClientLedgerWorkSurface />
     </WorkSurfaceGate>
   ))}
@@ -2996,6 +2990,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
 <Route
   path="/clients/:clientId/ledger"
@@ -3004,6 +2999,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/clients/:clientId/ledger` route in App.tsx to use ClientLedgerWorkSurface directly
 - [ ] Verify ClientLedgerWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -3011,6 +3007,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: ClientLedgerWorkSurface
 - Routes affected: `/clients/:clientId/ledger`
@@ -3028,6 +3025,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/purchase-orders"
@@ -3043,6 +3041,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
 <Route
   path="/purchase-orders"
@@ -3051,6 +3050,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/purchase-orders` route in App.tsx to use PurchaseOrdersWorkSurface directly
 - [ ] Verify PurchaseOrdersWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -3058,6 +3058,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: PurchaseOrdersWorkSurface
 - Routes affected: `/purchase-orders`
@@ -3075,14 +3076,12 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/pick-pack"
   component={withErrorBoundary(() => (
-    <WorkSurfaceGate
-      flag="WORK_SURFACE_INVENTORY"
-      fallback={<PickPackPage />}
-    >
+    <WorkSurfaceGate flag="WORK_SURFACE_INVENTORY" fallback={<PickPackPage />}>
       <PickPackWorkSurface />
     </WorkSurfaceGate>
   ))}
@@ -3090,14 +3089,13 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
-<Route
-  path="/pick-pack"
-  component={withErrorBoundary(PickPackWorkSurface)}
-/>
+<Route path="/pick-pack" component={withErrorBoundary(PickPackWorkSurface)} />
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/pick-pack` route in App.tsx to use PickPackWorkSurface directly
 - [ ] Verify PickPackWorkSurface renders correctly
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
@@ -3105,6 +3103,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: PickPackWorkSurface
 - Routes affected: `/pick-pack`
@@ -3122,6 +3121,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Dependencies:** None
 
 **Current State (App.tsx):**
+
 ```tsx
 <Route
   path="/intake"
@@ -3148,6 +3148,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Target State:**
+
 ```tsx
 <Route
   path="/intake"
@@ -3160,6 +3161,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 ```
 
 **Agent Checklist:**
+
 - [ ] Update `/intake` route in App.tsx to use DirectIntakeWorkSurface directly
 - [ ] Update `/spreadsheet-view` route in App.tsx to use DirectIntakeWorkSurface directly
 - [ ] Verify DirectIntakeWorkSurface renders correctly
@@ -3168,6 +3170,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 - [ ] Document blast radius
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Components affected: DirectIntakeWorkSurface
 - Routes affected: `/intake`, `/spreadsheet-view`
@@ -3191,6 +3194,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Description:** After all WorkSurfaceGate wrappers are removed, clean up unused legacy page imports from App.tsx.
 
 **Legacy Imports to Remove:**
+
 ```tsx
 import Invoices from "@/pages/accounting/Invoices";
 import ClientsListPage from "@/pages/ClientsListPage";
@@ -3203,12 +3207,14 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 ```
 
 **Agent Checklist:**
+
 - [ ] Remove unused legacy page imports from App.tsx
 - [ ] Verify no other files import these pages
 - [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
 - [ ] Verify application still works correctly
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/App.tsx`
 - Imports removed: 8 legacy page imports
 - Rollback: Restore imports if needed
@@ -3227,11 +3233,13 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 **Description:** Remove the WorkSurfaceGate component and associated feature flag infrastructure.
 
 **Files to Remove/Modify:**
+
 - `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts` - Remove WorkSurfaceGate export
 - `client/src/pages/settings/FeatureFlagsPage.tsx` - Remove work surface flags section (if applicable)
 - Any database/API endpoints for work surface feature flags
 
 **Agent Checklist:**
+
 - [ ] Remove WorkSurfaceGate component from useWorkSurfaceFeatureFlags.ts
 - [ ] Remove WorkSurfaceGate import from App.tsx
 - [ ] Update FeatureFlagsPage if it references work surface flags
@@ -3239,6 +3247,7 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 - [ ] Verify feature flags page still works for other flags
 
 **Blast Radius Analysis:**
+
 - Files modified: `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts`, `client/src/App.tsx`
 - Components removed: WorkSurfaceGate
 - Rollback: Restore WorkSurfaceGate component
@@ -3257,6 +3266,7 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 **Description:** After a verification period confirming WorkSurface components work correctly, delete the legacy page files.
 
 **Files to Delete:**
+
 - `client/src/pages/accounting/Invoices.tsx` (if not used elsewhere)
 - `client/src/pages/ClientsListPage.tsx`
 - `client/src/pages/ClientLedger.tsx`
@@ -3267,6 +3277,7 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 - `client/src/pages/SpreadsheetViewPage.tsx`
 
 **Agent Checklist:**
+
 - [ ] Verify 1-week verification period has passed
 - [ ] Confirm no runtime errors reported for WorkSurface components
 - [ ] Search codebase for any remaining references to legacy pages
@@ -3275,6 +3286,7 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 - [ ] Document deleted files for audit trail
 
 **Blast Radius Analysis:**
+
 - Files deleted: Up to 8 legacy page files
 - Risk: HIGH (permanent deletion)
 - Rollback: Restore from git history
@@ -3283,19 +3295,19 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 
 ### Phase 6 Summary
 
-| Task ID | Title | Risk | Dependencies | Est. |
-|---------|-------|------|--------------|------|
-| DEPRECATE-UI-001 | Remove WorkSurfaceGate from Orders | 🟡 | None | 2h |
-| DEPRECATE-UI-002 | Remove WorkSurfaceGate from Quotes | 🟡 | None | 2h |
-| DEPRECATE-UI-003 | Remove WorkSurfaceGate from Clients | 🟡 | None | 2h |
-| DEPRECATE-UI-004 | Remove WorkSurfaceGate from Invoices | 🟡 | None | 2h |
-| DEPRECATE-UI-005 | Remove WorkSurfaceGate from ClientLedger | 🟡 | None | 2h |
-| DEPRECATE-UI-006 | Remove WorkSurfaceGate from PurchaseOrders | 🟡 | None | 2h |
-| DEPRECATE-UI-007 | Remove WorkSurfaceGate from PickPack | 🟡 | None | 2h |
-| DEPRECATE-UI-008 | Remove WorkSurfaceGate from DirectIntake | 🟡 | None | 2h |
-| DEPRECATE-UI-009 | Remove legacy page imports | 🟡 | UI-001 to UI-008 | 2h |
-| DEPRECATE-UI-010 | Remove WorkSurfaceGate infrastructure | 🟡 | UI-009 | 4h |
-| DEPRECATE-UI-011 | Delete legacy page files | 🔴 | UI-010 + 1 week | 2h |
+| Task ID          | Title                                      | Risk | Dependencies     | Est. |
+| ---------------- | ------------------------------------------ | ---- | ---------------- | ---- |
+| DEPRECATE-UI-001 | Remove WorkSurfaceGate from Orders         | 🟡   | None             | 2h   |
+| DEPRECATE-UI-002 | Remove WorkSurfaceGate from Quotes         | 🟡   | None             | 2h   |
+| DEPRECATE-UI-003 | Remove WorkSurfaceGate from Clients        | 🟡   | None             | 2h   |
+| DEPRECATE-UI-004 | Remove WorkSurfaceGate from Invoices       | 🟡   | None             | 2h   |
+| DEPRECATE-UI-005 | Remove WorkSurfaceGate from ClientLedger   | 🟡   | None             | 2h   |
+| DEPRECATE-UI-006 | Remove WorkSurfaceGate from PurchaseOrders | 🟡   | None             | 2h   |
+| DEPRECATE-UI-007 | Remove WorkSurfaceGate from PickPack       | 🟡   | None             | 2h   |
+| DEPRECATE-UI-008 | Remove WorkSurfaceGate from DirectIntake   | 🟡   | None             | 2h   |
+| DEPRECATE-UI-009 | Remove legacy page imports                 | 🟡   | UI-001 to UI-008 | 2h   |
+| DEPRECATE-UI-010 | Remove WorkSurfaceGate infrastructure      | 🟡   | UI-009           | 4h   |
+| DEPRECATE-UI-011 | Delete legacy page files                   | 🔴   | UI-010 + 1 week  | 2h   |
 
 **Total Estimate:** 24h (3 days)
 **Buffer:** +1 day (20%)
