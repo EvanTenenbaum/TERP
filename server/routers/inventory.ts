@@ -150,9 +150,14 @@ export const inventoryRouter = router({
         inventoryLogger.operationStart("getEnhanced", { input });
 
         // Get base inventory data
+        // INV-FILTER-001: Pass status and category filters to database layer
         const result = await inventoryDb.getBatchesWithDetails(
           input.pageSize + 1, // Fetch one extra to check for more pages
-          input.cursor
+          input.cursor,
+          {
+            status: input.status?.[0], // DB layer expects single string, not array
+            category: input.category,
+          }
         );
 
         // Get movement data if requested
