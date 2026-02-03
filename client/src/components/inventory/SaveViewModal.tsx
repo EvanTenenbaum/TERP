@@ -1,22 +1,23 @@
-import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
+import React, { useState } from "react";
+import { trpc } from "@/lib/trpc";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import type { InventoryFilters } from "@/hooks/useInventoryFilters";
 
 interface SaveViewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  filters: any;
+  filters: InventoryFilters;
   onSuccess: () => void;
 }
 
@@ -26,7 +27,7 @@ export function SaveViewModal({
   filters,
   onSuccess,
 }: SaveViewModalProps) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [isShared, setIsShared] = useState(false);
 
   const saveView = trpc.inventory.views.save.useMutation();
@@ -35,7 +36,7 @@ export function SaveViewModal({
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('View name is required');
+      toast.error("View name is required");
       return;
     }
 
@@ -46,16 +47,18 @@ export function SaveViewModal({
         isShared,
       });
 
-      toast.success('View saved successfully');
-      
+      toast.success("View saved successfully");
+
       // Reset form
-      setName('');
+      setName("");
       setIsShared(false);
-      
+
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save view');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save view";
+      toast.error(message);
       console.error(error);
     }
   };
@@ -73,7 +76,7 @@ export function SaveViewModal({
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               placeholder="e.g., Low Stock Electronics"
               required
               maxLength={100}
@@ -87,7 +90,7 @@ export function SaveViewModal({
             <Checkbox
               id="isShared"
               checked={isShared}
-              onCheckedChange={(checked) => setIsShared(checked as boolean)}
+              onCheckedChange={checked => setIsShared(checked as boolean)}
             />
             <Label
               htmlFor="isShared"
@@ -106,7 +109,7 @@ export function SaveViewModal({
               Cancel
             </Button>
             <Button type="submit" disabled={saveView.isPending}>
-              {saveView.isPending ? 'Saving...' : 'Save View'}
+              {saveView.isPending ? "Saving..." : "Save View"}
             </Button>
           </DialogFooter>
         </form>
@@ -114,4 +117,3 @@ export function SaveViewModal({
     </Dialog>
   );
 }
-

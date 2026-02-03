@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,26 +8,48 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { BookmarkIcon, Trash2, Users } from 'lucide-react';
-import { toast } from 'sonner';
+} from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { BookmarkIcon, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
+import type { InventoryFilters } from "@/hooks/useInventoryFilters";
+
+interface SavedView {
+  id: number;
+  name: string;
+  filters: InventoryFilters;
+  createdBy: number | null;
+  createdByName: string | null;
+  isShared: number;
+  createdAt: Date | null;
+}
 
 interface SavedViewsDropdownProps {
-  onApplyView: (filters: any) => void;
+  onApplyView: (filters: InventoryFilters) => void;
 }
 
 export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
-  const [deleteViewInfo, setDeleteViewInfo] = useState<{ id: number; name: string } | null>(null);
-  const { data: views, isLoading, refetch } = trpc.inventory.views.list.useQuery();
+  const [deleteViewInfo, setDeleteViewInfo] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const {
+    data: views,
+    isLoading,
+    refetch,
+  } = trpc.inventory.views.list.useQuery();
   const deleteView = trpc.inventory.views.delete.useMutation();
 
-  const handleApplyView = (view: any) => {
+  const handleApplyView = (view: SavedView) => {
     onApplyView(view.filters);
     toast.success(`Applied view: ${view.name}`);
   };
 
-  const handleDeleteView = (e: React.MouseEvent, viewId: number, viewName: string) => {
+  const handleDeleteView = (
+    e: React.MouseEvent,
+    viewId: number,
+    viewName: string
+  ) => {
     e.stopPropagation(); // Prevent dropdown from closing
     setDeleteViewInfo({ id: viewId, name: viewName });
   };
@@ -37,11 +59,13 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
 
     try {
       await deleteView.mutateAsync(deleteViewInfo.id);
-      toast.success('View deleted');
+      toast.success("View deleted");
       refetch();
       setDeleteViewInfo(null);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete view');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete view";
+      toast.error(message);
       console.error(error);
     }
   };
@@ -55,7 +79,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
     );
   }
 
-  const viewItems = views?.items ?? [];
+  const viewItems = (views?.items ?? []) as SavedView[];
   const hasViews = viewItems.length > 0;
 
   return (
@@ -69,7 +93,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>Your Saved Views</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {!hasViews ? (
           <div className="px-2 py-6 text-center text-sm text-muted-foreground">
             No saved views yet.
@@ -78,7 +102,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
           </div>
         ) : (
           <>
-            {viewItems.map((view) => (
+            {viewItems.map(view => (
               <DropdownMenuItem
                 key={view.id}
                 onClick={() => handleApplyView(view)}
@@ -91,7 +115,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
                     {view.isShared === 1 && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        Shared by {view.createdByName || 'Unknown'}
+                        Shared by {view.createdByName || "Unknown"}
                       </span>
                     )}
                   </div>
@@ -101,7 +125,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                    onClick={(e) => handleDeleteView(e, view.id, view.name)}
+                    onClick={e => handleDeleteView(e, view.id, view.name)}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -114,7 +138,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
 
       <ConfirmDialog
         open={!!deleteViewInfo}
-        onOpenChange={(open) => !open && setDeleteViewInfo(null)}
+        onOpenChange={open => !open && setDeleteViewInfo(null)}
         title="Delete View"
         description={`Are you sure you want to delete the view "${deleteViewInfo?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
@@ -125,4 +149,3 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
     </DropdownMenu>
   );
 }
-

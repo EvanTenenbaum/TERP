@@ -1,6 +1,12 @@
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "./db";
-import { orders, products, productTags, tags } from "../drizzle/schema";
+import {
+  orders,
+  products,
+  productTags,
+  tags,
+  type Product,
+} from "../drizzle/schema";
 import { logger } from "./_core/logger";
 import { isSafeForInArray } from "./lib/sqlSafety";
 
@@ -28,7 +34,7 @@ export async function getProductRecommendations(
     // Extract product IDs from order items (JSON field)
     const purchasedProductIds: number[] = [];
     for (const order of clientOrders) {
-      const items = order.items as any[];
+      const items = order.items as Array<{ productId?: number }>;
       if (items && Array.isArray(items)) {
         for (const item of items) {
           if (item.productId) {
@@ -67,8 +73,8 @@ export async function getProductRecommendations(
     const topTagEntries = Array.from(tagFrequency.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
-    
-    const topTags = topTagEntries.map((entry) => entry[0]);
+
+    const topTags = topTagEntries.map(entry => entry[0]);
 
     if (topTags.length === 0) {
       return { success: true, recommendations: [] };
@@ -85,12 +91,15 @@ export async function getProductRecommendations(
       .where(inArray(productTags.tagId, topTags));
 
     // Filter out already purchased products and score by tag overlap
-    const productScores = new Map<number, { product: any; score: number }>();
+    const productScores = new Map<
+      number,
+      { product: Product; score: number }
+    >();
     for (const rp of recommendedProducts) {
       if (!rp.product) continue;
 
       const productId = rp.product.id;
-      
+
       // Skip if already purchased
       if (uniquePurchasedIds.includes(productId)) continue;
 
@@ -102,15 +111,18 @@ export async function getProductRecommendations(
       }
 
       // Increase score based on tag frequency
-      const tagFreq = tagFrequency.get(rp.tagId!) || 0;
-      productScores.get(productId)!.score += tagFreq;
+      const tagFreq = rp.tagId ? (tagFrequency.get(rp.tagId) ?? 0) : 0;
+      const existing = productScores.get(productId);
+      if (existing) {
+        existing.score += tagFreq;
+      }
     }
 
     // Sort by score and return top recommendations
     const recommendations = Array.from(productScores.values())
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
-      .map((item) => ({
+      .map(item => ({
         ...item.product,
         recommendationScore: item.score,
         reason: "Based on your previous purchases",
@@ -119,14 +131,20 @@ export async function getProductRecommendations(
     return { success: true, recommendations };
   } catch (error) {
     logger.error({ error }, "Error getting product recommendations");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
 /**
  * Get similar products based on tags
  */
-export async function getSimilarProducts(productId: number, limit: number = 10) {
+export async function getSimilarProducts(
+  productId: number,
+  limit: number = 10
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -143,7 +161,9 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
       return { success: true, similarProducts: [] };
     }
 
-    const tagIds = productTagsList.map((pt) => pt.tagId).filter((id): id is number => id !== null);
+    const tagIds = productTagsList
+      .map(pt => pt.tagId)
+      .filter((id): id is number => id !== null);
 
     // SQL Safety: Return early if no valid tag IDs
     if (!isSafeForInArray(tagIds)) {
@@ -161,12 +181,15 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
       .where(inArray(productTags.tagId, tagIds));
 
     // Score by tag overlap
-    const productScores = new Map<number, { product: any; score: number }>();
+    const productScores = new Map<
+      number,
+      { product: Product; score: number }
+    >();
     for (const sp of similarProducts) {
       if (!sp.product) continue;
 
       const pid = sp.product.id;
-      
+
       // Skip the original product
       if (pid === productId) continue;
 
@@ -176,14 +199,17 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
           score: 0,
         });
       }
-      productScores.get(pid)!.score += 1;
+      const existingScore = productScores.get(pid);
+      if (existingScore) {
+        existingScore.score += 1;
+      }
     }
 
     // Sort and return
     const similar = Array.from(productScores.values())
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
-      .map((item) => ({
+      .map(item => ({
         ...item.product,
         similarityScore: item.score,
       }));
@@ -191,7 +217,10 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
     return { success: true, similarProducts: similar };
   } catch (error) {
     logger.error({ error }, "Error getting similar products");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -211,9 +240,9 @@ export async function getFrequentlyBoughtTogether(
 
     const ordersWithProduct: number[] = [];
     for (const order of allOrders) {
-      const items = order.items as any[];
+      const items = order.items as Array<{ productId?: number }>;
       if (items && Array.isArray(items)) {
-        const hasProduct = items.some((item: any) => item.productId === productId);
+        const hasProduct = items.some(item => item.productId === productId);
         if (hasProduct) {
           ordersWithProduct.push(order.id);
         }
@@ -226,10 +255,10 @@ export async function getFrequentlyBoughtTogether(
 
     // Find other products in those orders
     const otherProductsMap = new Map<number, number>();
-    
+
     for (const order of allOrders) {
       if (ordersWithProduct.includes(order.id)) {
-        const items = order.items as any[];
+        const items = order.items as Array<{ productId?: number }>;
         if (items && Array.isArray(items)) {
           for (const item of items) {
             if (item.productId && item.productId !== productId) {
@@ -262,11 +291,12 @@ export async function getFrequentlyBoughtTogether(
 
     // Build result with frequency
     const frequentlyBought = productDetails
-      .map((product) => ({
+      .map(product => ({
         ...product,
         frequency: otherProductsMap.get(product.id) || 0,
         percentage: Math.round(
-          ((otherProductsMap.get(product.id) || 0) / ordersWithProduct.length) * 100
+          ((otherProductsMap.get(product.id) || 0) / ordersWithProduct.length) *
+            100
         ),
       }))
       .sort((a, b) => b.frequency - a.frequency)
@@ -275,7 +305,9 @@ export async function getFrequentlyBoughtTogether(
     return { success: true, frequentlyBoughtTogether: frequentlyBought };
   } catch (error) {
     logger.error({ error }, "Error getting frequently bought together");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
-

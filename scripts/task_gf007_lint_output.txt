@@ -1,0 +1,222 @@
+```filepath:components/inventory/CogsEditModal.tsx
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { TRPCClientError } from '@trpc/client';
+import type { AppRouter } from '@/server/routers/_app';
+import { trpc } from '@/utils/trpc';
+
+interface Props {
+  batchId: number;
+  onClose: () => void;
+}
+
+interface FormValues {
+  cogs: number;
+}
+
+const CogsEditModal: React.FC<Props> = ({ batchId, onClose }) => {
+  const utils = trpc.useUtils();
+
+  const { register, handleSubmit } = useForm<FormValues>({
+    defaultValues: { cogs: 0 },
+  });
+
+  const mutation = trpc.inventory.updateCogs.useMutation({
+    onSuccess: () => {
+      utils.inventory.list.invalidate();
+      onClose();
+    },
+    onError: (error: TRPCClientError<AppRouter>) => {
+      // Replace this with your preferred error-handling UX (toast, modal, etc.)
+      console.error('Failed to update COGS:', error.message);
+    },
+  });
+
+  const onSubmit = (data: FormValues) => {
+    mutation.mutate({ batchId, cogs: data.cogs });
+  };
+
+  return (
+    <div className="modal">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <input
+          {...register('cogs', { required: true, min: 0 })}
+          type="number"
+          step="0.01"
+          className="input w-full"
+        />
+
+        <div className="flex justify-end space-x-2">
+          <button type="button" onClick={onClose} className="btn-secondary">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={mutation.isLoading}
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CogsEditModal;
+```
+
+```filepath:components/inventory/SaveViewModal.tsx
+import React, { useState } from 'react';
+import { TRPCClientError } from '@trpc/client';
+import type { AppRouter } from '@/server/routers/_app';
+import type { BatchStatus } from '@prisma/client';
+import { trpc } from '@/utils/trpc';
+
+type InventoryFilters = {
+  query?: string;
+  limit?: number;
+  cursor?: number;
+  offset?: number;
+  status?: BatchStatus;
+  category?: string;
+};
+
+interface Props {
+  filters: InventoryFilters;
+  onClose: () => void;
+}
+
+const SaveViewModal: React.FC<Props> = ({ filters, onClose }) => {
+  const [name, setName] = useState('');
+  const mutation = trpc.inventory.saveView.useMutation({
+    onSuccess: () => onClose(),
+  });
+
+  const handleSave = async () => {
+    try {
+      await mutation.mutateAsync({ name, filters });
+    } catch (error: unknown) {
+      if (error instanceof TRPCClientError<AppRouter>) {
+        console.error('Failed to save view:', error.message);
+      } else if (error instanceof Error) {
+        console.error('Unknown error while saving view:', error.message);
+      } else {
+        console.error('Unexpected error while saving view:', error);
+      }
+    }
+  };
+
+  return (
+    <div className="modal">
+      <h2 className="text-lg font-semibold mb-4">Save Current View</h2>
+
+      <input
+        className="input w-full mb-4"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="View name"
+      />
+
+      <div className="flex justify-end space-x-2">
+        <button type="button" onClick={onClose} className="btn-secondary">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="btn-primary"
+          disabled={mutation.isLoading}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SaveViewModal;
+```
+
+```filepath:components/inventory/SavedViewsDropdown.tsx
+import React from 'react';
+import { TRPCClientError } from '@trpc/client';
+import type { AppRouter } from '@/server/routers/_app';
+import type { BatchStatus } from '@prisma/client';
+import { trpc } from '@/utils/trpc';
+
+type InventoryFilters = {
+  query?: string;
+  limit?: number;
+  cursor?: number;
+  offset?: number;
+  status?: BatchStatus;
+  category?: string;
+};
+
+interface SavedView {
+  id: number;
+  name: string;
+  filters: InventoryFilters;
+}
+
+interface Props {
+  onApplyView: (filters: InventoryFilters) => void;
+}
+
+const SavedViewsDropdown: React.FC<Props> = ({ onApplyView }) => {
+  const utils = trpc.useUtils();
+  const { data: views = [] } = trpc.inventory.savedViews.useQuery();
+
+  const deleteMutation = trpc.inventory.deleteView.useMutation({
+    onSuccess: () => utils.inventory.savedViews.invalidate(),
+  });
+
+  const handleApplyView = (view: SavedView) => {
+    onApplyView(view.filters);
+  };
+
+  const handleDelete = async (viewId: number) => {
+    try {
+      await deleteMutation.mutateAsync({ viewId });
+    } catch (error: unknown) {
+      if (error instanceof TRPCClientError<AppRouter>) {
+        console.error('Failed to delete saved view:', error.message);
+      } else if (error instanceof Error) {
+        console.error('Unknown error while deleting saved view:', error.message);
+      } else {
+        console.error('Unexpected error while deleting saved view:', error);
+      }
+    }
+  };
+
+  return (
+    <div className="relative inline-block">
+      <button className="btn-secondary">Saved Views</button>
+
+      <ul className="dropdown-content">
+        {views.map((view) => (
+          <li key={view.id} className="flex justify-between items-center px-2">
+            <span
+              className="cursor-pointer"
+              onClick={() => handleApplyView(view as SavedView)}
+            >
+              {view.name}
+            </span>
+
+            <button
+              title="Delete view"
+              className="text-red-500 hover:text-red-700"
+              onClick={() => handleDelete(view.id)}
+            >
+              &times;
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default SavedViewsDropdown;
+```

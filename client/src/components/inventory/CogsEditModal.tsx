@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +34,9 @@ export function CogsEditModal({
   onSuccess,
 }: CogsEditModalProps) {
   const [newCogs, setNewCogs] = useState(currentCogs);
-  const [applyTo, setApplyTo] = useState<"FUTURE_SALES" | "PAST_SALES" | "BOTH">("FUTURE_SALES");
+  const [applyTo, setApplyTo] = useState<
+    "FUTURE_SALES" | "PAST_SALES" | "BOTH"
+  >("FUTURE_SALES");
   const [reason, setReason] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -44,8 +53,10 @@ export function CogsEditModal({
       onSuccess?.();
       handleClose();
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update COGS");
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : "Failed to update COGS";
+      toast.error(message);
     },
   });
 
@@ -101,7 +112,8 @@ export function CogsEditModal({
           <DialogHeader>
             <DialogTitle>Confirm COGS Change</DialogTitle>
             <DialogDescription>
-              You are about to change COGS retroactively. This will affect past sales records.
+              You are about to change COGS retroactively. This will affect past
+              sales records.
             </DialogDescription>
           </DialogHeader>
 
@@ -109,7 +121,8 @@ export function CogsEditModal({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Warning:</strong> This action will update accounting records and cannot be easily undone.
+                <strong>Warning:</strong> This action will update accounting
+                records and cannot be easily undone.
               </AlertDescription>
             </Alert>
 
@@ -120,21 +133,31 @@ export function CogsEditModal({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Old COGS:</span>
-                <span className="font-medium">{formatCurrency(parseFloat(currentCogs))}</span>
+                <span className="font-medium">
+                  {formatCurrency(parseFloat(currentCogs))}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">New COGS:</span>
-                <span className="font-medium">{formatCurrency(parseFloat(newCogs))}</span>
+                <span className="font-medium">
+                  {formatCurrency(parseFloat(newCogs))}
+                </span>
               </div>
               {impact && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Affected Sales:</span>
+                    <span className="text-muted-foreground">
+                      Affected Sales:
+                    </span>
                     <span className="font-medium">{impact.affectedSales}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Profit Impact:</span>
-                    <span className={`font-medium ${impact.profitImpact < 0 ? "text-red-600" : "text-green-600"}`}>
+                    <span className="text-muted-foreground">
+                      Profit Impact:
+                    </span>
+                    <span
+                      className={`font-medium ${impact.profitImpact < 0 ? "text-red-600" : "text-green-600"}`}
+                    >
                       {formatCurrency(impact.profitImpact)}
                     </span>
                   </div>
@@ -144,10 +167,16 @@ export function CogsEditModal({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmation(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmation(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={confirmUpdate} disabled={updateCogsMutation.isPending}>
+            <Button
+              onClick={confirmUpdate}
+              disabled={updateCogsMutation.isPending}
+            >
               {updateCogsMutation.isPending ? "Updating..." : "Confirm Update"}
             </Button>
           </DialogFooter>
@@ -170,7 +199,9 @@ export function CogsEditModal({
           {/* Current COGS Display */}
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
             <span className="text-sm text-muted-foreground">Current COGS:</span>
-            <span className="text-lg font-semibold">{formatCurrency(parseFloat(currentCogs))}</span>
+            <span className="text-lg font-semibold">
+              {formatCurrency(parseFloat(currentCogs))}
+            </span>
           </div>
 
           {/* New COGS Input */}
@@ -184,7 +215,7 @@ export function CogsEditModal({
                 step="0.01"
                 min="0"
                 value={newCogs}
-                onChange={(e) => setNewCogs(e.target.value)}
+                onChange={e => setNewCogs(e.target.value)}
                 className="pl-9"
                 placeholder="0.00"
               />
@@ -194,7 +225,10 @@ export function CogsEditModal({
           {/* Apply To Radio Group */}
           <div className="space-y-3">
             <Label>Apply Changes To:</Label>
-            <RadioGroup value={applyTo} onValueChange={(value) => setApplyTo(value as typeof applyTo)}>
+            <RadioGroup
+              value={applyTo}
+              onValueChange={value => setApplyTo(value as typeof applyTo)}
+            >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="FUTURE_SALES" id="future" />
                 <Label htmlFor="future" className="font-normal cursor-pointer">
@@ -221,8 +255,13 @@ export function CogsEditModal({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                This will affect <strong>{impact.affectedSales}</strong> past sale(s) and change profit by{" "}
-                <strong className={impact.profitImpact < 0 ? "text-red-600" : "text-green-600"}>
+                This will affect <strong>{impact.affectedSales}</strong> past
+                sale(s) and change profit by{" "}
+                <strong
+                  className={
+                    impact.profitImpact < 0 ? "text-red-600" : "text-green-600"
+                  }
+                >
                   {formatCurrency(impact.profitImpact)}
                 </strong>
               </AlertDescription>
@@ -235,7 +274,7 @@ export function CogsEditModal({
             <Input
               id="reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={e => setReason(e.target.value)}
               placeholder="e.g., Vendor price adjustment"
             />
           </div>
@@ -245,7 +284,10 @@ export function CogsEditModal({
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={updateCogsMutation.isPending}>
+          <Button
+            onClick={handleSubmit}
+            disabled={updateCogsMutation.isPending}
+          >
             {updateCogsMutation.isPending ? "Updating..." : "Update COGS"}
           </Button>
         </DialogFooter>
@@ -253,4 +295,3 @@ export function CogsEditModal({
     </Dialog>
   );
 }
-
