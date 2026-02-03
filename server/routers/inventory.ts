@@ -323,20 +323,8 @@ export const inventoryRouter = router({
           );
         }
 
-        // Apply status filter
-        if (input.status && input.status.length > 0) {
-          const statusFilter = input.status;
-          filteredItems = filteredItems.filter(item =>
-            statusFilter.includes(item.status)
-          );
-        }
-
-        // Apply category filter
-        if (input.category) {
-          filteredItems = filteredItems.filter(
-            item => item.category === input.category
-          );
-        }
+        // INV-FILTER-003: Removed redundant status filter (now handled by DB in getBatchesWithDetails)
+        // INV-FILTER-003: Removed redundant category filter (now handled by DB in getBatchesWithDetails)
 
         // Apply stock status filter
         if (input.stockStatus && input.stockStatus !== "ALL") {
