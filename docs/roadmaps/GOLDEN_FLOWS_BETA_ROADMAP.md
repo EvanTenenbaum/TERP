@@ -2787,7 +2787,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-001: Remove WorkSurfaceGate from Orders routes
 
 **Task ID:** DEPRECATE-UI-001
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2832,7 +2832,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-002: Remove WorkSurfaceGate from Quotes routes
 
 **Task ID:** DEPRECATE-UI-002
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2877,7 +2877,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-003: Remove WorkSurfaceGate from Clients routes
 
 **Task ID:** DEPRECATE-UI-003
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2922,7 +2922,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-004: Remove WorkSurfaceGate from Invoices routes
 
 **Task ID:** DEPRECATE-UI-004
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -2970,7 +2970,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-005: Remove WorkSurfaceGate from ClientLedger routes
 
 **Task ID:** DEPRECATE-UI-005
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3018,7 +3018,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-006: Remove WorkSurfaceGate from PurchaseOrders routes
 
 **Task ID:** DEPRECATE-UI-006
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3069,7 +3069,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-007: Remove WorkSurfaceGate from PickPack routes
 
 **Task ID:** DEPRECATE-UI-007
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3114,7 +3114,7 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 #### DEPRECATE-UI-008: Remove WorkSurfaceGate from DirectIntake routes
 
 **Task ID:** DEPRECATE-UI-008
-**Status:** [ ]
+**Status:** [🔄]
 **Priority:** HIGH
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
