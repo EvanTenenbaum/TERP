@@ -39,7 +39,7 @@ PR #366 identified critical test infrastructure and lint issues that must be add
 
 **Task ID:** INFRA-P0-001
 **Source:** PR #366 CTO Triage Report, TEST-INFRA-09
-**Status:** [ ] not started
+**Status:** [🔄] in progress
 **Priority:** P0 (CRITICAL)
 **Estimate:** 4-8h
 **Mode:** RED
@@ -85,7 +85,7 @@ pnpm test 2>&1 | grep -i "jest"
 
 **Task ID:** INFRA-P0-002
 **Source:** PR #366 CTO Triage Report, TEST-INFRA-09
-**Status:** [ ] not started
+**Status:** [🔄] in progress
 **Priority:** P0 (CRITICAL)
 **Estimate:** 8-12h
 **Mode:** RED
@@ -148,7 +148,7 @@ pnpm test 2>&1 | grep -i "ECONNREFUSED"
 
 **Task ID:** GF-007-LINT-P1-001
 **Source:** PR #366 CTO Triage Report (Type-safety regressions P1)
-**Status:** [ ] not started
+**Status:** [🔄] in progress
 **Priority:** P1 (HIGH)
 **Estimate:** 12-16h
 **Mode:** STRICT
@@ -208,7 +208,7 @@ pnpm check
 
 **Task ID:** GF-CORE-REACT-P1-001
 **Source:** PR #366 CTO Triage Report (React correctness P1)
-**Status:** [ ] not started
+**Status:** [🔄] in progress
 **Priority:** P1 (HIGH)
 **Estimate:** 8h
 **Mode:** STRICT
