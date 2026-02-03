@@ -81,6 +81,15 @@ interface Migration {
 // Ordered list of migrations to apply
 const MIGRATIONS: Migration[] = [
   {
+    id: "0027-ownership",
+    file: "0027_add_payables_and_ownership_tracking.sql",
+    description: "CRITICAL: Add ownership_type column to batches table (MEET-006)",
+    dependencies: [],
+    verifyQuery: "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'batches' AND COLUMN_NAME = 'ownership_type'",
+    priority: "CRITICAL",
+    feature: "MEET-006"
+  },
+  {
     id: "0027",
     file: "0027_add_vendor_payment_terms.sql",
     description: "Add paymentTerms column to vendors table",
