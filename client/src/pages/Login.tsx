@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { QaRoleSwitcher } from "@/components/qa/QaRoleSwitcher";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -108,8 +107,6 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* QA Role Switcher - only visible when QA_AUTH_ENABLED=true */}
-        <QaRoleSwitcher />
       </div>
     </div>
   );
