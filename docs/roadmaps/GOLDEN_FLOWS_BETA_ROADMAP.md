@@ -2619,7 +2619,8 @@ pnpm test && pnpm test:e2e
 | **3.5**   | **Test/Lint Signal Recovery** | **4**  | **2-3 days**   | -                        | **NEW (PR #366)** |
 | 4         | E2E Automation                | 4      | 7 days         | +1 day                   | ready             |
 | 5         | Beta Hardening + Security     | 7 (+1) | 6 days         | +1 day                   | ready             |
-| **Total** |                               | **48** | **38-39 days** | **+6 days (20% buffer)** |                   |
+| **6**     | **Legacy UI Deprecation**     | **11** | **3 days**     | **+1 day**               | **NEW (PR #376)** |
+| **Total** |                               | **59** | **41-42 days** | **+7 days (20% buffer)** |                   |
 
 > **Protocol QA Analysis Note:** Phase 0.A added per QA Protocol v3.0 requirement that all golden flows be "fully defined on a UX, UI, backend, frontend, logic, and business logic standpoint." This adds 2 days but significantly reduces risk of discovering undefined behaviors during implementation.
 
@@ -2750,3 +2751,564 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 **Created:** 2026-01-27
 **Author:** Claude Code Agent
 **Next Review:** After Phase 0 completion
+
+
+---
+
+## Phase 6: Legacy UI Deprecation (Days 40-44)
+
+**Objective:** Remove WorkSurfaceGate wrappers and wire all WorkSurface components directly, eliminating feature flag infrastructure.
+**Mode:** 🟡 STRICT
+**Gate Criteria:** All WorkSurface components render directly without gates; legacy page imports removed; feature flag infrastructure deleted.
+**Priority:** P1 - Technical debt reduction, simplifies codebase, eliminates potential flag-related bugs
+**Reference:** PR #376 (InventoryWorkSurface pattern)
+
+> **Context:** PR #376 successfully fixed the inventory page by removing WorkSurfaceGate and wiring InventoryWorkSurface directly. The same pattern should be applied to all other WorkSurface components.
+
+### Pattern to Follow (from PR #376)
+
+**BEFORE:**
+```tsx
+<WorkSurfaceGate flag="FLAG" fallback={<LegacyPage />}>
+  <WorkSurfaceComponent />
+</WorkSurfaceGate>
+```
+
+**AFTER:**
+```tsx
+<WorkSurfaceComponent />
+```
+
+### Phase 6.A: Remove WorkSurfaceGate from Individual Routes (Days 40-42)
+
+---
+
+#### DEPRECATE-UI-001: Remove WorkSurfaceGate from Orders routes
+
+**Task ID:** DEPRECATE-UI-001
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/orders"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_ORDERS"
+      fallback={<Orders />}
+    >
+      <OrdersWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/orders"
+  component={withErrorBoundary(OrdersWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/orders` route in App.tsx to use OrdersWorkSurface directly
+- [ ] Verify OrdersWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /orders, verify functionality
+- [ ] Document blast radius (affected components/routes)
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: OrdersWorkSurface
+- Routes affected: `/orders`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-002: Remove WorkSurfaceGate from Quotes routes
+
+**Task ID:** DEPRECATE-UI-002
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/quotes"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_ORDERS"
+      fallback={<Quotes />}
+    >
+      <QuotesWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/quotes"
+  component={withErrorBoundary(QuotesWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/quotes` route in App.tsx to use QuotesWorkSurface directly
+- [ ] Verify QuotesWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /quotes, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: QuotesWorkSurface
+- Routes affected: `/quotes`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-003: Remove WorkSurfaceGate from Clients routes
+
+**Task ID:** DEPRECATE-UI-003
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/clients"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_ORDERS"
+      fallback={<ClientsListPage />}
+    >
+      <ClientsWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/clients"
+  component={withErrorBoundary(ClientsWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/clients` route in App.tsx to use ClientsWorkSurface directly
+- [ ] Verify ClientsWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /clients, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: ClientsWorkSurface
+- Routes affected: `/clients`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-004: Remove WorkSurfaceGate from Invoices routes
+
+**Task ID:** DEPRECATE-UI-004
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/accounting/invoices"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_ACCOUNTING"
+      fallback={<Invoices />}
+    >
+      <InvoicesWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/accounting/invoices"
+  component={withErrorBoundary(InvoicesWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/accounting/invoices` route in App.tsx to use InvoicesWorkSurface directly
+- [ ] Verify InvoicesWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /accounting/invoices, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: InvoicesWorkSurface
+- Routes affected: `/accounting/invoices`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-005: Remove WorkSurfaceGate from ClientLedger routes
+
+**Task ID:** DEPRECATE-UI-005
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/clients/:clientId/ledger"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_ACCOUNTING"
+      fallback={<ClientLedger />}
+    >
+      <ClientLedgerWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/clients/:clientId/ledger"
+  component={withErrorBoundary(ClientLedgerWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/clients/:clientId/ledger` route in App.tsx to use ClientLedgerWorkSurface directly
+- [ ] Verify ClientLedgerWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /clients/:clientId/ledger, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: ClientLedgerWorkSurface
+- Routes affected: `/clients/:clientId/ledger`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-006: Remove WorkSurfaceGate from PurchaseOrders routes
+
+**Task ID:** DEPRECATE-UI-006
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/purchase-orders"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_INTAKE"
+      fallback={<PurchaseOrdersPage />}
+    >
+      <PurchaseOrdersWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/purchase-orders"
+  component={withErrorBoundary(PurchaseOrdersWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/purchase-orders` route in App.tsx to use PurchaseOrdersWorkSurface directly
+- [ ] Verify PurchaseOrdersWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /purchase-orders, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: PurchaseOrdersWorkSurface
+- Routes affected: `/purchase-orders`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-007: Remove WorkSurfaceGate from PickPack routes
+
+**Task ID:** DEPRECATE-UI-007
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/pick-pack"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_INVENTORY"
+      fallback={<PickPackPage />}
+    >
+      <PickPackWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/pick-pack"
+  component={withErrorBoundary(PickPackWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/pick-pack` route in App.tsx to use PickPackWorkSurface directly
+- [ ] Verify PickPackWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /pick-pack, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: PickPackWorkSurface
+- Routes affected: `/pick-pack`
+- Rollback: Revert App.tsx changes
+
+---
+
+#### DEPRECATE-UI-008: Remove WorkSurfaceGate from DirectIntake routes
+
+**Task ID:** DEPRECATE-UI-008
+**Status:** [ ]
+**Priority:** HIGH
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** None
+
+**Current State (App.tsx):**
+```tsx
+<Route
+  path="/intake"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_INTAKE"
+      fallback={<SpreadsheetViewPage />}
+    >
+      <DirectIntakeWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+<Route
+  path="/spreadsheet-view"
+  component={withErrorBoundary(() => (
+    <WorkSurfaceGate
+      flag="WORK_SURFACE_INTAKE"
+      fallback={<SpreadsheetViewPage />}
+    >
+      <DirectIntakeWorkSurface />
+    </WorkSurfaceGate>
+  ))}
+/>
+```
+
+**Target State:**
+```tsx
+<Route
+  path="/intake"
+  component={withErrorBoundary(DirectIntakeWorkSurface)}
+/>
+<Route
+  path="/spreadsheet-view"
+  component={withErrorBoundary(DirectIntakeWorkSurface)}
+/>
+```
+
+**Agent Checklist:**
+- [ ] Update `/intake` route in App.tsx to use DirectIntakeWorkSurface directly
+- [ ] Update `/spreadsheet-view` route in App.tsx to use DirectIntakeWorkSurface directly
+- [ ] Verify DirectIntakeWorkSurface renders correctly
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Browser QA: Navigate to /intake and /spreadsheet-view, verify functionality
+- [ ] Document blast radius
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Components affected: DirectIntakeWorkSurface
+- Routes affected: `/intake`, `/spreadsheet-view`
+- Rollback: Revert App.tsx changes
+
+---
+
+### Phase 6.B: Cleanup Legacy Infrastructure (Days 43-44)
+
+---
+
+#### DEPRECATE-UI-009: Remove legacy page imports from App.tsx
+
+**Task ID:** DEPRECATE-UI-009
+**Status:** [ ]
+**Priority:** MEDIUM
+**Estimate:** 2h
+**Mode:** 🟡 STRICT
+**Dependencies:** DEPRECATE-UI-001 through DEPRECATE-UI-008
+
+**Description:** After all WorkSurfaceGate wrappers are removed, clean up unused legacy page imports from App.tsx.
+
+**Legacy Imports to Remove:**
+```tsx
+import Invoices from "@/pages/accounting/Invoices";
+import ClientsListPage from "@/pages/ClientsListPage";
+import ClientLedger from "@/pages/ClientLedger";
+import Orders from "@/pages/Orders";
+import Quotes from "@/pages/Quotes";
+import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
+import PickPackPage from "@/pages/PickPackPage";
+import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
+```
+
+**Agent Checklist:**
+- [ ] Remove unused legacy page imports from App.tsx
+- [ ] Verify no other files import these pages
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Verify application still works correctly
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/App.tsx`
+- Imports removed: 8 legacy page imports
+- Rollback: Restore imports if needed
+
+---
+
+#### DEPRECATE-UI-010: Remove WorkSurfaceGate component and feature flag infrastructure
+
+**Task ID:** DEPRECATE-UI-010
+**Status:** [ ]
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Mode:** 🟡 STRICT
+**Dependencies:** DEPRECATE-UI-009
+
+**Description:** Remove the WorkSurfaceGate component and associated feature flag infrastructure.
+
+**Files to Remove/Modify:**
+- `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts` - Remove WorkSurfaceGate export
+- `client/src/pages/settings/FeatureFlagsPage.tsx` - Remove work surface flags section (if applicable)
+- Any database/API endpoints for work surface feature flags
+
+**Agent Checklist:**
+- [ ] Remove WorkSurfaceGate component from useWorkSurfaceFeatureFlags.ts
+- [ ] Remove WorkSurfaceGate import from App.tsx
+- [ ] Update FeatureFlagsPage if it references work surface flags
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Verify feature flags page still works for other flags
+
+**Blast Radius Analysis:**
+- Files modified: `client/src/hooks/work-surface/useWorkSurfaceFeatureFlags.ts`, `client/src/App.tsx`
+- Components removed: WorkSurfaceGate
+- Rollback: Restore WorkSurfaceGate component
+
+---
+
+#### DEPRECATE-UI-011: Delete legacy page files (after verification period)
+
+**Task ID:** DEPRECATE-UI-011
+**Status:** [ ]
+**Priority:** LOW
+**Estimate:** 2h
+**Mode:** 🔴 RED (file deletion)
+**Dependencies:** DEPRECATE-UI-010, 1-week verification period
+
+**Description:** After a verification period confirming WorkSurface components work correctly, delete the legacy page files.
+
+**Files to Delete:**
+- `client/src/pages/accounting/Invoices.tsx` (if not used elsewhere)
+- `client/src/pages/ClientsListPage.tsx`
+- `client/src/pages/ClientLedger.tsx`
+- `client/src/pages/Orders.tsx`
+- `client/src/pages/Quotes.tsx`
+- `client/src/pages/PurchaseOrdersPage.tsx`
+- `client/src/pages/PickPackPage.tsx`
+- `client/src/pages/SpreadsheetViewPage.tsx`
+
+**Agent Checklist:**
+- [ ] Verify 1-week verification period has passed
+- [ ] Confirm no runtime errors reported for WorkSurface components
+- [ ] Search codebase for any remaining references to legacy pages
+- [ ] Delete legacy page files
+- [ ] Run `pnpm check && pnpm lint && pnpm test && pnpm build`
+- [ ] Document deleted files for audit trail
+
+**Blast Radius Analysis:**
+- Files deleted: Up to 8 legacy page files
+- Risk: HIGH (permanent deletion)
+- Rollback: Restore from git history
+
+---
+
+### Phase 6 Summary
+
+| Task ID | Title | Risk | Dependencies | Est. |
+|---------|-------|------|--------------|------|
+| DEPRECATE-UI-001 | Remove WorkSurfaceGate from Orders | 🟡 | None | 2h |
+| DEPRECATE-UI-002 | Remove WorkSurfaceGate from Quotes | 🟡 | None | 2h |
+| DEPRECATE-UI-003 | Remove WorkSurfaceGate from Clients | 🟡 | None | 2h |
+| DEPRECATE-UI-004 | Remove WorkSurfaceGate from Invoices | 🟡 | None | 2h |
+| DEPRECATE-UI-005 | Remove WorkSurfaceGate from ClientLedger | 🟡 | None | 2h |
+| DEPRECATE-UI-006 | Remove WorkSurfaceGate from PurchaseOrders | 🟡 | None | 2h |
+| DEPRECATE-UI-007 | Remove WorkSurfaceGate from PickPack | 🟡 | None | 2h |
+| DEPRECATE-UI-008 | Remove WorkSurfaceGate from DirectIntake | 🟡 | None | 2h |
+| DEPRECATE-UI-009 | Remove legacy page imports | 🟡 | UI-001 to UI-008 | 2h |
+| DEPRECATE-UI-010 | Remove WorkSurfaceGate infrastructure | 🟡 | UI-009 | 4h |
+| DEPRECATE-UI-011 | Delete legacy page files | 🔴 | UI-010 + 1 week | 2h |
+
+**Total Estimate:** 24h (3 days)
+**Buffer:** +1 day (20%)
+**Phase Duration:** 4-5 days
+
+---
+
+### Acceptance Criteria (Phase 6)
+
+- [ ] All WorkSurface components wired directly (no WorkSurfaceGate wrappers)
+- [ ] Legacy page imports removed from App.tsx
+- [ ] WorkSurfaceGate component removed
+- [ ] Feature flag infrastructure for work surfaces removed
+- [ ] All routes verified working in production
+- [ ] No P0/P1 bugs introduced
+- [ ] Legacy page files deleted (after verification period)
