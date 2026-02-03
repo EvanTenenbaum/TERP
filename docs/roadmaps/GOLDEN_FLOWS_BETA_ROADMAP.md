@@ -2610,14 +2610,13 @@ pnpm test && pnpm test:e2e
 ## Summary: Task Breakdown by Phase (Post-Protocol QA Analysis)
 
 | Phase     | Focus                         | Tasks  | Est. Duration  | Buffer                   | Status                              |
-| --------- | ----------------------------- | ------ | -------------- | ------------------------ | ----------------------------------- |
+| --------- | ----------------------------- | ------ | -------------- | ------------------------ | ----------------------------------- | --- | --- | -------------- | --- | ------ | ------ | ------------------------------- | --- |
 | 0.A       | Golden Flow Specification     | 8      | 2 days         | -                        | complete                            |
 | 0         | Foundation Unblocking         | 8      | 3 days         | +1 day                   | mostly complete                     |
 | 1         | Flow Restoration              | 6      | 4 days         | -                        | verified                            |
 | 2         | Flow Completion               | 6      | 5 days         | +1 day                   | verified                            |
 | 3         | RBAC Verification             | 5      | 5 days         | +1 day                   | verified                            |
-| **3.5**   | **Test/Lint Signal Recovery** | **4**  | **2-3 days**   | -                        | ✅ COMPLETE (Feb 3)                 |
-| 4         | E2E Automation                | 4      | 7 days         | +1 day                   | ready                               |
+| **3.5**   | **Test/Lint Signal Recovery** | **4**  | **2-3 days**   | -                        | ✅ COMPLETE (Feb 3)                 |     | 4   | E2E Automation | 4   | 7 days | +1 day | 🟡 IN PROGRESS (PR #383 merged) |     |
 | 5         | Beta Hardening + Security     | 7 (+1) | 6 days         | +1 day                   | ready                               |
 | **6**     | **Legacy UI Deprecation**     | **11** | **3 days**     | **+1 day**               | 🟡 IN PROGRESS (8/11 done, PR #380) |
 | **Total** |                               | **59** | **41-42 days** | **+7 days (20% buffer)** |                                     |
