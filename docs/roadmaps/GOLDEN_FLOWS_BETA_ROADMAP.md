@@ -3189,10 +3189,10 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 
 ---
 
-#### DEPRECATE-UI-009: Remove legacy page imports from App.tsx
+#### DEPRECATE-UI-009: Remove legacy page imports from App.tsx ✅
 
 **Task ID:** DEPRECATE-UI-009
-**Status:** [ ]
+**Status:** [x]
 **Priority:** MEDIUM
 **Estimate:** 2h
 **Mode:** 🟡 STRICT
@@ -3231,7 +3231,7 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 #### DEPRECATE-UI-010: Remove WorkSurfaceGate component and feature flag infrastructure
 
 **Task ID:** DEPRECATE-UI-010
-**Status:** [ ]
+**Status:** [x]
 **Priority:** MEDIUM
 **Estimate:** 4h
 **Mode:** 🟡 STRICT
@@ -3264,7 +3264,7 @@ import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 #### DEPRECATE-UI-011: Delete legacy page files (after verification period)
 
 **Task ID:** DEPRECATE-UI-011
-**Status:** [ ]
+**Status:** [x]
 **Priority:** LOW
 **Estimate:** 2h
 **Mode:** 🔴 RED (file deletion)
