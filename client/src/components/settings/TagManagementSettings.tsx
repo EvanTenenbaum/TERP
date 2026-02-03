@@ -31,6 +31,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -61,6 +71,10 @@ const DEFAULT_FORM: TagFormData = {
 export function TagManagementSettings() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // UI-CONFIRM-DIALOG: State for delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<number | null>(null);
   const [formData, setFormData] = useState<TagFormData>(DEFAULT_FORM);
   const [editingTagId, setEditingTagId] = useState<number | null>(null);
 
@@ -138,9 +152,9 @@ export function TagManagementSettings() {
   };
 
   const handleDeleteClick = (tagId: number) => {
-    if (confirm("Are you sure you want to delete this tag? This will remove it from all tagged items.")) {
-      deleteTag.mutate({ id: tagId });
-    }
+    // UI-CONFIRM-DIALOG: Show confirm dialog instead of confirm()
+    setTagToDelete(tagId);
+    setDeleteDialogOpen(true);
   };
 
   const handleCategoryChange = (category: TagCategory) => {
@@ -468,6 +482,33 @@ export function TagManagementSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* UI-CONFIRM-DIALOG: Delete Tag Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tag?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tag? This will remove it from all tagged items. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTagToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (tagToDelete !== null) {
+                  deleteTag.mutate({ id: tagToDelete });
+                  setTagToDelete(null);
+                }
+                setDeleteDialogOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Tag
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

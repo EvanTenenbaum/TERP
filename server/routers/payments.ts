@@ -385,16 +385,6 @@ export const paymentsRouter = router({
               createdBy: userId,
             });
 
-            // ARCH-002: Update client totalOwed within transaction for atomicity
-            // Note: This is kept for transactional consistency.
-            // After the transaction, we sync from invoices to ensure accuracy.
-            await tx
-              .update(clients)
-              .set({
-                totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${effectiveAmount}`,
-              })
-              .where(eq(clients.id, invoice.customerId));
-
             logger.info({
               msg: "[Payments] Payment recorded successfully",
               paymentId,
@@ -843,14 +833,6 @@ export const paymentsRouter = router({
               createdBy: userId,
             });
 
-            // ARCH-002: Update client totalOwed within transaction for atomicity
-            await tx
-              .update(clients)
-              .set({
-                totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) - ${input.totalAmount}`,
-              })
-              .where(eq(clients.id, input.clientId));
-
             logger.info({
               msg: "[Payments] Multi-invoice payment recorded",
               paymentId,
@@ -1028,16 +1010,6 @@ export const paymentsRouter = router({
                   })
                   .where(eq(invoices.id, payment.invoiceId));
               }
-            }
-
-            // ARCH-002: Update client totalOwed within transaction for atomicity
-            if (payment.customerId) {
-              await tx
-                .update(clients)
-                .set({
-                  totalOwed: sql`CAST(${clients.totalOwed} AS DECIMAL(15,2)) + ${paymentAmount}`,
-                })
-                .where(eq(clients.id, payment.customerId));
             }
 
             // Create reversing GL entries

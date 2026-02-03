@@ -27,6 +27,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -78,6 +88,10 @@ export default function CreditsPage() {
   const [issueCreditOpen, setIssueCreditOpen] = useState(false);
   const [applyCreditOpen, setApplyCreditOpen] = useState(false);
   const [selectedCredit, setSelectedCredit] = useState<any>(null);
+  
+  // UI-CONFIRM-DIALOG: State for void confirmation dialog
+  const [voidDialogOpen, setVoidDialogOpen] = useState(false);
+  const [creditToVoid, setCreditToVoid] = useState<number | null>(null);
 
   // Form state for issuing credit
   const [newCredit, setNewCredit] = useState({
@@ -348,9 +362,9 @@ export default function CreditsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                if (confirm("Are you sure you want to void this credit?")) {
-                                  voidCreditMutation.mutate({ creditId: credit.id });
-                                }
+                                // UI-CONFIRM-DIALOG: Show confirm dialog instead of confirm()
+                                setCreditToVoid(credit.id);
+                                setVoidDialogOpen(true);
                               }}
                             >
                               Void
@@ -502,6 +516,33 @@ export default function CreditsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* UI-CONFIRM-DIALOG: Void Credit Confirmation Dialog */}
+      <AlertDialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void Credit?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to void this credit? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCreditToVoid(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (creditToVoid !== null) {
+                  voidCreditMutation.mutate({ creditId: creditToVoid });
+                  setCreditToVoid(null);
+                }
+                setVoidDialogOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Void Credit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
