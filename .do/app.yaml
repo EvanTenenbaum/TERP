@@ -120,43 +120,6 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-# Jobs for running scripts from stable connection
-jobs:
-  # Data augmentation job - run manually via:
-  # doctl apps create-job-run <app-id> augment-data
-  - name: augment-data
-    github:
-      repo: EvanTenenbaum/TERP
-      branch: main
-    dockerfile_path: Dockerfile
-    instance_count: 1
-    instance_size_slug: apps-d-1vcpu-0.5gb
-    run_command: |
-      pnpm install &&
-      pnpm tsx scripts/fix-temporal-coherence.ts &&
-      pnpm tsx scripts/augment-orders.ts &&
-      pnpm tsx scripts/augment-inventory-movements.ts &&
-      pnpm tsx scripts/augment-financial-chains.ts &&
-      pnpm tsx scripts/augment-client-relationships.ts &&
-      pnpm tsx scripts/validate-data-quality.ts
-    source_dir: /
-    envs:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        scope: RUN_TIME
-        value: ${terp-mysql-db.DATABASE_URL}
-
-      # VITE vars needed for Dockerfile build (even though job doesn't use frontend)
-      - key: VITE_APP_TITLE
-        value: TERP
-        scope: RUN_AND_BUILD_TIME
-      - key: VITE_APP_LOGO
-        value: /logo.png
-        scope: RUN_AND_BUILD_TIME
-      - key: VITE_APP_ID
-        value: terp-app
-        scope: RUN_AND_BUILD_TIME
-      - key: VITE_CLERK_PUBLISHABLE_KEY
-        value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
-        scope: RUN_AND_BUILD_TIME
+# Note: Data augmentation scripts should be run manually via:
+# doctl apps create-job-run <app-id> augment-data
+# The job definition has been moved to scripts/jobs/augment-data.yaml
