@@ -33,6 +33,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -70,6 +80,10 @@ export function OfficeSupplyManager() {
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<unknown>(null);
+  
+  // BUG-007: State for deactivate confirmation dialog (replaces window.confirm)
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [itemToDeactivate, setItemToDeactivate] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -376,13 +390,9 @@ export function OfficeSupplyManager() {
                                 <DropdownMenuItem
                                   className="text-destructive"
                                   onClick={() => {
-                                    if (
-                                      window.confirm("Deactivate this item?")
-                                    ) {
-                                      deactivateMutation.mutate({
-                                        id: item.id,
-                                      });
-                                    }
+                                    // BUG-007: Show confirm dialog instead of window.confirm
+                                    setItemToDeactivate(item.id);
+                                    setDeactivateDialogOpen(true);
                                   }}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
@@ -591,6 +601,33 @@ export function OfficeSupplyManager() {
           isSubmitting={updateMutation.isPending}
         />
       ) : null}
+      
+      {/* BUG-007: Deactivate Confirmation Dialog (replaces window.confirm) */}
+      <AlertDialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate Item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate the office supply item. You can reactivate it later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDeactivate(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (itemToDeactivate !== null) {
+                  deactivateMutation.mutate({ id: itemToDeactivate });
+                  setItemToDeactivate(null);
+                }
+                setDeactivateDialogOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

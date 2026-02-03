@@ -31,6 +31,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -105,6 +115,10 @@ export function ClientWantsSection({ clientId }: ClientWantsSectionProps) {
   const [matchesDialogOpen, setMatchesDialogOpen] = useState(false);
   const [selectedWant, setSelectedWant] = useState<ClientWant | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
+  
+  // BUG-007: State for delete confirmation dialog (replaces window.confirm)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [wantToDelete, setWantToDelete] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -390,13 +404,9 @@ export function ClientWantsSection({ clientId }: ClientWantsSectionProps) {
                             <DropdownMenuItem
                               className="text-destructive"
                               onClick={() => {
-                                if (
-                                  window.confirm(
-                                    "Are you sure you want to delete this want?"
-                                  )
-                                ) {
-                                  deleteMutation.mutate({ id: want.id });
-                                }
+                                // BUG-007: Show confirm dialog instead of window.confirm
+                                setWantToDelete(want.id);
+                                setDeleteDialogOpen(true);
                               }}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -518,6 +528,33 @@ export function ClientWantsSection({ clientId }: ClientWantsSectionProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* BUG-007: Delete Confirmation Dialog (replaces window.confirm) */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Want?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this want? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setWantToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (wantToDelete !== null) {
+                  deleteMutation.mutate({ id: wantToDelete });
+                  setWantToDelete(null);
+                }
+                setDeleteDialogOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

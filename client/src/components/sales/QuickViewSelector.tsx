@@ -4,7 +4,7 @@
  * SALES-SHEET-IMPROVEMENTS: New component for saved views functionality
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Zap,
   Star,
@@ -43,6 +53,10 @@ export function QuickViewSelector({
   currentViewId,
 }: QuickViewSelectorProps) {
   const utils = trpc.useUtils();
+  
+  // BUG-007: State for delete confirmation dialog (replaces window.confirm)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viewToDelete, setViewToDelete] = useState<number | null>(null);
 
   // Fetch saved views for this client
   const { data: views, isLoading } = trpc.salesSheets.getViews.useQuery(
@@ -106,12 +120,20 @@ export function QuickViewSelector({
     setDefaultMutation.mutate({ viewId, clientId });
   };
 
-  // Handle deleting a view
+  // BUG-007: Show confirm dialog instead of window.confirm
   const handleDelete = (e: React.MouseEvent, viewId: number) => {
     e.stopPropagation();
-    if (window.confirm("Delete this saved view?")) {
-      deleteViewMutation.mutate({ viewId });
+    setViewToDelete(viewId);
+    setDeleteDialogOpen(true);
+  };
+  
+  // BUG-007: Confirm delete action
+  const confirmDelete = () => {
+    if (viewToDelete !== null) {
+      deleteViewMutation.mutate({ viewId: viewToDelete });
+      setViewToDelete(null);
     }
+    setDeleteDialogOpen(false);
   };
 
   // Format last used time
@@ -136,6 +158,7 @@ export function QuickViewSelector({
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
@@ -247,5 +270,24 @@ export function QuickViewSelector({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+    
+    {/* BUG-007: Delete Confirmation Dialog (replaces window.confirm) */}
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Saved View?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete your saved view.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setViewToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
