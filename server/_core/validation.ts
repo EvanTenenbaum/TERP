@@ -231,12 +231,16 @@ export const intakeSchema = z
     paymentTerms: validators.paymentTerms,
     location: locationSchema,
     metadata: validators.metadata,
-    mediaUrls: z.array(z.object({
-      url: z.string().url(),
-      fileName: z.string(),
-      fileType: z.string(),
-      fileSize: z.number(),
-    })).optional(), // BUG-004: Media file URLs
+    mediaUrls: z
+      .array(
+        z.object({
+          url: z.string().url(),
+          fileName: z.string(),
+          fileType: z.string(),
+          fileSize: z.number(),
+        })
+      )
+      .optional(), // BUG-004: Media file URLs
   })
   .merge(cogsSchema.omit({ cogsMode: true })); // Merge COGS validation
 
@@ -277,7 +281,8 @@ export const listQuerySchema = z.object({
     .max(1000, "Limit must be 1000 or less")
     .default(100),
   // Cursor-based pagination (preferred for large datasets)
-  cursor: validators.positiveInt.optional(),
+  // FIX: Use nonNegativeInt to allow cursor: 0 for first page
+  cursor: validators.nonNegativeInt.optional(),
   // Offset-based pagination (legacy support)
   offset: validators.nonNegativeInt.default(0),
   // Filters
