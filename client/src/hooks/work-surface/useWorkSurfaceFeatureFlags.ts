@@ -13,7 +13,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useFeatureFlags } from "@/contexts/FeatureFlagContext";
 
 // ============================================================================
@@ -288,58 +288,7 @@ export function useWorkSurfaceFeatureFlags(): UseWorkSurfaceFeatureFlagsReturn {
   };
 }
 
-// ============================================================================
-// HELPER COMPONENTS
-// ============================================================================
-
-/**
- * Props for WorkSurfaceGate component
- */
-interface WorkSurfaceGateProps {
-  /** The Work Surface flag to check */
-  flag: keyof typeof WORK_SURFACE_FLAGS;
-
-  /** Content to render when flag is enabled */
-  children: React.ReactNode;
-
-  /** Content to render when flag is disabled (optional) */
-  fallback?: React.ReactNode;
-
-  /** Content to render while loading (optional) */
-  loading?: React.ReactNode;
-}
-
-/**
- * Component that gates content based on Work Surface feature flags
- *
- * @example
- * ```tsx
- * <WorkSurfaceGate
- *   flag="ORDERS"
- *   fallback={<LegacyOrdersPage />}
- *   loading={<Spinner />}
- * >
- *   <OrdersWorkSurface />
- * </WorkSurfaceGate>
- * ```
- */
-export function WorkSurfaceGate({
-  flag,
-  children,
-  fallback = null,
-  loading = null,
-}: WorkSurfaceGateProps): React.ReactNode {
-  const { isWorkSurfaceEnabled, isLoading } = useWorkSurfaceFeatureFlags();
-
-  if (isLoading) {
-    return loading;
-  }
-
-  if (isWorkSurfaceEnabled(flag)) {
-    return children;
-  }
-
-  return fallback;
-}
+// NOTE: WorkSurfaceGate component removed in DEPRECATE-UI-010
+// All WorkSurface components are now wired directly without feature flag gates
 
 export default useWorkSurfaceFeatureFlags;
