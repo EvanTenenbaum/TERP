@@ -945,8 +945,8 @@ async function createPayable(input: PayableInput, actorId: number) {
 
 | Task          | Description                                             | Priority | Status      | Root Cause       | Est. Impact |
 | ------------- | ------------------------------------------------------- | -------- | ----------- | ---------------- | ----------- |
-| TEST-INFRA-07 | Fix tRPC mock missing `useUtils` method                 | P2       | NOT STARTED | RC-TRPC-MOCK     | 4 tests     |
-| TEST-INFRA-08 | Fix Radix UI React 19 render loop in EventFormDialog    | P2       | NOT STARTED | RC-RADIX-REACT19 | 5 tests     |
+| TEST-INFRA-07 | Fix tRPC mock missing `useUtils` method                 | P2       | COMPLETE    | RC-TRPC-MOCK     | 4 tests     |
+| TEST-INFRA-08 | Fix Radix UI React 19 render loop in EventFormDialog    | P2       | ADDRESSED   | RC-RADIX-REACT19 | 5 tests     |
 | TEST-INFRA-09 | Fix comments.test.ts database connection requirement    | P2       | NOT STARTED | RC-DB-REQUIRED   | 1 test      |
 | TEST-020      | Fix Vitest mock hoisting for permissionMiddleware tests | P2       | BLOCKED     | RC-MOCK-HOIST    | 8 tests     |
 | INFRA-015     | Migrate idempotency cache to Redis for multi-instance   | P3       | NOT STARTED | SINGLE-INSTANCE  | N/A         |
@@ -2265,7 +2265,7 @@ See `docs/roadmaps/INCOMPLETE_FEATURES_TASKS_2026-01-20.md` for complete list in
 
 ##### WSQA-001: Fix InvoicesWorkSurface Payment Recording Stub
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (handled by InvoiceToPaymentFlow Golden Flow)
 **Priority:** CRITICAL (P0)
 **Estimate:** 4h
 **Module:** `client/src/components/work-surface/InvoicesWorkSurface.tsx`
@@ -2291,7 +2291,7 @@ Payment recording mutation is a stub - shows success toast without actually pers
 
 ##### WSQA-002: Implement Flexible Lot Selection
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (batch selection implemented in InventoryWorkSurface)
 **Priority:** CRITICAL (P0)
 **Estimate:** 8h
 **Module:** `client/src/components/work-surface/InventoryWorkSurface.tsx`, `server/inventoryUtils.ts`
@@ -2316,7 +2316,7 @@ Users cannot select specific batches when creating orders. System auto-allocates
 
 ##### WSQA-003: Add RETURNED Order Status with Processing Paths
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (RETURNED status and processing paths implemented)
 **Priority:** CRITICAL (P0)
 **Estimate:** 8h
 **Module:** `server/schema.ts`, `server/ordersDb.ts:1564-1570`
@@ -2380,7 +2380,7 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 | Task     | Description                            | Priority | Status      | Estimate | Module                                         |
 | -------- | -------------------------------------- | -------- | ----------- | -------- | ---------------------------------------------- |
 | SSE-001  | Fix Live Shopping SSE Event Naming     | HIGH     | COMPLETE    | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
-| MEET-048 | Create Hour Tracking Frontend          | HIGH     | NOT STARTED | 16h      | client/src/pages/                              |
+| MEET-048 | Create Hour Tracking Frontend          | HIGH     | COMPLETE    | 16h      | client/src/pages/                              |
 | WS-010A  | Integrate Photography Module into Page | HIGH     | NOT STARTED | 4h       | PhotographyPage.tsx                            |
 | NAV-017  | Route CreditsPage in App.tsx           | HIGH     | COMPLETE    | 1h       | App.tsx                                        |
 | API-016  | Implement Quote Email Sending          | HIGH     | COMPLETE    | 4h       | server/routers/quotes.ts:294                   |
@@ -2406,7 +2406,7 @@ Backend emits `SESSION_TIMEOUT_WARNING` events but frontend listens for `TIMEOUT
 
 ##### MEET-048: Create Hour Tracking Frontend
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (TimeClockPage.tsx - 550 lines, routed at /time-clock)
 **Priority:** HIGH (P1)
 **Estimate:** 16h
 **Module:** `client/src/pages/`, `server/routers/hourTracking.ts`
@@ -2486,7 +2486,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 
 | Task       | Description                                   | Priority | Status      | Estimate | Module                         |
 | ---------- | --------------------------------------------- | -------- | ----------- | -------- | ------------------------------ |
-| FE-QA-009  | Enable VendorSupplyPage Creation              | MEDIUM   | NOT STARTED | 8h       | VendorSupplyPage.tsx:96        |
+| FE-QA-009  | Enable VendorSupplyPage Creation              | MEDIUM   | COMPLETE    | 8h       | VendorSupplyPage.tsx:96        |
 | FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
 | API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
 | DATA-022   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
@@ -2502,7 +2502,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 
 ##### FE-QA-009: Enable VendorSupplyPage Creation
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (create mutation and form implemented)
 **Priority:** MEDIUM (P2)
 **Estimate:** 8h
 **Module:** `client/src/pages/VendorSupplyPage.tsx:96`
@@ -2512,10 +2512,10 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 
 **Deliverables:**
 
-- [ ] Supply creation form implemented
-- [ ] Edit functionality added
-- [ ] "Find Matching Clients" button connected to matchmaking
-- [ ] Development alert removed
+- [x] Supply creation form implemented (lines 111-121)
+- [x] Edit functionality added
+- [x] "Find Matching Clients" button connected to matchmaking (line 512)
+- [x] Development alert removed
 
 ---
 
