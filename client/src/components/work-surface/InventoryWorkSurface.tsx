@@ -355,7 +355,15 @@ export function InventoryWorkSurface() {
     cursor: page * pageSize,
   });
 
+  // DEBUG: Log the raw data from tRPC
+  console.info('[InventoryWorkSurface] inventoryData:', inventoryData);
+  console.info('[InventoryWorkSurface] inventoryData type:', typeof inventoryData);
+  console.info('[InventoryWorkSurface] inventoryData keys:', inventoryData ? Object.keys(inventoryData) : 'null');
+  console.info('[InventoryWorkSurface] inventoryData.items:', inventoryData?.items);
+  console.info('[InventoryWorkSurface] isLoading:', isLoading);
+  
   const rawItems = inventoryData?.items ?? [];
+  console.info('[InventoryWorkSurface] rawItems length:', rawItems.length);
   // Cast to our local interface type for easier manipulation
   const items = rawItems as unknown as InventoryItem[];
   // Note: inventory.list returns { items, hasMore, nextCursor }, not pagination.total
