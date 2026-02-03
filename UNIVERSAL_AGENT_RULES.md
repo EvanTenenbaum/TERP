@@ -1,47 +1,72 @@
-# UNIVERSAL_AGENT_RULES (Current)
+# UNIVERSAL_AGENT_RULES
 
-This file exists to provide a single, stable entrypoint for all agents. It **does not replace**
-the steering files. Instead, it **points to the canonical sources** and summarizes the minimum
-protocol required to work in TERP safely.
+> **Single stable entrypoint for all agents.** This file points to canonical sources and summarizes the minimum protocol required to work in TERP safely.
 
 ---
 
-## Canonical Protocols (Read in Order)
+## Canonical Entry Point
 
-1. `.kiro/steering/00-core-identity.md`
-2. `.kiro/steering/06-architecture-guide.md`
-3. `.kiro/steering/07-deprecated-systems.md`
-4. `.kiro/steering/08-adaptive-qa-protocol.md`
-5. `.kiro/steering/01-development-standards.md`
-6. `.kiro/steering/02-workflows.md`
-7. `.kiro/steering/03-agent-coordination.md`
-8. `.kiro/steering/04-infrastructure.md`
-9. `.kiro/steering/99-pre-commit-checklist.md`
+**Start with `CLAUDE.md`** in the repository root. It contains the complete agent protocol.
 
-If you are an external agent, also read:
-`.kiro/steering/05-external-agent-handoff.md`
+---
+
+## Canonical Steering Files (Read in Order)
+
+The `.kiro/steering/` directory contains detailed protocols. Read these in order:
+
+| # | File | Purpose |
+|---|------|---------|
+| 00 | `00-core-identity.md` | Who you are, prime directive |
+| 01 | `01-development-standards.md` | Code standards, TypeScript rules |
+| 02 | `02-workflows.md` | Development workflows |
+| 03 | `03-agent-coordination.md` | Multi-agent coordination |
+| 04 | `04-infrastructure.md` | Deployment, infrastructure |
+| 05 | `05-external-agent-handoff.md` | External agent protocols |
+| 06 | `06-architecture-guide.md` | System architecture |
+| 07 | `07-deprecated-systems.md` | What NOT to use |
+| 08 | `08-adaptive-qa-protocol.md` | QA and verification modes |
+| 10 | `10-mvp-initiative.md` | Current MVP scope |
+| 11 | `11-mvp-iteration-protocol.md` | Iteration workflow |
+| 99 | `99-pre-commit-checklist.md` | Pre-commit requirements |
+
+Also see: `terp-master-protocol.md` for consolidated protocol reference.
 
 ---
 
 ## Non-Negotiables (Summary)
 
-- **Verification over persuasion**: follow SAFE/STRICT/RED requirements.
-- **No `any` types** and explicit TypeScript return types.
-- **TDD**: write tests before implementation when modifying code.
-- **No parallel edits** to files another agent is working on.
-- **Session registration required** before starting work.
-- **Deployment verification required** before marking complete.
+- **Verification over persuasion**: Follow SAFE/STRICT/RED requirements
+- **No `any` types**: Explicit TypeScript return types required
+- **TDD**: Write tests before implementation when modifying code
+- **No parallel edits**: Don't edit files another agent is working on
+- **Session registration**: Required before starting work
+- **Deployment verification**: Required before marking complete
 
 ---
 
-## Quick Commands (TERP)
+## Quick Commands
 
 ```bash
-pnpm check
-pnpm lint
-pnpm test
-pnpm build
-pnpm test:e2e   # when UI/business flows change
+pnpm check      # Type checking
+pnpm lint       # Linting
+pnpm test       # Unit tests
+pnpm build      # Production build
+pnpm test:e2e   # E2E tests (when UI/business flows change)
 ```
 
 If a required command cannot be run, mark verification as **UNSURE** and provide a local/CI plan.
+
+---
+
+## Document Hierarchy
+
+```
+CLAUDE.md                          ← Primary Protocol (START HERE)
+├── UNIVERSAL_AGENT_RULES.md       ← This file (quick reference)
+├── .kiro/steering/                ← Detailed protocols
+├── AGENTS.md                      ← Technical stack info
+└── docs/TERP_AGENT_INSTRUCTIONS.md ← Extended instructions
+```
+
+---
+*Last updated: 2026-02-03*
