@@ -17,14 +17,12 @@ import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
 import ChartOfAccounts from "@/pages/accounting/ChartOfAccounts";
 import GeneralLedger from "@/pages/accounting/GeneralLedger";
 import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
-import Invoices from "@/pages/accounting/Invoices";
 import Bills from "@/pages/accounting/Bills";
 import Payments from "@/pages/accounting/Payments";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import Expenses from "@/pages/accounting/Expenses";
 import CashLocations from "@/pages/CashLocations";
-import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
@@ -35,10 +33,7 @@ import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
-import Orders from "@/pages/Orders";
-import Quotes from "@/pages/Quotes";
-// Work Surface components for progressive rollout
-import { WorkSurfaceGate } from "@/hooks/work-surface/useWorkSurfaceFeatureFlags";
+// Work Surface components - legacy pages removed, using WorkSurface directly
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import InvoicesWorkSurface from "@/components/work-surface/InvoicesWorkSurface";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
@@ -56,7 +51,6 @@ import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import InterestListPage from "@/pages/InterestListPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 import VendorRedirect from "@/components/VendorRedirect";
-import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
 import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
@@ -89,9 +83,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
-import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
-import PickPackPage from "@/pages/PickPackPage";
 import PhotographyPage from "@/pages/PhotographyPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -214,14 +206,7 @@ function Router() {
                 />
                 <Route
                   path="/accounting/invoices"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_ACCOUNTING"
-                      fallback={<Invoices />}
-                    >
-                      <InvoicesWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(InvoicesWorkSurface)}
                 />
                 <Route
                   path="/accounting/bills"
@@ -250,14 +235,7 @@ function Router() {
                 />
                 <Route
                   path="/clients"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_ORDERS"
-                      fallback={<ClientsListPage />}
-                    >
-                      <ClientsWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(ClientsWorkSurface)}
                 />
                 <Route
                   path="/clients/:id"
@@ -265,14 +243,7 @@ function Router() {
                 />
                 <Route
                   path="/clients/:clientId/ledger"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_ACCOUNTING"
-                      fallback={<ClientLedger />}
-                    >
-                      <ClientLedgerWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(ClientLedgerWorkSurface)}
                 />
                 <Route
                   path="/client-ledger"
@@ -297,25 +268,11 @@ function Router() {
                 />
                 <Route
                   path="/orders"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_ORDERS"
-                      fallback={<Orders />}
-                    >
-                      <OrdersWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(OrdersWorkSurface)}
                 />
                 <Route
                   path="/pick-pack"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_INVENTORY"
-                      fallback={<PickPackPage />}
-                    >
-                      <PickPackWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(PickPackWorkSurface)}
                 />
                 <Route
                   path="/photography"
@@ -327,14 +284,7 @@ function Router() {
                 />
                 <Route
                   path="/quotes"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_ORDERS"
-                      fallback={<Quotes />}
-                    >
-                      <QuotesWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(QuotesWorkSurface)}
                 />
                 <Route
                   path="/settings/cogs"
@@ -387,14 +337,7 @@ function Router() {
                 />
                 <Route
                   path="/purchase-orders"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_INTAKE"
-                      fallback={<PurchaseOrdersPage />}
-                    >
-                      <PurchaseOrdersWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(PurchaseOrdersWorkSurface)}
                 />
                 <Route
                   path="/returns"
@@ -416,14 +359,7 @@ function Router() {
                 {/* ROUTE-001: Direct Intake WorkSurface */}
                 <Route
                   path="/intake"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_INTAKE"
-                      fallback={<SpreadsheetViewPage />}
-                    >
-                      <DirectIntakeWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(DirectIntakeWorkSurface)}
                 />
                 <Route
                   path="/matchmaking"
@@ -435,14 +371,7 @@ function Router() {
                 />
                 <Route
                   path="/spreadsheet-view"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_INTAKE"
-                      fallback={<SpreadsheetViewPage />}
-                    >
-                      <DirectIntakeWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(DirectIntakeWorkSurface)}
                 />
                 <Route path="/help" component={withErrorBoundary(Help)} />
                 <Route
