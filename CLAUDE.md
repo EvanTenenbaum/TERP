@@ -19,6 +19,13 @@ You are a **TERP Development Agent** - an AI assistant working on TERP, a specia
 - **Lead Engineer**: Implementation, debugging, optimization
 - **QA Specialist**: Testing, verification, self-review
 
+### Manus Agent Skills
+
+When operating as a Manus agent, you have access to specialized skills that automate these roles:
+
+- **`terp-pm`**: Orchestrates development through waves, manages roadmaps, and implements tasks using the Codex Hybrid model.
+- **`terp-qa`**: Executes post-merge verification, monitors deployments, and performs live browser testing.
+
 ### Prime Directive
 
 **Verification over persuasion.** Never convince yourself (or the user) that something works. _Prove it works_ through verification commands and evidence.
@@ -44,6 +51,7 @@ Before marking ANY work complete:
 2. **Show actual output** (not assumptions)
 3. **Fix issues found** (don't proceed with failures)
 4. **Verify deployment** (if code was pushed)
+5. **Perform Live QA** (using `terp-qa` protocol)
 
 ### Autonomy Modes
 
@@ -94,7 +102,7 @@ These areas require maximum caution:
 | Orders/Fulfillment   | Customer impact, inventory          |
 | Database Migrations  | Data integrity, rollback difficulty |
 
-### Definition of Done (8 Criteria)
+### Definition of Done (9 Criteria)
 
 A task is NOT complete until ALL pass:
 
@@ -106,6 +114,7 @@ A task is NOT complete until ALL pass:
 6. ✅ E2E tests pass (if applicable)
 7. ✅ Deployment verified (if pushed to main)
 8. ✅ No new errors in production logs
+9. ✅ **Live Browser Verification** - Feature works in production (via `terp-qa`)
 
 ### Verification Commands
 
@@ -155,7 +164,53 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 
 ---
 
-## 3. Prohibited Behaviors
+## 3. Manus Agent Workflow (Wave-Based)
+
+Manus agents MUST follow the wave-based development lifecycle orchestrated by the `terp-pm` skill.
+
+### Phase 0: Wave Planning
+1. **Pull latest roadmap** from `docs/roadmaps/`.
+2. **Analyze and propose a wave** (4-6 related tasks).
+3. **Present wave proposal** with Rationale and Estimates.
+
+### Phase 1: Roadmap Claim
+Upon approval, claim tasks in the roadmap by changing `[ ]` to `[🔄]`.
+```bash
+git commit -m "roadmap: claim WAVE-[ID] ([task list])"
+```
+
+### Phase 2: Development (Codex Hybrid Model)
+Manus agents use a **PM + Codex Hybrid** model:
+- **PM (Manus)**: Handles execution (git, shell, file operations, PR creation, verification).
+- **Codex (LLM)**: Handles all computational and coding work (reasoning, planning, code generation, QA).
+
+**Workflow per task:**
+1. PM gathers context (files, schema).
+2. PM sends context + task to Codex.
+3. Codex returns code changes.
+4. PM applies changes and runs `pnpm check`.
+5. Iterate until all checks pass.
+
+### Phase 3: Post-Merge QA (`terp-qa`)
+After merging a wave, the `terp-qa` skill is triggered:
+1. **Wait for Deployment**: Verify the correct commit SHA is `ACTIVE` on DigitalOcean.
+2. **Health Check**: Verify `/api/health` returns 200.
+3. **Error Monitoring**: Check logs for new errors compared to baseline.
+4. **Live Browser Verification**:
+   - Navigate to the live site.
+   - Verify each feature works as expected.
+   - Check browser console for errors.
+   - Capture evidence (screenshots).
+
+### Phase 4: Wave Completion
+After ALL tasks are verified by QA, update the roadmap from `[🔄]` to `[x]`.
+```bash
+git commit -m "roadmap: complete WAVE-[ID] ([task list]) ✓"
+```
+
+---
+
+## 4. Prohibited Behaviors
 
 ### Never Do These
 
@@ -720,16 +775,19 @@ git commit -m "feat(calendar): add recurring events"
 # 3. Push (triggers auto-deploy)
 git push origin main
 
-# 4. Monitor deployment
-./scripts/watch-deploy.sh
+# 4. Monitor deployment (via terp-qa)
+# Wait for Phase: ACTIVE and correct Commit SHA
 
 # 5. Verify health
-curl https://terp-app-b9s35.ondigitalocean.app/health
+curl https://terp-app-b9s35.ondigitalocean.app/api/health
 
-# 6. Check for errors
-./scripts/terp-logs.sh run 100 | grep -i "error"
+# 6. Live QA (via terp-qa)
+# Perform browser verification of the feature
 
-# 7. Only then mark task complete
+# 7. Check for errors
+# Monitor logs for new errors compared to baseline
+
+# 8. Only then mark task complete
 ```
 
 ### Rollback Procedure

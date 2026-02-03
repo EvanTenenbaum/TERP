@@ -128,21 +128,26 @@ echo "Source: $SOURCE_COUNT, Roadmap unique items: check Appendix A"
   - **Tests Failing:** Blocks the merge.
   - **Fully Tested:** Proceeds with the merge.
 
-### Step 5: Deployment Log Tracking (MANDATORY)
+### Step 5: Deployment & Live QA (MANDATORY)
 
-- **🚨 CRITICAL:** After every deployment, agents MUST track logs to verify success.
+- **🚨 CRITICAL:** After every deployment, agents MUST verify success through logs and live browser testing.
+- **Manus Agents:** Use the `terp-qa` skill to automate this process.
 - **If deployment fails:** Investigate logs immediately, fix issues, and redeploy.
-- **Never report completion** without verifying deployment succeeded via logs.
+- **Never report completion** without verifying deployment succeeded and the feature works in production.
 
 **Required Actions:**
 
-1. Monitor build logs: `./scripts/terp-logs.sh build --follow`
-2. Monitor deploy logs: `./scripts/terp-logs.sh deploy --follow`
-3. Check runtime logs for errors: `./scripts/terp-logs.sh run 100 | grep -i "error"`
-4. Verify application is healthy (no crashes, no critical errors)
-5. Document any deployment issues in session notes
+1. **Monitor Deployment**: Wait for Phase: `ACTIVE` and verify the correct commit SHA is deployed.
+2. **Health Check**: Verify `/api/health` returns 200.
+3. **Runtime Error Monitoring**: Check logs for new errors compared to baseline.
+4. **Live Browser Verification**:
+   - Navigate to the live site.
+   - Verify each feature works as expected.
+   - Check browser console for errors.
+   - Capture evidence (screenshots).
+5. **Document Results**: Provide a QA Verification Report with evidence.
 
-**See:** `docs/LOGGING_ACCESS_GUIDE.md` for complete log access instructions.
+**See:** `docs/LOGGING_ACCESS_GUIDE.md` for complete log access instructions and `terp-qa` skill for automation.
 
 ---
 
