@@ -150,13 +150,17 @@ export const inventoryRouter = router({
         inventoryLogger.operationStart("getEnhanced", { input });
 
         // Get base inventory data
-        // INV-FILTER-001: Pass status and category filters to database layer
+        // INV-FILTER-002: Pass all filters to database layer
         const result = await inventoryDb.getBatchesWithDetails(
           input.pageSize + 1, // Fetch one extra to check for more pages
           input.cursor,
           {
-            status: input.status?.[0], // DB layer expects single string, not array
+            status: input.status, // Array or undefined
             category: input.category,
+            subcategory: input.subcategory,
+            vendor: input.vendor, // Array of vendor names
+            brand: input.brand, // Array of brand names
+            grade: input.grade, // Array of grade values
           }
         );
 

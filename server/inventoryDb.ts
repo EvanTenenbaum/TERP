@@ -860,14 +860,22 @@ export async function getBatchesByIds(
 /**
  * Get batches with details using cursor-based pagination
  * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
+ * ✅ ENHANCED: INV-FILTER-002 - Extended filter support for vendor, brand, grade, subcategory
  * @param limit - Maximum number of results to return
  * @param cursor - Optional cursor (batch ID) for pagination
- * @param filters - Optional filters (status, category)
+ * @param filters - Optional filters (status, category, subcategory, vendor, brand, grade)
  */
 export async function getBatchesWithDetails(
   limit: number = 100,
   cursor?: number,
-  filters?: { status?: string; category?: string }
+  filters?: {
+    status?: string | string[]; // INV-FILTER-002: Support single or array
+    category?: string;
+    subcategory?: string; // INV-FILTER-002: New filter
+    vendor?: string[]; // INV-FILTER-002: Match against clients.businessName
+    brand?: string[]; // INV-FILTER-002: Match against brands.name
+    grade?: string[]; // INV-FILTER-002: Match against batches.grade
+  }
 ) {
   const db = await getDb();
   // BUG-098 FIX: Include hasMore in early return to prevent frontend issues
@@ -878,11 +886,32 @@ export async function getBatchesWithDetails(
   if (cursor) {
     conditions.push(sql`${batches.id} < ${cursor}`);
   }
+  // INV-FILTER-002: Support both single string and array for status
   if (filters?.status) {
-    conditions.push(sql`${batches.batchStatus} = ${filters.status}`);
+    if (Array.isArray(filters.status) && filters.status.length > 0) {
+      conditions.push(safeInArray(batches.batchStatus, filters.status));
+    } else if (typeof filters.status === "string") {
+      conditions.push(sql`${batches.batchStatus} = ${filters.status}`);
+    }
   }
   if (filters?.category) {
     conditions.push(eq(products.category, filters.category));
+  }
+  // INV-FILTER-002: New subcategory filter
+  if (filters?.subcategory) {
+    conditions.push(eq(products.subcategory, filters.subcategory));
+  }
+  // INV-FILTER-002: New vendor filter (matches against clients.name)
+  if (filters?.vendor && filters.vendor.length > 0) {
+    conditions.push(safeInArray(clients.name, filters.vendor));
+  }
+  // INV-FILTER-002: New brand filter
+  if (filters?.brand && filters.brand.length > 0) {
+    conditions.push(safeInArray(brands.name, filters.brand));
+  }
+  // INV-FILTER-002: New grade filter
+  if (filters?.grade && filters.grade.length > 0) {
+    conditions.push(safeInArray(batches.grade, filters.grade));
   }
 
   // Join batches with products, brands, lots, and vendors
