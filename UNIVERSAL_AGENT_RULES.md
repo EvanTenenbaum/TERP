@@ -4,32 +4,44 @@
 
 ---
 
-## Canonical Entry Point
+## Document Hierarchy
 
-**Start with `CLAUDE.md`** in the repository root. It contains the complete agent protocol.
+```
+CLAUDE.md                          ← PRIMARY ENTRY POINT (start here)
+├── UNIVERSAL_AGENT_RULES.md       ← This file (quick reference)
+├── .kiro/steering/                ← Detailed protocols (below)
+├── AGENTS.md                      ← Technical stack reference
+└── docs/TERP_AGENT_INSTRUCTIONS.md
+```
 
 ---
 
-## Canonical Steering Files (Read in Order)
+## Canonical Protocols (Recommended Reading Order)
 
-The `.kiro/steering/` directory contains detailed protocols. Read these in order:
+### Priority Reading (Core Understanding)
+1. `.kiro/steering/00-core-identity.md` - Who you are, prime directive
+2. `.kiro/steering/06-architecture-guide.md` - System architecture
+3. `.kiro/steering/07-deprecated-systems.md` - What NOT to use
+4. `.kiro/steering/08-adaptive-qa-protocol.md` - SAFE/STRICT/RED verification
 
-| # | File | Purpose |
-|---|------|---------|
-| 00 | `00-core-identity.md` | Who you are, prime directive |
-| 01 | `01-development-standards.md` | Code standards, TypeScript rules |
-| 02 | `02-workflows.md` | Development workflows |
-| 03 | `03-agent-coordination.md` | Multi-agent coordination |
-| 04 | `04-infrastructure.md` | Deployment, infrastructure |
-| 05 | `05-external-agent-handoff.md` | External agent protocols |
-| 06 | `06-architecture-guide.md` | System architecture |
-| 07 | `07-deprecated-systems.md` | What NOT to use |
-| 08 | `08-adaptive-qa-protocol.md` | QA and verification modes |
-| 10 | `10-mvp-initiative.md` | Current MVP scope |
-| 11 | `11-mvp-iteration-protocol.md` | Iteration workflow |
-| 99 | `99-pre-commit-checklist.md` | Pre-commit requirements |
+### Standard Protocols
+5. `.kiro/steering/01-development-standards.md` - Code standards
+6. `.kiro/steering/02-workflows.md` - Development workflows
+7. `.kiro/steering/03-agent-coordination.md` - Multi-agent coordination
+8. `.kiro/steering/04-infrastructure.md` - Deployment, infrastructure
+9. `.kiro/steering/99-pre-commit-checklist.md` - Pre-commit requirements
 
-Also see: `terp-master-protocol.md` for consolidated protocol reference.
+### External Agents
+If you are an external agent, also read:
+- `.kiro/steering/05-external-agent-handoff.md`
+
+### MVP-Specific (Current Initiative)
+- `.kiro/steering/10-mvp-initiative.md` - Current MVP scope
+- `.kiro/steering/11-mvp-iteration-protocol.md` - Iteration workflow
+
+### Reference
+- `.kiro/steering/terp-master-protocol.md` - Consolidated protocol reference
+- `.kiro/steering/README.md` - Steering directory overview
 
 ---
 
@@ -39,8 +51,8 @@ Also see: `terp-master-protocol.md` for consolidated protocol reference.
 - **No `any` types**: Explicit TypeScript return types required
 - **TDD**: Write tests before implementation when modifying code
 - **No parallel edits**: Don't edit files another agent is working on
-- **Session registration**: Required before starting work
-- **Deployment verification**: Required before marking complete
+- **Session registration required**: Before starting work
+- **Deployment verification required**: Before marking complete
 
 ---
 
@@ -58,15 +70,12 @@ If a required command cannot be run, mark verification as **UNSURE** and provide
 
 ---
 
-## Document Hierarchy
+## Historical Reference
 
-```
-CLAUDE.md                          ← Primary Protocol (START HERE)
-├── UNIVERSAL_AGENT_RULES.md       ← This file (quick reference)
-├── .kiro/steering/                ← Detailed protocols
-├── AGENTS.md                      ← Technical stack info
-└── docs/TERP_AGENT_INSTRUCTIONS.md ← Extended instructions
-```
+A comprehensive version of agent rules (from 2025-12-17) is preserved at:
+`docs/archive/agent-prompts/UNIVERSAL_AGENT_RULES.md`
+
+This archived version contains expanded explanations that may be useful for deep reference.
 
 ---
 *Last updated: 2026-02-03*
