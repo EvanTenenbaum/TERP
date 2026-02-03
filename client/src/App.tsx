@@ -24,7 +24,6 @@ import BankTransactions from "@/pages/accounting/BankTransactions";
 import Expenses from "@/pages/accounting/Expenses";
 import CashLocations from "@/pages/CashLocations";
 import ClientProfilePage from "@/pages/ClientProfilePage";
-import ClientLedger from "@/pages/ClientLedger";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
 import CreditsPage from "@/pages/CreditsPage"; // NAV-017: Credits management page
 import PricingRulesPage from "@/pages/PricingRulesPage";
@@ -247,7 +246,7 @@ function Router() {
                 />
                 <Route
                   path="/client-ledger"
-                  component={withErrorBoundary(ClientLedger)}
+                  component={withErrorBoundary(ClientLedgerWorkSurface)}
                 />
                 <Route path="/users" component={withErrorBoundary(UsersPage)} />
                 <Route
