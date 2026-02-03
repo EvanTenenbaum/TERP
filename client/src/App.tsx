@@ -7,7 +7,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardV3 from "./pages/DashboardV3";
-import Inventory from "@/pages/Inventory";
+// Legacy Inventory page removed - now using InventoryWorkSurface directly
 import ProductsPage from "@/pages/ProductsPage";
 import VendorsPage from "@/pages/VendorsPage";
 import UsersPage from "@/pages/UsersPage";
@@ -181,25 +181,11 @@ function Router() {
                 />
                 <Route
                   path="/inventory"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_INVENTORY"
-                      fallback={<Inventory />}
-                    >
-                      <InventoryWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(InventoryWorkSurface)}
                 />
                 <Route
                   path="/inventory/:id"
-                  component={withErrorBoundary(() => (
-                    <WorkSurfaceGate
-                      flag="WORK_SURFACE_INVENTORY"
-                      fallback={<Inventory />}
-                    >
-                      <InventoryWorkSurface />
-                    </WorkSurfaceGate>
-                  ))}
+                  component={withErrorBoundary(InventoryWorkSurface)}
                 />
                 <Route
                   path="/products"
