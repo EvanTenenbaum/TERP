@@ -2381,7 +2381,7 @@ GL posting failures are silently ignored. When standard accounts are not found, 
 | -------- | -------------------------------------- | -------- | ----------- | -------- | ---------------------------------------------- |
 | SSE-001  | Fix Live Shopping SSE Event Naming     | HIGH     | COMPLETE    | 2h       | sessionTimeoutService.ts, useLiveSessionSSE.ts |
 | MEET-048 | Create Hour Tracking Frontend          | HIGH     | COMPLETE    | 16h      | client/src/pages/                              |
-| WS-010A  | Integrate Photography Module into Page | HIGH     | NOT STARTED | 4h       | PhotographyPage.tsx                            |
+| WS-010A  | Integrate Photography Module into Page | HIGH     | IN_PROGRESS | 4h       | PhotographyPage.tsx                            |
 | NAV-017  | Route CreditsPage in App.tsx           | HIGH     | COMPLETE    | 1h       | App.tsx                                        |
 | API-016  | Implement Quote Email Sending          | HIGH     | COMPLETE    | 4h       | server/routers/quotes.ts:294                   |
 
@@ -2427,7 +2427,7 @@ Hour tracking backend is fully implemented (clockIn, clockOut, startBreak, endBr
 
 ##### WS-010A: Integrate Photography Module into PhotographyPage
 
-**Status:** NOT STARTED
+**Status:** IN_PROGRESS (PR #373 open)
 **Priority:** HIGH (P1)
 **Estimate:** 4h
 **Module:** `client/src/pages/PhotographyPage.tsx`, `client/src/components/inventory/PhotographyModule.tsx`
@@ -2487,7 +2487,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 | Task       | Description                                   | Priority | Status      | Estimate | Module                         |
 | ---------- | --------------------------------------------- | -------- | ----------- | -------- | ------------------------------ |
 | FE-QA-009  | Enable VendorSupplyPage Creation              | MEDIUM   | COMPLETE    | 8h       | VendorSupplyPage.tsx:96        |
-| FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | NOT STARTED | 4h       | MatchmakingServicePage.tsx     |
+| FE-QA-010  | Wire MatchmakingServicePage Action Buttons    | MEDIUM   | COMPLETE    | 4h       | MatchmakingServicePage.tsx     |
 | API-017    | Implement Stock Threshold Configuration       | MEDIUM   | NOT STARTED | 4h       | alerts.ts:379-398              |
 | DATA-022   | Add Calendar Recurring Events Schema          | MEDIUM   | NOT STARTED | 4h       | seed-calendar-test-data.ts:201 |
 | DEPR-001   | Migrate Deprecated Vendor Router Usages       | MEDIUM   | NOT STARTED | 8h       | vendors.ts, multiple callers   |
@@ -2521,7 +2521,7 @@ CreditsPage is a complete page with issue/apply/void functionality. It's importe
 
 ##### FE-QA-010: Wire MatchmakingServicePage Action Buttons
 
-**Status:** NOT STARTED
+**Status:** COMPLETE (verified 2026-02-02)
 **Priority:** MEDIUM (P2)
 **Estimate:** 4h
 **Module:** `client/src/pages/MatchmakingServicePage.tsx`
@@ -2536,10 +2536,10 @@ Four action buttons have no implementation:
 
 **Deliverables:**
 
-- [ ] View Buyers opens buyer list modal
-- [ ] Reserve creates reservation record
-- [ ] Create Quote navigates to quote creator with pre-filled data
-- [ ] Dismiss marks match as dismissed with reason
+- [x] View Buyers opens buyer list modal (line 531-534, handleViewBuyers)
+- [x] Reserve creates reservation record (line 541-544, reserveMutation)
+- [x] Create Quote navigates to quote creator with pre-filled data (line 625, handleCreateQuote)
+- [x] Dismiss marks match as dismissed with confirmation dialog (line 633, handleDismissClick)
 
 ---
 
