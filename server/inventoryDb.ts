@@ -2108,33 +2108,35 @@ export async function getProfitabilitySummary() {
 }
 
 // ============================================================================
-// VENDOR BATCH QUERIES
+// SUPPLIER BATCH QUERIES (INV-PARTY-001: Renamed from VENDOR BATCH QUERIES)
 // ============================================================================
 
 /**
- * Get all batches supplied by a specific vendor
- * Joins batches → lots → filter by vendorId
- * @param vendorId - The vendor ID to filter by
+ * Get all batches for a specific supplier (client with isSeller=true)
+ * INV-PARTY-001: Renamed from getBatchesByVendor to align with party model
+ * @param supplierClientId - The client ID of the supplier to filter by
  * @returns Array of batches with their associated lot and product data
  * _Requirements: 7.1, 7.2_
  */
-export async function getBatchesByVendor(vendorId: number) {
+export async function getBatchesBySupplier(supplierClientId: number) {
   const db = await getDb();
   if (!db) return [];
 
-  // Join batches → lots → filter by vendorId
+  // INV-PARTY-001: Join batches → lots → filter by supplierClientId (party model)
   const result = await db
     .select({
       batch: batches,
       lot: lots,
-      product: products,
+      product: safeProductSelect,
       brand: brands,
+      supplierClient: clients,
     })
     .from(batches)
     .innerJoin(lots, eq(batches.lotId, lots.id))
     .leftJoin(products, eq(batches.productId, products.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
-    .where(eq(lots.vendorId, vendorId))
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
+    .where(eq(lots.supplierClientId, supplierClientId))
     .orderBy(desc(batches.createdAt));
 
   return result;

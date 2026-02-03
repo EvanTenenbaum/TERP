@@ -1317,29 +1317,36 @@ export const inventoryRouter = router({
 
   // Get batches by vendor
   // _Requirements: 7.1_
-  getBatchesByVendor: protectedProcedure
+  // INV-PARTY-001: Renamed from getBatchesByVendor to align with party model
+  getBatchesBySupplier: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({ vendorId: z.number() }))
+    .input(z.object({ supplierClientId: z.number() }))
     .query(async ({ input }) => {
       try {
-        inventoryLogger.operationStart("getBatchesByVendor", {
-          vendorId: input.vendorId,
+        inventoryLogger.operationStart("getBatchesBySupplier", {
+          supplierClientId: input.supplierClientId,
         });
 
-        const result = await inventoryDb.getBatchesByVendor(input.vendorId);
+        const result = await inventoryDb.getBatchesBySupplier(
+          input.supplierClientId
+        );
 
-        inventoryLogger.operationSuccess("getBatchesByVendor", {
-          vendorId: input.vendorId,
+        inventoryLogger.operationSuccess("getBatchesBySupplier", {
+          supplierClientId: input.supplierClientId,
           batchCount: result.length,
         });
 
         // BUG-034: Standardized pagination response
         return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
       } catch (error) {
-        inventoryLogger.operationFailure("getBatchesByVendor", error as Error, {
-          vendorId: input.vendorId,
-        });
-        handleError(error, "inventory.getBatchesByVendor");
+        inventoryLogger.operationFailure(
+          "getBatchesBySupplier",
+          error as Error,
+          {
+            supplierClientId: input.supplierClientId,
+          }
+        );
+        handleError(error, "inventory.getBatchesBySupplier");
         throw error;
       }
     }),
