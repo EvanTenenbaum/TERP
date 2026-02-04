@@ -147,7 +147,7 @@ roadmap_md += f"""## Notes
 """
 
 # Write to file
-output_path = '/home/ubuntu/TERP-fresh/docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md'
+output_path = '/home/ubuntu/TERP/docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md'
 with open(output_path, 'w') as f:
     f.write(roadmap_md)
 

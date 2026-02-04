@@ -89,11 +89,15 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
 
 ## Phase 1: Core Flow Restoration
 
-**Status:** 🟡 IN PROGRESS (15%)  
-**Progress:** 4/27 tasks complete
+**Status:** 🟡 IN PROGRESS (26%)  
+**Progress:** 7/27 tasks complete
 
 ### Done
 
+- **[TER-59](https://linear.app/terpcorp/issue/TER-59/gf-phase5-006-fix-fallback-user-id-pattern-security):** GF-PHASE5-006: Fix Fallback User ID Pattern (Security)
+  - Priority: High | Mode: SAFE | Type: Task
+- **[TER-58](https://linear.app/terpcorp/issue/TER-58/p1-1-001-gf-phase5-005-fix-qa-password-hint-exposure-security):** [P1] 1-001: GF-PHASE5-005: Fix QA Password Hint Exposure (Security)
+  - Priority: High | Mode: SAFE | Type: Task
 - **[TER-53](https://linear.app/terpcorp/issue/TER-53/p1-1-005-gf-phase4-004-ci-integration-for-golden-flow-tests):** [P1] 1-005: GF-PHASE4-004: CI Integration for Golden Flow Tests
   - Priority: High | Mode: STRICT | Type: Feature
 - **[TER-52](https://linear.app/terpcorp/issue/TER-52/p1-1-006-gf-phase4-003-e2e-tests-for-remaining-flows):** [P1] 1-006: GF-PHASE4-003: E2E Tests for Remaining Flows
@@ -102,13 +106,8 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
   - Priority: High | Mode: STRICT | Type: Feature
 - **[TER-50](https://linear.app/terpcorp/issue/TER-50/p1-1-008-gf-phase4-001-e2e-test-for-gf-001-direct-intake):** [P1] 1-008: GF-PHASE4-001: E2E Test for GF-001 Direct Intake
   - Priority: High | Mode: STRICT | Type: Feature
-
-### In Progress
-
-- **[TER-59](https://linear.app/terpcorp/issue/TER-59/gf-phase5-006-fix-fallback-user-id-pattern-security):** GF-PHASE5-006: Fix Fallback User ID Pattern (Security)
-  - Priority: High | Mode: SAFE | Type: Task
-- **[TER-58](https://linear.app/terpcorp/issue/TER-58/p1-1-001-gf-phase5-005-fix-qa-password-hint-exposure-security):** [P1] 1-001: GF-PHASE5-005: Fix QA Password Hint Exposure (Security)
-  - Priority: High | Mode: SAFE | Type: Task
+- **[TER-54](https://linear.app/terpcorp/issue/TER-54/p2-1-042-gf-phase5-001-fix-test-infrastructure-issues):** [P2] 1-042: GF-PHASE5-001: Fix Test Infrastructure Issues
+  - Priority: Medium | Mode: SAFE | Type: Bug
 
 ### Backlog
 
@@ -136,8 +135,6 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
   - Priority: High | Mode: STRICT | Type: Feature
 - **[TER-38](https://linear.app/terpcorp/issue/TER-38/p1-1-017-gf-phase1-006-fix-client-creation-silent-failure):** [P1] 1-017: GF-PHASE1-006: Fix Client Creation Silent Failure
   - Priority: High | Mode: STRICT | Type: Bug
-- **[TER-54](https://linear.app/terpcorp/issue/TER-54/p2-1-042-gf-phase5-001-fix-test-infrastructure-issues):** [P2] 1-042: GF-PHASE5-001: Fix Test Infrastructure Issues
-  - Priority: Medium | Mode: SAFE | Type: Bug
 - **[TER-49](https://linear.app/terpcorp/issue/TER-49/p2-1-043-gf-phase3-005-verify-read-only-auditor-access):** [P2] 1-043: GF-PHASE3-005: Verify Read-Only Auditor Access
   - Priority: Medium | Mode: RED | Type: Feature
 - **[TER-44](https://linear.app/terpcorp/issue/TER-44/p2-1-044-gf-phase2-006-integrate-cogs-visibility-components):** [P2] 1-044: GF-PHASE2-006: Integrate COGS Visibility Components
@@ -162,4 +159,4 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
 - **Linear is the primary source of truth** for all roadmap tasks
 - This GitHub roadmap is a backup and may not be as up-to-date as Linear
 - For the most current information, always refer to the [Linear project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
-- Last synced: 2026-02-04 13:03:47
+- Last synced: 2026-02-04 15:39:30
