@@ -25,26 +25,30 @@ import bcrypt from "bcrypt";
 
 /**
  * QA Authentication enabled flag
- * Only enable in dev/staging/QA environments, NEVER in production
+ *
+ * Returns true when:
+ * 1. QA_AUTH_ENABLED=true AND not in production, OR
+ * 2. DEMO_MODE=true (explicit demo mode works in any environment)
+ *
+ * DEMO_MODE is the preferred way to enable QA auth in production for
+ * internal/demo deployments.
  */
 export function isQaAuthEnabled(): boolean {
-  const enabled = process.env.QA_AUTH_ENABLED === "true";
-  const isProduction = process.env.NODE_ENV === "production";
-
-  // TEMPORARY: Allow FORCE_QA_AUTH to bypass production check for QA testing
-  // SECURITY WARNING: Remove this flag immediately after QA testing is complete!
-  const forceQaAuth = process.env.FORCE_QA_AUTH === "true";
-  if (forceQaAuth && enabled) {
-    logger.warn(
-      "FORCE_QA_AUTH is enabled - QA auth bypassing production check. REMOVE AFTER TESTING!"
-    );
+  // DEMO_MODE explicitly enables QA auth in any environment
+  // This is intentional for demo/internal deployments
+  const demoMode = process.env.DEMO_MODE === "true";
+  if (demoMode) {
     return true;
   }
 
-  // Safety check: Never enable in production even if flag is set
+  // Standard QA auth: only in non-production
+  const enabled = process.env.QA_AUTH_ENABLED === "true";
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // Safety check: Never enable in production even if flag is set (unless DEMO_MODE)
   if (isProduction && enabled) {
     logger.warn(
-      "QA_AUTH_ENABLED is set to true in production - this is ignored for security"
+      "QA_AUTH_ENABLED is set to true in production - this is ignored for security. Use DEMO_MODE=true for production demos."
     );
     return false;
   }

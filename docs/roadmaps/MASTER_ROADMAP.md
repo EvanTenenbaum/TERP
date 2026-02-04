@@ -98,11 +98,12 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | SEC-003 | Remove Hardcoded Admin Credentials      | ✅ COMPLETE | Dec 2025        |
 | SEC-004 | Remove Debug Code from Production       | ✅ COMPLETE | Dec 2025        |
 
-### ✅ QA & Testing Infrastructure (COMPLETE)
+### 🔄 QA & Testing Infrastructure (IN PROGRESS)
 
-| Task        | Description                                    | Status      | Completion Date |
-| ----------- | ---------------------------------------------- | ----------- | --------------- |
-| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC | ✅ COMPLETE | Jan 9, 2026     |
+| Task        | Description                                       | Status         | Completion Date |
+| ----------- | ------------------------------------------------- | -------------- | --------------- |
+| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC    | ✅ COMPLETE    | Jan 9, 2026     |
+| AUTH-QA-002 | Demo Mode with Auto-Login and Role Simplification | 🔄 in-progress | -               |
 
 > **AUTH-QA-001 Details:**
 >
@@ -113,6 +114,37 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 > - Audit logging for QA auth events
 > - Documentation: `docs/auth/QA_AUTH.md`, `docs/qa/QA_PLAYBOOK.md`
 > - Seed command: `pnpm seed:qa-accounts`
+
+> **AUTH-QA-002 Details:**
+>
+> - **Priority:** HIGH
+> - **Estimate:** 4h
+> - **Module:** `server/_core/`, `client/src/pages/Login.tsx`
+> - **Mode:** RED (auth changes)
+>
+> **Goals:**
+>
+> 1. Simple login schema with one working login per role type
+> 2. Master admin login with full access to everything
+> 3. Auto-login as master admin for all visitors (no manual login required)
+>
+> **Implementation:**
+>
+> - Add `DEMO_MODE` env var - single control for demo behavior
+> - When `DEMO_MODE=true`: auto-authenticate visitors as Super Admin
+> - Enable role switcher in demo mode (allows testing other roles)
+> - Remove `FORCE_QA_AUTH` bypass (dangerous, unused)
+> - Clean up duplicate public user provisioning code
+>
+> **Deliverables:**
+>
+> - [ ] Add `DEMO_MODE` to env.ts
+> - [ ] Modify context.ts for auto-login when DEMO_MODE=true
+> - [ ] Enable QA auth endpoints when DEMO_MODE=true
+> - [ ] Update login page to show role switcher in demo mode
+> - [ ] Remove FORCE_QA_AUTH from qaAuth.ts
+> - [ ] Update .env.example documentation
+> - [ ] Verify all 7 role logins work
 
 ### ✅ Bug Fixes (COMPLETE)
 
