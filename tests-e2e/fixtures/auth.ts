@@ -7,6 +7,9 @@
  * QA accounts have bcrypt password hashes stored in the database and can authenticate
  * via the standard login flow (not the QA Auth system which is disabled in production).
  *
+ * NOTE: When DEMO_MODE=true is set on the server, visitors are auto-authenticated
+ * as Super Admin. The role switcher is also available for testing other roles.
+ *
  * @module tests-e2e/fixtures/auth
  */
 
@@ -37,14 +40,14 @@ export const TEST_USERS = {
   },
   // Customer Service / Sales Rep role
   salesRep: {
-    email: process.env.E2E_SALES_REP_USERNAME || "qa.custservice@terp.test",
+    email: process.env.E2E_SALES_REP_USERNAME || "qa.salesrep@terp.test",
     password: process.env.E2E_SALES_REP_PASSWORD || QA_PASSWORD,
     role: "Customer Service",
     description: "Full access to clients, orders, returns, refunds",
   },
   // Inventory Manager role
   inventory: {
-    email: process.env.E2E_INVENTORY_USERNAME || "qa.invmanager@terp.test",
+    email: process.env.E2E_INVENTORY_USERNAME || "qa.inventory@terp.test",
     password: process.env.E2E_INVENTORY_PASSWORD || QA_PASSWORD,
     role: "Inventory Manager",
     description:
@@ -52,7 +55,7 @@ export const TEST_USERS = {
   },
   // Warehouse Staff / Fulfillment role
   fulfillment: {
-    email: process.env.E2E_FULFILLMENT_USERNAME || "qa.warehouse@terp.test",
+    email: process.env.E2E_FULFILLMENT_USERNAME || "qa.fulfillment@terp.test",
     password: process.env.E2E_FULFILLMENT_PASSWORD || QA_PASSWORD,
     role: "Warehouse Staff",
     description:
@@ -60,7 +63,7 @@ export const TEST_USERS = {
   },
   // Accountant role
   accounting: {
-    email: process.env.E2E_ACCOUNTING_USERNAME || "qa.accountant@terp.test",
+    email: process.env.E2E_ACCOUNTING_USERNAME || "qa.accounting@terp.test",
     password: process.env.E2E_ACCOUNTING_PASSWORD || QA_PASSWORD,
     role: "Accountant",
     description: "Full access to accounting, credits, COGS, bad debt",
