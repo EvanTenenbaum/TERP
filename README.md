@@ -10,14 +10,19 @@ This project is managed by a platform-agnostic, GitHub-native roadmap system des
 
 ### 🎯 For AI Agents
 
-**Your starting point is `.claude/AGENT_ONBOARDING.md`**
+**Your starting point is `CLAUDE.md`** (in repository root)
 
-This file contains the complete protocol for interacting with the TERP roadmap system. To begin work, read and follow the instructions in that file.
+This file contains the complete protocol for AI agents working on TERP. To begin work:
 
 ```bash
-# To start, read this file:
-cat .claude/AGENT_ONBOARDING.md
+# Primary entry point - read this first:
+cat CLAUDE.md
+
+# Quick reference to canonical steering files:
+cat UNIVERSAL_AGENT_RULES.md
 ```
+
+For detailed protocols, see `.kiro/steering/` directory.
 
 ### 👨‍💻 For Human Collaborators
 
@@ -28,7 +33,7 @@ This document provides a human-friendly overview of the GitHub-native roadmap sy
 #### Quick Links
 
 - **[Master Roadmap](docs/roadmaps/MASTER_ROADMAP.md):** View all active and ready tasks.
-- **[System Design](docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.2_FINAL.md):** Read the final architecture and design document.
+- **[System Design](docs/architecture/):** Architecture and design documentation.
 - **[Repository Security](docs/REPOSITORY_SECURITY.md):** Understand the security and enforcement policies.
 
 ---
