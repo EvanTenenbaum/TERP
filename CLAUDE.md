@@ -483,7 +483,21 @@ Check for terp_session cookie
 
 ### Single Source of Truth
 
-**`docs/roadmaps/MASTER_ROADMAP.md`** - This is the ONLY place for executable tasks.
+**Linear** is the primary source of truth for all roadmap tasks. The GitHub roadmap (`docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`) is maintained as a backup only.
+
+**Linear Project:** https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d
+
+**After completing tasks or waves, sync the GitHub roadmap:**
+```bash
+python3 scripts/sync_linear_to_github_roadmap.py
+git add docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md
+git commit -m "docs: sync roadmap from Linear"
+git push origin main
+```
+
+**Documentation:**
+- `docs/LINEAR_INTEGRATION.md` - Complete Linear integration guide
+- `docs/LINEAR_ROADMAP_SYNC.md` - Roadmap sync protocol
 
 ### Before Starting ANY Work
 
