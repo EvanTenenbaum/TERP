@@ -28,6 +28,8 @@
 
 | Session ID                                 | Task                                       | Status      |
 | ------------------------------------------ | ------------------------------------------ | ----------- |
+| Session-20260203-BUG-131-768a8a            | BUG-131 Add Batch Button Fix               | ✅ Complete |
+| Session-20260203-QA-BUG-131-743f14         | QA-BUG-131                                 | ✅ Complete |
 | Session-20260204-AUTH-QA-002-4e74e9        | AUTH-QA-002 Demo Mode Auto-Login           | ✅ Complete |
 | Session-20260130-TASK-ID-a20d2e            | Execute Inventory Troubleshooting Playbook | ✅ Archived |
 | Session-20260130-TASK-ID-757025            | Fix inventory playbook issues + tests      | ✅ Archived |
