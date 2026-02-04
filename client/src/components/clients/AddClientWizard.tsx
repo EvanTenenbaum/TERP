@@ -118,6 +118,7 @@ export function AddClientWizard({
 
   // Create client mutation
   // BUG-071 FIX: Enhanced error handling with detailed messages
+  // TER-38 FIX: Use tRPC error codes for reliable error detection
   const createClientMutation = trpc.clients.create.useMutation({
     onSuccess: data => {
       toast.success("Client created successfully", {
@@ -128,38 +129,72 @@ export function AddClientWizard({
       if (onSuccess && data) onSuccess(data as number);
     },
     onError: error => {
-      // BUG-071 FIX: Provide clear, user-friendly error messages
-      console.error("Create client error:", error);
+      // TER-38 FIX: Always log the error for debugging
+      console.error("Create client error:", {
+        message: error.message,
+        code: error.data?.code,
+        httpStatus: error.data?.httpStatus,
+      });
 
-      // Handle specific error types
-      if (
-        error.message.includes("unique") ||
-        error.message.includes("duplicate")
-      ) {
-        toast.error("Client already exists", {
-          description:
-            "A client with this TERI code or name already exists. Please use a different identifier.",
-        });
-      } else if (
-        error.message.includes("validation") ||
-        error.message.includes("required")
-      ) {
-        toast.error("Invalid form data", {
-          description: "Please check all required fields and try again.",
-        });
-      } else if (
-        error.message.includes("network") ||
-        error.message.includes("fetch")
-      ) {
-        toast.error("Connection error", {
-          description:
-            "Unable to reach the server. Please check your connection and try again.",
-        });
-      } else {
-        toast.error("Failed to create client", {
-          description:
-            error.message || "An unexpected error occurred. Please try again.",
-        });
+      // TER-38 FIX: Use tRPC error codes for reliable error categorization
+      const errorCode = error.data?.code;
+      const errorMessage = error.message || "An unexpected error occurred";
+
+      switch (errorCode) {
+        case "CONFLICT":
+          // Duplicate TERI code or other unique constraint violation
+          toast.error("Client already exists", {
+            description: errorMessage.includes("TERI code")
+              ? errorMessage
+              : "A client with this TERI code already exists. Please use a different code.",
+          });
+          break;
+
+        case "BAD_REQUEST":
+          // Validation error
+          toast.error("Invalid form data", {
+            description: "Please check all required fields and try again.",
+          });
+          break;
+
+        case "UNAUTHORIZED":
+          // Authentication error
+          toast.error("Authentication required", {
+            description: "Please log in to create a client.",
+          });
+          break;
+
+        case "FORBIDDEN":
+          // Permission error
+          toast.error("Permission denied", {
+            description: "You don't have permission to create clients.",
+          });
+          break;
+
+        default:
+          // Handle by message content as fallback
+          if (
+            errorMessage.includes("network") ||
+            errorMessage.includes("fetch") ||
+            errorMessage.includes("Failed to fetch")
+          ) {
+            toast.error("Connection error", {
+              description:
+                "Unable to reach the server. Please check your connection and try again.",
+            });
+          } else if (
+            errorMessage.includes("already exists") ||
+            errorMessage.includes("duplicate")
+          ) {
+            toast.error("Client already exists", {
+              description: errorMessage,
+            });
+          } else {
+            // Generic error - show the server message
+            toast.error("Failed to create client", {
+              description: errorMessage,
+            });
+          }
       }
     },
   });
