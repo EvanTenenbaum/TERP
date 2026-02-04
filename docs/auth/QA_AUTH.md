@@ -11,15 +11,35 @@ The QA Authentication Layer provides deterministic login capabilities for all RB
 - **Regression testing** - Automated testing with consistent credentials
 - **No external dependencies** - Works without SSO/IdP infrastructure
 
+## Demo Mode (Recommended for Production Demos)
+
+**NEW:** For internal or demo deployments, use `DEMO_MODE=true` instead of `QA_AUTH_ENABLED`.
+
+When `DEMO_MODE=true`:
+
+- Visitors are **auto-authenticated as Super Admin** (no login required)
+- Role switcher is visible to test different roles
+- Works in production `NODE_ENV` (unlike QA_AUTH_ENABLED)
+
+```bash
+# Enable in DigitalOcean App Platform or .env
+DEMO_MODE=true
+```
+
+This is the preferred way to enable QA features in production for demo/internal use.
+
 ## Security
 
-**CRITICAL**: QA Authentication is automatically disabled in production environments (`NODE_ENV=production`), even if `QA_AUTH_ENABLED=true` is set.
+**CRITICAL**: `QA_AUTH_ENABLED` is automatically disabled in production environments (`NODE_ENV=production`), even if set to `true`.
+
+Use `DEMO_MODE=true` for production demo environments instead.
 
 This feature should only be used in:
+
 - Development (`NODE_ENV=development`)
 - Staging
 - QA environments
-- Demo environments
+- Demo environments (use `DEMO_MODE=true`)
 
 ## Quick Start
 
@@ -50,6 +70,7 @@ pnpm dev
 ### 4. Login as QA User
 
 **Option A: Via QA Auth Endpoint**
+
 ```bash
 curl -X POST http://localhost:3000/api/qa-auth/login \
   -H "Content-Type: application/json" \
@@ -61,15 +82,15 @@ Use any QA email/password in the normal login form.
 
 ## QA Accounts Reference
 
-| Email | Role | Permissions |
-|-------|------|-------------|
-| `qa.superadmin@terp.test` | Super Admin | Unrestricted access to entire system |
-| `qa.salesmanager@terp.test` | Sales Manager | Full access to clients, orders, quotes, sales sheets |
-| `qa.salesrep@terp.test` | Customer Service (Sales Rep) | Full access to clients, orders, returns, refunds |
-| `qa.inventory@terp.test` | Inventory Manager | Full access to inventory, locations, transfers, product intake |
-| `qa.fulfillment@terp.test` | Warehouse Staff (Fulfillment) | Can receive POs, adjust inventory, transfer inventory, process returns |
-| `qa.accounting@terp.test` | Accountant | Full access to accounting, credits, COGS, bad debt |
-| `qa.auditor@terp.test` | Read-Only Auditor | Read-only access to all modules, full access to audit logs |
+| Email                       | Role                          | Permissions                                                            |
+| --------------------------- | ----------------------------- | ---------------------------------------------------------------------- |
+| `qa.superadmin@terp.test`   | Super Admin                   | Unrestricted access to entire system                                   |
+| `qa.salesmanager@terp.test` | Sales Manager                 | Full access to clients, orders, quotes, sales sheets                   |
+| `qa.salesrep@terp.test`     | Customer Service (Sales Rep)  | Full access to clients, orders, returns, refunds                       |
+| `qa.inventory@terp.test`    | Inventory Manager             | Full access to inventory, locations, transfers, product intake         |
+| `qa.fulfillment@terp.test`  | Warehouse Staff (Fulfillment) | Can receive POs, adjust inventory, transfer inventory, process returns |
+| `qa.accounting@terp.test`   | Accountant                    | Full access to accounting, credits, COGS, bad debt                     |
+| `qa.auditor@terp.test`      | Read-Only Auditor             | Read-only access to all modules, full access to audit logs             |
 
 **Password for all accounts**: `TerpQA2026!`
 
@@ -80,6 +101,7 @@ Use any QA email/password in the normal login form.
 Authenticate as a QA user.
 
 **Request:**
+
 ```json
 {
   "email": "qa.superadmin@terp.test",
@@ -88,6 +110,7 @@ Authenticate as a QA user.
 ```
 
 **Response (Success):**
+
 ```json
 {
   "success": true,
@@ -109,6 +132,7 @@ Authenticate as a QA user.
 List all available QA roles (for role switcher UI).
 
 **Response:**
+
 ```json
 {
   "enabled": true,
@@ -130,6 +154,7 @@ List all available QA roles (for role switcher UI).
 Check if QA authentication is enabled.
 
 **Response:**
+
 ```json
 {
   "enabled": true,
@@ -139,35 +164,46 @@ Check if QA authentication is enabled.
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `QA_AUTH_ENABLED` | Enable QA authentication | `false` |
-| `NODE_ENV` | Environment (production disables QA auth) | `development` |
+| Variable          | Description                                                           | Default       |
+| ----------------- | --------------------------------------------------------------------- | ------------- |
+| `DEMO_MODE`       | Auto-login as Super Admin, enable role switcher (works in production) | `false`       |
+| `QA_AUTH_ENABLED` | Enable QA authentication (disabled in production)                     | `false`       |
+| `NODE_ENV`        | Environment (production disables QA_AUTH_ENABLED but not DEMO_MODE)   | `development` |
+
+### Which to Use?
+
+| Scenario                   | Use                     |
+| -------------------------- | ----------------------- |
+| Local development          | `QA_AUTH_ENABLED=true`  |
+| Staging/QA environment     | `QA_AUTH_ENABLED=true`  |
+| Production demo/internal   | `DEMO_MODE=true`        |
+| Production customer-facing | Neither (use real auth) |
 
 ## Role-Permission Mapping
 
 QA roles map to the following RBAC roles from `USER_FLOW_MATRIX.csv`:
 
-| QA Account | RBAC Role | Permission Categories |
-|------------|-----------|----------------------|
-| qa.superadmin | Super Admin | ALL (bypasses permission checks) |
-| qa.salesmanager | Sales Manager | clients:*, orders:*, quotes:*, pricing:* |
-| qa.salesrep | Customer Service | clients:*, orders:*, returns:* |
-| qa.inventory | Inventory Manager | inventory:*, batches:*, strains:*, products:* |
-| qa.fulfillment | Warehouse Staff | orders:fulfill, inventory:adjust, inventory:transfer |
-| qa.accounting | Accountant | accounting:*, invoices:*, credits:*, badDebt:* |
-| qa.auditor | Read-Only Auditor | *:read, audit:* |
+| QA Account      | RBAC Role         | Permission Categories                                |
+| --------------- | ----------------- | ---------------------------------------------------- |
+| qa.superadmin   | Super Admin       | ALL (bypasses permission checks)                     |
+| qa.salesmanager | Sales Manager     | clients:_, orders:_, quotes:_, pricing:_             |
+| qa.salesrep     | Customer Service  | clients:_, orders:_, returns:\*                      |
+| qa.inventory    | Inventory Manager | inventory:_, batches:_, strains:_, products:_        |
+| qa.fulfillment  | Warehouse Staff   | orders:fulfill, inventory:adjust, inventory:transfer |
+| qa.accounting   | Accountant        | accounting:_, invoices:_, credits:_, badDebt:_       |
+| qa.auditor      | Read-Only Auditor | _:read, audit:_                                      |
 
 ## Audit Logging
 
 All QA authentication events are logged to the audit trail:
 
-| Event Type | Description |
-|------------|-------------|
-| `QA_AUTH_LOGIN` | QA user logged in |
+| Event Type            | Description            |
+| --------------------- | ---------------------- |
+| `QA_AUTH_LOGIN`       | QA user logged in      |
 | `QA_AUTH_ROLE_SWITCH` | QA user switched roles |
 
 Logged data includes:
+
 - Timestamp
 - User ID
 - Email
@@ -177,6 +213,7 @@ Logged data includes:
 - User agent (if available)
 
 Query audit logs:
+
 ```sql
 SELECT * FROM audit_logs
 WHERE action IN ('QA_AUTH_LOGIN', 'QA_AUTH_ROLE_SWITCH')
@@ -188,11 +225,13 @@ ORDER BY created_at DESC;
 ### QA Auth Not Working
 
 1. **Check environment variable:**
+
    ```bash
    echo $QA_AUTH_ENABLED  # Should be "true"
    ```
 
 2. **Check NODE_ENV:**
+
    ```bash
    echo $NODE_ENV  # Should NOT be "production"
    ```
@@ -208,6 +247,7 @@ ORDER BY created_at DESC;
 ### Role Permissions Not Working
 
 1. **Verify RBAC seeding:**
+
    ```bash
    pnpm seed:rbac
    ```
@@ -224,6 +264,7 @@ ORDER BY created_at DESC;
 ### Password Not Accepted
 
 The QA password is `TerpQA2026!` (case-sensitive). Ensure:
+
 - No trailing whitespace
 - Correct capitalization
 - Using the QA auth endpoint or standard login
@@ -232,12 +273,12 @@ The QA password is `TerpQA2026!` (case-sensitive). Ensure:
 
 ### Files
 
-| File | Purpose |
-|------|---------|
-| `server/_core/qaAuth.ts` | Core QA auth service and routes |
-| `server/db/seed/qaAccounts.ts` | QA account seeder |
-| `server/_core/env.ts` | Environment variable handling |
-| `server/auditLogger.ts` | Audit event types |
+| File                           | Purpose                         |
+| ------------------------------ | ------------------------------- |
+| `server/_core/qaAuth.ts`       | Core QA auth service and routes |
+| `server/db/seed/qaAccounts.ts` | QA account seeder               |
+| `server/_core/env.ts`          | Environment variable handling   |
+| `server/auditLogger.ts`        | Audit event types               |
 
 ### Authentication Flow
 
@@ -283,8 +324,8 @@ describe("RBAC Tests", () => {
       method: "POST",
       body: JSON.stringify({
         email: "qa.salesmanager@terp.test",
-        password: "TerpQA2026!"
-      })
+        password: "TerpQA2026!",
+      }),
     });
 
     // Test order creation
@@ -304,9 +345,10 @@ QA user accounts remain in the database but cannot authenticate without the flag
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
-| 2026-01-09 | Initial QA Authentication Layer implementation |
+| Date       | Change                                                        |
+| ---------- | ------------------------------------------------------------- |
+| 2026-02-04 | Added DEMO_MODE for production demo deployments (AUTH-QA-002) |
+| 2026-01-09 | Initial QA Authentication Layer implementation                |
 
 ## Related Documentation
 
