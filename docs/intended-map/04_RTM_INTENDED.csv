@@ -1,0 +1,26 @@
+ReqID,Description,FlowIDs,RuleIDs,InvariantIDs,States,Screens,Endpoints,Models,IntentSource,Status
+REQ-001,User can add inventory without PO,GF-001,RULE-INV-010,INV-001;INV-006;INV-007,AWAITING_INTAKE;LIVE,Inventory;PurchaseModal,inventory.createIntake,batches;lots;inventory_movements,GF-001,Intended&Implemented
+REQ-002,Inventory cannot go negative,GF-001;GF-003;GF-005;GF-007,RULE-INV-003;RULE-INV-013,INV-001,all batch states,Inventory,inventory.*,batches,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-001,Intended&Implemented
+REQ-003,Order total equals sum of line items,GF-003,RULE-005,INV-002,draft;confirmed,OrderForm,orders.create;orders.updateItems,orders;order_items,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-002,Intended&Implemented
+REQ-004,Invoice balance is total minus paid,GF-004,RULE-007;RULE-008,INV-003,all invoice states,Invoices,invoices.*;payments.*,invoices;payments,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-003,Intended&Implemented
+REQ-005,GL entries always balance,GF-002;GF-004,,INV-004,N/A,N/A,accounting.postJournalEntry;payments.*,gl_entries,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-004,Intended&Implemented
+REQ-006,Client totalOwed equals unpaid invoices,GF-004;GF-006,,INV-005,N/A,ClientLedger;Dashboard,accounting.syncClientBalance,clients;invoices,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-005,Intended&Implemented
+REQ-007,All mutations have audit trail,GF-001;GF-002;GF-003;GF-004;GF-005;GF-007;GF-008,,INV-007,N/A,N/A,all mutations,all tables with createdBy,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-007,Intended&Implemented
+REQ-008,Order state transitions are valid,GF-003;GF-005,,INV-008,draft;confirmed;invoiced;shipped;delivered;cancelled,Orders;PickPack,orders.confirm;orders.shipOrder,orders,GOLDEN_FLOWS_BETA_ROADMAP.md:INV-008,Intended&Implemented
+REQ-009,User can create and track POs,GF-002,RULE-INV-011,INV-001,DRAFT;SENT;CONFIRMED;RECEIVING;RECEIVED,PurchaseOrders,purchaseOrders.*,purchase_orders;po_items,GF-002,Intended&Implemented
+REQ-010,User can receive goods against PO,GF-002,RULE-INV-011,INV-001;INV-006,RECEIVING;RECEIVED,N/A,purchaseOrders.receive,purchase_orders;batches,GF-002,IntendedMissing
+REQ-011,User can record payments against invoices,GF-004,RULE-007;RULE-008,INV-003;INV-004;INV-005,PARTIAL;PAID,Invoices;RecordPaymentDialog,payments.recordPayment,payments;invoices;gl_entries,GF-004,Intended&Implemented
+REQ-012,User can record multi-invoice payments,GF-004,RULE-007,INV-003;INV-005,PARTIAL;PAID,MultiInvoicePaymentForm,payments.recordMultiInvoicePayment,payments;invoice_payments,GF-004,Intended&Implemented
+REQ-013,User can pick pack and ship orders,GF-005,RULE-INV-003,INV-001;INV-006;INV-008,PENDING;PICKING;PACKED;READY;SHIPPED,PickPackPage,pickPack.*;orders.shipOrder,orders;pick_pack_items;bags,GF-005,Intended&Implemented
+REQ-014,User can view client ledger with history,GF-006,,INV-003;INV-005,N/A,ClientLedger,accounting.getClientLedger,clients;invoices;payments,GF-006,Intended&Implemented
+REQ-015,User can adjust inventory quantities,GF-007,RULE-INV-012;RULE-INV-013,INV-001;INV-006;INV-007,LIVE,BatchDetailDrawer,inventory.adjustQuantity,batches;inventory_movements,GF-007,Intended&Implemented
+REQ-016,User can change batch status,GF-007,RULE-INV-006;RULE-INV-007,INV-008,all batch states,BatchDetailDrawer,inventory.updateStatus,batches,GF-007,Intended&Implemented
+REQ-017,User can create sample requests,GF-008,RULE-INV-014,INV-001;INV-007,PENDING,SampleManagement;SampleForm,samples.createRequest,sample_requests;sample_allocations,GF-008,Intended&Implemented
+REQ-018,Sample fulfillment decrements sampleQty,GF-008,RULE-INV-004;RULE-INV-015,INV-001,FULFILLED,N/A,samples.fulfillRequest,sample_requests;batches;inventory_movements,GF-008,IntendedMissing
+REQ-019,Sales orders reserve inventory on confirm,GF-003,RULE-INV-001,INV-001,confirmed,Orders,orders.confirm,orders;batches,GF-003,Intended&Implemented
+REQ-020,Shipped orders decrement onHandQty,GF-003;GF-005,RULE-INV-003,INV-001;INV-006,shipped,PickPack,orders.shipOrder,orders;batches;inventory_movements,GF-005,Intended&Implemented
+REQ-021,Intake verification workflow (FEAT-008),GF-001,,INV-007,AWAITING_INTAKE;LIVE,IntakeVerification,inventory.verify,batches,GF-001:FEAT-008,IntendedMissing
+REQ-022,PDF invoice generation,GF-004,,,SENT,Invoices,vipPortal.documents.downloadInvoicePdf,invoices,GF-004,Intended&Implemented
+REQ-023,VIP portal client access,FLOW-VIP,,,N/A,VIPPortal,vipPortal.*,clients;invoices;orders,FEATURE-012,Intended&Implemented
+REQ-024,Feature flag system,FLOW-FLAGS,,,N/A,FeatureFlags,featureFlags.*,feature_flags;feature_flag_overrides,FEATURE-FLAG-SYSTEM-SPEC,Intended&Implemented
+REQ-025,QA authentication for testing,FLOW-001,,,N/A,Login,qa-auth.*,users,QA_PLAYBOOK.md,Intended&Implemented
