@@ -319,81 +319,81 @@ export const paymentsRouter = router({
               amount: effectiveAmount.toFixed(2),
               paymentMethod: input.paymentMethod,
               referenceNumber: input.referenceNumber,
-                notes: input.notes,
-                createdBy: userId,
-              })
-              .$returningId();
-
-            const paymentId = payment.id;
-
-            // Update invoice amounts
-            // TERP-0016: Use effectiveAmount for calculations
-            const currentPaid = parseFloat(invoice.amountPaid || "0");
-            const newPaid = currentPaid + effectiveAmount;
-            const totalAmount = parseFloat(invoice.totalAmount || "0");
-            const newDue = Math.max(0, totalAmount - newPaid);
-
-            // Determine new status
-            let newStatus: "PARTIAL" | "PAID";
-            if (newDue <= 0.01) {
-              // Allow for rounding
-              newStatus = "PAID";
-            } else {
-              newStatus = "PARTIAL";
-            }
-
-            await tx
-              .update(invoices)
-              .set({
-                amountPaid: newPaid.toFixed(2),
-                amountDue: newDue.toFixed(2),
-                status: newStatus,
-              })
-              .where(eq(invoices.id, input.invoiceId));
-
-            // Create GL entries (Cash debit, AR credit)
-            const entryNumber = `PMT-${paymentId}`;
-
-            // Debit Cash
-            // TERP-0016: Use effectiveAmount for GL entries
-            await tx.insert(ledgerEntries).values({
-              entryNumber: `${entryNumber}-DR`,
-              entryDate: new Date(),
-              accountId: cashAccountId,
-              debit: effectiveAmount.toFixed(2),
-              credit: "0.00",
-              description: `Payment received - Invoice #${invoice.invoiceNumber}`,
-              referenceType: "PAYMENT",
-              referenceId: paymentId,
-              fiscalPeriodId,
-              isManual: false,
+              notes: input.notes,
               createdBy: userId,
-            });
+            })
+            .$returningId();
 
-            // Credit AR
-            await tx.insert(ledgerEntries).values({
-              entryNumber: `${entryNumber}-CR`,
-              entryDate: new Date(),
-              accountId: arAccountId,
-              debit: "0.00",
-              credit: effectiveAmount.toFixed(2),
-              description: `Payment received - Invoice #${invoice.invoiceNumber}`,
-              referenceType: "PAYMENT",
-              referenceId: paymentId,
-              fiscalPeriodId,
-              isManual: false,
-              createdBy: userId,
-            });
+          const paymentId = payment.id;
 
-            logger.info({
-              msg: "[Payments] Payment recorded successfully",
-              paymentId,
-              paymentNumber,
-              invoiceId: input.invoiceId,
-              amount: effectiveAmount,
-              newInvoiceStatus: newStatus,
-              newAmountDue: newDue,
-            });
+          // Update invoice amounts
+          // TERP-0016: Use effectiveAmount for calculations
+          const currentPaid = parseFloat(invoice.amountPaid || "0");
+          const newPaid = currentPaid + effectiveAmount;
+          const totalAmount = parseFloat(invoice.totalAmount || "0");
+          const newDue = Math.max(0, totalAmount - newPaid);
+
+          // Determine new status
+          let newStatus: "PARTIAL" | "PAID";
+          if (newDue <= 0.01) {
+            // Allow for rounding
+            newStatus = "PAID";
+          } else {
+            newStatus = "PARTIAL";
+          }
+
+          await tx
+            .update(invoices)
+            .set({
+              amountPaid: newPaid.toFixed(2),
+              amountDue: newDue.toFixed(2),
+              status: newStatus,
+            })
+            .where(eq(invoices.id, input.invoiceId));
+
+          // Create GL entries (Cash debit, AR credit)
+          const entryNumber = `PMT-${paymentId}`;
+
+          // Debit Cash
+          // TERP-0016: Use effectiveAmount for GL entries
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${entryNumber}-DR`,
+            entryDate: new Date(),
+            accountId: cashAccountId,
+            debit: effectiveAmount.toFixed(2),
+            credit: "0.00",
+            description: `Payment received - Invoice #${invoice.invoiceNumber}`,
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          // Credit AR
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${entryNumber}-CR`,
+            entryDate: new Date(),
+            accountId: arAccountId,
+            debit: "0.00",
+            credit: effectiveAmount.toFixed(2),
+            description: `Payment received - Invoice #${invoice.invoiceNumber}`,
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          logger.info({
+            msg: "[Payments] Payment recorded successfully",
+            paymentId,
+            paymentNumber,
+            invoiceId: input.invoiceId,
+            amount: effectiveAmount,
+            newInvoiceStatus: newStatus,
+            newAmountDue: newDue,
+          });
 
           return {
             paymentId,
@@ -429,9 +429,8 @@ export const paymentsRouter = router({
 
       // ARCH-002: Sync client balance after transaction to ensure consistency
       // This derives totalOwed from SUM(invoices.amountDue)
-      const { syncClientBalance } = await import(
-        "../services/clientBalanceService"
-      );
+      const { syncClientBalance } =
+        await import("../services/clientBalanceService");
       await syncClientBalance(txResult.customerId);
 
       return txResult;
@@ -729,118 +728,118 @@ export const paymentsRouter = router({
             })
             .$returningId();
 
-            const paymentId = payment.id;
+          const paymentId = payment.id;
 
-            // Process each invoice allocation
-            const invoiceAllocations: {
-              invoiceId: number;
-              amount: number;
-              newStatus: string;
-            }[] = [];
+          // Process each invoice allocation
+          const invoiceAllocations: {
+            invoiceId: number;
+            amount: number;
+            newStatus: string;
+          }[] = [];
 
-            for (const allocation of input.allocations) {
-              // Get invoice
-              const [invoice] = await tx
-                .select()
-                .from(invoices)
-                .where(eq(invoices.id, allocation.invoiceId))
-                .limit(1);
+          for (const allocation of input.allocations) {
+            // Get invoice
+            const [invoice] = await tx
+              .select()
+              .from(invoices)
+              .where(eq(invoices.id, allocation.invoiceId))
+              .limit(1);
 
-              if (!invoice) {
-                throw new TRPCError({
-                  code: "NOT_FOUND",
-                  message: `Invoice ${allocation.invoiceId} not found`,
-                });
-              }
-
-              const amountDue = parseFloat(String(invoice.amountDue) || "0");
-              if (allocation.amount > amountDue + 0.01) {
-                throw new TRPCError({
-                  code: "BAD_REQUEST",
-                  message: `Allocation for invoice #${invoice.invoiceNumber} exceeds amount due`,
-                });
-              }
-
-              // Create invoice_payments record
-              await tx.insert(invoicePayments).values({
-                paymentId,
-                invoiceId: allocation.invoiceId,
-                allocatedAmount: allocation.amount.toFixed(2),
-                allocatedBy: userId,
-              });
-
-              // Update invoice amounts
-              const currentPaid = parseFloat(String(invoice.amountPaid) || "0");
-              const newPaid = currentPaid + allocation.amount;
-              const totalAmount = parseFloat(String(invoice.totalAmount) || "0");
-              const newDue = Math.max(0, totalAmount - newPaid);
-
-              let newStatus: string;
-              if (newDue <= 0.01) {
-                newStatus = "PAID";
-              } else if (newPaid > 0) {
-                newStatus = "PARTIAL";
-              } else {
-                newStatus = invoice.status;
-              }
-
-              await tx
-                .update(invoices)
-                .set({
-                  amountPaid: newPaid.toFixed(2),
-                  amountDue: newDue.toFixed(2),
-                  status: newStatus as "PAID" | "PARTIAL",
-                })
-                .where(eq(invoices.id, allocation.invoiceId));
-
-              invoiceAllocations.push({
-                invoiceId: allocation.invoiceId,
-                amount: allocation.amount,
-                newStatus,
+            if (!invoice) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: `Invoice ${allocation.invoiceId} not found`,
               });
             }
 
-            // Create GL entries
-            const entryNumber = `PMT-${paymentId}`;
+            const amountDue = parseFloat(String(invoice.amountDue) || "0");
+            if (allocation.amount > amountDue + 0.01) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Allocation for invoice #${invoice.invoiceNumber} exceeds amount due`,
+              });
+            }
 
-            // Debit Cash
-            await tx.insert(ledgerEntries).values({
-              entryNumber: `${entryNumber}-DR`,
-              entryDate: new Date(),
-              accountId: cashAccountId,
-              debit: input.totalAmount.toFixed(2),
-              credit: "0.00",
-              description: `Multi-invoice payment - ${input.allocations.length} invoices`,
-              referenceType: "PAYMENT",
-              referenceId: paymentId,
-              fiscalPeriodId,
-              isManual: false,
-              createdBy: userId,
-            });
-
-            // Credit AR
-            await tx.insert(ledgerEntries).values({
-              entryNumber: `${entryNumber}-CR`,
-              entryDate: new Date(),
-              accountId: arAccountId,
-              debit: "0.00",
-              credit: input.totalAmount.toFixed(2),
-              description: `Multi-invoice payment - ${input.allocations.length} invoices`,
-              referenceType: "PAYMENT",
-              referenceId: paymentId,
-              fiscalPeriodId,
-              isManual: false,
-              createdBy: userId,
-            });
-
-            logger.info({
-              msg: "[Payments] Multi-invoice payment recorded",
+            // Create invoice_payments record
+            await tx.insert(invoicePayments).values({
               paymentId,
-              paymentNumber,
-              clientId: input.clientId,
-              totalAmount: input.totalAmount,
-              invoiceCount: input.allocations.length,
+              invoiceId: allocation.invoiceId,
+              allocatedAmount: allocation.amount.toFixed(2),
+              allocatedBy: userId,
             });
+
+            // Update invoice amounts
+            const currentPaid = parseFloat(String(invoice.amountPaid) || "0");
+            const newPaid = currentPaid + allocation.amount;
+            const totalAmount = parseFloat(String(invoice.totalAmount) || "0");
+            const newDue = Math.max(0, totalAmount - newPaid);
+
+            let newStatus: string;
+            if (newDue <= 0.01) {
+              newStatus = "PAID";
+            } else if (newPaid > 0) {
+              newStatus = "PARTIAL";
+            } else {
+              newStatus = invoice.status;
+            }
+
+            await tx
+              .update(invoices)
+              .set({
+                amountPaid: newPaid.toFixed(2),
+                amountDue: newDue.toFixed(2),
+                status: newStatus as "PAID" | "PARTIAL",
+              })
+              .where(eq(invoices.id, allocation.invoiceId));
+
+            invoiceAllocations.push({
+              invoiceId: allocation.invoiceId,
+              amount: allocation.amount,
+              newStatus,
+            });
+          }
+
+          // Create GL entries
+          const entryNumber = `PMT-${paymentId}`;
+
+          // Debit Cash
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${entryNumber}-DR`,
+            entryDate: new Date(),
+            accountId: cashAccountId,
+            debit: input.totalAmount.toFixed(2),
+            credit: "0.00",
+            description: `Multi-invoice payment - ${input.allocations.length} invoices`,
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          // Credit AR
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${entryNumber}-CR`,
+            entryDate: new Date(),
+            accountId: arAccountId,
+            debit: "0.00",
+            credit: input.totalAmount.toFixed(2),
+            description: `Multi-invoice payment - ${input.allocations.length} invoices`,
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          logger.info({
+            msg: "[Payments] Multi-invoice payment recorded",
+            paymentId,
+            paymentNumber,
+            clientId: input.clientId,
+            totalAmount: input.totalAmount,
+            invoiceCount: input.allocations.length,
+          });
 
           return {
             paymentId,
@@ -873,10 +872,247 @@ export const paymentsRouter = router({
       }
 
       // ARCH-002: Sync client balance after transaction
-      const { syncClientBalance } = await import(
-        "../services/clientBalanceService"
-      );
+      const { syncClientBalance } =
+        await import("../services/clientBalanceService");
       await syncClientBalance(txResult.clientId);
+
+      return txResult;
+    }),
+
+  /**
+   * TER-39: Record a wire payment with wire-specific validation
+   * Provides enhanced wire payment support with:
+   * - Wire confirmation number tracking
+   * - Bank routing number validation
+   * - Wire transfer date tracking
+   */
+  recordWirePayment: protectedProcedure
+    .use(requirePermission("accounting:create"))
+    .input(
+      z.object({
+        invoiceId: z.number(),
+        amount: z.number().positive("Amount must be positive"),
+        wireConfirmationNumber: z
+          .string()
+          .min(1, "Wire confirmation number is required"),
+        bankRoutingNumber: z.string().optional(),
+        bankAccountNumber: z.string().optional(),
+        bankName: z.string().optional(),
+        wireTransferDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
+        paymentDate: z.string().optional(), // ISO date string
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      logger.info({
+        msg: "[Payments] Recording wire payment",
+        invoiceId: input.invoiceId,
+        amount: input.amount,
+        wireConfirmationNumber: input.wireConfirmationNumber,
+      });
+
+      // Validate routing number format if provided (9 digits for US)
+      if (input.bankRoutingNumber && !/^\d{9}$/.test(input.bankRoutingNumber)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Invalid bank routing number format. US routing numbers must be 9 digits.",
+        });
+      }
+
+      // Get invoice
+      const [invoice] = await db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.id, input.invoiceId))
+        .limit(1);
+
+      if (!invoice) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
+      }
+
+      if (invoice.status === "PAID") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invoice is already paid in full",
+        });
+      }
+
+      if (invoice.status === "VOID") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot apply payment to a voided invoice",
+        });
+      }
+
+      const amountDue = parseFloat(invoice.amountDue || "0");
+
+      // Validate payment amount doesn't exceed amount due
+      if (input.amount > amountDue + 0.01) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Payment amount (${formatCurrency(input.amount)}) exceeds amount due (${formatCurrency(amountDue)}). Overpayments are not allowed.`,
+        });
+      }
+
+      const effectiveAmount =
+        input.amount > amountDue ? amountDue : input.amount;
+
+      // Get account IDs for GL entries
+      const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+      const arAccountId = await getAccountIdByName(
+        ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+      );
+      const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+
+      // Build wire details for notes
+      const wireDetails = [
+        `Wire Confirmation: ${input.wireConfirmationNumber}`,
+        input.bankName && `Bank: ${input.bankName}`,
+        input.bankRoutingNumber && `Routing: ${input.bankRoutingNumber}`,
+        input.wireTransferDate && `Transfer Date: ${input.wireTransferDate}`,
+        input.notes,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      let txResult;
+      try {
+        txResult = await db.transaction(async tx => {
+          // Generate payment number
+          const paymentNumber = await generatePaymentNumber();
+
+          // Create payment record
+          const [payment] = await tx
+            .insert(payments)
+            .values({
+              paymentNumber,
+              paymentType: "RECEIVED",
+              invoiceId: input.invoiceId,
+              customerId: invoice.customerId,
+              paymentDate: input.paymentDate
+                ? new Date(input.paymentDate)
+                : new Date(),
+              amount: effectiveAmount.toFixed(2),
+              paymentMethod: "WIRE",
+              referenceNumber: input.wireConfirmationNumber,
+              notes: wireDetails,
+              createdBy: userId,
+            })
+            .$returningId();
+
+          const paymentId = payment.id;
+
+          // Update invoice amounts
+          const currentPaid = parseFloat(invoice.amountPaid || "0");
+          const newPaid = currentPaid + effectiveAmount;
+          const totalAmount = parseFloat(invoice.totalAmount || "0");
+          const newDue = Math.max(0, totalAmount - newPaid);
+
+          // Determine new status
+          let newStatus: "PARTIAL" | "PAID";
+          if (newDue <= 0.01) {
+            newStatus = "PAID";
+          } else {
+            newStatus = "PARTIAL";
+          }
+
+          await tx
+            .update(invoices)
+            .set({
+              amountPaid: newPaid.toFixed(2),
+              amountDue: newDue.toFixed(2),
+              status: newStatus,
+            })
+            .where(eq(invoices.id, input.invoiceId));
+
+          // Create GL entries (Cash debit, AR credit)
+          const entryNumber = `PMT-WIRE-${paymentId}`;
+
+          // Debit Cash
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${entryNumber}-DR`,
+            entryDate: new Date(),
+            accountId: cashAccountId,
+            debit: effectiveAmount.toFixed(2),
+            credit: "0.00",
+            description: `Wire payment received - Invoice #${invoice.invoiceNumber} - Conf: ${input.wireConfirmationNumber}`,
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          // Credit AR
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${entryNumber}-CR`,
+            entryDate: new Date(),
+            accountId: arAccountId,
+            debit: "0.00",
+            credit: effectiveAmount.toFixed(2),
+            description: `Wire payment received - Invoice #${invoice.invoiceNumber} - Conf: ${input.wireConfirmationNumber}`,
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          logger.info({
+            msg: "[Payments] Wire payment recorded successfully",
+            paymentId,
+            paymentNumber,
+            wireConfirmationNumber: input.wireConfirmationNumber,
+            invoiceId: input.invoiceId,
+            amount: effectiveAmount,
+            newInvoiceStatus: newStatus,
+          });
+
+          return {
+            paymentId,
+            paymentNumber,
+            invoiceId: input.invoiceId,
+            customerId: invoice.customerId,
+            amount: effectiveAmount,
+            wireConfirmationNumber: input.wireConfirmationNumber,
+            invoiceStatus: newStatus,
+            amountDue: newDue,
+          };
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            operation: "wire_payment_record",
+            invoiceId: input.invoiceId,
+            amount: input.amount,
+            wireConfirmationNumber: input.wireConfirmationNumber,
+            userId,
+          }
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Wire payment recording failed - transaction rolled back",
+          cause: error,
+        });
+      }
+
+      // ARCH-002: Sync client balance after transaction
+      const { syncClientBalance } =
+        await import("../services/clientBalanceService");
+      await syncClientBalance(txResult.customerId);
 
       return txResult;
     }),
@@ -935,65 +1171,31 @@ export const paymentsRouter = router({
             })
             .where(eq(payments.id, input.id));
 
-            // FEAT-007: Check for multi-invoice allocations first
-            const allocations = await tx
-              .select({
-                invoiceId: invoicePayments.invoiceId,
-                allocatedAmount: invoicePayments.allocatedAmount,
-              })
-              .from(invoicePayments)
-              .where(eq(invoicePayments.paymentId, input.id));
+          // FEAT-007: Check for multi-invoice allocations first
+          const allocations = await tx
+            .select({
+              invoiceId: invoicePayments.invoiceId,
+              allocatedAmount: invoicePayments.allocatedAmount,
+            })
+            .from(invoicePayments)
+            .where(eq(invoicePayments.paymentId, input.id));
 
-            if (allocations.length > 0) {
-              // Handle multi-invoice payment: reverse each allocation
-              for (const allocation of allocations) {
-                const allocatedAmount = parseFloat(
-                  allocation.allocatedAmount || "0"
-                );
+          if (allocations.length > 0) {
+            // Handle multi-invoice payment: reverse each allocation
+            for (const allocation of allocations) {
+              const allocatedAmount = parseFloat(
+                allocation.allocatedAmount || "0"
+              );
 
-                const [invoice] = await tx
-                  .select()
-                  .from(invoices)
-                  .where(eq(invoices.id, allocation.invoiceId))
-                  .limit(1);
-
-                if (invoice) {
-                  const currentPaid = parseFloat(invoice.amountPaid || "0");
-                  const newPaid = Math.max(0, currentPaid - allocatedAmount);
-                  const totalAmount = parseFloat(invoice.totalAmount || "0");
-                  const newDue = totalAmount - newPaid;
-
-                  // Determine new status
-                  const newStatus: "SENT" | "PARTIAL" =
-                    newPaid > 0 ? "PARTIAL" : "SENT";
-
-                  await tx
-                    .update(invoices)
-                    .set({
-                      amountPaid: newPaid.toFixed(2),
-                      amountDue: newDue.toFixed(2),
-                      status: newStatus,
-                    })
-                    .where(eq(invoices.id, allocation.invoiceId));
-                }
-              }
-
-              // Soft delete the invoice_payments records
-              await tx
-                .update(invoicePayments)
-                .set({ deletedAt: new Date() })
-                .where(eq(invoicePayments.paymentId, input.id));
-            } else if (payment.invoiceId) {
-              // Handle legacy single-invoice payment
               const [invoice] = await tx
                 .select()
                 .from(invoices)
-                .where(eq(invoices.id, payment.invoiceId))
+                .where(eq(invoices.id, allocation.invoiceId))
                 .limit(1);
 
               if (invoice) {
                 const currentPaid = parseFloat(invoice.amountPaid || "0");
-                const newPaid = Math.max(0, currentPaid - paymentAmount);
+                const newPaid = Math.max(0, currentPaid - allocatedAmount);
                 const totalAmount = parseFloat(invoice.totalAmount || "0");
                 const newDue = totalAmount - newPaid;
 
@@ -1008,58 +1210,92 @@ export const paymentsRouter = router({
                     amountDue: newDue.toFixed(2),
                     status: newStatus,
                   })
-                  .where(eq(invoices.id, payment.invoiceId));
+                  .where(eq(invoices.id, allocation.invoiceId));
               }
             }
 
-            // Create reversing GL entries
-            const fiscalPeriodId = await getFiscalPeriodIdOrDefault(
-              new Date(),
-              1
-            );
-            const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
-            const arAccountId = await getAccountIdByName(
-              ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
-            );
-            const reversalNumber = `PMT-REV-${input.id}`;
+            // Soft delete the invoice_payments records
+            await tx
+              .update(invoicePayments)
+              .set({ deletedAt: new Date() })
+              .where(eq(invoicePayments.paymentId, input.id));
+          } else if (payment.invoiceId) {
+            // Handle legacy single-invoice payment
+            const [invoice] = await tx
+              .select()
+              .from(invoices)
+              .where(eq(invoices.id, payment.invoiceId))
+              .limit(1);
 
-            // Credit Cash (reverse debit)
-            await tx.insert(ledgerEntries).values({
-              entryNumber: `${reversalNumber}-CR`,
-              entryDate: new Date(),
-              accountId: cashAccountId,
-              debit: "0.00",
-              credit: paymentAmount.toFixed(2),
-              description: `Payment void reversal - ${input.reason}`,
-              referenceType: "PAYMENT_VOID",
-              referenceId: input.id,
-              fiscalPeriodId,
-              isManual: false,
-              createdBy: userId,
-            });
+            if (invoice) {
+              const currentPaid = parseFloat(invoice.amountPaid || "0");
+              const newPaid = Math.max(0, currentPaid - paymentAmount);
+              const totalAmount = parseFloat(invoice.totalAmount || "0");
+              const newDue = totalAmount - newPaid;
 
-            // Debit AR (reverse credit)
-            await tx.insert(ledgerEntries).values({
-              entryNumber: `${reversalNumber}-DR`,
-              entryDate: new Date(),
-              accountId: arAccountId,
-              debit: paymentAmount.toFixed(2),
-              credit: "0.00",
-              description: `Payment void reversal - ${input.reason}`,
-              referenceType: "PAYMENT_VOID",
-              referenceId: input.id,
-              fiscalPeriodId,
-              isManual: false,
-              createdBy: userId,
-            });
+              // Determine new status
+              const newStatus: "SENT" | "PARTIAL" =
+                newPaid > 0 ? "PARTIAL" : "SENT";
 
-            logger.info({
-              msg: "[Payments] Payment voided",
-              paymentId: input.id,
-              reason: input.reason,
-              amount: paymentAmount,
-              allocationsReversed: allocations.length,
-            });
+              await tx
+                .update(invoices)
+                .set({
+                  amountPaid: newPaid.toFixed(2),
+                  amountDue: newDue.toFixed(2),
+                  status: newStatus,
+                })
+                .where(eq(invoices.id, payment.invoiceId));
+            }
+          }
+
+          // Create reversing GL entries
+          const fiscalPeriodId = await getFiscalPeriodIdOrDefault(
+            new Date(),
+            1
+          );
+          const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+          const arAccountId = await getAccountIdByName(
+            ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
+          );
+          const reversalNumber = `PMT-REV-${input.id}`;
+
+          // Credit Cash (reverse debit)
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${reversalNumber}-CR`,
+            entryDate: new Date(),
+            accountId: cashAccountId,
+            debit: "0.00",
+            credit: paymentAmount.toFixed(2),
+            description: `Payment void reversal - ${input.reason}`,
+            referenceType: "PAYMENT_VOID",
+            referenceId: input.id,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          // Debit AR (reverse credit)
+          await tx.insert(ledgerEntries).values({
+            entryNumber: `${reversalNumber}-DR`,
+            entryDate: new Date(),
+            accountId: arAccountId,
+            debit: paymentAmount.toFixed(2),
+            credit: "0.00",
+            description: `Payment void reversal - ${input.reason}`,
+            referenceType: "PAYMENT_VOID",
+            referenceId: input.id,
+            fiscalPeriodId,
+            isManual: false,
+            createdBy: userId,
+          });
+
+          logger.info({
+            msg: "[Payments] Payment voided",
+            paymentId: input.id,
+            reason: input.reason,
+            amount: paymentAmount,
+            allocationsReversed: allocations.length,
+          });
 
           return {
             success: true,
@@ -1090,9 +1326,8 @@ export const paymentsRouter = router({
 
       // ARCH-002: Sync client balance after transaction
       if (txResult.customerId) {
-        const { syncClientBalance } = await import(
-          "../services/clientBalanceService"
-        );
+        const { syncClientBalance } =
+          await import("../services/clientBalanceService");
         await syncClientBalance(txResult.customerId);
       }
 

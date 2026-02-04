@@ -1941,6 +1941,7 @@ export const customerServicePermissions = [
 ];
 
 // Warehouse Staff: Can receive POs, adjust inventory, transfer inventory, process returns
+// TER-48: Added orders:update for shipOrder/deliverOrder fulfillment mutations
 export const warehouseStaffPermissions = [
   "dashboard:access",
   "dashboard:read",
@@ -1949,6 +1950,7 @@ export const warehouseStaffPermissions = [
   "clients:read",
   "orders:access",
   "orders:read",
+  "orders:update", // TER-48: Required for shipOrder, deliverOrder mutations
   "orders:fulfill",
   "inventory:access",
   "inventory:read",
