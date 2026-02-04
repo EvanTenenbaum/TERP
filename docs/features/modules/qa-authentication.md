@@ -2,11 +2,27 @@
 
 > Feature Documentation for QA Authentication Layer
 
-**Feature ID:** AUTH-QA-001
+**Feature ID:** AUTH-QA-001, AUTH-QA-002
 **Module:** Authentication
 **Status:** ✅ COMPLETE
-**Completion Date:** 2026-01-09
-**Branch:** `claude/qa-auth-layer-KpG9q`
+**Completion Date:** 2026-02-04 (AUTH-QA-002 added DEMO_MODE)
+**Branch:** `claude/qa-auth-layer-KpG9q`, `claude/refactor-login-roles-qlrDH`
+
+---
+
+## Quick Start: Demo Mode
+
+**For production demo/internal deployments, set one environment variable:**
+
+```bash
+DEMO_MODE=true
+```
+
+This will:
+
+- Auto-login all visitors as **Super Admin** (no login required)
+- Show role switcher to test different roles
+- Work in production `NODE_ENV`
 
 ---
 
@@ -25,6 +41,7 @@ The QA Authentication Layer provides deterministic login capabilities for all RB
 ### Problem Solved
 
 Previously, QA testing required:
+
 - SSO/magic-link authentication (not available in all environments)
 - Manual role assignment for test users
 - External IdP dependencies
@@ -36,15 +53,15 @@ This module eliminates these blockers with deterministic, environment-controlled
 
 ## 2. Current Implementation Status
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Core Auth Service | ✅ Complete | `server/_core/qaAuth.ts` |
-| API Endpoints | ✅ Complete | 3 endpoints under `/api/qa-auth/*` |
-| User Seed Script | ✅ Complete | `server/db/seed/qaAccounts.ts` |
-| Environment Config | ✅ Complete | `QA_AUTH_ENABLED` flag |
-| Audit Logging | ✅ Complete | `QA_AUTH_LOGIN`, `QA_AUTH_ROLE_SWITCH` events |
-| Role Switcher UI | ✅ Complete | `QaRoleSwitcher` component on Login page |
-| Documentation | ✅ Complete | 8 documentation locations updated |
+| Component          | Status      | Notes                                         |
+| ------------------ | ----------- | --------------------------------------------- |
+| Core Auth Service  | ✅ Complete | `server/_core/qaAuth.ts`                      |
+| API Endpoints      | ✅ Complete | 3 endpoints under `/api/qa-auth/*`            |
+| User Seed Script   | ✅ Complete | `server/db/seed/qaAccounts.ts`                |
+| Environment Config | ✅ Complete | `QA_AUTH_ENABLED` flag                        |
+| Audit Logging      | ✅ Complete | `QA_AUTH_LOGIN`, `QA_AUTH_ROLE_SWITCH` events |
+| Role Switcher UI   | ✅ Complete | `QaRoleSwitcher` component on Login page      |
+| Documentation      | ✅ Complete | 8 documentation locations updated             |
 
 ---
 
@@ -110,6 +127,7 @@ auditLogs: {
 Authenticate as a QA test user.
 
 **Request:**
+
 ```json
 {
   "email": "qa.superadmin@terp.test",
@@ -118,6 +136,7 @@ Authenticate as a QA test user.
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -135,6 +154,7 @@ Authenticate as a QA test user.
 ```
 
 **Response (401):**
+
 ```json
 {
   "error": "Invalid QA credentials"
@@ -142,6 +162,7 @@ Authenticate as a QA test user.
 ```
 
 **Response (403):**
+
 ```json
 {
   "error": "QA authentication is not enabled",
@@ -154,6 +175,7 @@ Authenticate as a QA test user.
 List available QA roles for role switcher UI.
 
 **Response (200):**
+
 ```json
 {
   "enabled": true,
@@ -163,7 +185,7 @@ List available QA roles for role switcher UI.
       "name": "QA Super Admin",
       "role": "Super Admin",
       "description": "Unrestricted access to entire system"
-    },
+    }
     // ... 6 more roles
   ],
   "password": "TerpQA2026!"
@@ -175,6 +197,7 @@ List available QA roles for role switcher UI.
 Check if QA authentication is enabled.
 
 **Response (200):**
+
 ```json
 {
   "enabled": true,
@@ -242,15 +265,15 @@ curl http://localhost:3000/api/trpc/clients.list \
 
 All planned functionality has been implemented:
 
-| Requirement | Status |
-|-------------|--------|
-| Login as any RBAC role | ✅ |
-| Deterministic password | ✅ |
-| Environment flag control | ✅ |
-| Production safety | ✅ |
-| Audit logging | ✅ |
-| Role switcher UI | ✅ |
-| Documentation | ✅ |
+| Requirement              | Status |
+| ------------------------ | ------ |
+| Login as any RBAC role   | ✅     |
+| Deterministic password   | ✅     |
+| Environment flag control | ✅     |
+| Production safety        | ✅     |
+| Audit logging            | ✅     |
+| Role switcher UI         | ✅     |
+| Documentation            | ✅     |
 
 ### Known Limitations
 
@@ -276,12 +299,20 @@ These could be added if needed:
 ```typescript
 // server/_core/qaAuth.ts
 export function isQaAuthEnabled(): boolean {
+  // DEMO_MODE explicitly enables QA auth in any environment
+  if (process.env.DEMO_MODE === "true") {
+    return true;
+  }
+
   const enabled = process.env.QA_AUTH_ENABLED === "true";
   const isProduction = process.env.NODE_ENV === "production";
 
-  // CRITICAL: Never enable in production
+  // CRITICAL: QA_AUTH_ENABLED is ignored in production
+  // Use DEMO_MODE=true for production demos
   if (isProduction && enabled) {
-    logger.warn("QA_AUTH_ENABLED ignored in production");
+    logger.warn(
+      "QA_AUTH_ENABLED ignored in production. Use DEMO_MODE=true instead."
+    );
     return false;
   }
 
@@ -289,9 +320,17 @@ export function isQaAuthEnabled(): boolean {
 }
 ```
 
+### Environment Variables
+
+| Variable               | Purpose                                   | Works in Production? |
+| ---------------------- | ----------------------------------------- | -------------------- |
+| `DEMO_MODE=true`       | Auto-login as Super Admin + role switcher | ✅ Yes               |
+| `QA_AUTH_ENABLED=true` | Enable QA auth (dev/staging only)         | ❌ No                |
+
 ### Audit Trail
 
 All QA logins are logged with:
+
 - Timestamp
 - User ID
 - Email
@@ -303,7 +342,9 @@ All QA logins are logged with:
 ### Rollback
 
 Disable with:
+
 ```bash
+DEMO_MODE=false
 QA_AUTH_ENABLED=false
 ```
 
@@ -315,39 +356,42 @@ Or remove from environment entirely.
 
 ### Core Implementation
 
-| File | Purpose |
-|------|---------|
-| `server/_core/qaAuth.ts` | Core service, routes, configuration |
-| `server/db/seed/qaAccounts.ts` | QA user seeder |
-| `server/_core/env.ts` | Environment flag (`qaAuthEnabled`) |
-| `server/_core/index.ts` | Route registration |
-| `server/auditLogger.ts` | Audit event types |
+| File                           | Purpose                             |
+| ------------------------------ | ----------------------------------- |
+| `server/_core/qaAuth.ts`       | Core service, routes, configuration |
+| `server/db/seed/qaAccounts.ts` | QA user seeder                      |
+| `server/_core/env.ts`          | Environment flag (`qaAuthEnabled`)  |
+| `server/_core/index.ts`        | Route registration                  |
+| `server/auditLogger.ts`        | Audit event types                   |
 
 ### Frontend
 
-| File | Purpose |
-|------|---------|
+| File                                          | Purpose                 |
+| --------------------------------------------- | ----------------------- |
 | `client/src/components/qa/QaRoleSwitcher.tsx` | Role switcher component |
-| `client/src/pages/Login.tsx` | Login page integration |
+| `client/src/pages/Login.tsx`                  | Login page integration  |
 
 ### Documentation
 
-| File | Purpose |
-|------|---------|
-| `docs/auth/QA_AUTH.md` | Primary documentation |
-| `docs/qa/QA_PLAYBOOK.md` | 7-step testing guide |
-| `docs/qa/README.md` | QA docs index |
-| `docs/AUTH_SETUP.md` | Auth setup reference |
+| File                       | Purpose               |
+| -------------------------- | --------------------- |
+| `docs/auth/QA_AUTH.md`     | Primary documentation |
+| `docs/qa/QA_PLAYBOOK.md`   | 7-step testing guide  |
+| `docs/qa/README.md`        | QA docs index         |
+| `docs/AUTH_SETUP.md`       | Auth setup reference  |
 | `docs/reference/README.md` | Quick reference table |
-| `.env.example` | Environment template |
-| `CHANGELOG.md` | Release notes |
+| `.env.example`             | Environment template  |
+| `CHANGELOG.md`             | Release notes         |
 
 ---
 
 ## 9. Commands
 
 ```bash
-# Enable QA auth
+# Option A: Demo Mode (recommended for production demos)
+echo "DEMO_MODE=true" >> .env
+
+# Option B: QA Auth (dev/staging only)
 echo "QA_AUTH_ENABLED=true" >> .env
 
 # Seed RBAC (required first)
@@ -362,6 +406,20 @@ pnpm dev
 # Check QA auth status
 curl http://localhost:3000/api/qa-auth/status
 ```
+
+### Available QA Accounts
+
+| Email                     | Role              | Access                                |
+| ------------------------- | ----------------- | ------------------------------------- |
+| qa.superadmin@terp.test   | Super Admin       | Full access (auto-login in DEMO_MODE) |
+| qa.salesmanager@terp.test | Sales Manager     | Clients, orders, quotes               |
+| qa.salesrep@terp.test     | Customer Service  | Clients, orders, returns              |
+| qa.inventory@terp.test    | Inventory Manager | Inventory, locations, transfers       |
+| qa.fulfillment@terp.test  | Warehouse Staff   | Receive POs, adjustments              |
+| qa.accounting@terp.test   | Accountant        | Accounting, credits, COGS             |
+| qa.auditor@terp.test      | Read-Only Auditor | Read-only access, audit logs          |
+
+**Password for all:** `TerpQA2026!`
 
 ---
 
