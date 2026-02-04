@@ -98,12 +98,12 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | SEC-003 | Remove Hardcoded Admin Credentials      | ✅ COMPLETE | Dec 2025        |
 | SEC-004 | Remove Debug Code from Production       | ✅ COMPLETE | Dec 2025        |
 
-### 🔄 QA & Testing Infrastructure (IN PROGRESS)
+### ✅ QA & Testing Infrastructure (COMPLETE)
 
-| Task        | Description                                       | Status         | Completion Date |
-| ----------- | ------------------------------------------------- | -------------- | --------------- |
-| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC    | ✅ COMPLETE    | Jan 9, 2026     |
-| AUTH-QA-002 | Demo Mode with Auto-Login and Role Simplification | 🔄 in-progress | -               |
+| Task        | Description                                       | Status      | Completion Date |
+| ----------- | ------------------------------------------------- | ----------- | --------------- |
+| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC    | ✅ COMPLETE | Jan 9, 2026     |
+| AUTH-QA-002 | Demo Mode with Auto-Login and Role Simplification | ✅ COMPLETE | Feb 4, 2026     |
 
 > **AUTH-QA-001 Details:**
 >
@@ -117,34 +117,33 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 > **AUTH-QA-002 Details:**
 >
-> - **Priority:** HIGH
-> - **Estimate:** 4h
-> - **Module:** `server/_core/`, `client/src/pages/Login.tsx`
-> - **Mode:** RED (auth changes)
+> - **Completed:** Feb 4, 2026
+> - **Key Commits:** `f23b55d`
+> - **Actual Time:** 4h
 >
-> **Goals:**
+> **What was implemented:**
 >
-> 1. Simple login schema with one working login per role type
-> 2. Master admin login with full access to everything
-> 3. Auto-login as master admin for all visitors (no manual login required)
+> - Added `DEMO_MODE` env var for single-control demo behavior
+> - Auto-authenticates visitors as Super Admin when `DEMO_MODE=true`
+> - Enables role switcher in demo mode (test different roles)
+> - Removed dangerous `FORCE_QA_AUTH` bypass
+> - Works in production NODE_ENV (explicit demo flag)
 >
-> **Implementation:**
+> **How to enable:**
 >
-> - Add `DEMO_MODE` env var - single control for demo behavior
-> - When `DEMO_MODE=true`: auto-authenticate visitors as Super Admin
-> - Enable role switcher in demo mode (allows testing other roles)
-> - Remove `FORCE_QA_AUTH` bypass (dangerous, unused)
-> - Clean up duplicate public user provisioning code
+> Set `DEMO_MODE=true` in environment variables
 >
-> **Deliverables:**
+> **Available roles (via switcher):**
 >
-> - [ ] Add `DEMO_MODE` to env.ts
-> - [ ] Modify context.ts for auto-login when DEMO_MODE=true
-> - [ ] Enable QA auth endpoints when DEMO_MODE=true
-> - [ ] Update login page to show role switcher in demo mode
-> - [ ] Remove FORCE_QA_AUTH from qaAuth.ts
-> - [ ] Update .env.example documentation
-> - [ ] Verify all 7 role logins work
+> - qa.superadmin@terp.test (Super Admin) - full access
+> - qa.salesmanager@terp.test (Sales Manager)
+> - qa.salesrep@terp.test (Customer Service)
+> - qa.inventory@terp.test (Inventory Manager)
+> - qa.fulfillment@terp.test (Warehouse Staff)
+> - qa.accounting@terp.test (Accountant)
+> - qa.auditor@terp.test (Read-Only Auditor)
+>
+> Password for all: `TerpQA2026!`
 
 ### ✅ Bug Fixes (COMPLETE)
 
