@@ -100,9 +100,10 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ QA & Testing Infrastructure (COMPLETE)
 
-| Task        | Description                                    | Status      | Completion Date |
-| ----------- | ---------------------------------------------- | ----------- | --------------- |
-| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC | ✅ COMPLETE | Jan 9, 2026     |
+| Task        | Description                                       | Status      | Completion Date |
+| ----------- | ------------------------------------------------- | ----------- | --------------- |
+| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC    | ✅ COMPLETE | Jan 9, 2026     |
+| AUTH-QA-002 | Demo Mode with Auto-Login and Role Simplification | ✅ COMPLETE | Feb 4, 2026     |
 
 > **AUTH-QA-001 Details:**
 >
@@ -113,6 +114,36 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 > - Audit logging for QA auth events
 > - Documentation: `docs/auth/QA_AUTH.md`, `docs/qa/QA_PLAYBOOK.md`
 > - Seed command: `pnpm seed:qa-accounts`
+
+> **AUTH-QA-002 Details:**
+>
+> - **Completed:** Feb 4, 2026
+> - **Key Commits:** `f23b55d`
+> - **Actual Time:** 4h
+>
+> **What was implemented:**
+>
+> - Added `DEMO_MODE` env var for single-control demo behavior
+> - Auto-authenticates visitors as Super Admin when `DEMO_MODE=true`
+> - Enables role switcher in demo mode (test different roles)
+> - Removed dangerous `FORCE_QA_AUTH` bypass
+> - Works in production NODE_ENV (explicit demo flag)
+>
+> **How to enable:**
+>
+> Set `DEMO_MODE=true` in environment variables
+>
+> **Available roles (via switcher):**
+>
+> - qa.superadmin@terp.test (Super Admin) - full access
+> - qa.salesmanager@terp.test (Sales Manager)
+> - qa.salesrep@terp.test (Customer Service)
+> - qa.inventory@terp.test (Inventory Manager)
+> - qa.fulfillment@terp.test (Warehouse Staff)
+> - qa.accounting@terp.test (Accountant)
+> - qa.auditor@terp.test (Read-Only Auditor)
+>
+> Password for all: `TerpQA2026!`
 
 ### ✅ Bug Fixes (COMPLETE)
 

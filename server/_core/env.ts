@@ -103,6 +103,14 @@ export const env = {
     // Safety: Never enable in production
     return enabled && !isProduction;
   },
+  // Demo mode: Auto-login as Super Admin for demo/internal use
+  // When enabled:
+  // - Visitors are auto-authenticated as Super Admin
+  // - Role switcher is visible to test different roles
+  // - Works in production NODE_ENV (explicit demo flag)
+  get DEMO_MODE() {
+    return process.env.DEMO_MODE === "true";
+  },
 };
 
 // Legacy export for compatibility
