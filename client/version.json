@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "commit": "a79a1c0",
-  "date": "2026-01-29",
-  "branch": "claude/terp-behavior-audit-TL2tI",
-  "phase": "Development",
-  "buildTime": "2026-01-29T00:44:33.778Z"
+  "commit": "b8662fc5",
+  "date": "2026-02-03",
+  "branch": "main",
+  "phase": "Production",
+  "buildTime": "2026-02-03T23:22:28.233Z"
 }
