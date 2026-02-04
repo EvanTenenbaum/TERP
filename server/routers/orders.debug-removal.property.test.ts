@@ -30,10 +30,7 @@ const DEBUG_ROUTES = [
  * Known debug tRPC endpoints that should NOT exist in production.
  * These endpoints expose internal system information.
  */
-const DEBUG_TRPC_ENDPOINTS = [
-  "orders.debugGetRaw",
-  "debug.getCounts",
-] as const;
+const DEBUG_TRPC_ENDPOINTS = ["orders.debugGetRaw", "debug.getCounts"] as const;
 
 /**
  * Production routes that ARE allowed (for comparison).
@@ -118,38 +115,29 @@ describe("Debug Route Removal - Property Tests", () => {
 
     it("should return 404 for any debug route in production", () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(...DEBUG_ROUTES),
-          (debugRoute) => {
-            const status = getRouteStatusInProduction(debugRoute);
-            expect(status).toBe(404);
-          }
-        ),
+        fc.property(fc.constantFrom(...DEBUG_ROUTES), debugRoute => {
+          const status = getRouteStatusInProduction(debugRoute);
+          expect(status).toBe(404);
+        }),
         { numRuns: 100 }
       );
     });
 
     it("should return 200 for any production route", () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(...PRODUCTION_ROUTES),
-          (prodRoute) => {
-            const status = getRouteStatusInProduction(prodRoute);
-            expect(status).toBe(200);
-          }
-        ),
+        fc.property(fc.constantFrom(...PRODUCTION_ROUTES), prodRoute => {
+          const status = getRouteStatusInProduction(prodRoute);
+          expect(status).toBe(200);
+        }),
         { numRuns: 100 }
       );
     });
 
     it("should identify debug endpoints by name pattern", () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(...DEBUG_TRPC_ENDPOINTS),
-          (endpoint) => {
-            expect(isDebugEndpoint(endpoint)).toBe(true);
-          }
-        ),
+        fc.property(fc.constantFrom(...DEBUG_TRPC_ENDPOINTS), endpoint => {
+          expect(isDebugEndpoint(endpoint)).toBe(true);
+        }),
         { numRuns: 100 }
       );
     });
@@ -157,14 +145,11 @@ describe("Debug Route Removal - Property Tests", () => {
     it("should correctly classify randomly generated debug-like routes", () => {
       // Generate random routes that contain "debug" and verify they're identified
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 1, maxLength: 10 }),
-          (randomPart) => {
-            const debugRoute = `/debug/${randomPart}`;
-            expect(isDebugRoute(debugRoute)).toBe(true);
-            expect(getRouteStatusInProduction(debugRoute)).toBe(404);
-          }
-        ),
+        fc.property(fc.string({ minLength: 1, maxLength: 10 }), randomPart => {
+          const debugRoute = `/debug/${randomPart}`;
+          expect(isDebugRoute(debugRoute)).toBe(true);
+          expect(getRouteStatusInProduction(debugRoute)).toBe(404);
+        }),
         { numRuns: 100 }
       );
     });
@@ -172,14 +157,11 @@ describe("Debug Route Removal - Property Tests", () => {
     it("should correctly classify randomly generated dev routes", () => {
       // Generate random routes that start with "/dev/" and verify they're identified
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 1, maxLength: 10 }),
-          (randomPart) => {
-            const devRoute = `/dev/${randomPart}`;
-            expect(isDebugRoute(devRoute)).toBe(true);
-            expect(getRouteStatusInProduction(devRoute)).toBe(404);
-          }
-        ),
+        fc.property(fc.string({ minLength: 1, maxLength: 10 }), randomPart => {
+          const devRoute = `/dev/${randomPart}`;
+          expect(isDebugRoute(devRoute)).toBe(true);
+          expect(getRouteStatusInProduction(devRoute)).toBe(404);
+        }),
         { numRuns: 100 }
       );
     });
@@ -193,24 +175,24 @@ describe("Debug Route Removal - Property Tests", () => {
     it("should not have debugGetRaw in the orders router exports", async () => {
       // Import the orders router and verify debugGetRaw is not present
       const { ordersRouter } = await import("./orders");
-      
+
       // Get the procedure names from the router
       const procedureNames = Object.keys(ordersRouter._def.procedures);
-      
+
       // Verify debugGetRaw is not in the list
       expect(procedureNames).not.toContain("debugGetRaw");
-    });
+    }, 10000); // 10 second timeout for heavy import
 
     it("should not have any debug-prefixed procedures in orders router", async () => {
       const { ordersRouter } = await import("./orders");
       const procedureNames = Object.keys(ordersRouter._def.procedures);
-      
+
       // Check that no procedure starts with "debug"
-      const debugProcedures = procedureNames.filter(name => 
+      const debugProcedures = procedureNames.filter(name =>
         name.toLowerCase().startsWith("debug")
       );
-      
+
       expect(debugProcedures).toHaveLength(0);
-    });
+    }, 10000); // 10 second timeout for heavy import
   });
 });
