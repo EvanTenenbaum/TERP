@@ -375,7 +375,6 @@ export function registerQaAuthRoutes(app: import("express").Express): void {
     res.json({
       enabled: true,
       roles: qaAuth.getAvailableRoles(),
-      password: QA_PASSWORD, // Safe to expose in dev/staging
     });
   });
 
