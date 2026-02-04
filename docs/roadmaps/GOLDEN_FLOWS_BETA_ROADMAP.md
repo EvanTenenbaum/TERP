@@ -89,8 +89,8 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
 
 ## Phase 1: Core Flow Restoration
 
-**Status:** 🟡 IN PROGRESS (26%)  
-**Progress:** 7/27 tasks complete
+**Status:** 🟡 IN PROGRESS (41%)  
+**Progress:** 11/27 tasks complete
 
 ### Done
 
@@ -106,6 +106,14 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
   - Priority: High | Mode: STRICT | Type: Feature
 - **[TER-50](https://linear.app/terpcorp/issue/TER-50/p1-1-008-gf-phase4-001-e2e-test-for-gf-001-direct-intake):** [P1] 1-008: GF-PHASE4-001: E2E Test for GF-001 Direct Intake
   - Priority: High | Mode: STRICT | Type: Feature
+- **[TER-47](https://linear.app/terpcorp/issue/TER-47/p1-1-010-gf-phase3-003-verify-accounting-flows-with-accounting-role):** [P1] 1-010: GF-PHASE3-003: Verify Accounting Flows with Accounting Role
+  - Priority: High | Mode: RED | Type: Feature
+- **[TER-46](https://linear.app/terpcorp/issue/TER-46/p1-1-011-gf-phase3-002-verify-inventory-flows-with-inventory-role):** [P1] 1-011: GF-PHASE3-002: Verify Inventory Flows with Inventory Role
+  - Priority: High | Mode: RED | Type: Feature
+- **[TER-45](https://linear.app/terpcorp/issue/TER-45/p1-1-012-gf-phase3-001-verify-sales-flows-with-sales-rep-role):** [P1] 1-012: GF-PHASE3-001: Verify Sales Flows with Sales Rep Role
+  - Priority: High | Mode: RED | Type: Feature
+- **[TER-38](https://linear.app/terpcorp/issue/TER-38/p1-1-017-gf-phase1-006-fix-client-creation-silent-failure):** [P1] 1-017: GF-PHASE1-006: Fix Client Creation Silent Failure
+  - Priority: High | Mode: STRICT | Type: Bug
 - **[TER-54](https://linear.app/terpcorp/issue/TER-54/p2-1-042-gf-phase5-001-fix-test-infrastructure-issues):** [P2] 1-042: GF-PHASE5-001: Fix Test Infrastructure Issues
   - Priority: Medium | Mode: SAFE | Type: Bug
 
@@ -119,12 +127,6 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
   - Priority: High | Mode: SAFE | Type: Feature
 - **[TER-48](https://linear.app/terpcorp/issue/TER-48/p1-1-009-gf-phase3-004-verify-fulfillment-flows-with-fulfillment-role):** [P1] 1-009: GF-PHASE3-004: Verify Fulfillment Flows with Fulfillment Role
   - Priority: High | Mode: RED | Type: Feature
-- **[TER-47](https://linear.app/terpcorp/issue/TER-47/p1-1-010-gf-phase3-003-verify-accounting-flows-with-accounting-role):** [P1] 1-010: GF-PHASE3-003: Verify Accounting Flows with Accounting Role
-  - Priority: High | Mode: RED | Type: Feature
-- **[TER-46](https://linear.app/terpcorp/issue/TER-46/p1-1-011-gf-phase3-002-verify-inventory-flows-with-inventory-role):** [P1] 1-011: GF-PHASE3-002: Verify Inventory Flows with Inventory Role
-  - Priority: High | Mode: RED | Type: Feature
-- **[TER-45](https://linear.app/terpcorp/issue/TER-45/p1-1-012-gf-phase3-001-verify-sales-flows-with-sales-rep-role):** [P1] 1-012: GF-PHASE3-001: Verify Sales Flows with Sales Rep Role
-  - Priority: High | Mode: RED | Type: Feature
 - **[TER-42](https://linear.app/terpcorp/issue/TER-42/p1-1-013-gf-phase2-004-complete-order-to-cash-full-flow):** [P1] 1-013: GF-PHASE2-004: Complete Order-to-Cash Full Flow
   - Priority: High | Mode: STRICT | Type: Feature
 - **[TER-41](https://linear.app/terpcorp/issue/TER-41/p1-1-014-gf-phase2-003-verify-gl-entries-on-invoicepayment):** [P1] 1-014: GF-PHASE2-003: Verify GL Entries on Invoice/Payment
@@ -133,8 +135,6 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
   - Priority: High | Mode: STRICT | Type: Feature
 - **[TER-39](https://linear.app/terpcorp/issue/TER-39/p1-1-016-gf-phase2-001-wire-payment-recording-mutation):** [P1] 1-016: GF-PHASE2-001: Wire Payment Recording Mutation
   - Priority: High | Mode: STRICT | Type: Feature
-- **[TER-38](https://linear.app/terpcorp/issue/TER-38/p1-1-017-gf-phase1-006-fix-client-creation-silent-failure):** [P1] 1-017: GF-PHASE1-006: Fix Client Creation Silent Failure
-  - Priority: High | Mode: STRICT | Type: Bug
 - **[TER-49](https://linear.app/terpcorp/issue/TER-49/p2-1-043-gf-phase3-005-verify-read-only-auditor-access):** [P2] 1-043: GF-PHASE3-005: Verify Read-Only Auditor Access
   - Priority: Medium | Mode: RED | Type: Feature
 - **[TER-44](https://linear.app/terpcorp/issue/TER-44/p2-1-044-gf-phase2-006-integrate-cogs-visibility-components):** [P2] 1-044: GF-PHASE2-006: Integrate COGS Visibility Components
@@ -159,4 +159,4 @@ This roadmap tracks the restoration and verification of TERP's 8 Golden Flows fo
 - **Linear is the primary source of truth** for all roadmap tasks
 - This GitHub roadmap is a backup and may not be as up-to-date as Linear
 - For the most current information, always refer to the [Linear project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
-- Last synced: 2026-02-04 15:39:30
+- Last synced: 2026-02-04 16:21:47
