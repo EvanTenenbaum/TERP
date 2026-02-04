@@ -2,7 +2,7 @@
 
 ## Real-Time Coordination for Parallel Development
 
-**Last Updated:** 2026-02-03
+**Last Updated:** 2026-02-04
 **Auto-Generated:** This file tracks all active development sessions
 **Source:** `docs/sessions/active/*.md`
 
@@ -14,8 +14,7 @@
 | ---------------------------------------------- | ---------------------- | ------- | ---------------------- | ----------- | ---------- | --- |
 | Session-20260203-WAVE-2026-02-03-PHASE4-de061c | WAVE-2026-02-03-PHASE4 | current | tests-e2e/golden-flows | In Progress | 2026-02-03 | TBD |
 | Session-20260203-QA-FIX-49ca77                 | QA-FIX                 | current | tests-e2e/golden-flows | In Progress | 2026-02-03 | TBD |
-| Session-20260203-BUG-131-768a8a                | BUG-131                | current | client/src             | In Progress | 2026-02-03 | TBD |
-| Session-20260203-QA-BUG-131-743f14             | QA-BUG-131             | current | client/src             | In Progress | 2026-02-03 | TBD |
+| Session-20260203-BUG-132-cd4d7f                | BUG-132                | current | server/productsDb.ts   | In Progress | 2026-02-03 | TBD |
 
 > **Note:** All sessions cleared. Phase 3.5 complete. Ready for Phase 4 E2E Automation.
 
@@ -25,10 +24,13 @@
 | ---------- | ---- | ------ | ------ | --------- | ----------- |
 | _(none)_   | -    | -      | -      | -         | -           |
 
-## ✅ Completed/Archived (2026-02-03)
+## ✅ Completed/Archived (2026-02-04)
 
 | Session ID                                 | Task                                       | Status      |
 | ------------------------------------------ | ------------------------------------------ | ----------- |
+| Session-20260203-BUG-131-768a8a            | BUG-131 Add Batch Button Fix               | ✅ Complete |
+| Session-20260203-QA-BUG-131-743f14         | QA-BUG-131                                 | ✅ Complete |
+| Session-20260204-AUTH-QA-002-4e74e9        | AUTH-QA-002 Demo Mode Auto-Login           | ✅ Complete |
 | Session-20260130-TASK-ID-a20d2e            | Execute Inventory Troubleshooting Playbook | ✅ Archived |
 | Session-20260130-TASK-ID-757025            | Fix inventory playbook issues + tests      | ✅ Archived |
 | Session-20260130-TASK-ID-425fd9            | Address inventory playbook PR feedback     | ✅ Archived |

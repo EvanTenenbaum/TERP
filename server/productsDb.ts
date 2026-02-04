@@ -5,6 +5,7 @@
  */
 
 import { eq, and, desc, like, or, isNull, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { getDb } from "./db";
 import { products, brands, strains } from "../drizzle/schema";
 import { logger } from "./_core/logger";
@@ -42,7 +43,23 @@ function isSchemaError(error: unknown): boolean {
 /**
  * Get all products with optional filters and pagination
  */
-export async function getProducts(options: ProductFilters = {}) {
+export async function getProducts(options: ProductFilters = {}): Promise<
+  Array<{
+    id: number;
+    brandId: number | null;
+    strainId: number | null;
+    nameCanonical: string;
+    category: string;
+    subcategory: string | null;
+    uomSellable: string | null;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    deletedAt: Date | null;
+    brandName: string | null;
+    strainName: string | null;
+  }>
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -58,7 +75,7 @@ export async function getProducts(options: ProductFilters = {}) {
 
   // QA-001 FIX: Build conditions in two parts - base conditions and strainId condition
   // This allows fallback to use only base conditions when strainId column doesn't exist
-  const baseConditions = [];
+  const baseConditions: Array<SQL<unknown> | undefined> = [];
 
   // Soft delete filter
   if (!includeDeleted) {
@@ -84,13 +101,12 @@ export async function getProducts(options: ProductFilters = {}) {
   }
 
   // SCHEMA-015: strainId column doesn't exist in production, so we cannot filter by it
-  // If strainId filter was requested, return empty array since no products can match
+  // If strainId filter was requested, log and continue without applying strainId
   if (strainId) {
     logger.warn(
       { strainId },
-      "getProducts: strainId filter requested but column doesn't exist, returning empty results"
+      "getProducts: strainId filter requested but column doesn't exist, ignoring strainId"
     );
-    return [];
   }
 
   // Still have try-catch for other potential schema issues
@@ -164,7 +180,7 @@ export async function getProducts(options: ProductFilters = {}) {
  */
 export async function getProductCount(
   options: Omit<ProductFilters, "limit" | "offset"> = {}
-) {
+): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -177,7 +193,7 @@ export async function getProductCount(
   } = options;
 
   // QA-002 FIX: Build conditions in two parts like getProducts
-  const baseConditions = [];
+  const baseConditions: Array<SQL<unknown> | undefined> = [];
 
   if (!includeDeleted) {
     baseConditions.push(isNull(products.deletedAt));
@@ -201,20 +217,13 @@ export async function getProductCount(
     baseConditions.push(eq(products.brandId, brandId));
   }
 
-  // Build full conditions including strainId
-  const fullConditions = [...baseConditions];
-  if (strainId) {
-    fullConditions.push(eq(products.strainId, strainId));
-  }
-
   // SCHEMA-015: strainId column doesn't exist in production, so only use baseConditions
-  // If strainId filter was requested, return 0 since no products can match
+  // If strainId filter was requested, log and continue without applying strainId
   if (strainId) {
     logger.warn(
       { strainId },
-      "getProductCount: strainId filter requested but column doesn't exist, returning 0"
+      "getProductCount: strainId filter requested but column doesn't exist, ignoring strainId"
     );
-    return 0;
   }
 
   const result = await db

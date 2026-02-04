@@ -12,7 +12,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -46,7 +46,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -70,7 +69,6 @@ import {
   RotateCcw,
   AlertCircle,
   RefreshCw,
-  Tag,
   Beaker,
   Box,
 } from "lucide-react";
@@ -84,11 +82,11 @@ interface Product {
   nameCanonical: string;
   category: string;
   subcategory: string | null;
-  brandId: number;
+  brandId: number | null;
   brandName: string | null;
   strainId: number | null;
   strainName: string | null;
-  uomSellable: string;
+  uomSellable: string | null;
   description: string | null;
   deletedAt: Date | null;
 }
@@ -189,7 +187,9 @@ function ProductInspectorContent({
         <InspectorField label="Name">
           <p className="font-semibold text-lg">{product.nameCanonical}</p>
           {product.deletedAt && (
-            <Badge variant="secondary" className="mt-1">Archived</Badge>
+            <Badge variant="secondary" className="mt-1">
+              Archived
+            </Badge>
           )}
         </InspectorField>
 
@@ -207,7 +207,9 @@ function ProductInspectorContent({
         </div>
 
         <InspectorField label="Brand">
-          <p className="font-medium">{brand?.name || product.brandName || "Unknown"}</p>
+          <p className="font-medium">
+            {brand?.name || product.brandName || "Unknown"}
+          </p>
         </InspectorField>
 
         {strain && (
@@ -216,7 +218,9 @@ function ProductInspectorContent({
               <Beaker className="h-4 w-4 text-muted-foreground" />
               <span>{strain.name}</span>
               {strain.category && (
-                <Badge variant="outline" className="text-xs">{strain.category}</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {strain.category}
+                </Badge>
               )}
             </div>
           </InspectorField>
@@ -225,7 +229,12 @@ function ProductInspectorContent({
         <InspectorField label="Unit of Measure">
           <div className="flex items-center gap-2">
             <Box className="h-4 w-4 text-muted-foreground" />
-            <span>{UOM_OPTIONS.find(u => u.value === product.uomSellable)?.label || product.uomSellable}</span>
+            <span>
+              {UOM_OPTIONS.find(u => u.value === (product.uomSellable ?? "EA"))
+                ?.label ||
+                product.uomSellable ||
+                "EA"}
+            </span>
           </div>
         </InspectorField>
       </InspectorSection>
@@ -309,9 +318,13 @@ function ProductFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add New Product" : "Edit Product"}</DialogTitle>
+          <DialogTitle>
+            {mode === "create" ? "Add New Product" : "Edit Product"}
+          </DialogTitle>
           <DialogDescription>
-            {mode === "create" ? "Create a new product in the catalogue" : "Update product information"}
+            {mode === "create"
+              ? "Create a new product in the catalogue"
+              : "Update product information"}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -320,7 +333,9 @@ function ProductFormDialog({
             <Input
               id="nameCanonical"
               value={formData.nameCanonical}
-              onChange={e => setFormData({ ...formData, nameCanonical: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, nameCanonical: e.target.value })
+              }
               placeholder="Enter product name"
             />
           </div>
@@ -329,7 +344,9 @@ function ProductFormDialog({
             <Label htmlFor="brand">Brand *</Label>
             <Select
               value={formData.brandId?.toString() ?? ""}
-              onValueChange={v => setFormData({ ...formData, brandId: parseInt(v) })}
+              onValueChange={v =>
+                setFormData({ ...formData, brandId: parseInt(v) })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a brand" />
@@ -349,7 +366,9 @@ function ProductFormDialog({
             <Input
               id="category"
               value={formData.category}
-              onChange={e => setFormData({ ...formData, category: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, category: e.target.value })
+              }
               placeholder="e.g., Flower, Concentrate, Edible"
               list="category-suggestions"
             />
@@ -365,7 +384,9 @@ function ProductFormDialog({
             <Input
               id="subcategory"
               value={formData.subcategory}
-              onChange={e => setFormData({ ...formData, subcategory: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, subcategory: e.target.value })
+              }
               placeholder="e.g., Smalls, Indoor, Outdoor"
             />
           </div>
@@ -374,10 +395,12 @@ function ProductFormDialog({
             <Label htmlFor="strain">Strain</Label>
             <Select
               value={formData.strainId?.toString() ?? "none"}
-              onValueChange={v => setFormData({
-                ...formData,
-                strainId: v === "none" ? null : parseInt(v),
-              })}
+              onValueChange={v =>
+                setFormData({
+                  ...formData,
+                  strainId: v === "none" ? null : parseInt(v),
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a strain (optional)" />
@@ -388,7 +411,9 @@ function ProductFormDialog({
                   <SelectItem key={strain.id} value={strain.id.toString()}>
                     {strain.name}
                     {strain.category && (
-                      <span className="text-muted-foreground ml-2">({strain.category})</span>
+                      <span className="text-muted-foreground ml-2">
+                        ({strain.category})
+                      </span>
                     )}
                   </SelectItem>
                 ))}
@@ -420,7 +445,9 @@ function ProductFormDialog({
             <Textarea
               id="description"
               value={formData.description}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Optional product description"
               rows={3}
             />
@@ -432,9 +459,12 @@ function ProductFormDialog({
           </Button>
           <Button onClick={onSubmit} disabled={isPending}>
             {isPending
-              ? mode === "create" ? "Creating..." : "Saving..."
-              : mode === "create" ? "Create Product" : "Save Changes"
-            }
+              ? mode === "create"
+                ? "Creating..."
+                : "Saving..."
+              : mode === "create"
+                ? "Create Product"
+                : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -452,14 +482,18 @@ export function ProductsWorkSurface() {
   // State
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+    null
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productToArchive, setProductToArchive] = useState<Product | null>(null);
+  const [productToArchive, setProductToArchive] = useState<Product | null>(
+    null
+  );
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -485,7 +519,8 @@ export function ProductsWorkSurface() {
 
   const { data: brands = [] } = trpc.productCatalogue.getBrands.useQuery();
   const { data: strains = [] } = trpc.productCatalogue.getStrains.useQuery();
-  const { data: categories = [] } = trpc.productCatalogue.getCategories.useQuery();
+  const { data: categories = [] } =
+    trpc.productCatalogue.getCategories.useQuery();
 
   // Transform products data
   const products = useMemo<Product[]>(() => {
@@ -519,11 +554,12 @@ export function ProductsWorkSurface() {
     // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.nameCanonical.toLowerCase().includes(searchLower) ||
-        p.category.toLowerCase().includes(searchLower) ||
-        (p.brandName?.toLowerCase().includes(searchLower) ?? false) ||
-        (p.strainName?.toLowerCase().includes(searchLower) ?? false)
+      filtered = filtered.filter(
+        p =>
+          p.nameCanonical.toLowerCase().includes(searchLower) ||
+          p.category.toLowerCase().includes(searchLower) ||
+          (p.brandName?.toLowerCase().includes(searchLower) ?? false) ||
+          (p.strainName?.toLowerCase().includes(searchLower) ?? false)
       );
     }
 
@@ -537,12 +573,15 @@ export function ProductsWorkSurface() {
   );
 
   // Statistics
-  const stats = useMemo(() => ({
-    total: products.length,
-    active: products.filter(p => !p.deletedAt).length,
-    archived: products.filter(p => p.deletedAt).length,
-    categories: new Set(products.map(p => p.category)).size,
-  }), [products]);
+  const stats = useMemo(
+    () => ({
+      total: products.length,
+      active: products.filter(p => !p.deletedAt).length,
+      archived: products.filter(p => p.deletedAt).length,
+      categories: new Set(products.map(p => p.category)).size,
+    }),
+    [products]
+  );
 
   // Mutations
   const createMutation = trpc.productCatalogue.create.useMutation({
@@ -555,7 +594,7 @@ export function ProductsWorkSurface() {
       setShowCreateDialog(false);
       setFormData(initialFormData);
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message || "Failed to create product");
       setError(err.message);
     },
@@ -572,7 +611,7 @@ export function ProductsWorkSurface() {
       setEditingProduct(null);
       setFormData(initialFormData);
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message || "Failed to update product");
       setError(err.message);
     },
@@ -588,7 +627,7 @@ export function ProductsWorkSurface() {
       setProductToArchive(null);
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message || "Failed to archive product");
       setError(err.message);
     },
@@ -601,7 +640,7 @@ export function ProductsWorkSurface() {
       setSaved();
       utils.productCatalogue.list.invalidate();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message || "Failed to restore product");
       setError(err.message);
     },
@@ -613,33 +652,36 @@ export function ProductsWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": (e) => {
+      "cmd+k": e => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "ctrl+k": (e) => {
+      "ctrl+k": e => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "cmd+n": (e) => {
+      "cmd+n": e => {
         e.preventDefault();
         setShowCreateDialog(true);
       },
-      arrowdown: (e) => {
+      arrowdown: e => {
         e.preventDefault();
-        const newIndex = Math.min(displayProducts.length - 1, selectedIndex + 1);
+        const newIndex = Math.min(
+          displayProducts.length - 1,
+          selectedIndex + 1
+        );
         setSelectedIndex(newIndex);
         const product = displayProducts[newIndex];
         if (product) setSelectedProductId(product.id);
       },
-      arrowup: (e) => {
+      arrowup: e => {
         e.preventDefault();
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const product = displayProducts[newIndex];
         if (product) setSelectedProductId(product.id);
       },
-      enter: (e) => {
+      enter: e => {
         if (selectedProduct) {
           e.preventDefault();
           inspector.open();
@@ -663,7 +705,7 @@ export function ProductsWorkSurface() {
       nameCanonical: product.nameCanonical,
       category: product.category,
       subcategory: product.subcategory ?? "",
-      uomSellable: product.uomSellable,
+      uomSellable: product.uomSellable ?? "EA",
       description: product.description ?? "",
     });
     setShowEditDialog(true);
@@ -674,9 +716,12 @@ export function ProductsWorkSurface() {
     setShowArchiveDialog(true);
   }, []);
 
-  const handleRestore = useCallback((productId: number) => {
-    restoreMutation.mutate({ id: productId });
-  }, [restoreMutation]);
+  const handleRestore = useCallback(
+    (productId: number) => {
+      restoreMutation.mutate({ id: productId });
+    },
+    [restoreMutation]
+  );
 
   const handleCreateSubmit = useCallback(() => {
     if (!formData.brandId) {
@@ -769,13 +814,22 @@ export function ProductsWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Total: <span className="font-semibold text-foreground">{stats.total}</span>
+              Total:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.total}
+              </span>
             </span>
             <span>
-              Active: <span className="font-semibold text-foreground">{stats.active}</span>
+              Active:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.active}
+              </span>
             </span>
             <span>
-              Categories: <span className="font-semibold text-foreground">{stats.categories}</span>
+              Categories:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.categories}
+              </span>
             </span>
           </div>
         </div>
@@ -791,7 +845,7 @@ export function ProductsWorkSurface() {
                 ref={searchInputRef}
                 placeholder="Search products... (Cmd+K)"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -817,10 +871,12 @@ export function ProductsWorkSurface() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        <div className={cn(
-          "flex-1 overflow-auto transition-all duration-200",
-          inspector.isOpen && "mr-96"
-        )}>
+        <div
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-200",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -831,7 +887,9 @@ export function ProductsWorkSurface() {
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No products found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search ? "Try adjusting your search" : "Create your first product"}
+                  {search
+                    ? "Try adjusting your search"
+                    : "Create your first product"}
                 </p>
               </div>
             </div>
@@ -855,7 +913,8 @@ export function ProductsWorkSurface() {
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedProductId === product.id && "bg-muted",
-                      selectedIndex === index && "ring-1 ring-inset ring-primary"
+                      selectedIndex === index &&
+                        "ring-1 ring-inset ring-primary"
                     )}
                     onClick={() => {
                       setSelectedProductId(product.id);
@@ -865,9 +924,13 @@ export function ProductsWorkSurface() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{product.nameCanonical}</span>
+                        <span className="font-medium">
+                          {product.nameCanonical}
+                        </span>
                         {product.deletedAt && (
-                          <Badge variant="secondary" className="text-xs">Archived</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Archived
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
@@ -879,7 +942,7 @@ export function ProductsWorkSurface() {
                     <TableCell>{product.subcategory || "-"}</TableCell>
                     <TableCell>{product.brandName || "-"}</TableCell>
                     <TableCell>{product.strainName || "-"}</TableCell>
-                    <TableCell>{product.uomSellable}</TableCell>
+                    <TableCell>{product.uomSellable ?? "EA"}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <ChevronRight className="h-4 w-4" />
@@ -929,7 +992,7 @@ export function ProductsWorkSurface() {
       {/* Edit Product Dialog */}
       <ProductFormDialog
         open={showEditDialog}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           setShowEditDialog(open);
           if (!open) {
             setEditingProduct(null);
@@ -953,11 +1016,15 @@ export function ProductsWorkSurface() {
             <DialogTitle>Archive Product</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to archive "{productToArchive?.nameCanonical}"?
-            This product will be hidden from the catalogue but can be restored later.
+            Are you sure you want to archive "{productToArchive?.nameCanonical}
+            "? This product will be hidden from the catalogue but can be
+            restored later.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowArchiveDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowArchiveDialog(false)}
+            >
               Cancel
             </Button>
             <Button
