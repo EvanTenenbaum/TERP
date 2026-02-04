@@ -335,6 +335,7 @@ export async function getClientByTeriCode(teriCode: string) {
 /**
  * Create new client
  * FEAT-001: Added wishlist field support for notes/additional info
+ * TER-38: Enhanced error handling to prevent silent failures
  */
 export async function createClient(
   userId: number,
@@ -344,7 +345,14 @@ export async function createClient(
     email?: string;
     phone?: string;
     address?: string;
-    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    businessType?:
+      | "RETAIL"
+      | "WHOLESALE"
+      | "DISPENSARY"
+      | "DELIVERY"
+      | "MANUFACTURER"
+      | "DISTRIBUTOR"
+      | "OTHER";
     preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
     paymentTerms?: number;
     isBuyer?: boolean;
@@ -383,11 +391,43 @@ export async function createClient(
     wishlist: data.wishlist || null, // FEAT-001: Store notes/additional info
   };
 
-  const result = await db.insert(clients).values(clientData);
-  const clientId = Number(result[0].insertId);
+  // TER-38: Wrap database insert in try/catch for better error handling
+  let clientId: number;
+  try {
+    const result = await db.insert(clients).values(clientData);
+    clientId = Number(result[0].insertId);
 
-  // Log activity
-  await logActivity(clientId, userId, "CREATED", {});
+    // TER-38: Validate that we got a valid client ID
+    if (!clientId || isNaN(clientId) || clientId <= 0) {
+      throw new Error(
+        `Invalid client ID returned from database: ${result[0].insertId}`
+      );
+    }
+  } catch (error) {
+    // TER-38: Re-throw with context for better debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[clientsDb.createClient] Database insert failed:", {
+      error: errorMessage,
+      teriCode: data.teriCode,
+      name: data.name,
+    });
+    throw error;
+  }
+
+  // TER-38: Log activity in a separate try/catch so it doesn't fail the whole operation
+  try {
+    await logActivity(clientId, userId, "CREATED", {});
+  } catch (activityError) {
+    // Log but don't fail - client was created successfully
+    console.error("[clientsDb.createClient] Failed to log activity:", {
+      error:
+        activityError instanceof Error
+          ? activityError.message
+          : String(activityError),
+      clientId,
+      userId,
+    });
+  }
 
   return clientId;
 }
@@ -407,7 +447,14 @@ export async function updateClient(
     email?: string;
     phone?: string;
     address?: string;
-    businessType?: "RETAIL" | "WHOLESALE" | "DISPENSARY" | "DELIVERY" | "MANUFACTURER" | "DISTRIBUTOR" | "OTHER";
+    businessType?:
+      | "RETAIL"
+      | "WHOLESALE"
+      | "DISPENSARY"
+      | "DELIVERY"
+      | "MANUFACTURER"
+      | "DISTRIBUTOR"
+      | "OTHER";
     preferredContact?: "EMAIL" | "PHONE" | "TEXT" | "ANY";
     paymentTerms?: number;
     isBuyer?: boolean;
@@ -429,9 +476,12 @@ export async function updateClient(
   if (data.email !== undefined) updateData.email = data.email;
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.address !== undefined) updateData.address = data.address;
-  if (data.businessType !== undefined) updateData.businessType = data.businessType;
-  if (data.preferredContact !== undefined) updateData.preferredContact = data.preferredContact;
-  if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms;
+  if (data.businessType !== undefined)
+    updateData.businessType = data.businessType;
+  if (data.preferredContact !== undefined)
+    updateData.preferredContact = data.preferredContact;
+  if (data.paymentTerms !== undefined)
+    updateData.paymentTerms = data.paymentTerms;
   if (data.isBuyer !== undefined) updateData.isBuyer = data.isBuyer;
   if (data.isSeller !== undefined) updateData.isSeller = data.isSeller;
   if (data.isBrand !== undefined) updateData.isBrand = data.isBrand;
@@ -540,7 +590,9 @@ export async function updateClientStats(clientId: number) {
     const amount = Number(txn.amount);
     // Calculate profit from transaction margin if available
     // Note: profit field may not exist on all transactions
-    const profit = Number((txn as { profit?: string | number | null }).profit || 0);
+    const profit = Number(
+      (txn as { profit?: string | number | null }).profit || 0
+    );
 
     if (txn.transactionType === "INVOICE" || txn.transactionType === "ORDER") {
       totalSpent += amount;

@@ -92,6 +92,7 @@ export const clientsRouter = router({
   // Create new client
   // BLOCK-001: Enhanced error handling for duplicate TERI codes
   // FEAT-001: Added wishlist/notes field support and business fields
+  // TER-38: Fixed silent failure with comprehensive error handling and logging
   create: protectedProcedure
     .use(requirePermission("clients:create"))
     .input(
@@ -101,8 +102,18 @@ export const clientsRouter = router({
         email: z.string().email().optional(),
         phone: z.string().max(50).optional(),
         address: z.string().optional(),
-        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
-        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        businessType: z
+          .enum([
+            "RETAIL",
+            "WHOLESALE",
+            "DISPENSARY",
+            "DELIVERY",
+            "MANUFACTURER",
+            "DISTRIBUTOR",
+            "OTHER",
+          ])
+          .optional(),
+        preferredContact: z.enum(["EMAIL", "PHONE", "TEXT", "ANY"]).optional(),
         paymentTerms: z.number().int().positive().optional().default(30),
         isBuyer: z.boolean().optional(),
         isSeller: z.boolean().optional(),
@@ -120,22 +131,81 @@ export const clientsRouter = router({
           message: "Authentication required to create a client.",
         });
       }
+
+      // TER-38: Log client creation attempt for debugging
+      console.info("[clients.create] Attempting to create client:", {
+        teriCode: input.teriCode,
+        name: input.name,
+        userId: ctx.user.id,
+      });
+
       try {
-        return await clientsDb.createClient(ctx.user.id, input);
+        const clientId = await clientsDb.createClient(ctx.user.id, input);
+
+        // TER-38: Log successful creation
+        console.info("[clients.create] Client created successfully:", {
+          clientId,
+          teriCode: input.teriCode,
+          userId: ctx.user.id,
+        });
+
+        return clientId;
       } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        // TER-38: Log the error with full context for debugging
+        console.error("[clients.create] Failed to create client:", {
+          error: errorMessage,
+          teriCode: input.teriCode,
+          name: input.name,
+          userId: ctx.user.id,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
         // Handle duplicate TERI code error with user-friendly message
-        if (
-          error instanceof Error &&
-          error.message.includes("TERI code already exists")
-        ) {
+        if (errorMessage.includes("TERI code already exists")) {
           throw new TRPCError({
             code: "CONFLICT",
             message: `A client with TERI code "${input.teriCode}" already exists. Please use a different code.`,
             cause: error,
           });
         }
-        // Re-throw other errors
-        throw error;
+
+        // TER-38: Handle database constraint violations
+        if (
+          errorMessage.includes("Duplicate entry") ||
+          errorMessage.includes("unique constraint")
+        ) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "A client with this information already exists. Please check the TERI code and try again.",
+            cause: error,
+          });
+        }
+
+        // TER-38: Handle validation errors
+        if (
+          errorMessage.includes("validation") ||
+          errorMessage.includes("invalid")
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Invalid client data. Please check all fields and try again.",
+            cause: error,
+          });
+        }
+
+        // TER-38: Wrap all other errors in a TRPCError with INTERNAL_SERVER_ERROR
+        // This ensures the error is properly formatted for the client
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "Failed to create client. Please try again or contact support if the problem persists.",
+          cause: error,
+        });
       }
     }),
 
@@ -151,8 +221,18 @@ export const clientsRouter = router({
         email: z.string().email().optional(),
         phone: z.string().max(50).optional(),
         address: z.string().optional(),
-        businessType: z.enum(['RETAIL', 'WHOLESALE', 'DISPENSARY', 'DELIVERY', 'MANUFACTURER', 'DISTRIBUTOR', 'OTHER']).optional(),
-        preferredContact: z.enum(['EMAIL', 'PHONE', 'TEXT', 'ANY']).optional(),
+        businessType: z
+          .enum([
+            "RETAIL",
+            "WHOLESALE",
+            "DISPENSARY",
+            "DELIVERY",
+            "MANUFACTURER",
+            "DISTRIBUTOR",
+            "OTHER",
+          ])
+          .optional(),
+        preferredContact: z.enum(["EMAIL", "PHONE", "TEXT", "ANY"]).optional(),
         paymentTerms: z.number().int().positive().optional(),
         isBuyer: z.boolean().optional(),
         isSeller: z.boolean().optional(),
