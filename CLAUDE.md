@@ -140,6 +140,7 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 ```
 
 **Schema Verification Notes:**
+
 - `pnpm test:schema` runs integration tests against a real database
 - Tests auto-validate ALL tables/columns from `drizzle/schema.ts`
 - Uses `COLUMNS_PENDING_MIGRATION` array for known pending migrations (e.g., `products.strainId`)
@@ -169,31 +170,39 @@ Deployment: ✅ VERIFIED | ⏳ PENDING | ❌ FAILED
 Manus agents MUST follow the wave-based development lifecycle orchestrated by the `terp-pm` skill.
 
 ### Phase 0: Wave Planning
+
 1. **Pull latest roadmap** from `docs/roadmaps/`.
 2. **Analyze and propose a wave** (4-6 related tasks).
 3. **Present wave proposal** with Rationale and Estimates.
 
 ### Phase 1: Roadmap Claim
+
 Upon approval, claim tasks in the roadmap by changing `[ ]` to `[🔄]`.
+
 ```bash
 git commit -m "roadmap: claim WAVE-[ID] ([task list])"
 ```
 
 ### Phase 2: Development
+
 Manus agents handle the full development lifecycle:
+
 - **Reasoning & Planning**: Analyzing tasks and breaking down problems.
 - **Implementation**: Writing and modifying code directly.
 - **Execution**: Managing git, shell, and file operations.
 - **Verification**: Running tests and checks to ensure quality.
 
 **Workflow per task:**
+
 1. Gather context (files, schema).
 2. Plan and implement changes.
 3. Run `pnpm check` and other verification commands.
 4. Iterate until all checks pass.
 
 ### Phase 3: Post-Merge QA (`terp-qa`)
+
 After merging a wave, the `terp-qa` skill is triggered:
+
 1. **Wait for Deployment**: Verify the correct commit SHA is `ACTIVE` on DigitalOcean.
 2. **Health Check**: Verify `/api/health` returns 200.
 3. **Error Monitoring**: Check logs for new errors compared to baseline.
@@ -204,7 +213,9 @@ After merging a wave, the `terp-qa` skill is triggered:
    - Capture evidence (screenshots).
 
 ### Phase 4: Wave Completion
+
 After ALL tasks are verified by QA, update the roadmap from `[🔄]` to `[x]`.
+
 ```bash
 git commit -m "roadmap: complete WAVE-[ID] ([task list]) ✓"
 ```
@@ -409,6 +420,62 @@ const createdBy = input.createdBy;
 // For VIP portal
 const actorId = `vip:${ctx.session.clientId}`;
 ```
+
+### Authentication & Login
+
+TERP uses session-based authentication with JWT tokens stored in HTTP-only cookies.
+
+#### Demo Mode (Recommended for Internal/Demo Deployments)
+
+When `DEMO_MODE=true`:
+
+- Visitors are **auto-authenticated as Super Admin** (no login required)
+- Role switcher is visible to test different roles
+- Works in production `NODE_ENV`
+
+**To enable:** Set `DEMO_MODE=true` in environment variables.
+
+#### Available Test Accounts
+
+| Email                     | Role              | Access Level                       |
+| ------------------------- | ----------------- | ---------------------------------- |
+| qa.superadmin@terp.test   | Super Admin       | Full access (default in DEMO_MODE) |
+| qa.salesmanager@terp.test | Sales Manager     | Clients, orders, quotes            |
+| qa.salesrep@terp.test     | Customer Service  | Clients, orders, returns           |
+| qa.inventory@terp.test    | Inventory Manager | Inventory, locations, transfers    |
+| qa.fulfillment@terp.test  | Warehouse Staff   | Receive POs, adjustments           |
+| qa.accounting@terp.test   | Accountant        | Accounting, credits, COGS          |
+| qa.auditor@terp.test      | Read-Only Auditor | Read-only access, audit logs       |
+
+**Password for all accounts:** `TerpQA2026!`
+
+#### Auth Flow Summary
+
+```
+Request arrives
+    ↓
+Check for terp_session cookie
+    ├─ Valid token → Authenticated user
+    ├─ No token + DEMO_MODE=true → Auto-login as Super Admin
+    └─ No token + DEMO_MODE=false → Public demo user (read-only)
+```
+
+#### Key Files
+
+| File                         | Purpose                              |
+| ---------------------------- | ------------------------------------ |
+| `server/_core/context.ts`    | Request context, user provisioning   |
+| `server/_core/simpleAuth.ts` | JWT creation, password verification  |
+| `server/_core/qaAuth.ts`     | QA role definitions, DEMO_MODE check |
+| `server/_core/env.ts`        | Environment variable access          |
+
+#### Environment Variables
+
+| Variable          | Purpose                                     | Default |
+| ----------------- | ------------------------------------------- | ------- |
+| `DEMO_MODE`       | Auto-login as Super Admin for all visitors  | `false` |
+| `QA_AUTH_ENABLED` | Enable QA auth (dev/staging only, not prod) | `false` |
+| `JWT_SECRET`      | Secret for signing JWT tokens (required)    | -       |
 
 ---
 
@@ -877,7 +944,6 @@ When updating protocols, update both this file AND the source files to maintain 
 
 **Remember**: Verification over persuasion. Prove it works, don't convince yourself it works.
 
-
 ---
 
 ## 13. Audit System
@@ -900,11 +966,11 @@ From Claude Code, use these slash commands:
 
 ### Audit Files
 
-| File | Purpose |
-| ---- | ------- |
+| File                            | Purpose                                           |
+| ------------------------------- | ------------------------------------------------- |
 | `.claude/known-bug-patterns.md` | Catalog of recurring bugs with detection commands |
-| `.claude/audit-history.json` | Tracks issues found across sessions |
-| `.claude/commands/audit/*.md` | Audit command implementations |
+| `.claude/audit-history.json`    | Tracks issues found across sessions               |
+| `.claude/commands/audit/*.md`   | Audit command implementations                     |
 
 ### Known Bug Patterns
 
