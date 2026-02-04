@@ -1,0 +1,24 @@
+[Unit]
+Description=TERP Operations API
+Documentation=https://github.com/EvanTenenbaum/TERP
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/terp-ops-api
+ExecStart=/usr/bin/node /opt/terp-ops-api/dist/index.js
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/terp-ops-api/.env
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/terp-ops-api/logs
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=terp-ops-api
+
+[Install]
+WantedBy=multi-user.target
