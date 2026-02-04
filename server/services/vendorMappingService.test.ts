@@ -8,7 +8,7 @@
  * correctly maps legacy vendor IDs to the unified clients table.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
 
 // ============================================================================
@@ -49,13 +49,6 @@ interface SupplierProfileRecord {
   legacyVendorId: number | null;
 }
 
-interface MigrationResult {
-  success: boolean;
-  clientId?: number;
-  supplierProfileId?: number;
-  error?: string;
-}
-
 // ============================================================================
 // Pure Functions Under Test (extracted from vendorMappingService)
 // ============================================================================
@@ -72,18 +65,17 @@ function generateTeriCodeForVendor(vendorId: number): string {
  * Validate that a vendor record has required fields for migration
  */
 function isValidVendorForMigration(vendor: VendorRecord): boolean {
-  return (
-    vendor.id > 0 &&
-    vendor.name.length > 0 &&
-    vendor.name.length <= 255
-  );
+  return vendor.id > 0 && vendor.name.length > 0 && vendor.name.length <= 255;
 }
 
 /**
  * Check if a vendor name collides with an existing client name
  * Case-insensitive comparison
  */
-function hasNameCollision(vendorName: string, existingClientNames: string[]): boolean {
+function hasNameCollision(
+  vendorName: string,
+  existingClientNames: string[]
+): boolean {
   const normalizedVendorName = vendorName.toLowerCase().trim();
   return existingClientNames.some(
     clientName => clientName.toLowerCase().trim() === normalizedVendorName
@@ -93,7 +85,10 @@ function hasNameCollision(vendorName: string, existingClientNames: string[]): bo
 /**
  * Generate a renamed vendor name to avoid collision
  */
-function generateRenamedVendorName(vendorName: string, suffix: string = " (Vendor)"): string {
+function generateRenamedVendorName(
+  vendorName: string,
+  suffix: string = " (Vendor)"
+): string {
   return `${vendorName}${suffix}`;
 }
 
@@ -132,7 +127,8 @@ function isValidMigratedTeriCode(teriCode: string): boolean {
 
 const vendorIdArb = fc.integer({ min: 1, max: 999999 });
 
-const vendorNameArb = fc.string({ minLength: 1, maxLength: 100 })
+const vendorNameArb = fc
+  .string({ minLength: 1, maxLength: 100 })
   .filter(s => s.trim().length > 0);
 
 const vendorRecordArb = fc.record({
@@ -140,8 +136,13 @@ const vendorRecordArb = fc.record({
   name: vendorNameArb,
   contactName: fc.option(fc.string({ maxLength: 100 }), { nil: null }),
   contactEmail: fc.option(fc.emailAddress(), { nil: null }),
-  contactPhone: fc.option(fc.string({ minLength: 10, maxLength: 20 }), { nil: null }),
-  paymentTerms: fc.option(fc.constantFrom("Net 30", "Net 60", "COD", "Prepaid"), { nil: null }),
+  contactPhone: fc.option(fc.string({ minLength: 10, maxLength: 20 }), {
+    nil: null,
+  }),
+  paymentTerms: fc.option(
+    fc.constantFrom("Net 30", "Net 60", "COD", "Prepaid"),
+    { nil: null }
+  ),
   notes: fc.option(fc.string({ maxLength: 500 }), { nil: null }),
 });
 
@@ -163,12 +164,12 @@ describe("Vendor-to-Client Mapping", () => {
   describe("Property 8: Vendor-to-Client Mapping Correctness", () => {
     it("should generate valid teriCode for any vendor ID", () => {
       fc.assert(
-        fc.property(vendorIdArb, (vendorId) => {
+        fc.property(vendorIdArb, vendorId => {
           const teriCode = generateTeriCodeForVendor(vendorId);
-          
+
           // Property: Generated teriCode should match expected format
           expect(isValidMigratedTeriCode(teriCode)).toBe(true);
-          
+
           // Property: teriCode should contain the vendor ID
           expect(teriCode).toContain(vendorId.toString().padStart(6, "0"));
         }),
@@ -183,7 +184,7 @@ describe("Vendor-to-Client Mapping", () => {
           ([vendorId1, vendorId2]) => {
             const teriCode1 = generateTeriCodeForVendor(vendorId1);
             const teriCode2 = generateTeriCodeForVendor(vendorId2);
-            
+
             // Property: Different vendor IDs should produce different teriCodes
             expect(teriCode1).not.toBe(teriCode2);
           }
@@ -194,11 +195,15 @@ describe("Vendor-to-Client Mapping", () => {
 
     it("should correctly identify valid vendors for migration", () => {
       fc.assert(
-        fc.property(vendorRecordArb, (vendor) => {
+        fc.property(vendorRecordArb, vendor => {
           const isValid = isValidVendorForMigration(vendor);
-          
+
           // Property: Vendor with positive ID and non-empty name should be valid
-          if (vendor.id > 0 && vendor.name.length > 0 && vendor.name.length <= 255) {
+          if (
+            vendor.id > 0 &&
+            vendor.name.length > 0 &&
+            vendor.name.length <= 255
+          ) {
             expect(isValid).toBe(true);
           }
         }),
@@ -216,7 +221,7 @@ describe("Vendor-to-Client Mapping", () => {
         paymentTerms: null,
         notes: null,
       };
-      
+
       expect(isValidVendorForMigration(invalidVendor)).toBe(false);
     });
 
@@ -230,7 +235,7 @@ describe("Vendor-to-Client Mapping", () => {
         paymentTerms: null,
         notes: null,
       };
-      
+
       expect(isValidVendorForMigration(invalidVendor)).toBe(false);
     });
   });
@@ -238,15 +243,19 @@ describe("Vendor-to-Client Mapping", () => {
   describe("Name Collision Detection", () => {
     it("should detect exact name collisions (case-insensitive)", () => {
       fc.assert(
-        fc.property(vendorNameArb, (name) => {
+        fc.property(vendorNameArb, name => {
           const existingNames = [name];
-          
+
           // Property: Same name should always collide
           expect(hasNameCollision(name, existingNames)).toBe(true);
-          
+
           // Property: Same name with different case should collide
-          expect(hasNameCollision(name.toUpperCase(), existingNames)).toBe(true);
-          expect(hasNameCollision(name.toLowerCase(), existingNames)).toBe(true);
+          expect(hasNameCollision(name.toUpperCase(), existingNames)).toBe(
+            true
+          );
+          expect(hasNameCollision(name.toLowerCase(), existingNames)).toBe(
+            true
+          );
         }),
         { numRuns: 100 }
       );
@@ -255,8 +264,12 @@ describe("Vendor-to-Client Mapping", () => {
     it("should not detect collision when name is unique", () => {
       fc.assert(
         fc.property(
-          fc.tuple(vendorNameArb, clientNamesArb).filter(([name, names]) => 
-            !names.some(n => n.toLowerCase() === name.toLowerCase())
+          fc.tuple(vendorNameArb, clientNamesArb).filter(
+            ([name, names]) =>
+              // Use trim() in filter to match hasNameCollision behavior
+              !names.some(
+                n => n.toLowerCase().trim() === name.toLowerCase().trim()
+              )
           ),
           ([vendorName, existingNames]) => {
             // Property: Unique name should not collide
@@ -269,7 +282,7 @@ describe("Vendor-to-Client Mapping", () => {
 
     it("should handle whitespace in name comparison", () => {
       const existingNames = ["Test Vendor"];
-      
+
       // Property: Names with leading/trailing whitespace should still match
       expect(hasNameCollision("  Test Vendor  ", existingNames)).toBe(true);
       expect(hasNameCollision("Test Vendor", existingNames)).toBe(true);
@@ -279,15 +292,15 @@ describe("Vendor-to-Client Mapping", () => {
   describe("Renamed Vendor Name Generation", () => {
     it("should append suffix to vendor name", () => {
       fc.assert(
-        fc.property(vendorNameArb, (name) => {
+        fc.property(vendorNameArb, name => {
           const renamed = generateRenamedVendorName(name);
-          
+
           // Property: Renamed name should contain original name
           expect(renamed).toContain(name);
-          
+
           // Property: Renamed name should be longer than original
           expect(renamed.length).toBeGreaterThan(name.length);
-          
+
           // Property: Renamed name should end with default suffix
           expect(renamed).toMatch(/\(Vendor\)$/);
         }),
@@ -301,7 +314,7 @@ describe("Vendor-to-Client Mapping", () => {
           fc.tuple(vendorNameArb, fc.string({ minLength: 1, maxLength: 20 })),
           ([name, suffix]) => {
             const renamed = generateRenamedVendorName(name, suffix);
-            
+
             // Property: Renamed name should end with custom suffix
             expect(renamed).toBe(`${name}${suffix}`);
           }
@@ -325,7 +338,7 @@ describe("Vendor-to-Client Mapping", () => {
         isReferee: false,
         isContractor: false,
       };
-      
+
       expect(hasCorrectSupplierFlags(validClient)).toBe(true);
     });
 
@@ -342,7 +355,7 @@ describe("Vendor-to-Client Mapping", () => {
         isReferee: false,
         isContractor: false,
       };
-      
+
       expect(hasCorrectSupplierFlags(invalidClient)).toBe(false);
     });
   });
@@ -358,7 +371,7 @@ describe("Vendor-to-Client Mapping", () => {
         paymentTerms: "Net 30",
         notes: "Test notes",
       };
-      
+
       const client: ClientRecord = {
         id: 100,
         teriCode: "VEND-000042",
@@ -371,7 +384,7 @@ describe("Vendor-to-Client Mapping", () => {
         isReferee: false,
         isContractor: false,
       };
-      
+
       const validProfile: SupplierProfileRecord = {
         id: 1,
         clientId: 100,
@@ -382,7 +395,7 @@ describe("Vendor-to-Client Mapping", () => {
         supplierNotes: "Test notes",
         legacyVendorId: 42,
       };
-      
+
       expect(isValidSupplierProfile(validProfile, client, vendor)).toBe(true);
     });
 
@@ -396,7 +409,7 @@ describe("Vendor-to-Client Mapping", () => {
         paymentTerms: null,
         notes: null,
       };
-      
+
       const client: ClientRecord = {
         id: 100,
         teriCode: "VEND-000042",
@@ -409,7 +422,7 @@ describe("Vendor-to-Client Mapping", () => {
         isReferee: false,
         isContractor: false,
       };
-      
+
       const invalidProfile: SupplierProfileRecord = {
         id: 1,
         clientId: 999, // Wrong client ID
@@ -420,8 +433,10 @@ describe("Vendor-to-Client Mapping", () => {
         supplierNotes: null,
         legacyVendorId: 42,
       };
-      
-      expect(isValidSupplierProfile(invalidProfile, client, vendor)).toBe(false);
+
+      expect(isValidSupplierProfile(invalidProfile, client, vendor)).toBe(
+        false
+      );
     });
 
     it("should reject profile with wrong legacy vendor ID", () => {
@@ -434,7 +449,7 @@ describe("Vendor-to-Client Mapping", () => {
         paymentTerms: null,
         notes: null,
       };
-      
+
       const client: ClientRecord = {
         id: 100,
         teriCode: "VEND-000042",
@@ -447,7 +462,7 @@ describe("Vendor-to-Client Mapping", () => {
         isReferee: false,
         isContractor: false,
       };
-      
+
       const invalidProfile: SupplierProfileRecord = {
         id: 1,
         clientId: 100,
@@ -458,8 +473,10 @@ describe("Vendor-to-Client Mapping", () => {
         supplierNotes: null,
         legacyVendorId: 999, // Wrong vendor ID
       };
-      
-      expect(isValidSupplierProfile(invalidProfile, client, vendor)).toBe(false);
+
+      expect(isValidSupplierProfile(invalidProfile, client, vendor)).toBe(
+        false
+      );
     });
   });
 
@@ -489,11 +506,11 @@ describe("Migration Edge Cases", () => {
     it("should skip migration when collision strategy is 'skip'", () => {
       const vendorName = "Existing Client";
       const existingNames = ["Existing Client"];
-      
+
       // Simulate skip strategy
       const hasCollision = hasNameCollision(vendorName, existingNames);
       expect(hasCollision).toBe(true);
-      
+
       // In skip mode, migration should not proceed
       // This is tested at the service level
     });
@@ -501,10 +518,10 @@ describe("Migration Edge Cases", () => {
     it("should rename vendor when collision strategy is 'rename'", () => {
       const vendorName = "Existing Client";
       const existingNames = ["Existing Client"];
-      
+
       const hasCollision = hasNameCollision(vendorName, existingNames);
       expect(hasCollision).toBe(true);
-      
+
       // Rename should produce unique name
       const renamedName = generateRenamedVendorName(vendorName);
       expect(hasNameCollision(renamedName, existingNames)).toBe(false);
@@ -513,11 +530,11 @@ describe("Migration Edge Cases", () => {
     it("should handle multiple collisions with rename strategy", () => {
       const vendorName = "Test Vendor";
       const existingNames = ["Test Vendor", "Test Vendor (Vendor)"];
-      
+
       // First rename
       const renamed1 = generateRenamedVendorName(vendorName);
       expect(renamed1).toBe("Test Vendor (Vendor)");
-      
+
       // If that also collides, need different suffix
       const renamed2 = generateRenamedVendorName(vendorName, " (Vendor 2)");
       expect(renamed2).toBe("Test Vendor (Vendor 2)");
@@ -528,10 +545,10 @@ describe("Migration Edge Cases", () => {
   describe("Idempotency", () => {
     it("should generate same teriCode for same vendor ID", () => {
       const vendorId = 12345;
-      
+
       const teriCode1 = generateTeriCodeForVendor(vendorId);
       const teriCode2 = generateTeriCodeForVendor(vendorId);
-      
+
       // Property: Same input should always produce same output
       expect(teriCode1).toBe(teriCode2);
     });
@@ -561,16 +578,16 @@ describe("Migration Edge Cases", () => {
     it("should handle empty existing client list", () => {
       const vendorName = "New Vendor";
       const existingNames: string[] = [];
-      
+
       expect(hasNameCollision(vendorName, existingNames)).toBe(false);
     });
 
     it("should handle vendor name with special characters", () => {
-      const vendorName = "Vendor's \"Special\" Name & Co.";
+      const vendorName = 'Vendor\'s "Special" Name & Co.';
       const existingNames = ["Other Vendor"];
-      
+
       expect(hasNameCollision(vendorName, existingNames)).toBe(false);
-      
+
       const renamed = generateRenamedVendorName(vendorName);
       expect(renamed).toContain(vendorName);
     });
@@ -586,10 +603,10 @@ describe("Migration Edge Cases", () => {
         paymentTerms: null,
         notes: null,
       };
-      
+
       // Names > 255 chars should be invalid
       expect(isValidVendorForMigration(vendor)).toBe(true); // 200 < 255
-      
+
       const tooLongName = "A".repeat(300);
       const invalidVendor: VendorRecord = {
         ...vendor,
@@ -610,7 +627,7 @@ describe("Migration Edge Cases", () => {
         paymentTerms: "Net 60",
         notes: "Important supplier notes",
       };
-      
+
       // Simulate creating supplier profile from vendor
       const profile: SupplierProfileRecord = {
         id: 1,
@@ -622,7 +639,7 @@ describe("Migration Edge Cases", () => {
         supplierNotes: vendor.notes,
         legacyVendorId: vendor.id,
       };
-      
+
       // Property: All vendor fields should be preserved
       expect(profile.contactName).toBe(vendor.contactName);
       expect(profile.contactEmail).toBe(vendor.contactEmail);
@@ -642,7 +659,7 @@ describe("Migration Edge Cases", () => {
         paymentTerms: null,
         notes: null,
       };
-      
+
       // Simulate creating supplier profile from vendor with nulls
       const profile: SupplierProfileRecord = {
         id: 1,
@@ -654,7 +671,7 @@ describe("Migration Edge Cases", () => {
         supplierNotes: vendor.notes,
         legacyVendorId: vendor.id,
       };
-      
+
       // Property: Null fields should remain null
       expect(profile.contactName).toBeNull();
       expect(profile.contactEmail).toBeNull();
