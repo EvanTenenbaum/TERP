@@ -11,7 +11,15 @@
  * @see ATOMIC_UX_STRATEGY.md - Golden Flow specification
  */
 
-import { useState, useMemo, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -22,15 +30,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +63,6 @@ import {
   DollarSign,
   Users,
   Loader2,
-  AlertCircle,
   Sparkles,
 } from "lucide-react";
 
@@ -65,9 +70,23 @@ import {
 // TYPES
 // ============================================================================
 
+type RouterInputs = inferRouterInputs<AppRouter>;
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type ClientsListResponse = RouterOutputs["clients"]["list"];
+type ClientListItem = ClientsListResponse extends { items: Array<infer Item> }
+  ? Item
+  : never;
+type CreateOrderOutput = RouterOutputs["orders"]["create"];
+
+type ProductUpdateHandler = <K extends keyof SelectedProduct>(
+  batchId: number,
+  field: K,
+  value: SelectedProduct[K]
+) => void;
+
 interface IntakeBatch {
   id: number;
-  productId: number;
+  productId?: number;
   productName: string;
   quantity: number;
   unitCost: string;
@@ -77,7 +96,7 @@ interface IntakeBatch {
 
 interface SelectedProduct {
   batchId: number;
-  productId: number;
+  productId?: number;
   productName: string;
   availableQuantity: number;
   selectedQuantity: number;
@@ -89,7 +108,7 @@ interface FlowStep {
   id: number;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
 
 // ============================================================================
@@ -129,7 +148,10 @@ const FLOW_STEPS: FlowStep[] = [
 
 const formatCurrency = (value: string | number): string => {
   const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 const formatDate = (dateString: string): string => {
@@ -168,7 +190,8 @@ function StepIndicator({
               className={cn(
                 "flex items-center gap-3 p-3 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
-                isCompleted && "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
+                isCompleted &&
+                  "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -226,7 +249,9 @@ function SelectProductsStep({
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
         <Package className="h-12 w-12 mb-4 opacity-50" />
         <p className="font-medium">No available batches</p>
-        <p className="text-sm">Create an intake first to have products to sell</p>
+        <p className="text-sm">
+          Create an intake first to have products to sell
+        </p>
       </div>
     );
   }
@@ -242,7 +267,7 @@ function SelectProductsStep({
 
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-2">
-          {batches.map((batch) => (
+          {batches.map(batch => (
             <div
               key={batch.id}
               className={cn(
@@ -262,7 +287,8 @@ function SelectProductsStep({
                   <div>
                     <p className="font-medium">{batch.productName}</p>
                     <p className="text-sm text-muted-foreground">
-                      From: {batch.vendorName} • Received: {formatDate(batch.receivedAt)}
+                      From: {batch.vendorName} • Received:{" "}
+                      {formatDate(batch.receivedAt)}
                     </p>
                   </div>
                 </div>
@@ -290,7 +316,7 @@ function QuantityPricingStep({
   onUpdateProduct,
 }: {
   products: SelectedProduct[];
-  onUpdateProduct: (batchId: number, field: keyof SelectedProduct, value: any) => void;
+  onUpdateProduct: ProductUpdateHandler;
 }) {
   const calculateMargin = (product: SelectedProduct): number => {
     const price = parseFloat(product.unitPrice) || 0;
@@ -308,14 +334,17 @@ function QuantityPricingStep({
 
       <ScrollArea className="h-[400px] pr-4">
         <div className="space-y-4">
-          {products.map((product) => {
+          {products.map(product => {
             const margin = calculateMargin(product);
-            const lineTotal = product.selectedQuantity * parseFloat(product.unitPrice || "0");
+            const lineTotal =
+              product.selectedQuantity * parseFloat(product.unitPrice || "0");
 
             return (
               <Card key={product.batchId}>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{product.productName}</CardTitle>
+                  <CardTitle className="text-base">
+                    {product.productName}
+                  </CardTitle>
                   <CardDescription>
                     Available: {product.availableQuantity} units • Cost basis:{" "}
                     {formatCurrency(product.costBasis)}/unit
@@ -330,7 +359,7 @@ function QuantityPricingStep({
                         min={1}
                         max={product.availableQuantity}
                         value={product.selectedQuantity}
-                        onChange={(e) =>
+                        onChange={e =>
                           onUpdateProduct(
                             product.batchId,
                             "selectedQuantity",
@@ -349,8 +378,12 @@ function QuantityPricingStep({
                         step="0.01"
                         min={0}
                         value={product.unitPrice}
-                        onChange={(e) =>
-                          onUpdateProduct(product.batchId, "unitPrice", e.target.value)
+                        onChange={e =>
+                          onUpdateProduct(
+                            product.batchId,
+                            "unitPrice",
+                            e.target.value
+                          )
                         }
                       />
                     </div>
@@ -362,14 +395,20 @@ function QuantityPricingStep({
                         <span
                           className={cn(
                             "font-semibold",
-                            margin > 0 ? "text-green-600" : margin < 0 ? "text-red-600" : ""
+                            margin > 0
+                              ? "text-green-600"
+                              : margin < 0
+                                ? "text-red-600"
+                                : ""
                           )}
                         >
                           {margin}%
                         </span>
                       </span>
                     </div>
-                    <span className="font-semibold">Line Total: {formatCurrency(lineTotal)}</span>
+                    <span className="font-semibold">
+                      Line Total: {formatCurrency(lineTotal)}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -391,7 +430,7 @@ function ChooseClientStep({
   onSelectClient,
   isLoading,
 }: {
-  clients: any[];
+  clients: ClientListItem[];
   selectedClientId: number | null;
   onSelectClient: (clientId: number) => void;
   isLoading: boolean;
@@ -402,7 +441,7 @@ function ChooseClientStep({
     if (!search) return clients;
     const searchLower = search.toLowerCase();
     return clients.filter(
-      (c) =>
+      c =>
         c.name?.toLowerCase().includes(searchLower) ||
         c.email?.toLowerCase().includes(searchLower)
     );
@@ -422,13 +461,13 @@ function ChooseClientStep({
         <Input
           placeholder="Search clients..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
         />
       </div>
 
       <ScrollArea className="h-[350px] pr-4">
         <div className="space-y-2">
-          {filteredClients.map((client) => (
+          {filteredClients.map(client => (
             <div
               key={client.id}
               className={cn(
@@ -442,7 +481,9 @@ function ChooseClientStep({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">{client.name}</p>
-                  <p className="text-sm text-muted-foreground">{client.email || "No email"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {client.email || "No email"}
+                  </p>
                 </div>
                 {selectedClientId === client.id && (
                   <Check className="h-5 w-5 text-primary" />
@@ -479,7 +520,10 @@ function ReviewStep({
     (sum, p) => sum + p.selectedQuantity * parseFloat(p.costBasis || "0"),
     0
   );
-  const margin = totalCost > 0 ? Math.round(((orderTotal - totalCost) / totalCost) * 100) : 0;
+  const margin =
+    totalCost > 0
+      ? Math.round(((orderTotal - totalCost) / totalCost) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -497,12 +541,16 @@ function ReviewStep({
             <span className="font-medium">{products.length} items</span>
           </div>
           <Separator />
-          {products.map((p) => (
+          {products.map(p => (
             <div key={p.batchId} className="flex justify-between text-sm">
               <span>
                 {p.productName} × {p.selectedQuantity}
               </span>
-              <span>{formatCurrency(p.selectedQuantity * parseFloat(p.unitPrice || "0"))}</span>
+              <span>
+                {formatCurrency(
+                  p.selectedQuantity * parseFloat(p.unitPrice || "0")
+                )}
+              </span>
             </div>
           ))}
           <Separator />
@@ -512,7 +560,12 @@ function ReviewStep({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Margin</span>
-            <span className={cn("font-medium", margin > 0 ? "text-green-600" : "text-red-600")}>
+            <span
+              className={cn(
+                "font-medium",
+                margin > 0 ? "text-green-600" : "text-red-600"
+              )}
+            >
               {margin}%
             </span>
           </div>
@@ -563,42 +616,58 @@ interface OrderCreationFlowProps {
 }
 
 export function OrderCreationFlow({
-  intakeId,
+  intakeId: _intakeId,
   open,
   onOpenChange,
   onOrderCreated,
-}: OrderCreationFlowProps) {
+}: OrderCreationFlowProps): ReactElement {
   // State
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());
+  const [selectedBatches, setSelectedBatches] = useState<Set<number>>(
+    new Set()
+  );
   const [products, setProducts] = useState<SelectedProduct[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError } = useSaveState();
+  const { setSaving, setSaved, setError } = useSaveState();
 
   // Data queries
-  const { data: batchesData, isLoading: loadingBatches } = trpc.inventory.getEnhanced.useQuery(
-    { intakeId } as any,
-    { enabled: open }
-  );
-  const batches: IntakeBatch[] = Array.isArray(batchesData)
-    ? batchesData
-    : (batchesData as any)?.batches ?? (batchesData as any)?.items ?? [];
+  const inventoryQueryInput: RouterInputs["inventory"]["getEnhanced"] = {};
+  const { data: batchesData, isLoading: loadingBatches } =
+    trpc.inventory.getEnhanced.useQuery(inventoryQueryInput, { enabled: open });
+  const batches: IntakeBatch[] = useMemo(() => {
+    const items = batchesData?.items ?? [];
+    return items.map(
+      (item): IntakeBatch => ({
+        id: item.id,
+        productId: undefined,
+        productName: item.productName,
+        quantity: item.availableQty,
+        unitCost: (item.unitCogs ?? 0).toFixed(2),
+        vendorName: item.vendorName ?? "Unknown",
+        receivedAt:
+          item.receivedDate instanceof Date
+            ? item.receivedDate.toISOString()
+            : String(item.receivedDate),
+      })
+    );
+  }, [batchesData]);
 
-  const { data: clientsData, isLoading: loadingClients } = trpc.clients.list.useQuery(
-    { limit: 500 },
-    { enabled: open && currentStep === 3 }
-  );
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData as any)?.items ?? [];
+  const { data: clientsData, isLoading: loadingClients } =
+    trpc.clients.list.useQuery(
+      { limit: 500 },
+      { enabled: open && currentStep === 3 }
+    );
+  const clients: ClientListItem[] = clientsData?.items ?? [];
 
   // Get client name
-  const selectedClient = clients.find((c: any) => c.id === selectedClientId);
+  const selectedClient = clients.find(client => client.id === selectedClientId);
   const selectedClientName = selectedClient?.name || "";
 
   // Handlers
   const handleToggleBatch = useCallback((batchId: number) => {
-    setSelectedBatches((prev) => {
+    setSelectedBatches(prev => {
       const newSet = new Set(prev);
       if (newSet.has(batchId)) {
         newSet.delete(batchId);
@@ -609,10 +678,10 @@ export function OrderCreationFlow({
     });
   }, []);
 
-  const handleUpdateProduct = useCallback(
-    (batchId: number, field: keyof SelectedProduct, value: any) => {
-      setProducts((prev) =>
-        prev.map((p) => (p.batchId === batchId ? { ...p, [field]: value } : p))
+  const handleUpdateProduct: ProductUpdateHandler = useCallback(
+    (batchId, field, value) => {
+      setProducts(prev =>
+        prev.map(p => (p.batchId === batchId ? { ...p, [field]: value } : p))
       );
     },
     []
@@ -622,8 +691,8 @@ export function OrderCreationFlow({
     if (currentStep === 1) {
       // Convert selected batches to products
       const selectedProducts: SelectedProduct[] = batches
-        .filter((b) => selectedBatches.has(b.id))
-        .map((b) => ({
+        .filter(b => selectedBatches.has(b.id))
+        .map(b => ({
           batchId: b.id,
           productId: b.productId,
           productName: b.productName,
@@ -634,21 +703,20 @@ export function OrderCreationFlow({
         }));
       setProducts(selectedProducts);
     }
-    setCurrentStep((prev) => Math.min(prev + 1, FLOW_STEPS.length));
+    setCurrentStep(prev => Math.min(prev + 1, FLOW_STEPS.length));
   }, [currentStep, batches, selectedBatches]);
 
   const handlePrevStep = useCallback(() => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    setCurrentStep(prev => Math.max(prev - 1, 1));
   }, []);
 
   // Create order mutation
   const createOrderMutation = trpc.orders.create.useMutation({
     onMutate: () => setSaving("Creating order..."),
-    onSuccess: (data) => {
+    onSuccess: (data: CreateOrderOutput) => {
       setSaved();
       toast.success("Order created successfully!");
-      const orderId = typeof data === 'number' ? data : (data as any).id;
-      onOrderCreated?.(orderId);
+      onOrderCreated?.(data.id);
       onOpenChange(false);
       // Reset state
       setCurrentStep(1);
@@ -656,7 +724,7 @@ export function OrderCreationFlow({
       setProducts([]);
       setSelectedClientId(null);
     },
-    onError: (err) => {
+    onError: err => {
       setError(err.message);
       toast.error(err.message || "Failed to create order");
     },
@@ -669,16 +737,18 @@ export function OrderCreationFlow({
         return;
       }
 
-      createOrderMutation.mutate({
+      const createOrderInput: RouterInputs["orders"]["create"] = {
         orderType: "SALE",
         clientId: selectedClientId,
-        items: products.map((p) => ({
+        items: products.map(p => ({
           batchId: p.batchId,
           quantity: p.selectedQuantity,
           unitPrice: parseFloat(p.unitPrice),
           isSample: false,
         })),
-      } as unknown as Parameters<typeof createOrderMutation.mutate>[0]);
+        isDraft: asDraft,
+      };
+      createOrderMutation.mutate(createOrderInput);
     },
     [selectedClientId, products, createOrderMutation]
   );
@@ -687,11 +757,11 @@ export function OrderCreationFlow({
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: false,
     customHandlers: {
-      arrowright: (e) => {
+      arrowright: e => {
         e.preventDefault();
         if (canProceed) handleNextStep();
       },
-      arrowleft: (e) => {
+      arrowleft: e => {
         e.preventDefault();
         handlePrevStep();
       },
@@ -715,13 +785,19 @@ export function OrderCreationFlow({
   // Can proceed to next step?
   const canProceed =
     (currentStep === 1 && selectedBatches.size > 0) ||
-    (currentStep === 2 && products.every((p) => p.selectedQuantity > 0 && parseFloat(p.unitPrice) > 0)) ||
+    (currentStep === 2 &&
+      products.every(
+        p => p.selectedQuantity > 0 && parseFloat(p.unitPrice) > 0
+      )) ||
     (currentStep === 3 && selectedClientId !== null) ||
     currentStep === 4;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden" {...keyboardProps}>
+      <DialogContent
+        className="max-w-3xl max-h-[90vh] overflow-hidden"
+        {...keyboardProps}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -749,7 +825,10 @@ export function OrderCreationFlow({
               />
             )}
             {currentStep === 2 && (
-              <QuantityPricingStep products={products} onUpdateProduct={handleUpdateProduct} />
+              <QuantityPricingStep
+                products={products}
+                onUpdateProduct={handleUpdateProduct}
+              />
             )}
             {currentStep === 3 && (
               <ChooseClientStep

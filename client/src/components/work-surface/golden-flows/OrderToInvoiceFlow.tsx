@@ -11,7 +11,15 @@
  * @see ATOMIC_UX_STRATEGY.md - Golden Flow specification
  */
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -23,7 +31,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -69,6 +83,17 @@ import {
 // TYPES
 // ============================================================================
 
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type OrderByIdOutput = RouterOutputs["orders"]["getById"];
+type OrderDataItems = OrderByIdOutput extends { items: infer Items }
+  ? Items
+  : unknown;
+
+type InvoiceConfigUpdate = <K extends keyof InvoiceConfig>(
+  field: K,
+  value: InvoiceConfig[K]
+) => void;
+
 interface Order {
   id: number;
   orderNumber: string;
@@ -98,11 +123,49 @@ interface InvoiceConfig {
   autoSend: boolean;
 }
 
+interface RawOrderItem {
+  displayName?: string;
+  originalName?: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal?: number;
+}
+
+const isRawOrderItem = (value: unknown): value is RawOrderItem => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as RawOrderItem;
+  return (
+    typeof candidate.quantity === "number" &&
+    typeof candidate.unitPrice === "number"
+  );
+};
+
+const toLineItems = (items: OrderDataItems): Order["lineItems"] => {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter(isRawOrderItem)
+    .map((item, index): Order["lineItems"][number] => {
+      const quantity = Number.isFinite(item.quantity) ? item.quantity : 0;
+      const unitPrice = Number.isFinite(item.unitPrice) ? item.unitPrice : 0;
+      const lineTotal =
+        typeof item.lineTotal === "number"
+          ? item.lineTotal
+          : quantity * unitPrice;
+      return {
+        id: index + 1,
+        productName: item.displayName || item.originalName || "Item",
+        quantity,
+        unitPrice: unitPrice.toFixed(2),
+        totalPrice: lineTotal.toFixed(2),
+      };
+    });
+};
+
 interface FlowStep {
   id: number;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
 
 // ============================================================================
@@ -152,7 +215,10 @@ const PAYMENT_TERMS = [
 
 const formatCurrency = (value: string | number): string => {
   const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 const formatDate = (dateString: string): string => {
@@ -191,7 +257,8 @@ function StepIndicator({
               className={cn(
                 "flex items-center gap-2 p-2 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
-                isCompleted && "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
+                isCompleted &&
+                  "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -205,7 +272,9 @@ function StepIndicator({
               >
                 {isCompleted ? <Check className="h-3 w-3" /> : step.id}
               </div>
-              <span className="font-medium text-sm hidden sm:inline">{step.title}</span>
+              <span className="font-medium text-sm hidden sm:inline">
+                {step.title}
+              </span>
             </button>
             {index < steps.length - 1 && (
               <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground" />
@@ -221,7 +290,13 @@ function StepIndicator({
 // STEP 1: REVIEW ORDER
 // ============================================================================
 
-function ReviewOrderStep({ order, isLoading }: { order: Order | null; isLoading: boolean }) {
+function ReviewOrderStep({
+  order,
+  isLoading,
+}: {
+  order: Order | null;
+  isLoading: boolean;
+}) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-48">
@@ -245,9 +320,12 @@ function ReviewOrderStep({ order, isLoading }: { order: Order | null; isLoading:
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Order #{order.orderNumber}</CardTitle>
+              <CardTitle className="text-lg">
+                Order #{order.orderNumber}
+              </CardTitle>
               <CardDescription>
-                Confirmed: {order.confirmedAt ? formatDate(order.confirmedAt) : "N/A"}
+                Confirmed:{" "}
+                {order.confirmedAt ? formatDate(order.confirmedAt) : "N/A"}
               </CardDescription>
             </div>
             <Badge variant="outline" className="bg-green-100 text-green-800">
@@ -263,18 +341,25 @@ function ReviewOrderStep({ order, isLoading }: { order: Order | null; isLoading:
           <Separator />
           <div className="space-y-2">
             {order.lineItems.map((item, index) => (
-              <div key={item.id || index} className="flex justify-between text-sm">
+              <div
+                key={item.id || index}
+                className="flex justify-between text-sm"
+              >
                 <span>
                   {item.productName} × {item.quantity}
                 </span>
-                <span className="font-mono">{formatCurrency(item.totalPrice)}</span>
+                <span className="font-mono">
+                  {formatCurrency(item.totalPrice)}
+                </span>
               </div>
             ))}
           </div>
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Order Total</span>
-            <span className="font-mono text-lg">{formatCurrency(order.total)}</span>
+            <span className="font-mono text-lg">
+              {formatCurrency(order.total)}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -291,11 +376,11 @@ function InvoiceTermsStep({
   onUpdate,
 }: {
   config: InvoiceConfig;
-  onUpdate: (field: keyof InvoiceConfig, value: any) => void;
+  onUpdate: InvoiceConfigUpdate;
 }) {
   const handleTermsChange = (value: string) => {
     onUpdate("paymentTerms", value);
-    const term = PAYMENT_TERMS.find((t) => t.value === value);
+    const term = PAYMENT_TERMS.find(t => t.value === value);
     if (term && term.days !== null) {
       const dueDate = addDays(new Date(), term.days);
       onUpdate("dueDate", format(dueDate, "yyyy-MM-dd"));
@@ -312,7 +397,7 @@ function InvoiceTermsStep({
               <SelectValue placeholder="Select terms" />
             </SelectTrigger>
             <SelectContent>
-              {PAYMENT_TERMS.map((term) => (
+              {PAYMENT_TERMS.map(term => (
                 <SelectItem key={term.value} value={term.value}>
                   {term.label}
                 </SelectItem>
@@ -325,7 +410,7 @@ function InvoiceTermsStep({
           <Input
             type="date"
             value={config.dueDate}
-            onChange={(e) => onUpdate("dueDate", e.target.value)}
+            onChange={e => onUpdate("dueDate", e.target.value)}
             min={format(new Date(), "yyyy-MM-dd")}
           />
         </div>
@@ -336,7 +421,7 @@ function InvoiceTermsStep({
         <Textarea
           placeholder="Add any notes to appear on the invoice..."
           value={config.notes}
-          onChange={(e) => onUpdate("notes", e.target.value)}
+          onChange={e => onUpdate("notes", e.target.value)}
           rows={3}
         />
       </div>
@@ -355,7 +440,7 @@ function AdjustmentsStep({
 }: {
   config: InvoiceConfig;
   orderTotal: number;
-  onUpdate: (field: keyof InvoiceConfig, value: any) => void;
+  onUpdate: InvoiceConfigUpdate;
 }) {
   const addCharge = () => {
     onUpdate("additionalCharges", [
@@ -364,7 +449,11 @@ function AdjustmentsStep({
     ]);
   };
 
-  const updateCharge = (index: number, field: "description" | "amount", value: any) => {
+  const updateCharge = (
+    index: number,
+    field: "description" | "amount",
+    value: string | number
+  ): void => {
     const newCharges = [...config.additionalCharges];
     newCharges[index] = { ...newCharges[index], [field]: value };
     onUpdate("additionalCharges", newCharges);
@@ -382,8 +471,16 @@ function AdjustmentsStep({
       ? (orderTotal * config.discount) / 100
       : config.discount;
 
-  const chargesTotal = config.additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const chargesTotal = config.additionalCharges.reduce(
+    (sum, c) => sum + (c.amount || 0),
+    0
+  );
   const adjustedTotal = orderTotal - discountAmount + chargesTotal;
+  const handleDiscountTypeChange = (value: string): void => {
+    if (value === "percent" || value === "fixed") {
+      onUpdate("discountType", value);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -403,14 +500,16 @@ function AdjustmentsStep({
                 type="number"
                 min={0}
                 value={config.discount}
-                onChange={(e) => onUpdate("discount", parseFloat(e.target.value) || 0)}
+                onChange={e =>
+                  onUpdate("discount", parseFloat(e.target.value) || 0)
+                }
               />
             </div>
             <div className="w-32 space-y-2">
               <Label>Type</Label>
               <Select
                 value={config.discountType}
-                onValueChange={(v) => onUpdate("discountType", v)}
+                onValueChange={handleDiscountTypeChange}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -446,14 +545,21 @@ function AdjustmentsStep({
         </CardHeader>
         <CardContent className="space-y-3">
           {config.additionalCharges.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No additional charges</p>
+            <p className="text-sm text-muted-foreground">
+              No additional charges
+            </p>
           ) : (
             config.additionalCharges.map((charge, index) => (
-              <div key={index} className="flex gap-2 items-center">
+              <div
+                key={`${charge.description}-${charge.amount}`}
+                className="flex gap-2 items-center"
+              >
                 <Input
                   placeholder="Description"
                   value={charge.description}
-                  onChange={(e) => updateCharge(index, "description", e.target.value)}
+                  onChange={e =>
+                    updateCharge(index, "description", e.target.value)
+                  }
                   className="flex-1"
                 />
                 <Input
@@ -461,7 +567,13 @@ function AdjustmentsStep({
                   min={0}
                   step="0.01"
                   value={charge.amount}
-                  onChange={(e) => updateCharge(index, "amount", parseFloat(e.target.value) || 0)}
+                  onChange={e =>
+                    updateCharge(
+                      index,
+                      "amount",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
                   className="w-28"
                 />
                 <Button
@@ -529,7 +641,10 @@ function GenerateStep({
     config.discountType === "percent"
       ? (orderTotal * config.discount) / 100
       : config.discount;
-  const chargesTotal = config.additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
+  const chargesTotal = config.additionalCharges.reduce(
+    (sum, c) => sum + (c.amount || 0),
+    0
+  );
   const invoiceTotal = orderTotal - discountAmount + chargesTotal;
 
   return (
@@ -551,7 +666,10 @@ function GenerateStep({
             <div>
               <span className="text-muted-foreground">Terms</span>
               <p className="font-medium">
-                {PAYMENT_TERMS.find((t) => t.value === config.paymentTerms)?.label}
+                {
+                  PAYMENT_TERMS.find(t => t.value === config.paymentTerms)
+                    ?.label
+                }
               </p>
             </div>
             <div>
@@ -574,10 +692,7 @@ function GenerateStep({
             Automatically email the invoice to the client
           </p>
         </div>
-        <Switch
-          checked={config.autoSend}
-          onCheckedChange={() => {}}
-        />
+        <Switch checked={config.autoSend} onCheckedChange={() => {}} />
       </div>
 
       <div className="flex gap-4">
@@ -628,7 +743,7 @@ export function OrderToInvoiceFlow({
   open,
   onOpenChange,
   onInvoiceCreated,
-}: OrderToInvoiceFlowProps) {
+}: OrderToInvoiceFlowProps): ReactElement {
   // State
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<InvoiceConfig>({
@@ -649,38 +764,46 @@ export function OrderToInvoiceFlow({
     { id: orderId },
     { enabled: open && !!orderId }
   );
+  const { data: clientData } = trpc.clients.getById.useQuery(
+    { clientId: orderData?.clientId ?? 0 },
+    { enabled: open && !!orderData?.clientId }
+  );
 
-  const order: Order | null = orderData
-    ? {
-        id: orderData.id,
-        orderNumber: orderData.orderNumber,
-        clientId: orderData.clientId,
-        clientName: (orderData as any).clientName || "Unknown",
-        total: orderData.total,
-        confirmedAt: orderData.confirmedAt ? (orderData.confirmedAt instanceof Date ? orderData.confirmedAt.toISOString() : String(orderData.confirmedAt)) : undefined,
-        lineItems: (orderData as any).lineItems || [],
-      }
-    : null;
+  const order = useMemo<Order | null>(() => {
+    if (!orderData) return null;
+    return {
+      id: orderData.id,
+      orderNumber: orderData.orderNumber,
+      clientId: orderData.clientId,
+      clientName: clientData?.name || "Unknown",
+      total: orderData.total,
+      confirmedAt: orderData.confirmedAt
+        ? orderData.confirmedAt instanceof Date
+          ? orderData.confirmedAt.toISOString()
+          : String(orderData.confirmedAt)
+        : undefined,
+      lineItems: toLineItems(orderData.items),
+    };
+  }, [orderData, clientData]);
 
-  const orderTotal = parseFloat(order?.total || "0");
+  const orderTotal = useMemo(() => parseFloat(order?.total || "0"), [order]);
 
   // Update config helper
-  const updateConfig = useCallback((field: keyof InvoiceConfig, value: any) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
+  const updateConfig: InvoiceConfigUpdate = useCallback((field, value) => {
+    setConfig(prev => ({ ...prev, [field]: value }));
   }, []);
 
   // Create invoice mutation
   const createInvoiceMutation = trpc.accounting.invoices.create.useMutation({
     onMutate: () => setSaving("Creating invoice..."),
-    onSuccess: (data) => {
+    onSuccess: data => {
       setSaved();
       toast.success("Invoice created successfully!");
-      const invoiceId = typeof data === 'number' ? data : (data as any).id;
-      onInvoiceCreated?.(invoiceId);
+      onInvoiceCreated?.(data);
       onOpenChange(false);
       setCurrentStep(1);
     },
-    onError: (err) => {
+    onError: err => {
       setError(err.message);
       toast.error(err.message || "Failed to create invoice");
     },
@@ -694,7 +817,10 @@ export function OrderToInvoiceFlow({
         config.discountType === "percent"
           ? (orderTotal * config.discount) / 100
           : config.discount;
-      const chargesTotal = config.additionalCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
+      const chargesTotal = config.additionalCharges.reduce(
+        (sum, c) => sum + (c.amount || 0),
+        0
+      );
       const invoiceTotal = orderTotal - discountAmount + chargesTotal;
 
       createInvoiceMutation.mutate({
@@ -714,16 +840,16 @@ export function OrderToInvoiceFlow({
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: false,
     customHandlers: {
-      arrowright: (e) => {
+      arrowright: e => {
         e.preventDefault();
         if (currentStep < FLOW_STEPS.length) {
-          setCurrentStep((prev) => prev + 1);
+          setCurrentStep(prev => prev + 1);
         }
       },
-      arrowleft: (e) => {
+      arrowleft: e => {
         e.preventDefault();
         if (currentStep > 1) {
-          setCurrentStep((prev) => prev - 1);
+          setCurrentStep(prev => prev - 1);
         }
       },
     },
@@ -731,20 +857,25 @@ export function OrderToInvoiceFlow({
       if (currentStep === 1) {
         onOpenChange(false);
       } else {
-        setCurrentStep((prev) => prev - 1);
+        setCurrentStep(prev => prev - 1);
       }
     },
   });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden" {...keyboardProps}>
+      <DialogContent
+        className="max-w-2xl max-h-[85vh] overflow-hidden"
+        {...keyboardProps}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             Generate Invoice
           </DialogTitle>
-          <DialogDescription>Create an invoice from this confirmed order</DialogDescription>
+          <DialogDescription>
+            Create an invoice from this confirmed order
+          </DialogDescription>
         </DialogHeader>
 
         <div className="py-2">
@@ -755,8 +886,12 @@ export function OrderToInvoiceFlow({
           />
 
           <div className="min-h-[350px] max-h-[400px] overflow-y-auto pr-2">
-            {currentStep === 1 && <ReviewOrderStep order={order} isLoading={isLoading} />}
-            {currentStep === 2 && <InvoiceTermsStep config={config} onUpdate={updateConfig} />}
+            {currentStep === 1 && (
+              <ReviewOrderStep order={order} isLoading={isLoading} />
+            )}
+            {currentStep === 2 && (
+              <InvoiceTermsStep config={config} onUpdate={updateConfig} />
+            )}
             {currentStep === 3 && (
               <AdjustmentsStep
                 config={config}
@@ -779,14 +914,14 @@ export function OrderToInvoiceFlow({
         <DialogFooter className="flex justify-between">
           <Button
             variant="outline"
-            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+            onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
             disabled={currentStep === 1}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           {currentStep < FLOW_STEPS.length && (
-            <Button onClick={() => setCurrentStep((prev) => prev + 1)}>
+            <Button onClick={() => setCurrentStep(prev => prev + 1)}>
               Next
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>

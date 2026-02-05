@@ -59,15 +59,24 @@ export const GLReversalViewer = React.memo(function GLReversalViewer({
 
   const entries = useMemo<LedgerEntryItem[]>(() => {
     const items = data?.items ?? [];
-    return items.filter((item): item is LedgerEntryItem => {
-      return (
-        typeof item?.id === "number" &&
-        typeof item?.entryNumber === "string" &&
-        typeof item?.entryDate !== "undefined" &&
-        typeof item?.debit === "string" &&
-        typeof item?.credit === "string"
-      );
-    });
+    return items
+      .filter(
+        item =>
+          typeof item?.id === "number" &&
+          typeof item?.entryNumber === "string" &&
+          typeof item?.entryDate !== "undefined" &&
+          typeof item?.debit === "string" &&
+          typeof item?.credit === "string"
+      )
+      .map(item => ({
+        id: item.id,
+        entryNumber: item.entryNumber,
+        entryDate: item.entryDate,
+        debit: item.debit,
+        credit: item.credit,
+        description: item.description,
+        isPosted: item.isPosted,
+      }));
   }, [data?.items]);
 
   const filteredEntries = useMemo(() => {

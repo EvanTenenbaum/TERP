@@ -461,7 +461,7 @@ export function PurchaseOrdersWorkSurface() {
     const items = productsData?.items ?? [];
     return items
       .filter(
-        (product): product is { id: number; nameCanonical: string } =>
+        product =>
           typeof product?.id === "number" &&
           typeof product?.nameCanonical === "string"
       )
