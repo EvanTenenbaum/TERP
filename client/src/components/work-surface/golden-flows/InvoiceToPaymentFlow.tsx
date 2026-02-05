@@ -11,7 +11,16 @@
  * @see ATOMIC_UX_STRATEGY.md - Golden Flow specification
  */
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -24,14 +33,13 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -42,10 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -74,6 +79,17 @@ import {
 // ============================================================================
 // TYPES
 // ============================================================================
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type PaymentsListResponse = RouterOutputs["accounting"]["payments"]["list"];
+type PaymentListItem = PaymentsListResponse extends { items: Array<infer Item> }
+  ? Item
+  : never;
+
+type PaymentConfigUpdate = <K extends keyof PaymentConfig>(
+  field: K,
+  value: PaymentConfig[K]
+) => void;
 
 interface Invoice {
   id: number;
@@ -109,7 +125,7 @@ interface FlowStep {
   id: number;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }
 
 // ============================================================================
@@ -155,7 +171,10 @@ const QUICK_AMOUNTS = ["full", "50%", "25%", "custom"] as const;
 
 const formatCurrency = (value: string | number): string => {
   const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 const formatDate = (dateString: string): string => {
@@ -164,6 +183,20 @@ const formatDate = (dateString: string): string => {
   } catch {
     return "-";
   }
+};
+
+const toPaymentHistoryItem = (payment: PaymentListItem): PaymentHistoryItem => {
+  const paymentDate =
+    payment.paymentDate instanceof Date
+      ? payment.paymentDate.toISOString()
+      : String(payment.paymentDate);
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    paymentDate,
+    paymentMethod: payment.paymentMethod,
+    reference: payment.referenceNumber ?? undefined,
+  };
 };
 
 // ============================================================================
@@ -192,8 +225,11 @@ function StepIndicator({
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
-                isCompleted && "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
-                !isActive && !isCompleted && "bg-muted text-muted-foreground cursor-not-allowed"
+                isCompleted &&
+                  "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
+                !isActive &&
+                  !isCompleted &&
+                  "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
               <div
@@ -204,7 +240,9 @@ function StepIndicator({
               >
                 {isCompleted ? <Check className="h-3 w-3" /> : step.id}
               </div>
-              <span className="font-medium text-sm hidden sm:inline">{step.title}</span>
+              <span className="font-medium text-sm hidden sm:inline">
+                {step.title}
+              </span>
             </button>
             {index < steps.length - 1 && (
               <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground" />
@@ -249,7 +287,8 @@ function ReviewInvoiceStep({
   const amountDue = parseFloat(invoice.amountDue);
   const totalAmount = parseFloat(invoice.totalAmount);
   const amountPaid = parseFloat(invoice.amountPaid);
-  const paymentProgress = totalAmount > 0 ? Math.round((amountPaid / totalAmount) * 100) : 0;
+  const paymentProgress =
+    totalAmount > 0 ? Math.round((amountPaid / totalAmount) * 100) : 0;
   const isOverdue = invoice.status === "OVERDUE";
 
   return (
@@ -258,8 +297,12 @@ function ReviewInvoiceStep({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Invoice #{invoice.invoiceNumber}</CardTitle>
-              <CardDescription>{invoice.customerName || "Unknown Customer"}</CardDescription>
+              <CardTitle className="text-lg">
+                Invoice #{invoice.invoiceNumber}
+              </CardTitle>
+              <CardDescription>
+                {invoice.customerName || "Unknown Customer"}
+              </CardDescription>
             </div>
             <Badge
               variant="outline"
@@ -300,7 +343,9 @@ function ReviewInvoiceStep({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Amount Paid</span>
-              <span className="font-mono text-green-600">{formatCurrency(amountPaid)}</span>
+              <span className="font-mono text-green-600">
+                {formatCurrency(amountPaid)}
+              </span>
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
@@ -312,7 +357,12 @@ function ReviewInvoiceStep({
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Amount Due</span>
-              <span className={cn("font-mono text-lg", amountDue > 0 && "text-red-600")}>
+              <span
+                className={cn(
+                  "font-mono text-lg",
+                  amountDue > 0 && "text-red-600"
+                )}
+              >
                 {formatCurrency(amountDue)}
               </span>
             </div>
@@ -330,13 +380,15 @@ function ReviewInvoiceStep({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {paymentHistory.slice(0, 3).map((payment) => (
+              {paymentHistory.slice(0, 3).map(payment => (
                 <div
                   key={payment.id}
                   className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded"
                 >
                   <div>
-                    <span className="font-medium">{formatDate(payment.paymentDate)}</span>
+                    <span className="font-medium">
+                      {formatDate(payment.paymentDate)}
+                    </span>
                     <span className="text-muted-foreground ml-2">
                       via {payment.paymentMethod.replace("_", " ")}
                     </span>
@@ -365,7 +417,7 @@ function PaymentDetailsStep({
 }: {
   config: PaymentConfig;
   amountDue: number;
-  onUpdate: (field: keyof PaymentConfig, value: any) => void;
+  onUpdate: PaymentConfigUpdate;
 }) {
   const [quickAmount, setQuickAmount] = useState<string>("full");
 
@@ -386,7 +438,7 @@ function PaymentDetailsStep({
       <div className="space-y-3">
         <Label>Payment Amount</Label>
         <div className="flex gap-2 mb-2">
-          {QUICK_AMOUNTS.map((type) => (
+          {QUICK_AMOUNTS.map(type => (
             <Button
               key={type}
               variant={quickAmount === type ? "default" : "outline"}
@@ -405,7 +457,7 @@ function PaymentDetailsStep({
             min="0"
             max={amountDue}
             value={config.amount}
-            onChange={(e) => {
+            onChange={e => {
               onUpdate("amount", e.target.value);
               setQuickAmount("custom");
             }}
@@ -422,10 +474,10 @@ function PaymentDetailsStep({
         <Label>Payment Method</Label>
         <RadioGroup
           value={config.paymentMethod}
-          onValueChange={(v) => onUpdate("paymentMethod", v)}
+          onValueChange={v => onUpdate("paymentMethod", v)}
           className="grid grid-cols-2 gap-2"
         >
-          {PAYMENT_METHODS.slice(0, 6).map((method) => {
+          {PAYMENT_METHODS.slice(0, 6).map(method => {
             const Icon = method.icon;
             return (
               <div key={method.value}>
@@ -458,7 +510,7 @@ function PaymentDetailsStep({
           <Input
             type="date"
             value={config.paymentDate}
-            onChange={(e) => onUpdate("paymentDate", e.target.value)}
+            onChange={e => onUpdate("paymentDate", e.target.value)}
             max={format(new Date(), "yyyy-MM-dd")}
           />
         </div>
@@ -467,7 +519,7 @@ function PaymentDetailsStep({
           <Input
             placeholder="Check #, Transaction ID..."
             value={config.reference}
-            onChange={(e) => onUpdate("reference", e.target.value)}
+            onChange={e => onUpdate("reference", e.target.value)}
           />
         </div>
       </div>
@@ -478,7 +530,7 @@ function PaymentDetailsStep({
         <Textarea
           placeholder="Add any payment notes..."
           value={config.notes}
-          onChange={(e) => onUpdate("notes", e.target.value)}
+          onChange={e => onUpdate("notes", e.target.value)}
           rows={2}
         />
       </div>
@@ -505,7 +557,7 @@ function ConfirmStep({
   const amountDue = parseFloat(invoice.amountDue);
   const remainingAfter = Math.max(0, amountDue - paymentAmount);
   const willBePaid = remainingAfter === 0;
-  const method = PAYMENT_METHODS.find((m) => m.value === config.paymentMethod);
+  const method = PAYMENT_METHODS.find(m => m.value === config.paymentMethod);
 
   return (
     <div className="space-y-4">
@@ -529,7 +581,9 @@ function ConfirmStep({
             </div>
             <div>
               <span className="text-muted-foreground">Method</span>
-              <p className="font-medium">{method?.label || config.paymentMethod}</p>
+              <p className="font-medium">
+                {method?.label || config.paymentMethod}
+              </p>
             </div>
             {config.reference && (
               <div className="col-span-2">
@@ -548,12 +602,19 @@ function ConfirmStep({
             </div>
             <div className="flex justify-between text-green-600">
               <span>Payment Amount</span>
-              <span className="font-mono font-semibold">-{formatCurrency(paymentAmount)}</span>
+              <span className="font-mono font-semibold">
+                -{formatCurrency(paymentAmount)}
+              </span>
             </div>
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Remaining Balance</span>
-              <span className={cn("font-mono text-lg", remainingAfter > 0 ? "text-red-600" : "text-green-600")}>
+              <span
+                className={cn(
+                  "font-mono text-lg",
+                  remainingAfter > 0 ? "text-red-600" : "text-green-600"
+                )}
+              >
                 {formatCurrency(remainingAfter)}
               </span>
             </div>
@@ -562,7 +623,9 @@ function ConfirmStep({
           {willBePaid && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
               <CheckCircle2 className="h-5 w-5" />
-              <span className="font-medium">This payment will mark the invoice as PAID</span>
+              <span className="font-medium">
+                This payment will mark the invoice as PAID
+              </span>
             </div>
           )}
         </CardContent>
@@ -571,12 +634,11 @@ function ConfirmStep({
       <div className="flex items-center justify-between p-4 border rounded-lg">
         <div>
           <p className="font-medium">Send payment receipt</p>
-          <p className="text-sm text-muted-foreground">Email a receipt to the customer</p>
+          <p className="text-sm text-muted-foreground">
+            Email a receipt to the customer
+          </p>
         </div>
-        <Switch
-          checked={config.sendReceipt}
-          onCheckedChange={() => {}}
-        />
+        <Switch checked={config.sendReceipt} onCheckedChange={() => {}} />
       </div>
 
       <div className="flex gap-4">
@@ -626,7 +688,7 @@ export function InvoiceToPaymentFlow({
   open,
   onOpenChange,
   onPaymentRecorded,
-}: InvoiceToPaymentFlowProps) {
+}: InvoiceToPaymentFlowProps): ReactElement {
   // State
   const [currentStep, setCurrentStep] = useState(1);
   const [config, setConfig] = useState<PaymentConfig>({
@@ -642,56 +704,76 @@ export function InvoiceToPaymentFlow({
   const { setSaving, setSaved, setError } = useSaveState();
 
   // Data queries
-  const { data: invoiceData, isLoading } = trpc.accounting.invoices.getById.useQuery(
-    { id: invoiceId },
+  const { data: invoiceData, isLoading } =
+    trpc.accounting.invoices.getById.useQuery(
+      { id: invoiceId },
+      { enabled: open && !!invoiceId }
+    );
+  const { data: clientData } = trpc.clients.getById.useQuery(
+    { clientId: invoiceData?.customerId ?? 0 },
+    { enabled: open && !!invoiceData?.customerId }
+  );
+  const { data: paymentsData } = trpc.accounting.payments.list.useQuery(
+    { invoiceId },
     { enabled: open && !!invoiceId }
   );
 
-  const invoice: Invoice | null = invoiceData
-    ? {
-        id: invoiceData.id,
-        invoiceNumber: invoiceData.invoiceNumber,
-        customerId: invoiceData.customerId,
-        customerName: (invoiceData as any).customerName || "Unknown",
-        invoiceDate: invoiceData.invoiceDate instanceof Date ? invoiceData.invoiceDate.toISOString() : String(invoiceData.invoiceDate),
-        dueDate: invoiceData.dueDate instanceof Date ? invoiceData.dueDate.toISOString() : String(invoiceData.dueDate),
-        totalAmount: invoiceData.totalAmount,
-        amountPaid: invoiceData.amountPaid,
-        amountDue: invoiceData.amountDue,
-        status: invoiceData.status,
-      }
-    : null;
+  const invoice = useMemo<Invoice | null>(() => {
+    if (!invoiceData) return null;
+    return {
+      id: invoiceData.id,
+      invoiceNumber: invoiceData.invoiceNumber,
+      customerId: invoiceData.customerId,
+      customerName: clientData?.name || "Unknown",
+      invoiceDate:
+        invoiceData.invoiceDate instanceof Date
+          ? invoiceData.invoiceDate.toISOString()
+          : String(invoiceData.invoiceDate),
+      dueDate:
+        invoiceData.dueDate instanceof Date
+          ? invoiceData.dueDate.toISOString()
+          : String(invoiceData.dueDate),
+      totalAmount: invoiceData.totalAmount,
+      amountPaid: invoiceData.amountPaid,
+      amountDue: invoiceData.amountDue,
+      status: invoiceData.status,
+    };
+  }, [invoiceData, clientData]);
 
-  const paymentHistory: PaymentHistoryItem[] = (invoiceData as any)?.payments || [];
-  const amountDue = parseFloat(invoice?.amountDue || "0");
+  const paymentHistory = useMemo<PaymentHistoryItem[]>(() => {
+    const payments = paymentsData?.items ?? [];
+    return payments.map(toPaymentHistoryItem);
+  }, [paymentsData]);
+  const amountDue = useMemo(
+    () => parseFloat(invoice?.amountDue || "0"),
+    [invoice]
+  );
 
   // Set initial amount when invoice loads
   useEffect(() => {
-    if (invoice && open) {
-      setConfig((prev) => ({
-        ...prev,
-        amount: amountDue.toFixed(2),
-      }));
-    }
+    if (!invoice || !open) return;
+    const nextAmount = amountDue.toFixed(2);
+    setConfig(prev =>
+      prev.amount === nextAmount ? prev : { ...prev, amount: nextAmount }
+    );
   }, [invoice, open, amountDue]);
 
   // Update config helper
-  const updateConfig = useCallback((field: keyof PaymentConfig, value: any) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
+  const updateConfig: PaymentConfigUpdate = useCallback((field, value) => {
+    setConfig(prev => ({ ...prev, [field]: value }));
   }, []);
 
   // Record payment mutation
   const recordPaymentMutation = trpc.accounting.payments.create.useMutation({
     onMutate: () => setSaving("Recording payment..."),
-    onSuccess: (data) => {
+    onSuccess: data => {
       setSaved();
       toast.success("Payment recorded successfully!");
-      const paymentId = typeof data === 'number' ? data : (data as any).id;
-      onPaymentRecorded?.(paymentId);
+      onPaymentRecorded?.(data);
       onOpenChange(false);
       setCurrentStep(1);
     },
-    onError: (err) => {
+    onError: err => {
       setError(err.message);
       toast.error(err.message || "Failed to record payment");
     },
@@ -714,7 +796,14 @@ export function InvoiceToPaymentFlow({
       recordPaymentMutation.mutate({
         invoiceId: invoice.id,
         amount: paymentAmount.toString(),
-        paymentMethod: config.paymentMethod as "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER",
+        paymentMethod: config.paymentMethod as
+          | "CASH"
+          | "CHECK"
+          | "WIRE"
+          | "ACH"
+          | "CREDIT_CARD"
+          | "DEBIT_CARD"
+          | "OTHER",
         paymentDate: new Date(config.paymentDate),
         reference: config.reference || undefined,
         notes: config.notes || undefined,
@@ -726,23 +815,25 @@ export function InvoiceToPaymentFlow({
 
   // Validation
   const canProceed =
-    (currentStep === 1) ||
-    (currentStep === 2 && parseFloat(config.amount) > 0 && config.paymentMethod);
+    currentStep === 1 ||
+    (currentStep === 2 &&
+      parseFloat(config.amount) > 0 &&
+      config.paymentMethod);
 
   // Keyboard shortcuts
   const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: false,
     customHandlers: {
-      arrowright: (e) => {
+      arrowright: e => {
         e.preventDefault();
         if (canProceed && currentStep < FLOW_STEPS.length) {
-          setCurrentStep((prev) => prev + 1);
+          setCurrentStep(prev => prev + 1);
         }
       },
-      arrowleft: (e) => {
+      arrowleft: e => {
         e.preventDefault();
         if (currentStep > 1) {
-          setCurrentStep((prev) => prev - 1);
+          setCurrentStep(prev => prev - 1);
         }
       },
     },
@@ -750,20 +841,25 @@ export function InvoiceToPaymentFlow({
       if (currentStep === 1) {
         onOpenChange(false);
       } else {
-        setCurrentStep((prev) => prev - 1);
+        setCurrentStep(prev => prev - 1);
       }
     },
   });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden" {...keyboardProps}>
+      <DialogContent
+        className="max-w-lg max-h-[85vh] overflow-hidden"
+        {...keyboardProps}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             Record Payment
           </DialogTitle>
-          <DialogDescription>Record a payment for this invoice</DialogDescription>
+          <DialogDescription>
+            Record a payment for this invoice
+          </DialogDescription>
         </DialogHeader>
 
         <div className="py-2">
@@ -802,14 +898,17 @@ export function InvoiceToPaymentFlow({
         <DialogFooter className="flex justify-between">
           <Button
             variant="outline"
-            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+            onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
             disabled={currentStep === 1}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           {currentStep < FLOW_STEPS.length && (
-            <Button onClick={() => setCurrentStep((prev) => prev + 1)} disabled={!canProceed}>
+            <Button
+              onClick={() => setCurrentStep(prev => prev + 1)}
+              disabled={!canProceed}
+            >
               Next
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
