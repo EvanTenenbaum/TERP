@@ -33,8 +33,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
   for (const route of WORK_SURFACE_ROUTES) {
     test.describe(`${route.name} Work Surface`, () => {
       test(`should support arrow key navigation on ${route.path}`, async ({ page }) => {
-        await page.goto(route.path);
-        await page.waitForLoadState("networkidle");
+        await page.goto(route.path, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
         // Tab into the list
         await page.keyboard.press("Tab");
@@ -57,8 +57,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
       });
 
       test(`should open inspector with Enter on ${route.path}`, async ({ page }) => {
-        await page.goto(route.path);
-        await page.waitForLoadState("networkidle");
+        await page.goto(route.path, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
         // Navigate to first item
         await page.keyboard.press("Tab");
@@ -74,8 +74,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
       });
 
       test(`should close with Escape on ${route.path}`, async ({ page }) => {
-        await page.goto(route.path);
-        await page.waitForLoadState("networkidle");
+        await page.goto(route.path, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
         // Open something first
         await page.keyboard.press("Tab");
@@ -92,8 +92,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
       });
 
       test(`should focus search with Cmd+K on ${route.path}`, async ({ page }) => {
-        await page.goto(route.path);
-        await page.waitForLoadState("networkidle");
+        await page.goto(route.path, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
         const isMac = process.platform === "darwin";
         await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
@@ -111,8 +111,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
   test.describe("Cross-Surface Consistency", () => {
     test("all surfaces should have consistent header pattern", async ({ page }) => {
       for (const route of WORK_SURFACE_ROUTES) {
-        await page.goto(route.path);
-        await page.waitForLoadState("networkidle");
+        await page.goto(route.path, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
         // Should have h1 header
         const header = page.locator("h1").first();
@@ -122,8 +122,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
 
     test("all surfaces should have save state indicator area", async ({ page }) => {
       for (const route of WORK_SURFACE_ROUTES) {
-        await page.goto(route.path);
-        await page.waitForLoadState("networkidle");
+        await page.goto(route.path, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
         // Save state area should exist (may or may not be visible)
         const saveState = page.locator('[data-testid="save-state"], .save-indicator, :text("Saved"), :text("Saving")');
@@ -136,8 +136,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
 
   test.describe("Inspector Panel Contract", () => {
     test("inspector should trap focus when open", async ({ page }) => {
-      await page.goto("/orders");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/orders", { waitUntil: "domcontentloaded", timeout: 60000 });
+      await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
       // Open inspector
       await page.keyboard.press("Tab");
@@ -162,8 +162,8 @@ test.describe("Golden Flow: Work Surface Keyboard Contract", () => {
     });
 
     test("inspector should close on Escape", async ({ page }) => {
-      await page.goto("/clients");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/clients", { waitUntil: "domcontentloaded", timeout: 60000 });
+      await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
 
       // Open inspector
       await page.keyboard.press("Tab");

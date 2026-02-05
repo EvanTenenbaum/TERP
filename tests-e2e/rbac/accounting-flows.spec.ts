@@ -708,7 +708,10 @@ test.describe("API RBAC - Accounting Endpoints", () => {
     await loginAsAccountant(page);
 
     // Make API request to get AR summary
-    const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
+    const baseUrl =
+      process.env.PLAYWRIGHT_BASE_URL ||
+      process.env.MEGA_QA_BASE_URL ||
+      `http://localhost:${process.env.PORT || "3000"}`;
 
     // Navigate first to ensure cookies are set
     await page.goto("/accounting");
@@ -729,7 +732,10 @@ test.describe("API RBAC - Accounting Endpoints", () => {
   }) => {
     await loginAsWarehouseStaff(page);
 
-    const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
+    const baseUrl =
+      process.env.PLAYWRIGHT_BASE_URL ||
+      process.env.MEGA_QA_BASE_URL ||
+      `http://localhost:${process.env.PORT || "3000"}`;
 
     // Navigate first to ensure cookies are set
     await page.goto("/dashboard");

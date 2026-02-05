@@ -16,52 +16,30 @@ test.describe("Golden Flow: GF-006 Client Ledger Review", (): void => {
     page,
   }): Promise<void> => {
     await page.goto("/clients");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: "Clients" })).toBeVisible({
+      timeout: 15000,
+    });
 
-    const clientRow = page.locator('[role="row"], tr').first();
-    if (await clientRow.isVisible().catch(() => false)) {
-      await clientRow.click();
+    // Select the first client row (skip header row).
+    const firstClientRow = page.getByRole("row").nth(1);
+    await expect(firstClientRow).toBeVisible({ timeout: 10000 });
+    await firstClientRow.click();
 
-      const ledgerTab = page.locator(
-        'a:has-text("Ledger"), button:has-text("Ledger"), [data-testid="ledger-tab"]'
-      );
-      if (
-        await ledgerTab
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await ledgerTab.first().click();
-      }
+    // Open full profile from inspector.
+    const viewProfile = page.getByRole("button", { name: "View Full Profile" });
+    await expect(viewProfile).toBeVisible({ timeout: 5000 });
+    await viewProfile.click();
 
-      const ledgerHeader = page.locator(
-        'h1:has-text("Ledger"), h2:has-text("Ledger"), [data-testid="client-ledger"]'
-      );
-      await expect(ledgerHeader.first()).toBeVisible({ timeout: 5000 });
+    await expect(page).toHaveURL(/\/clients\/\d+$/i, { timeout: 10000 });
 
-      const filterControl = page.locator(
-        '[data-testid="ledger-filter"], select:has-text("All"), button:has-text("Filter")'
-      );
-      if (
-        await filterControl
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(filterControl.first()).toBeVisible();
-      }
+    // Navigate to ledger from profile.
+    const viewLedger = page.getByRole("button", { name: "View Ledger" });
+    await expect(viewLedger).toBeVisible({ timeout: 5000 });
+    await viewLedger.click();
 
-      const exportButton = page.locator(
-        'button:has-text("Export"), button:has-text("Download"), [data-testid="ledger-export"]'
-      );
-      if (
-        await exportButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(exportButton.first()).toBeVisible();
-      }
-    }
+    await expect(page.getByRole("heading", { name: "Client Ledger" })).toBeVisible(
+      { timeout: 10000 }
+    );
+    await expect(page.getByRole("button", { name: /Export/i })).toBeVisible();
   });
 });

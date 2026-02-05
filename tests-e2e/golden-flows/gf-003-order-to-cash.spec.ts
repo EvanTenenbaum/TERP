@@ -15,7 +15,9 @@ import {
 
 const openOrders = async (page: Page): Promise<void> => {
   await page.goto("/orders");
-  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("heading", { name: "Orders" })).toBeVisible({
+    timeout: 15000,
+  });
 };
 
 test.describe("Golden Flow: GF-003 Order-to-Cash", (): void => {
@@ -27,7 +29,7 @@ test.describe("Golden Flow: GF-003 Order-to-Cash", (): void => {
       await openOrders(page);
 
       const createButton = page.locator(
-        'button:has-text("New Order"), button:has-text("Create Order"), a[href*="orders/new"]'
+        'button:has-text("New Order"), button:has-text("Create Order"), a[href*="orders/create"]'
       );
       if (
         await createButton
@@ -40,10 +42,9 @@ test.describe("Golden Flow: GF-003 Order-to-Cash", (): void => {
           timeout: 5000,
         });
 
-        const clientSelector = page.locator(
-          '[data-testid="client-select"], select[name*="client"], button:has-text("Select Client")'
-        );
-        await expect(clientSelector.first()).toBeVisible({ timeout: 5000 });
+        await expect(
+          page.getByRole("combobox", { name: "Select a client" })
+        ).toBeVisible({ timeout: 5000 });
       }
     });
 
@@ -65,7 +66,9 @@ test.describe("Golden Flow: GF-003 Order-to-Cash", (): void => {
       await logout(page);
       await loginAsAccountant(page);
       await page.goto("/accounting/invoices");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Invoices" })).toBeVisible({
+        timeout: 15000,
+      });
 
       const generateButton = page.locator(
         'button:has-text("Generate Invoice"), button:has-text("Create Invoice"), button:has-text("Invoice")'
@@ -96,7 +99,9 @@ test.describe("Golden Flow: GF-003 Order-to-Cash", (): void => {
       await logout(page);
       await loginAsFulfillment(page);
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(
+        page.getByRole("heading", { name: "Pick & Pack" })
+      ).toBeVisible({ timeout: 15000 });
 
       const fulfillButton = page.locator(
         'button:has-text("Pack"), button:has-text("Ready"), button:has-text("Ship")'

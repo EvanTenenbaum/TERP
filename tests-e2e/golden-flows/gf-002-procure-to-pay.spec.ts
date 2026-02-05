@@ -9,7 +9,9 @@ import { loginAsInventoryManager } from "../fixtures/auth";
 
 const openPurchaseOrders = async (page: Page): Promise<void> => {
   await page.goto("/purchase-orders");
-  await page.waitForLoadState("networkidle");
+  await expect(
+    page.getByRole("heading", { name: "Purchase Orders" })
+  ).toBeVisible({ timeout: 15000 });
 };
 
 test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
@@ -33,14 +35,12 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
         .catch(() => false)
     ) {
       await createButton.first().click();
-      await expect(page).toHaveURL(/purchase-orders\/(new|create)/, {
-        timeout: 5000,
-      });
+      await expect(
+        page.getByRole("heading", { name: "Create Purchase Order" })
+      ).toBeVisible({ timeout: 5000 });
 
-      const productSelector = page.locator(
-        '[data-testid="po-product-select"], select[name*="product"], input[placeholder*="Product"], input[aria-label*="Product"]'
-      );
-      await expect(productSelector.first()).toBeVisible({ timeout: 5000 });
+      // Basic form sanity check
+      await expect(page.getByText("Supplier *")).toBeVisible({ timeout: 5000 });
     }
   });
 

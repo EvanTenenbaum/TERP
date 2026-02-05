@@ -13,8 +13,9 @@ const patterns = {
   name: /^[a-zA-Z0-9\s_-]+$/,
   // Positive decimal number (up to 2 decimal places)
   decimal: /^\d+(\.\d{1,2})?$/,
-  // Site code (e.g., "SITE-A", "WAREHOUSE-1")
-  siteCode: /^[A-Z0-9_-]+$/,
+  // Site identifier (stored as free-form text in `locations.site` in production)
+  // Example values: "Cold Storage", "Main Warehouse", "VAULT-1"
+  siteCode: /^[a-zA-Z0-9\s_-]+$/,
   // Location code (alphanumeric with hyphens)
   locationCode: /^[A-Z0-9-]+$/,
 };
@@ -67,7 +68,7 @@ export const validators = {
     .max(50, "Site code must be 50 characters or less")
     .regex(
       patterns.siteCode,
-      "Site code must be uppercase alphanumeric with hyphens or underscores"
+      "Site can only contain letters, numbers, spaces, hyphens, and underscores"
     ),
 
   /**

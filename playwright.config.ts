@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 const baseURL =
   process.env.PLAYWRIGHT_BASE_URL ||
   process.env.MEGA_QA_BASE_URL ||
-  "http://localhost:5173";
+  `http://localhost:${process.env.PORT || "3000"}`;
 const isRemoteBaseURL =
   !baseURL.includes("localhost") && !baseURL.includes("127.0.0.1");
 const isCloud =
@@ -80,7 +80,7 @@ export default defineConfig({
       ? undefined
       : {
           command: "pnpm dev",
-          url: "http://localhost:5173",
+          url: `http://localhost:${process.env.PORT || "3000"}`,
           reuseExistingServer: true,
         },
   globalSetup: resolve(__dirname, "./testing/setup-e2e.ts"),

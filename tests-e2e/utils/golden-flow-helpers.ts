@@ -32,7 +32,7 @@ interface BatchCleanupResult {
   updatedCount: number;
 }
 
-const DEFAULT_BASE_URL = "http://localhost:5173";
+const DEFAULT_BASE_URL = `http://localhost:${process.env.PORT || "3000"}`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -47,7 +47,9 @@ const isTrpcResponse = <T>(value: unknown): value is TrpcResponse<T> => {
 };
 
 const resolveBaseUrl = (): string =>
-  process.env.PLAYWRIGHT_BASE_URL || DEFAULT_BASE_URL;
+  process.env.PLAYWRIGHT_BASE_URL ||
+  process.env.MEGA_QA_BASE_URL ||
+  DEFAULT_BASE_URL;
 
 const buildTrpcUrl = (
   path: string,
@@ -105,7 +107,10 @@ export const fillAgGridTextCell = async (
   await cell.scrollIntoViewIfNeeded();
   await cell.click();
   await page.keyboard.press("Enter");
-  await page.keyboard.press("Control+A");
+  // Select-all differs by platform. On macOS, Control+A can just move the
+  // caret to the beginning (causing values like "10" to become "100").
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+A" : "Control+A");
   await page.keyboard.type(value);
   await page.keyboard.press("Enter");
 };

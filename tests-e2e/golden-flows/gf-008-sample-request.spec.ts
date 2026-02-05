@@ -16,23 +16,42 @@ test.describe("Golden Flow: GF-008 Sample Request", (): void => {
     page,
   }): Promise<void> => {
     await page.goto("/samples");
-    await page.waitForLoadState("networkidle");
+    await expect(
+      page.getByRole("heading", { name: "Sample Management" })
+    ).toBeVisible({ timeout: 15000 });
 
-    const createButton = page.locator(
-      'button:has-text("Create Sample"), button:has-text("New Sample"), button:has-text("Sample Request")'
-    );
-    if (
-      await createButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await createButton.first().click();
+    const createFromEmptyState = page.getByRole("button", {
+      name: "Create Sample Request",
+    });
+    const newSample = page.getByRole("button", { name: "New Sample" });
+
+    // The empty state button only appears after the samples query resolves.
+    // Wait for either control, then click whichever is available.
+    await Promise.race([
+      createFromEmptyState
+        .waitFor({ state: "visible", timeout: 15000 })
+        .catch(() => {}),
+      newSample.waitFor({ state: "visible", timeout: 15000 }).catch(() => {}),
+    ]);
+
+    if (await createFromEmptyState.isVisible().catch(() => false)) {
+      await createFromEmptyState.click();
+    } else {
+      await newSample.click();
     }
 
-    const productSelector = page.locator(
-      '[data-testid="sample-product-select"], select[name*="product"], input[placeholder*="Product"], [role="combobox"]'
-    );
-    await expect(productSelector.first()).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.locator('[data-slot="dialog-title"]:has-text("Create Sample Request")')
+    ).toBeVisible({ timeout: 10000 });
+
+    // "Product" appears in multiple aria-labels across the nav; scope to the dialog.
+    const dialog = page.getByRole("dialog").filter({
+      has: page.locator(
+        '[data-slot="dialog-title"]:has-text("Create Sample Request")'
+      ),
+    });
+    await expect(dialog.getByRole("combobox", { name: "Product" })).toBeVisible({
+      timeout: 5000,
+    });
   });
 });

@@ -18,7 +18,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
   test.describe("Pick List Navigation", () => {
     test("should display pick list with Work Surface pattern", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       // Header should be visible
       const header = page.locator('h1:has-text("Pick"), h1:has-text("Pack")');
@@ -31,7 +33,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
     test("should navigate orders with keyboard", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       // Focus and navigate
       await page.keyboard.press("Tab");
@@ -49,7 +53,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
     test("should filter by status", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       const statusFilter = page.locator('select, [data-testid="status-filter"]');
       if (await statusFilter.first().isVisible().catch(() => false)) {
@@ -59,21 +65,27 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
     test("should search orders", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
-      // Cmd+K should focus search
+      // Cmd+K should open global command palette
       const isMac = process.platform === "darwin";
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
 
-      const searchInput = page.locator('input[placeholder*="Search"], input[type="search"]');
-      await expect(searchInput.first()).toBeFocused({ timeout: 3000 });
+      const paletteInput = page
+        .locator('[role="dialog"] [data-slot="command-input"]')
+        .first();
+      await expect(paletteInput).toBeVisible({ timeout: 5000 });
     });
   });
 
   test.describe("Item Selection", () => {
     test("should allow multi-select items", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       // Select an order first
       const orderRow = page.locator('[role="row"], tr').first();
@@ -91,7 +103,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
     test("should select all unpacked with shortcut", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       const orderRow = page.locator('[role="row"], tr').first();
       if (await orderRow.isVisible().catch(() => false)) {
@@ -110,7 +124,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
   test.describe("Pack Operations", () => {
     test("should pack selected items", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       // Pack button should be visible when items selected
       const packButton = page.locator('button:has-text("Pack")');
@@ -121,7 +137,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
     test("should mark order ready when fully packed", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       // Mark Ready button
       const readyButton = page.locator('button:has-text("Ready"), button:has-text("Mark Ready")');
@@ -137,7 +155,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
   test.describe("Inspector Panel", () => {
     test("should show order details in inspector", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       const orderRow = page.locator('[role="row"], tr').first();
       if (await orderRow.isVisible().catch(() => false)) {
@@ -157,7 +177,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
     test("should show item details when inspecting", async ({ page }) => {
       await page.goto("/pick-pack");
-      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("heading", { name: "Pick & Pack" })).toBeVisible({
+        timeout: 15000,
+      });
 
       // Use keyboard to inspect
       await page.keyboard.press("Tab");
