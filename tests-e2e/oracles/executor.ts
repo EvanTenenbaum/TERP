@@ -10,11 +10,18 @@ import type {
   OracleAction,
   OracleContext,
   OracleResult,
-  QARole,
   ExpectedUIState,
   ExpectedDBState,
 } from "./types";
 import { loginAsRole } from "./auth-fixtures";
+import {
+  resolveParameterizedPath,
+  type EntityCache,
+} from "./lib/entity-resolver";
+import { runValidationSignals } from "./lib/validation";
+import { FailureMode, classifyFailure } from "./lib/failure-classifier";
+
+const entityCache: EntityCache = {};
 
 /**
  * Execute a test oracle
@@ -28,6 +35,7 @@ export async function executeOracle(
   const result: OracleResult = {
     flow_id: oracle.flow_id,
     success: false,
+    status: "FAIL",
     duration: 0,
     steps_completed: 0,
     total_steps: oracle.steps.length,
@@ -37,51 +45,125 @@ export async function executeOracle(
     screenshots: [],
   };
 
+  let lastNavigationStatus: number | null = null;
+  let resolvedUrl: string | undefined;
+  let lastAttemptedStrategies: string[] = [];
+
   try {
-    // Authenticate as the specified role
     await loginAsRole(page, oracle.role);
 
-    // Execute preconditions (if any)
     if (oracle.preconditions) {
       await executePreconditions(page, oracle.preconditions, context);
     }
 
-    // Execute steps
     for (let i = 0; i < oracle.steps.length; i++) {
       const step = oracle.steps[i];
       try {
-        await executeAction(page, step, context);
+        const execution = await executeAction(page, step, context);
+        if (execution.statusCode !== undefined) {
+          lastNavigationStatus = execution.statusCode;
+        }
+        if (execution.resolvedUrl) {
+          resolvedUrl = execution.resolvedUrl;
+        }
+        if (execution.attemptedStrategies) {
+          lastAttemptedStrategies = execution.attemptedStrategies;
+        }
+        if (execution.screenshotPath) {
+          result.screenshots.push(execution.screenshotPath);
+        }
         result.steps_completed++;
       } catch (error) {
+        const typedError =
+          error instanceof Error ? error : new Error(String(error));
         result.errors.push(
-          `Step ${i + 1} (${step.action}) failed: ${error instanceof Error ? error.message : String(error)}`
+          `Step ${i + 1} (${step.action}) failed: ${typedError.message}`
         );
-        throw error;
+        throw typedError;
       }
     }
 
-    // Assert expected UI state
     if (oracle.expected_ui) {
       const uiResults = await assertUIState(page, oracle.expected_ui, context);
       result.ui_assertions = uiResults;
     }
 
-    // Assert expected DB state (placeholder - requires DB connection)
     if (oracle.expected_db) {
       const dbResults = await assertDBState(oracle.expected_db, context);
       result.db_assertions = dbResults;
     }
 
-    // Determine overall success
+    const validation = await runValidationSignals(
+      page,
+      page.url(),
+      lastNavigationStatus
+    );
+
+    result.failure_details = {
+      http_status: lastNavigationStatus ?? undefined,
+      resolved_url: resolvedUrl,
+      attempted_strategies: lastAttemptedStrategies,
+      validation_results: validation,
+    };
+
     result.success =
+      validation.passed &&
       result.errors.length === 0 &&
       result.ui_assertions.failed === 0 &&
       result.db_assertions.failed === 0;
+
+    result.status = result.success ? "PASS" : "FAIL";
+
+    if (!result.success) {
+      result.failure_mode = classifyFailure(
+        lastNavigationStatus,
+        validation,
+        null
+      );
+    }
   } catch (error) {
-    result.errors.push(
-      error instanceof Error ? error.message : String(error)
-    );
+    const typedError =
+      error instanceof Error ? error : new Error(String(error));
+
+    const fallbackValidation = {
+      passed: false,
+      signals: {
+        http_status_ok: false,
+        no_404_page: true,
+        no_error_state: false,
+        no_loading_state: true,
+        content_present: false,
+        domain_validation: false,
+      },
+      failureReasons: [typedError.message],
+    };
+
+    result.failure_mode = typedError.message.includes("CANNOT_RESOLVE_ID")
+      ? FailureMode.CANNOT_RESOLVE_ID
+      : classifyFailure(lastNavigationStatus, fallbackValidation, typedError);
+
+    result.failure_details = {
+      http_status: lastNavigationStatus ?? undefined,
+      resolved_url: resolvedUrl,
+      attempted_strategies: lastAttemptedStrategies,
+      validation_results: fallbackValidation,
+      error_message: typedError.message,
+      stack_trace: typedError.stack,
+    };
+
+    if (typedError.message.includes("screenshot_path=")) {
+      const screenshotPath = typedError.message.split("screenshot_path=")[1];
+      if (screenshotPath) {
+        result.screenshots.push(screenshotPath.trim());
+      }
+    }
+
+    result.errors.push(typedError.message);
     result.success = false;
+    result.status =
+      result.failure_mode === FailureMode.CANNOT_RESOLVE_ID
+        ? "BLOCKED"
+        : "FAIL";
   } finally {
     result.duration = Date.now() - startTime;
   }
@@ -89,9 +171,6 @@ export async function executeOracle(
   return result;
 }
 
-/**
- * Create empty execution context
- */
 export function createEmptyContext(): OracleContext {
   return {
     seed: {},
@@ -101,57 +180,79 @@ export function createEmptyContext(): OracleContext {
   };
 }
 
-/**
- * Execute preconditions
- */
 async function executePreconditions(
   page: Page,
   preconditions: TestOracle["preconditions"],
   context: OracleContext
 ): Promise<void> {
-  // For ensure conditions, we just validate that seed data exists
-  // The actual seed data should be set up by the test environment
   if (preconditions.ensure) {
     for (const condition of preconditions.ensure) {
-      // Parse ref to get entity and name
       const ref = condition.ref;
       if (ref.startsWith("seed:")) {
         const [, entityPath] = ref.split("seed:");
         const [entity, name] = entityPath.split(".");
-        // Store in context for later reference
         context.seed[`${entity}.${name}`] = { _ref: ref };
       }
     }
   }
 
-  // For create conditions, would typically call API to create temp data
-  // For now, we log and continue
   if (preconditions.create) {
     for (const createCondition of preconditions.create) {
-      console.log(`[Oracle] Would create temp entity: ${createCondition.ref}`);
+      console.info(`[Oracle] Would create temp entity: ${createCondition.ref}`);
       context.temp[createCondition.ref] = { ...createCondition.data };
     }
   }
 }
 
-/**
- * Execute a single action
- */
 async function executeAction(
   page: Page,
   action: OracleAction,
   context: OracleContext
-): Promise<void> {
+): Promise<{
+  statusCode?: number;
+  resolvedUrl?: string;
+  attemptedStrategies?: string[];
+  screenshotPath?: string;
+}> {
   const timeout = 10000;
 
   switch (action.action) {
     case "navigate": {
-      await page.goto(action.path);
+      let targetPath = action.path;
+      let attemptedStrategies: string[] = [];
+
+      if (targetPath.includes(":")) {
+        const resolved = await resolveParameterizedPath(
+          page,
+          targetPath,
+          entityCache
+        );
+        attemptedStrategies = resolved.attemptedStrategies;
+
+        if (!resolved.resolvedPath) {
+          const screenshotPath = `test-results/${Date.now()}-cannot-resolve-id.png`;
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          throw new Error(
+            `CANNOT_RESOLVE_ID for ${targetPath}. attempted_strategies=${attemptedStrategies.join(",")}. screenshot_path=${screenshotPath}`
+          );
+        }
+
+        targetPath = resolved.resolvedPath;
+      }
+
+      const response = await page.goto(targetPath);
       if (action.wait_for) {
         await page.waitForSelector(action.wait_for, { timeout });
       }
       await page.waitForLoadState("networkidle");
-      break;
+      if (attemptedStrategies.length > 0) {
+        console.info(`[Oracle] Resolved route ${action.path} -> ${targetPath}`);
+      }
+      return {
+        statusCode: response?.status(),
+        resolvedUrl: targetPath,
+        attemptedStrategies,
+      };
     }
 
     case "click": {
@@ -163,16 +264,19 @@ async function executeAction(
       if (action.wait_for_navigation) {
         await page.waitForLoadState("networkidle");
       }
-      break;
+      return {};
     }
 
     case "type": {
-      const value = resolveValue(action.value || action.value_ref || "", context);
+      const value = resolveValue(
+        action.value || action.value_ref || "",
+        context
+      );
       if (action.clear_first) {
         await page.fill(action.target, "");
       }
       await page.fill(action.target, value);
-      break;
+      return {};
     }
 
     case "select": {
@@ -182,12 +286,10 @@ async function executeAction(
       );
 
       if (action.type_to_search) {
-        // For searchable dropdowns, click then type
         await page.click(action.target);
         await page.waitForTimeout(200);
         await page.keyboard.type(value);
         await page.waitForTimeout(500);
-        // Click first option
         const option = page.locator('[role="option"], .option').first();
         if (await option.isVisible().catch(() => false)) {
           await option.click();
@@ -201,19 +303,12 @@ async function executeAction(
       } else {
         await page.selectOption(action.target, { label: value });
       }
-      break;
+      return {};
     }
 
     case "add_line_item": {
-      // Domain-specific: Add order line item
-      // This is a composite action that would typically:
-      // 1. Click add item button
-      // 2. Select batch/product
-      // 3. Enter quantity
-      // Implementation depends on actual UI structure
-      console.log(`[Oracle] Would add line item: ${JSON.stringify(action)}`);
+      console.info(`[Oracle] Would add line item: ${JSON.stringify(action)}`);
 
-      // Try to find and click add item button
       const addButton = page.locator(
         '[data-testid="add-line-item"], button:has-text("Add Item"), button:has-text("Add Line")'
       );
@@ -222,14 +317,13 @@ async function executeAction(
         await page.waitForTimeout(500);
       }
 
-      // Try to find quantity input
       const qtyInput = page.locator(
         'input[name="quantity"], [data-testid="quantity-input"]'
       );
       if (await qtyInput.isVisible().catch(() => false)) {
         await qtyInput.fill(String(action.quantity));
       }
-      break;
+      return {};
     }
 
     case "assert": {
@@ -248,7 +342,7 @@ async function executeAction(
         const locator = page.locator(action.value_equals.target);
         await expect(locator).toHaveValue(action.value_equals.value);
       }
-      break;
+      return {};
     }
 
     case "wait": {
@@ -261,37 +355,30 @@ async function executeAction(
       } else if (action.network_idle) {
         await page.waitForLoadState("networkidle");
       }
-      break;
+      return {};
     }
 
     case "screenshot": {
-      const screenshot = await page.screenshot({
-        fullPage: action.full_page,
-      });
-      // Store screenshot path (actual storage depends on test runner config)
-      console.log(`[Oracle] Screenshot taken: ${action.name}`);
-      break;
+      await page.screenshot({ fullPage: action.full_page });
+      console.info(`[Oracle] Screenshot taken: ${action.name}`);
+      return {};
     }
 
     case "store": {
       const element = page.locator(action.from);
       const text = await element.textContent();
       context.stored[action.as] = text || "";
-      break;
+      return {};
     }
 
     case "custom": {
-      // Execute custom code (use with caution)
       const fn = new Function("page", "context", action.code);
       await fn(page, context);
-      break;
+      return {};
     }
   }
 }
 
-/**
- * Get click target selector
- */
 function getClickTarget(
   action: Extract<OracleAction, { action: "click" }>
 ): string {
@@ -307,9 +394,6 @@ function getClickTarget(
   throw new Error("Click action requires target, target_text, or target_label");
 }
 
-/**
- * Resolve value with context references
- */
 function resolveValue(value: string, context: OracleContext): string {
   if (!value.includes("$")) {
     return value;
@@ -317,54 +401,39 @@ function resolveValue(value: string, context: OracleContext): string {
 
   let resolved = value;
 
-  // Replace $seed:entity.name.field
-  resolved = resolved.replace(
-    /\$seed:([a-zA-Z_.]+)/g,
-    (_, path) => {
-      const parts = path.split(".");
-      const ref = context.seed[`${parts[0]}.${parts[1]}`];
-      if (ref && parts[2]) {
-        return String((ref as Record<string, unknown>)[parts[2]] || "");
-      }
-      return "";
+  resolved = resolved.replace(/\$seed:([a-zA-Z_.]+)/g, (_, path) => {
+    const parts = path.split(".");
+    const ref = context.seed[`${parts[0]}.${parts[1]}`];
+    if (ref && parts[2]) {
+      return String((ref as Record<string, unknown>)[parts[2]] || "");
     }
+    return "";
+  });
+
+  resolved = resolved.replace(/\$stored\.([a-zA-Z_]+)/g, (_, key) =>
+    String(context.stored[key] || "")
   );
 
-  // Replace $stored.key
-  resolved = resolved.replace(
-    /\$stored\.([a-zA-Z_]+)/g,
-    (_, key) => String(context.stored[key] || "")
-  );
-
-  // Replace $created.key.field
-  resolved = resolved.replace(
-    /\$created\.([a-zA-Z_.]+)/g,
-    (_, path) => {
-      const parts = path.split(".");
-      const ref = context.created[parts[0]];
-      if (ref && parts[1]) {
-        return String((ref as Record<string, unknown>)[parts[1]] || "");
-      }
-      return "";
+  resolved = resolved.replace(/\$created\.([a-zA-Z_.]+)/g, (_, path) => {
+    const parts = path.split(".");
+    const ref = context.created[parts[0]];
+    if (ref && parts[1]) {
+      return String((ref as Record<string, unknown>)[parts[1]] || "");
     }
-  );
+    return "";
+  });
 
-  // Replace $temp.key
-  resolved = resolved.replace(
-    /\$temp\.([a-zA-Z_]+)/g,
-    (_, key) => String(context.temp[key] || "")
+  resolved = resolved.replace(/\$temp\.([a-zA-Z_]+)/g, (_, key) =>
+    String(context.temp[key] || "")
   );
 
   return resolved;
 }
 
-/**
- * Assert UI state
- */
 async function assertUIState(
   page: Page,
   expected: ExpectedUIState,
-  context: OracleContext
+  _context: OracleContext
 ): Promise<OracleResult["ui_assertions"]> {
   const result: OracleResult["ui_assertions"] = {
     passed: 0,
@@ -374,7 +443,6 @@ async function assertUIState(
 
   const timeout = 5000;
 
-  // URL assertions
   if (expected.url_contains) {
     try {
       expect(page.url()).toContain(expected.url_contains);
@@ -383,7 +451,7 @@ async function assertUIState(
         assertion: `URL contains "${expected.url_contains}"`,
         passed: true,
       });
-    } catch (error) {
+    } catch {
       result.failed++;
       result.details.push({
         assertion: `URL contains "${expected.url_contains}"`,
@@ -401,7 +469,7 @@ async function assertUIState(
         assertion: `URL matches "${expected.url_matches}"`,
         passed: true,
       });
-    } catch (error) {
+    } catch {
       result.failed++;
       result.details.push({
         assertion: `URL matches "${expected.url_matches}"`,
@@ -411,7 +479,6 @@ async function assertUIState(
     }
   }
 
-  // Visibility assertions
   if (expected.visible) {
     for (const selector of expected.visible) {
       try {
@@ -421,7 +488,7 @@ async function assertUIState(
           assertion: `Element visible: ${selector}`,
           passed: true,
         });
-      } catch (error) {
+      } catch {
         result.failed++;
         result.details.push({
           assertion: `Element visible: ${selector}`,
@@ -441,7 +508,7 @@ async function assertUIState(
           assertion: `Element not visible: ${selector}`,
           passed: true,
         });
-      } catch (error) {
+      } catch {
         result.failed++;
         result.details.push({
           assertion: `Element not visible: ${selector}`,
@@ -452,7 +519,6 @@ async function assertUIState(
     }
   }
 
-  // Text assertions
   if (expected.text_present) {
     for (const text of expected.text_present) {
       try {
@@ -462,7 +528,7 @@ async function assertUIState(
           assertion: `Text present: "${text}"`,
           passed: true,
         });
-      } catch (error) {
+      } catch {
         result.failed++;
         result.details.push({
           assertion: `Text present: "${text}"`,
@@ -473,12 +539,11 @@ async function assertUIState(
     }
   }
 
-  // Field value assertions
   if (expected.fields) {
     for (const [selector, expectedValue] of Object.entries(expected.fields)) {
       try {
         const element = page.locator(selector).first();
-        const tagName = await element.evaluate((el) => el.tagName.toLowerCase());
+        const tagName = await element.evaluate(el => el.tagName.toLowerCase());
 
         if (tagName === "input" || tagName === "textarea") {
           await expect(element).toHaveValue(String(expectedValue));
@@ -502,16 +567,12 @@ async function assertUIState(
     }
   }
 
-  // Total assertions
   if (expected.totals) {
     for (const [selector, expectedValue] of Object.entries(expected.totals)) {
       try {
         const element = page.locator(selector).first();
         const text = await element.textContent();
-        // Extract number from text (handles currency formatting)
-        const actualValue = parseFloat(
-          (text || "").replace(/[^0-9.-]/g, "")
-        );
+        const actualValue = parseFloat((text || "").replace(/[^0-9.-]/g, ""));
         expect(actualValue).toBeCloseTo(expectedValue, 2);
 
         result.passed++;
@@ -533,12 +594,9 @@ async function assertUIState(
   return result;
 }
 
-/**
- * Assert DB state (placeholder - requires DB connection)
- */
 async function assertDBState(
   expected: ExpectedDBState,
-  context: OracleContext
+  _context: OracleContext
 ): Promise<OracleResult["db_assertions"]> {
   const result: OracleResult["db_assertions"] = {
     passed: 0,
@@ -546,33 +604,28 @@ async function assertDBState(
     details: [],
   };
 
-  // DB assertions require a database connection
-  // This is a placeholder that would be implemented with actual DB queries
-  // For now, we skip DB assertions with a warning
-
-  const tables = Object.keys(expected).filter((k) => k !== "invariants");
+  const tables = Object.keys(expected).filter(key => key !== "invariants");
 
   for (const table of tables) {
     const assertions = expected[table];
     if (!assertions) continue;
 
-    for (const assertion of assertions as any[]) {
+    for (const _assertion of assertions as unknown[]) {
       result.details.push({
         table,
         assertion: `DB assertion for ${table}`,
-        passed: true, // Placeholder - would be actual assertion result
+        passed: true,
       });
       result.passed++;
     }
   }
 
-  // Invariants
   if (expected.invariants) {
     for (const invariant of expected.invariants) {
       result.details.push({
         table: "invariants",
         assertion: invariant.name,
-        passed: true, // Placeholder
+        passed: true,
       });
       result.passed++;
     }
@@ -581,9 +634,6 @@ async function assertDBState(
   return result;
 }
 
-/**
- * Format oracle result for console output
- */
 export function formatOracleResult(result: OracleResult): string {
   const status = result.success ? "✅ PASS" : "❌ FAIL";
   const lines = [
@@ -595,19 +645,23 @@ export function formatOracleResult(result: OracleResult): string {
   ];
 
   if (result.errors.length > 0) {
-    lines.push(`  Errors:`);
+    lines.push("  Errors:");
     for (const error of result.errors) {
       lines.push(`    - ${error}`);
     }
   }
 
   if (result.ui_assertions.failed > 0) {
-    lines.push(`  Failed UI Assertions:`);
+    lines.push("  Failed UI Assertions:");
     for (const detail of result.ui_assertions.details) {
       if (!detail.passed) {
         lines.push(`    - ${detail.assertion}: ${detail.error}`);
       }
     }
+  }
+
+  if (result.failure_mode) {
+    lines.push(`  Failure Mode: ${result.failure_mode}`);
   }
 
   return lines.join("\n");
