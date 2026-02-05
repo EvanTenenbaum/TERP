@@ -12,17 +12,22 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -58,7 +63,6 @@ import {
   InspectorPanel,
   InspectorSection,
   InspectorField,
-  InspectorActions,
   useInspectorPanel,
 } from "./InspectorPanel";
 
@@ -68,15 +72,11 @@ import { InvoiceToPaymentFlow } from "./golden-flows/InvoiceToPaymentFlow";
 // Icons
 import {
   Search,
-  Plus,
   FileText,
-  DollarSign,
   ChevronRight,
   Loader2,
-  AlertCircle,
   RefreshCw,
   CheckCircle2,
-  Clock,
   Send,
   Eye,
   XCircle,
@@ -86,8 +86,6 @@ import {
   Printer,
   CalendarClock,
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
   Receipt,
 } from "lucide-react";
 
@@ -115,12 +113,9 @@ interface Invoice {
   }>;
 }
 
-interface ARAging {
-  current: number;
-  days30: number;
-  days60: number;
-  days90: number;
-  days90Plus: number;
+interface CustomerSummary {
+  id: number;
+  name?: string | null;
 }
 
 // ============================================================================
@@ -138,7 +133,7 @@ const INVOICE_STATUSES = [
   { value: "VOID", label: "Void" },
 ];
 
-const STATUS_ICONS: Record<string, React.ReactNode> = {
+const STATUS_ICONS: Record<string, ReactNode> = {
   DRAFT: <FileText className="h-4 w-4" />,
   SENT: <Send className="h-4 w-4" />,
   VIEWED: <Eye className="h-4 w-4" />,
@@ -164,7 +159,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 const formatCurrency = (value: string | number | null | undefined): string => {
   const num = typeof value === "string" ? parseFloat(value) : value || 0;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 const formatDate = (dateString: Date | string | null | undefined): string => {
@@ -188,13 +186,25 @@ const getPaymentProgress = (invoice: Invoice): number => {
   return total > 0 ? Math.round((paid / total) * 100) : 0;
 };
 
+const extractItems = <T,>(data: unknown): T[] => {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && "items" in data) {
+    const items = (data as { items?: unknown }).items;
+    if (Array.isArray(items)) return items as T[];
+  }
+  return [];
+};
+
 // ============================================================================
 // STATUS BADGE
 // ============================================================================
 
 function InvoiceStatusBadge({ status }: { status: string }) {
   return (
-    <Badge variant="outline" className={cn("gap-1", STATUS_COLORS[status] || STATUS_COLORS.DRAFT)}>
+    <Badge
+      variant="outline"
+      className={cn("gap-1", STATUS_COLORS[status] || STATUS_COLORS.DRAFT)}
+    >
       {STATUS_ICONS[status]}
       {status}
     </Badge>
@@ -267,7 +277,8 @@ function InvoiceInspectorContent({
   }
 
   const paymentProgress = getPaymentProgress(invoice);
-  const daysOverdue = invoice.status === "OVERDUE" ? getDaysOverdue(invoice.dueDate) : 0;
+  const daysOverdue =
+    invoice.status === "OVERDUE" ? getDaysOverdue(invoice.dueDate) : 0;
   const isOverdue = daysOverdue > 0;
 
   return (
@@ -275,7 +286,9 @@ function InvoiceInspectorContent({
       <InspectorSection title="Invoice Information" defaultOpen>
         <div className="grid grid-cols-2 gap-4">
           <InspectorField label="Invoice #">
-            <p className="font-semibold text-lg font-mono">{invoice.invoiceNumber}</p>
+            <p className="font-semibold text-lg font-mono">
+              {invoice.invoiceNumber}
+            </p>
           </InspectorField>
           <InspectorField label="Status">
             <InvoiceStatusBadge status={invoice.status} />
@@ -309,16 +322,25 @@ function InvoiceInspectorContent({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Amount</span>
-            <span className="font-mono font-semibold">{formatCurrency(invoice.totalAmount)}</span>
+            <span className="font-mono font-semibold">
+              {formatCurrency(invoice.totalAmount)}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Amount Paid</span>
-            <span className="font-mono text-green-600">{formatCurrency(invoice.amountPaid)}</span>
+            <span className="font-mono text-green-600">
+              {formatCurrency(invoice.amountPaid)}
+            </span>
           </div>
           <Separator />
           <div className="flex justify-between items-center">
             <span className="font-semibold">Amount Due</span>
-            <span className={cn("font-mono font-bold text-lg", isOverdue && "text-red-600")}>
+            <span
+              className={cn(
+                "font-mono font-bold text-lg",
+                isOverdue && "text-red-600"
+              )}
+            >
               {formatCurrency(invoice.amountDue)}
             </span>
           </div>
@@ -339,7 +361,10 @@ function InvoiceInspectorContent({
         <InspectorSection title={`Line Items (${invoice.lineItems.length})`}>
           <div className="space-y-2">
             {invoice.lineItems.map((item, index) => (
-              <div key={item.id || index} className="p-3 border rounded-lg bg-muted/30">
+              <div
+                key={item.id || index}
+                className="p-3 border rounded-lg bg-muted/30"
+              >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.description}</p>
@@ -347,7 +372,9 @@ function InvoiceInspectorContent({
                       Qty: {item.quantity} × {formatCurrency(item.unitPrice)}
                     </p>
                   </div>
-                  <p className="font-mono font-semibold text-sm">{formatCurrency(item.amount)}</p>
+                  <p className="font-mono font-semibold text-sm">
+                    {formatCurrency(item.amount)}
+                  </p>
                 </div>
               </div>
             ))}
@@ -378,16 +405,18 @@ function InvoiceInspectorContent({
             </>
           )}
 
-          {invoice.status !== "DRAFT" && invoice.status !== "VOID" && invoice.status !== "PAID" && (
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => onSendReminder(invoice.id)}
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Send Payment Reminder
-            </Button>
-          )}
+          {invoice.status !== "DRAFT" &&
+            invoice.status !== "VOID" &&
+            invoice.status !== "PAID" && (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => onSendReminder(invoice.id)}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Send Payment Reminder
+              </Button>
+            )}
 
           <Button
             variant="outline"
@@ -440,7 +469,9 @@ export function InvoicesWorkSurface() {
   // State
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(
+    null
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showVoidDialog, setShowVoidDialog] = useState(false);
@@ -449,7 +480,7 @@ export function InvoicesWorkSurface() {
   const pageSize = 50;
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
   const toasts = useToastConfig();
   const { print, isPrinting } = usePrint();
@@ -471,28 +502,38 @@ export function InvoicesWorkSurface() {
 
   // Data queries
   const { data: customersData } = trpc.clients.list.useQuery({ limit: 1000 });
-  const customers = Array.isArray(customersData) ? customersData : (customersData as any)?.items ?? [];
+  const customers = useMemo(
+    () => extractItems<CustomerSummary>(customersData),
+    [customersData]
+  );
 
   const {
     data: invoicesResponse,
     isLoading,
     refetch: refetchInvoices,
   } = trpc.accounting.invoices.list.useQuery({
-    status: statusFilter !== "ALL" ? (statusFilter as Invoice["status"]) : undefined,
+    status:
+      statusFilter !== "ALL" ? (statusFilter as Invoice["status"]) : undefined,
     limit: pageSize,
     offset: (page - 1) * pageSize,
   });
-  const invoices: Invoice[] = invoicesResponse?.items ?? [];
+  const invoices = useMemo(
+    () => extractItems<Invoice>(invoicesResponse),
+    [invoicesResponse]
+  );
   const totalInvoices = invoicesResponse?.pagination?.total ?? 0;
 
-  const { data: arAging } = trpc.accounting.invoices.getARAging.useQuery(undefined, {
-    enabled: showAging,
-  });
+  const { data: arAging } = trpc.accounting.invoices.getARAging.useQuery(
+    undefined,
+    {
+      enabled: showAging,
+    }
+  );
 
   // Helpers
   const getCustomerName = useCallback(
     (customerId: number) => {
-      const customer = customers.find((c: any) => c.id === customerId);
+      const customer = customers.find(c => c.id === customerId);
       return customer?.name || "Unknown Customer";
     },
     [customers]
@@ -502,7 +543,7 @@ export function InvoicesWorkSurface() {
   const displayInvoices = useMemo(() => {
     if (!search) return invoices;
     const searchLower = search.toLowerCase();
-    return invoices.filter((invoice) => {
+    return invoices.filter(invoice => {
       const invoiceNumber = invoice.invoiceNumber || "";
       const customerName = getCustomerName(invoice.customerId);
       return (
@@ -514,15 +555,23 @@ export function InvoicesWorkSurface() {
 
   // Selected invoice
   const selectedInvoice = useMemo(
-    () => displayInvoices.find((i) => i.id === selectedInvoiceId) || null,
+    () => displayInvoices.find(i => i.id === selectedInvoiceId) || null,
     [displayInvoices, selectedInvoiceId]
   );
 
   // Statistics
   const stats = useMemo(() => {
-    const totalBilled = invoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
-    const totalDue = invoices.reduce((sum, inv) => sum + parseFloat(inv.amountDue), 0);
-    const overdueCount = invoices.filter((inv) => inv.status === "OVERDUE").length;
+    const totalBilled = invoices.reduce(
+      (sum, inv) => sum + parseFloat(inv.totalAmount),
+      0
+    );
+    const totalDue = invoices.reduce(
+      (sum, inv) => sum + parseFloat(inv.amountDue),
+      0
+    );
+    const overdueCount = invoices.filter(
+      inv => inv.status === "OVERDUE"
+    ).length;
     return {
       count: invoices.length,
       totalBilled,
@@ -540,7 +589,7 @@ export function InvoicesWorkSurface() {
       utils.accounting.invoices.list.invalidate();
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(err)) {
         toasts.error(err.message || "Failed to mark as paid");
@@ -558,12 +607,25 @@ export function InvoicesWorkSurface() {
       setShowVoidDialog(false);
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(err)) {
         toasts.error(err.message || "Failed to void invoice");
         setError(err.message);
       }
+    },
+  });
+
+  const downloadPdfMutation = trpc.invoices.downloadPdf.useMutation({
+    onSuccess: result => {
+      const link = document.createElement("a");
+      link.href = `data:application/pdf;base64,${result.pdf}`;
+      link.download = result.fileName;
+      link.click();
+      toasts.success("Invoice PDF downloaded");
+    },
+    onError: err => {
+      toasts.error(err.message || "Failed to download PDF");
     },
   });
 
@@ -582,39 +644,42 @@ export function InvoicesWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": (e) => {
+      "cmd+k": e => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "ctrl+k": (e) => {
+      "ctrl+k": e => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      arrowdown: (e) => {
+      arrowdown: e => {
         e.preventDefault();
-        const newIndex = Math.min(displayInvoices.length - 1, selectedIndex + 1);
+        const newIndex = Math.min(
+          displayInvoices.length - 1,
+          selectedIndex + 1
+        );
         setSelectedIndex(newIndex);
         const invoice = displayInvoices[newIndex];
         if (invoice) setSelectedInvoiceId(invoice.id);
       },
-      arrowup: (e) => {
+      arrowup: e => {
         e.preventDefault();
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const invoice = displayInvoices[newIndex];
         if (invoice) setSelectedInvoiceId(invoice.id);
       },
-      enter: (e) => {
+      enter: e => {
         if (selectedInvoice) {
           e.preventDefault();
           inspector.open();
         }
       },
-      "cmd+r": (e) => {
+      "cmd+r": e => {
         e.preventDefault();
         refetchInvoices();
       },
-      "ctrl+r": (e) => {
+      "ctrl+r": e => {
         e.preventDefault();
         refetchInvoices();
       },
@@ -632,17 +697,21 @@ export function InvoicesWorkSurface() {
   };
 
   const handleSendReminder = (invoiceId: number) => {
-    const invoice = invoices.find((i) => i.id === invoiceId);
+    const invoice = invoices.find(i => i.id === invoiceId);
     toasts.success(`Payment reminder sent for ${invoice?.invoiceNumber}`);
   };
 
-  const handleDownloadPDF = (invoiceId: number) => {
-    const invoice = invoices.find((i) => i.id === invoiceId);
-    toasts.info(`Downloading PDF for ${invoice?.invoiceNumber}`);
-  };
+  const handleDownloadPDF = useCallback(
+    (invoiceId: number) => {
+      const invoice = invoices.find(i => i.id === invoiceId);
+      toasts.info(`Preparing PDF for ${invoice?.invoiceNumber ?? "invoice"}`);
+      downloadPdfMutation.mutate({ id: invoiceId });
+    },
+    [downloadPdfMutation, invoices, toasts]
+  );
 
   const handlePrintInvoice = async (invoiceId: number) => {
-    const invoice = invoices.find((i) => i.id === invoiceId);
+    const invoice = invoices.find(i => i.id === invoiceId);
     if (invoice) {
       await print({
         title: `Invoice ${invoice.invoiceNumber}`,
@@ -682,14 +751,21 @@ export function InvoicesWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Total Billed: <span className="font-semibold text-foreground">{formatCurrency(stats.totalBilled)}</span>
+              Total Billed:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(stats.totalBilled)}
+              </span>
             </span>
             <span>
-              Due: <span className="font-semibold text-foreground">{formatCurrency(stats.totalDue)}</span>
+              Due:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(stats.totalDue)}
+              </span>
             </span>
             {stats.overdueCount > 0 && (
               <span className="text-red-600">
-                Overdue: <span className="font-semibold">{stats.overdueCount}</span>
+                Overdue:{" "}
+                <span className="font-semibold">{stats.overdueCount}</span>
               </span>
             )}
           </div>
@@ -706,7 +782,7 @@ export function InvoicesWorkSurface() {
                 ref={searchInputRef}
                 placeholder="Search invoices... (Cmd+K)"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -715,7 +791,7 @@ export function InvoicesWorkSurface() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                {INVOICE_STATUSES.map((s) => (
+                {INVOICE_STATUSES.map(s => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
                   </SelectItem>
@@ -752,7 +828,12 @@ export function InvoicesWorkSurface() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        <div className={cn("flex-1 overflow-auto transition-all duration-200", inspector.isOpen && "mr-96")}>
+        <div
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-200",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -763,7 +844,9 @@ export function InvoicesWorkSurface() {
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No invoices found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search ? "Try adjusting your search" : "Create invoices from sales orders"}
+                  {search
+                    ? "Try adjusting your search"
+                    : "Create invoices from sales orders"}
                 </p>
               </div>
             </div>
@@ -788,7 +871,8 @@ export function InvoicesWorkSurface() {
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedInvoiceId === invoice.id && "bg-muted",
-                      selectedIndex === index && "ring-1 ring-inset ring-primary"
+                      selectedIndex === index &&
+                        "ring-1 ring-inset ring-primary"
                     )}
                     onClick={() => {
                       setSelectedInvoiceId(invoice.id);
@@ -796,12 +880,18 @@ export function InvoicesWorkSurface() {
                       inspector.open();
                     }}
                   >
-                    <TableCell className="font-mono font-medium">{invoice.invoiceNumber}</TableCell>
+                    <TableCell className="font-mono font-medium">
+                      {invoice.invoiceNumber}
+                    </TableCell>
                     <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
                     <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className={invoice.status === "OVERDUE" ? "text-red-600" : ""}>
+                        <span
+                          className={
+                            invoice.status === "OVERDUE" ? "text-red-600" : ""
+                          }
+                        >
                           {formatDate(invoice.dueDate)}
                         </span>
                         {invoice.status === "OVERDUE" && (
@@ -811,9 +901,17 @@ export function InvoicesWorkSurface() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(invoice.totalAmount)}</TableCell>
                     <TableCell className="text-right font-mono">
-                      <span className={parseFloat(invoice.amountDue) > 0 ? "text-red-600" : "text-green-600"}>
+                      {formatCurrency(invoice.totalAmount)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      <span
+                        className={
+                          parseFloat(invoice.amountDue) > 0
+                            ? "text-red-600"
+                            : "text-green-600"
+                        }
+                      >
                         {formatCurrency(invoice.amountDue)}
                       </span>
                     </TableCell>
@@ -842,7 +940,7 @@ export function InvoicesWorkSurface() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
                 >
                   Previous
@@ -850,7 +948,7 @@ export function InvoicesWorkSurface() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => setPage(p => p + 1)}
                   disabled={page * pageSize >= totalInvoices}
                 >
                   Next
@@ -865,11 +963,17 @@ export function InvoicesWorkSurface() {
           isOpen={inspector.isOpen}
           onClose={inspector.close}
           title={selectedInvoice?.invoiceNumber || "Invoice Details"}
-          subtitle={selectedInvoice ? getCustomerName(selectedInvoice.customerId) : undefined}
+          subtitle={
+            selectedInvoice
+              ? getCustomerName(selectedInvoice.customerId)
+              : undefined
+          }
         >
           <InvoiceInspectorContent
             invoice={selectedInvoice}
-            customerName={selectedInvoice ? getCustomerName(selectedInvoice.customerId) : ""}
+            customerName={
+              selectedInvoice ? getCustomerName(selectedInvoice.customerId) : ""
+            }
             onMarkPaid={handleMarkPaid}
             onSendReminder={handleSendReminder}
             onDownloadPDF={handleDownloadPDF}
@@ -902,8 +1006,9 @@ export function InvoicesWorkSurface() {
             <DialogTitle>Void Invoice</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to void invoice <strong>{selectedInvoice?.invoiceNumber}</strong>? This action cannot
-            be undone.
+            Are you sure you want to void invoice{" "}
+            <strong>{selectedInvoice?.invoiceNumber}</strong>? This action
+            cannot be undone.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowVoidDialog(false)}>
@@ -911,7 +1016,10 @@ export function InvoicesWorkSurface() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedInvoice && voidMutation.mutate({ id: selectedInvoice.id, status: "VOID" })}
+              onClick={() =>
+                selectedInvoice &&
+                voidMutation.mutate({ id: selectedInvoice.id, status: "VOID" })
+              }
               disabled={voidMutation.isPending}
             >
               {voidMutation.isPending ? "Voiding..." : "Void Invoice"}

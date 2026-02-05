@@ -29,7 +29,9 @@ describe("SampleForm", () => {
       />
     );
 
-    expect(screen.getByLabelText(/product/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: /product/i })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/client/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/quantity/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/due date/i)).toBeInTheDocument();
@@ -70,9 +72,8 @@ describe("SampleForm", () => {
       />
     );
 
-    fireEvent.change(screen.getByLabelText(/product/i), {
-      target: { value: "10" },
-    });
+    fireEvent.click(screen.getByRole("combobox", { name: /product/i }));
+    fireEvent.click(screen.getByText("Product Alpha"));
     fireEvent.change(screen.getByLabelText(/client/i), {
       target: { value: "1" },
     });

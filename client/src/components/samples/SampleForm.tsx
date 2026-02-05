@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,6 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  ProductCombobox,
+  type ProductOption,
+} from "@/components/ui/product-combobox";
 
 export interface SampleFormValues {
   productId: number;
@@ -57,8 +61,6 @@ export const SampleForm = React.memo(function SampleForm({
   isSubmitting = false,
   isProductSearchLoading = false,
 }: SampleFormProps) {
-  const [productQuery, setProductQuery] = useState("");
-
   const {
     register,
     handleSubmit,
@@ -86,17 +88,20 @@ export const SampleForm = React.memo(function SampleForm({
     );
   }, [productOptions, selectedProductId]);
 
-  const handleProductChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const { value } = event.target;
-      setProductQuery(value);
-      const parsed = Number(value);
-      setValue("productId", Number.isNaN(parsed) ? 0 : parsed);
-      if (onProductSearch) {
-        onProductSearch(value);
-      }
+  const productOptionsList = useMemo<ProductOption[]>(
+    () =>
+      productOptions.map(option => ({
+        id: option.id,
+        label: option.label,
+      })),
+    [productOptions]
+  );
+
+  const handleProductSelect = useCallback(
+    (productId: number | null) => {
+      setValue("productId", productId ?? 0, { shouldValidate: true });
     },
-    [onProductSearch, setValue]
+    [setValue]
   );
 
   const handleFormSubmit = handleSubmit(async values => {
@@ -128,28 +133,20 @@ export const SampleForm = React.memo(function SampleForm({
         <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="product">Product</Label>
-            <Input
+            <ProductCombobox
               id="product"
-              list="product-options"
-              placeholder="Search product by name or ID"
-              value={productQuery}
-              onChange={handleProductChange}
-              aria-label="Product"
+              value={selectedProductId || null}
+              onValueChange={handleProductSelect}
+              products={productOptionsList}
+              isLoading={isProductSearchLoading}
+              onSearchChange={onProductSearch}
+              ariaLabel="Product"
               disabled={isSubmitting}
             />
             <input
               type="hidden"
               {...register("productId", { valueAsNumber: true })}
             />
-            <datalist id="product-options">
-              {productOptions.map(option => (
-                <option
-                  key={option.id}
-                  value={option.id.toString()}
-                  label={option.label}
-                />
-              ))}
-            </datalist>
             {selectedProductLabel && (
               <p className="text-xs text-muted-foreground">
                 Selected: {selectedProductLabel}

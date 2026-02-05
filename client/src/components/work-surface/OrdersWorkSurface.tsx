@@ -11,7 +11,14 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -22,7 +29,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -51,10 +58,13 @@ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeybo
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
 import {
+  OrderCOGSDetails,
+  type OrderCOGSLineItem,
+} from "@/components/orders/OrderCOGSDetails";
+import {
   InspectorPanel,
   InspectorSection,
   InspectorField,
-  InspectorActions,
   useInspectorPanel,
 } from "./InspectorPanel";
 
@@ -65,7 +75,6 @@ import {
   ShoppingCart,
   ChevronRight,
   Loader2,
-  AlertCircle,
   RefreshCw,
   Package,
   CheckCircle2,
@@ -104,6 +113,11 @@ interface Order {
   }>;
 }
 
+interface ClientSummary {
+  id: number;
+  name?: string | null;
+}
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -123,7 +137,7 @@ const FULFILLMENT_STATUSES = [
 ];
 
 // WSQA-003: Added return status icons
-const STATUS_ICONS: Record<string, React.ReactNode> = {
+const STATUS_ICONS: Record<string, ReactNode> = {
   PENDING: <Clock className="h-4 w-4" />,
   PROCESSING: <Package className="h-4 w-4" />,
   PACKED: <CheckCircle2 className="h-4 w-4" />,
@@ -155,7 +169,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 const formatCurrency = (value: string | number | null | undefined): string => {
   const num = typeof value === "string" ? parseFloat(value) : value || 0;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 const formatDate = (dateString: string | null | undefined): string => {
@@ -167,14 +184,32 @@ const formatDate = (dateString: string | null | undefined): string => {
   }
 };
 
+const extractItems = <T,>(data: unknown): T[] => {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && "items" in data) {
+    const items = (data as { items?: unknown }).items;
+    if (Array.isArray(items)) return items as T[];
+  }
+  return [];
+};
+
 // ============================================================================
 // STATUS BADGE
 // ============================================================================
 
-function OrderStatusBadge({ status, isDraft }: { status?: string; isDraft?: boolean }) {
+function OrderStatusBadge({
+  status,
+  isDraft,
+}: {
+  status?: string;
+  isDraft?: boolean;
+}) {
   const displayStatus = isDraft ? "DRAFT" : status || "PENDING";
   return (
-    <Badge variant="outline" className={cn("gap-1", STATUS_COLORS[displayStatus])}>
+    <Badge
+      variant="outline"
+      className={cn("gap-1", STATUS_COLORS[displayStatus])}
+    >
       {STATUS_ICONS[displayStatus]}
       {displayStatus}
     </Badge>
@@ -189,6 +224,7 @@ function OrderStatusBadge({ status, isDraft }: { status?: string; isDraft?: bool
 interface OrderInspectorProps {
   order: Order | null;
   clientName: string;
+  cogsLineItems: OrderCOGSLineItem[];
   onEdit: (orderId: number) => void;
   onConfirm: (orderId: number) => void;
   onDelete: (orderId: number) => void;
@@ -201,6 +237,7 @@ interface OrderInspectorProps {
 function OrderInspectorContent({
   order,
   clientName,
+  cogsLineItems,
   onEdit,
   onConfirm,
   onDelete,
@@ -232,7 +269,10 @@ function OrderInspectorContent({
             <p className="font-semibold text-lg">{order.orderNumber}</p>
           </InspectorField>
           <InspectorField label="Status">
-            <OrderStatusBadge status={order.fulfillmentStatus} isDraft={order.isDraft} />
+            <OrderStatusBadge
+              status={order.fulfillmentStatus}
+              isDraft={order.isDraft}
+            />
           </InspectorField>
         </div>
 
@@ -264,7 +304,10 @@ function OrderInspectorContent({
         ) : (
           <div className="space-y-2">
             {lineItems.map((item, index) => (
-              <div key={item.id || index} className="p-3 border rounded-lg bg-muted/30">
+              <div
+                key={item.id || index}
+                className="p-3 border rounded-lg bg-muted/30"
+              >
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{item.productName}</p>
@@ -272,27 +315,43 @@ function OrderInspectorContent({
                       Qty: {item.quantity} @ {formatCurrency(item.unitPrice)}
                     </p>
                   </div>
-                  <p className="font-semibold">{formatCurrency(item.totalPrice)}</p>
+                  <p className="font-semibold">
+                    {formatCurrency(item.totalPrice)}
+                  </p>
                 </div>
               </div>
             ))}
             <div className="pt-2 border-t flex justify-between items-center">
               <span className="font-medium">Total</span>
-              <span className="text-lg font-bold">{formatCurrency(order.total || lineTotal)}</span>
+              <span className="text-lg font-bold">
+                {formatCurrency(order.total || lineTotal)}
+              </span>
             </div>
           </div>
         )}
+      </InspectorSection>
+
+      <InspectorSection title="COGS Details" defaultOpen>
+        <OrderCOGSDetails lineItems={cogsLineItems} />
       </InspectorSection>
 
       <InspectorSection title="Quick Actions">
         <div className="space-y-2">
           {order.isDraft ? (
             <>
-              <Button variant="outline" className="w-full justify-start" onClick={() => onEdit(order.id)}>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => onEdit(order.id)}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Draft
               </Button>
-              <Button variant="default" className="w-full justify-start" onClick={() => onConfirm(order.id)}>
+              <Button
+                variant="default"
+                className="w-full justify-start"
+                onClick={() => onConfirm(order.id)}
+              >
                 <Send className="h-4 w-4 mr-2" />
                 Confirm Order
               </Button>
@@ -309,33 +368,47 @@ function OrderInspectorContent({
             <>
               {/* WSQA-003: Status-based actions */}
               {order.fulfillmentStatus === "PENDING" && (
-                <Button variant="default" className="w-full justify-start" onClick={() => onShip(order.id)}>
+                <Button
+                  variant="default"
+                  className="w-full justify-start"
+                  onClick={() => onShip(order.id)}
+                >
                   <Truck className="h-4 w-4 mr-2" />
                   Ship Order
                 </Button>
               )}
               {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
-              {(order.fulfillmentStatus === "SHIPPED" || order.fulfillmentStatus === "DELIVERED") && onMarkReturned && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-orange-600 hover:text-orange-700"
-                  onClick={() => onMarkReturned(order.id)}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Mark as Returned
-                </Button>
-              )}
+              {(order.fulfillmentStatus === "SHIPPED" ||
+                order.fulfillmentStatus === "DELIVERED") &&
+                onMarkReturned && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-orange-600 hover:text-orange-700"
+                    onClick={() => onMarkReturned(order.id)}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Mark as Returned
+                  </Button>
+                )}
               {/* WSQA-003: Processing paths for RETURNED orders */}
               {order.fulfillmentStatus === "RETURNED" && (
                 <>
                   {onProcessRestock && (
-                    <Button variant="default" className="w-full justify-start" onClick={() => onProcessRestock(order.id)}>
+                    <Button
+                      variant="default"
+                      className="w-full justify-start"
+                      onClick={() => onProcessRestock(order.id)}
+                    >
                       <Package className="h-4 w-4 mr-2" />
                       Restock Inventory
                     </Button>
                   )}
                   {onReturnToVendor && (
-                    <Button variant="outline" className="w-full justify-start" onClick={() => onReturnToVendor(order.id)}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => onReturnToVendor(order.id)}
+                    >
                       <Truck className="h-4 w-4 mr-2" />
                       Return to Vendor
                     </Button>
@@ -363,7 +436,9 @@ export function OrdersWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State
-  const [activeTab, setActiveTab] = useState<"draft" | "confirmed">("confirmed");
+  const [activeTab, setActiveTab] = useState<"draft" | "confirmed">(
+    "confirmed"
+  );
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -377,7 +452,7 @@ export function OrdersWorkSurface() {
   const [returnReason, setReturnReason] = useState("");
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
@@ -395,14 +470,20 @@ export function OrdersWorkSurface() {
 
   // Data queries
   const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData as any)?.items ?? [];
+  const clients = useMemo(
+    () => extractItems<ClientSummary>(clientsData),
+    [clientsData]
+  );
 
   const {
     data: draftOrdersData,
     isLoading: loadingDrafts,
     refetch: refetchDrafts,
   } = trpc.orders.getAll.useQuery({ isDraft: true });
-  const draftOrders = Array.isArray(draftOrdersData) ? draftOrdersData : (draftOrdersData as any)?.items ?? [];
+  const draftOrders = useMemo(
+    () => extractItems<Order>(draftOrdersData),
+    [draftOrdersData]
+  );
 
   const {
     data: confirmedOrdersData,
@@ -412,14 +493,15 @@ export function OrdersWorkSurface() {
     isDraft: false,
     fulfillmentStatus: statusFilter === "ALL" ? undefined : statusFilter,
   });
-  const confirmedOrders = Array.isArray(confirmedOrdersData)
-    ? confirmedOrdersData
-    : (confirmedOrdersData as any)?.items ?? [];
+  const confirmedOrders = useMemo(
+    () => extractItems<Order>(confirmedOrdersData),
+    [confirmedOrdersData]
+  );
 
   // Helpers
   const getClientName = useCallback(
     (clientId: number) => {
-      const client = clients.find((c: any) => c.id === clientId);
+      const client = clients.find(c => c.id === clientId);
       return client?.name || "Unknown";
     },
     [clients]
@@ -442,17 +524,57 @@ export function OrdersWorkSurface() {
 
   // Selected order
   const selectedOrder = useMemo(
-    () => (displayOrders as Order[]).find((o) => o.id === selectedOrderId) || null,
+    () =>
+      (displayOrders as Order[]).find(o => o.id === selectedOrderId) || null,
     [displayOrders, selectedOrderId]
   );
 
+  const { data: orderDetails } = trpc.orders.getOrderWithLineItems.useQuery(
+    { orderId: selectedOrderId ?? 0 },
+    { enabled: selectedOrderId !== null }
+  );
+
+  const cogsLineItems = useMemo<OrderCOGSLineItem[]>(() => {
+    const items = orderDetails?.lineItems ?? [];
+    return items
+      .map(item => ({
+        id: item.id,
+        productDisplayName: item.productDisplayName ?? null,
+        quantity: item.quantity,
+        cogsPerUnit: item.cogsPerUnit,
+        marginPercent: item.marginPercent,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        isSample:
+          typeof item.isSample === "boolean"
+            ? item.isSample
+            : item.isSample === 1,
+      }))
+      .filter(
+        (item): item is OrderCOGSLineItem =>
+          typeof item.id === "number" &&
+          typeof item.quantity === "string" &&
+          typeof item.cogsPerUnit === "string" &&
+          typeof item.marginPercent === "string" &&
+          typeof item.unitPrice === "string" &&
+          typeof item.lineTotal === "string"
+      );
+  }, [orderDetails?.lineItems]);
+
   // Statistics
-  const stats = useMemo(() => ({
-    drafts: draftOrders.length,
-    pending: confirmedOrders.filter((o: Order) => o.fulfillmentStatus === "PENDING").length,
-    shipped: confirmedOrders.filter((o: Order) => o.fulfillmentStatus === "SHIPPED").length,
-    total: confirmedOrders.length,
-  }), [draftOrders, confirmedOrders]);
+  const stats = useMemo(
+    () => ({
+      drafts: draftOrders.length,
+      pending: confirmedOrders.filter(
+        (o: Order) => o.fulfillmentStatus === "PENDING"
+      ).length,
+      shipped: confirmedOrders.filter(
+        (o: Order) => o.fulfillmentStatus === "SHIPPED"
+      ).length,
+      total: confirmedOrders.length,
+    }),
+    [draftOrders, confirmedOrders]
+  );
 
   // Mutations
   const confirmOrderMutation = trpc.orders.confirmDraftOrder.useMutation({
@@ -465,7 +587,7 @@ export function OrdersWorkSurface() {
       setShowConfirmDialog(false);
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(err)) {
         toast.error(err.message || "Failed to confirm order");
@@ -484,7 +606,7 @@ export function OrdersWorkSurface() {
       setSelectedOrderId(null);
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(err)) {
         toast.error(err.message || "Failed to delete draft");
@@ -503,7 +625,7 @@ export function OrdersWorkSurface() {
       setShowReturnDialog(false);
       setReturnReason("");
     },
-    onError: (err) => {
+    onError: err => {
       if (!handleConflictError(err)) {
         toast.error(err.message || "Failed to mark order as returned");
         setError(err.message);
@@ -519,7 +641,7 @@ export function OrdersWorkSurface() {
       refetchConfirmed();
       setShowRestockDialog(false);
     },
-    onError: (err) => {
+    onError: err => {
       if (!handleConflictError(err)) {
         toast.error(err.message || "Failed to restock inventory");
         setError(err.message);
@@ -527,22 +649,23 @@ export function OrdersWorkSurface() {
     },
   });
 
-  const processVendorReturnMutation = trpc.orders.processVendorReturn.useMutation({
-    onMutate: () => setSaving("Processing vendor return..."),
-    onSuccess: () => {
-      toast.success("Vendor return processed successfully");
-      setSaved();
-      refetchConfirmed();
-      setShowVendorReturnDialog(false);
-      setReturnReason("");
-    },
-    onError: (err) => {
-      if (!handleConflictError(err)) {
-        toast.error(err.message || "Failed to process vendor return");
-        setError(err.message);
-      }
-    },
-  });
+  const processVendorReturnMutation =
+    trpc.orders.processVendorReturn.useMutation({
+      onMutate: () => setSaving("Processing vendor return..."),
+      onSuccess: () => {
+        toast.success("Vendor return processed successfully");
+        setSaved();
+        refetchConfirmed();
+        setShowVendorReturnDialog(false);
+        setReturnReason("");
+      },
+      onError: err => {
+        if (!handleConflictError(err)) {
+          toast.error(err.message || "Failed to process vendor return");
+          setError(err.message);
+        }
+      },
+    });
 
   // Track version for optimistic locking when order is selected (UXS-705)
   useEffect(() => {
@@ -557,47 +680,83 @@ export function OrdersWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
-      "ctrl+k": (e) => { e.preventDefault(); searchInputRef.current?.focus(); },
-      "cmd+n": (e) => { e.preventDefault(); setLocation("/orders/create"); },
-      "ctrl+n": (e) => { e.preventDefault(); setLocation("/orders/create"); },
-      arrowdown: (e) => {
+      "cmd+k": e => {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      },
+      "ctrl+k": e => {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      },
+      "cmd+n": e => {
+        e.preventDefault();
+        setLocation("/orders/create");
+      },
+      "ctrl+n": e => {
+        e.preventDefault();
+        setLocation("/orders/create");
+      },
+      arrowdown: e => {
         e.preventDefault();
         const newIndex = Math.min(displayOrders.length - 1, selectedIndex + 1);
         setSelectedIndex(newIndex);
         const order = displayOrders[newIndex];
         if (order) setSelectedOrderId(order.id);
       },
-      arrowup: (e) => {
+      arrowup: e => {
         e.preventDefault();
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const order = displayOrders[newIndex];
         if (order) setSelectedOrderId(order.id);
       },
-      enter: (e) => {
-        if (selectedOrder) { e.preventDefault(); inspector.open(); }
+      enter: e => {
+        if (selectedOrder) {
+          e.preventDefault();
+          inspector.open();
+        }
       },
     },
     onCancel: () => {
       if (showConfirmDialog) setShowConfirmDialog(false);
       else if (showDeleteDialog) setShowDeleteDialog(false);
-      else if (showReturnDialog) { setShowReturnDialog(false); setReturnReason(""); }
-      else if (showRestockDialog) setShowRestockDialog(false);
-      else if (showVendorReturnDialog) { setShowVendorReturnDialog(false); setReturnReason(""); }
-      else if (inspector.isOpen) inspector.close();
+      else if (showReturnDialog) {
+        setShowReturnDialog(false);
+        setReturnReason("");
+      } else if (showRestockDialog) setShowRestockDialog(false);
+      else if (showVendorReturnDialog) {
+        setShowVendorReturnDialog(false);
+        setReturnReason("");
+      } else if (inspector.isOpen) inspector.close();
     },
   });
 
   // Handlers
-  const handleEdit = (orderId: number) => setLocation(`/orders/create?draftId=${orderId}`);
-  const handleConfirm = (orderId: number) => { setSelectedOrderId(orderId); setShowConfirmDialog(true); };
-  const handleDelete = (orderId: number) => { setSelectedOrderId(orderId); setShowDeleteDialog(true); };
-  const handleShip = (orderId: number) => toast.info(`Ship order ${orderId} - modal to be implemented`);
+  const handleEdit = (orderId: number) =>
+    setLocation(`/orders/create?draftId=${orderId}`);
+  const handleConfirm = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowConfirmDialog(true);
+  };
+  const handleDelete = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowDeleteDialog(true);
+  };
+  const handleShip = (orderId: number) =>
+    toast.info(`Ship order ${orderId} - modal to be implemented`);
   // WSQA-003: Return processing handlers
-  const handleMarkReturned = (orderId: number) => { setSelectedOrderId(orderId); setShowReturnDialog(true); };
-  const handleProcessRestock = (orderId: number) => { setSelectedOrderId(orderId); setShowRestockDialog(true); };
-  const handleReturnToVendor = (orderId: number) => { setSelectedOrderId(orderId); setShowVendorReturnDialog(true); };
+  const handleMarkReturned = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowReturnDialog(true);
+  };
+  const handleProcessRestock = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowRestockDialog(true);
+  };
+  const handleReturnToVendor = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowVendorReturnDialog(true);
+  };
 
   const isLoading = activeTab === "draft" ? loadingDrafts : loadingConfirmed;
 
@@ -610,25 +769,49 @@ export function OrdersWorkSurface() {
             <ShoppingCart className="h-6 w-6" />
             Orders
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage sales orders and drafts</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage sales orders and drafts
+          </p>
         </div>
         <div className="flex items-center gap-4">
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
-            <span>Drafts: <span className="font-semibold text-foreground">{stats.drafts}</span></span>
-            <span>Pending: <span className="font-semibold text-foreground">{stats.pending}</span></span>
-            <span>Shipped: <span className="font-semibold text-foreground">{stats.shipped}</span></span>
+            <span>
+              Drafts:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.drafts}
+              </span>
+            </span>
+            <span>
+              Pending:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.pending}
+              </span>
+            </span>
+            <span>
+              Shipped:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.shipped}
+              </span>
+            </span>
           </div>
         </div>
       </div>
 
       {/* Tabs & Filters */}
       <div className="px-6 py-3 border-b bg-muted/30">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "draft" | "confirmed")}>
+        <Tabs
+          value={activeTab}
+          onValueChange={v => setActiveTab(v as "draft" | "confirmed")}
+        >
           <div className="flex items-center justify-between">
             <TabsList>
-              <TabsTrigger value="draft">Drafts ({draftOrders.length})</TabsTrigger>
-              <TabsTrigger value="confirmed">Confirmed ({confirmedOrders.length})</TabsTrigger>
+              <TabsTrigger value="draft">
+                Drafts ({draftOrders.length})
+              </TabsTrigger>
+              <TabsTrigger value="confirmed">
+                Confirmed ({confirmedOrders.length})
+              </TabsTrigger>
             </TabsList>
             <div className="flex gap-4 items-center">
               <div className="relative w-64">
@@ -637,7 +820,7 @@ export function OrdersWorkSurface() {
                   ref={searchInputRef}
                   placeholder="Search orders... (Cmd+K)"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -647,8 +830,10 @@ export function OrdersWorkSurface() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {FULFILLMENT_STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    {FULFILLMENT_STATUSES.map(s => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -664,7 +849,12 @@ export function OrdersWorkSurface() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        <div className={cn("flex-1 overflow-auto transition-all duration-200", inspector.isOpen && "mr-96")}>
+        <div
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-200",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -675,7 +865,9 @@ export function OrdersWorkSurface() {
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No orders found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search ? "Try adjusting your search" : "Create your first order"}
+                  {search
+                    ? "Try adjusting your search"
+                    : "Create your first order"}
                 </p>
               </div>
             </div>
@@ -698,17 +890,29 @@ export function OrdersWorkSurface() {
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedOrderId === order.id && "bg-muted",
-                      selectedIndex === index && "ring-1 ring-inset ring-primary"
+                      selectedIndex === index &&
+                        "ring-1 ring-inset ring-primary"
                     )}
-                    onClick={() => { setSelectedOrderId(order.id); setSelectedIndex(index); inspector.open(); }}
+                    onClick={() => {
+                      setSelectedOrderId(order.id);
+                      setSelectedIndex(index);
+                      inspector.open();
+                    }}
                   >
-                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                    <TableCell className="font-medium">
+                      {order.orderNumber}
+                    </TableCell>
                     <TableCell>{getClientName(order.clientId)}</TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
                     <TableCell>
-                      <OrderStatusBadge status={order.fulfillmentStatus} isDraft={order.isDraft} />
+                      <OrderStatusBadge
+                        status={order.fulfillmentStatus}
+                        isDraft={order.isDraft}
+                      />
                     </TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(order.total)}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(order.total)}
+                    </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <ChevronRight className="h-4 w-4" />
@@ -726,11 +930,16 @@ export function OrdersWorkSurface() {
           isOpen={inspector.isOpen}
           onClose={inspector.close}
           title={selectedOrder?.orderNumber || "Order Details"}
-          subtitle={selectedOrder ? getClientName(selectedOrder.clientId) : undefined}
+          subtitle={
+            selectedOrder ? getClientName(selectedOrder.clientId) : undefined
+          }
         >
           <OrderInspectorContent
             order={selectedOrder}
-            clientName={selectedOrder ? getClientName(selectedOrder.clientId) : ""}
+            clientName={
+              selectedOrder ? getClientName(selectedOrder.clientId) : ""
+            }
+            cogsLineItems={cogsLineItems}
             onEdit={handleEdit}
             onConfirm={handleConfirm}
             onDelete={handleDelete}
@@ -748,17 +957,30 @@ export function OrdersWorkSurface() {
           <DialogHeader>
             <DialogTitle>Confirm Order</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to confirm this order? It will be sent to fulfillment.</p>
+          <p>
+            Are you sure you want to confirm this order? It will be sent to
+            fulfillment.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>Cancel</Button>
             <Button
-              onClick={() => selectedOrderId && confirmOrderMutation.mutate({
-                orderId: selectedOrderId,
-                paymentTerms: "NET_30" // Default payment terms
-              })}
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                selectedOrderId &&
+                confirmOrderMutation.mutate({
+                  orderId: selectedOrderId,
+                  paymentTerms: "NET_30", // Default payment terms
+                })
+              }
               disabled={confirmOrderMutation.isPending}
             >
-              {confirmOrderMutation.isPending ? "Confirming..." : "Confirm Order"}
+              {confirmOrderMutation.isPending
+                ? "Confirming..."
+                : "Confirm Order"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -770,12 +992,23 @@ export function OrdersWorkSurface() {
           <DialogHeader>
             <DialogTitle>Delete Draft</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete this draft? This action cannot be undone.</p>
+          <p>
+            Are you sure you want to delete this draft? This action cannot be
+            undone.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancel
+            </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedOrderId && deleteOrderMutation.mutate({ id: selectedOrderId })}
+              onClick={() =>
+                selectedOrderId &&
+                deleteOrderMutation.mutate({ id: selectedOrderId })
+              }
               disabled={deleteOrderMutation.isPending}
             >
               {deleteOrderMutation.isPending ? "Deleting..." : "Delete"}
@@ -785,10 +1018,13 @@ export function OrdersWorkSurface() {
       </Dialog>
 
       {/* WSQA-003: Mark as Returned Dialog */}
-      <Dialog open={showReturnDialog} onOpenChange={(open) => {
-        setShowReturnDialog(open);
-        if (!open) setReturnReason("");
-      }}>
+      <Dialog
+        open={showReturnDialog}
+        onOpenChange={open => {
+          setShowReturnDialog(open);
+          if (!open) setReturnReason("");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Mark Order as Returned</DialogTitle>
@@ -798,21 +1034,34 @@ export function OrdersWorkSurface() {
             <Input
               placeholder="Return reason..."
               value={returnReason}
-              onChange={(e) => setReturnReason(e.target.value)}
+              onChange={e => setReturnReason(e.target.value)}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowReturnDialog(false); setReturnReason(""); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowReturnDialog(false);
+                setReturnReason("");
+              }}
+            >
               Cancel
             </Button>
             <Button
-              onClick={() => selectedOrderId && markAsReturnedMutation.mutate({
-                orderId: selectedOrderId,
-                returnReason,
-              })}
-              disabled={markAsReturnedMutation.isPending || !returnReason.trim()}
+              onClick={() =>
+                selectedOrderId &&
+                markAsReturnedMutation.mutate({
+                  orderId: selectedOrderId,
+                  returnReason,
+                })
+              }
+              disabled={
+                markAsReturnedMutation.isPending || !returnReason.trim()
+              }
             >
-              {markAsReturnedMutation.isPending ? "Processing..." : "Mark as Returned"}
+              {markAsReturnedMutation.isPending
+                ? "Processing..."
+                : "Mark as Returned"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -824,24 +1073,40 @@ export function OrdersWorkSurface() {
           <DialogHeader>
             <DialogTitle>Restock Inventory</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to restock the returned items? This will add the items back to inventory.</p>
+          <p>
+            Are you sure you want to restock the returned items? This will add
+            the items back to inventory.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRestockDialog(false)}>Cancel</Button>
             <Button
-              onClick={() => selectedOrderId && processRestockMutation.mutate({ orderId: selectedOrderId })}
+              variant="outline"
+              onClick={() => setShowRestockDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                selectedOrderId &&
+                processRestockMutation.mutate({ orderId: selectedOrderId })
+              }
               disabled={processRestockMutation.isPending}
             >
-              {processRestockMutation.isPending ? "Restocking..." : "Restock Inventory"}
+              {processRestockMutation.isPending
+                ? "Restocking..."
+                : "Restock Inventory"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* WSQA-003: Vendor Return Dialog */}
-      <Dialog open={showVendorReturnDialog} onOpenChange={(open) => {
-        setShowVendorReturnDialog(open);
-        if (!open) setReturnReason("");
-      }}>
+      <Dialog
+        open={showVendorReturnDialog}
+        onOpenChange={open => {
+          setShowVendorReturnDialog(open);
+          if (!open) setReturnReason("");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Return to Vendor</DialogTitle>
@@ -851,11 +1116,17 @@ export function OrdersWorkSurface() {
             <Input
               placeholder="Vendor return reason..."
               value={returnReason}
-              onChange={(e) => setReturnReason(e.target.value)}
+              onChange={e => setReturnReason(e.target.value)}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowVendorReturnDialog(false); setReturnReason(""); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowVendorReturnDialog(false);
+                setReturnReason("");
+              }}
+            >
               Cancel
             </Button>
             <Button
@@ -869,9 +1140,13 @@ export function OrdersWorkSurface() {
                   });
                 }
               }}
-              disabled={processVendorReturnMutation.isPending || !returnReason.trim()}
+              disabled={
+                processVendorReturnMutation.isPending || !returnReason.trim()
+              }
             >
-              {processVendorReturnMutation.isPending ? "Processing..." : "Return to Vendor"}
+              {processVendorReturnMutation.isPending
+                ? "Processing..."
+                : "Return to Vendor"}
             </Button>
           </DialogFooter>
         </DialogContent>
