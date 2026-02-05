@@ -17,13 +17,20 @@ import {
   createSafeUnifiedResponse,
 } from "../_core/pagination";
 import { getDb } from "../db";
-import { invoices, bills, payments, clients } from "../../drizzle/schema";
-import { eq, and, gt, sql, desc, asc, inArray } from "drizzle-orm";
+import {
+  invoices,
+  bills,
+  payments,
+  clients,
+  supplierProfiles,
+} from "../../drizzle/schema";
+import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import {
   onInvoiceCreated,
   onPaymentReceived,
 } from "../services/notificationTriggers";
+import { postInvoiceGLEntries, postPaymentGLEntries } from "../accountingHooks";
 
 export const accountingRouter = router({
   // ============================================================================
@@ -53,16 +60,24 @@ export const accountingRouter = router({
         // Get outstanding receivables
         const outstanding = await arApDb.getOutstandingReceivables();
 
-        // Get top debtors - clients with highest outstanding balance
+        // Get top debtors from outstanding invoices to avoid stale client totals
         const topDebtorsResult = await db
           .select({
-            clientId: clients.id,
+            clientId: invoices.customerId,
             clientName: clients.name,
-            totalOwed: clients.totalOwed,
+            totalOwed: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
           })
-          .from(clients)
-          .where(gt(sql`CAST(${clients.totalOwed} AS DECIMAL(15,2))`, 0))
-          .orderBy(desc(sql`CAST(${clients.totalOwed} AS DECIMAL(15,2))`))
+          .from(invoices)
+          .leftJoin(clients, eq(invoices.customerId, clients.id))
+          .where(
+            and(
+              inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
+              sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+              sql`${invoices.deletedAt} IS NULL`
+            )
+          )
+          .groupBy(invoices.customerId, clients.name)
+          .orderBy(desc(sql`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`))
           .limit(10);
 
         // Count invoices by status
@@ -132,7 +147,11 @@ export const accountingRouter = router({
             billCount: sql<number>`COUNT(*)`,
           })
           .from(bills)
-          .leftJoin(clients, eq(bills.vendorId, clients.id))
+          .leftJoin(
+            supplierProfiles,
+            eq(bills.vendorId, supplierProfiles.legacyVendorId)
+          )
+          .leftJoin(clients, eq(supplierProfiles.clientId, clients.id))
           .where(
             and(
               inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
@@ -816,6 +835,15 @@ export const accountingRouter = router({
           lineItems
         );
 
+        await postInvoiceGLEntries({
+          invoiceId,
+          invoiceNumber: invoiceData.invoiceNumber,
+          clientId: invoiceData.customerId,
+          amount: totalAmount.toFixed(2),
+          invoiceDate: invoiceData.invoiceDate,
+          userId: getAuthenticatedUserId(ctx),
+        });
+
         // Trigger notification for new invoice
         onInvoiceCreated({
           id: invoiceId,
@@ -880,7 +908,7 @@ export const accountingRouter = router({
           amount: z.number(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const result = await arApDb.recordInvoicePayment(
           input.invoiceId,
           input.amount
@@ -889,6 +917,15 @@ export const accountingRouter = router({
         // Get invoice details for notification
         const invoice = await arApDb.getInvoiceById(input.invoiceId);
         if (invoice) {
+          await postPaymentGLEntries({
+            transactionId: input.invoiceId,
+            transactionNumber: invoice.invoiceNumber,
+            clientId: invoice.customerId,
+            amount: input.amount.toFixed(2),
+            transactionDate: new Date(),
+            userId: getAuthenticatedUserId(ctx),
+          });
+
           onPaymentReceived({
             id: input.invoiceId, // Use invoice ID as reference
             clientId: invoice.customerId,

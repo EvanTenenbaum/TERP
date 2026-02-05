@@ -49,3 +49,5 @@
 **Session Registry Clear.** New agents can register sessions freely.
 
 - Session-20260205-TYPE-001-8bf360: TYPE-001 - QA review of golden flow type safety
+- Session-20260205-TER-Phase1-6d687a: TER Phase1 Completion
+- Session-20260205-QA-REVIEW-7493e5: QA-REVIEW - Adversarial QA of latest commit

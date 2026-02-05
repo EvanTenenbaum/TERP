@@ -947,7 +947,13 @@ export const inventoryRouter = router({
           batchCode: result.batch.code,
         });
 
-        return { success: true, batch: result.batch };
+        return {
+          success: true,
+          batch: result.batch,
+          vendor: result.vendor,
+          brand: result.brand,
+          product: result.product,
+        };
       } catch (error) {
         inventoryLogger.operationFailure("intake", error as Error, { input });
         handleError(error, "inventory.intake");

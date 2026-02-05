@@ -18,6 +18,8 @@ import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
+import { processIntake } from "../inventoryIntakeService";
+import type { Batch, Brand, Lot, Product, Vendor } from "../../drizzle/schema";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -25,6 +27,95 @@ const mockUser = {
   email: "test@terp.com",
   name: "Test User",
 };
+
+const createMockVendor = (overrides: Partial<Vendor> = {}): Vendor => ({
+  id: 1,
+  name: "Evergreen Supply",
+  deletedAt: null,
+  contactName: null,
+  contactEmail: null,
+  contactPhone: null,
+  paymentTerms: null,
+  notes: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+const createMockBrand = (overrides: Partial<Brand> = {}): Brand => ({
+  id: 10,
+  name: "Evergreen Farms",
+  deletedAt: null,
+  vendorId: 1,
+  description: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
+  id: 100,
+  brandId: 10,
+  strainId: null,
+  nameCanonical: "Blue Dream",
+  deletedAt: null,
+  category: "Flower",
+  subcategory: null,
+  uomSellable: "EA",
+  description: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+const createMockLot = (overrides: Partial<Lot> = {}): Lot => ({
+  id: 200,
+  code: "LOT-001",
+  deletedAt: null,
+  supplierClientId: null,
+  vendorId: 1,
+  date: new Date(),
+  notes: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+const createMockBatch = (overrides: Partial<Batch> = {}): Batch => ({
+  id: 300,
+  code: "BATCH-001",
+  deletedAt: null,
+  version: 1,
+  sku: "SKU-001",
+  productId: 100,
+  lotId: 200,
+  batchStatus: "AWAITING_INTAKE",
+  statusId: null,
+  grade: null,
+  isSample: 0,
+  sampleOnly: 0,
+  sampleAvailable: 0,
+  cogsMode: "FIXED",
+  unitCogs: "10.0000",
+  unitCogsMin: null,
+  unitCogsMax: null,
+  paymentTerms: "NET_30",
+  ownershipType: "OFFICE_OWNED",
+  amountPaid: "0.00",
+  metadata: null,
+  photoSessionEventId: null,
+  onHandQty: "0.0000",
+  sampleQty: "0.0000",
+  reservedQty: "0.0000",
+  quarantineQty: "0.0000",
+  holdQty: "0.0000",
+  defectiveQty: "0.0000",
+  publishEcom: 0,
+  publishB2b: 0,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
 
 // Create a test caller with mock context
 const createCaller = async () => {
@@ -236,7 +327,56 @@ describe("Inventory Router", () => {
     });
   });
 
-  // NOTE: intake test removed - uses dynamic imports, tested via E2E
+  describe("intake", () => {
+    it("should pass authenticated user and return intake result", async () => {
+      const mockResult = {
+        success: true,
+        batch: createMockBatch(),
+        vendor: createMockVendor(),
+        brand: createMockBrand(),
+        product: createMockProduct(),
+        lot: createMockLot(),
+      };
+
+      vi.mocked(processIntake).mockResolvedValue(mockResult);
+
+      const input = {
+        vendorName: "Evergreen Supply",
+        brandName: "Evergreen Farms",
+        productName: "Blue Dream",
+        category: "Flower",
+        subcategory: undefined,
+        grade: undefined,
+        strainId: null,
+        quantity: 10,
+        cogsMode: "FIXED" as const,
+        unitCogs: "10.00",
+        paymentTerms: "NET_30" as const,
+        location: {
+          site: "SITE-1",
+          zone: undefined,
+          rack: undefined,
+          shelf: undefined,
+          bin: undefined,
+        },
+        metadata: undefined,
+      };
+
+      const result = await caller.inventory.intake(input);
+
+      expect(processIntake).toHaveBeenCalledWith({
+        ...input,
+        userId: mockUser.id,
+      });
+      expect(result).toEqual({
+        success: true,
+        batch: mockResult.batch,
+        vendor: mockResult.vendor,
+        brand: mockResult.brand,
+        product: mockResult.product,
+      });
+    });
+  });
 
   describe("updateStatus", () => {
     // NOTE: "should update batch status with audit log" test removed - mock setup issues
