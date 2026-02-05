@@ -635,4 +635,59 @@ export const invoicesRouter = router({
 
       return { success: true, overdueCount: count };
     }),
+
+  /**
+   * TER-36: Download invoice as PDF
+   * Generates a professional PDF invoice using jsPDF
+   */
+  downloadPdf: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { downloadInvoicePdf } =
+        await import("../services/invoicePdfService");
+
+      const result = await downloadInvoicePdf(input.id);
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
+      }
+
+      logger.info({
+        msg: "[Invoices] PDF generated",
+        invoiceId: input.id,
+        filename: result.filename,
+      });
+
+      return result;
+    }),
+
+  /**
+   * TER-36: Get invoice HTML preview
+   * Returns HTML version of invoice for preview/email
+   */
+  getPreview: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { getInvoicePdfData, generateInvoiceHtml } =
+        await import("../services/invoicePdfService");
+
+      const data = await getInvoicePdfData(input.id);
+
+      if (!data) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
+      }
+
+      return {
+        invoiceNumber: data.invoiceNumber,
+        html: generateInvoiceHtml(data),
+      };
+    }),
 });
