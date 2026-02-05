@@ -29,6 +29,7 @@ import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { createInvoiceFromOrder } from "../services/orderAccountingService";
 import { reverseGLEntries, GLPostingError } from "../accountingHooks";
+import { generateInvoicePdf } from "../services/pdfGenerator";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -213,6 +214,66 @@ export const invoicesRouter = router({
         createdBy: result.createdByUser,
         lineItems,
         payments: invoicePayments,
+      };
+    }),
+
+  /**
+   * Download invoice PDF
+   */
+  downloadPdf: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const [result] = await db
+        .select({
+          invoice: invoices,
+          client: clients,
+        })
+        .from(invoices)
+        .leftJoin(clients, eq(invoices.customerId, clients.id))
+        .where(and(eq(invoices.id, input.id), isNull(invoices.deletedAt)))
+        .limit(1);
+
+      if (!result?.invoice) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invoice not found",
+        });
+      }
+
+      const lineItems = await db
+        .select()
+        .from(invoiceLineItems)
+        .where(eq(invoiceLineItems.invoiceId, input.id));
+
+      const pdf = generateInvoicePdf({
+        invoiceNumber: result.invoice.invoiceNumber,
+        invoiceDate: result.invoice.invoiceDate,
+        dueDate: result.invoice.dueDate,
+        clientName:
+          result.client?.name ||
+          `Client #${result.invoice.customerId ?? "Unknown"}`,
+        clientAddress: result.client?.address ?? null,
+        subtotal: result.invoice.subtotal,
+        taxAmount: result.invoice.taxAmount ?? null,
+        discountAmount: result.invoice.discountAmount ?? null,
+        totalAmount: result.invoice.totalAmount,
+        amountDue: result.invoice.amountDue ?? "0.00",
+        notes: result.invoice.notes ?? null,
+        lineItems: lineItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        })),
+      });
+
+      return {
+        pdf,
+        fileName: `invoice-${result.invoice.invoiceNumber}.pdf`,
       };
     }),
 

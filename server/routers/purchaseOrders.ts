@@ -15,10 +15,42 @@ import {
 import { eq, desc, sql, and } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { requirePermission } from "../_core/permissionMiddleware";
+import * as productsDb from "../productsDb";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
 export const purchaseOrdersRouter = router({
+  // Product options for PO creation (use product catalogue)
+  products: protectedProcedure
+    .use(requirePermission("purchase_orders:read"))
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          limit: z.number().min(1).max(500).optional().default(50),
+          offset: z.number().min(0).optional().default(0),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const search = input?.search;
+
+      const items = await productsDb.getProducts({
+        search,
+        limit,
+        offset,
+        includeDeleted: false,
+      });
+      const total = await productsDb.getProductCount({
+        search,
+        includeDeleted: false,
+      });
+
+      return createSafeUnifiedResponse(items, total, limit, offset);
+    }),
   // List purchase orders with pagination
   // BUG-034: Standardized .list procedure for API consistency
   list: protectedProcedure
