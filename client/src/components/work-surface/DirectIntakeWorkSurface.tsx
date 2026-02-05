@@ -13,7 +13,14 @@
  */
 
 import { useState, useCallback, useMemo, useRef } from "react";
-import type { ColDef, CellValueChangedEvent, GridApi, GridReadyEvent } from "ag-grid-community";
+import type {
+  ColDef,
+  CellValueChangedEvent,
+  GridApi,
+  GridReadyEvent,
+  ICellRendererParams,
+  RowSelectedEvent,
+} from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
@@ -21,10 +28,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // UI Components
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -39,7 +44,13 @@ import {
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { useSaveState } from "@/hooks/work-surface/useSaveState";
 import { useValidationTiming } from "@/hooks/work-surface/useValidationTiming";
-import { InspectorPanel, InspectorSection, InspectorField, InspectorActions, useInspectorPanel } from "./InspectorPanel";
+import {
+  InspectorPanel,
+  InspectorSection,
+  InspectorField,
+  InspectorActions,
+  useInspectorPanel,
+} from "./InspectorPanel";
 
 // Icons
 import {
@@ -52,7 +63,6 @@ import {
   RefreshCw,
   Package,
   ChevronRight,
-  X,
 } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
@@ -65,11 +75,26 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 const intakeRowSchema = z.object({
   vendorName: z.string().min(1, "Vendor is required"),
   brandName: z.string().min(1, "Brand/Farmer is required"),
-  category: z.enum(["Flower", "Deps", "Concentrate", "Edible", "PreRoll", "Vape", "Other"]),
+  category: z.enum([
+    "Flower",
+    "Deps",
+    "Concentrate",
+    "Edible",
+    "PreRoll",
+    "Vape",
+    "Other",
+  ]),
   item: z.string().min(1, "Product is required"),
   qty: z.number().min(0.01, "Quantity must be greater than 0"),
   cogs: z.number().min(0.01, "COGS must be greater than 0"),
-  paymentTerms: z.enum(["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT", "PARTIAL"]),
+  paymentTerms: z.enum([
+    "COD",
+    "NET_7",
+    "NET_15",
+    "NET_30",
+    "CONSIGNMENT",
+    "PARTIAL",
+  ]),
   site: z.string().min(1, "Location is required"),
   notes: z.string().optional(),
 });
@@ -79,6 +104,7 @@ type IntakeRowData = z.infer<typeof intakeRowSchema>;
 interface IntakeGridRow extends IntakeRowData {
   id: string;
   vendorId: number | null;
+  productId: number | null;
   strainId: number | null;
   locationId: number | null;
   locationName: string;
@@ -126,6 +152,7 @@ const createEmptyRow = (): IntakeGridRow => ({
   brandName: "",
   category: "Flower",
   item: "",
+  productId: null,
   strainId: null,
   qty: 0,
   cogs: 0,
@@ -156,7 +183,10 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
 
   if (status === "error") {
     return (
-      <div className="flex items-center gap-1 text-red-600" title={errorMessage}>
+      <div
+        className="flex items-center gap-1 text-red-600"
+        title={errorMessage}
+      >
         <AlertCircle className="h-4 w-4" />
         <span>Error</span>
       </div>
@@ -179,10 +209,22 @@ interface RowInspectorProps {
   onUpdate: (updates: Partial<IntakeGridRow>) => void;
   vendors: { id: number; name: string }[];
   locations: { id: number; site: string }[];
-  strains: { id: number; name: string; standardizedName: string }[];
+  products: {
+    id: number;
+    name: string;
+    category: string;
+    subcategory?: string | null;
+    strainId?: number | null;
+  }[];
 }
 
-function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: RowInspectorProps) {
+function RowInspectorContent({
+  row,
+  onUpdate,
+  vendors,
+  locations,
+  products,
+}: RowInspectorProps) {
   // Validation timing for inspector fields
   const validation = useValidationTiming({
     schema: intakeRowSchema,
@@ -204,8 +246,8 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
         <InspectorField label="Vendor" required>
           <Select
             value={row.vendorName}
-            onValueChange={(value) => {
-              const vendor = vendors.find((v) => v.name === value);
+            onValueChange={value => {
+              const vendor = vendors.find(v => v.name === value);
               onUpdate({
                 vendorName: value,
                 vendorId: vendor?.id || null,
@@ -214,17 +256,26 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
               validation.handleChange("vendorName", value);
             }}
           >
-            <SelectTrigger className={cn(
-              validation.getFieldState("vendorName").showError && "border-red-500"
-            )}>
+            <SelectTrigger
+              className={cn(
+                validation.getFieldState("vendorName").showError &&
+                  "border-red-500"
+              )}
+            >
               <SelectValue placeholder="Select vendor" />
             </SelectTrigger>
             <SelectContent>
-              {vendors.map((v) => (
-                <SelectItem key={v.id} value={v.name}>
-                  {v.name}
+              {vendors.length === 0 ? (
+                <SelectItem value="no-vendors" disabled>
+                  No vendors available
                 </SelectItem>
-              ))}
+              ) : (
+                vendors.map(v => (
+                  <SelectItem key={v.id} value={v.name}>
+                    {v.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           {validation.getFieldState("vendorName").showError && (
@@ -237,13 +288,14 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
         <InspectorField label="Brand / Farmer" required>
           <Input
             value={row.brandName}
-            onChange={(e) => {
+            onChange={e => {
               onUpdate({ brandName: e.target.value });
               validation.handleChange("brandName", e.target.value);
             }}
             onBlur={() => validation.handleBlur("brandName")}
             className={cn(
-              validation.getFieldState("brandName").showError && "border-red-500"
+              validation.getFieldState("brandName").showError &&
+                "border-red-500"
             )}
             placeholder="Enter brand or farmer name"
           />
@@ -268,7 +320,7 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORY_OPTIONS.map((opt) => (
+              {CATEGORY_OPTIONS.map(opt => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -280,28 +332,36 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
         <InspectorField label="Product" required>
           <Select
             value={row.item}
-            onValueChange={(value) => {
-              const strain = strains.find(
-                (s) => s.standardizedName === value || s.name === value
-              );
+            onValueChange={value => {
+              const product = products.find(p => p.name === value);
               onUpdate({
                 item: value,
-                strainId: strain?.id || null,
+                productId: product?.id ?? null,
+                strainId: product?.strainId ?? null,
+                category: product?.category ?? row.category,
               });
               validation.handleChange("item", value);
             }}
           >
-            <SelectTrigger className={cn(
-              validation.getFieldState("item").showError && "border-red-500"
-            )}>
+            <SelectTrigger
+              className={cn(
+                validation.getFieldState("item").showError && "border-red-500"
+              )}
+            >
               <SelectValue placeholder="Select product" />
             </SelectTrigger>
             <SelectContent>
-              {strains.map((s) => (
-                <SelectItem key={s.id} value={s.standardizedName || s.name}>
-                  {s.standardizedName || s.name}
+              {products.length === 0 ? (
+                <SelectItem value="no-products" disabled>
+                  No products available
                 </SelectItem>
-              ))}
+              ) : (
+                products.map(product => (
+                  <SelectItem key={product.id} value={product.name}>
+                    {product.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           {validation.getFieldState("item").showError && (
@@ -318,7 +378,7 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
               min="0"
               step="0.01"
               value={row.qty || ""}
-              onChange={(e) => {
+              onChange={e => {
                 const val = parseFloat(e.target.value) || 0;
                 onUpdate({ qty: val });
                 validation.handleChange("qty", val);
@@ -341,7 +401,7 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
               min="0"
               step="0.01"
               value={row.cogs || ""}
-              onChange={(e) => {
+              onChange={e => {
                 const val = parseFloat(e.target.value) || 0;
                 onUpdate({ cogs: val });
                 validation.handleChange("cogs", val);
@@ -373,7 +433,7 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PAYMENT_TERMS_OPTIONS.map((opt) => (
+              {PAYMENT_TERMS_OPTIONS.map(opt => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -385,8 +445,8 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
         <InspectorField label="Location" required>
           <Select
             value={row.site}
-            onValueChange={(value) => {
-              const location = locations.find((l) => l.site === value);
+            onValueChange={value => {
+              const location = locations.find(l => l.site === value);
               onUpdate({
                 site: value,
                 locationId: location?.id || null,
@@ -395,17 +455,25 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
               validation.handleChange("site", value);
             }}
           >
-            <SelectTrigger className={cn(
-              validation.getFieldState("site").showError && "border-red-500"
-            )}>
+            <SelectTrigger
+              className={cn(
+                validation.getFieldState("site").showError && "border-red-500"
+              )}
+            >
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
             <SelectContent>
-              {locations.map((l) => (
-                <SelectItem key={l.id} value={l.site}>
-                  {l.site}
+              {locations.length === 0 ? (
+                <SelectItem value="no-locations" disabled>
+                  No locations available
                 </SelectItem>
-              ))}
+              ) : (
+                locations.map(l => (
+                  <SelectItem key={l.id} value={l.site}>
+                    {l.site}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
           {validation.getFieldState("site").showError && (
@@ -418,7 +486,7 @@ function RowInspectorContent({ row, onUpdate, vendors, locations, strains }: Row
         <InspectorField label="Notes">
           <Textarea
             value={row.notes || ""}
-            onChange={(e) => onUpdate({ notes: e.target.value })}
+            onChange={e => onUpdate({ notes: e.target.value })}
             placeholder="Add any notes about this intake..."
             rows={3}
           />
@@ -450,15 +518,8 @@ export function DirectIntakeWorkSurface() {
   const gridApiRef = useRef<GridApi | null>(null);
 
   // Work Surface hooks
-  const {
-    saveState,
-    setSaving,
-    setSaved,
-    setError,
-    SaveStateIndicator,
-    isDirty,
-  } = useSaveState({
-    onStateChange: (state) => {
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState({
+    onStateChange: state => {
       if (state.status === "error") {
         toast.error(state.message || "Save failed");
       }
@@ -469,12 +530,12 @@ export function DirectIntakeWorkSurface() {
 
   // Selected row
   const selectedRow = useMemo(
-    () => rows.find((r) => r.id === selectedRowId) || null,
+    () => rows.find(r => r.id === selectedRowId) || null,
     [rows, selectedRowId]
   );
 
   // Keyboard contract
-  const { keyboardProps, focusState, startEditing, stopEditing } = useWorkSurfaceKeyboard({
+  const { keyboardProps } = useWorkSurfaceKeyboard({
     gridMode: true, // Let AG Grid handle Tab navigation
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
@@ -503,31 +564,78 @@ export function DirectIntakeWorkSurface() {
   });
 
   // Data queries
-  const { data: vendorsData, isLoading: vendorsLoading, error: vendorsError, refetch: refetchVendors } =
-    trpc.vendors.getAll.useQuery();
+  const {
+    data: vendorsData,
+    isLoading: vendorsLoading,
+    error: vendorsError,
+    refetch: refetchVendors,
+  } = trpc.clients.list.useQuery({
+    clientTypes: ["seller"],
+    limit: 500,
+  });
+
   const vendors = useMemo(() => {
-    if (!vendorsData || !(vendorsData as any).success) return [];
-    const data = (vendorsData as any).data;
-    return Array.isArray(data) ? data : [];
+    const items = Array.isArray(vendorsData)
+      ? vendorsData
+      : (vendorsData?.items ?? []);
+    return items
+      .filter(
+        (item): item is { id: number; name: string } =>
+          typeof item?.id === "number" && typeof item?.name === "string"
+      )
+      .map(item => ({ id: item.id, name: item.name }));
   }, [vendorsData]);
 
-  const { data: locationsData, isLoading: locationsLoading, error: locationsError, refetch: refetchLocations } =
-    trpc.locations.getAll.useQuery();
+  const {
+    data: locationsData,
+    isLoading: locationsLoading,
+    error: locationsError,
+    refetch: refetchLocations,
+  } = trpc.locations.getAll.useQuery();
   const locations = useMemo(
     () => (Array.isArray(locationsData) ? locationsData : []),
     [locationsData]
   );
 
-  const { data: strainsData, isLoading: strainsLoading, error: strainsError, refetch: refetchStrains } =
-    trpc.strains.list.useQuery({});
-  const strains = useMemo(() => strainsData?.items ?? [], [strainsData?.items]);
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    error: productsError,
+    refetch: refetchProducts,
+  } = trpc.productCatalogue.list.useQuery({
+    limit: 500,
+  });
+  const products = useMemo(() => {
+    const items = productsData?.items ?? [];
+    return items
+      .filter(
+        (
+          item
+        ): item is {
+          id: number;
+          nameCanonical: string;
+          category: string;
+          subcategory?: string | null;
+          strainId?: number | null;
+        } =>
+          typeof item?.id === "number" &&
+          typeof item?.nameCanonical === "string"
+      )
+      .map(item => ({
+        id: item.id,
+        name: item.nameCanonical,
+        category: item.category,
+        subcategory: item.subcategory,
+        strainId: item.strainId ?? null,
+      }));
+  }, [productsData?.items]);
 
   // Mutation
   const intakeMutation = trpc.inventory.intake.useMutation();
 
   // Loading state
-  const isLoadingData = vendorsLoading || locationsLoading || strainsLoading;
-  const dataError = vendorsError || locationsError || strainsError;
+  const isLoadingData = vendorsLoading || locationsLoading || productsLoading;
+  const dataError = vendorsError || locationsError || productsError;
 
   // Column definitions
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
@@ -536,39 +644,39 @@ export function DirectIntakeWorkSurface() {
         headerName: "Vendor",
         field: "vendorName",
         width: 160,
-        editable: (params) => params.data?.status === "pending",
+        editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: vendors.map((v) => v.name) },
+        cellEditorParams: { values: vendors.map(v => v.name) },
       },
       {
         headerName: "Brand/Farmer",
         field: "brandName",
         width: 140,
-        editable: (params) => params.data?.status === "pending",
+        editable: params => params.data?.status === "pending",
       },
       {
         headerName: "Category",
         field: "category",
         width: 120,
-        editable: (params) => params.data?.status === "pending",
+        editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: CATEGORY_OPTIONS.map((c) => c.value) },
+        cellEditorParams: { values: CATEGORY_OPTIONS.map(c => c.value) },
       },
       {
         headerName: "Product",
         field: "item",
         flex: 1,
         minWidth: 180,
-        editable: (params) => params.data?.status === "pending",
+        editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: strains.map((s) => s.standardizedName || s.name) },
+        cellEditorParams: { values: products.map(product => product.name) },
       },
       {
         headerName: "Qty",
         field: "qty",
         width: 100,
-        editable: (params) => params.data?.status === "pending",
-        valueParser: (params) => {
+        editable: params => params.data?.status === "pending",
+        valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
         },
@@ -577,9 +685,9 @@ export function DirectIntakeWorkSurface() {
         headerName: "COGS",
         field: "cogs",
         width: 120,
-        editable: (params) => params.data?.status === "pending",
-        valueFormatter: (params) => `$${(params.value ?? 0).toFixed(2)}`,
-        valueParser: (params) => {
+        editable: params => params.data?.status === "pending",
+        valueFormatter: params => `$${(params.value ?? 0).toFixed(2)}`,
+        valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
         },
@@ -588,35 +696,37 @@ export function DirectIntakeWorkSurface() {
         headerName: "Payment",
         field: "paymentTerms",
         width: 120,
-        editable: (params) => params.data?.status === "pending",
+        editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: PAYMENT_TERMS_OPTIONS.map((p) => p.value) },
+        cellEditorParams: { values: PAYMENT_TERMS_OPTIONS.map(p => p.value) },
       },
       {
         headerName: "Location",
         field: "site",
         width: 130,
-        editable: (params) => params.data?.status === "pending",
+        editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: locations.map((l) => l.site) },
+        cellEditorParams: { values: locations.map(l => l.site) },
       },
       {
         headerName: "Status",
         field: "status",
         width: 110,
-        cellRenderer: (params: any) => <StatusCellRenderer data={params.data} />,
+        cellRenderer: (params: ICellRendererParams<IntakeGridRow>) => (
+          <StatusCellRenderer data={params.data} />
+        ),
         editable: false,
       },
       {
         headerName: "",
         colId: "actions",
         width: 50,
-        cellRenderer: (params: any) => (
+        cellRenderer: (params: ICellRendererParams<IntakeGridRow>) => (
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               setSelectedRowId(params.data?.id);
               inspector.open();
@@ -630,7 +740,7 @@ export function DirectIntakeWorkSurface() {
         filter: false,
       },
     ],
-    [vendors, locations, strains, inspector]
+    [vendors, locations, products, inspector]
   );
 
   const defaultColDef = useMemo<ColDef<IntakeGridRow>>(
@@ -655,7 +765,7 @@ export function DirectIntakeWorkSurface() {
 
       // Update vendor ID when vendor name changes
       if (event.colDef.field === "vendorName") {
-        const vendor = vendors.find((v) => v.name === event.newValue);
+        const vendor = vendors.find(v => v.name === event.newValue);
         if (vendor) {
           event.node.setDataValue("vendorId", vendor.id);
           if (!event.data.brandName) {
@@ -666,44 +776,64 @@ export function DirectIntakeWorkSurface() {
 
       // Update location ID and site when location name changes
       if (event.colDef.field === "site") {
-        const location = locations.find((l) => l.site === event.newValue);
+        const location = locations.find(l => l.site === event.newValue);
         if (location) {
           event.node.setDataValue("locationId", location.id);
         }
       }
 
-      // Update strainId when item/product changes
+      // Update product selection when item/product changes
       if (event.colDef.field === "item") {
-        const strain = strains.find(
-          (s) => s.standardizedName === event.newValue || s.name === event.newValue
-        );
-        if (strain) {
-          event.node.setDataValue("strainId", strain.id);
+        const product = products.find(p => p.name === event.newValue);
+        if (product) {
+          event.node.setDataValue("productId", product.id);
+          event.node.setDataValue("strainId", product.strainId ?? null);
+          event.node.setDataValue("category", product.category);
         }
       }
 
+      // Reset error status when editing after a validation failure
+      if (event.data.status === "error") {
+        event.node.setDataValue("status", "pending");
+        event.node.setDataValue("errorMessage", undefined);
+      }
+
       // Update rows state
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.id === event.data?.id ? { ...row, ...event.data } : row
+      setRows(prevRows =>
+        prevRows.map(row =>
+          row.id === event.data?.id
+            ? {
+                ...row,
+                ...event.data,
+                status:
+                  event.data.status === "error" ? "pending" : event.data.status,
+                errorMessage:
+                  event.data.status === "error"
+                    ? undefined
+                    : event.data.errorMessage,
+              }
+            : row
         )
       );
 
       // Mark as saved after a short debounce (simulating auto-save)
       setTimeout(() => setSaved(), 500);
     },
-    [vendors, locations, strains, setSaving, setSaved]
+    [vendors, locations, products, setSaving, setSaved]
   );
 
-  const handleRowSelected = useCallback((event: any) => {
-    if (event.node.isSelected()) {
-      setSelectedRowId(event.data?.id);
-    }
-  }, []);
+  const handleRowSelected = useCallback(
+    (event: RowSelectedEvent<IntakeGridRow>) => {
+      if (event.node.isSelected()) {
+        setSelectedRowId(event.data?.id ?? null);
+      }
+    },
+    []
+  );
 
   const handleAddRow = useCallback(() => {
     const newRow = createEmptyRow();
-    setRows((prev) => [...prev, newRow]);
+    setRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
 
     // Focus the new row
@@ -716,81 +846,121 @@ export function DirectIntakeWorkSurface() {
     }, 50);
   }, [rows.length]);
 
-  const handleRemoveRow = useCallback((rowId: string) => {
-    setRows((prev) => {
-      const pendingRows = prev.filter((r) => r.status === "pending");
-      if (pendingRows.length <= 1 && prev.find((r) => r.id === rowId)?.status === "pending") {
-        toast.error("Cannot remove all rows. Keep at least one row.");
-        return prev;
-      }
-      return prev.filter((r) => r.id !== rowId);
-    });
-    if (selectedRowId === rowId) {
-      setSelectedRowId(null);
-    }
-  }, [selectedRowId]);
-
-  const handleSubmitRow = useCallback(async (row: IntakeGridRow) => {
-    // Validate
-    const result = intakeRowSchema.safeParse(row);
-    if (!result.success) {
-      const firstError = result.error.issues[0];
-      toast.error(firstError?.message || "Validation failed");
-      return;
-    }
-
-    setSaving("Submitting intake...");
-
-    try {
-      await intakeMutation.mutateAsync({
-        vendorName: row.vendorName,
-        brandName: row.brandName,
-        productName: row.item,
-        category: row.category,
-        strainId: row.strainId,
-        quantity: row.qty,
-        cogsMode: "FIXED" as const,
-        unitCogs: row.cogs.toFixed(2),
-        paymentTerms: row.paymentTerms,
-        location: { site: row.site },
-        metadata: row.notes ? { notes: row.notes } : undefined,
+  const handleRemoveRow = useCallback(
+    (rowId: string) => {
+      setRows(prev => {
+        const pendingRows = prev.filter(r => r.status === "pending");
+        if (
+          pendingRows.length <= 1 &&
+          prev.find(r => r.id === rowId)?.status === "pending"
+        ) {
+          toast.error("Cannot remove all rows. Keep at least one row.");
+          return prev;
+        }
+        return prev.filter(r => r.id !== rowId);
       });
+      if (selectedRowId === rowId) {
+        setSelectedRowId(null);
+      }
+    },
+    [selectedRowId]
+  );
 
-      // Mark as submitted
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id ? { ...r, status: "submitted" as const } : r
-        )
-      );
-      setSaved();
-      toast.success("Intake submitted successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to submit intake";
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id
-            ? { ...r, status: "error" as const, errorMessage: message }
-            : r
-        )
-      );
-      setError(message);
-    }
-  }, [intakeMutation, setSaving, setSaved, setError]);
+  const handleSubmitRow = useCallback(
+    async (row: IntakeGridRow) => {
+      // Validate
+      const result = intakeRowSchema.safeParse(row);
+      if (!result.success) {
+        const firstError = result.error.issues[0];
+        setRows(prev =>
+          prev.map(r =>
+            r.id === row.id
+              ? {
+                  ...r,
+                  status: "error" as const,
+                  errorMessage: firstError?.message || "Validation failed",
+                }
+              : r
+          )
+        );
+        toast.error(firstError?.message || "Validation failed");
+        return;
+      }
+
+      setSaving("Submitting intake...");
+
+      try {
+        await intakeMutation.mutateAsync({
+          vendorName: row.vendorName,
+          brandName: row.brandName,
+          productName: row.item,
+          category: row.category,
+          strainId: row.strainId,
+          quantity: row.qty,
+          cogsMode: "FIXED" as const,
+          unitCogs: row.cogs.toFixed(2),
+          paymentTerms: row.paymentTerms,
+          location: { site: row.site },
+          metadata: row.notes ? { notes: row.notes } : undefined,
+        });
+
+        // Mark as submitted
+        setRows(prev =>
+          prev.map(r =>
+            r.id === row.id ? { ...r, status: "submitted" as const } : r
+          )
+        );
+        setSaved();
+        toast.success("Intake submitted successfully");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to submit intake";
+        setRows(prev =>
+          prev.map(r =>
+            r.id === row.id
+              ? { ...r, status: "error" as const, errorMessage: message }
+              : r
+          )
+        );
+        setError(message);
+      }
+    },
+    [intakeMutation, setSaving, setSaved, setError]
+  );
 
   const handleSubmitAll = useCallback(async () => {
-    const pendingRows = rows.filter(
-      (r) =>
-        r.status === "pending" &&
-        r.vendorName.trim() !== "" &&
-        r.brandName.trim() !== "" &&
-        r.item.trim() !== "" &&
-        r.qty > 0 &&
-        r.cogs > 0 &&
-        r.site.trim() !== ""
+    const validationResults = rows
+      .filter(row => row.status === "pending")
+      .map(row => ({ row, result: intakeRowSchema.safeParse(row) }));
+
+    const invalidRows = validationResults.filter(
+      ({ result }) => !result.success
     );
+    const pendingRows = validationResults
+      .filter(({ result }) => result.success)
+      .map(({ row }) => row);
+
+    if (invalidRows.length > 0) {
+      setRows(prev =>
+        prev.map(row => {
+          const invalid = invalidRows.find(item => item.row.id === row.id);
+          if (!invalid) return row;
+          const firstIssue = invalid.result.success
+            ? null
+            : invalid.result.error.issues[0];
+          return {
+            ...row,
+            status: "error" as const,
+            errorMessage: firstIssue?.message ?? "Validation failed",
+          };
+        })
+      );
+    }
 
     if (pendingRows.length === 0) {
-      toast.error("No valid rows to submit. Ensure all required fields are filled.");
+      toast.error(
+        "No valid rows to submit. Ensure all required fields are filled."
+      );
       return;
     }
 
@@ -816,20 +986,21 @@ export function DirectIntakeWorkSurface() {
           metadata: row.notes ? { notes: row.notes } : undefined,
         });
 
-        setRows((prev) =>
-          prev.map((r) =>
+        setRows(prev =>
+          prev.map(r =>
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
         successCount++;
       } catch (error) {
-        setRows((prev) =>
-          prev.map((r) =>
+        setRows(prev =>
+          prev.map(r =>
             r.id === row.id
               ? {
                   ...r,
                   status: "error" as const,
-                  errorMessage: error instanceof Error ? error.message : "Failed",
+                  errorMessage:
+                    error instanceof Error ? error.message : "Failed",
                 }
               : r
           )
@@ -851,18 +1022,30 @@ export function DirectIntakeWorkSurface() {
     setIsSubmitting(false);
   }, [rows, intakeMutation, setSaving, setSaved, setError]);
 
-  const handleUpdateSelectedRow = useCallback((updates: Partial<IntakeGridRow>) => {
-    if (!selectedRowId) return;
-    setSaving();
-    setRows((prev) =>
-      prev.map((r) => (r.id === selectedRowId ? { ...r, ...updates } : r))
-    );
-    setTimeout(() => setSaved(), 500);
-  }, [selectedRowId, setSaving, setSaved]);
+  const handleUpdateSelectedRow = useCallback(
+    (updates: Partial<IntakeGridRow>) => {
+      if (!selectedRowId) return;
+      setSaving();
+      setRows(prev =>
+        prev.map(r =>
+          r.id === selectedRowId
+            ? {
+                ...r,
+                ...updates,
+                status: r.status === "error" ? "pending" : r.status,
+                errorMessage: r.status === "error" ? undefined : r.errorMessage,
+              }
+            : r
+        )
+      );
+      setTimeout(() => setSaved(), 500);
+    },
+    [selectedRowId, setSaving, setSaved]
+  );
 
   // Summary calculation
   const summary = useMemo<IntakeSummary>(() => {
-    const pendingRows = rows.filter((r) => r.status === "pending");
+    const pendingRows = rows.filter(r => r.status === "pending");
     return {
       totalItems: pendingRows.length,
       totalQty: pendingRows.reduce((sum, r) => sum + r.qty, 0),
@@ -891,13 +1074,22 @@ export function DirectIntakeWorkSurface() {
           {/* Summary Stats */}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Items: <span className="font-semibold text-foreground">{summary.totalItems}</span>
+              Items:{" "}
+              <span className="font-semibold text-foreground">
+                {summary.totalItems}
+              </span>
             </span>
             <span>
-              Qty: <span className="font-semibold text-foreground">{summary.totalQty}</span>
+              Qty:{" "}
+              <span className="font-semibold text-foreground">
+                {summary.totalQty}
+              </span>
             </span>
             <span>
-              Value: <span className="font-semibold text-foreground">${summary.totalValue.toFixed(2)}</span>
+              Value:{" "}
+              <span className="font-semibold text-foreground">
+                ${summary.totalValue.toFixed(2)}
+              </span>
             </span>
           </div>
         </div>
@@ -924,7 +1116,10 @@ export function DirectIntakeWorkSurface() {
         <Button
           size="sm"
           onClick={handleSubmitAll}
-          disabled={isSubmitting || rows.filter((r) => r.status === "pending").length === 0}
+          disabled={
+            isSubmitting ||
+            rows.filter(r => r.status === "pending").length === 0
+          }
         >
           {isSubmitting ? (
             <>
@@ -943,19 +1138,28 @@ export function DirectIntakeWorkSurface() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Grid Area */}
-        <div className={cn("flex-1 transition-all duration-200 min-h-0", inspector.isOpen && "mr-96")}>
+        <div
+          className={cn(
+            "flex-1 transition-all duration-200 min-h-0",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {isLoadingData ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-                <p className="mt-2 text-sm text-muted-foreground">Loading reference data...</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Loading reference data...
+                </p>
               </div>
             </div>
           ) : dataError ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-md">
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <h3 className="font-semibold text-lg">Unable to load reference data</h3>
+                <h3 className="font-semibold text-lg">
+                  Unable to load reference data
+                </h3>
                 <p className="text-sm text-muted-foreground mt-2">
                   {dataError?.message || "Please try again."}
                 </p>
@@ -964,7 +1168,7 @@ export function DirectIntakeWorkSurface() {
                   onClick={() => {
                     refetchVendors();
                     refetchLocations();
-                    refetchStrains();
+                    refetchProducts();
                   }}
                   className="mt-4"
                 >
@@ -984,10 +1188,10 @@ export function DirectIntakeWorkSurface() {
                 onGridReady={handleGridReady}
                 onCellValueChanged={handleCellValueChanged}
                 onRowSelected={handleRowSelected}
-                getRowId={(params) => params.data.id}
+                getRowId={params => params.data.id}
                 rowClassRules={{
-                  "bg-green-50": (params) => params.data?.status === "submitted",
-                  "bg-red-50": (params) => params.data?.status === "error",
+                  "bg-green-50": params => params.data?.status === "submitted",
+                  "bg-red-50": params => params.data?.status === "error",
                 }}
               />
             </div>
@@ -1006,7 +1210,7 @@ export function DirectIntakeWorkSurface() {
             onUpdate={handleUpdateSelectedRow}
             vendors={vendors}
             locations={locations}
-            strains={strains}
+            products={products}
           />
           {selectedRow && selectedRow.status === "pending" && (
             <InspectorActions>

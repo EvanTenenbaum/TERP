@@ -452,16 +452,23 @@ export function PurchaseOrdersWorkSurface() {
     }));
   }, [suppliersRawData]);
 
-  // BUG-114 FIX: Use product catalogue instead of inventory batches for PO creation
-  const { data: productsData } = trpc.productCatalogue.list.useQuery({
-    limit: 500,
-  });
+  // BUG-114 FIX: Use product catalogue via PO endpoint for role-safe access
+  const { data: productsData, isLoading: productsLoading } =
+    trpc.purchaseOrders.products.useQuery({
+      limit: 500,
+    });
   const products = useMemo(() => {
     const items = productsData?.items ?? [];
-    return items.map((product: { id: number; nameCanonical: string }) => ({
-      id: product.id,
-      name: product.nameCanonical,
-    }));
+    return items
+      .filter(
+        (product): product is { id: number; nameCanonical: string } =>
+          typeof product?.id === "number" &&
+          typeof product?.nameCanonical === "string"
+      )
+      .map(product => ({
+        id: product.id,
+        name: product.nameCanonical,
+      }));
   }, [productsData]);
 
   // Selected PO
@@ -1019,11 +1026,21 @@ export function PurchaseOrdersWorkSurface() {
                         <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map(p => (
-                          <SelectItem key={p.id} value={p.id.toString()}>
-                            {p.name}
+                        {productsLoading ? (
+                          <SelectItem value="loading-products" disabled>
+                            Loading products...
                           </SelectItem>
-                        ))}
+                        ) : products.length === 0 ? (
+                          <SelectItem value="no-products" disabled>
+                            No products available
+                          </SelectItem>
+                        ) : (
+                          products.map(p => (
+                            <SelectItem key={p.id} value={p.id.toString()}>
+                              {p.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

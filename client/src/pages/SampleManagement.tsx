@@ -169,7 +169,12 @@ export default function SampleManagement() {
       });
 
       // Warn if we have a response but no items
-      if (!samplesLoading && !isSamplesError && samplesData && itemCount === 0) {
+      if (
+        !samplesLoading &&
+        !isSamplesError &&
+        samplesData &&
+        itemCount === 0
+      ) {
         console.warn(
           "[SampleManagement] Zero samples returned - possible data display issue",
           {
@@ -186,8 +191,8 @@ export default function SampleManagement() {
   );
 
   const { data: productSearchData, isLoading: productSearchLoading } =
-    trpc.search.global.useQuery(
-      { query: debouncedProductSearch, limit: 15 },
+    trpc.samples.productOptions.useQuery(
+      { search: debouncedProductSearch, limit: 15 },
       { enabled: debouncedProductSearch.length > 1 }
     );
 
@@ -211,14 +216,14 @@ export default function SampleManagement() {
   }, [clientOptions]);
 
   const productOptions = useMemo<SampleFormOption[]>(() => {
-    const products = productSearchData?.products ?? [];
+    const products = productSearchData?.items ?? [];
     if (!products.length) return [];
 
     return products.map(product => ({
       id: product.id,
-      label: product.title || `Product #${product.id}`,
+      label: product.nameCanonical || `Product #${product.id}`,
     }));
-  }, [productSearchData?.products]);
+  }, [productSearchData?.items]);
 
   const fallbackProductOptions = useMemo<SampleFormOption[]>(() => {
     const items =
