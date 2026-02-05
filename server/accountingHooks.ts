@@ -651,28 +651,31 @@ export async function reverseGLEntries(
     const reversalNumber = await generateEntryNumber("REV");
 
     // Create reversing entries (swap debit and credit)
+    // Use transaction to ensure all reversals succeed or all fail (atomicity)
     const reversalEntries: GLPostingEntry[] = [];
-    for (const entry of originalEntries) {
-      await db.insert(ledgerEntries).values({
-        entryNumber: `${reversalNumber}-${entry.id}`,
-        entryDate: new Date(),
-        accountId: entry.accountId,
-        debit: entry.credit, // Swap
-        credit: entry.debit, // Swap
-        description: `Reversal: ${reason} (Original: ${entry.entryNumber})`,
-        referenceType: "REVERSAL",
-        referenceId: originalReferenceId,
-        fiscalPeriodId,
-        isManual: false,
-        createdBy: userId,
-      });
+    await db.transaction(async tx => {
+      for (const entry of originalEntries) {
+        await tx.insert(ledgerEntries).values({
+          entryNumber: `${reversalNumber}-${entry.id}`,
+          entryDate: new Date(),
+          accountId: entry.accountId,
+          debit: entry.credit, // Swap
+          credit: entry.debit, // Swap
+          description: `Reversal: ${reason} (Original: ${entry.entryNumber})`,
+          referenceType: "REVERSAL",
+          referenceId: originalReferenceId,
+          fiscalPeriodId,
+          isManual: false,
+          createdBy: userId,
+        });
 
-      reversalEntries.push({
-        accountId: entry.accountId,
-        debit: parseFloat(entry.credit || "0"),
-        credit: parseFloat(entry.debit || "0"),
-      });
-    }
+        reversalEntries.push({
+          accountId: entry.accountId,
+          debit: parseFloat(entry.credit || "0"),
+          credit: parseFloat(entry.debit || "0"),
+        });
+      }
+    });
 
     return reversalEntries;
   } catch (error) {
