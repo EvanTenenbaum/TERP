@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { InvoiceGLStatus } from "@/components/accounting/GLReversalStatus";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -355,6 +356,15 @@ function InvoiceInspectorContent({
             </div>
           )}
         </div>
+      </InspectorSection>
+
+      <InspectorSection title="GL Reversal & Posting" defaultOpen>
+        <InvoiceGLStatus
+          invoiceId={invoice.id}
+          invoiceNumber={invoice.invoiceNumber}
+          status={invoice.status}
+          amount={Number.parseFloat(invoice.totalAmount || "0")}
+        />
       </InspectorSection>
 
       {invoice.lineItems && invoice.lineItems.length > 0 && (

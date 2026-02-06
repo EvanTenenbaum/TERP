@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -34,24 +34,58 @@ import { Checkbox } from "../components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+type ReturnReason =
+  | "DEFECTIVE"
+  | "WRONG_ITEM"
+  | "NOT_AS_DESCRIBED"
+  | "CUSTOMER_CHANGED_MIND"
+  | "OTHER";
+
+interface OrderLineItemOption {
+  id: number;
+  batchId: number;
+  quantity: string;
+  unitPrice?: string;
+  productDisplayName?: string | null;
+}
+
+const RETURN_REASONS: ReturnReason[] = [
+  "DEFECTIVE",
+  "WRONG_ITEM",
+  "NOT_AS_DESCRIBED",
+  "CUSTOMER_CHANGED_MIND",
+  "OTHER",
+];
+
+const isReturnReason = (value: string): value is ReturnReason =>
+  RETURN_REASONS.includes(value as ReturnReason);
+
 export default function ReturnsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [orderIdInput, setOrderIdInput] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [returnReason, setReturnReason] = useState<string>("");
+  const [returnReason, setReturnReason] = useState<ReturnReason | "">("");
   const [notes, setNotes] = useState("");
-  const [returnItems, setReturnItems] = useState<Array<{ batchId: number; quantity: string; reason?: string }>>([]);
+  const [returnItems, setReturnItems] = useState<
+    Array<{ batchId: number; quantity: string; reason?: string }>
+  >([]);
   const [restockInventory, setRestockInventory] = useState(true);
-  const [deleteReturnItemConfirm, setDeleteReturnItemConfirm] = useState<number | null>(null);
+  const [deleteReturnItemConfirm, setDeleteReturnItemConfirm] = useState<
+    number | null
+  >(null);
 
-  const { data: returns, isLoading, refetch } = trpc.returns.getAll.useQuery({ limit: 100 });
+  const {
+    data: returns,
+    isLoading,
+    refetch,
+  } = trpc.returns.getAll.useQuery({ limit: 100 });
   const { data: stats } = trpc.returns.getStats.useQuery();
 
   // Get order details when order ID is entered
   const { data: orderDetails } = trpc.orders.getOrderWithLineItems.useQuery(
-    { orderId: selectedOrderId! },
+    { orderId: selectedOrderId ?? 0 },
     { enabled: !!selectedOrderId }
   );
 
@@ -62,8 +96,12 @@ export default function ReturnsPage() {
       resetForm();
       refetch();
     },
-    onError: (error) => {
-      toast({ title: "Error processing return", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error processing return",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -78,7 +116,10 @@ export default function ReturnsPage() {
 
   const handleCreateReturn = () => {
     if (!selectedOrderId || !returnReason || returnItems.length === 0) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -90,7 +131,7 @@ export default function ReturnsPage() {
     createReturn.mutate({
       orderId: selectedOrderId,
       items: returnItems,
-      reason: returnReason as any,
+      reason: returnReason,
       notes,
       restockInventory,
     });
@@ -109,7 +150,7 @@ export default function ReturnsPage() {
   };
 
   // Add order line item to return items
-  const addOrderItemToReturn = (lineItem: any) => {
+  const addOrderItemToReturn = (lineItem: OrderLineItemOption) => {
     // Check if item already added
     const exists = returnItems.some(item => item.batchId === lineItem.batchId);
     if (exists) {
@@ -117,14 +158,21 @@ export default function ReturnsPage() {
       return;
     }
 
-    setReturnItems([...returnItems, {
-      batchId: lineItem.batchId,
-      quantity: lineItem.quantity.toString(),
-      reason: "",
-    }]);
+    setReturnItems([
+      ...returnItems,
+      {
+        batchId: lineItem.batchId,
+        quantity: lineItem.quantity.toString(),
+        reason: "",
+      },
+    ]);
   };
 
-  const updateReturnItem = (index: number, field: string, value: string | number) => {
+  const updateReturnItem = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const updated = [...returnItems];
     updated[index] = { ...updated[index], [field]: value };
     setReturnItems(updated);
@@ -198,23 +246,32 @@ export default function ReturnsPage() {
           </TableHeader>
           <TableBody>
             {returns && returns.length > 0 ? (
-              returns.map((returnRecord) => (
-                <TableRow key={returnRecord.id}>
-                  <TableCell>#{returnRecord.id}</TableCell>
-                  <TableCell>#{returnRecord.orderId}</TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-700">
-                      {returnRecord.returnReason}
-                    </span>
-                  </TableCell>
-                  <TableCell>User #{returnRecord.processedBy}</TableCell>
-                  <TableCell>{new Date(returnRecord.processedAt).toLocaleDateString()}</TableCell>
-                  <TableCell className="max-w-xs truncate">{returnRecord.notes || "-"}</TableCell>
-                </TableRow>
+              returns.map(returnRecord => (
+                <Fragment key={returnRecord.id}>
+                  <TableRow>
+                    <TableCell>#{returnRecord.id}</TableCell>
+                    <TableCell>#{returnRecord.orderId}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-700">
+                        {returnRecord.returnReason}
+                      </span>
+                    </TableCell>
+                    <TableCell>User #{returnRecord.processedBy}</TableCell>
+                    <TableCell>
+                      {new Date(returnRecord.processedAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {returnRecord.notes || "-"}
+                    </TableCell>
+                  </TableRow>
+                </Fragment>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center text-muted-foreground"
+                >
                   No returns found
                 </TableCell>
               </TableRow>
@@ -228,7 +285,9 @@ export default function ReturnsPage() {
         <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Process Return</DialogTitle>
-            <DialogDescription>Process a customer return and optionally restock inventory</DialogDescription>
+            <DialogDescription>
+              Process a customer return and optionally restock inventory
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -238,68 +297,103 @@ export default function ReturnsPage() {
                 id="orderId"
                 type="number"
                 value={orderIdInput}
-                onChange={(e) => handleOrderIdChange(e.target.value)}
+                onChange={e => handleOrderIdChange(e.target.value)}
                 placeholder="Enter order ID"
               />
               {selectedOrderId && orderDetails && (
                 <div className="mt-2 p-3 bg-accent rounded-lg">
-                  <div className="font-medium">Order #{orderDetails.order.orderNumber || orderDetails.order.id}</div>
+                  <div className="font-medium">
+                    Order #
+                    {orderDetails.order.orderNumber || orderDetails.order.id}
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    Client ID: {orderDetails.order.clientId || "N/A"} - Total: ${parseFloat(orderDetails.order.total || "0").toFixed(2)}
+                    Client ID: {orderDetails.order.clientId || "N/A"} - Total: $
+                    {parseFloat(orderDetails.order.total || "0").toFixed(2)}
                   </div>
                 </div>
               )}
               {selectedOrderId && !orderDetails && (
                 <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-sm text-yellow-800">Loading order details...</div>
+                  <div className="text-sm text-yellow-800">
+                    Loading order details...
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Order Line Items Selection */}
-            {orderDetails && orderDetails.lineItems && orderDetails.lineItems.length > 0 && (
-              <div>
-                <Label>Select Items to Return</Label>
-                <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
-                  {orderDetails.lineItems.map((lineItem: any) => {
-                    const isSelected = returnItems.some(item => item.batchId === lineItem.batchId);
-                    return (
-                      <div
-                        key={lineItem.id}
-                        className={`p-2 border rounded cursor-pointer ${
-                          isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
-                        }`}
-                        onClick={() => !isSelected && addOrderItemToReturn(lineItem)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{lineItem.productDisplayName || `Batch #${lineItem.batchId}`}</div>
-                            <div className="text-sm text-muted-foreground">
-                              Qty: {lineItem.quantity} × ${lineItem.unitPrice?.toFixed(2) || "0.00"}
+            {orderDetails &&
+              orderDetails.lineItems &&
+              orderDetails.lineItems.length > 0 && (
+                <div>
+                  <Label>Select Items to Return</Label>
+                  <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                    {orderDetails.lineItems.map(
+                      (lineItem: OrderLineItemOption) => {
+                        const isSelected = returnItems.some(
+                          item => item.batchId === lineItem.batchId
+                        );
+                        return (
+                          <div
+                            key={lineItem.id}
+                            className={`p-2 border rounded cursor-pointer ${
+                              isSelected
+                                ? "bg-primary/10 border-primary"
+                                : "hover:bg-accent"
+                            }`}
+                            onClick={() =>
+                              !isSelected && addOrderItemToReturn(lineItem)
+                            }
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">
+                                  {lineItem.productDisplayName ||
+                                    `Batch #${lineItem.batchId}`}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Qty: {lineItem.quantity} × $
+                                  {Number.parseFloat(
+                                    lineItem.unitPrice ?? "0"
+                                  ).toFixed(2)}
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <div className="text-sm text-primary font-medium">
+                                  Added
+                                </div>
+                              )}
                             </div>
                           </div>
-                          {isSelected && (
-                            <div className="text-sm text-primary font-medium">Added</div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      }
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div>
               <Label htmlFor="returnReason">Return Reason *</Label>
-              <Select value={returnReason} onValueChange={setReturnReason}>
+              <Select
+                value={returnReason}
+                onValueChange={value => {
+                  if (isReturnReason(value)) {
+                    setReturnReason(value);
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select reason" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="DEFECTIVE">Defective</SelectItem>
                   <SelectItem value="WRONG_ITEM">Wrong Item</SelectItem>
-                  <SelectItem value="NOT_AS_DESCRIBED">Not As Described</SelectItem>
-                  <SelectItem value="CUSTOMER_CHANGED_MIND">Customer Changed Mind</SelectItem>
+                  <SelectItem value="NOT_AS_DESCRIBED">
+                    Not As Described
+                  </SelectItem>
+                  <SelectItem value="CUSTOMER_CHANGED_MIND">
+                    Customer Changed Mind
+                  </SelectItem>
                   <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -310,7 +404,7 @@ export default function ReturnsPage() {
               <Textarea
                 id="notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 placeholder="Additional notes about the return"
                 rows={3}
               />
@@ -320,7 +414,9 @@ export default function ReturnsPage() {
               <Checkbox
                 id="restockInventory"
                 checked={restockInventory}
-                onCheckedChange={(checked) => setRestockInventory(checked as boolean)}
+                onCheckedChange={checked =>
+                  setRestockInventory(checked as boolean)
+                }
               />
               <Label htmlFor="restockInventory" className="cursor-pointer">
                 Restock inventory automatically
@@ -333,12 +429,18 @@ export default function ReturnsPage() {
                 <Label>Return Items ({returnItems.length})</Label>
                 <div className="mt-2 space-y-2">
                   {returnItems.map((item, index) => {
-                    const lineItem = orderDetails?.lineItems?.find((li: any) => li.batchId === item.batchId);
+                    const lineItem = orderDetails?.lineItems?.find(
+                      (li: OrderLineItemOption) => li.batchId === item.batchId
+                    );
                     return (
-                      <div key={`page-item-${index}`} className="flex gap-2 items-center p-2 border rounded-lg">
+                      <div
+                        key={`page-item-${item.batchId}`}
+                        className="flex gap-2 items-center p-2 border rounded-lg"
+                      >
                         <div className="flex-1">
                           <div className="font-medium">
-                            {lineItem?.productDisplayName || `Batch #${item.batchId}`}
+                            {lineItem?.productDisplayName ||
+                              `Batch #${item.batchId}`}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             Quantity: {item.quantity}
@@ -348,10 +450,17 @@ export default function ReturnsPage() {
                           type="text"
                           placeholder="Item reason (optional)"
                           value={item.reason || ""}
-                          onChange={(e) => updateReturnItem(index, "reason", e.target.value)}
+                          onChange={e =>
+                            updateReturnItem(index, "reason", e.target.value)
+                          }
                           className="flex-1"
                         />
-                        <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteReturnItemConfirm(index)}>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteReturnItemConfirm(index)}
+                        >
                           Remove
                         </Button>
                       </div>
@@ -369,10 +478,16 @@ export default function ReturnsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreateReturn} disabled={createReturn.isPending}>
+            <Button
+              onClick={handleCreateReturn}
+              disabled={createReturn.isPending}
+            >
               {createReturn.isPending ? "Processing..." : "Process Return"}
             </Button>
           </DialogFooter>
@@ -382,7 +497,7 @@ export default function ReturnsPage() {
       {/* Return Item Delete Confirmation */}
       <ConfirmDialog
         open={deleteReturnItemConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteReturnItemConfirm(null)}
+        onOpenChange={open => !open && setDeleteReturnItemConfirm(null)}
         title="Remove Return Item"
         description="Are you sure you want to remove this item from the return?"
         confirmLabel="Remove"

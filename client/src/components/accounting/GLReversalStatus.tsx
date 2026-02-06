@@ -235,7 +235,7 @@ export function GLReversalStatus({
 interface InvoiceGLStatusProps {
   invoiceId: number;
   invoiceNumber: string;
-  status: "DRAFT" | "SENT" | "PARTIAL" | "PAID" | "VOID" | "OVERDUE";
+  status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "VOID" | "OVERDUE";
   voidedAt?: Date | null;
   voidedBy?: string | null;
   voidReason?: string | null;

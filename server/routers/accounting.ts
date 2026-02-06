@@ -142,7 +142,7 @@ export const accountingRouter = router({
         const byVendorResult = await db
           .select({
             vendorId: bills.vendorId,
-            vendorName: clients.name,
+            vendorName: sql<string>`COALESCE(${clients.name}, CONCAT('Vendor #', ${bills.vendorId}))`,
             totalOwed: sql<number>`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`,
             billCount: sql<number>`COUNT(*)`,
           })

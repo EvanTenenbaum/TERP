@@ -31,6 +31,28 @@ import { createInvoiceFromOrder } from "../services/orderAccountingService";
 import { reverseGLEntries, GLPostingError } from "../accountingHooks";
 import { generateInvoicePdf } from "../services/pdfGenerator";
 
+const PDF_TIMEOUT_MS = 30_000;
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  context: string
+): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new TRPCError({
+            code: "TIMEOUT",
+            message: `${context} timed out after ${timeoutMs}ms`,
+          })
+        );
+      }, timeoutMs);
+    }),
+  ]);
+}
+
 // ============================================================================
 // INPUT SCHEMAS
 // ============================================================================
@@ -224,6 +246,7 @@ export const invoicesRouter = router({
     .use(requirePermission("accounting:read"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
+      const startMs = Date.now();
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -249,26 +272,45 @@ export const invoicesRouter = router({
         .from(invoiceLineItems)
         .where(eq(invoiceLineItems.invoiceId, input.id));
 
-      const pdf = generateInvoicePdf({
+      logger.info({
+        msg: "[Invoices] PDF generation started",
+        invoiceId: input.id,
         invoiceNumber: result.invoice.invoiceNumber,
-        invoiceDate: result.invoice.invoiceDate,
-        dueDate: result.invoice.dueDate,
-        clientName:
-          result.client?.name ||
-          `Client #${result.invoice.customerId ?? "Unknown"}`,
-        clientAddress: result.client?.address ?? null,
-        subtotal: result.invoice.subtotal,
-        taxAmount: result.invoice.taxAmount ?? null,
-        discountAmount: result.invoice.discountAmount ?? null,
-        totalAmount: result.invoice.totalAmount,
-        amountDue: result.invoice.amountDue ?? "0.00",
-        notes: result.invoice.notes ?? null,
-        lineItems: lineItems.map(item => ({
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineTotal,
-        })),
+        lineItemCount: lineItems.length,
+      });
+
+      const pdf = await withTimeout(
+        Promise.resolve(
+          generateInvoicePdf({
+            invoiceNumber: result.invoice.invoiceNumber,
+            invoiceDate: result.invoice.invoiceDate,
+            dueDate: result.invoice.dueDate,
+            clientName:
+              result.client?.name ||
+              `Client #${result.invoice.customerId ?? "Unknown"}`,
+            clientAddress: result.client?.address ?? null,
+            subtotal: result.invoice.subtotal,
+            taxAmount: result.invoice.taxAmount ?? null,
+            discountAmount: result.invoice.discountAmount ?? null,
+            totalAmount: result.invoice.totalAmount,
+            amountDue: result.invoice.amountDue ?? "0.00",
+            notes: result.invoice.notes ?? null,
+            lineItems: lineItems.map(item => ({
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              lineTotal: item.lineTotal,
+            })),
+          })
+        ),
+        PDF_TIMEOUT_MS,
+        "Invoice PDF generation"
+      );
+
+      logger.info({
+        msg: "[Invoices] PDF generation finished",
+        invoiceId: input.id,
+        durationMs: Date.now() - startMs,
       });
 
       return {

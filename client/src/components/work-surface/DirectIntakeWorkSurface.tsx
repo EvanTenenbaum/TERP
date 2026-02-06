@@ -1050,7 +1050,10 @@ export function DirectIntakeWorkSurface() {
 
   // Render
   return (
-    <div {...keyboardProps} className="h-full flex flex-col">
+    <div
+      {...keyboardProps}
+      className="h-full min-h-[calc(100vh-8rem)] flex flex-col"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
         <div>
@@ -1173,7 +1176,7 @@ export function DirectIntakeWorkSurface() {
               </div>
             </div>
           ) : (
-            <div className="ag-theme-alpine h-full w-full">
+            <div className="ag-theme-alpine h-full min-h-[420px] w-full">
               <AgGridReact<IntakeGridRow>
                 rowData={rows}
                 columnDefs={columnDefs}
