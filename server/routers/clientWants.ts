@@ -14,6 +14,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import { clients, products, batches } from "../../drizzle/schema";
+import { clientWants } from "../../drizzle/schema-client360";
 import { eq, sql } from "drizzle-orm";
 
 export const clientWantsRouter = router({
@@ -264,7 +265,7 @@ export const clientWantsRouter = router({
           message: "Database not available",
         });
 
-      await db.execute(sql`DELETE FROM client_wants WHERE id = ${input.id}`);
+      await db.delete(clientWants).where(eq(clientWants.id, input.id));
 
       return { success: true };
     }),
