@@ -247,41 +247,46 @@ export const invoicesRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const startMs = Date.now();
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
 
-      const [result] = await db
-        .select({
-          invoice: invoices,
-          client: clients,
-        })
-        .from(invoices)
-        .leftJoin(clients, eq(invoices.customerId, clients.id))
-        .where(and(eq(invoices.id, input.id), isNull(invoices.deletedAt)))
-        .limit(1);
+      // Wrap entire operation in timeout to prevent hanging requests
+      const pdfResult = await withTimeout(
+        (async () => {
+          const dbStartMs = Date.now();
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
 
-      if (!result?.invoice) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Invoice not found",
-        });
-      }
+          const [result] = await db
+            .select({
+              invoice: invoices,
+              client: clients,
+            })
+            .from(invoices)
+            .leftJoin(clients, eq(invoices.customerId, clients.id))
+            .where(and(eq(invoices.id, input.id), isNull(invoices.deletedAt)))
+            .limit(1);
 
-      const lineItems = await db
-        .select()
-        .from(invoiceLineItems)
-        .where(eq(invoiceLineItems.invoiceId, input.id));
+          if (!result?.invoice) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Invoice not found",
+            });
+          }
 
-      logger.info({
-        msg: "[Invoices] PDF generation started",
-        invoiceId: input.id,
-        invoiceNumber: result.invoice.invoiceNumber,
-        lineItemCount: lineItems.length,
-      });
+          const lineItems = await db
+            .select()
+            .from(invoiceLineItems)
+            .where(eq(invoiceLineItems.invoiceId, input.id));
 
-      const pdf = await withTimeout(
-        Promise.resolve(
-          generateInvoicePdf({
+          logger.info({
+            msg: "[Invoices] PDF data fetched",
+            invoiceId: input.id,
+            invoiceNumber: result.invoice.invoiceNumber,
+            lineItemCount: lineItems.length,
+            dbDurationMs: Date.now() - dbStartMs,
+          });
+
+          const genStartMs = Date.now();
+          const pdf = generateInvoicePdf({
             invoiceNumber: result.invoice.invoiceNumber,
             invoiceDate: result.invoice.invoiceDate,
             dueDate: result.invoice.dueDate,
@@ -301,22 +306,31 @@ export const invoicesRouter = router({
               unitPrice: item.unitPrice,
               lineTotal: item.lineTotal,
             })),
-          })
-        ),
+          });
+
+          logger.info({
+            msg: "[Invoices] PDF generated",
+            invoiceId: input.id,
+            genDurationMs: Date.now() - genStartMs,
+            pdfSizeBytes: pdf.length,
+          });
+
+          return {
+            pdf,
+            fileName: `invoice-${result.invoice.invoiceNumber}.pdf`,
+          };
+        })(),
         PDF_TIMEOUT_MS,
         "Invoice PDF generation"
       );
 
       logger.info({
-        msg: "[Invoices] PDF generation finished",
+        msg: "[Invoices] PDF download complete",
         invoiceId: input.id,
-        durationMs: Date.now() - startMs,
+        totalDurationMs: Date.now() - startMs,
       });
 
-      return {
-        pdf,
-        fileName: `invoice-${result.invoice.invoiceNumber}.pdf`,
-      };
+      return pdfResult;
     }),
 
   /**
