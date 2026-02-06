@@ -453,13 +453,20 @@ export function PurchaseOrdersWorkSurface() {
   }, [suppliersRawData]);
 
   // BUG-114 FIX: Use product catalogue via PO endpoint for role-safe access
-  const { data: productsData, isLoading: productsLoading } =
-    trpc.purchaseOrders.products.useQuery({
-      limit: 500,
-    });
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    isError: productsError,
+  } = trpc.purchaseOrders.products.useQuery({
+    limit: 500,
+  });
+  // Only fire fallback AFTER primary query settles (completes or errors)
+  const primarySettled = !productsLoading;
+  const primaryEmpty =
+    primarySettled && (productsData?.items?.length ?? 0) === 0;
   const { data: productsListFallback } = trpc.productCatalogue.list.useQuery(
     { limit: 500, offset: 0 },
-    { enabled: (productsData?.items?.length ?? 0) === 0 }
+    { enabled: primaryEmpty || productsError }
   );
   const products = useMemo(() => {
     const poItems = productsData?.items ?? [];
