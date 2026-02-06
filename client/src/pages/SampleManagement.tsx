@@ -192,8 +192,8 @@ export default function SampleManagement() {
 
   const { data: productSearchData, isLoading: productSearchLoading } =
     trpc.samples.productOptions.useQuery(
-      { search: debouncedProductSearch, limit: 15 },
-      { enabled: debouncedProductSearch.length > 1 }
+      { search: debouncedProductSearch, limit: 20 },
+      { staleTime: 5 * 60 * 1000 }
     );
 
   const clientOptions = useMemo<SampleFormOption[]>(() => {
