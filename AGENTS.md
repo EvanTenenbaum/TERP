@@ -498,3 +498,156 @@ The project has extensive pre-commit validation:
 - **docs/** - Architecture and feature documentation
 - **Testing_Guide.md** - Testing procedures
 - **terp-qa skill** (`~/.config/agents/skills/terp-qa/`) - QA verification framework for testing features and deployments
+
+
+---
+
+## Agent Protocol Documentation
+
+For detailed agent workflows, protocols, and best practices, refer to these key documents:
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| **Agent Onboarding** | `.claude/AGENT_ONBOARDING.md` | Detailed workflow guide for new agents |
+| **Agent Commands** | `.github/AGENT_COMMANDS.md` | GitHub-specific agent commands |
+| **Development Protocols** | `docs/DEVELOPMENT_PROTOCOLS.md` | Development workflow standards |
+| **TERP Agent Instructions** | `docs/TERP_AGENT_INSTRUCTIONS.md` | TERP-specific agent guidance |
+| **Secrets Management** | `docs/SECRETS_MANAGEMENT_FOR_AGENTS.md` | How to handle secrets safely |
+| **Universal Agent Rules** | `UNIVERSAL_AGENT_RULES.md` | Cross-project agent standards |
+
+---
+
+## Roadmap Management
+
+### Source of Truth: Linear
+
+The TERP project roadmap is managed in **Linear** (project management tool). Linear is the **primary source of truth** for all roadmap tasks, priorities, and status tracking.
+
+### Accessing the Roadmap via MCP
+
+Use the `manus-mcp-cli` tool to interact with Linear:
+
+```bash
+# List all tools available
+manus-mcp-cli tool list --server linear
+
+# Get all tasks for the team
+manus-mcp-cli tool call list_issues --server linear --input '{"team": "Terpcorp", "limit": 50}'
+
+# Get tasks for a specific project
+manus-mcp-cli tool call list_issues --server linear --input '{"project": "TERP - Golden Flows Beta", "limit": 30}'
+
+# Get tasks by status
+manus-mcp-cli tool call list_issues --server linear --input '{"team": "Terpcorp", "state": "Backlog", "limit": 50}'
+
+# Get a specific task by ID
+manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
+```
+
+### Projects
+
+| Project | Description |
+|---------|-------------|
+| **TERP - Golden Flows Beta** | Core business flows for MVP release |
+| **Om Platform** | Future AI platform features |
+
+### Task Statuses
+
+| Status | Meaning |
+|--------|---------|
+| Backlog | Not started, queued for work |
+| Todo | Ready to start |
+| In Progress | Currently being worked on |
+| In Review | PR submitted, awaiting review |
+| Done | Completed and merged |
+| Canceled | Will not be done |
+| Duplicate | Duplicate of another task |
+
+### Priority Levels
+
+| Priority | Value | Meaning |
+|----------|-------|---------|
+| Urgent | 1 | Critical, do immediately |
+| High | 2 | Important, do soon |
+| Medium | 3 | Normal priority |
+| Low | 4 | Can wait |
+
+### Mode Labels
+
+| Mode | Risk Level | Description |
+|------|------------|-------------|
+| `mode:safe` | Low | Can make changes without extensive testing |
+| `mode:strict` | Medium | Must verify all changes work correctly |
+| `mode:red` | High | High-risk, requires careful review |
+
+### Updating Tasks
+
+```bash
+# First get the task UUID (required for updates)
+manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
+# Note the "id" field (UUID format)
+
+# Update status using UUID
+manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID-HERE", "state": "Done"}'
+manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID-HERE", "state": "In Progress"}'
+
+# Add comment to task
+manus-mcp-cli tool call create_comment --server linear --input '{"issueId": "TER-55", "body": "Completed via PR #XXX"}'
+```
+
+**Important:** The `update_issue` command requires the **UUID** (from the `id` field), not the identifier (TER-XX). Always `get_issue` first to retrieve the UUID.
+
+### Creating New Tasks
+
+```bash
+manus-mcp-cli tool call create_issue --server linear --input '{
+  "team": "Terpcorp",
+  "title": "[P2] New Task Title",
+  "description": "## Problem\n\nDescription.\n\n## Solution\n\nProposed solution.",
+  "priority": 3,
+  "project": "TERP - Golden Flows Beta",
+  "labels": ["type:feature", "mode:strict"]
+}'
+```
+
+### Common Workflows
+
+**Find Next Task:**
+```bash
+# Get backlog sorted by priority
+manus-mcp-cli tool call list_issues --server linear --input '{"team": "Terpcorp", "state": "Backlog", "limit": 30}'
+# Pick task with priority.value = 1 or 2 (Urgent/High)
+```
+
+**Complete a Task:**
+```bash
+# 1. Get task details and UUID
+manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
+
+# 2. Move to In Progress
+manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID", "state": "In Progress"}'
+
+# 3. Do the work, create PR
+
+# 4. After PR merge, mark Done
+manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID", "state": "Done"}'
+
+# 5. Add completion comment
+manus-mcp-cli tool call create_comment --server linear --input '{"issueId": "TER-55", "body": "Completed via PR #XXX"}'
+```
+
+### Team and Project IDs (Reference)
+
+| Entity | Name | ID |
+|--------|------|-----|
+| Team | Terpcorp | d88bb32f-ea0a-4809-aac1-fde6ec81bad3 |
+| Project | TERP - Golden Flows Beta | 79882db1-0cac-448b-b73c-5dd9307c85c8 |
+| Project | Om Platform | fcebfeb2-a50a-487e-b673-84a125c76658 |
+
+---
+
+## Additional Resources
+
+- **Roadmap Agent Guide** - `docs/ROADMAP_AGENT_GUIDE.md`
+- **Agent Monitoring Guide** - `docs/AGENT_MONITORING_GUIDE.md`
+- **DigitalOcean MCP Guide** - `docs/agents/DIGITALOCEAN_MCP_GUIDE.md`
