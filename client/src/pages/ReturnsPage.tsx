@@ -61,6 +61,25 @@ const RETURN_REASONS: ReturnReason[] = [
 const isReturnReason = (value: string): value is ReturnReason =>
   RETURN_REASONS.includes(value as ReturnReason);
 
+/**
+ * Derive GL-relevant status from return notes markers.
+ * Status is tracked via markers in notes (e.g. "[PROCESSED ...]").
+ * Maps to the subset accepted by ReturnGLStatus component.
+ */
+function deriveGLStatus(
+  notes: string | null
+): "PENDING" | "APPROVED" | "PROCESSED" | "CANCELLED" {
+  if (!notes) return "PENDING";
+  if (notes.includes("[CANCELLED")) return "CANCELLED";
+  if (notes.includes("[PROCESSED")) return "PROCESSED";
+  // REJECTED maps to CANCELLED for GL purposes (no reversal entry)
+  if (notes.includes("[REJECTED")) return "CANCELLED";
+  // RECEIVED and APPROVED both map to APPROVED (reversal pending)
+  if (notes.includes("[RECEIVED")) return "APPROVED";
+  if (notes.includes("[APPROVED")) return "APPROVED";
+  return "PENDING";
+}
+
 export default function ReturnsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -290,9 +309,8 @@ export default function ReturnsPage() {
                         <ReturnGLStatus
                           returnId={returnRecord.id}
                           returnNumber={`RET-${returnRecord.id}`}
-                          status="PROCESSED"
+                          status={deriveGLStatus(returnRecord.notes)}
                           processedAt={new Date(returnRecord.processedAt)}
-                          processedBy={`User #${returnRecord.processedBy}`}
                           reason={returnRecord.returnReason}
                         />
                       </TableCell>

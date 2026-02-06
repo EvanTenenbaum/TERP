@@ -23,7 +23,6 @@ import {
   payments,
   clients,
   supplierProfiles,
-  vendors,
 } from "../../drizzle/schema";
 import { eq, and, sql, desc, asc, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -146,17 +145,15 @@ export const accountingRouter = router({
         const outstanding = await arApDb.getOutstandingPayables();
 
         // Group bills by vendor
-        // Join through both paths: legacy vendors table AND supplier_profiles→clients
-        // bills.vendorId references vendors.id (deprecated), so join vendors for name fallback
+        // Join through supplier_profiles→clients to resolve vendor names
         const byVendorResult = await db
           .select({
             vendorId: bills.vendorId,
-            vendorName: sql<string>`COALESCE(${clients.name}, ${vendors.name}, CONCAT('Vendor #', ${bills.vendorId}))`,
+            vendorName: sql<string>`COALESCE(${clients.name}, CONCAT('Vendor #', ${bills.vendorId}))`,
             totalOwed: sql<number>`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`,
             billCount: sql<number>`COUNT(*)`,
           })
           .from(bills)
-          .leftJoin(vendors, eq(bills.vendorId, vendors.id))
           .leftJoin(
             supplierProfiles,
             eq(bills.vendorId, supplierProfiles.legacyVendorId)
@@ -169,7 +166,7 @@ export const accountingRouter = router({
               sql`${bills.deletedAt} IS NULL`
             )
           )
-          .groupBy(bills.vendorId, clients.name, vendors.name)
+          .groupBy(bills.vendorId, clients.name)
           .orderBy(desc(sql`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`));
 
         // Count bills by status

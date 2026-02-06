@@ -192,7 +192,7 @@ export default function SampleManagement() {
 
   const { data: productSearchData, isLoading: productSearchLoading } =
     trpc.samples.productOptions.useQuery(
-      { search: debouncedProductSearch, limit: 20 },
+      { search: debouncedProductSearch, limit: 15 },
       { staleTime: 5 * 60 * 1000 }
     );
 
