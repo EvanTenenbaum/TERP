@@ -51,3 +51,7 @@
 - Session-20260205-TYPE-001-8bf360: TYPE-001 - QA review of golden flow type safety
 - Session-20260205-TER-Phase1-6d687a: TER Phase1 Completion
 - Session-20260205-QA-REVIEW-7493e5: QA-REVIEW - Adversarial QA of latest commit
+
+- Session-20260205-GOLDEN-FLOWS-886518: Golden flows batch fixes
+
+- Session-20260206-QA-REVIEW-dd1cf5: Adversarial QA on Golden Flows batch fixes

@@ -457,8 +457,14 @@ export function PurchaseOrdersWorkSurface() {
     trpc.purchaseOrders.products.useQuery({
       limit: 500,
     });
+  const { data: productsListFallback } = trpc.productCatalogue.list.useQuery(
+    { limit: 500, offset: 0 },
+    { enabled: (productsData?.items?.length ?? 0) === 0 }
+  );
   const products = useMemo(() => {
-    const items = productsData?.items ?? [];
+    const poItems = productsData?.items ?? [];
+    const fallbackItems = productsListFallback?.items ?? [];
+    const items = poItems.length > 0 ? poItems : fallbackItems;
     return items
       .filter(
         product =>
@@ -469,7 +475,7 @@ export function PurchaseOrdersWorkSurface() {
         id: product.id,
         name: product.nameCanonical,
       }));
-  }, [productsData]);
+  }, [productsData, productsListFallback]);
 
   // Selected PO
   const selectedPO = useMemo(

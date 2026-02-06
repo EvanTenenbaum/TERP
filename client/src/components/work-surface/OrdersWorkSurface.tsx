@@ -61,6 +61,7 @@ import {
   OrderCOGSDetails,
   type OrderCOGSLineItem,
 } from "@/components/orders/OrderCOGSDetails";
+import { GLEntriesViewer } from "@/components/accounting/GLEntriesViewer";
 import {
   InspectorPanel,
   InspectorSection,
@@ -335,6 +336,16 @@ function OrderInspectorContent({
         <OrderCOGSDetails lineItems={cogsLineItems} />
       </InspectorSection>
 
+      <InspectorSection title="GL Entries" defaultOpen>
+        <GLEntriesViewer
+          referenceType="ORDER"
+          referenceId={order.id}
+          showTitle={false}
+          compact
+          maxEntries={20}
+        />
+      </InspectorSection>
+
       <InspectorSection title="Quick Actions">
         <div className="space-y-2">
           {order.isDraft ? (
@@ -450,6 +461,7 @@ export function OrdersWorkSurface() {
   const [showRestockDialog, setShowRestockDialog] = useState(false);
   const [showVendorReturnDialog, setShowVendorReturnDialog] = useState(false);
   const [returnReason, setReturnReason] = useState("");
+  const [selectedVendorId, setSelectedVendorId] = useState("");
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -533,6 +545,12 @@ export function OrdersWorkSurface() {
     { orderId: selectedOrderId ?? 0 },
     { enabled: selectedOrderId !== null }
   );
+
+  const { data: vendorReturnOptions } =
+    trpc.orders.getVendorReturnOptions.useQuery(
+      { orderId: selectedOrderId ?? 0 },
+      { enabled: selectedOrderId !== null && showVendorReturnDialog }
+    );
 
   const cogsLineItems = useMemo<OrderCOGSLineItem[]>(() => {
     const items = orderDetails?.lineItems ?? [];
@@ -658,6 +676,7 @@ export function OrdersWorkSurface() {
         refetchConfirmed();
         setShowVendorReturnDialog(false);
         setReturnReason("");
+        setSelectedVendorId("");
       },
       onError: err => {
         if (!handleConflictError(err)) {
@@ -1112,6 +1131,24 @@ export function OrdersWorkSurface() {
             <DialogTitle>Return to Vendor</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <p className="mb-2">Select vendor:</p>
+              <Select
+                value={selectedVendorId}
+                onValueChange={value => setSelectedVendorId(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vendor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(vendorReturnOptions?.items ?? []).map(vendor => (
+                    <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                      {vendor.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <p>Please provide a reason for returning to the vendor:</p>
             <Input
               placeholder="Vendor return reason..."
@@ -1125,23 +1162,30 @@ export function OrdersWorkSurface() {
               onClick={() => {
                 setShowVendorReturnDialog(false);
                 setReturnReason("");
+                setSelectedVendorId("");
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={() => {
-                if (selectedOrderId && selectedOrder) {
-                  // Note: We need vendorId - for now using a placeholder that should be determined from the order
+                const vendorId = Number.parseInt(selectedVendorId, 10);
+                if (
+                  selectedOrderId &&
+                  selectedOrder &&
+                  Number.isFinite(vendorId)
+                ) {
                   processVendorReturnMutation.mutate({
                     orderId: selectedOrderId,
-                    vendorId: 1, // TODO: Get from order line items or prompt user
+                    vendorId,
                     returnReason,
                   });
                 }
               }}
               disabled={
-                processVendorReturnMutation.isPending || !returnReason.trim()
+                processVendorReturnMutation.isPending ||
+                !returnReason.trim() ||
+                !selectedVendorId
               }
             >
               {processVendorReturnMutation.isPending

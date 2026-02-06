@@ -23,6 +23,8 @@ import {
   orderLineItems,
   orderLineItemAllocations,
   batches,
+  lots,
+  clients,
   products,
   inventoryMovements,
   orderStatusHistory,
@@ -2150,6 +2152,107 @@ export const ordersRouter = router({
       );
 
       return { vendorReturnId };
+    }),
+
+  getVendorReturnOptions: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ orderId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const [order] = await db
+        .select({ id: orders.id, fulfillmentStatus: orders.fulfillmentStatus })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      const lineItems = await db
+        .select({ id: orderLineItems.id, batchId: orderLineItems.batchId })
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, input.orderId));
+
+      const lineItemIds = lineItems.map(item => item.id);
+      const allocationBatches =
+        lineItemIds.length > 0
+          ? await db
+              .select({ batchId: orderLineItemAllocations.batchId })
+              .from(orderLineItemAllocations)
+              .where(
+                safeInArray(
+                  orderLineItemAllocations.orderLineItemId,
+                  lineItemIds
+                )
+              )
+          : [];
+
+      const batchIds = new Set<number>();
+      for (const item of lineItems) {
+        if (item.batchId) batchIds.add(item.batchId);
+      }
+      for (const alloc of allocationBatches) {
+        batchIds.add(alloc.batchId);
+      }
+
+      const batchIdList = Array.from(batchIds);
+      if (batchIdList.length === 0) {
+        return {
+          orderStatus: order.fulfillmentStatus,
+          items: [] as Array<{ id: number; label: string }>,
+        };
+      }
+
+      const batchRows = await db
+        .select({ lotId: batches.lotId })
+        .from(batches)
+        .where(safeInArray(batches.id, batchIdList));
+
+      const lotIds = Array.from(new Set(batchRows.map(batch => batch.lotId)));
+      if (lotIds.length === 0) {
+        return {
+          orderStatus: order.fulfillmentStatus,
+          items: [] as Array<{ id: number; label: string }>,
+        };
+      }
+
+      const lotRows = await db
+        .select({
+          vendorId: lots.vendorId,
+          supplierClientId: lots.supplierClientId,
+        })
+        .from(lots)
+        .where(safeInArray(lots.id, lotIds));
+
+      const vendorIds = new Set<number>();
+      for (const lot of lotRows) {
+        if (lot.vendorId) vendorIds.add(lot.vendorId);
+        if (lot.supplierClientId) vendorIds.add(lot.supplierClientId);
+      }
+
+      const vendorIdList = Array.from(vendorIds);
+      if (vendorIdList.length === 0) {
+        return {
+          orderStatus: order.fulfillmentStatus,
+          items: [] as Array<{ id: number; label: string }>,
+        };
+      }
+
+      const vendorRows = await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(safeInArray(clients.id, vendorIdList));
+
+      return {
+        orderStatus: order.fulfillmentStatus,
+        items: vendorRows.map(vendor => ({
+          id: vendor.id,
+          label: vendor.name || `Vendor #${vendor.id}`,
+        })),
+      };
     }),
 
   // WSQA-003: Get valid next statuses for an order
