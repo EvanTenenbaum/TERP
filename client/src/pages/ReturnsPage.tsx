@@ -33,6 +33,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { Checkbox } from "../components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ReturnGLStatus } from "@/components/accounting/GLReversalStatus";
 
 type ReturnReason =
   | "DEFECTIVE"
@@ -75,6 +76,7 @@ export default function ReturnsPage() {
   const [deleteReturnItemConfirm, setDeleteReturnItemConfirm] = useState<
     number | null
   >(null);
+  const [expandedReturnId, setExpandedReturnId] = useState<number | null>(null);
 
   const {
     data: returns,
@@ -242,6 +244,7 @@ export default function ReturnsPage() {
               <TableHead>Processed By</TableHead>
               <TableHead>Processed At</TableHead>
               <TableHead>Notes</TableHead>
+              <TableHead>GL Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -263,13 +266,44 @@ export default function ReturnsPage() {
                     <TableCell className="max-w-xs truncate">
                       {returnRecord.notes || "-"}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setExpandedReturnId(
+                            expandedReturnId === returnRecord.id
+                              ? null
+                              : returnRecord.id
+                          )
+                        }
+                      >
+                        {expandedReturnId === returnRecord.id
+                          ? "Hide GL"
+                          : "View GL"}
+                      </Button>
+                    </TableCell>
                   </TableRow>
+                  {expandedReturnId === returnRecord.id && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="p-4 bg-muted/30">
+                        <ReturnGLStatus
+                          returnId={returnRecord.id}
+                          returnNumber={`RET-${returnRecord.id}`}
+                          status="PROCESSED"
+                          processedAt={new Date(returnRecord.processedAt)}
+                          processedBy={`User #${returnRecord.processedBy}`}
+                          reason={returnRecord.returnReason}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </Fragment>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="text-center text-muted-foreground"
                 >
                   No returns found
