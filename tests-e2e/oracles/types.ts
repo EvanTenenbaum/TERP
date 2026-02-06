@@ -251,6 +251,7 @@ export interface OracleContext {
 export interface OracleResult {
   flow_id: string;
   success: boolean;
+  status?: "PASS" | "FAIL" | "BLOCKED" | "SKIPPED";
   duration: number;
   steps_completed: number;
   total_steps: number;
@@ -275,10 +276,33 @@ export interface OracleResult {
   };
   errors: string[];
   screenshots: string[];
+  failure_mode?: string;
+  failure_details?: {
+    http_status?: number;
+    resolved_url?: string;
+    attempted_strategies?: string[];
+    validation_results?: {
+      passed: boolean;
+      signals: {
+        http_status_ok: boolean;
+        no_404_page: boolean;
+        no_error_state: boolean;
+        no_loading_state: boolean;
+        content_present: boolean;
+        domain_validation: boolean;
+      };
+      failureReasons: string[];
+    };
+    error_message?: string;
+    stack_trace?: string;
+  };
 }
 
 // QA role credentials mapping
-export const QA_CREDENTIALS: Record<QARole, { email: string; password: string }> = {
+export const QA_CREDENTIALS: Record<
+  QARole,
+  { email: string; password: string }
+> = {
   SuperAdmin: {
     email: "qa.superadmin@terp.test",
     password: "TerpQA2026!",
