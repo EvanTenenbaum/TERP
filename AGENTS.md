@@ -523,26 +523,63 @@ For detailed agent workflows, protocols, and best practices, refer to these key 
 
 The TERP project roadmap is managed in **Linear** (project management tool). Linear is the **primary source of truth** for all roadmap tasks, priorities, and status tracking.
 
-### Accessing the Roadmap via MCP
+### Accessing the Roadmap
 
-Use the `manus-mcp-cli` tool to interact with Linear:
+#### Option 1: Linear API (Recommended)
+
+Use the [Linear API](https://developers.linear.app/docs) to interact with the roadmap programmatically:
+
+```graphql
+# Get all issues for the team
+query {
+  team(id: "d88bb32f-ea0a-4809-aac1-fde6ec81bad3") {
+    issues(first: 50) {
+      nodes {
+        identifier
+        title
+        state { name }
+        priority
+        description
+      }
+    }
+  }
+}
+
+# Get a specific issue
+query {
+  issue(id: "TER-55") {
+    id
+    identifier
+    title
+    description
+    state { name }
+    priority
+  }
+}
+```
+
+**API Endpoint:** `https://api.linear.app/graphql`
+**Authentication:** Bearer token via `Authorization` header
+
+#### Option 2: Linear MCP Server
+
+If using an MCP-compatible agent platform, connect to the Linear MCP server:
 
 ```bash
-# List all tools available
-manus-mcp-cli tool list --server linear
+# List issues
+linear.list_issues({"team": "Terpcorp", "limit": 50})
 
-# Get all tasks for the team
-manus-mcp-cli tool call list_issues --server linear --input '{"team": "Terpcorp", "limit": 50}'
+# Get specific issue
+linear.get_issue({"id": "TER-55"})
 
-# Get tasks for a specific project
-manus-mcp-cli tool call list_issues --server linear --input '{"project": "TERP - Golden Flows Beta", "limit": 30}'
-
-# Get tasks by status
-manus-mcp-cli tool call list_issues --server linear --input '{"team": "Terpcorp", "state": "Backlog", "limit": 50}'
-
-# Get a specific task by ID
-manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
+# Update issue status
+linear.update_issue({"id": "<UUID>", "state": "Done"})
 ```
+
+#### Option 3: Linear Web UI
+
+- **Team URL:** https://linear.app/terpcorp
+- **Golden Flows Project:** https://linear.app/terpcorp/project/terp-golden-flows-beta
 
 ### Projects
 
@@ -582,59 +619,94 @@ manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
 
 ### Updating Tasks
 
-```bash
-# First get the task UUID (required for updates)
-manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
-# Note the "id" field (UUID format)
+#### Via Linear API (GraphQL)
 
-# Update status using UUID
-manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID-HERE", "state": "Done"}'
-manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID-HERE", "state": "In Progress"}'
+```graphql
+# Update issue state
+mutation {
+  issueUpdate(
+    id: "<UUID>"
+    input: { stateId: "<state-uuid>" }
+  ) {
+    issue { id identifier state { name } }
+  }
+}
 
-# Add comment to task
-manus-mcp-cli tool call create_comment --server linear --input '{"issueId": "TER-55", "body": "Completed via PR #XXX"}'
+# Add comment
+mutation {
+  commentCreate(
+    input: {
+      issueId: "<UUID>"
+      body: "Completed via PR #XXX"
+    }
+  ) {
+    comment { id body }
+  }
+}
 ```
 
-**Important:** The `update_issue` command requires the **UUID** (from the `id` field), not the identifier (TER-XX). Always `get_issue` first to retrieve the UUID.
+#### Via MCP Server
+
+```bash
+# Get issue UUID first
+linear.get_issue({"id": "TER-55"})
+# Use the "id" field (UUID) for updates
+
+# Update status
+linear.update_issue({"id": "<UUID>", "state": "Done"})
+
+# Add comment
+linear.create_comment({"issueId": "TER-55", "body": "Completed via PR #XXX"})
+```
+
+**Important:** Updates require the **UUID** (from the `id` field), not the identifier (TER-XX). Always fetch the issue first to retrieve the UUID.
 
 ### Creating New Tasks
 
+#### Via Linear API (GraphQL)
+
+```graphql
+mutation {
+  issueCreate(
+    input: {
+      teamId: "d88bb32f-ea0a-4809-aac1-fde6ec81bad3"
+      title: "[P2] New Task Title"
+      description: "## Problem\n\nDescription.\n\n## Solution\n\nProposed solution."
+      priority: 3
+      projectId: "79882db1-0cac-448b-b73c-5dd9307c85c8"
+    }
+  ) {
+    issue { id identifier title }
+  }
+}
+```
+
+#### Via MCP Server
+
 ```bash
-manus-mcp-cli tool call create_issue --server linear --input '{
+linear.create_issue({
   "team": "Terpcorp",
   "title": "[P2] New Task Title",
   "description": "## Problem\n\nDescription.\n\n## Solution\n\nProposed solution.",
   "priority": 3,
   "project": "TERP - Golden Flows Beta",
   "labels": ["type:feature", "mode:strict"]
-}'
+})
 ```
 
 ### Common Workflows
 
 **Find Next Task:**
-```bash
-# Get backlog sorted by priority
-manus-mcp-cli tool call list_issues --server linear --input '{"team": "Terpcorp", "state": "Backlog", "limit": 30}'
-# Pick task with priority.value = 1 or 2 (Urgent/High)
-```
+1. Query issues with `state: "Backlog"` for the Terpcorp team
+2. Sort by priority (1 = Urgent, 2 = High)
+3. Pick the highest priority task with the lowest sequence number
 
 **Complete a Task:**
-```bash
-# 1. Get task details and UUID
-manus-mcp-cli tool call get_issue --server linear --input '{"id": "TER-55"}'
-
-# 2. Move to In Progress
-manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID", "state": "In Progress"}'
-
-# 3. Do the work, create PR
-
-# 4. After PR merge, mark Done
-manus-mcp-cli tool call update_issue --server linear --input '{"id": "UUID", "state": "Done"}'
-
-# 5. Add completion comment
-manus-mcp-cli tool call create_comment --server linear --input '{"issueId": "TER-55", "body": "Completed via PR #XXX"}'
-```
+1. Fetch the task to get its UUID
+2. Update state to "In Progress"
+3. Do the work, create PR
+4. After PR merge, update state to "Done"
+5. Add a comment with PR link: "Completed via PR #XXX"
 
 ### Team and Project IDs (Reference)
 
