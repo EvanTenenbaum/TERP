@@ -14,7 +14,6 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 import { clients, products, batches } from "../../drizzle/schema";
-import { clientWants } from "../../drizzle/schema-client360";
 import { eq, sql } from "drizzle-orm";
 
 export const clientWantsRouter = router({
@@ -140,14 +139,18 @@ export const clientWantsRouter = router({
         LEFT JOIN products p ON cw.product_id = p.id
         LEFT JOIN categories c ON cw.category_id = c.id
         LEFT JOIN users u ON cw.created_by = u.id
-        WHERE cw.client_id = ${input.clientId} ${statusFilter}
+        WHERE cw.client_id = ${input.clientId}
+          AND cw.deleted_at IS NULL
+          ${statusFilter}
         ORDER BY cw.created_at DESC
         LIMIT ${input.limit} OFFSET ${input.offset}
       `);
 
       const countResultRaw = await db.execute(sql`
         SELECT COUNT(*) as total FROM client_wants
-        WHERE client_id = ${input.clientId} ${statusFilter}
+        WHERE client_id = ${input.clientId}
+          AND deleted_at IS NULL
+          ${statusFilter}
       `);
 
       const countData = (
@@ -185,6 +188,7 @@ export const clientWantsRouter = router({
         LEFT JOIN categories c ON cw.category_id = c.id
         LEFT JOIN clients cl ON cw.client_id = cl.id
         WHERE cw.id = ${input.id}
+          AND cw.deleted_at IS NULL
         LIMIT 1
       `);
 
@@ -246,6 +250,7 @@ export const clientWantsRouter = router({
           expires_at = ${input.expiresAt ? new Date(input.expiresAt) : sql`expires_at`},
           updated_at = NOW()
         WHERE id = ${input.id}
+          AND deleted_at IS NULL
       `);
 
       return { success: true };
@@ -265,7 +270,12 @@ export const clientWantsRouter = router({
           message: "Database not available",
         });
 
-      await db.delete(clientWants).where(eq(clientWants.id, input.id));
+      await db.execute(sql`
+        UPDATE client_wants
+        SET status = 'CANCELLED', deleted_at = NOW(), updated_at = NOW()
+        WHERE id = ${input.id}
+          AND deleted_at IS NULL
+      `);
 
       return { success: true };
     }),
@@ -291,7 +301,9 @@ export const clientWantsRouter = router({
 
       // Get the want details
       const wantResult = await db.execute(sql`
-        SELECT * FROM client_wants WHERE id = ${input.wantId}
+        SELECT * FROM client_wants
+        WHERE id = ${input.wantId}
+          AND deleted_at IS NULL
       `);
 
       const wantData = wantResult as unknown as Array<{
@@ -371,6 +383,7 @@ export const clientWantsRouter = router({
         UPDATE client_wants
         SET match_count = ${scoredMatches.length}, last_matched_at = NOW()
         WHERE id = ${input.wantId}
+          AND deleted_at IS NULL
       `);
 
       return {
@@ -414,7 +427,9 @@ export const clientWantsRouter = router({
         INNER JOIN clients cl ON cw.client_id = cl.id
         LEFT JOIN products p ON cw.product_id = p.id
         LEFT JOIN categories c ON cw.category_id = c.id
-        WHERE cw.status = 'ACTIVE' ${priorityFilter}
+        WHERE cw.status = 'ACTIVE'
+          AND cw.deleted_at IS NULL
+          ${priorityFilter}
         ORDER BY
           CASE cw.priority
             WHEN 'URGENT' THEN 1
@@ -428,7 +443,9 @@ export const clientWantsRouter = router({
 
       const countResultRaw = await db.execute(sql`
         SELECT COUNT(*) as total FROM client_wants
-        WHERE status = 'ACTIVE' ${priorityFilter}
+        WHERE status = 'ACTIVE'
+          AND deleted_at IS NULL
+          ${priorityFilter}
       `);
 
       const countData = (
@@ -463,6 +480,7 @@ export const clientWantsRouter = router({
         UPDATE client_wants
         SET status = 'FULFILLED', updated_at = NOW()
         WHERE id = ${input.id}
+          AND deleted_at IS NULL
       `);
 
       return { success: true };
@@ -486,6 +504,7 @@ export const clientWantsRouter = router({
         UPDATE client_wants
         SET status = 'CANCELLED', updated_at = NOW()
         WHERE id = ${input.id}
+          AND deleted_at IS NULL
       `);
 
       return { success: true };
@@ -538,6 +557,7 @@ export const clientWantsRouter = router({
         FROM client_wants cw
         INNER JOIN clients cl ON cw.client_id = cl.id
         WHERE cw.status = 'ACTIVE'
+          AND cw.deleted_at IS NULL
           AND (
             cw.product_id = ${item.productId}
             OR ${item.productName} LIKE CONCAT('%', cw.strain_name, '%')

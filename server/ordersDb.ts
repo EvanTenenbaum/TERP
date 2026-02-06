@@ -23,6 +23,7 @@ import {
   restoreInventoryFromOrderTx,
   reverseOrderAccountingEntriesTx,
 } from "./services/orderAccountingService";
+import { syncClientBalance } from "./services/clientBalanceService";
 import { calculateAvailableQty } from "./inventoryUtils";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
@@ -1793,6 +1794,9 @@ export async function updateOrderStatus(input: {
           createdBy: userId,
         });
       }
+
+      // Keep stored client balance aligned with canonical invoice amounts.
+      await syncClientBalance(order.clientId);
 
       // Update credit exposure
       await updateClientCreditExposure(order.clientId);

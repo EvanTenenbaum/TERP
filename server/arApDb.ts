@@ -247,7 +247,7 @@ export async function getOutstandingReceivables() {
     .from(invoices)
     .where(
       and(
-        safeInArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
+        safeInArray(invoices.status, ["SENT", "VIEWED", "PARTIAL", "OVERDUE"]),
         sql`${invoices.amountDue} > 0`,
         sql`${invoices.deletedAt} IS NULL`
       )
@@ -283,7 +283,7 @@ export async function calculateARAging() {
       .from(invoices)
       .where(
         and(
-          safeInArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
+          safeInArray(invoices.status, ["SENT", "VIEWED", "PARTIAL", "OVERDUE"]),
           sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
           sql`${invoices.deletedAt} IS NULL`
         )
@@ -993,4 +993,3 @@ export async function getPaymentsForBill(billId: number) {
     ))
     .orderBy(desc(payments.paymentDate));
 }
-

@@ -94,6 +94,7 @@ export const clientWants = mysqlTable(
     createdBy: int("created_by").references(() => users.id),
     lastMatchedAt: timestamp("last_matched_at"),
     matchCount: int("match_count").default(0),
+    deletedAt: timestamp("deleted_at"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -105,6 +106,7 @@ export const clientWants = mysqlTable(
     productIdIdx: index("idx_client_wants_product_id").on(table.productId),
     categoryIdIdx: index("idx_client_wants_category_id").on(table.categoryId),
     expiresAtIdx: index("idx_client_wants_expires_at").on(table.expiresAt),
+    deletedAtIdx: index("idx_client_wants_deleted_at").on(table.deletedAt),
   })
 );
 

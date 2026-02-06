@@ -414,4 +414,15 @@ describe("Permission Checks Integration Tests", () => {
       await expect(caller.rbacUsers.list({})).rejects.toThrow();
     });
   });
+
+  describe("Vendor Supply Router Permission Checks", () => {
+    it("should reject expireOld when user lacks vendor_supply:update", async () => {
+      vi.mocked(permissionService.hasPermission).mockResolvedValue(false);
+      vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
+
+      const caller = await createCallerWithUser(mockUser);
+
+      await expect(caller.vendorSupply.expireOld()).rejects.toThrow();
+    });
+  });
 });

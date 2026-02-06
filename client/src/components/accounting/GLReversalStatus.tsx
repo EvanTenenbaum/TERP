@@ -292,7 +292,13 @@ export function ReturnGLStatus({
   creditAmount,
 }: ReturnGLStatusProps) {
   const transactionStatus: TransactionStatus =
-    status === "PROCESSED" ? "REVERSED" : "ACTIVE";
+    status === "PROCESSED"
+      ? "REVERSED"
+      : status === "CANCELLED"
+        ? "VOIDED"
+        : status === "APPROVED"
+          ? "PARTIALLY_REVERSED"
+          : "ACTIVE";
 
   return (
     <GLReversalStatus
@@ -300,10 +306,14 @@ export function ReturnGLStatus({
       referenceId={returnId}
       referenceNumber={returnNumber}
       status={transactionStatus}
-      voidedAt={processedAt}
-      voidedBy={processedBy}
-      voidReason={reason}
-      reversedAmount={creditAmount}
+      voidedAt={
+        status === "PROCESSED" || status === "CANCELLED" ? processedAt : undefined
+      }
+      voidedBy={
+        status === "PROCESSED" || status === "CANCELLED" ? processedBy : undefined
+      }
+      voidReason={status === "CANCELLED" ? reason : undefined}
+      reversedAmount={status === "PROCESSED" ? creditAmount : undefined}
     />
   );
 }

@@ -354,23 +354,25 @@ export const vendorSupplyRouter = router({
   /**
    * Expire old vendor supply items
    */
-  expireOld: protectedProcedure.mutation(async () => {
-    try {
-      const count = await vendorSupplyDb.expireOldVendorSupply();
+  expireOld: protectedProcedure
+    .use(requirePermission("vendor_supply:update"))
+    .mutation(async () => {
+      try {
+        const count = await vendorSupplyDb.expireOldVendorSupply();
 
-      return {
-        success: true,
-        data: { expiredCount: count },
-      };
-    } catch (error) {
-      console.error("Error expiring old vendor supply:", error);
-      return {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to expire old vendor supply",
-      };
-    }
-  }),
+        return {
+          success: true,
+          data: { expiredCount: count },
+        };
+      } catch (error) {
+        console.error("Error expiring old vendor supply:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to expire old vendor supply",
+        };
+      }
+    }),
 });
