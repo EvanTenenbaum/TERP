@@ -854,6 +854,11 @@ export const accountingRouter = router({
           userId: getAuthenticatedUserId(ctx),
         });
 
+        // ARCH-002: Sync client balance after invoice creation
+        const { syncClientBalance } =
+          await import("../services/clientBalanceService");
+        await syncClientBalance(invoiceData.customerId);
+
         // Trigger notification for new invoice
         onInvoiceCreated({
           id: invoiceId,

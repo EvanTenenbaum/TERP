@@ -29,6 +29,7 @@ import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
 import { createInvoiceFromOrder } from "../services/orderAccountingService";
 import { reverseGLEntries, GLPostingError } from "../accountingHooks";
+import { syncClientBalance } from "../services/clientBalanceService";
 import { generateInvoicePdf } from "../services/pdfGenerator";
 
 const PDF_TIMEOUT_MS = 30_000;
@@ -454,6 +455,9 @@ export const invoicesRouter = router({
         .update(orders)
         .set({ invoiceId })
         .where(eq(orders.id, input.orderId));
+
+      // ARCH-002: Sync client balance after invoice creation
+      await syncClientBalance(order.clientId);
 
       logger.info({
         msg: "[Invoices] Invoice generated from order",
