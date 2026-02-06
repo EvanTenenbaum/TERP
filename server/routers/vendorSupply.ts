@@ -6,8 +6,7 @@ import {
 } from "../_core/trpc";
 import * as vendorSupplyDb from "../vendorSupplyDb";
 import * as matchingEngine from "../matchingEngine";
-// TODO: Add permission checks to mutations
-// import { requirePermission } from "../_core/permissionMiddleware";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Vendor Supply Router
@@ -18,6 +17,7 @@ export const vendorSupplyRouter = router({
    * Create a new vendor supply item
    */
   create: protectedProcedure
+    .use(requirePermission("vendor_supply:create"))
     .input(
       z.object({
         vendorId: z.number(),
@@ -160,6 +160,7 @@ export const vendorSupplyRouter = router({
    * Update a vendor supply item
    */
   update: protectedProcedure
+    .use(requirePermission("vendor_supply:update"))
     .input(
       z.object({
         id: z.number(),
@@ -214,6 +215,7 @@ export const vendorSupplyRouter = router({
    * FE-BUG-007: Added actor attribution for audit trail
    */
   reserve: protectedProcedure
+    .use(requirePermission("vendor_supply:update"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       try {
@@ -245,6 +247,7 @@ export const vendorSupplyRouter = router({
    * Mark a vendor supply item as purchased
    */
   purchase: protectedProcedure
+    .use(requirePermission("vendor_supply:update"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -270,6 +273,7 @@ export const vendorSupplyRouter = router({
    * Delete a vendor supply item
    */
   delete: protectedProcedure
+    .use(requirePermission("vendor_supply:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       try {
