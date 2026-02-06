@@ -31,13 +31,19 @@ vi.mock("@/lib/trpc", () => ({
               ...mockMutationConfig,
               mutate: vi.fn(data => {
                 if (config?.onSuccess) {
-                  config.onSuccess({ paymentId: 123 }, data, undefined);
+                  config.onSuccess(123, data, undefined);
                 }
               }),
               mutateAsync: vi.fn().mockResolvedValue({ paymentId: 123 }),
             };
             return mockMutationConfig;
           }),
+        },
+        list: {
+          useQuery: vi.fn(() => ({
+            data: { items: [] },
+            isLoading: false,
+          })),
         },
       },
       invoices: {
@@ -58,6 +64,14 @@ vi.mock("@/lib/trpc", () => ({
             isLoading: false,
           })),
         },
+      },
+    },
+    clients: {
+      getById: {
+        useQuery: vi.fn(() => ({
+          data: { id: 100, name: "Test Customer" },
+          isLoading: false,
+        })),
       },
     },
   },
@@ -81,8 +95,8 @@ vi.mock("@/hooks/work-surface/useSaveState", () => ({
 }));
 
 // Mock sonner toast
-const mockToastSuccess = vi.fn();
-const mockToastError = vi.fn();
+const mockToastSuccess = vi.hoisted(() => vi.fn());
+const mockToastError = vi.hoisted(() => vi.fn());
 
 vi.mock("sonner", () => ({
   toast: {

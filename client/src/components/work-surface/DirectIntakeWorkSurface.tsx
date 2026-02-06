@@ -334,11 +334,14 @@ function RowInspectorContent({
             value={row.item}
             onValueChange={value => {
               const product = products.find(p => p.name === value);
+              const categoryValue = product?.category as
+                | IntakeRowData["category"]
+                | undefined;
               onUpdate({
                 item: value,
                 productId: product?.id ?? null,
                 strainId: product?.strainId ?? null,
-                category: product?.category ?? row.category,
+                category: categoryValue ?? row.category,
               });
               validation.handleChange("item", value);
             }}
@@ -609,15 +612,7 @@ export function DirectIntakeWorkSurface() {
     const items = productsData?.items ?? [];
     return items
       .filter(
-        (
-          item
-        ): item is {
-          id: number;
-          nameCanonical: string;
-          category: string;
-          subcategory?: string | null;
-          strainId?: number | null;
-        } =>
+        item =>
           typeof item?.id === "number" &&
           typeof item?.nameCanonical === "string"
       )
@@ -728,7 +723,7 @@ export function DirectIntakeWorkSurface() {
             className="h-8 w-8"
             onClick={e => {
               e.stopPropagation();
-              setSelectedRowId(params.data?.id);
+              setSelectedRowId(params.data?.id ?? null);
               inspector.open();
             }}
           >
