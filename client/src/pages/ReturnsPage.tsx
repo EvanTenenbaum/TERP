@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { useState, Fragment } from "react";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -33,7 +33,6 @@ import { BackButton } from "@/components/common/BackButton";
 import { Checkbox } from "../components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ReturnGLStatus } from "@/components/accounting/GLReversalStatus";
 
 type ReturnReason =
   | "DEFECTIVE"
@@ -249,7 +248,7 @@ export default function ReturnsPage() {
             {returns && returns.length > 0 ? (
               returns.map(returnRecord => (
                 <Fragment key={returnRecord.id}>
-                  <TableRow key={returnRecord.id}>
+                  <TableRow>
                     <TableCell>#{returnRecord.id}</TableCell>
                     <TableCell>#{returnRecord.orderId}</TableCell>
                     <TableCell>
@@ -263,18 +262,6 @@ export default function ReturnsPage() {
                     </TableCell>
                     <TableCell className="max-w-xs truncate">
                       {returnRecord.notes || "-"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell colSpan={6} className="bg-muted/20">
-                      <ReturnGLStatus
-                        returnId={returnRecord.id}
-                        returnNumber={`RETURN-${returnRecord.id}`}
-                        status={
-                          returnRecord.returnReason ? "PROCESSED" : "PENDING"
-                        }
-                        reason={returnRecord.returnReason}
-                      />
                     </TableCell>
                   </TableRow>
                 </Fragment>
