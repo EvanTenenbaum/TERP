@@ -26,6 +26,7 @@ import {
   Edit,
   Download,
   Image as ImageIcon,
+  Filter,
   type LucideIcon,
 } from "lucide-react";
 // Sprint 4 Track A imports
@@ -682,30 +683,82 @@ export default function Inventory() {
           </div>
         </div>
 
+        {/* DATA-026 FIX: Alert when filters are active from localStorage */}
+        {hasActiveFilters && (
+          <Alert className="border-amber-200 bg-amber-50">
+            <Filter className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-amber-800">
+                {activeFilterCount} filter{activeFilterCount !== 1 ? "s" : ""}{" "}
+                active from previous session.
+                {!useEnhancedApi &&
+                  " Stats below show total inventory (unfiltered)."}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="ml-4 border-amber-300 hover:bg-amber-100"
+              >
+                Clear All Filters
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Dashboard Statistics - BUG-098 FIX: Use enhanced API summary when available */}
         {useEnhancedApi && enhancedResponse?.summary ? (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="p-4">
-              <div className="text-sm text-muted-foreground">Total Items</div>
-              <div className="text-2xl font-bold">{enhancedResponse.summary.totalItems.toLocaleString()}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-muted-foreground">Total On Hand</div>
-              <div className="text-2xl font-bold">{enhancedResponse.summary.totalOnHand.toLocaleString()}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-muted-foreground">Available Units</div>
-              <div className="text-2xl font-bold">{enhancedResponse.summary.totalAvailable.toLocaleString()}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-muted-foreground">Total Value</div>
+              <div className="text-sm text-muted-foreground">
+                Total Items (Filtered)
+              </div>
               <div className="text-2xl font-bold">
-                ${enhancedResponse.summary.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {enhancedResponse.summary.totalItems.toLocaleString()}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">
+                Total On Hand (Filtered)
+              </div>
+              <div className="text-2xl font-bold">
+                {enhancedResponse.summary.totalOnHand.toLocaleString()}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">
+                Available Units (Filtered)
+              </div>
+              <div className="text-2xl font-bold">
+                {enhancedResponse.summary.totalAvailable.toLocaleString()}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">
+                Total Value (Filtered)
+              </div>
+              <div className="text-2xl font-bold">
+                $
+                {enhancedResponse.summary.totalValue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
             </Card>
           </div>
         ) : (
-          <DataCardSection moduleId="inventory" />
+          <>
+            <DataCardSection moduleId="inventory" />
+            {hasActiveFilters && (
+              <Alert variant="default" className="border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  Stats above show total inventory. The list below is filtered
+                  based on your active filters.
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
         )}
 
         {/* Stock Level Charts */}
@@ -816,9 +869,15 @@ export default function Inventory() {
               inventoryData
                 ?.map(i => i.product?.subcategory)
                 .filter((s): s is string => Boolean(s))
-                .filter(s => !filters.category || inventoryData?.some(
-                  item => item.product?.subcategory === s && item.product?.category === filters.category
-                )) || []
+                .filter(
+                  s =>
+                    !filters.category ||
+                    inventoryData?.some(
+                      item =>
+                        item.product?.subcategory === s &&
+                        item.product?.category === filters.category
+                    )
+                ) || []
             )
           )}
           grades={Array.from(
