@@ -65,8 +65,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
+import { themeAlpine } from "ag-grid-community";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -1176,8 +1175,9 @@ export function DirectIntakeWorkSurface() {
               </div>
             </div>
           ) : (
-            <div className="ag-theme-alpine h-full min-h-[420px] w-full">
+            <div className="h-full min-h-[420px] w-full">
               <AgGridReact<IntakeGridRow>
+                theme={themeAlpine}
                 rowData={rows}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
