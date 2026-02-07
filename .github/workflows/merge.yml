@@ -32,30 +32,37 @@ jobs:
           --health-cmd="mysqladmin ping"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=5
     
     steps:
       - uses: actions/checkout@v4
       
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 10.4.1
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-      
+
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
       
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -P 3307 --silent 2>/dev/null; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
       - name: Push database schema
         id: schema
         run: |
           echo "Pushing database schema..."
-          pnpm drizzle-kit push 2>&1 | tee schema-output.txt || {
+          npx drizzle-kit push --force 2>&1 | tee schema-output.txt || {
             echo "status=failed" >> $GITHUB_OUTPUT
             exit 1
           }
