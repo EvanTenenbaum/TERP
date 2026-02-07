@@ -6,7 +6,7 @@
 # ============================================
 # Stage 1: Base image with system deps
 # ============================================
-FROM node:20.19-slim AS base
+FROM node:22-slim AS base
 
 LABEL build.version="2026-01-05-MEMORY-FIX"
 
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 
 # Install ALL dependencies (need devDeps for build)
-RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # ============================================
 # Stage 3: Build
