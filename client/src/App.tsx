@@ -357,7 +357,7 @@ function Router() {
                 />
                 {/* ROUTE-001: Direct Intake WorkSurface */}
                 <Route
-                  path="/intake"
+                  path="/direct-intake"
                   component={withErrorBoundary(DirectIntakeWorkSurface)}
                 />
                 <Route
