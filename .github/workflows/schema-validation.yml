@@ -63,8 +63,15 @@ jobs:
 
       - name: Wait for MySQL
         run: |
-          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent; do
-            echo "Waiting for MySQL..."
+          MAX_ATTEMPTS=30
+          ATTEMPTS=0
+          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent 2>/dev/null; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "MySQL failed to start after $MAX_ATTEMPTS attempts"
+              exit 1
+            fi
+            echo "Waiting for MySQL... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
             sleep 2
           done
 

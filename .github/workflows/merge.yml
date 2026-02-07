@@ -53,8 +53,15 @@ jobs:
       
       - name: Wait for MySQL
         run: |
+          MAX_ATTEMPTS=30
+          ATTEMPTS=0
           until mysqladmin ping -h 127.0.0.1 -P 3307 --silent 2>/dev/null; do
-            echo "Waiting for MySQL..."
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "MySQL failed to start after $MAX_ATTEMPTS attempts"
+              exit 1
+            fi
+            echo "Waiting for MySQL... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
             sleep 2
           done
 
@@ -62,7 +69,7 @@ jobs:
         id: schema
         run: |
           echo "Pushing database schema..."
-          npx drizzle-kit push --force 2>&1 | tee schema-output.txt || {
+          pnpm drizzle-kit push --force 2>&1 | tee schema-output.txt || {
             echo "status=failed" >> $GITHUB_OUTPUT
             exit 1
           }
