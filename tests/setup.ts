@@ -26,6 +26,15 @@ if (typeof window !== "undefined") {
   (window as any).ResizeObserver = ResizeObserverMock;
 }
 
+// Mock scrollIntoView for jsdom (used by cmdk combobox and other UI libraries)
+if (
+  typeof window !== "undefined" &&
+  window.Element &&
+  !window.Element.prototype.scrollIntoView
+) {
+  window.Element.prototype.scrollIntoView = vi.fn();
+}
+
 // Cleanup after each test case (for React tests)
 // TEST-026: Add vi.clearAllMocks() to prevent test pollution
 afterEach(() => {

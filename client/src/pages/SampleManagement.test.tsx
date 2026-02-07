@@ -169,6 +169,10 @@ vi.mock("@/lib/trpc", () => ({
       setExpirationDate: {
         useMutation: () => mockMutation(),
       },
+      // Product options for SampleForm combobox
+      productOptions: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
     },
     clients: {
       list: {
