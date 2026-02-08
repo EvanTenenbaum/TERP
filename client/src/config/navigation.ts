@@ -206,7 +206,7 @@ export const navigationItems: NavigationItem[] = [
   // TERP-0005: Add Direct Intake to Inventory group
   {
     name: "Direct Intake",
-    path: "/intake",
+    path: "/direct-intake",
     icon: Download,
     group: "inventory",
     ariaLabel: "Direct intake of inventory items",
