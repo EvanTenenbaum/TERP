@@ -1,6 +1,6 @@
 # TERP Golden Flows Beta - Roadmap
 
-**Last Updated:** 2026-02-07  
+**Last Updated:** 2026-02-08  
 **Source of Truth:** [Linear Project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)  
 **Status:** This file is a backup. Linear is the primary source of truth for roadmap tasks.
 
@@ -8,28 +8,35 @@
 
 ## Current State Summary
 
-| Phase                                | Status         | Progress |
-| ------------------------------------ | -------------- | -------- |
-| Phase 0.A: Golden Flow Specification | ✅ COMPLETE    | 8/8      |
-| Phase 0: Critical Blockers           | ✅ COMPLETE    | 19/19    |
-| Phase 1: Core Flow Restoration       | ✅ COMPLETE    | 27/27    |
-| QA & Testing Infrastructure          | ✅ COMPLETE    | 4/4      |
-| Post-QA Bug Fixes                    | 🟡 IN PROGRESS | 0/4      |
+| Phase                                   | Status         | Progress |
+| --------------------------------------- | -------------- | -------- |
+| Phase 0.A: Golden Flow Specification    | ✅ COMPLETE    | 8/8      |
+| Phase 0: Critical Blockers              | ✅ COMPLETE    | 19/19    |
+| Phase 1: Core Flow Restoration          | ✅ COMPLETE    | 27/27    |
+| QA & Testing Infrastructure             | ✅ COMPLETE    | 5/5      |
+| Post-QA Bug Fixes                       | ✅ COMPLETE    | 3/3      |
+| Golden Flow Regression Remediation      | 🔄 IN REVIEW   | 8/8 (PR open) |
+| DevOps & Infrastructure                 | 🟡 TODO        | 0/1      |
 
-**Overall:** 58/62 TERP tasks complete. **4 open items remain.**
+**Overall:** 62/71 TERP tasks complete. 8 in review (PR #404). 1 todo.
 
-**Beta Assessment:** CONDITIONAL GO — 97.7% application health, 9/9 Golden Flows passing.
+**Beta Assessment:** CONDITIONAL GO — PR #404 contains final regression fixes. Once merged, all golden flows are remediated.
 
 ---
 
-## Open Items (4 tickets)
+## Open Items (9 tickets)
 
-| Ticket                                                                                                           | Priority  | Title                                                     | Status | Blocker?                                 |
-| ---------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------- | ------ | ---------------------------------------- |
-| [TER-92](https://linear.app/terpcorp/issue/TER-92/qa-create-rbac-qa-role-accounts-for-beta-verification)         | P1 Urgent | Create RBAC QA Role Accounts for Beta Verification        | Todo   | **YES** — sole beta blocker              |
-| [TER-93](https://linear.app/terpcorp/issue/TER-93/devops-fix-deployment-health-check-failure-staging-stale)      | P2 High   | Fix Deployment Health Check Failure - Staging Stale       | Todo   | Likely fixed by CI merge, needs redeploy |
-| [TER-94](https://linear.app/terpcorp/issue/TER-94/bug-direct-intake-returns-404-despite-sidebar-link)            | P3 Medium | /direct-intake returns 404 despite sidebar link           | Todo   | No — can ship as known issue             |
-| [TER-95](https://linear.app/terpcorp/issue/TER-95/bug-client-detail-page-shows-infinite-loading-for-invalid-ids) | P3 Medium | Client detail page shows infinite loading for invalid IDs | Todo   | No — can ship as known issue             |
+| Ticket | Priority | Title | Status | PR | Blocker? |
+| ------ | -------- | ----- | ------ | -- | -------- |
+| [TER-96](https://linear.app/terpcorp/issue/TER-96) | P1 Urgent | GF-001: Fix intake location site schema mismatch | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97) | P1 Urgent | GF-002: Fix purchaseOrders.create 500 vendor mapping | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes |
+| [TER-98](https://linear.app/terpcorp/issue/TER-98) | P1 Urgent | GF-008: Fix samples.createRequest 500 on insert | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes |
+| [TER-99](https://linear.app/terpcorp/issue/TER-99) | P2 High | GF-006: Restore Clients list navigation affordances | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
+| [TER-100](https://linear.app/terpcorp/issue/TER-100) | P2 High | Orders routing: add /orders/new redirect | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
+| [TER-101](https://linear.app/terpcorp/issue/TER-101) | P2 High | Command palette contract: align Cmd+K behavior | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
+| [TER-102](https://linear.app/terpcorp/issue/TER-102) | P2 High | GF-005 test stabilization: pick-pack selectors | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
+| [TER-103](https://linear.app/terpcorp/issue/TER-103) | P2 High | Order creation e2e alignment | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
+| [TER-93](https://linear.app/terpcorp/issue/TER-93) | P2 High | Fix Deployment Health Check Failure - Staging Stale | Todo | — | No |
 
 ---
 
@@ -124,33 +131,62 @@ _Note: TER-7 through TER-17 are duplicate entries of the above tasks from an ear
 ## QA & Testing Infrastructure
 
 **Status:** ✅ COMPLETE  
-**Progress:** 4/4 tasks complete
+**Progress:** 5/5 tasks complete
 
-- **[TER-87](https://linear.app/terpcorp/issue/TER-87):** Fix Testing Infrastructure - Entity ID Resolution
-- **[TER-88](https://linear.app/terpcorp/issue/TER-88):** Fix Testing Infrastructure - Strengthen Validation Logic
-- **[TER-89](https://linear.app/terpcorp/issue/TER-89):** Fix Testing Infrastructure - Enhanced Error Handling & Classification
-- **[TER-90](https://linear.app/terpcorp/issue/TER-90):** Testing Infrastructure - Validation & Regression Testing
-- **[TER-91](https://linear.app/terpcorp/issue/TER-91):** Execute Full P0 Suite with Fixed Testing Infrastructure
+- **[TER-87](https://linear.app/terpcorp/issue/TER-87):** Fix Testing Infrastructure - Entity ID Resolution (Done via PR #399)
+- **[TER-88](https://linear.app/terpcorp/issue/TER-88):** Fix Testing Infrastructure - Strengthen Validation Logic (Done via PR #399)
+- **[TER-89](https://linear.app/terpcorp/issue/TER-89):** Fix Testing Infrastructure - Enhanced Error Handling & Classification (Done via PR #399)
+- **[TER-90](https://linear.app/terpcorp/issue/TER-90):** Testing Infrastructure - Validation & Regression Testing (Done)
+- **[TER-91](https://linear.app/terpcorp/issue/TER-91):** Execute Full P0 Suite with Fixed Testing Infrastructure (Done)
 
 ---
 
 ## Post-QA Bug Fixes
 
-**Status:** 🟡 IN PROGRESS  
-**Progress:** 0/4 tasks
+**Status:** ✅ COMPLETE  
+**Progress:** 3/3 tasks complete
 
-These issues were discovered during the QA Runtime Testing on 2026-02-07:
+These issues were discovered during the QA Runtime Testing on 2026-02-07 and resolved via PR #403 (merged 2026-02-08):
 
-- **[TER-92](https://linear.app/terpcorp/issue/TER-92):** [P1 Urgent] Create RBAC QA Role Accounts for Beta Verification — **BETA BLOCKER**
+- **[TER-92](https://linear.app/terpcorp/issue/TER-92):** [P1 Urgent] Create RBAC QA Role Accounts for Beta Verification — Done (PR #403)
+- **[TER-94](https://linear.app/terpcorp/issue/TER-94):** [P3 Medium] /direct-intake returns 404 despite sidebar link — Done (PR #403, route fix `c615d86c`)
+- **[TER-95](https://linear.app/terpcorp/issue/TER-95):** [P3 Medium] Client detail page shows infinite loading for invalid IDs — Done (PR #403)
+
+---
+
+## Golden Flow Regression Remediation (PR #404)
+
+**Status:** 🔄 IN REVIEW  
+**Progress:** 8/8 tasks implemented, awaiting merge  
+**PR:** [#404](https://github.com/EvanTenenbaum/TERP/pull/404) — Remediate golden-flow regressions and stabilize live e2e coverage  
+**Branch:** `codex/golden-flow-remediation-20260208`  
+**CI:** Golden Flows E2E ✅, Argos ✅, 4 checks fail (pre-existing workflow bugs)
+
+These tasks address regressions discovered during live e2e testing after the initial golden flow fixes were deployed:
+
+- **[TER-96](https://linear.app/terpcorp/issue/TER-96):** GF-001: Fix intake location site schema mismatch (UI label vs API regex)
+- **[TER-97](https://linear.app/terpcorp/issue/TER-97):** GF-002: Fix purchaseOrders.create 500 vendor mapping failure
+- **[TER-98](https://linear.app/terpcorp/issue/TER-98):** GF-008: Fix samples.createRequest 500 on insert
+- **[TER-99](https://linear.app/terpcorp/issue/TER-99):** GF-006: Restore discoverable navigation from Clients list to Client Ledger
+- **[TER-100](https://linear.app/terpcorp/issue/TER-100):** Orders routing: add /orders/new alias/redirect to /orders/create
+- **[TER-101](https://linear.app/terpcorp/issue/TER-101):** Command palette contract: align Cmd+K behavior and tests
+- **[TER-102](https://linear.app/terpcorp/issue/TER-102):** GF-005 test stabilization: pick-pack selectors, empty-state handling
+- **[TER-103](https://linear.app/terpcorp/issue/TER-103):** Order creation e2e alignment: route/setup and totals/inspector assertions
+
+---
+
+## DevOps & Infrastructure
+
+**Status:** 🟡 TODO  
+**Progress:** 0/1
+
 - **[TER-93](https://linear.app/terpcorp/issue/TER-93):** [P2 High] Fix Deployment Health Check Failure - Staging Stale — Likely fixed by CI merge (`60d808e9`), needs redeploy to confirm
-- **[TER-94](https://linear.app/terpcorp/issue/TER-94):** [P3 Medium] /direct-intake returns 404 despite sidebar link
-- **[TER-95](https://linear.app/terpcorp/issue/TER-95):** [P3 Medium] Client detail page shows infinite loading for invalid IDs
 
 ---
 
 ## CI Infrastructure (Merged 2026-02-07)
 
-The following CI improvements were merged to `main` as commit `60d808e9`:
+The following CI improvements were merged to `main` as commit `60d808e9` (PR #402):
 
 - Standardized all 6 CI workflows to Node 22, pnpm 10.4.1, action-setup v4
 - Aligned Dockerfile with CI versions (Node 22, pnpm 10.4.1)
@@ -159,6 +195,23 @@ The following CI improvements were merged to `main` as commit `60d808e9`:
 - Fixed SampleManagement test failures (missing productOptions mock)
 - Added scrollIntoView mock to test setup for cmdk combobox
 - Enforced `--frozen-lockfile` consistently across all workflows
+
+Additional CI fixes merged 2026-02-08 (commit `9d823285`):
+
+- Removed duplicate pnpm version declarations from all workflows
+
+---
+
+## Recent Merges (2026-02-05 through 2026-02-08)
+
+| PR | Date | Description |
+| -- | ---- | ----------- |
+| [#398](https://github.com/EvanTenenbaum/TERP/pull/398) | 2026-02-05 | Golden flows type-safety, tRPC queries, test updates |
+| [#399](https://github.com/EvanTenenbaum/TERP/pull/399) | 2026-02-06 | Oracle QA infrastructure: entity resolver, validation, failure classifier |
+| [#400](https://github.com/EvanTenenbaum/TERP/pull/400) | 2026-02-06 | QA follow-up: fix hardcoded vendor return ID |
+| [#401](https://github.com/EvanTenenbaum/TERP/pull/401) | 2026-02-06 | Golden Flow batch fixes (TER-33 through TER-57) |
+| [#402](https://github.com/EvanTenenbaum/TERP/pull/402) | 2026-02-07 | CI standardization: Node 22, pnpm 10.4.1, test fixes |
+| [#403](https://github.com/EvanTenenbaum/TERP/pull/403) | 2026-02-08 | QA user seeder, direct intake route, client error handling |
 
 ---
 
@@ -176,4 +229,4 @@ The following CI improvements were merged to `main` as commit `60d808e9`:
 - **Linear is the primary source of truth** for all roadmap tasks
 - This GitHub roadmap is a backup and may not be as up-to-date as Linear
 - For the most current information, always refer to the [Linear project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
-- Last synced: 2026-02-07 17:45:00
+- Last synced: 2026-02-08 16:30:00
