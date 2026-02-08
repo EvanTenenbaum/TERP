@@ -194,7 +194,17 @@ export const cleanupBatchesByBrandName = async (
   page: Page,
   brandName: string
 ): Promise<BatchCleanupResult> => {
-  const list = await fetchInventoryByQuery(page, brandName);
+  let list: InventoryListResponse;
+  try {
+    list = await fetchInventoryByQuery(page, brandName);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // Some test roles cannot query inventory list directly in production environments.
+    if (message.includes("status 403")) {
+      return { batchIds: [], updatedCount: 0 };
+    }
+    throw error;
+  }
   const batchIds = list.items
     .filter(item => item.brand?.name === brandName)
     .map(item => item.batch.id);

@@ -282,6 +282,10 @@ function Router() {
                   component={withErrorBoundary(OrderCreatorPage)}
                 />
                 <Route
+                  path="/orders/new"
+                  component={RedirectWithSearch("/orders/create")}
+                />
+                <Route
                   path="/quotes"
                   component={withErrorBoundary(QuotesWorkSurface)}
                 />
@@ -359,6 +363,10 @@ function Router() {
                 <Route
                   path="/intake"
                   component={withErrorBoundary(DirectIntakeWorkSurface)}
+                />
+                <Route
+                  path="/inventory/intake"
+                  component={RedirectWithSearch("/intake")}
                 />
                 <Route
                   path="/matchmaking"

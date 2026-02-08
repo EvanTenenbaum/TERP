@@ -20,6 +20,11 @@ test.describe("Golden Flow: GF-005 Pick & Pack", (): void => {
 
     const header = page.locator('h1:has-text("Pick"), h1:has-text("Pack")');
     await expect(header).toBeVisible({ timeout: 5000 });
+
+    const queue = page.locator(
+      '[role="listbox"], :text("No orders to pick"), [data-testid="order-queue"]'
+    );
+    await expect(queue.first()).toBeVisible({ timeout: 5000 });
   });
 
   test("should expose pack and ship actions", async ({
@@ -55,6 +60,8 @@ test.describe("Golden Flow: GF-005 Pick & Pack", (): void => {
       ) {
         await expect(shipButton.first()).toBeVisible();
       }
+    } else {
+      test.skip(true, "No pick-pack rows available in this deployment");
     }
   });
 });
