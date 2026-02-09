@@ -38,6 +38,18 @@ When PM triggers QA, expect this context:
 
 ---
 
+## Database Access for `db_queries`
+
+When PM includes `db_queries`, use this connection string as the default `DATABASE_URL`:
+
+```bash
+export DATABASE_URL="mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED"
+```
+
+Run verification SQL against this same database unless PM explicitly provides a different target.
+
+---
+
 ## Step 1: Wait for Correct Deployment
 
 **Critical:** You must verify the CORRECT commit is deployed, not just any deployment.
