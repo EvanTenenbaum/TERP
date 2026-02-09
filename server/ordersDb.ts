@@ -519,6 +519,17 @@ export async function getAllOrders(filters?: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const normalizeOptionalStatus = (value?: string): string | undefined => {
+    if (typeof value !== "string") return undefined;
+    const normalized = value.trim();
+    if (!normalized) return undefined;
+    const lower = normalized.toLowerCase();
+    if (lower === "undefined" || lower === "null" || lower === "all") {
+      return undefined;
+    }
+    return normalized.toUpperCase();
+  };
+
   const {
     orderType,
     isDraft,
@@ -528,6 +539,10 @@ export async function getAllOrders(filters?: {
     limit = 50,
     offset = 0,
   } = filters || {};
+
+  const normalizedQuoteStatus = normalizeOptionalStatus(quoteStatus);
+  const normalizedSaleStatus = normalizeOptionalStatus(saleStatus);
+  const normalizedFulfillmentStatus = normalizeOptionalStatus(fulfillmentStatus);
 
   const conditions: ReturnType<typeof eq>[] = [];
 
@@ -546,7 +561,7 @@ export async function getAllOrders(filters?: {
     }
   }
 
-  if (quoteStatus) {
+  if (normalizedQuoteStatus) {
     // Type assertion needed because filter input is string but schema expects enum
     const validQuoteStatuses = [
       "DRAFT",
@@ -558,19 +573,19 @@ export async function getAllOrders(filters?: {
     ] as const;
     if (
       validQuoteStatuses.includes(
-        quoteStatus as (typeof validQuoteStatuses)[number]
+        normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
       )
     ) {
       conditions.push(
         eq(
           orders.quoteStatus,
-          quoteStatus as (typeof validQuoteStatuses)[number]
+          normalizedQuoteStatus as (typeof validQuoteStatuses)[number]
         )
       );
     }
   }
 
-  if (saleStatus) {
+  if (normalizedSaleStatus) {
     const validSaleStatuses = [
       "PENDING",
       "PARTIAL",
@@ -580,30 +595,47 @@ export async function getAllOrders(filters?: {
     ] as const;
     if (
       validSaleStatuses.includes(
-        saleStatus as (typeof validSaleStatuses)[number]
+        normalizedSaleStatus as (typeof validSaleStatuses)[number]
       )
     ) {
       conditions.push(
-        eq(orders.saleStatus, saleStatus as (typeof validSaleStatuses)[number])
+        eq(
+          orders.saleStatus,
+          normalizedSaleStatus as (typeof validSaleStatuses)[number]
+        )
       );
     }
   }
 
-  if (fulfillmentStatus) {
-    const validFulfillmentStatuses = ["PENDING", "PACKED", "SHIPPED"] as const;
+  if (normalizedFulfillmentStatus) {
+    const validFulfillmentStatuses = [
+      "DRAFT",
+      "CONFIRMED",
+      "PENDING",
+      "PACKED",
+      "SHIPPED",
+      "DELIVERED",
+      "RETURNED",
+      "RESTOCKED",
+      "RETURNED_TO_VENDOR",
+      "CANCELLED",
+    ] as const;
     if (
       validFulfillmentStatuses.includes(
-        fulfillmentStatus as (typeof validFulfillmentStatuses)[number]
+        normalizedFulfillmentStatus as (typeof validFulfillmentStatuses)[number]
       )
     ) {
       conditions.push(
         eq(
           orders.fulfillmentStatus,
-          fulfillmentStatus as (typeof validFulfillmentStatuses)[number]
+          normalizedFulfillmentStatus as (typeof validFulfillmentStatuses)[number]
         )
       );
     }
   }
+
+  const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 50;
+  const safeOffset = Number.isFinite(offset) ? Math.max(offset, 0) : 0;
 
   // BUG-078: Explicitly select columns from both tables to avoid ambiguous column names
   // When using leftJoin, bare .select() causes MySQL column name conflicts (both tables have 'id', 'created_at', etc.)
@@ -620,8 +652,8 @@ export async function getAllOrders(filters?: {
       .leftJoin(clients, eq(orders.clientId, clients.id))
       .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .limit(safeLimit)
+      .offset(safeOffset);
   } else {
     results = await db
       .select({
@@ -631,8 +663,8 @@ export async function getAllOrders(filters?: {
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
       .orderBy(desc(orders.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .limit(safeLimit)
+      .offset(safeOffset);
   }
 
   // Transform results to include client data and parse JSON items

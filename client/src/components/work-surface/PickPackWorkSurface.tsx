@@ -160,6 +160,7 @@ function OrderListRow({ order, isSelected, isFocused, onClick }: OrderListRowPro
   return (
     <div
       onClick={onClick}
+      data-testid="order-queue-row"
       className={cn(
         'p-4 border-b cursor-pointer transition-colors',
         isSelected && 'bg-blue-50 border-l-4 border-l-blue-500',
@@ -833,6 +834,7 @@ export function PickPackWorkSurface() {
               <Input
                 ref={searchInputRef}
                 type="text"
+                data-testid="pick-pack-search-input"
                 placeholder="Search orders... (Cmd+K)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -858,13 +860,17 @@ export function PickPackWorkSurface() {
         </div>
 
         {/* Order List */}
-        <div className="flex-1 overflow-y-auto" role="listbox">
+        <div
+          className="flex-1 overflow-y-auto"
+          role="listbox"
+          data-testid="order-queue"
+        >
           {pickListLoading ? (
-            <div className="flex items-center justify-center h-32">
+            <div className="flex items-center justify-center h-32" data-testid="order-queue-loading">
               <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
             </div>
           ) : filteredPickList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-32 text-gray-500" data-testid="order-queue-empty">
               <Package className="w-8 h-8 mb-2" />
               <p>No orders to pick</p>
             </div>

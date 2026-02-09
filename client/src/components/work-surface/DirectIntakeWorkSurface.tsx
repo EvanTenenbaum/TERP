@@ -571,15 +571,21 @@ export function DirectIntakeWorkSurface() {
     isLoading: vendorsLoading,
     error: vendorsError,
     refetch: refetchVendors,
-  } = trpc.clients.list.useQuery({
-    clientTypes: ["seller"],
-    limit: 500,
-  });
+  } = trpc.vendors.getAll.useQuery();
 
-  const vendors = useMemo(() => {
-    const items = Array.isArray(vendorsData)
-      ? vendorsData
-      : (vendorsData?.items ?? []);
+  const vendors = useMemo<Array<{ id: number; name: string }>>(() => {
+    const items =
+      vendorsData &&
+      typeof vendorsData === "object" &&
+      "data" in vendorsData &&
+      Array.isArray(vendorsData.data)
+        ? (vendorsData.data as Array<{ id?: unknown; name?: unknown }>)
+        : vendorsData &&
+            typeof vendorsData === "object" &&
+            "items" in vendorsData &&
+            Array.isArray(vendorsData.items)
+          ? (vendorsData.items as Array<{ id?: unknown; name?: unknown }>)
+          : [];
     return items
       .filter(
         (item): item is { id: number; name: string } =>

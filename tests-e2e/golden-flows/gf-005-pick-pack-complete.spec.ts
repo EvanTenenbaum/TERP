@@ -18,7 +18,7 @@ import { loginAsAdmin, loginAsWarehouseStaff } from "../fixtures/auth";
  * Helper to check if the pick-pack page has orders
  */
 async function hasOrdersInQueue(page: Page): Promise<boolean> {
-  const rows = page.locator("table tbody tr");
+  const rows = page.locator('[data-testid="order-queue-row"]');
   const count = await rows.count();
   return count > 0;
 }
@@ -27,7 +27,7 @@ async function hasOrdersInQueue(page: Page): Promise<boolean> {
  * Helper to select first order in the queue
  */
 async function selectFirstOrder(page: Page): Promise<boolean> {
-  const firstRow = page.locator("table tbody tr").first();
+  const firstRow = page.locator('[data-testid="order-queue-row"]').first();
   if (await firstRow.isVisible()) {
     await firstRow.click();
     await page.waitForTimeout(500);
@@ -55,10 +55,8 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // STRICT: Must see order list/table structure
-      const orderList = page.locator(
-        "table, [data-testid='order-queue'], [data-testid='pick-list']"
-      );
+      // STRICT: Must see order queue structure
+      const orderList = page.locator('[data-testid="order-queue"]');
       await expect(orderList).toBeVisible({ timeout: 15000 });
     });
 
@@ -78,15 +76,14 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // STRICT: Search should exist (may be hidden behind a button)
-      const searchInput = page.locator(
-        'input[placeholder*="Search"], input[type="search"], [data-testid="search-input"]'
-      );
+      const searchInput = page.locator('[data-testid="pick-pack-search-input"]');
       const searchButton = page.locator(
         'button[aria-label*="search" i], button:has-text("Search")'
       );
 
       const hasSearch =
-        (await searchInput.isVisible()) || (await searchButton.isVisible());
+        (await searchInput.isVisible().catch(() => false)) ||
+        (await searchButton.isVisible().catch(() => false));
       expect(hasSearch).toBe(true);
     });
   });
@@ -99,8 +96,8 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
     });
 
     test("should display order rows when orders exist", async ({ page }) => {
-      const table = page.locator("table");
-      await expect(table).toBeVisible({ timeout: 10000 });
+      const queue = page.locator('[data-testid="order-queue"]');
+      await expect(queue).toBeVisible({ timeout: 10000 });
 
       // Check if we have orders - if not, skip remaining assertions
       const hasOrders = await hasOrdersInQueue(page);
@@ -110,7 +107,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       }
 
       // STRICT: If orders exist, first row must be visible
-      const firstRow = page.locator("table tbody tr").first();
+      const firstRow = page.locator('[data-testid="order-queue-row"]').first();
       await expect(firstRow).toBeVisible();
     });
 
@@ -202,10 +199,10 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
     test("should filter results when searching", async ({ page }) => {
       const searchInput = page.locator(
-        'input[placeholder*="Search"], input[type="search"]'
+        '[data-testid="pick-pack-search-input"]'
       );
 
-      if (!(await searchInput.isVisible())) {
+      if (!(await searchInput.isVisible().catch(() => false))) {
         test.skip(true, "Search input not visible on this page");
         return;
       }
@@ -227,10 +224,10 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       page,
     }) => {
       const searchInput = page.locator(
-        'input[placeholder*="Search"], input[type="search"]'
+        '[data-testid="pick-pack-search-input"]'
       );
 
-      if (!(await searchInput.isVisible())) {
+      if (!(await searchInput.isVisible().catch(() => false))) {
         test.skip(true, "Search input not visible on this page");
         return;
       }
@@ -240,9 +237,9 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // STRICT: Should either show empty state or no rows
-      const rows = page.locator("table tbody tr");
+      const rows = page.locator('[data-testid="order-queue-row"]');
       const emptyMessage = page.locator(
-        'text=/no.*found/i, text=/no orders/i, [data-testid="empty-state"]'
+        '[data-testid="order-queue-empty"], text=/no.*found/i, text=/no orders/i'
       );
 
       const rowCount = await rows.count();
@@ -335,7 +332,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
         await expect(header).toBeVisible({ timeout: 10000 });
 
         // STRICT: Order list must be visible
-        const orderList = page.locator("table, [data-testid='order-queue']");
+        const orderList = page.locator('[data-testid="order-queue"]');
         await expect(orderList).toBeVisible();
       });
     });
@@ -349,9 +346,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
         await page.waitForLoadState("networkidle");
 
         // STRICT: Core content must be visible
-        const content = page.locator(
-          "table, [data-testid='order-queue'], [data-testid='pick-list']"
-        );
+        const content = page.locator('[data-testid="order-queue"]');
         await expect(content).toBeVisible({ timeout: 10000 });
       });
 
@@ -391,9 +386,12 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
       // STRICT: Should not show uncaught error
       const uncaughtError = page.locator(
-        'text=/uncaught|unhandled|crash/i, [data-testid="error-boundary"]'
+        '[data-testid="error-boundary"]'
       );
       await expect(uncaughtError).not.toBeVisible();
+      await expect(
+        page.getByText(/uncaught|unhandled|crash/i).first()
+      ).not.toBeVisible();
     });
 
     test("should show appropriate message for empty queue", async ({
@@ -497,7 +495,7 @@ test.describe("TER-40: Pick & Pack with Warehouse Staff Role", () => {
 
     // STRICT: Should either see content OR access denied (not a crash)
     const hasContent =
-      (await page.locator("table, [data-testid='order-queue']").isVisible()) ||
+      (await page.locator('[data-testid="order-queue"]').isVisible()) ||
       (await page.locator("text=/access|denied|permission/i").isVisible()) ||
       (await page.locator("h1").isVisible());
 
