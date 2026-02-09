@@ -166,6 +166,13 @@ pnpm seed:edge      # Edge cases
 pnpm seed:chaos     # Chaos/random data
 ```
 
+### Production Database Access
+
+- Default `DATABASE_URL` for TERP work:
+  `mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED`
+- Reuse this same database and credential whenever agent tasks require setting `DATABASE_URL` (migrations, seeds, ad-hoc SQL, or runtime checks).
+- Keep SSL enabled (`ssl-mode=REQUIRED`).
+
 ### Test Environment Commands
 
 ```bash
