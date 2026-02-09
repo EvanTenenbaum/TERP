@@ -837,6 +837,7 @@ export function OrdersWorkSurface() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   ref={searchInputRef}
+                  data-testid="orders-search-input"
                   placeholder="Search orders... (Cmd+K)"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -879,7 +880,7 @@ export function OrdersWorkSurface() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : displayOrders.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-64" data-testid="orders-empty-state">
               <div className="text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No orders found</p>
@@ -891,7 +892,7 @@ export function OrdersWorkSurface() {
               </div>
             </div>
           ) : (
-            <Table>
+            <Table data-testid="orders-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Order #</TableHead>

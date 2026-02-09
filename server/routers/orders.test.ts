@@ -319,6 +319,38 @@ describe("Orders Router", () => {
         expect.objectContaining({ limit: 10, offset: 10 })
       );
     });
+
+    it("should pass placeholder status filters through to db normalization", async () => {
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue([]);
+
+      await caller.orders.getAll({
+        isDraft: false,
+        fulfillmentStatus: "undefined",
+        quoteStatus: "all",
+      });
+
+      expect(ordersDb.getAllOrders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isDraft: false,
+          fulfillmentStatus: "undefined",
+          quoteStatus: "all",
+        })
+      );
+    });
+
+    it("should forward status filters for db-side normalization", async () => {
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue([]);
+
+      await caller.orders.getAll({
+        fulfillmentStatus: "shipped" as unknown as string,
+      });
+
+      expect(ordersDb.getAllOrders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fulfillmentStatus: "shipped",
+        })
+      );
+    });
   });
 
   describe("update", () => {

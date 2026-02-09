@@ -282,6 +282,10 @@ function Router() {
                   component={withErrorBoundary(OrderCreatorPage)}
                 />
                 <Route
+                  path="/orders/new"
+                  component={withErrorBoundary(OrderCreatorPage)}
+                />
+                <Route
                   path="/quotes"
                   component={withErrorBoundary(QuotesWorkSurface)}
                 />
@@ -358,6 +362,10 @@ function Router() {
                 {/* ROUTE-001: Direct Intake WorkSurface */}
                 <Route
                   path="/intake"
+                  component={withErrorBoundary(DirectIntakeWorkSurface)}
+                />
+                <Route
+                  path="/direct-intake"
                   component={withErrorBoundary(DirectIntakeWorkSurface)}
                 />
                 <Route
