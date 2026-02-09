@@ -365,9 +365,6 @@ function Router() {
                   component={withErrorBoundary(DirectIntakeWorkSurface)}
                 />
                 <Route
-                  path="/direct-intake"
-                  component={withErrorBoundary(DirectIntakeWorkSurface)}
-                <Route
                   path="/matchmaking"
                   component={withErrorBoundary(MatchmakingServicePage)}
                 />
