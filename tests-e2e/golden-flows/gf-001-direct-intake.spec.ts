@@ -1,7 +1,7 @@
 /**
  * Golden Flow Test: GF-001 Direct Intake
  *
- * Flow: /intake → add row → submit → verify batch created → cleanup
+ * Flow: /direct-intake → add row → submit → verify batch created → cleanup
  */
 
 import { expect, test, type Page } from "@playwright/test";
@@ -49,7 +49,8 @@ test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
   }): Promise<void> => {
     brandName = createBrandName();
 
-    await gotoDirectIntake(page);
+    await page.goto("/direct-intake");
+    await page.waitForLoadState("networkidle");
 
     await page.getByRole("button", { name: "Add Row" }).click();
 
