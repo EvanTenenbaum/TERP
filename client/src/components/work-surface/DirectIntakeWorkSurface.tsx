@@ -12,7 +12,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, type ChangeEvent } from "react";
 import type {
   ColDef,
   CellValueChangedEvent,
@@ -62,7 +62,9 @@ import {
   Loader2,
   RefreshCw,
   Package,
+  Upload,
   ChevronRight,
+  X,
 } from "lucide-react";
 
 import { themeAlpine } from "ag-grid-community";
@@ -115,6 +117,23 @@ interface IntakeSummary {
   totalItems: number;
   totalQty: number;
   totalValue: number;
+}
+
+type UploadedMediaUrl = {
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
+class UploadMediaError extends Error {
+  uploaded: UploadedMediaUrl[];
+
+  constructor(uploaded: UploadedMediaUrl[]) {
+    super("Failed to upload one or more photos");
+    this.name = "UploadMediaError";
+    this.uploaded = uploaded;
+  }
 }
 
 // ============================================================================
@@ -206,6 +225,8 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
 interface RowInspectorProps {
   row: IntakeGridRow | null;
   onUpdate: (updates: Partial<IntakeGridRow>) => void;
+  mediaFiles: File[];
+  onMediaFilesChange: (files: File[]) => void;
   vendors: { id: number; name: string }[];
   locations: { id: number; site: string }[];
   products: {
@@ -220,6 +241,8 @@ interface RowInspectorProps {
 function RowInspectorContent({
   row,
   onUpdate,
+  mediaFiles,
+  onMediaFilesChange,
   vendors,
   locations,
   products,
@@ -238,6 +261,30 @@ function RowInspectorContent({
       </div>
     );
   }
+
+  const handleMediaUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    // Reset input so selecting the same file twice still triggers onChange.
+    e.target.value = "";
+
+    const accepted = files.filter(
+      f => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024
+    );
+
+    if (accepted.length !== files.length) {
+      toast.error("Only images under 10MB are allowed");
+    }
+
+    onMediaFilesChange([...mediaFiles, ...accepted]);
+  };
+
+  const removeMedia = (index: number) => {
+    onMediaFilesChange(mediaFiles.filter((_, i) => i !== index));
+  };
+
+  const clearMedia = () => onMediaFilesChange([]);
 
   return (
     <div className="space-y-6">
@@ -495,6 +542,66 @@ function RowInspectorContent({
         </InspectorField>
       </InspectorSection>
 
+      <InspectorSection title="Photos" defaultOpen>
+        <InspectorField label={`Attached (${mediaFiles.length})`}>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleMediaUpload}
+                className="hidden"
+                id={`direct-intake-media-${row.id}`}
+              />
+              <label
+                htmlFor={`direct-intake-media-${row.id}`}
+                className="inline-flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer text-sm"
+              >
+                <Upload className="h-4 w-4" />
+                Add photos
+              </label>
+
+              {mediaFiles.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={clearMedia}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {mediaFiles.length > 0 && (
+              <div className="space-y-2">
+                {mediaFiles.map((file, index) => (
+                  <div
+                    key={`${file.name}-${file.size}-${index}`}
+                    className="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-md"
+                  >
+                    <span className="text-sm truncate">{file.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeMedia(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Photos upload when you submit this row.
+            </p>
+          </div>
+        </InspectorField>
+      </InspectorSection>
+
       {/* Row Summary */}
       <div className="p-4 bg-muted/50 rounded-lg">
         <div className="flex justify-between items-center">
@@ -516,6 +623,9 @@ export function DirectIntakeWorkSurface() {
   // State
   const [rows, setRows] = useState<IntakeGridRow[]>([createEmptyRow()]);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [rowMediaFilesById, setRowMediaFilesById] = useState<
+    Record<string, File[]>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
 
@@ -632,6 +742,8 @@ export function DirectIntakeWorkSurface() {
 
   // Mutation
   const intakeMutation = trpc.inventory.intake.useMutation();
+  const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
+  const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
 
   // Loading state
   const isLoadingData = vendorsLoading || locationsLoading || productsLoading;
@@ -859,11 +971,57 @@ export function DirectIntakeWorkSurface() {
         }
         return prev.filter(r => r.id !== rowId);
       });
+      setRowMediaFilesById(prev => {
+        const next = { ...prev };
+        delete next[rowId];
+        return next;
+      });
       if (selectedRowId === rowId) {
         setSelectedRowId(null);
       }
     },
     [selectedRowId]
+  );
+
+  const uploadMediaFiles = useCallback(
+    async (files: File[]) => {
+      const uploaded: UploadedMediaUrl[] = [];
+
+      for (const file of files) {
+        try {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result =
+                typeof reader.result === "string" ? reader.result : "";
+              const base64 = result.split(",")[1] || "";
+              resolve(base64);
+            };
+            reader.onerror = () =>
+              reject(reader.error ?? new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+          });
+
+          const result = await uploadMediaMutation.mutateAsync({
+            fileData: base64Data,
+            fileName: file.name,
+            fileType: file.type,
+          });
+
+          uploaded.push({
+            url: result.url,
+            fileName: result.fileName,
+            fileType: result.fileType,
+            fileSize: result.fileSize,
+          });
+        } catch {
+          throw new UploadMediaError(uploaded);
+        }
+      }
+
+      return uploaded;
+    },
+    [uploadMediaMutation]
   );
 
   const handleSubmitRow = useCallback(
@@ -887,9 +1045,23 @@ export function DirectIntakeWorkSurface() {
         return;
       }
 
-      setSaving("Submitting intake...");
+      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      let uploadedMediaUrls: UploadedMediaUrl[] = [];
 
       try {
+        if (mediaFiles.length > 0) {
+          setSaving("Uploading photos...");
+          try {
+            uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          } catch (err) {
+            if (err instanceof UploadMediaError) {
+              uploadedMediaUrls = err.uploaded;
+            }
+            throw err;
+          }
+        }
+
+        setSaving("Submitting intake...");
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -902,6 +1074,8 @@ export function DirectIntakeWorkSurface() {
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         // Mark as submitted
@@ -910,9 +1084,29 @@ export function DirectIntakeWorkSurface() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFilesById(prev => {
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         setSaved();
         toast.success("Intake submitted successfully");
       } catch (error) {
+        // Rollback uploaded files if intake failed
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            setSaving("Cleaning up uploaded photos...");
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch (cleanupError) {
+            console.error("Failed to cleanup media files:", cleanupError);
+            toast.warning("Some uploaded photos could not be cleaned up");
+          }
+        }
+
         const message =
           error instanceof Error ? error.message : "Failed to submit intake";
         setRows(prev =>
@@ -925,7 +1119,15 @@ export function DirectIntakeWorkSurface() {
         setError(message);
       }
     },
-    [intakeMutation, setSaving, setSaved, setError]
+    [
+      deleteMediaMutation,
+      intakeMutation,
+      rowMediaFilesById,
+      setSaving,
+      setSaved,
+      setError,
+      uploadMediaFiles,
+    ]
   );
 
   const handleSubmitAll = useCallback(async () => {
@@ -971,7 +1173,23 @@ export function DirectIntakeWorkSurface() {
     let errorCount = 0;
 
     for (const row of pendingRows) {
+      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      let uploadedMediaUrls: UploadedMediaUrl[] = [];
+
       try {
+        if (mediaFiles.length > 0) {
+          setSaving(`Uploading photos for ${row.item || "row"}...`);
+          try {
+            uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          } catch (err) {
+            if (err instanceof UploadMediaError) {
+              uploadedMediaUrls = err.uploaded;
+            }
+            throw err;
+          }
+        }
+
+        setSaving(`Submitting ${pendingRows.length} records...`);
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -984,6 +1202,8 @@ export function DirectIntakeWorkSurface() {
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         setRows(prev =>
@@ -991,8 +1211,27 @@ export function DirectIntakeWorkSurface() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFilesById(prev => {
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         successCount++;
       } catch (error) {
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            setSaving("Cleaning up uploaded photos...");
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch (cleanupError) {
+            console.error("Failed to cleanup media files:", cleanupError);
+            toast.warning("Some uploaded photos could not be cleaned up");
+          }
+        }
+
         setRows(prev =>
           prev.map(r =>
             r.id === row.id
@@ -1020,7 +1259,16 @@ export function DirectIntakeWorkSurface() {
     }
 
     setIsSubmitting(false);
-  }, [rows, intakeMutation, setSaving, setSaved, setError]);
+  }, [
+    deleteMediaMutation,
+    intakeMutation,
+    rowMediaFilesById,
+    rows,
+    setSaving,
+    setSaved,
+    setError,
+    uploadMediaFiles,
+  ]);
 
   const handleUpdateSelectedRow = useCallback(
     (updates: Partial<IntakeGridRow>) => {
@@ -1212,6 +1460,16 @@ export function DirectIntakeWorkSurface() {
           <RowInspectorContent
             row={selectedRow}
             onUpdate={handleUpdateSelectedRow}
+            mediaFiles={
+              selectedRow ? rowMediaFilesById[selectedRow.id] ?? [] : []
+            }
+            onMediaFilesChange={files => {
+              if (!selectedRow) return;
+              setRowMediaFilesById(prev => ({
+                ...prev,
+                [selectedRow.id]: files,
+              }));
+            }}
             vendors={vendors}
             locations={locations}
             products={products}
