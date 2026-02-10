@@ -31,6 +31,10 @@ import {
   Loader2,
   Star,
   X,
+  Eye,
+  EyeOff,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -109,6 +113,23 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
       toast({
         title: "Update failed",
         description: error.message || "Failed to update image",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reorderImagesMutation = trpc.photography.reorder.useMutation({
+    onSuccess: () => {
+      utils.photography.getBatchImages.invalidate({ batchId });
+      toast({
+        title: "Order updated",
+        description: "The image order has been saved.",
+      });
+    },
+    onError: error => {
+      toast({
+        title: "Reorder failed",
+        description: error.message || "Failed to reorder images",
         variant: "destructive",
       });
     },
@@ -239,6 +260,56 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
     [updateImageMutation]
   );
 
+  const shownImages = (images ?? [])
+    .filter(img => img.status !== "ARCHIVED" && img.status !== "REJECTED")
+    .sort((a, b) => {
+      const aPrimary = a.isPrimary ? 1 : 0;
+      const bPrimary = b.isPrimary ? 1 : 0;
+      if (aPrimary !== bPrimary) return bPrimary - aPrimary;
+
+      const aOrder = a.sortOrder ?? 0;
+      const bOrder = b.sortOrder ?? 0;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      return a.id - b.id;
+    });
+
+  const hiddenImages = (images ?? [])
+    .filter(img => img.status === "ARCHIVED" || img.status === "REJECTED")
+    .sort((a, b) => (b.uploadedAt?.getTime() ?? 0) - (a.uploadedAt?.getTime() ?? 0));
+
+  const handleToggleVisibility = useCallback(
+    (imageId: number, makeVisible: boolean) => {
+      updateImageMutation.mutate({
+        imageId,
+        status: makeVisible ? "APPROVED" : "ARCHIVED",
+      });
+    },
+    [updateImageMutation]
+  );
+
+  const handleMoveShown = useCallback(
+    (imageId: number, direction: "up" | "down") => {
+      const idx = shownImages.findIndex(img => img.id === imageId);
+      if (idx === -1) return;
+
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= shownImages.length) return;
+
+      // Keep the primary image pinned at the top.
+      if (shownImages[idx]?.isPrimary) return;
+      if (shownImages[targetIdx]?.isPrimary) return;
+
+      const reordered = [...shownImages];
+      const tmp = reordered[idx];
+      reordered[idx] = reordered[targetIdx];
+      reordered[targetIdx] = tmp;
+
+      reorderImagesMutation.mutate({ imageIds: reordered.map(img => img.id) });
+    },
+    [shownImages, reorderImagesMutation]
+  );
+
   // CHAOS-016: Show confirm dialog instead of window.confirm
   const handleDelete = useCallback((imageId: number) => {
     setImageToDelete(imageId);
@@ -279,53 +350,195 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : images && images.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((image: ImageData) => (
-              <div
-                key={image.id}
-                className="relative group rounded-lg overflow-hidden border bg-muted"
-              >
-                <img
-                  src={image.thumbnailUrl || image.imageUrl}
-                  alt={image.caption || "Batch image"}
-                  className="w-full aspect-square object-cover cursor-pointer"
-                  onClick={() => setLightboxImage(image.imageUrl)}
-                />
-                {image.isPrimary && (
-                  <div className="absolute top-2 left-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      <Star className="h-3 w-3 mr-1 fill-current" />
-                      Primary
-                    </span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  {!image.isPrimary && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleSetPrimary(image.id)}
-                      disabled={updateImageMutation.isPending}
-                    >
-                      <Star className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(image.id)}
-                    disabled={deleteImageMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+          <div className="space-y-6">
+            <div>
+              <div className="mb-2">
+                <div className="text-sm font-medium">
+                  Shown on batch ({shownImages.length})
                 </div>
-                {image.caption && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-2 truncate">
-                    {image.caption}
-                  </div>
-                )}
+                <div className="text-xs text-muted-foreground">
+                  These images are used anywhere the batch photo shows. The
+                  primary image is the cover.
+                </div>
               </div>
-            ))}
+
+              {shownImages.length === 0 ? (
+                <div className="text-sm text-muted-foreground rounded-md border p-3">
+                  No shown images yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {shownImages.map((image: ImageData, idx: number) => (
+                    <div
+                      key={image.id}
+                      className="flex items-center gap-3 rounded-md border p-2 bg-muted/30"
+                    >
+                      <button
+                        type="button"
+                        className="shrink-0"
+                        onClick={() => setLightboxImage(image.imageUrl)}
+                      >
+                        <img
+                          src={image.thumbnailUrl || image.imageUrl}
+                          alt={image.caption || "Batch image"}
+                          className="h-16 w-16 rounded object-cover"
+                        />
+                      </button>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {image.isPrimary && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              <Star className="h-3 w-3 mr-1 fill-current" />
+                              Primary
+                            </span>
+                          )}
+                          <div className="text-sm truncate">
+                            {image.caption || "No caption"}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          #{idx + 1}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => handleMoveShown(image.id, "up")}
+                          disabled={
+                            reorderImagesMutation.isPending ||
+                            image.isPrimary ||
+                            idx === 0 ||
+                            shownImages[idx - 1]?.isPrimary
+                          }
+                          aria-label="Move up"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => handleMoveShown(image.id, "down")}
+                          disabled={
+                            reorderImagesMutation.isPending ||
+                            image.isPrimary ||
+                            idx === shownImages.length - 1 ||
+                            shownImages[idx + 1]?.isPrimary
+                          }
+                          aria-label="Move down"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+
+                        {!image.isPrimary && (
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            onClick={() => handleSetPrimary(image.id)}
+                            disabled={updateImageMutation.isPending}
+                            aria-label="Set primary"
+                          >
+                            <Star className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => handleToggleVisibility(image.id, false)}
+                          disabled={updateImageMutation.isPending}
+                          aria-label="Hide from batch"
+                        >
+                          <EyeOff className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          onClick={() => handleDelete(image.id)}
+                          disabled={deleteImageMutation.isPending}
+                          aria-label="Delete image"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="mb-2">
+                <div className="text-sm font-medium">
+                  Hidden ({hiddenImages.length})
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Hidden images will not show anywhere for this batch.
+                </div>
+              </div>
+
+              {hiddenImages.length === 0 ? (
+                <div className="text-sm text-muted-foreground rounded-md border p-3">
+                  No hidden images.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {hiddenImages.map((image: ImageData) => (
+                    <div
+                      key={image.id}
+                      className="flex items-center gap-3 rounded-md border p-2 bg-muted/20"
+                    >
+                      <button
+                        type="button"
+                        className="shrink-0"
+                        onClick={() => setLightboxImage(image.imageUrl)}
+                      >
+                        <img
+                          src={image.thumbnailUrl || image.imageUrl}
+                          alt={image.caption || "Batch image"}
+                          className="h-12 w-12 rounded object-cover opacity-75"
+                        />
+                      </button>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate">
+                          {image.caption || "No caption"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {image.status === "REJECTED" ? "Rejected" : "Archived"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          onClick={() => handleToggleVisibility(image.id, true)}
+                          disabled={updateImageMutation.isPending}
+                          aria-label="Show on batch"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          onClick={() => handleDelete(image.id)}
+                          disabled={deleteImageMutation.isPending}
+                          aria-label="Delete image"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12">

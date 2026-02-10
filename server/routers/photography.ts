@@ -14,7 +14,7 @@ import {
   users,
   strains,
 } from "../../drizzle/schema";
-import { eq, and, desc, sql, isNull, or } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, or, ne } from "drizzle-orm";
 import { storagePut, isStorageConfigured } from "../storage";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
@@ -116,6 +116,54 @@ function isSchemaError(error: unknown): boolean {
 
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
+const visibleImageStatusWhere = or(
+  isNull(productImages.status),
+  eq(productImages.status, "APPROVED"),
+  eq(productImages.status, "PENDING")
+);
+
+async function ensureExactlyOneVisiblePrimaryForGroup(group: {
+  batchId?: number | null;
+  productId?: number | null;
+}): Promise<void> {
+  const groupWhere = group.batchId
+    ? eq(productImages.batchId, group.batchId)
+    : group.productId
+      ? eq(productImages.productId, group.productId)
+      : null;
+
+  if (!groupWhere) return;
+
+  const visibleImages = await db
+    .select({
+      id: productImages.id,
+      isPrimary: productImages.isPrimary,
+      sortOrder: productImages.sortOrder,
+    })
+    .from(productImages)
+    .where(and(groupWhere, visibleImageStatusWhere))
+    .orderBy(desc(productImages.isPrimary), productImages.sortOrder, productImages.id);
+
+  if (visibleImages.length === 0) return;
+
+  const visiblePrimaryIds = visibleImages
+    .filter(img => Boolean(img.isPrimary))
+    .map(img => img.id);
+
+  const desiredPrimaryId =
+    visiblePrimaryIds.length === 1 ? visiblePrimaryIds[0] : visibleImages[0].id;
+
+  // Make sure the desired primary is the only primary for this group, including hidden images.
+  await db
+    .update(productImages)
+    .set({ isPrimary: false })
+    .where(and(groupWhere, ne(productImages.id, desiredPrimaryId)));
+
+  await db
+    .update(productImages)
+    .set({ isPrimary: true })
+    .where(eq(productImages.id, desiredPrimaryId));
+}
 
 export const photographyRouter = router({
   /**
@@ -130,7 +178,7 @@ export const photographyRouter = router({
         thumbnailUrl: z.string().url().optional(),
         caption: z.string().optional(),
         isPrimary: z.boolean().default(false),
-        sortOrder: z.number().default(0),
+        sortOrder: z.number().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -139,19 +187,35 @@ export const photographyRouter = router({
         throw new Error("Either batchId or productId is required");
       }
 
-      // If setting as primary, unset other primary images
-      if (input.isPrimary) {
-        if (input.batchId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.batchId, input.batchId));
-        } else if (input.productId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.productId, input.productId));
-        }
+      const groupWhere = input.batchId
+        ? eq(productImages.batchId, input.batchId)
+        : eq(productImages.productId, input.productId!);
+
+      const [{ maxSortOrder }] = await db
+        .select({
+          maxSortOrder: sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
+            "maxSortOrder"
+          ),
+        })
+        .from(productImages)
+        .where(groupWhere);
+
+      const nextSortOrder =
+        typeof input.sortOrder === "number"
+          ? input.sortOrder
+          : (maxSortOrder ?? -1) + 1;
+
+      // If there are no visible images yet, make this image primary even if caller didn't request it.
+      const existingVisibleImages = await db
+        .select({ id: productImages.id })
+        .from(productImages)
+        .where(and(groupWhere, visibleImageStatusWhere))
+        .limit(1);
+
+      const shouldBePrimary = input.isPrimary || existingVisibleImages.length === 0;
+
+      if (shouldBePrimary) {
+        await db.update(productImages).set({ isPrimary: false }).where(groupWhere);
       }
 
       const [image] = await db.insert(productImages).values({
@@ -160,11 +224,16 @@ export const photographyRouter = router({
         imageUrl: input.imageUrl,
         thumbnailUrl: input.thumbnailUrl,
         caption: input.caption,
-        isPrimary: input.isPrimary,
-        sortOrder: input.sortOrder,
+        isPrimary: shouldBePrimary,
+        sortOrder: nextSortOrder,
         status: "APPROVED", // Auto-approve for now
         uploadedBy: ctx.user.id,
         uploadedAt: new Date(),
+      });
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: input.batchId,
+        productId: input.productId,
       });
 
       return {
@@ -384,33 +453,85 @@ export const photographyRouter = router({
     .mutation(async ({ input }) => {
       const { imageId, ...updates } = input;
 
-      // If setting as primary, need to unset others
-      if (updates.isPrimary) {
-        const [image] = await db
+      const [existingImage] = await db
+        .select({
+          id: productImages.id,
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+          status: productImages.status,
+          isPrimary: productImages.isPrimary,
+        })
+        .from(productImages)
+        .where(eq(productImages.id, imageId));
+
+      if (!existingImage) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+      }
+
+      const groupWhere = existingImage.batchId
+        ? eq(productImages.batchId, existingImage.batchId)
+        : existingImage.productId
+          ? eq(productImages.productId, existingImage.productId)
+          : null;
+
+      if (!groupWhere) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Image is not associated with a batch or product",
+        });
+      }
+
+      const nextStatus = updates.status ?? existingImage.status;
+      const nextIsPrimary = updates.isPrimary ?? existingImage.isPrimary;
+
+      // Hidden images cannot be primary. If caller explicitly asks for this, reject.
+      if (
+        (nextStatus === "ARCHIVED" || nextStatus === "REJECTED") &&
+        nextIsPrimary === true
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Hidden images cannot be set as primary",
+        });
+      }
+
+      // If hiding, force primary to false (avoid invalid state when hiding the current primary).
+      if (nextStatus === "ARCHIVED" || nextStatus === "REJECTED") {
+        updates.isPrimary = false;
+      }
+
+      // If un-hiding and no explicit sortOrder was provided, put the image at the end of the visible list.
+      const isBecomingVisible =
+        (existingImage.status === "ARCHIVED" || existingImage.status === "REJECTED") &&
+        (nextStatus === null || nextStatus === "APPROVED" || nextStatus === "PENDING");
+
+      if (isBecomingVisible && typeof updates.sortOrder !== "number") {
+        const [{ maxSortOrder }] = await db
           .select({
-            batchId: productImages.batchId,
-            productId: productImages.productId,
+            maxSortOrder: sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
+              "maxSortOrder"
+            ),
           })
           .from(productImages)
-          .where(eq(productImages.id, imageId));
+          .where(and(groupWhere, visibleImageStatusWhere));
 
-        if (image?.batchId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.batchId, image.batchId));
-        } else if (image?.productId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.productId, image.productId));
-        }
+        updates.sortOrder = (maxSortOrder ?? -1) + 1;
+      }
+
+      // If setting as primary, unset others first.
+      if (updates.isPrimary) {
+        await db.update(productImages).set({ isPrimary: false }).where(groupWhere);
       }
 
       await db
         .update(productImages)
         .set(updates)
         .where(eq(productImages.id, imageId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: existingImage.batchId,
+        productId: existingImage.productId,
+      });
 
       return { success: true };
     }),
@@ -440,13 +561,58 @@ export const photographyRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // Update sort order for each image
-      for (let i = 0; i < input.imageIds.length; i++) {
-        await db
-          .update(productImages)
-          .set({ sortOrder: i })
-          .where(eq(productImages.id, input.imageIds[i]));
+      const uniqueIds = new Set(input.imageIds);
+      if (uniqueIds.size !== input.imageIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Duplicate image IDs are not allowed",
+        });
       }
+
+      if (input.imageIds.length === 0) {
+        return { success: true };
+      }
+
+      const rows = await db
+        .select({
+          id: productImages.id,
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+        })
+        .from(productImages)
+        .where(sql`${productImages.id} IN (${sql.join(
+          input.imageIds.map(id => sql`${id}`),
+          sql`, `
+        )})`);
+
+      if (rows.length !== input.imageIds.length) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more images were not found",
+        });
+      }
+
+      const first = rows[0];
+      const allSameBatch =
+        first.batchId !== null && rows.every(r => r.batchId === first.batchId);
+      const allSameProduct =
+        first.productId !== null && rows.every(r => r.productId === first.productId);
+
+      if (!allSameBatch && !allSameProduct) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Images must all belong to the same batch or the same product",
+        });
+      }
+
+      await db.transaction(async tx => {
+        for (let i = 0; i < input.imageIds.length; i++) {
+          await tx
+            .update(productImages)
+            .set({ sortOrder: i })
+            .where(eq(productImages.id, input.imageIds[i]));
+        }
+      });
 
       return { success: true };
     }),
