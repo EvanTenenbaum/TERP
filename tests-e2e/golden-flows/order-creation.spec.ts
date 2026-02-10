@@ -9,6 +9,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement, assertOneVisible } from "../utils/preconditions";
 
 test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
   test.beforeEach(async ({ page }) => {
@@ -90,31 +91,15 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
       await page.waitForLoadState("networkidle");
 
-      const localSearchInput = page.getByTestId("orders-search-input");
-      const commandPalette = page.locator(
-        '[cmdk-input], [data-testid="command-palette"], input[placeholder*="command or search" i]'
+      // Verify either local search is focused or command palette appears
+      await assertOneVisible(
+        page,
+        [
+          'input[data-testid="orders-search-input"]:focus',
+          '[cmdk-input], [cmdk-root], [data-testid="command-palette"], input[placeholder*="command or search" i]',
+        ],
+        "Cmd+K shortcut not implemented or search not available"
       );
-
-      const hasLocalSearch = (await localSearchInput.count()) > 0;
-      const localFocused = hasLocalSearch
-        ? await localSearchInput
-            .evaluate(el => document.activeElement === el)
-            .catch(() => false)
-        : false;
-      const paletteVisible = await commandPalette
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false);
-
-      if (!localFocused && !paletteVisible) {
-        test.skip(
-          true,
-          "Cmd+K shortcut not implemented or search not available"
-        );
-        return;
-      }
-
-      expect(localFocused || paletteVisible).toBeTruthy();
     });
   });
 
@@ -127,12 +112,11 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
       const createButton = page.locator(
         'button:has-text("New Order"), button:has-text("Create"), a[href*="create"]'
       );
-      if (
-        await createButton
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false)
-      ) {
+      const hasCreateButton =
+        (await createButton.count()) > 0 &&
+        (await createButton.first().isVisible({ timeout: 2000 }));
+
+      if (hasCreateButton) {
         await createButton.first().click();
         await page.waitForLoadState("networkidle");
       } else {
@@ -178,21 +162,20 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
         '[data-testid="order-totals"], :text("Order Totals"), :text("Subtotal"), :text("Total")'
       );
 
-      if (
-        !(await totals
-          .first()
-          .isVisible({ timeout: 3000 })
-          .catch(() => false))
-      ) {
+      const totalsVisible = await totals.first().isVisible({ timeout: 3000 });
+
+      if (!totalsVisible) {
         const customerInput = page
           .locator(
             'input[placeholder*="search for a customer" i], input[placeholder*="customer" i]'
           )
           .first();
 
-        if (
-          await customerInput.isVisible({ timeout: 3000 }).catch(() => false)
-        ) {
+        const customerInputVisible = await customerInput.isVisible({
+          timeout: 3000,
+        });
+
+        if (customerInputVisible) {
           await customerInput.click({ force: true });
           await customerInput.fill("qa");
           await page.waitForLoadState("networkidle");
@@ -202,7 +185,9 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
               '[role="option"], [data-testid="customer-option"], [cmdk-item]'
             )
             .first();
-          if (await option.isVisible({ timeout: 3000 }).catch(() => false)) {
+          const optionVisible = await option.isVisible({ timeout: 3000 });
+
+          if (optionVisible) {
             await option.click();
           } else {
             await page.keyboard.press("ArrowDown");
@@ -213,11 +198,10 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
         }
       }
 
-      const totalsVisible = await totals
+      const finalTotalsVisible = await totals
         .first()
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
-      if (!totalsVisible) {
+        .isVisible({ timeout: 3000 });
+      if (!finalTotalsVisible) {
         test.skip(
           true,
           "Order totals panel not visible before line-item selection in current environment"
@@ -235,19 +219,15 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Product/inventory list or selector should be visible
+      await requireElement(
+        page,
+        '[data-testid="product-list"], [data-testid="inventory-select"], .product-grid',
+        "Product/inventory area not visible - may require client selection first"
+      );
+
       const productArea = page.locator(
         '[data-testid="product-list"], [data-testid="inventory-select"], .product-grid'
       );
-      if (
-        !(await productArea.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(
-          true,
-          "Product/inventory area not visible - may require client selection first"
-        );
-        return;
-      }
-
       await expect(productArea).toBeVisible();
     });
 
@@ -256,22 +236,15 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Quantity input should be accessible
+      await requireElement(
+        page,
+        'input[name*="quantity"], input[type="number"], [data-testid="quantity-input"]',
+        "Quantity input not visible - may require product selection first"
+      );
+
       const qtyInput = page.locator(
         'input[name*="quantity"], input[type="number"], [data-testid="quantity-input"]'
       );
-      if (
-        !(await qtyInput
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(
-          true,
-          "Quantity input not visible - may require product selection first"
-        );
-        return;
-      }
-
       await expect(qtyInput.first()).toBeVisible();
     });
   });
@@ -284,18 +257,15 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Try to submit without required fields
+      await requireElement(
+        page,
+        'button[type="submit"], button:has-text("Create"), button:has-text("Submit")',
+        "Submit button not visible"
+      );
+
       const submitButton = page.locator(
         'button[type="submit"], button:has-text("Create"), button:has-text("Submit")'
       );
-      if (
-        !(await submitButton
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Submit button not visible");
-        return;
-      }
 
       const isDisabled = await submitButton.first().isDisabled();
       if (isDisabled) {
@@ -311,9 +281,7 @@ test.describe("Golden Flow: Order Creation @dev-only @golden-flow", () => {
       const errorMessage = page.locator(
         '.error, [role="alert"], :text("required")'
       );
-      const errorVisible = await errorMessage
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
+      const errorVisible = await errorMessage.isVisible({ timeout: 3000 });
 
       expect(errorVisible).toBeTruthy();
     });

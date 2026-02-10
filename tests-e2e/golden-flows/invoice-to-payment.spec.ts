@@ -9,6 +9,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Golden Flow: Invoice to Payment @dev-only @golden-flow", () => {
   test.beforeEach(async ({ page }) => {
@@ -21,30 +22,27 @@ test.describe("Golden Flow: Invoice to Payment @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Find unpaid invoice and click record payment
+      await requireElement(
+        page,
+        'tr:has-text("UNPAID"), tr:has-text("DUE")',
+        "No unpaid invoices available"
+      );
+
       const unpaidRow = page
         .locator('tr:has-text("UNPAID"), tr:has-text("DUE")')
         .first();
-      if (!(await unpaidRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No unpaid invoices available");
-        return;
-      }
-
       await unpaidRow.click();
       await page.waitForLoadState("networkidle");
+
+      await requireElement(
+        page,
+        'button:has-text("Record Payment"), button:has-text("Pay")',
+        "Record Payment button not available"
+      );
 
       const paymentBtn = page.locator(
         'button:has-text("Record Payment"), button:has-text("Pay")'
       );
-      if (
-        !(await paymentBtn
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Record Payment button not available");
-        return;
-      }
-
       await paymentBtn.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -59,12 +57,9 @@ test.describe("Golden Flow: Invoice to Payment @dev-only @golden-flow", () => {
       await page.goto("/accounting/invoices");
       await page.waitForLoadState("networkidle");
 
-      const invoiceRow = page.locator("tr").first();
-      if (!(await invoiceRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No invoices available");
-        return;
-      }
+      await requireElement(page, "tr", "No invoices available");
 
+      const invoiceRow = page.locator("tr").first();
       await invoiceRow.click();
       await page.waitForLoadState("networkidle");
 
@@ -79,38 +74,36 @@ test.describe("Golden Flow: Invoice to Payment @dev-only @golden-flow", () => {
       await page.goto("/accounting/invoices");
       await page.waitForLoadState("networkidle");
 
-      const unpaidRow = page.locator('tr:has-text("UNPAID")').first();
-      if (!(await unpaidRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No unpaid invoices available");
-        return;
-      }
+      await requireElement(
+        page,
+        'tr:has-text("UNPAID")',
+        "No unpaid invoices available"
+      );
 
+      const unpaidRow = page.locator('tr:has-text("UNPAID")').first();
       await unpaidRow.click();
       await page.waitForLoadState("networkidle");
 
-      const paymentBtn = page.locator('button:has-text("Record Payment")');
-      if (!(await paymentBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "Record Payment button not available");
-        return;
-      }
+      await requireElement(
+        page,
+        'button:has-text("Record Payment")',
+        "Record Payment button not available"
+      );
 
+      const paymentBtn = page.locator('button:has-text("Record Payment")');
       await paymentBtn.click();
       await page.waitForLoadState("networkidle");
 
       // Try to submit without amount
+      await requireElement(
+        page,
+        'button[type="submit"], button:has-text("Record")',
+        "Submit button not visible"
+      );
+
       const submitBtn = page.locator(
         'button[type="submit"], button:has-text("Record")'
       );
-      if (
-        !(await submitBtn
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Submit button not visible");
-        return;
-      }
-
       const isDisabled = await submitBtn.first().isDisabled();
       expect(isDisabled).toBeTruthy();
     });
@@ -138,35 +131,36 @@ test.describe("Golden Flow: Invoice to Payment @dev-only @golden-flow", () => {
       await page.goto("/accounting/invoices");
       await page.waitForLoadState("networkidle");
 
-      const unpaidRow = page.locator('tr:has-text("UNPAID")').first();
-      if (!(await unpaidRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No unpaid invoices available");
-        return;
-      }
+      await requireElement(
+        page,
+        'tr:has-text("UNPAID")',
+        "No unpaid invoices available"
+      );
 
+      const unpaidRow = page.locator('tr:has-text("UNPAID")').first();
       await unpaidRow.click();
       await page.waitForLoadState("networkidle");
 
-      const paymentBtn = page.locator('button:has-text("Record Payment")');
-      if (!(await paymentBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "Record Payment button not available");
-        return;
-      }
+      await requireElement(
+        page,
+        'button:has-text("Record Payment")',
+        "Record Payment button not available"
+      );
 
+      const paymentBtn = page.locator('button:has-text("Record Payment")');
       await paymentBtn.click();
       await page.waitForLoadState("networkidle");
 
       // Payment method selector
+      await requireElement(
+        page,
+        'select:has-text("Cash"), [data-testid="payment-method"]',
+        "Payment method selector not visible"
+      );
+
       const methodSelector = page.locator(
         'select:has-text("Cash"), [data-testid="payment-method"]'
       );
-      if (
-        !(await methodSelector.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "Payment method selector not visible");
-        return;
-      }
-
       await expect(methodSelector).toBeVisible();
     });
   });
@@ -177,21 +171,23 @@ test.describe("Golden Flow: Invoice to Payment @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Navigate to payment form
-      const unpaidRow = page.locator('tr:has-text("UNPAID")').first();
-      if (!(await unpaidRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No unpaid invoices available");
-        return;
-      }
+      await requireElement(
+        page,
+        'tr:has-text("UNPAID")',
+        "No unpaid invoices available"
+      );
 
+      const unpaidRow = page.locator('tr:has-text("UNPAID")').first();
       await unpaidRow.click();
       await page.waitForLoadState("networkidle");
 
-      const paymentBtn = page.locator('button:has-text("Record Payment")');
-      if (!(await paymentBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "Record Payment button not available");
-        return;
-      }
+      await requireElement(
+        page,
+        'button:has-text("Record Payment")',
+        "Record Payment button not available"
+      );
 
+      const paymentBtn = page.locator('button:has-text("Record Payment")');
       await paymentBtn.click();
       await page.waitForLoadState("networkidle");
 

@@ -9,6 +9,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () => {
   test.beforeEach(async ({ page }) => {
@@ -54,19 +55,15 @@ test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () 
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
+      await requireElement(
+        page,
+        'select, [data-testid="status-filter"]',
+        "Status filter not visible on this page"
+      );
+
       const statusFilter = page.locator(
         'select, [data-testid="status-filter"]'
       );
-      if (
-        !(await statusFilter
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Status filter not visible on this page");
-        return;
-      }
-
       await expect(statusFilter.first()).toBeVisible();
     });
 
@@ -91,27 +88,20 @@ test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () 
       await page.waitForLoadState("networkidle");
 
       // Select an order first
-      const orderRow = page.locator('[role="row"], tr').first();
-      if (!(await orderRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No orders available");
-        return;
-      }
+      await requireElement(page, '[role="row"], tr', "No orders available");
 
+      const orderRow = page.locator('[role="row"], tr').first();
       await orderRow.click();
       await page.waitForLoadState("networkidle");
 
       // Items should be visible
-      const items = page.locator('[role="checkbox"], input[type="checkbox"]');
-      if (
-        !(await items
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Checkboxes not visible for this order");
-        return;
-      }
+      await requireElement(
+        page,
+        '[role="checkbox"], input[type="checkbox"]',
+        "Checkboxes not visible for this order"
+      );
 
+      const items = page.locator('[role="checkbox"], input[type="checkbox"]');
       await expect(items.first()).toBeVisible();
     });
 
@@ -119,29 +109,22 @@ test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () 
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      const orderRow = page.locator('[role="row"], tr').first();
-      if (!(await orderRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No orders available");
-        return;
-      }
+      await requireElement(page, '[role="row"], tr', "No orders available");
 
+      const orderRow = page.locator('[role="row"], tr').first();
       await orderRow.click();
       await page.waitForLoadState("networkidle");
 
       // Select All button
+      await requireElement(
+        page,
+        'button:has-text("Select All"), button:has-text("All")',
+        "Select All button not visible"
+      );
+
       const selectAll = page.locator(
         'button:has-text("Select All"), button:has-text("All")'
       );
-      if (
-        !(await selectAll
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Select All button not visible");
-        return;
-      }
-
       await expect(selectAll.first()).toBeVisible();
     });
   });
@@ -152,20 +135,13 @@ test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () 
       await page.waitForLoadState("networkidle");
 
       // Pack button may or may not be visible depending on order state
-      const packButton = page.locator('button:has-text("Pack")');
-      if (
-        !(await packButton
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(
-          true,
-          "Pack button not visible - may need to select order/items first"
-        );
-        return;
-      }
+      await requireElement(
+        page,
+        'button:has-text("Pack")',
+        "Pack button not visible - may need to select order/items first"
+      );
 
+      const packButton = page.locator('button:has-text("Pack")');
       await expect(packButton.first()).toBeVisible();
     });
 
@@ -174,22 +150,15 @@ test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () 
       await page.waitForLoadState("networkidle");
 
       // Mark Ready button
+      await requireElement(
+        page,
+        'button:has-text("Ready"), button:has-text("Mark Ready")',
+        "Mark Ready button not visible - may need to select order first"
+      );
+
       const readyButton = page.locator(
         'button:has-text("Ready"), button:has-text("Mark Ready")'
       );
-      if (
-        !(await readyButton
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(
-          true,
-          "Mark Ready button not visible - may need to select order first"
-        );
-        return;
-      }
-
       // Just verify button exists (may be disabled until all items packed)
       await expect(readyButton.first()).toBeVisible();
     });
@@ -200,26 +169,22 @@ test.describe("Golden Flow: Pick & Pack Fulfillment @dev-only @golden-flow", () 
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      const orderRow = page.locator('[role="row"], tr').first();
-      if (!(await orderRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No orders available");
-        return;
-      }
+      await requireElement(page, '[role="row"], tr', "No orders available");
 
+      const orderRow = page.locator('[role="row"], tr').first();
       await orderRow.click();
       await page.waitForLoadState("networkidle");
 
       // View Details should open inspector
+      await requireElement(
+        page,
+        'button:has-text("View Details"), button:has-text("Details")',
+        "View Details button not available"
+      );
+
       const viewDetails = page.locator(
         'button:has-text("View Details"), button:has-text("Details")'
       );
-      if (
-        !(await viewDetails.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "View Details button not available");
-        return;
-      }
-
       await viewDetails.click();
       await page.waitForLoadState("networkidle");
 

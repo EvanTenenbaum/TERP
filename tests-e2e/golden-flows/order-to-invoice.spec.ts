@@ -9,6 +9,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
   test.beforeEach(async ({ page }) => {
@@ -21,19 +22,15 @@ test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Navigate to orders with CONFIRMED status
+      await requireElement(
+        page,
+        'tr:has-text("CONFIRMED"), [data-status="CONFIRMED"]',
+        "No confirmed orders available"
+      );
+
       const orderRow = page.locator(
         'tr:has-text("CONFIRMED"), [data-status="CONFIRMED"]'
       );
-      if (
-        !(await orderRow
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "No confirmed orders available");
-        return;
-      }
-
       await orderRow.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -49,28 +46,26 @@ test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Find a confirmed order
-      const confirmedOrder = page.locator('tr:has-text("CONFIRMED")').first();
-      if (
-        !(await confirmedOrder.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "No confirmed orders available");
-        return;
-      }
+      await requireElement(
+        page,
+        'tr:has-text("CONFIRMED")',
+        "No confirmed orders available"
+      );
 
+      const confirmedOrder = page.locator('tr:has-text("CONFIRMED")').first();
       await confirmedOrder.click();
       await page.waitForLoadState("networkidle");
 
       // Click generate invoice
+      await requireElement(
+        page,
+        'button:has-text("Generate Invoice"), button:has-text("Create Invoice")',
+        "Generate Invoice button not available"
+      );
+
       const generateButton = page.locator(
         'button:has-text("Generate Invoice"), button:has-text("Create Invoice")'
       );
-      if (
-        !(await generateButton.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "Generate Invoice button not available");
-        return;
-      }
-
       await generateButton.click();
       await page.waitForLoadState("networkidle");
 
@@ -111,12 +106,9 @@ test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Select first invoice
-      const invoiceRow = page.locator('tr, [role="row"]').first();
-      if (!(await invoiceRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No invoices available");
-        return;
-      }
+      await requireElement(page, 'tr, [role="row"]', "No invoices available");
 
+      const invoiceRow = page.locator('tr, [role="row"]').first();
       await invoiceRow.click();
       await page.waitForLoadState("networkidle");
 
@@ -134,19 +126,15 @@ test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Status filter should be present
+      await requireElement(
+        page,
+        '[data-testid="status-filter"], select:has-text("Status"), button:has-text("Status")',
+        "Status filter not visible on this page"
+      );
+
       const statusFilter = page.locator(
         '[data-testid="status-filter"], select:has-text("Status"), button:has-text("Status")'
       );
-      if (
-        !(await statusFilter
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false))
-      ) {
-        test.skip(true, "Status filter not visible on this page");
-        return;
-      }
-
       await expect(statusFilter.first()).toBeVisible();
     });
   });
@@ -157,26 +145,26 @@ test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Find draft invoice
-      const draftInvoice = page.locator('tr:has-text("DRAFT")').first();
-      if (
-        !(await draftInvoice.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "No draft invoices available");
-        return;
-      }
+      await requireElement(
+        page,
+        'tr:has-text("DRAFT")',
+        "No draft invoices available"
+      );
 
+      const draftInvoice = page.locator('tr:has-text("DRAFT")').first();
       await draftInvoice.click();
       await page.waitForLoadState("networkidle");
 
       // Send action should be available
+      await requireElement(
+        page,
+        'button:has-text("Send"), button:has-text("Email")',
+        "Send button not available for this invoice"
+      );
+
       const sendButton = page.locator(
         'button:has-text("Send"), button:has-text("Email")'
       );
-      if (!(await sendButton.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "Send button not available for this invoice");
-        return;
-      }
-
       await expect(sendButton).toBeVisible();
     });
 
@@ -185,30 +173,28 @@ test.describe("Golden Flow: Order to Invoice @dev-only @golden-flow", () => {
       await page.waitForLoadState("networkidle");
 
       // Select an unpaid invoice
+      await requireElement(
+        page,
+        'tr:has-text("UNPAID"), tr:has-text("SENT")',
+        "No unpaid invoices available"
+      );
+
       const unpaidInvoice = page
         .locator('tr:has-text("UNPAID"), tr:has-text("SENT")')
         .first();
-      if (
-        !(await unpaidInvoice.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "No unpaid invoices available");
-        return;
-      }
-
       await unpaidInvoice.click();
       await page.waitForLoadState("networkidle");
 
       // Record payment option
+      await requireElement(
+        page,
+        'button:has-text("Record Payment"), button:has-text("Payment")',
+        "Payment button not available for this invoice"
+      );
+
       const paymentButton = page.locator(
         'button:has-text("Record Payment"), button:has-text("Payment")'
       );
-      if (
-        !(await paymentButton.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "Payment button not available for this invoice");
-        return;
-      }
-
       await expect(paymentButton).toBeVisible();
     });
   });
