@@ -4,6 +4,37 @@
 // Cache the JWT secret once validated to avoid repeated logging
 let cachedJwtSecret: string | null = null;
 
+export type AutoMigrateMode = "apply" | "detect-only" | "off";
+
+/**
+ * Normalize AUTO_MIGRATE_MODE for predictable startup behavior.
+ * Default is "apply" to preserve current behavior when unset.
+ */
+export function parseAutoMigrateMode(value?: string): AutoMigrateMode {
+  const normalized = (value ?? "").trim().toLowerCase();
+
+  if (
+    normalized === "detect-only" ||
+    normalized === "detect" ||
+    normalized === "check" ||
+    normalized === "dry-run"
+  ) {
+    return "detect-only";
+  }
+
+  if (
+    normalized === "off" ||
+    normalized === "false" ||
+    normalized === "0" ||
+    normalized === "disabled" ||
+    normalized === "none"
+  ) {
+    return "off";
+  }
+
+  return "apply";
+}
+
 const getJwtSecret = (): string => {
   // Return cached value if already validated
   if (cachedJwtSecret !== null) {
@@ -64,6 +95,9 @@ export const env = {
   },
   get databaseUrl() {
     return process.env.DATABASE_URL ?? "";
+  },
+  get autoMigrateMode(): AutoMigrateMode {
+    return parseAutoMigrateMode(process.env.AUTO_MIGRATE_MODE);
   },
   get ownerId() {
     return process.env.OWNER_OPEN_ID ?? "";

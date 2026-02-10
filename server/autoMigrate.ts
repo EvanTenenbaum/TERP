@@ -11,6 +11,127 @@ let db: Awaited<ReturnType<typeof getDb>>;
 
 let migrationRun = false;
 
+export interface SchemaFingerprintCheckResult {
+  complete: boolean;
+  count: number;
+  attempts: number;
+  lastError?: string;
+}
+
+const FINGERPRINT_CANARY_COUNT = 7;
+
+async function runSchemaFingerprintCheck(
+  dbConn: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  options: {
+    retries?: number;
+    startTime?: number;
+  } = {}
+): Promise<SchemaFingerprintCheckResult> {
+  const retries = Math.max(1, options.retries ?? 3);
+  let lastError: string | undefined;
+
+  for (let fpAttempt = 1; fpAttempt <= retries; fpAttempt++) {
+    try {
+      // Warm up the DB connection with a simple query first.
+      // Keep parity with existing behavior: warmup only on first attempt.
+      if (fpAttempt === 1) {
+        await dbConn.execute(sql`SELECT 1`);
+      }
+
+      const [fpResult] = await dbConn.execute(sql`
+        SELECT COUNT(*) as cnt FROM (
+          SELECT 1 FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
+          UNION ALL
+          SELECT 1 FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_needs' AND COLUMN_NAME = 'strain_type'
+          UNION ALL
+          SELECT 1 FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_name'
+          UNION ALL
+          SELECT 1 FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
+          UNION ALL
+          SELECT 1 FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
+          UNION ALL
+          SELECT 1 FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
+          UNION ALL
+          SELECT 1 FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lots' AND COLUMN_NAME = 'supplier_client_id'
+        ) AS checks
+      `);
+      const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
+      const count = Number(row?.cnt ?? 0);
+
+      if (count === FINGERPRINT_CANARY_COUNT) {
+        if (typeof options.startTime === "number") {
+          const fpDuration = Date.now() - options.startTime;
+          console.info(
+            `✅ Schema fingerprint OK (${FINGERPRINT_CANARY_COUNT}/${FINGERPRINT_CANARY_COUNT} canary checks passed) - skipping migrations (${fpDuration}ms)`
+          );
+        }
+        return {
+          complete: true,
+          count,
+          attempts: fpAttempt,
+        };
+      }
+
+      console.info(
+        `  ℹ️  Schema fingerprint: ${count}/${FINGERPRINT_CANARY_COUNT} canary checks passed - running full migrations`
+      );
+      return {
+        complete: false,
+        count,
+        attempts: fpAttempt,
+      };
+    } catch (fpError) {
+      lastError = fpError instanceof Error ? fpError.message : String(fpError);
+      if (fpAttempt < retries) {
+        const delay = fpAttempt * 3000; // 3s, 6s backoff
+        console.info(
+          `  ℹ️  Schema fingerprint attempt ${fpAttempt}/${retries} failed (${lastError}) - retrying in ${delay / 1000}s`
+        );
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        console.info(
+          `  ℹ️  Schema fingerprint check failed after ${retries} attempts - running full migrations: ${lastError}`
+        );
+      }
+    }
+  }
+
+  return {
+    complete: false,
+    count: 0,
+    attempts: retries,
+    lastError,
+  };
+}
+
+/**
+ * Read-only schema drift signal using canary checks.
+ * Returns whether the schema appears aligned without applying DDL.
+ */
+export async function checkSchemaFingerprint(
+  options: { retries?: number } = {}
+): Promise<SchemaFingerprintCheckResult> {
+  const dbConn = await getDb();
+  if (!dbConn) {
+    logger.error("Database connection failed during schema fingerprint check");
+    return {
+      complete: false,
+      count: 0,
+      attempts: 1,
+      lastError: "Database not available",
+    };
+  }
+
+  return runSchemaFingerprintCheck(dbConn, { retries: options.retries ?? 3 });
+}
+
 export async function runAutoMigrations() {
   // Only run once per app lifecycle
   if (migrationRun) {
@@ -27,63 +148,17 @@ export async function runAutoMigrations() {
     logger.error("Database connection failed during auto-migration");
     return;
   }
-
-
-    // === FAST PATH: Schema fingerprint check with DB warmup ===
-    // Check 7 canary tables/columns representing latest schema state.
-    // If all present, skip all 80 sequential migration operations.
-    // Retries up to 3 times with backoff to handle cold DB connections.
-    for (let fpAttempt = 1; fpAttempt <= 3; fpAttempt++) {
-      try {
-        // Warm up the DB connection with a simple query first
-        if (fpAttempt === 1) {
-          await db.execute(sql`SELECT 1`);
-        }
-        const [fpResult] = await db.execute(sql`
-          SELECT COUNT(*) as cnt FROM (
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
-            UNION ALL
-            SELECT 1 FROM information_schema.COLUMNS
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_needs' AND COLUMN_NAME = 'strain_type'
-            UNION ALL
-            SELECT 1 FROM information_schema.COLUMNS
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_name'
-            UNION ALL
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
-            UNION ALL
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
-            UNION ALL
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
-            UNION ALL
-            SELECT 1 FROM information_schema.COLUMNS
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lots' AND COLUMN_NAME = 'supplier_client_id'
-          ) AS checks
-        `);
-        const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
-        const count = Number(row?.cnt ?? 0);
-        if (count === 7) {
-          const fpDuration = Date.now() - startTime;
-          console.info(`✅ Schema fingerprint OK (7/7 canary checks passed) - skipping migrations (${fpDuration}ms)`);
-          migrationRun = true;
-          return;
-        }
-        console.info(`  ℹ️  Schema fingerprint: ${count}/7 canary checks passed - running full migrations`);
-        break; // Query succeeded but schema incomplete - run full migrations
-      } catch (fpError) {
-        const fpMsg = fpError instanceof Error ? fpError.message : String(fpError);
-        if (fpAttempt < 3) {
-          const delay = fpAttempt * 3000; // 3s, 6s backoff
-          console.info(`  ℹ️  Schema fingerprint attempt ${fpAttempt}/3 failed (${fpMsg}) - retrying in ${delay/1000}s`);
-          await new Promise(r => setTimeout(r, delay));
-        } else {
-          console.info(`  ℹ️  Schema fingerprint check failed after 3 attempts - running full migrations: ${fpMsg}`);
-        }
-      }
-    }
+  // === FAST PATH: Schema fingerprint check with DB warmup ===
+  // Check canary tables/columns representing latest schema state.
+  // If all present, skip all sequential migration operations.
+  const fingerprint = await runSchemaFingerprintCheck(db, {
+    retries: 3,
+    startTime,
+  });
+  if (fingerprint.complete) {
+    migrationRun = true;
+    return;
+  }
 
   try {
     // Create matching/needs tables if they don't exist
