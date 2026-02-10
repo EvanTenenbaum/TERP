@@ -6752,7 +6752,9 @@ export type InsertReceipt = typeof receipts.$inferInsert;
  * Image Status Enum
  * Tracks the approval status of product images
  */
-export const imageStatusEnum = mysqlEnum("image_status", [
+// NOTE: Production column name is `status` (not `image_status`). If this drifts,
+// inserts/queries against `product_images` will fail at runtime.
+export const imageStatusEnum = mysqlEnum("status", [
   "PENDING",
   "APPROVED",
   "REJECTED",
