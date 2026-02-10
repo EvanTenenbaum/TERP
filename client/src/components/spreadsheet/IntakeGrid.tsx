@@ -26,6 +26,23 @@ import {
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
+type UploadedMediaUrl = {
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
+class UploadMediaError extends Error {
+  uploaded: UploadedMediaUrl[];
+
+  constructor(uploaded: UploadedMediaUrl[]) {
+    super("Failed to upload one or more photos");
+    this.name = "UploadMediaError";
+    this.uploaded = uploaded;
+  }
+}
+
 // Payment terms must match server validation schema
 const paymentTermsOptions = [
   "COD",
@@ -171,39 +188,39 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
 
   const uploadMediaFiles = useCallback(
     async (files: File[]) => {
-      const uploaded: Array<{
-        url: string;
-        fileName: string;
-        fileType: string;
-        fileSize: number;
-      }> = [];
+      const uploaded: UploadedMediaUrl[] = [];
 
       for (const file of files) {
-        const base64Data = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result =
-              typeof reader.result === "string" ? reader.result : "";
-            const base64 = result.split(",")[1] || "";
-            resolve(base64);
-          };
-          reader.onerror = () =>
-            reject(reader.error ?? new Error("Failed to read file"));
-          reader.readAsDataURL(file);
-        });
+        try {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result =
+                typeof reader.result === "string" ? reader.result : "";
+              const base64 = result.split(",")[1] || "";
+              resolve(base64);
+            };
+            reader.onerror = () =>
+              reject(reader.error ?? new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+          });
 
-        const result = await uploadMediaMutation.mutateAsync({
-          fileData: base64Data,
-          fileName: file.name,
-          fileType: file.type,
-        });
+          const result = await uploadMediaMutation.mutateAsync({
+            fileData: base64Data,
+            fileName: file.name,
+            fileType: file.type,
+          });
 
-        uploaded.push({
-          url: result.url,
-          fileName: result.fileName,
-          fileType: result.fileType,
-          fileSize: result.fileSize,
-        });
+          uploaded.push({
+            url: result.url,
+            fileName: result.fileName,
+            fileType: result.fileType,
+            fileSize: result.fileSize,
+          });
+        } catch {
+          // Return partial successes so caller can clean them up if intake fails.
+          throw new UploadMediaError(uploaded);
+        }
       }
 
       return uploaded;
@@ -249,7 +266,9 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
 
           <label
             htmlFor={`intake-grid-media-${rowId}`}
-            className={disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+            className={
+              disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            }
             title={count > 0 ? `${count} photo(s) attached` : "Attach photos"}
           >
             <div className="inline-flex items-center gap-1 text-sm">
@@ -498,16 +517,18 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
     // This uses inventoryIntakeService.processIntake which creates new batches
     for (const row of pendingRows) {
       const mediaFiles = rowMediaFilesById[row.id] ?? [];
-      let uploadedMediaUrls: Array<{
-        url: string;
-        fileName: string;
-        fileType: string;
-        fileSize: number;
-      }> = [];
+      let uploadedMediaUrls: UploadedMediaUrl[] = [];
 
       try {
         if (mediaFiles.length > 0) {
-          uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          try {
+            uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          } catch (err) {
+            if (err instanceof UploadMediaError) {
+              uploadedMediaUrls = err.uploaded;
+            }
+            throw err;
+          }
         }
 
         await intakeMutation.mutateAsync({
@@ -589,7 +610,13 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
     }
 
     setIsSubmitting(false);
-  }, [rows, intakeMutation, rowMediaFilesById, uploadMediaFiles, deleteMediaMutation]);
+  }, [
+    rows,
+    intakeMutation,
+    rowMediaFilesById,
+    uploadMediaFiles,
+    deleteMediaMutation,
+  ]);
 
   // Calculate summary
   const summary = useMemo<IntakeGridSummary>(() => {
