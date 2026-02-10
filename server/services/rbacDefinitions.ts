@@ -1157,6 +1157,11 @@ export const PERMISSIONS = [
   },
   { name: "users:read", description: "Can view users", module: "users" },
   {
+    name: "users:manage",
+    description: "Can manage users and user-level administration workflows",
+    module: "users",
+  },
+  {
     name: "users:create",
     description: "Can create/invite users",
     module: "users",
