@@ -7,7 +7,7 @@
 
 import { getDb } from "../db";
 import { batches, products, productImages, brands } from "../../drizzle/schema";
-import { eq, and, isNull, desc, sql } from "drizzle-orm";
+import { eq, and, isNull, desc, sql, or } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { safeInArray } from "../lib/sqlSafety";
 
@@ -106,14 +106,23 @@ export async function publishBatchToCatalog(
   const photos = await db
     .select()
     .from(productImages)
-    .where(eq(productImages.batchId, batchId));
+    .where(
+      and(
+        eq(productImages.batchId, batchId),
+        or(
+          isNull(productImages.status),
+          eq(productImages.status, "APPROVED"),
+          eq(productImages.status, "PENDING")
+        )
+      )
+    );
 
   if (photos.length === 0) {
     return {
       success: false,
       batchId,
       batchCode: batch.code,
-      message: "Batch must have at least one photo to publish",
+      message: "Batch must have at least one shown photo to publish",
     };
   }
 
@@ -254,7 +263,16 @@ export async function getBatchesReadyForPublishing(limit: number = 50): Promise<
         batchId: productImages.batchId,
       })
       .from(productImages)
-      .where(safeInArray(productImages.batchId, batchIds));
+      .where(
+        and(
+          safeInArray(productImages.batchId, batchIds),
+          or(
+            isNull(productImages.status),
+            eq(productImages.status, "APPROVED"),
+            eq(productImages.status, "PENDING")
+          )
+        )
+      );
 
     for (const photo of photos) {
       if (photo.batchId) {
@@ -364,7 +382,16 @@ export async function getPublishedCatalog(options: {
         caption: productImages.caption,
       })
       .from(productImages)
-      .where(safeInArray(productImages.batchId, batchIds))
+      .where(
+        and(
+          safeInArray(productImages.batchId, batchIds),
+          or(
+            isNull(productImages.status),
+            eq(productImages.status, "APPROVED"),
+            eq(productImages.status, "PENDING")
+          )
+        )
+      )
       .orderBy(desc(productImages.isPrimary), productImages.sortOrder);
 
     for (const photo of photos) {

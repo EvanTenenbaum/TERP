@@ -8,12 +8,18 @@
  */
 
 import { getDb } from "../db";
-import { batches, products, productMedia, brands } from "../../drizzle/schema";
+import {
+  batches,
+  products,
+  productImages,
+  productMedia,
+  brands,
+} from "../../drizzle/schema";
 import {
   vipPortalConfigurations,
   clientDraftInterests,
 } from "../../drizzle/schema-vip-portal";
-import { eq, and, inArray, notInArray, sql, isNull } from "drizzle-orm";
+import { eq, and, inArray, notInArray, sql, isNull, or, desc } from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
 import { vipPortalLogger, logger } from "../_core/logger";
 
@@ -358,13 +364,43 @@ async function getCatalogInternal(
   });
   const draftBatchIds = new Set(draftItems.map(d => d.batchId));
 
-  // Get product images for all products in the result set
-  const productIds = filteredBatches
+  // Get batch images for all batches in the result set (primary shown image per batch)
+  const batchIds = filteredBatches.map(({ batch }) => batch.id);
+  const batchPrimaryImagesMap = new Map<number, string>();
+  if (batchIds.length > 0) {
+    const batchImages = await db
+      .select({
+        batchId: productImages.batchId,
+        url: productImages.imageUrl,
+      })
+      .from(productImages)
+      .where(
+        and(
+          inArray(productImages.batchId, batchIds),
+          or(
+            isNull(productImages.status),
+            eq(productImages.status, "APPROVED"),
+            eq(productImages.status, "PENDING")
+          )
+        )
+      )
+      .orderBy(desc(productImages.isPrimary), productImages.sortOrder, productImages.id);
+
+    for (const img of batchImages) {
+      if (img.batchId && !batchPrimaryImagesMap.has(img.batchId)) {
+        batchPrimaryImagesMap.set(img.batchId, img.url);
+      }
+    }
+  }
+
+  // Fallback: legacy product-level images for any batches that do not have batch images yet.
+  const fallbackProductIds = filteredBatches
+    .filter(({ batch, product }) => Boolean(product?.id) && !batchPrimaryImagesMap.has(batch.id))
     .map(({ product }) => product?.id)
     .filter((id): id is number => id !== undefined && id !== null);
 
-  const productImagesMap = new Map<number, string>();
-  if (productIds.length > 0) {
+  const productFallbackImagesMap = new Map<number, string>();
+  if (fallbackProductIds.length > 0) {
     const productImages = await db
       .select({
         productId: productMedia.productId,
@@ -373,16 +409,15 @@ async function getCatalogInternal(
       .from(productMedia)
       .where(
         and(
-          inArray(productMedia.productId, productIds),
+          inArray(productMedia.productId, fallbackProductIds),
           eq(productMedia.type, "image"),
           isNull(productMedia.deletedAt)
         )
       );
 
-    // Store first image for each product (primary image)
     for (const img of productImages) {
-      if (!productImagesMap.has(img.productId)) {
-        productImagesMap.set(img.productId, img.url);
+      if (!productFallbackImagesMap.has(img.productId)) {
+        productFallbackImagesMap.set(img.productId, img.url);
       }
     }
   }
@@ -468,10 +503,9 @@ async function getCatalogInternal(
     if (quantity > STOCK_LEVEL_LOW_THRESHOLD) stockLevel = "in_stock";
     else if (quantity > 0) stockLevel = "low_stock";
 
-    // Get image URL from the map using productId
-    const imageUrl = item.productId
-      ? productImagesMap.get(item.productId)
-      : undefined;
+    const imageUrl =
+      batchPrimaryImagesMap.get(item.id) ??
+      (item.productId ? productFallbackImagesMap.get(item.productId) : undefined);
 
     return {
       batchId: item.id,
