@@ -13,6 +13,7 @@
 
 import { test, expect } from "@playwright/test";
 import { authenticatedTest } from "../fixtures/auth";
+import { assertOneVisible } from "../utils/preconditions";
 
 test.describe("VIP Portal Admin Impersonation @prod-regression", () => {
   test.describe("Settings Page - VIP Access Tab", () => {
@@ -107,12 +108,13 @@ test.describe("VIP Portal Admin Impersonation @prod-regression", () => {
 
         // Verify filtering occurred (either results or "no match" message)
         const hasResults = (await page.getByRole("cell").count()) > 0;
-        const hasNoMatch = await page
-          .getByText("No clients match your search")
-          .isVisible()
-          .catch(() => false);
 
-        expect(hasResults || hasNoMatch).toBeTruthy();
+        if (!hasResults) {
+          // If no results, verify "no match" message is shown
+          await expect(
+            page.getByText("No clients match your search")
+          ).toBeVisible();
+        }
       }
     );
   });
@@ -203,17 +205,12 @@ test.describe("VIP Portal Admin Impersonation @prod-regression", () => {
         await page.getByRole("tab", { name: /VIP Access/i }).click();
         await page.getByRole("tab", { name: /Active Sessions/i }).click();
 
-        // Either shows sessions or empty state
-        const hasEmptyState = await page
-          .getByText("No active impersonation sessions")
-          .isVisible()
-          .catch(() => false);
-        const hasTable = await page
-          .getByRole("table")
-          .isVisible()
-          .catch(() => false);
-
-        expect(hasEmptyState || hasTable).toBeTruthy();
+        // Either shows sessions table or empty state message
+        await assertOneVisible(
+          page,
+          ['text="No active impersonation sessions"', "role=table"],
+          "Neither active sessions table nor empty state message is visible"
+        );
       }
     );
   });
@@ -252,11 +249,7 @@ test.describe("VIP Portal Admin Impersonation @prod-regression", () => {
       await page.waitForLoadState("networkidle");
 
       // Should show some error state
-      const hasError = await page
-        .getByText(/Invalid|Error|expired/i)
-        .isVisible()
-        .catch(() => false);
-      expect(hasError).toBeTruthy();
+      await expect(page.getByText(/Invalid|Error|expired/i)).toBeVisible();
     });
   });
 
@@ -303,17 +296,14 @@ test.describe("RBAC Permission Checks @prod-regression", () => {
       // The tab should be visible for Super Admin users
       // For users without the permission, it should be hidden
       // This test assumes the authenticated user has the permission
-      const vipAccessTab = page.getByRole("tab", { name: /VIP Access/i });
-
-      // If visible, the user has permission
-      // If not visible, the user lacks permission (both are valid states)
-      // Check if tab is visible (depends on user permissions)
-      const _isVisible = await vipAccessTab.isVisible().catch(() => false);
 
       // Just verify the page loaded correctly
       await expect(
         page.getByRole("heading", { name: "Settings" })
       ).toBeVisible();
+
+      // Note: Actual permission check would require testing with different user roles
+      // which is beyond the scope of this basic navigation test
     }
   );
 });

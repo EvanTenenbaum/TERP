@@ -8,6 +8,7 @@
  */
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Calendar Page @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
@@ -79,14 +80,18 @@ test.describe("Calendar View Switching @prod-regression", () => {
 
     const weekButton = page.locator('button:has-text("Week")').first();
 
-    if (await weekButton.isVisible().catch(() => false)) {
-      await weekButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'button:has-text("Week")',
+      "Week view button not available"
+    );
 
-      // Week view should show time slots or week layout
-      const weekIndicator = page.locator("text=/week|am|pm|:00/i").first();
-      await expect(weekIndicator).toBeVisible();
-    }
+    await weekButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Week view should show time slots or week layout
+    const weekIndicator = page.locator("text=/week|am|pm|:00/i").first();
+    await expect(weekIndicator).toBeVisible();
   });
 
   test("should switch to Day view", async ({ page }) => {
@@ -94,14 +99,18 @@ test.describe("Calendar View Switching @prod-regression", () => {
 
     const dayButton = page.locator('button:has-text("Day")').first();
 
-    if (await dayButton.isVisible().catch(() => false)) {
-      await dayButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'button:has-text("Day")',
+      "Day view button not available"
+    );
 
-      // Day view should show hourly time slots
-      const timeSlot = page.locator("text=/\\d{1,2}:\\d{2}|am|pm/i").first();
-      await expect(timeSlot).toBeVisible();
-    }
+    await dayButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Day view should show hourly time slots
+    const timeSlot = page.locator("text=/\\d{1,2}:\\d{2}|am|pm/i").first();
+    await expect(timeSlot).toBeVisible();
   });
 
   test("should switch to Agenda view", async ({ page }) => {
@@ -109,13 +118,17 @@ test.describe("Calendar View Switching @prod-regression", () => {
 
     const agendaButton = page.locator('button:has-text("Agenda")').first();
 
-    if (await agendaButton.isVisible().catch(() => false)) {
-      await agendaButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'button:has-text("Agenda")',
+      "Agenda view button not available"
+    );
 
-      // Agenda view should show list of events
-      // (specific assertion depends on implementation)
-    }
+    await agendaButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Agenda view should show list of events
+    // (specific assertion depends on implementation)
   });
 });
 
@@ -140,17 +153,21 @@ test.describe("Calendar Navigation @prod-regression", () => {
       )
       .first();
 
-    if (await prevButton.isVisible().catch(() => false)) {
-      await prevButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'button[aria-label*="previous" i], button:has-text("<"), button:has-text("Prev")',
+      "Previous month button not available"
+    );
 
-      // Month should change
-      const newMonthText = await page
-        .locator('h1, h2, [data-testid="current-month"]')
-        .first()
-        .textContent();
-      expect(newMonthText).not.toBe(monthText);
-    }
+    await prevButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Month should change
+    const newMonthText = await page
+      .locator('h1, h2, [data-testid="current-month"]')
+      .first()
+      .textContent();
+    expect(newMonthText).not.toBe(monthText);
   });
 
   test("should navigate to next month", async ({ page }) => {
@@ -169,17 +186,21 @@ test.describe("Calendar Navigation @prod-regression", () => {
       )
       .first();
 
-    if (await nextButton.isVisible().catch(() => false)) {
-      await nextButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'button[aria-label*="next" i], button:has-text(">"), button:has-text("Next")',
+      "Next month button not available"
+    );
 
-      // Month should change
-      const newMonthText = await page
-        .locator('h1, h2, [data-testid="current-month"]')
-        .first()
-        .textContent();
-      expect(newMonthText).not.toBe(monthText);
-    }
+    await nextButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Month should change
+    const newMonthText = await page
+      .locator('h1, h2, [data-testid="current-month"]')
+      .first()
+      .textContent();
+    expect(newMonthText).not.toBe(monthText);
   });
 
   test("should navigate to Today", async ({ page }) => {
@@ -188,18 +209,20 @@ test.describe("Calendar Navigation @prod-regression", () => {
     // Click Today button
     const todayButton = page.locator('button:has-text("Today")').first();
 
-    if (await todayButton.isVisible().catch(() => false)) {
-      await todayButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'button:has-text("Today")',
+      "Today button not available"
+    );
 
-      // Should show current month
-      const currentMonth = new Date().toLocaleString("default", {
-        month: "long",
-      });
-      await expect(
-        page.locator(`text=/${currentMonth}/i`).first()
-      ).toBeVisible();
-    }
+    await todayButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Should show current month
+    const currentMonth = new Date().toLocaleString("default", {
+      month: "long",
+    });
+    await expect(page.locator(`text=/${currentMonth}/i`).first()).toBeVisible();
   });
 });
 
@@ -236,13 +259,17 @@ test.describe("Calendar Events @dev-only", () => {
       )
       .first();
 
-    if (await addButton.isVisible().catch(() => false)) {
-      await addButton.click();
+    await requireElement(
+      page,
+      'button:has-text("Add Event"), button:has-text("New Event"), button:has-text("Create")',
+      "Add Event button not available"
+    );
 
-      // Should open modal or form
-      const form = page.locator('[role="dialog"], form, .event-form').first();
-      await expect(form).toBeVisible();
-    }
+    await addButton.click();
+
+    // Should open modal or form
+    const form = page.locator('[role="dialog"], form, .event-form').first();
+    await expect(form).toBeVisible();
   });
 
   test("should show event details on click", async ({ page }) => {
@@ -253,16 +280,18 @@ test.describe("Calendar Events @dev-only", () => {
       .locator('[data-testid="calendar-event"], .event, .fc-event')
       .first();
 
-    if (await event.isVisible().catch(() => false)) {
-      await event.click();
+    await requireElement(
+      page,
+      '[data-testid="calendar-event"], .event, .fc-event',
+      "No calendar events found to click"
+    );
 
-      // Should show event details
-      const details = page
-        .locator(
-          '[role="dialog"], .event-details, [data-testid="event-detail"]'
-        )
-        .first();
-      await expect(details).toBeVisible();
-    }
+    await event.click();
+
+    // Should show event details
+    const details = page
+      .locator('[role="dialog"], .event-details, [data-testid="event-detail"]')
+      .first();
+    await expect(details).toBeVisible();
   });
 });

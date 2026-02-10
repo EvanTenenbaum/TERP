@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
@@ -23,27 +24,20 @@ test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment"), [data-testid="receive-payment"]'
     );
 
-    // If button exists on dashboard, verify it's clickable
-    const buttonVisible = await receivePaymentButton
-      .isVisible()
-      .catch(() => false);
-    if (!buttonVisible) {
-      test.skip(true, "Receive Payment button not available on dashboard");
-      return;
-    }
-    if (buttonVisible) {
-      await receivePaymentButton.click();
-      // Should open a modal or navigate to payment form
-      await expect(
-        page.locator(
-          '[role="dialog"], form, .modal, [data-testid="payment-form"]'
-        )
-      ).toBeVisible({ timeout: 5000 });
-    } else {
-      // If not on dashboard, navigate to accounting
-      await page.goto("/accounting");
-      await expect(page).toHaveURL(/\/accounting/);
-    }
+    // Require button to exist - skip if not available
+    await requireElement(
+      page,
+      'button:has-text("Receive Payment"), a:has-text("Receive Payment"), [data-testid="receive-payment"]',
+      "Receive Payment button not available on dashboard"
+    );
+
+    await receivePaymentButton.click();
+    // Should open a modal or navigate to payment form
+    await expect(
+      page.locator(
+        '[role="dialog"], form, .modal, [data-testid="payment-form"]'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should navigate to accounting module", async ({ page }) => {
@@ -65,13 +59,11 @@ test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment"), [data-testid="receive-payment"]'
     );
 
-    const buttonVisible = await receivePaymentButton
-      .isVisible()
-      .catch(() => false);
-    if (!buttonVisible) {
-      test.skip(true, "Receive Payment button not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'button:has-text("Receive Payment"), a:has-text("Receive Payment"), [data-testid="receive-payment"]',
+      "Receive Payment button not available"
+    );
 
     await receivePaymentButton.click();
 
@@ -104,13 +96,11 @@ test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment")'
     );
 
-    const buttonVisible = await receivePaymentButton
-      .isVisible()
-      .catch(() => false);
-    if (!buttonVisible) {
-      test.skip(true, "Receive Payment button not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'button:has-text("Receive Payment"), a:has-text("Receive Payment")',
+      "Receive Payment button not available"
+    );
 
     await receivePaymentButton.click();
 
@@ -135,13 +125,11 @@ test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment")'
     );
 
-    const buttonVisible = await receivePaymentButton
-      .isVisible()
-      .catch(() => false);
-    if (!buttonVisible) {
-      test.skip(true, "Receive Payment button not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'button:has-text("Receive Payment"), a:has-text("Receive Payment")',
+      "Receive Payment button not available"
+    );
 
     await receivePaymentButton.click();
 
@@ -149,29 +137,33 @@ test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
     const clientSelect = page.locator(
       'select[name="client"], [data-testid="client-select"]'
     );
-    const selectVisible = await clientSelect.isVisible().catch(() => false);
-    if (selectVisible) {
-      await clientSelect.selectOption({ index: 1 });
+    await requireElement(
+      page,
+      'select[name="client"], [data-testid="client-select"]',
+      "Client select not available"
+    );
 
-      // Enter amount
-      const amountInput = page.locator(
-        'input[name="amount"], [data-testid="amount-input"]'
-      );
-      await amountInput.fill("1000");
+    await clientSelect.selectOption({ index: 1 });
 
-      // Look for balance preview
-      const balancePreview = page.locator(
-        '[data-testid="balance-preview"], .balance-preview, :has-text("New Balance")'
-      );
+    // Enter amount
+    const amountInput = page.locator(
+      'input[name="amount"], [data-testid="amount-input"]'
+    );
+    await amountInput.fill("1000");
 
-      // Balance preview should be visible after client selection
-      const previewVisible = await balancePreview
-        .isVisible()
-        .catch(() => false);
-      if (previewVisible) {
-        await expect(balancePreview).toContainText(/balance|total/i);
-      }
-    }
+    // Look for balance preview
+    const balancePreview = page.locator(
+      '[data-testid="balance-preview"], .balance-preview, :has-text("New Balance")'
+    );
+
+    // Balance preview should be visible after client selection
+    await requireElement(
+      page,
+      '[data-testid="balance-preview"], .balance-preview, :has-text("New Balance")',
+      "Balance preview not available"
+    );
+
+    await expect(balancePreview).toContainText(/balance|total/i);
   });
 });
 
@@ -188,11 +180,11 @@ test.describe("Accounting Module Navigation @prod-regression", () => {
       'a:has-text("Chart of Accounts"), button:has-text("Chart of Accounts"), [data-testid="coa-link"]'
     );
 
-    const linkVisible = await coaLink.isVisible().catch(() => false);
-    if (!linkVisible) {
-      test.skip(true, "Chart of Accounts link not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'a:has-text("Chart of Accounts"), button:has-text("Chart of Accounts"), [data-testid="coa-link"]',
+      "Chart of Accounts link not available"
+    );
 
     await coaLink.click();
     await expect(
@@ -209,11 +201,11 @@ test.describe("Accounting Module Navigation @prod-regression", () => {
       'a:has-text("Invoices"), button:has-text("Invoices"), [data-testid="invoices-link"]'
     );
 
-    const linkVisible = await invoicesLink.isVisible().catch(() => false);
-    if (!linkVisible) {
-      test.skip(true, "Invoices link not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'a:has-text("Invoices"), button:has-text("Invoices"), [data-testid="invoices-link"]',
+      "Invoices link not available"
+    );
 
     await invoicesLink.click();
     await expect(
@@ -230,11 +222,11 @@ test.describe("Accounting Module Navigation @prod-regression", () => {
       'a:has-text("Bills"), button:has-text("Bills"), [data-testid="bills-link"]'
     );
 
-    const linkVisible = await billsLink.isVisible().catch(() => false);
-    if (!linkVisible) {
-      test.skip(true, "Bills link not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'a:has-text("Bills"), button:has-text("Bills"), [data-testid="bills-link"]',
+      "Bills link not available"
+    );
 
     await billsLink.click();
     await expect(

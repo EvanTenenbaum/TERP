@@ -8,6 +8,7 @@
  */
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "../fixtures/auth";
+import { requireElement, assertOneVisible } from "../utils/preconditions";
 
 test.describe("Locations Page @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
@@ -49,20 +50,26 @@ test.describe("Locations Page @prod-regression", () => {
       )
       .first();
 
-    if (await expandButton.isVisible().catch(() => false)) {
-      await expandButton.click();
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      '[data-testid="expand-location"], button:has-text("+"), [aria-expanded]',
+      "Expandable tree nodes not available"
+    );
 
-      // Should show child locations
-      const childLocations = page
-        .locator('[data-level="1"], .child-location, .nested-location')
-        .first();
-      // Tree should have expanded
-      expect(
-        (await expandButton.getAttribute("aria-expanded")) === "true" ||
-          (await childLocations.isVisible().catch(() => false))
-      ).toBeTruthy();
-    }
+    await expandButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Tree should have expanded - verify aria-expanded or child locations visible
+    await assertOneVisible(
+      page,
+      [
+        '[aria-expanded="true"]',
+        '[data-level="1"]',
+        ".child-location",
+        ".nested-location",
+      ],
+      "Tree did not expand - no expanded state or child locations found"
+    );
   });
 
   test("should allow searching locations", async ({ page }) => {
@@ -73,13 +80,17 @@ test.describe("Locations Page @prod-regression", () => {
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
 
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("warehouse");
-      await page.waitForLoadState("networkidle");
+    await requireElement(
+      page,
+      'input[type="search"], input[placeholder*="search" i]',
+      "Search input not available"
+    );
 
-      // Results should filter
-      // (specific assertion depends on data)
-    }
+    await searchInput.fill("warehouse");
+    await page.waitForLoadState("networkidle");
+
+    // Results should filter
+    // (specific assertion depends on data)
   });
 });
 
@@ -108,15 +119,17 @@ test.describe("Location CRUD Operations @dev-only", () => {
       )
       .first();
 
-    if (await addButton.isVisible().catch(() => false)) {
-      await addButton.click();
+    await requireElement(
+      page,
+      'button:has-text("Add"), button:has-text("New"), button:has-text("Create")',
+      "Add button not available"
+    );
 
-      // Should open modal or form
-      const form = page
-        .locator('[role="dialog"], form, .location-form')
-        .first();
-      await expect(form).toBeVisible();
-    }
+    await addButton.click();
+
+    // Should open modal or form
+    const form = page.locator('[role="dialog"], form, .location-form').first();
+    await expect(form).toBeVisible();
   });
 
   test("should display location details on click", async ({ page }) => {
@@ -127,19 +140,26 @@ test.describe("Location CRUD Operations @dev-only", () => {
       .locator('tbody tr, [data-testid="location-row"]')
       .first();
 
-    if (await locationRow.isVisible().catch(() => false)) {
-      await locationRow.click();
+    await requireElement(
+      page,
+      'tbody tr, [data-testid="location-row"]',
+      "No location rows found"
+    );
 
-      // Should show details panel or navigate to detail page
-      const details = page
-        .locator(
-          '[role="dialog"], .location-details, [data-testid="location-detail"]'
-        )
-        .first();
-      // Either details panel visible or URL changed
-      const detailsVisible = await details.isVisible().catch(() => false);
-      const urlChanged = page.url().includes("location");
-      expect(detailsVisible || urlChanged).toBeTruthy();
-    }
+    await locationRow.click();
+
+    // Should show details panel or navigate to detail page
+    // Verify that either details panel appears OR URL changed to detail page
+    await assertOneVisible(
+      page,
+      [
+        '[role="dialog"]',
+        ".location-details",
+        '[data-testid="location-detail"]',
+      ],
+      "No details panel found and URL did not change to location detail",
+      5000,
+      async () => page.url().includes("location")
+    );
   });
 });
