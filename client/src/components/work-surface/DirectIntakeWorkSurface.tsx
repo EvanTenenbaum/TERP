@@ -163,6 +163,22 @@ const createEmptyRow = (): IntakeGridRow => ({
   status: "pending",
 });
 
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("Unable to read file"));
+        return;
+      }
+      const base64 = reader.result.split(",")[1];
+      resolve(base64 || "");
+    };
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+
 // ============================================================================
 // STATUS CELL RENDERER
 // ============================================================================
@@ -517,6 +533,9 @@ export function DirectIntakeWorkSurface() {
   const [rows, setRows] = useState<IntakeGridRow[]>([createEmptyRow()]);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rowMediaFiles, setRowMediaFiles] = useState<Record<string, File[]>>(
+    {}
+  );
   const gridApiRef = useRef<GridApi | null>(null);
 
   // Work Surface hooks
@@ -632,6 +651,8 @@ export function DirectIntakeWorkSurface() {
 
   // Mutation
   const intakeMutation = trpc.inventory.intake.useMutation();
+  const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
+  const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
 
   // Loading state
   const isLoadingData = vendorsLoading || locationsLoading || productsLoading;
@@ -859,6 +880,12 @@ export function DirectIntakeWorkSurface() {
         }
         return prev.filter(r => r.id !== rowId);
       });
+      setRowMediaFiles(prev => {
+        if (!(rowId in prev)) return prev;
+        const next = { ...prev };
+        delete next[rowId];
+        return next;
+      });
       if (selectedRowId === rowId) {
         setSelectedRowId(null);
       }
@@ -889,7 +916,35 @@ export function DirectIntakeWorkSurface() {
 
       setSaving("Submitting intake...");
 
+      let uploadedMediaUrls: Array<{
+        url: string;
+        fileName: string;
+        fileType: string;
+        fileSize: number;
+      }> = [];
+
       try {
+        const mediaFiles = rowMediaFiles[row.id] ?? [];
+        if (mediaFiles.length > 0) {
+          uploadedMediaUrls = await Promise.all(
+            mediaFiles.map(async file => {
+              const base64 = await fileToBase64(file);
+              const result = await uploadMediaMutation.mutateAsync({
+                fileData: base64,
+                fileName: file.name,
+                fileType: file.type,
+              });
+
+              return {
+                url: result.url,
+                fileName: result.fileName ?? file.name,
+                fileType: result.fileType ?? file.type,
+                fileSize: result.fileSize ?? file.size,
+              };
+            })
+          );
+        }
+
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -902,6 +957,8 @@ export function DirectIntakeWorkSurface() {
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         // Mark as submitted
@@ -910,9 +967,28 @@ export function DirectIntakeWorkSurface() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFiles(prev => {
+          if (!(row.id in prev)) return prev;
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         setSaved();
         toast.success("Intake submitted successfully");
       } catch (error) {
+        // Rollback: delete uploaded files if intake fails
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch {
+            // Non-fatal; we still want to show the original intake error.
+          }
+        }
+
         const message =
           error instanceof Error ? error.message : "Failed to submit intake";
         setRows(prev =>
@@ -925,7 +1001,16 @@ export function DirectIntakeWorkSurface() {
         setError(message);
       }
     },
-    [intakeMutation, setSaving, setSaved, setError]
+    [
+      deleteMediaMutation,
+      intakeMutation,
+      rowMediaFiles,
+      setError,
+      setSaved,
+      setRowMediaFiles,
+      setSaving,
+      uploadMediaMutation,
+    ]
   );
 
   const handleSubmitAll = useCallback(async () => {
@@ -971,7 +1056,35 @@ export function DirectIntakeWorkSurface() {
     let errorCount = 0;
 
     for (const row of pendingRows) {
+      let uploadedMediaUrls: Array<{
+        url: string;
+        fileName: string;
+        fileType: string;
+        fileSize: number;
+      }> = [];
+
       try {
+        const mediaFiles = rowMediaFiles[row.id] ?? [];
+        if (mediaFiles.length > 0) {
+          uploadedMediaUrls = await Promise.all(
+            mediaFiles.map(async file => {
+              const base64 = await fileToBase64(file);
+              const result = await uploadMediaMutation.mutateAsync({
+                fileData: base64,
+                fileName: file.name,
+                fileType: file.type,
+              });
+
+              return {
+                url: result.url,
+                fileName: result.fileName ?? file.name,
+                fileType: result.fileType ?? file.type,
+                fileSize: result.fileSize ?? file.size,
+              };
+            })
+          );
+        }
+
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -984,6 +1097,8 @@ export function DirectIntakeWorkSurface() {
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         setRows(prev =>
@@ -991,8 +1106,27 @@ export function DirectIntakeWorkSurface() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFiles(prev => {
+          if (!(row.id in prev)) return prev;
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         successCount++;
       } catch (error) {
+        // Rollback: delete uploaded files for this row if intake fails
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch {
+            // Non-fatal; continue processing other rows.
+          }
+        }
+
         setRows(prev =>
           prev.map(r =>
             r.id === row.id
@@ -1020,7 +1154,17 @@ export function DirectIntakeWorkSurface() {
     }
 
     setIsSubmitting(false);
-  }, [rows, intakeMutation, setSaving, setSaved, setError]);
+  }, [
+    deleteMediaMutation,
+    intakeMutation,
+    rowMediaFiles,
+    rows,
+    setError,
+    setRowMediaFiles,
+    setSaved,
+    setSaving,
+    uploadMediaMutation,
+  ]);
 
   const handleUpdateSelectedRow = useCallback(
     (updates: Partial<IntakeGridRow>) => {
@@ -1216,6 +1360,89 @@ export function DirectIntakeWorkSurface() {
             locations={locations}
             products={products}
           />
+          {selectedRow && selectedRow.status === "pending" && (
+            <InspectorSection title="Media" defaultOpen={false}>
+              <InspectorField label="Attach Images">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={e => {
+                    const files = Array.from(e.target.files ?? []);
+                    if (files.length === 0) return;
+
+                    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+                    const validFiles: File[] = [];
+                    for (const file of files) {
+                      if (!file.type.startsWith("image/")) {
+                        toast.error(`Skipping ${file.name}: not an image`);
+                        continue;
+                      }
+                      if (file.size > MAX_SIZE_BYTES) {
+                        toast.error(
+                          `Skipping ${file.name}: file too large (max 10MB)`
+                        );
+                        continue;
+                      }
+                      validFiles.push(file);
+                    }
+
+                    if (validFiles.length > 0) {
+                      setRowMediaFiles(prev => ({
+                        ...prev,
+                        [selectedRow.id]: [
+                          ...(prev[selectedRow.id] ?? []),
+                          ...validFiles,
+                        ],
+                      }));
+                    }
+
+                    // Allow selecting the same file again if needed.
+                    e.target.value = "";
+                  }}
+                />
+
+                {(rowMediaFiles[selectedRow.id] ?? []).length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {(rowMediaFiles[selectedRow.id] ?? []).map(
+                      (file, index) => (
+                        <div
+                          key={`${file.name}-${file.size}-${file.lastModified}`}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="text-xs text-muted-foreground truncate">
+                            {file.name}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              setRowMediaFiles(prev => {
+                                const current = prev[selectedRow.id] ?? [];
+                                const nextFiles = current.filter(
+                                  (_, i) => i !== index
+                                );
+                                if (nextFiles.length === 0) {
+                                  const next = { ...prev };
+                                  delete next[selectedRow.id];
+                                  return next;
+                                }
+                                return { ...prev, [selectedRow.id]: nextFiles };
+                              });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </InspectorField>
+            </InspectorSection>
+          )}
           {selectedRow && selectedRow.status === "pending" && (
             <InspectorActions>
               <Button
