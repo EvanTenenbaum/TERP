@@ -276,7 +276,9 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
 
   const hiddenImages = (images ?? [])
     .filter(img => img.status === "ARCHIVED" || img.status === "REJECTED")
-    .sort((a, b) => (b.uploadedAt?.getTime() ?? 0) - (a.uploadedAt?.getTime() ?? 0));
+    .sort(
+      (a, b) => (b.uploadedAt?.getTime() ?? 0) - (a.uploadedAt?.getTime() ?? 0)
+    );
 
   const handleToggleVisibility = useCallback(
     (imageId: number, makeVisible: boolean) => {
@@ -409,9 +411,9 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
                           onClick={() => handleMoveShown(image.id, "up")}
                           disabled={
                             reorderImagesMutation.isPending ||
-                            image.isPrimary ||
+                            Boolean(image.isPrimary) ||
                             idx === 0 ||
-                            shownImages[idx - 1]?.isPrimary
+                            Boolean(shownImages[idx - 1]?.isPrimary)
                           }
                           aria-label="Move up"
                         >
@@ -424,9 +426,9 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
                           onClick={() => handleMoveShown(image.id, "down")}
                           disabled={
                             reorderImagesMutation.isPending ||
-                            image.isPrimary ||
+                            Boolean(image.isPrimary) ||
                             idx === shownImages.length - 1 ||
-                            shownImages[idx + 1]?.isPrimary
+                            Boolean(shownImages[idx + 1]?.isPrimary)
                           }
                           aria-label="Move down"
                         >
@@ -448,7 +450,9 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
                         <Button
                           size="icon"
                           variant="secondary"
-                          onClick={() => handleToggleVisibility(image.id, false)}
+                          onClick={() =>
+                            handleToggleVisibility(image.id, false)
+                          }
                           disabled={updateImageMutation.isPending}
                           aria-label="Hide from batch"
                         >
@@ -509,7 +513,9 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
                           {image.caption || "No caption"}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {image.status === "REJECTED" ? "Rejected" : "Archived"}
+                          {image.status === "REJECTED"
+                            ? "Rejected"
+                            : "Archived"}
                         </div>
                       </div>
 

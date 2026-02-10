@@ -251,7 +251,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             caption: media.fileName ? media.fileName.slice(0, 255) : null,
             isPrimary: index === 0,
             sortOrder: index,
-            status: "APPROVED",
+            status: "APPROVED" as const,
             uploadedBy: input.userId,
             uploadedAt: new Date(),
           }))
