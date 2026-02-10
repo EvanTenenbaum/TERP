@@ -4,7 +4,12 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure, protectedProcedure } from "../_core/trpc";
+import {
+  router,
+  adminProcedure,
+  protectedProcedure,
+  strictlyProtectedProcedure,
+} from "../_core/trpc";
 import { db } from "../db";
 import { getDb } from "../db";
 import {
@@ -176,7 +181,7 @@ export const photographyRouter = router({
   /**
    * Get images for a batch
    */
-  getBatchImages: protectedProcedure
+  getBatchImages: strictlyProtectedProcedure
     .input(
       z.object({
         batchId: z.number(),
@@ -206,7 +211,7 @@ export const photographyRouter = router({
   /**
    * Get images for a product
    */
-  getProductImages: protectedProcedure
+  getProductImages: strictlyProtectedProcedure
     .input(
       z.object({
         productId: z.number(),

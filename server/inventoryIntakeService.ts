@@ -17,6 +17,7 @@ import {
   lots,
   batches,
   batchLocations,
+  productImages,
   auditLogs,
   type Vendor,
   type Brand,
@@ -238,6 +239,25 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
       if (!batch) {
         throw new Error("Failed to create batch");
+      }
+
+      // Persist intake media onto the batch's canonical media table.
+      // Intake uploads happen before the batch exists (client uploads -> gets URLs),
+      // so we link them here transactionally.
+      if (input.mediaUrls && input.mediaUrls.length > 0) {
+        await tx.insert(productImages).values(
+          input.mediaUrls.map((media, index) => ({
+            batchId: batch.id,
+            productId: product.id,
+            imageUrl: media.url,
+            caption: media.fileName,
+            isPrimary: index === 0,
+            sortOrder: index,
+            status: "APPROVED",
+            uploadedBy: input.userId,
+            uploadedAt: new Date(),
+          }))
+        );
       }
 
       // 7. Create batch location
