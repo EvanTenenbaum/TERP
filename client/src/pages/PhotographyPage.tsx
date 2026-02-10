@@ -120,12 +120,12 @@ export default function PhotographyPage() {
   });
 
   const handleMarkComplete = (batchId: number) => {
-    markComplete.mutate({ batchId, imageUrls: [] });
+    markComplete.mutate({ batchId });
   };
 
   const handleBulkMarkComplete = () => {
     selectedItems.forEach(batchId => {
-      markComplete.mutate({ batchId, imageUrls: [] });
+      markComplete.mutate({ batchId });
     });
   };
 
@@ -139,8 +139,9 @@ export default function PhotographyPage() {
 
   const selectAll = () => {
     if (queue?.items) {
+      // Only select items that can actually be completed (must have at least one photo).
       const pendingIds = queue.items
-        .filter(item => item.status !== "COMPLETED")
+        .filter(item => item.status === "IN_PROGRESS")
         .map(item => item.batchId);
       setSelectedItems(pendingIds);
     }
@@ -365,7 +366,7 @@ export default function PhotographyPage() {
                 </>
               )}
               <Button variant="outline" size="sm" onClick={selectAll}>
-                Select All Pending
+                Select All In Progress
               </Button>
             </div>
           </div>
@@ -392,7 +393,8 @@ export default function PhotographyPage() {
                     <Checkbox
                       checked={
                         selectedItems.length ===
-                        queue.items.filter(i => i.status !== "COMPLETED").length
+                        queue.items.filter(i => i.status === "IN_PROGRESS")
+                          .length
                       }
                       onCheckedChange={checked => {
                         if (checked) {
@@ -418,7 +420,7 @@ export default function PhotographyPage() {
                       <Checkbox
                         checked={selectedItems.includes(item.batchId)}
                         onCheckedChange={() => toggleSelection(item.batchId)}
-                        disabled={item.status === "COMPLETED"}
+                        disabled={item.status !== "IN_PROGRESS"}
                       />
                     </TableCell>
                     <TableCell className="font-medium">
@@ -453,15 +455,17 @@ export default function PhotographyPage() {
                             <Upload className="h-4 w-4 mr-1" />
                             Upload Photos
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkComplete(item.batchId)}
-                            disabled={markComplete.isPending}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Done
-                          </Button>
+                          {item.status === "IN_PROGRESS" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkComplete(item.batchId)}
+                              disabled={markComplete.isPending}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Done
+                            </Button>
+                          )}
                         </>
                       )}
                     </TableCell>

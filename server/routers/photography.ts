@@ -34,29 +34,44 @@ function isSchemaError(error: unknown): boolean {
   if (error instanceof Error) {
     msg = error.message;
     // Check if Error has additional properties (MySQL2 format)
-    if ('code' in error) errorCode = (error as any).code;
-    if ('errno' in error) errno = (error as any).errno;
+    if ("code" in error) {
+      const code = (error as unknown as { code?: unknown }).code;
+      if (typeof code === "string" || typeof code === "number") {
+        errorCode = code;
+      }
+    }
+    if ("errno" in error) {
+      const errNo = (error as unknown as { errno?: unknown }).errno;
+      if (typeof errNo === "number") {
+        errno = errNo;
+      }
+    }
     // Check for nested cause
-    if ('cause' in error && error.cause) {
+    if ("cause" in error && error.cause) {
       return isSchemaError(error.cause);
     }
   }
   // Case 2: Plain object with message property
   else if (error && typeof error === "object") {
-    if ("message" in error && typeof (error as any).message === "string") {
-      msg = (error as any).message;
+    const errObj = error as Record<string, unknown>;
+    if (typeof errObj.message === "string") {
+      msg = errObj.message;
     }
-    if ("sqlMessage" in error && typeof (error as any).sqlMessage === "string") {
-      msg = (error as any).sqlMessage;
+    if (typeof errObj.sqlMessage === "string") {
+      msg = errObj.sqlMessage;
     }
-    if ("code" in error) errorCode = (error as any).code;
-    if ("errno" in error) errno = (error as any).errno;
+    if (typeof errObj.code === "string" || typeof errObj.code === "number") {
+      errorCode = errObj.code;
+    }
+    if (typeof errObj.errno === "number") {
+      errno = errObj.errno;
+    }
     // Check for nested cause or originalError
-    if ("cause" in error && (error as any).cause) {
-      return isSchemaError((error as any).cause);
+    if (errObj.cause) {
+      return isSchemaError(errObj.cause);
     }
-    if ("originalError" in error && (error as any).originalError) {
-      return isSchemaError((error as any).originalError);
+    if (errObj.originalError) {
+      return isSchemaError(errObj.originalError);
     }
   }
   // Case 3: String error
@@ -92,8 +107,8 @@ function isSchemaError(error: unknown): boolean {
     msgLower.includes("no such column") ||
     msgLower.includes("er_bad_field_error") ||
     msgLower.includes("er_no_such_table") ||
-    msgLower.includes("table") && msgLower.includes("doesn't exist") ||
-    msgLower.includes("table") && msgLower.includes("does not exist") ||
+    (msgLower.includes("table") && msgLower.includes("doesn't exist")) ||
+    (msgLower.includes("table") && msgLower.includes("does not exist")) ||
     (msgLower.includes("column") && msgLower.includes("does not exist")) ||
     (msgLower.includes("column") && msgLower.includes("on clause"))
   );
@@ -264,17 +279,37 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        const errObj =
+          queryError && typeof queryError === "object"
+            ? (queryError as Record<string, unknown>)
+            : null;
+        const errorCode =
+          errObj &&
+          (typeof errObj.code === "string" || typeof errObj.code === "number")
+            ? errObj.code
+            : undefined;
+        const errorErrno =
+          errObj && typeof errObj.errno === "number" ? errObj.errno : undefined;
+        const errorSqlMessage =
+          errObj && typeof errObj.sqlMessage === "string"
+            ? errObj.sqlMessage
+            : undefined;
+
         // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
         logger.error(
           {
             error: queryError,
             errorType: typeof queryError,
             errorConstructor: queryError?.constructor?.name,
-            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
-            errorMessage: queryError instanceof Error ? queryError.message : undefined,
-            errorCode: (queryError as any)?.code,
-            errorErrno: (queryError as any)?.errno,
-            errorSqlMessage: (queryError as any)?.sqlMessage,
+            errorKeys:
+              queryError && typeof queryError === "object"
+                ? Object.keys(queryError)
+                : [],
+            errorMessage:
+              queryError instanceof Error ? queryError.message : undefined,
+            errorCode,
+            errorErrno,
+            errorSqlMessage,
           },
           "getBatchesNeedingPhotos: Query with strains join failed - analyzing error format"
         );
@@ -310,10 +345,7 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .where(
-            and(
-              eq(batches.batchStatus, "LIVE"),
-              isNull(batches.deletedAt)
-            )
+            and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt))
           )
           .groupBy(batches.id)
           .orderBy(desc(batches.createdAt))
@@ -518,17 +550,37 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(100);
       } catch (queryError) {
+        const errObj =
+          queryError && typeof queryError === "object"
+            ? (queryError as Record<string, unknown>)
+            : null;
+        const errorCode =
+          errObj &&
+          (typeof errObj.code === "string" || typeof errObj.code === "number")
+            ? errObj.code
+            : undefined;
+        const errorErrno =
+          errObj && typeof errObj.errno === "number" ? errObj.errno : undefined;
+        const errorSqlMessage =
+          errObj && typeof errObj.sqlMessage === "string"
+            ? errObj.sqlMessage
+            : undefined;
+
         // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
         logger.error(
           {
             error: queryError,
             errorType: typeof queryError,
             errorConstructor: queryError?.constructor?.name,
-            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
-            errorMessage: queryError instanceof Error ? queryError.message : undefined,
-            errorCode: (queryError as any)?.code,
-            errorErrno: (queryError as any)?.errno,
-            errorSqlMessage: (queryError as any)?.sqlMessage,
+            errorKeys:
+              queryError && typeof queryError === "object"
+                ? Object.keys(queryError)
+                : [],
+            errorMessage:
+              queryError instanceof Error ? queryError.message : undefined,
+            errorCode,
+            errorErrno,
+            errorSqlMessage,
           },
           "Photography queue query with strains failed - analyzing error format"
         );
@@ -679,6 +731,44 @@ export const photographyRouter = router({
             uploadedAt: new Date(),
           });
         }
+      }
+
+      // Guard: do not allow completion without at least one visible image.
+      // "Visible" excludes ARCHIVED/REJECTED to align with batch surfacing.
+      const existingImages = await db
+        .select({
+          id: productImages.id,
+          isPrimary: productImages.isPrimary,
+          status: productImages.status,
+        })
+        .from(productImages)
+        .where(eq(productImages.batchId, input.batchId));
+
+      const visibleImages = existingImages.filter(
+        img => img.status !== "ARCHIVED" && img.status !== "REJECTED"
+      );
+
+      if (visibleImages.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "At least one photo is required to complete photography",
+        });
+      }
+
+      const hasVisiblePrimary = visibleImages.some(img =>
+        Boolean(img.isPrimary)
+      );
+      if (!hasVisiblePrimary) {
+        // Repair state: ensure exactly one primary among visible images.
+        await db
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(eq(productImages.batchId, input.batchId));
+
+        await db
+          .update(productImages)
+          .set({ isPrimary: true })
+          .where(eq(productImages.id, visibleImages[0].id));
       }
 
       // Update batch status to PHOTOGRAPHY_COMPLETE
@@ -863,14 +953,30 @@ export const photographyRouter = router({
         .from(productImages)
         .where(eq(productImages.batchId, input.batchId));
 
-      // Require at least one primary photo
-      const hasPrimary = photos.some(p => p.isPrimary);
-      if (!hasPrimary) {
+      const visiblePhotos = photos.filter(
+        p => p.status !== "ARCHIVED" && p.status !== "REJECTED"
+      );
+
+      if (visiblePhotos.length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            "At least one primary photo is required to complete photography",
+          message: "At least one photo is required to complete photography",
         });
+      }
+
+      // Require at least one primary photo (among visible photos)
+      const hasVisiblePrimary = visiblePhotos.some(p => Boolean(p.isPrimary));
+      if (!hasVisiblePrimary) {
+        // Repair state rather than blocking the workflow.
+        await database
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(eq(productImages.batchId, input.batchId));
+
+        await database
+          .update(productImages)
+          .set({ isPrimary: true })
+          .where(eq(productImages.id, visiblePhotos[0].id));
       }
 
       // Update batch metadata
@@ -980,17 +1086,37 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        const errObj =
+          queryError && typeof queryError === "object"
+            ? (queryError as Record<string, unknown>)
+            : null;
+        const errorCode =
+          errObj &&
+          (typeof errObj.code === "string" || typeof errObj.code === "number")
+            ? errObj.code
+            : undefined;
+        const errorErrno =
+          errObj && typeof errObj.errno === "number" ? errObj.errno : undefined;
+        const errorSqlMessage =
+          errObj && typeof errObj.sqlMessage === "string"
+            ? errObj.sqlMessage
+            : undefined;
+
         // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
         logger.error(
           {
             error: queryError,
             errorType: typeof queryError,
             errorConstructor: queryError?.constructor?.name,
-            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
-            errorMessage: queryError instanceof Error ? queryError.message : undefined,
-            errorCode: (queryError as any)?.code,
-            errorErrno: (queryError as any)?.errno,
-            errorSqlMessage: (queryError as any)?.sqlMessage,
+            errorKeys:
+              queryError && typeof queryError === "object"
+                ? Object.keys(queryError)
+                : [],
+            errorMessage:
+              queryError instanceof Error ? queryError.message : undefined,
+            errorCode,
+            errorErrno,
+            errorSqlMessage,
           },
           "getAwaitingPhotography: Query with strains join failed - analyzing error format"
         );
