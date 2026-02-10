@@ -5,8 +5,9 @@
  * Each QA role has deterministic credentials for reproducible tests.
  */
 
-import { Page } from "@playwright/test";
-import { QARole, QA_CREDENTIALS } from "./types";
+import { type Page } from "@playwright/test";
+import { QA_CREDENTIALS } from "./types";
+import type { QARole } from "./types";
 
 /**
  * Fill the first visible input matching any selector
@@ -198,4 +199,5 @@ export async function ensureLoggedInAs(
 }
 
 // Re-export types
-export { QARole, QA_CREDENTIALS } from "./types";
+export { QA_CREDENTIALS } from "./types";
+export type { QARole } from "./types";

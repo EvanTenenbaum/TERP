@@ -18,15 +18,21 @@ const isCloud =
   process.env.MEGA_QA_USE_LIVE_DB === "true" ||
   process.env.SKIP_E2E_SETUP === "1" ||
   process.env.SKIP_E2E_SETUP === "true";
+const isRemoteExecution = isRemoteBaseURL || isCloud;
+const envTaggedPattern = /@prod-smoke|@prod-regression|@dev-only/;
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["tests-e2e/**/*.spec.ts", "tests/e2e/**/*.spec.ts", "tests/smoke/**/*.spec.ts"],
+  testMatch: [
+    "tests-e2e/**/*.spec.ts",
+    "tests/e2e/**/*.spec.ts",
+    "tests/smoke/**/*.spec.ts",
+  ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Cloud/live runs should avoid parallelizing against production.
-  workers: process.env.CI || isCloud ? 1 : undefined,
+  // CI/remote runs should avoid high parallelism against shared environments.
+  workers: process.env.CI || isRemoteExecution ? 1 : undefined,
   reporter: [
     process.env.CI ? ["dot"] : ["list"],
     ["html"],
@@ -46,7 +52,13 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
+      name: "prod-smoke",
+      grep: /@prod-smoke/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "prod-regression",
+      grep: /@prod-regression/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -54,29 +66,48 @@ export default defineConfig({
       testDir: "./tests/smoke",
       use: { ...devices["Desktop Chrome"] },
     },
-    {
-      name: "ai-generated",
-      testDir: "./tests-e2e/ai-generated",
-      use: { ...devices["Desktop Chrome"] },
-    },
-    {
-      name: "Mobile Chrome",
-      use: { ...devices["Pixel 5"] },
-    },
-    {
-      name: "Mobile Safari",
-      use: { ...devices["iPhone 13"] },
-    },
-    {
-      name: "Tablet",
-      use: { ...devices["iPad (gen 7)"] },
-    },
+    // Local-only projects: broad compatibility, dev flows, and viewport matrix.
+    ...(isRemoteExecution
+      ? []
+      : [
+          {
+            name: "chromium",
+            // Keep untagged legacy coverage local, but avoid duplicate env-tagged runs.
+            grepInvert: envTaggedPattern,
+            use: { ...devices["Desktop Chrome"] },
+          },
+          {
+            name: "dev-only",
+            grep: /@dev-only/,
+            use: { ...devices["Desktop Chrome"] },
+          },
+          {
+            name: "ai-generated",
+            testDir: "./tests-e2e/ai-generated",
+            use: { ...devices["Desktop Chrome"] },
+          },
+          {
+            name: "Mobile Chrome",
+            grepInvert: envTaggedPattern,
+            use: { ...devices["Pixel 5"] },
+          },
+          {
+            name: "Mobile Safari",
+            grepInvert: envTaggedPattern,
+            use: { ...devices["iPhone 13"] },
+          },
+          {
+            name: "Tablet",
+            grepInvert: envTaggedPattern,
+            use: { ...devices["iPad (gen 7)"] },
+          },
+        ]),
   ],
   // In CI, we start the server manually before running tests
   // In local dev, Playwright starts the dev server automatically
   // In cloud/remote mode, never start a local dev server.
   webServer:
-    process.env.CI || isRemoteBaseURL || isCloud
+    process.env.CI || isRemoteExecution
       ? undefined
       : {
           command: "pnpm dev",

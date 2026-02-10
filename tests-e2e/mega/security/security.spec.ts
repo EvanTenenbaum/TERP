@@ -16,7 +16,7 @@ function emitTag(tag: string): void {
   console.log(`[COVERAGE] ${tag}`);
 }
 
-test.describe("Security - Authentication", () => {
+test.describe("Security - Authentication @dev-only", () => {
   test("Protected routes redirect to login when not authenticated", async ({
     page,
   }) => {
@@ -72,7 +72,7 @@ test.describe("Security - Authentication", () => {
   });
 });
 
-test.describe("Security - RBAC Negative Tests", () => {
+test.describe("Security - RBAC Negative Tests @dev-only", () => {
   test("TS-9.2: Standard user cannot access admin endpoints", async ({
     page,
   }) => {
@@ -138,7 +138,7 @@ test.describe("Security - RBAC Negative Tests", () => {
   });
 });
 
-test.describe("Security - Input Validation", () => {
+test.describe("Security - Input Validation @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -202,7 +202,7 @@ test.describe("Security - Input Validation", () => {
   });
 });
 
-test.describe("Security - Rate Limiting", () => {
+test.describe("Security - Rate Limiting @dev-only", () => {
   test("Rapid login attempts are rate limited", async ({ page }) => {
     emitTag("security-rate-limit");
 
@@ -232,7 +232,7 @@ test.describe("Security - Rate Limiting", () => {
   });
 });
 
-test.describe("Security - Headers", () => {
+test.describe("Security - Headers @dev-only", () => {
   test("Security headers are present", async ({ request }) => {
     emitTag("security-headers");
 

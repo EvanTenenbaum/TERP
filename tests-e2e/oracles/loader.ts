@@ -6,8 +6,12 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import * as yaml from "js-yaml";
 import type { TestOracle, SeedProfile } from "./types";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const ORACLES_DIR = path.join(__dirname, "..");
 const ORACLE_EXTENSION = ".oracle.yaml";
@@ -72,16 +76,17 @@ export function loadOraclesByTags(
 ): TestOracle[] {
   const allOracles = loadOraclesFromDir(path.join(ORACLES_DIR, "oracles"));
 
-  return allOracles.filter((oracle) => {
+  return allOracles.filter(oracle => {
     if (!oracle.tags || oracle.tags.length === 0) {
       return false;
     }
+    const oracleTags = oracle.tags;
 
     if (matchAll) {
-      return tags.every((tag) => oracle.tags!.includes(tag));
+      return tags.every(tag => oracleTags.includes(tag));
     }
 
-    return tags.some((tag) => oracle.tags!.includes(tag));
+    return tags.some(tag => oracleTags.includes(tag));
   });
 }
 
@@ -125,7 +130,7 @@ export function loadSeedProfile(profileName: string): SeedProfile | null {
  */
 export function getAllOracleIds(): string[] {
   const oracles = loadOraclesFromDir(path.join(ORACLES_DIR, "oracles"));
-  return oracles.map((o) => o.flow_id);
+  return oracles.map(o => o.flow_id);
 }
 
 /**
@@ -133,7 +138,7 @@ export function getAllOracleIds(): string[] {
  */
 export function findOracleById(flowId: string): TestOracle | null {
   const oracles = loadOraclesFromDir(path.join(ORACLES_DIR, "oracles"));
-  return oracles.find((o) => o.flow_id === flowId) || null;
+  return oracles.find(o => o.flow_id === flowId) || null;
 }
 
 /**
@@ -159,13 +164,14 @@ function validateOracle(oracle: TestOracle, filePath: string): void {
   }
 
   if (!oracle.expected_ui && !oracle.expected_db) {
-    errors.push(
-      "At least one of expected_ui or expected_db must be defined"
-    );
+    errors.push("At least one of expected_ui or expected_db must be defined");
   }
 
   // Validate flow_id format
-  if (oracle.flow_id && !/^[A-Z][a-zA-Z]+\.[A-Z][a-zA-Z]+\.[A-Z][a-zA-Z]+/.test(oracle.flow_id)) {
+  if (
+    oracle.flow_id &&
+    !/^[A-Z][a-zA-Z]+\.[A-Z][a-zA-Z]+\.[A-Z][a-zA-Z]+/.test(oracle.flow_id)
+  ) {
     errors.push(
       `Invalid flow_id format: ${oracle.flow_id}. Expected: Domain.Entity.FlowName`
     );
@@ -182,7 +188,9 @@ function validateOracle(oracle: TestOracle, filePath: string): void {
     "Auditor",
   ];
   if (oracle.role && !validRoles.includes(oracle.role)) {
-    errors.push(`Invalid role: ${oracle.role}. Valid roles: ${validRoles.join(", ")}`);
+    errors.push(
+      `Invalid role: ${oracle.role}. Valid roles: ${validRoles.join(", ")}`
+    );
   }
 
   if (errors.length > 0) {

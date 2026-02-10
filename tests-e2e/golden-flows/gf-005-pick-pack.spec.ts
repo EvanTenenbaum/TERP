@@ -7,7 +7,7 @@
 import { expect, test } from "@playwright/test";
 import { loginAsFulfillment } from "../fixtures/auth";
 
-test.describe("Golden Flow: GF-005 Pick & Pack", (): void => {
+test.describe("Golden Flow: GF-005 Pick & Pack @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
     await loginAsFulfillment(page);
   });
