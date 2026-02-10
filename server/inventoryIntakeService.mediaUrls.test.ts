@@ -2,7 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { createMockDb } from "./test-utils/testDb";
 
-const getDbMock = vi.fn();
+const { getDbMock } = vi.hoisted(() => ({
+  getDbMock: vi.fn(),
+}));
 
 vi.mock("./db", () => ({
   getDb: getDbMock,
