@@ -142,7 +142,11 @@ async function ensureExactlyOneVisiblePrimaryForGroup(group: {
     })
     .from(productImages)
     .where(and(groupWhere, visibleImageStatusWhere))
-    .orderBy(desc(productImages.isPrimary), productImages.sortOrder, productImages.id);
+    .orderBy(
+      desc(productImages.isPrimary),
+      productImages.sortOrder,
+      productImages.id
+    );
 
   if (visibleImages.length === 0) return;
 
@@ -189,13 +193,22 @@ export const photographyRouter = router({
 
       const groupWhere = input.batchId
         ? eq(productImages.batchId, input.batchId)
-        : eq(productImages.productId, input.productId!);
+        : (() => {
+            // We already validated that one of batchId/productId exists, but we avoid
+            // non-null assertions to satisfy lint rules.
+            const productId = input.productId;
+            if (!productId) {
+              throw new Error("Either batchId or productId is required");
+            }
+            return eq(productImages.productId, productId);
+          })();
 
       const [{ maxSortOrder }] = await db
         .select({
-          maxSortOrder: sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
-            "maxSortOrder"
-          ),
+          maxSortOrder:
+            sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
+              "maxSortOrder"
+            ),
         })
         .from(productImages)
         .where(groupWhere);
@@ -212,10 +225,14 @@ export const photographyRouter = router({
         .where(and(groupWhere, visibleImageStatusWhere))
         .limit(1);
 
-      const shouldBePrimary = input.isPrimary || existingVisibleImages.length === 0;
+      const shouldBePrimary =
+        input.isPrimary || existingVisibleImages.length === 0;
 
       if (shouldBePrimary) {
-        await db.update(productImages).set({ isPrimary: false }).where(groupWhere);
+        await db
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(groupWhere);
       }
 
       const [image] = await db.insert(productImages).values({
@@ -502,15 +519,19 @@ export const photographyRouter = router({
 
       // If un-hiding and no explicit sortOrder was provided, put the image at the end of the visible list.
       const isBecomingVisible =
-        (existingImage.status === "ARCHIVED" || existingImage.status === "REJECTED") &&
-        (nextStatus === null || nextStatus === "APPROVED" || nextStatus === "PENDING");
+        (existingImage.status === "ARCHIVED" ||
+          existingImage.status === "REJECTED") &&
+        (nextStatus === null ||
+          nextStatus === "APPROVED" ||
+          nextStatus === "PENDING");
 
       if (isBecomingVisible && typeof updates.sortOrder !== "number") {
         const [{ maxSortOrder }] = await db
           .select({
-            maxSortOrder: sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
-              "maxSortOrder"
-            ),
+            maxSortOrder:
+              sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
+                "maxSortOrder"
+              ),
           })
           .from(productImages)
           .where(and(groupWhere, visibleImageStatusWhere));
@@ -520,7 +541,10 @@ export const photographyRouter = router({
 
       // If setting as primary, unset others first.
       if (updates.isPrimary) {
-        await db.update(productImages).set({ isPrimary: false }).where(groupWhere);
+        await db
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(groupWhere);
       }
 
       await db
@@ -580,10 +604,12 @@ export const photographyRouter = router({
           productId: productImages.productId,
         })
         .from(productImages)
-        .where(sql`${productImages.id} IN (${sql.join(
-          input.imageIds.map(id => sql`${id}`),
-          sql`, `
-        )})`);
+        .where(
+          sql`${productImages.id} IN (${sql.join(
+            input.imageIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        );
 
       if (rows.length !== input.imageIds.length) {
         throw new TRPCError({
@@ -596,12 +622,14 @@ export const photographyRouter = router({
       const allSameBatch =
         first.batchId !== null && rows.every(r => r.batchId === first.batchId);
       const allSameProduct =
-        first.productId !== null && rows.every(r => r.productId === first.productId);
+        first.productId !== null &&
+        rows.every(r => r.productId === first.productId);
 
       if (!allSameBatch && !allSameProduct) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Images must all belong to the same batch or the same product",
+          message:
+            "Images must all belong to the same batch or the same product",
         });
       }
 
@@ -884,14 +912,49 @@ export const photographyRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // If imageUrls are provided, add them first
+      const [batch] = await db
+        .select({ id: batches.id, productId: batches.productId })
+        .from(batches)
+        .where(eq(batches.id, input.batchId))
+        .limit(1);
+
+      if (!batch) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      }
+
+      // If imageUrls are provided, add them first.
+      // Safety rules:
+      // - If the batch already has at least one visible image, do NOT create a new primary.
+      // - Append new images to the end of the visible list using sortOrder.
+      const existingBefore = await db
+        .select({
+          id: productImages.id,
+          isPrimary: productImages.isPrimary,
+          status: productImages.status,
+          sortOrder: productImages.sortOrder,
+        })
+        .from(productImages)
+        .where(eq(productImages.batchId, input.batchId));
+
+      const visibleBefore = existingBefore.filter(
+        img => img.status !== "ARCHIVED" && img.status !== "REJECTED"
+      );
+
+      const maxSortOrderBefore = visibleBefore.reduce((max, img) => {
+        const order = typeof img.sortOrder === "number" ? img.sortOrder : -1;
+        return Math.max(max, order);
+      }, -1);
+
+      const shouldPrimaryFirstInserted = visibleBefore.length === 0;
+
       if (input.imageUrls && input.imageUrls.length > 0) {
         for (let i = 0; i < input.imageUrls.length; i++) {
           await db.insert(productImages).values({
             batchId: input.batchId,
+            productId: batch.productId,
             imageUrl: input.imageUrls[i],
-            isPrimary: i === 0,
-            sortOrder: i,
+            isPrimary: shouldPrimaryFirstInserted && i === 0,
+            sortOrder: maxSortOrderBefore + 1 + i,
             status: "APPROVED",
             uploadedBy: ctx.user.id,
             uploadedAt: new Date(),
@@ -906,6 +969,7 @@ export const photographyRouter = router({
           id: productImages.id,
           isPrimary: productImages.isPrimary,
           status: productImages.status,
+          sortOrder: productImages.sortOrder,
         })
         .from(productImages)
         .where(eq(productImages.batchId, input.batchId));
@@ -921,11 +985,39 @@ export const photographyRouter = router({
         });
       }
 
-      const hasVisiblePrimary = visibleImages.some(img =>
-        Boolean(img.isPrimary)
-      );
-      if (!hasVisiblePrimary) {
-        // Repair state: ensure exactly one primary among visible images.
+      // Repair state: ensure exactly one primary overall for this batch.
+      // This handles:
+      // - zero visible primaries
+      // - multiple primaries (visible and/or hidden)
+      const visiblePrimaryIds = visibleImages
+        .filter(img => Boolean(img.isPrimary))
+        .map(img => img.id);
+
+      const desiredPrimaryId =
+        visiblePrimaryIds.length === 1
+          ? visiblePrimaryIds[0]
+          : [...visibleImages].sort((a, b) => {
+              const aOrder =
+                typeof a.sortOrder === "number"
+                  ? a.sortOrder
+                  : Number.MAX_SAFE_INTEGER;
+              const bOrder =
+                typeof b.sortOrder === "number"
+                  ? b.sortOrder
+                  : Number.MAX_SAFE_INTEGER;
+              if (aOrder !== bOrder) return aOrder - bOrder;
+              return a.id - b.id;
+            })[0].id;
+
+      const existingPrimaryIds = existingImages
+        .filter(img => Boolean(img.isPrimary))
+        .map(img => img.id);
+
+      const alreadyClean =
+        existingPrimaryIds.length === 1 &&
+        existingPrimaryIds[0] === desiredPrimaryId;
+
+      if (!alreadyClean) {
         await db
           .update(productImages)
           .set({ isPrimary: false })
@@ -934,7 +1026,7 @@ export const photographyRouter = router({
         await db
           .update(productImages)
           .set({ isPrimary: true })
-          .where(eq(productImages.id, visibleImages[0].id));
+          .where(eq(productImages.id, desiredPrimaryId));
       }
 
       // Update batch status to PHOTOGRAPHY_COMPLETE
