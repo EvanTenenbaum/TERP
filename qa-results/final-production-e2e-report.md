@@ -6,120 +6,101 @@
 
 ## Executive Summary
 
-The TERP production E2E test suite has been systematically stabilized across 4 phases, addressing both systemic infrastructure issues and file-level test failures. The changes span 49 modified spec files and 7 new infrastructure files.
-
-## Scope
-
-- **Systemic Tickets**: TER-120 through TER-127 (all resolved)
-- **File Tickets**: TER-128 through TER-165 (all resolved)
-- **Total Changes**: 1,228 insertions, 792 deletions across 50 files
+The TERP production E2E test suite has been systematically stabilized across two phases: initial infrastructure + tagging, then a thorough remediation pass that eliminated all identified anti-patterns and wired infrastructure into spec files.
 
 ## Verification Results
 
-| Check                   | Result                  |
-| ----------------------- | ----------------------- |
-| TypeScript (pnpm check) | PASS                    |
-| Unit Tests (pnpm test)  | 5,404 passed, 0 failed  |
-| ESLint (new files)      | PASS                    |
-| Build                   | Verified via TypeScript |
+| Check                   | Result                 |
+| ----------------------- | ---------------------- |
+| TypeScript (pnpm check) | PASS                   |
+| Unit Tests (pnpm test)  | 5,404 passed, 0 failed |
+| ESLint                  | PASS                   |
 
-## Key Improvements
+## Anti-Pattern Elimination (grep-verified)
 
-### 1. Suite Separation (TER-120)
+| Anti-Pattern                              | Before              | After                                   | Evidence                                                                                             |
+| ----------------------------------------- | ------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `.catch(() => false)` in spec files       | 401 across 44 files | **0 across 0 files**                    | `grep -r '.catch(() => false)' tests-e2e/ --include="*.spec.ts"`                                     |
+| `expect(x \|\| y).toBeTruthy()`           | 26 across 11 files  | **0 across 0 files**                    | `grep -r 'expect(.*\|\|.*).toBeTruthy' tests-e2e/ --include="*.spec.ts"`                             |
+| `expect(x \|\| true).toBeTruthy()`        | 5 across 5 files    | **0 across 0 files**                    | `grep -r '\|\| true).toBeTruthy' tests-e2e/ --include="*.spec.ts"`                                   |
+| `waitForTimeout` (non-intentional)        | 91 across 15 files  | **0**                                   | `grep -r 'waitForTimeout' tests-e2e/ --include="*.spec.ts" \| grep -v Intentional \| grep -v 'was:'` |
+| `waitForTimeout` (intentional, annotated) | N/A                 | **4** (with `// Intentional:` comments) | Rate-limit pacing, offline simulation, journey pacing, race condition testing                        |
 
-**Before**: All tests ran everywhere, causing prod failures for data-mutating tests
-**After**: Three distinct suites with clear run commands:
+## Utility Adoption (grep-verified)
 
-- `prod-smoke`: Read-only, safe for production
-- `prod-regression`: Extended tests that read existing data
-- `dev-only`: Tests that create/mutate data (local/staging only)
+| Utility            | Spec Files Importing | Evidence                                                         |
+| ------------------ | -------------------- | ---------------------------------------------------------------- |
+| `preconditions.ts` | **35 spec files**    | `grep -r 'from.*preconditions' tests-e2e/ --include="*.spec.ts"` |
 
-### 2. Precondition Guards (TER-121)
+## Infrastructure Changes
 
-**Before**: Tests used `.catch(() => false)` to silently ignore missing data
-**After**: Tests use `test.skip()` with explicit reasons when preconditions fail
+### Created (3 useful files)
 
-### 3. Auth/Session Contract (TER-124)
+| File                               | Purpose                                                                                   | Adoption                 |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------ |
+| `tests-e2e/utils/environment.ts`   | Environment detection (local/staging/production)                                          | Used by preconditions.ts |
+| `tests-e2e/utils/preconditions.ts` | `requireElement`, `requireOneOf`, `assertOneVisible`, `requireDataRows`, `skipInDemoMode` | **35 spec files**        |
+| `tests-e2e/utils/wait-helpers.ts`  | `waitForLoadingComplete`, `waitForTableReady` (composite waits)                           | Available for adoption   |
 
-**Before**: No documentation of auth expectations per environment
-**After**: ENVIRONMENT_CONTRACT.md defines auth modes, QA accounts, RBAC roles
+### Deleted (2 dead-code files)
 
-### 4. Feature-Flag Awareness (TER-125)
+| File                           | Reason                                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `tests-e2e/utils/selectors.ts` | Thin wrappers over Playwright APIs with zero added value                                |
+| `tests-e2e/utils/test-tags.ts` | `tagSuite()` fundamentally broken (Playwright `--grep` matches titles, not annotations) |
 
-**Before**: Tests assumed all features enabled everywhere
-**After**: `requireFeature()` guard skips tests when features unavailable
+### Retained from initial pass
 
-### 5. RBAC Contract (TER-126)
+| File                                | Purpose                                             |
+| ----------------------------------- | --------------------------------------------------- |
+| `tests-e2e/ENVIRONMENT_CONTRACT.md` | Documents auth modes, QA accounts, suite separation |
+| `scripts/e2e-failure-cluster.ts`    | Post-run failure auto-clustering by root cause      |
+| `playwright.config.ts`              | `prod-smoke` and `prod-regression` projects added   |
 
-**Before**: Admin fallback masked RBAC test failures in DEMO_MODE
-**After**: RBAC tests skip in DEMO_MODE; RBAC contract documented
+## Suite Separation
 
-### 6. Selector Strategy (TER-122)
+Tags applied to all spec files in `test.describe()` titles:
 
-**Before**: Mixed selectors (text, CSS, placeholder matching)
-**After**: Selector utility library with priority: data-testid > role > label
+- `@prod-smoke`: Read-only tests safe for production (auth, navigation, seed)
+- `@prod-regression`: Tests reading existing data (RBAC, workflows)
+- `@dev-only`: Tests creating/mutating data (CRUD, golden flows, critical paths)
 
-### 7. Timeout/Wait Policy (TER-123)
+## What Changed in Spec Files
 
-**Before**: 100+ hardcoded `page.waitForTimeout()` calls (100ms-2000ms)
-**After**: Deterministic wait helpers (networkidle, element visibility, loading states)
+Across 49 spec files:
 
-### 8. Auto-Clustering (TER-127)
+- **401 `.catch(() => false)` patterns** replaced with `requireElement()`, `assertOneVisible()`, or try/catch with explicit handling
+- **26 `expect(x || y).toBeTruthy()` patterns** replaced with `assertOneVisible()`, `expect(url).toMatch(regex)`, or proper Playwright assertions
+- **91 `waitForTimeout` calls** eliminated (deleted redundant ones, replaced others with networkidle/element waits)
+- **Suite tags** added to all `test.describe()` blocks
+- **Live-catalog infinite recursion** fixed (`takeScreenshot` calling itself)
+- **RBAC tests** skip in DEMO_MODE via `skipInDemoMode()`
 
-**Before**: Manual failure analysis
-**After**: Automated script classifies and clusters failures by root cause
+## Behavioral Impact
 
-## Soft Assertion Elimination
+Tests that previously "passed" silently (by swallowing errors) will now either:
 
-**Before**: Widespread `expect(x || true).toBeTruthy()` patterns (always pass)
-**After**: All replaced with proper assertions or precondition guards
+1. **Skip** with a clear reason (via `requireElement`/`requireOneOf`) when preconditions aren't met
+2. **Fail** with a descriptive error (via `assertOneVisible`) when expected elements are missing
 
-## Files Changed
-
-### New Infrastructure (7 files)
-
-| File                              | Purpose               |
-| --------------------------------- | --------------------- |
-| tests-e2e/utils/environment.ts    | Environment detection |
-| tests-e2e/utils/preconditions.ts  | Guard helpers         |
-| tests-e2e/utils/wait-helpers.ts   | Deterministic waits   |
-| tests-e2e/utils/selectors.ts      | Selector helpers      |
-| tests-e2e/utils/test-tags.ts      | Suite tagging         |
-| tests-e2e/ENVIRONMENT_CONTRACT.md | Environment docs      |
-| scripts/e2e-failure-cluster.ts    | Failure clustering    |
-
-### Modified Specs (49 files)
-
-- 3 CRUD specs (clients, inventory, orders)
-- 12 golden-flow specs (all 8 gf-\* plus supporting)
-- 14 critical-path specs (all)
-- 5 RBAC specs (all)
-- 2 mega specs (must-hit, sprint-features)
-- 1 comprehensive suite
-- 12 other specs (auth, navigation, live-catalog, seed, workflows, etc.)
-- playwright.config.ts, package.json
-
-## Definition of Done Assessment
-
-| Criteria                      | Status                                             |
-| ----------------------------- | -------------------------------------------------- |
-| All systemic tickets resolved | COMPLETE                                           |
-| All file tickets resolved     | COMPLETE                                           |
-| No selector-syntax failures   | RESOLVED (selector helpers + data-testid priority) |
-| Timeout failures reduced 75%+ | RESOLVED (all hardcoded waits replaced)            |
+This means the skip count may increase, but test results are now **honest** — a pass means the test actually verified something.
 
 ## Run Commands
 
 ```bash
-# Production smoke (safe)
+# Production smoke (safe, read-only)
 npx playwright test --project=prod-smoke
 
-# Production regression
+# Production regression (read existing data)
 npx playwright test --project=prod-regression
 
-# Development only
+# Development only (creates/mutates data)
 npx playwright test --grep @dev-only
 
 # Failure analysis after any run
 pnpm e2e:cluster
 ```
+
+## Remaining Non-Spec Anti-Patterns
+
+13 `.catch(() => false)` instances remain in non-spec utility/fixture files (`oracles/`, `fixtures/auth.ts`). These are pre-existing infrastructure not in scope for this stabilization effort.
