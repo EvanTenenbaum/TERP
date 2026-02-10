@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Order Creation Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
@@ -28,19 +29,25 @@ test.describe("Order Creation Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for client selector
-    const clientSelector = page.locator(
-      'select[name="client"], [data-testid="client-select"], button:has-text("Select Client")'
+    await requireElement(
+      page,
+      'select[name="client"], [data-testid="client-select"], button:has-text("Select Client")',
+      "Client selector not found"
     );
 
-    if (await clientSelector.isVisible().catch(() => false)) {
-      await clientSelector.click();
-      await page.waitForLoadState("networkidle");
+    const clientSelector = page
+      .locator(
+        'select[name="client"], [data-testid="client-select"], button:has-text("Select Client")'
+      )
+      .first();
 
-      // Should show client options
-      await expect(
-        page.locator('[role="option"], option, [data-testid="client-option"]')
-      ).toBeVisible({ timeout: 5000 });
-    }
+    await clientSelector.click();
+    await page.waitForLoadState("networkidle");
+
+    // Should show client options
+    await expect(
+      page.locator('[role="option"], option, [data-testid="client-option"]')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should add items to order", async ({ page }) => {
@@ -48,20 +55,26 @@ test.describe("Order Creation Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for add item button
-    const addItemButton = page.locator(
-      'button:has-text("Add Item"), button:has-text("Add Product"), [data-testid="add-item"]'
+    await requireElement(
+      page,
+      'button:has-text("Add Item"), button:has-text("Add Product"), [data-testid="add-item"]',
+      "Add item button not found"
     );
 
-    if (await addItemButton.isVisible().catch(() => false)) {
-      await addItemButton.click();
+    const addItemButton = page
+      .locator(
+        'button:has-text("Add Item"), button:has-text("Add Product"), [data-testid="add-item"]'
+      )
+      .first();
 
-      // Should show item form or selector
-      await expect(
-        page.locator(
-          '[data-testid="order-item"], .order-item, select[name="product"]'
-        )
-      ).toBeVisible({ timeout: 5000 });
-    }
+    await addItemButton.click();
+
+    // Should show item form or selector
+    await expect(
+      page.locator(
+        '[data-testid="order-item"], .order-item, select[name="product"]'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should calculate order total", async ({ page }) => {
@@ -69,13 +82,9 @@ test.describe("Order Creation Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for total display
-    const totalDisplay = page.locator(
-      '[data-testid="order-total"], .order-total, :text("Total")'
-    );
-
-    if (await totalDisplay.isVisible().catch(() => false)) {
-      await expect(totalDisplay).toBeVisible();
-    }
+    await expect(
+      page.locator('[data-testid="order-total"], .order-total, :text("Total")')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should submit order successfully", async ({ page }) => {
@@ -83,13 +92,11 @@ test.describe("Order Creation Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for submit button
-    const submitButton = page.locator(
-      'button[type="submit"], button:has-text("Create Order"), button:has-text("Submit")'
-    );
-
-    if (await submitButton.isVisible().catch(() => false)) {
-      await expect(submitButton).toBeVisible();
-    }
+    await expect(
+      page.locator(
+        'button[type="submit"], button:has-text("Create Order"), button:has-text("Submit")'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -113,13 +120,9 @@ test.describe("Order Fulfillment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for orders list
-    const ordersList = page.locator(
-      '[data-testid="fulfillment-orders"], table, .orders-list'
-    );
-
-    if (await ordersList.isVisible().catch(() => false)) {
-      await expect(ordersList).toBeVisible();
-    }
+    await expect(
+      page.locator('[data-testid="fulfillment-orders"], table, .orders-list')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should start picking process", async ({ page }) => {
@@ -127,23 +130,25 @@ test.describe("Order Fulfillment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found in pick-pack page"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for start picking button
-      const startPickingButton = page.locator(
+    // Look for start picking button
+    await expect(
+      page.locator(
         'button:has-text("Start Picking"), button:has-text("Pick"), [data-testid="start-picking"]'
-      );
-
-      if (await startPickingButton.isVisible().catch(() => false)) {
-        await expect(startPickingButton).toBeEnabled();
-      }
-    }
+      )
+    ).toBeEnabled({ timeout: 5000 });
   });
 
   test("should mark items as picked", async ({ page }) => {
@@ -151,29 +156,32 @@ test.describe("Order Fulfillment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found in pick-pack page"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for item checkboxes
-      const itemCheckbox = page.locator(
-        'input[type="checkbox"], [data-testid="pick-item"]'
-      );
+    // Look for item checkboxes
+    await requireElement(
+      page,
+      'input[type="checkbox"], [data-testid="pick-item"]',
+      "Item checkboxes not found"
+    );
 
-      if (
-        await itemCheckbox
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await itemCheckbox.first().check();
-        await expect(itemCheckbox.first()).toBeChecked();
-      }
-    }
+    const itemCheckbox = page
+      .locator('input[type="checkbox"], [data-testid="pick-item"]')
+      .first();
+
+    await itemCheckbox.check();
+    await expect(itemCheckbox).toBeChecked();
   });
 
   test("should complete packing process", async ({ page }) => {
@@ -181,23 +189,25 @@ test.describe("Order Fulfillment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found in pick-pack page"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for complete packing button
-      const completePackingButton = page.locator(
+    // Look for complete packing button
+    await expect(
+      page.locator(
         'button:has-text("Complete"), button:has-text("Pack"), [data-testid="complete-packing"]'
-      );
-
-      if (await completePackingButton.isVisible().catch(() => false)) {
-        await expect(completePackingButton).toBeVisible();
-      }
-    }
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -219,13 +229,9 @@ test.describe("Payment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for invoices list
-    const invoicesList = page.locator(
-      '[data-testid="invoices-list"], table, .invoices-list'
-    );
-
-    if (await invoicesList.isVisible().catch(() => false)) {
-      await expect(invoicesList).toBeVisible();
-    }
+    await expect(
+      page.locator('[data-testid="invoices-list"], table, .invoices-list')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should record payment for invoice", async ({ page }) => {
@@ -233,23 +239,25 @@ test.describe("Payment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first invoice
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='invoice-item']",
+      "No invoices found"
+    );
+
     const firstInvoice = page
       .locator("table tbody tr, [data-testid='invoice-item']")
       .first();
 
-    if (await firstInvoice.isVisible().catch(() => false)) {
-      await firstInvoice.click();
-      await page.waitForLoadState("networkidle");
+    await firstInvoice.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for record payment button
-      const recordPaymentButton = page.locator(
+    // Look for record payment button
+    await expect(
+      page.locator(
         'button:has-text("Record Payment"), button:has-text("Pay"), [data-testid="record-payment"]'
-      );
-
-      if (await recordPaymentButton.isVisible().catch(() => false)) {
-        await expect(recordPaymentButton).toBeEnabled();
-      }
-    }
+      )
+    ).toBeEnabled({ timeout: 5000 });
   });
 
   test("should display payment form", async ({ page }) => {
@@ -257,29 +265,37 @@ test.describe("Payment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first invoice
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='invoice-item']",
+      "No invoices found"
+    );
+
     const firstInvoice = page
       .locator("table tbody tr, [data-testid='invoice-item']")
       .first();
 
-    if (await firstInvoice.isVisible().catch(() => false)) {
-      await firstInvoice.click();
-      await page.waitForLoadState("networkidle");
+    await firstInvoice.click();
+    await page.waitForLoadState("networkidle");
 
-      // Click record payment
-      const recordPaymentButton = page.locator(
-        'button:has-text("Record Payment"), button:has-text("Pay")'
-      );
+    // Click record payment
+    await requireElement(
+      page,
+      'button:has-text("Record Payment"), button:has-text("Pay")',
+      "Record payment button not found"
+    );
 
-      if (await recordPaymentButton.isVisible().catch(() => false)) {
-        await recordPaymentButton.click();
-        await page.waitForLoadState("networkidle");
+    const recordPaymentButton = page
+      .locator('button:has-text("Record Payment"), button:has-text("Pay")')
+      .first();
 
-        // Should show payment form
-        await expect(
-          page.locator('[data-testid="payment-form"], form, [role="dialog"]')
-        ).toBeVisible({ timeout: 5000 });
-      }
-    }
+    await recordPaymentButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Should show payment form
+    await expect(
+      page.locator('[data-testid="payment-form"], form, [role="dialog"]')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should select payment method", async ({ page }) => {
@@ -287,33 +303,39 @@ test.describe("Payment Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first invoice
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='invoice-item']",
+      "No invoices found"
+    );
+
     const firstInvoice = page
       .locator("table tbody tr, [data-testid='invoice-item']")
       .first();
 
-    if (await firstInvoice.isVisible().catch(() => false)) {
-      await firstInvoice.click();
-      await page.waitForLoadState("networkidle");
+    await firstInvoice.click();
+    await page.waitForLoadState("networkidle");
 
-      // Click record payment
-      const recordPaymentButton = page.locator(
-        'button:has-text("Record Payment"), button:has-text("Pay")'
-      );
+    // Click record payment
+    await requireElement(
+      page,
+      'button:has-text("Record Payment"), button:has-text("Pay")',
+      "Record payment button not found"
+    );
 
-      if (await recordPaymentButton.isVisible().catch(() => false)) {
-        await recordPaymentButton.click();
-        await page.waitForLoadState("networkidle");
+    const recordPaymentButton = page
+      .locator('button:has-text("Record Payment"), button:has-text("Pay")')
+      .first();
 
-        // Look for payment method selector
-        const paymentMethodSelector = page.locator(
-          'select[name="paymentMethod"], [data-testid="payment-method"], button:has-text("Cash")'
-        );
+    await recordPaymentButton.click();
+    await page.waitForLoadState("networkidle");
 
-        if (await paymentMethodSelector.isVisible().catch(() => false)) {
-          await expect(paymentMethodSelector).toBeVisible();
-        }
-      }
-    }
+    // Look for payment method selector
+    await expect(
+      page.locator(
+        'select[name="paymentMethod"], [data-testid="payment-method"], button:has-text("Cash")'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -327,19 +349,25 @@ test.describe("Order Completion Flow @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for status filter
-    const statusFilter = page.locator(
-      'select[name="status"], [data-testid="status-filter"], button:has-text("Complete")'
+    await requireElement(
+      page,
+      'select[name="status"], [data-testid="status-filter"], button:has-text("Complete")',
+      "Status filter not found"
     );
 
-    if (await statusFilter.isVisible().catch(() => false)) {
-      if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
-        await statusFilter.selectOption("COMPLETE");
-      } else {
-        await statusFilter.click();
-      }
+    const statusFilter = page
+      .locator(
+        'select[name="status"], [data-testid="status-filter"], button:has-text("Complete")'
+      )
+      .first();
 
-      await page.waitForLoadState("networkidle");
+    if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
+      await statusFilter.selectOption("COMPLETE");
+    } else {
+      await statusFilter.click();
     }
+
+    await page.waitForLoadState("networkidle");
   });
 
   test("should show order completion status", async ({ page }) => {
@@ -347,23 +375,23 @@ test.describe("Order Completion Flow @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for status badge
-      const statusBadge = page.locator(
-        '[data-testid="order-status"], .status-badge, .badge'
-      );
-
-      if (await statusBadge.isVisible().catch(() => false)) {
-        await expect(statusBadge).toBeVisible();
-      }
-    }
+    // Look for status badge
+    await expect(
+      page.locator('[data-testid="order-status"], .status-badge, .badge')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should display order timeline", async ({ page }) => {
@@ -371,23 +399,27 @@ test.describe("Order Completion Flow @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for timeline/history
-      const timeline = page.locator(
-        '[data-testid="order-timeline"], .timeline, :text("History"), :text("Activity")'
-      );
+    // Look for timeline/history
+    const timeline = page.locator(
+      '[data-testid="order-timeline"], .timeline, :text("History"), :text("Activity")'
+    );
 
-      // May or may not show timeline
-      const count = await timeline.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not show timeline
+    const count = await timeline.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 
   test("should generate invoice for completed order", async ({ page }) => {
@@ -395,23 +427,27 @@ test.describe("Order Completion Flow @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for invoice link or button
-      const invoiceLink = page.locator(
-        'a:has-text("Invoice"), button:has-text("View Invoice"), [data-testid="order-invoice"]'
-      );
+    // Look for invoice link or button
+    const invoiceLink = page.locator(
+      'a:has-text("Invoice"), button:has-text("View Invoice"), [data-testid="order-invoice"]'
+    );
 
-      // May or may not have invoice
-      const count = await invoiceLink.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not have invoice
+    const count = await invoiceLink.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -441,23 +477,27 @@ test.describe("Order Workflow Integration @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first client
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='client-item']",
+      "No clients found"
+    );
+
     const firstClient = page
       .locator("table tbody tr, [data-testid='client-item']")
       .first();
 
-    if (await firstClient.isVisible().catch(() => false)) {
-      await firstClient.click();
-      await page.waitForLoadState("networkidle");
+    await firstClient.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for balance display
-      const balanceDisplay = page.locator(
-        '[data-testid="client-balance"], .balance, :text("Balance"), :text("Outstanding")'
-      );
+    // Look for balance display
+    const balanceDisplay = page.locator(
+      '[data-testid="client-balance"], .balance, :text("Balance"), :text("Outstanding")'
+    );
 
-      // May or may not show balance
-      const count = await balanceDisplay.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not show balance
+    const count = await balanceDisplay.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 
   test("should record transaction in accounting", async ({ page }) => {

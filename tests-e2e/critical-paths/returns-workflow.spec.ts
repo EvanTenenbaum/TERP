@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Return Request Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
@@ -29,23 +30,25 @@ test.describe("Return Request Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for return button
-      const returnButton = page.locator(
+    // Look for return button
+    await expect(
+      page.locator(
         'button:has-text("Return"), button:has-text("Create Return"), [data-testid="create-return"]'
-      );
-
-      if (await returnButton.isVisible().catch(() => false)) {
-        await expect(returnButton).toBeEnabled();
-      }
-    }
+      )
+    ).toBeEnabled({ timeout: 5000 });
   });
 
   test("should display return form with required fields", async ({ page }) => {
@@ -53,29 +56,37 @@ test.describe("Return Request Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Click return button
-      const returnButton = page.locator(
-        'button:has-text("Return"), button:has-text("Create Return")'
-      );
+    // Click return button
+    await requireElement(
+      page,
+      'button:has-text("Return"), button:has-text("Create Return")',
+      "Return button not found"
+    );
 
-      if (await returnButton.isVisible().catch(() => false)) {
-        await returnButton.click();
-        await page.waitForLoadState("networkidle");
+    const returnButton = page
+      .locator('button:has-text("Return"), button:has-text("Create Return")')
+      .first();
 
-        // Verify return form fields
-        await expect(
-          page.locator('[data-testid="return-form"], form, [role="dialog"]')
-        ).toBeVisible({ timeout: 5000 });
-      }
-    }
+    await returnButton.click();
+    await page.waitForLoadState("networkidle");
+
+    // Verify return form fields
+    await expect(
+      page.locator('[data-testid="return-form"], form, [role="dialog"]')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should select items for return", async ({ page }) => {
@@ -83,39 +94,46 @@ test.describe("Return Request Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Click return button
-      const returnButton = page.locator(
-        'button:has-text("Return"), button:has-text("Create Return")'
-      );
+    // Click return button
+    await requireElement(
+      page,
+      'button:has-text("Return"), button:has-text("Create Return")',
+      "Return button not found"
+    );
 
-      if (await returnButton.isVisible().catch(() => false)) {
-        await returnButton.click();
-        await page.waitForLoadState("networkidle");
+    const returnButton = page
+      .locator('button:has-text("Return"), button:has-text("Create Return")')
+      .first();
 
-        // Look for item selection checkboxes
-        const itemCheckbox = page.locator(
-          'input[type="checkbox"], [data-testid="return-item-select"]'
-        );
+    await returnButton.click();
+    await page.waitForLoadState("networkidle");
 
-        if (
-          await itemCheckbox
-            .first()
-            .isVisible()
-            .catch(() => false)
-        ) {
-          await itemCheckbox.first().check();
-          await expect(itemCheckbox.first()).toBeChecked();
-        }
-      }
-    }
+    // Look for item selection checkboxes
+    await requireElement(
+      page,
+      'input[type="checkbox"], [data-testid="return-item-select"]',
+      "Item checkboxes not found"
+    );
+
+    const itemCheckbox = page
+      .locator('input[type="checkbox"], [data-testid="return-item-select"]')
+      .first();
+
+    await itemCheckbox.check();
+    await expect(itemCheckbox).toBeChecked();
   });
 
   test("should specify return reason", async ({ page }) => {
@@ -123,33 +141,39 @@ test.describe("Return Request Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Click return button
-      const returnButton = page.locator(
-        'button:has-text("Return"), button:has-text("Create Return")'
-      );
+    // Click return button
+    await requireElement(
+      page,
+      'button:has-text("Return"), button:has-text("Create Return")',
+      "Return button not found"
+    );
 
-      if (await returnButton.isVisible().catch(() => false)) {
-        await returnButton.click();
-        await page.waitForLoadState("networkidle");
+    const returnButton = page
+      .locator('button:has-text("Return"), button:has-text("Create Return")')
+      .first();
 
-        // Look for reason field
-        const reasonField = page.locator(
-          'select[name="reason"], textarea[name="reason"], [data-testid="return-reason"]'
-        );
+    await returnButton.click();
+    await page.waitForLoadState("networkidle");
 
-        if (await reasonField.isVisible().catch(() => false)) {
-          await expect(reasonField).toBeVisible();
-        }
-      }
-    }
+    // Look for reason field
+    await expect(
+      page.locator(
+        'select[name="reason"], textarea[name="reason"], [data-testid="return-reason"]'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -163,13 +187,9 @@ test.describe("Return Processing Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for pending returns list
-    const pendingReturns = page.locator(
-      '[data-testid="pending-returns"], table, .returns-list'
-    );
-
-    if (await pendingReturns.isVisible().catch(() => false)) {
-      await expect(pendingReturns).toBeVisible();
-    }
+    await expect(
+      page.locator('[data-testid="pending-returns"], table, .returns-list')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should approve return request", async ({ page }) => {
@@ -177,23 +197,25 @@ test.describe("Return Processing Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first return
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='return-item']",
+      "No returns found"
+    );
+
     const firstReturn = page
       .locator("table tbody tr, [data-testid='return-item']")
       .first();
 
-    if (await firstReturn.isVisible().catch(() => false)) {
-      await firstReturn.click();
-      await page.waitForLoadState("networkidle");
+    await firstReturn.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for approve button
-      const approveButton = page.locator(
+    // Look for approve button
+    await expect(
+      page.locator(
         'button:has-text("Approve"), button:has-text("Accept"), [data-testid="approve-return"]'
-      );
-
-      if (await approveButton.isVisible().catch(() => false)) {
-        await expect(approveButton).toBeEnabled();
-      }
-    }
+      )
+    ).toBeEnabled({ timeout: 5000 });
   });
 
   test("should reject return request", async ({ page }) => {
@@ -201,23 +223,25 @@ test.describe("Return Processing Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first return
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='return-item']",
+      "No returns found"
+    );
+
     const firstReturn = page
       .locator("table tbody tr, [data-testid='return-item']")
       .first();
 
-    if (await firstReturn.isVisible().catch(() => false)) {
-      await firstReturn.click();
-      await page.waitForLoadState("networkidle");
+    await firstReturn.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for reject button
-      const rejectButton = page.locator(
+    // Look for reject button
+    await expect(
+      page.locator(
         'button:has-text("Reject"), button:has-text("Deny"), [data-testid="reject-return"]'
-      );
-
-      if (await rejectButton.isVisible().catch(() => false)) {
-        await expect(rejectButton).toBeEnabled();
-      }
-    }
+      )
+    ).toBeEnabled({ timeout: 5000 });
   });
 
   test("should process return with quality check", async ({ page }) => {
@@ -225,23 +249,27 @@ test.describe("Return Processing Flow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first return
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='return-item']",
+      "No returns found"
+    );
+
     const firstReturn = page
       .locator("table tbody tr, [data-testid='return-item']")
       .first();
 
-    if (await firstReturn.isVisible().catch(() => false)) {
-      await firstReturn.click();
-      await page.waitForLoadState("networkidle");
+    await firstReturn.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for quality check section
-      const qualityCheck = page.locator(
-        '[data-testid="quality-check"], .quality-check, :text("Quality"), :text("Condition")'
-      );
+    // Look for quality check section
+    const qualityCheck = page.locator(
+      '[data-testid="quality-check"], .quality-check, :text("Quality"), :text("Condition")'
+    );
 
-      // May or may not have quality check
-      const count = await qualityCheck.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not have quality check
+    const count = await qualityCheck.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -270,23 +298,25 @@ test.describe("Inventory Update from Return @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first batch
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='batch-item']",
+      "No batches found"
+    );
+
     const firstBatch = page
       .locator("table tbody tr, [data-testid='batch-item']")
       .first();
 
-    if (await firstBatch.isVisible().catch(() => false)) {
-      await firstBatch.click();
-      await page.waitForLoadState("networkidle");
+    await firstBatch.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for history/audit section
-      const historySection = page.locator(
+    // Look for history/audit section
+    await expect(
+      page.locator(
         '[data-testid="batch-history"], .history, :text("History"), :text("Audit")'
-      );
-
-      if (await historySection.isVisible().catch(() => false)) {
-        await expect(historySection).toBeVisible();
-      }
-    }
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should create credit memo for return", async ({ page }) => {
@@ -308,23 +338,27 @@ test.describe("Inventory Update from Return @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first order
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='order-item']",
+      "No orders found"
+    );
+
     const firstOrder = page
       .locator("table tbody tr, [data-testid='order-item']")
       .first();
 
-    if (await firstOrder.isVisible().catch(() => false)) {
-      await firstOrder.click();
-      await page.waitForLoadState("networkidle");
+    await firstOrder.click();
+    await page.waitForLoadState("networkidle");
 
-      // Look for returns section in order detail
-      const returnsSection = page.locator(
-        '[data-testid="order-returns"], .returns, :text("Return")'
-      );
+    // Look for returns section in order detail
+    const returnsSection = page.locator(
+      '[data-testid="order-returns"], .returns, :text("Return")'
+    );
 
-      // May or may not have returns
-      const count = await returnsSection.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not have returns
+    const count = await returnsSection.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -352,19 +386,25 @@ test.describe("Return Reporting @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for status filter
-    const statusFilter = page.locator(
-      'select[name="status"], [data-testid="status-filter"], button:has-text("Pending")'
+    await requireElement(
+      page,
+      'select[name="status"], [data-testid="status-filter"], button:has-text("Pending")',
+      "Status filter not found"
     );
 
-    if (await statusFilter.isVisible().catch(() => false)) {
-      if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
-        await statusFilter.selectOption({ index: 1 });
-      } else {
-        await statusFilter.click();
-      }
+    const statusFilter = page
+      .locator(
+        'select[name="status"], [data-testid="status-filter"], button:has-text("Pending")'
+      )
+      .first();
 
-      await page.waitForLoadState("networkidle");
+    if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
+      await statusFilter.selectOption({ index: 1 });
+    } else {
+      await statusFilter.click();
     }
+
+    await page.waitForLoadState("networkidle");
   });
 
   test("should filter returns by date range", async ({ page }) => {
@@ -372,12 +412,10 @@ test.describe("Return Reporting @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for date filter
-    const dateFilter = page.locator(
-      'input[type="date"], [data-testid="date-filter"], button:has-text("Date")'
-    );
-
-    if (await dateFilter.isVisible().catch(() => false)) {
-      await expect(dateFilter).toBeVisible();
-    }
+    await expect(
+      page.locator(
+        'input[type="date"], [data-testid="date-filter"], button:has-text("Date")'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 });
