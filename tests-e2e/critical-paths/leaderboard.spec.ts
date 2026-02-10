@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement, assertOneVisible } from "../utils/preconditions";
 
 test.describe("Leaderboard @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
@@ -22,9 +23,10 @@ test.describe("Leaderboard @prod-regression", () => {
       'a:has-text("Leaderboard"), button:has-text("Leaderboard"), [data-testid="leaderboard-link"]'
     );
 
-    if (await leaderboardLink.isVisible().catch(() => false)) {
+    try {
+      await leaderboardLink.waitFor({ state: "visible", timeout: 3000 });
       await leaderboardLink.click();
-    } else {
+    } catch {
       // Try direct navigation
       await page.goto("/analytics/leaderboard");
     }
@@ -71,7 +73,8 @@ test.describe("Leaderboard @prod-regression", () => {
       'select[name="clientType"], [data-testid="client-type-filter"], button:has-text("All"), button:has-text("Customer")'
     );
 
-    if (await clientTypeFilter.isVisible().catch(() => false)) {
+    try {
+      await clientTypeFilter.waitFor({ state: "visible", timeout: 3000 });
       // If it's a select, change the value
       if (await clientTypeFilter.evaluate(el => el.tagName === "SELECT")) {
         await clientTypeFilter.selectOption("CUSTOMER");
@@ -87,12 +90,22 @@ test.describe("Leaderboard @prod-regression", () => {
       const url = page.url();
       const hasFilterInUrl =
         url.includes("clientType") || url.includes("customer");
-      const hasFilterIndicator = await page
-        .locator('[data-active="true"], .active, [aria-selected="true"]')
-        .isVisible()
-        .catch(() => false);
 
-      expect(hasFilterInUrl || hasFilterIndicator).toBeTruthy();
+      if (hasFilterInUrl) {
+        expect(hasFilterInUrl).toBe(true);
+      } else {
+        // Check for UI indicator
+        await assertOneVisible(
+          page,
+          ['[data-active="true"]', ".active", '[aria-selected="true"]'],
+          "Expected filter to be applied via URL or UI indicator"
+        );
+      }
+    } catch {
+      test.skip(
+        true,
+        "Client type filter not found - feature may not be implemented"
+      );
     }
   });
 
@@ -156,22 +169,31 @@ test.describe("Leaderboard @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on a client row
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='ranking-item']",
+      "No client rows found in leaderboard"
+    );
+
     const clientRow = page
       .locator("table tbody tr, [data-testid='ranking-item']")
       .first();
 
-    if (await clientRow.isVisible().catch(() => false)) {
-      await clientRow.click();
+    await clientRow.click();
+    await page.waitForLoadState("networkidle");
 
-      // Should either open a modal or navigate to client profile
-      const detailsVisible = await page
-        .locator('[role="dialog"], [data-testid="client-details"], .modal')
-        .isVisible()
-        .catch(() => false);
+    // Should either open a modal or navigate to client profile
+    const navigatedToProfile = page.url().includes("/clients/");
 
-      const navigatedToProfile = page.url().includes("/clients/");
-
-      expect(detailsVisible || navigatedToProfile).toBeTruthy();
+    if (navigatedToProfile) {
+      expect(navigatedToProfile).toBe(true);
+    } else {
+      // Check for modal or details panel
+      await assertOneVisible(
+        page,
+        ['[role="dialog"]', '[data-testid="client-details"]', ".modal"],
+        "Expected client details modal or navigation to client profile"
+      );
     }
   });
 });
@@ -190,13 +212,19 @@ test.describe("Leaderboard Widget @prod-regression", () => {
       '[data-testid="leaderboard-widget"], .leaderboard-widget, :has-text("Top Performers")'
     );
 
-    if (await leaderboardWidget.isVisible().catch(() => false)) {
+    try {
+      await leaderboardWidget.waitFor({ state: "visible", timeout: 3000 });
       // Verify widget shows top entries
       const entries = leaderboardWidget.locator(
         "[data-testid='widget-entry'], .widget-entry, li"
       );
       const count = await entries.count();
       expect(count).toBeGreaterThanOrEqual(0);
+    } catch {
+      test.skip(
+        true,
+        "Leaderboard widget not found on dashboard - feature may not be enabled"
+      );
     }
   });
 

@@ -601,9 +601,14 @@ test.describe("Client Management - Desktop", () => {
       await waitForPageReady(page);
 
       // Should navigate to client detail page or open modal
-      const isOnDetail = page.url().includes("/clients/");
-      const hasModal = await isElementVisible(page, '[role="dialog"]');
-      expect(isOnDetail || hasModal).toBeTruthy();
+      if (!page.url().includes("/clients/")) {
+        // Not on detail page, should have opened a modal
+        await assertOneVisible(
+          page,
+          ['[role="dialog"]'],
+          "Expected detail page or modal after clicking client"
+        );
+      }
     }
   });
 });
