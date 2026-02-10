@@ -427,6 +427,43 @@ async function startServer() {
       }
     });
 
+    // Demo media fallback endpoint.
+    // Serves image bytes from DB when external storage is unavailable in DEMO_MODE.
+    app.get("/api/media/:id", async (req, res) => {
+      try {
+        if (process.env.DEMO_MODE !== "true") {
+          res.status(404).json({ error: "Not found" });
+          return;
+        }
+
+        const mediaId = req.params.id;
+        if (!mediaId || !/^[a-zA-Z0-9_-]{8,64}$/.test(mediaId)) {
+          res.status(400).json({ error: "Invalid media ID" });
+          return;
+        }
+
+        const { getDemoMediaBlobById } = await import("../demoMediaStorage");
+        const media = await getDemoMediaBlobById(mediaId);
+
+        if (!media) {
+          res.status(404).json({ error: "Media not found" });
+          return;
+        }
+
+        res.setHeader("Content-Type", media.contentType);
+        res.setHeader("Content-Length", String(media.fileSize));
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        res.send(media.bytes);
+      } catch (error) {
+        logger.error({
+          msg: "Failed to serve demo media",
+          error: error instanceof Error ? error.message : String(error),
+          mediaId: req.params.id,
+        });
+        res.status(500).json({ error: "Failed to load media" });
+      }
+    });
+
     // Data augmentation HTTP endpoint (temporary bypass for tRPC auth issues)
     const dataAugmentRouter = (await import("../routers/dataAugmentHttp.js"))
       .default;

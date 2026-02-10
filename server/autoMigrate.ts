@@ -1574,6 +1574,37 @@ export async function runAutoMigrations() {
     }
 
     // ========================================================================
+    // DEMO MEDIA BLOBS TABLE (TER-118)
+    // ========================================================================
+    // Demo-mode fallback storage for image uploads when external storage is unset
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS demo_media_blobs (
+          id VARCHAR(64) PRIMARY KEY,
+          file_name VARCHAR(255) NOT NULL,
+          content_type VARCHAR(128) NOT NULL,
+          bytes_base64 LONGTEXT NOT NULL,
+          file_size INT NOT NULL,
+          uploaded_by INT NULL,
+          batch_id INT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          deleted_at TIMESTAMP NULL,
+          INDEX idx_demo_media_blobs_batch (batch_id),
+          INDEX idx_demo_media_blobs_created_at (created_at),
+          INDEX idx_demo_media_blobs_deleted_at (deleted_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.info("  ✅ Created demo_media_blobs table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info("  ℹ️  demo_media_blobs table already exists");
+      } else {
+        console.warn("  ⚠️  demo_media_blobs table:", errMsg);
+      }
+    }
+
+    // ========================================================================
     // SCHEMA-024: ADD MISSING COLUMNS FROM drizzle/schema.ts
     // ========================================================================
     // Add products.strainId column (FK to strains table)

@@ -16,9 +16,16 @@ import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
 import type { BatchStatus } from "../inventoryUtils";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { storagePut, storageDelete } from "../storage";
+import { storagePut, storageDelete, isStorageConfigured } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { getDb } from "../db";
+import { env } from "../_core/env";
+import {
+  buildDemoMediaUrl,
+  createDemoMediaBlob,
+  deleteDemoMediaBlob,
+  extractDemoMediaBlobIdFromUrl,
+} from "../demoMediaStorage";
 
 // =============================================================================
 // SPRINT 4 TRACK A - Enhanced Inventory APIs
@@ -616,31 +623,40 @@ export const inventoryRouter = router({
         batchId: z.number().optional(), // Optional: link to existing batch
       })
     )
-    .mutation(async ({ input, ctx: _ctx }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
-        // Check if storage is configured
-        const { isStorageConfigured } = await import("../storage");
-        if (!isStorageConfigured()) {
+        const storageConfigured = isStorageConfigured();
+        const useDemoFallback = !storageConfigured && env.DEMO_MODE;
+
+        if (!storageConfigured && !useDemoFallback) {
           throw ErrorCatalog.STORAGE_NOT_CONFIGURED;
         }
 
         // Decode base64 file
         const fileBuffer = Buffer.from(input.fileData, "base64");
 
-        // Generate storage key
-        const timestamp = Date.now();
         const sanitizedFileName = input.fileName.replace(
           /[^a-zA-Z0-9.-]/g,
           "_"
         );
-        const storageKey = `batch-media/${input.batchId || "temp"}/${timestamp}-${sanitizedFileName}`;
 
-        // Upload to storage
-        const { url } = await storagePut(
-          storageKey,
-          fileBuffer,
-          input.fileType
-        );
+        let url: string;
+        if (useDemoFallback) {
+          const { id } = await createDemoMediaBlob({
+            fileName: sanitizedFileName,
+            contentType: input.fileType,
+            bytes: fileBuffer,
+            uploadedBy: ctx.user?.id ?? null,
+            batchId: input.batchId ?? null,
+          });
+          url = buildDemoMediaUrl(ctx.req, id);
+        } else {
+          // Generate storage key
+          const timestamp = Date.now();
+          const storageKey = `batch-media/${input.batchId || "temp"}/${timestamp}-${sanitizedFileName}`;
+          const uploaded = await storagePut(storageKey, fileBuffer, input.fileType);
+          url = uploaded.url;
+        }
 
         return {
           success: true,
@@ -669,15 +685,22 @@ export const inventoryRouter = router({
     )
     .mutation(async ({ input, ctx: _ctx }) => {
       try {
-        // Check if storage is configured
-        const { isStorageConfigured } = await import("../storage");
+        const demoBlobId = extractDemoMediaBlobIdFromUrl(input.url);
+        if (demoBlobId) {
+          await deleteDemoMediaBlob(demoBlobId);
+          return {
+            success: true,
+            url: input.url,
+          };
+        }
+
         if (!isStorageConfigured()) {
           throw ErrorCatalog.STORAGE_NOT_CONFIGURED;
         }
 
         // Extract the storage key from the URL
         // URL format: https://.../batch-media/.../filename.ext
-        const urlPath = new URL(input.url).pathname;
+        const urlPath = new URL(input.url, "http://local").pathname;
         const storageKey = urlPath.split("/").slice(-3).join("/"); // Get last 3 parts: batch-media/folder/file
 
         // Delete from storage
