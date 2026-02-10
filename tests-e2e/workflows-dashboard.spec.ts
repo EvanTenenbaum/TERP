@@ -10,12 +10,19 @@ test.describe("Workflows and Dashboard", () => {
   test("should display dashboard with widgets", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(
-      page.locator("h1, h2").filter({ hasText: /dashboard/i })
+      page
+        .locator("h1, h2")
+        .filter({ hasText: /dashboard|owner command center/i })
     ).toBeVisible();
 
-    // Check for dashboard widgets
-    const widgets = page.locator("[data-widget], .widget, .card");
-    await expect(widgets.first()).toBeVisible({ timeout: 5000 });
+    // Check for at least one dashboard widget title
+    const widgetTitle = page
+      .locator("h2, h3")
+      .filter({
+        hasText: /inventory|cash|debt|sales|workflow|opportunit(y|ies)|inbox/i,
+      })
+      .first();
+    await expect(widgetTitle).toBeVisible({ timeout: 5000 });
   });
 
   test("should display KPI metrics", async ({ page }) => {

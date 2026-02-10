@@ -4,6 +4,7 @@ import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
 import * as ordersDb from "../ordersDb";
+import * as payablesService from "../services/payablesService";
 import { requirePermission } from "../_core/permissionMiddleware";
 import {
   fetchClientNamesMap,
@@ -118,6 +119,15 @@ interface ClientDebt {
   customerName: string;
   currentDebt: number;
   oldestDebt: number;
+}
+
+/** Vendor payment risk data */
+interface VendorNeedingPayment {
+  vendorClientId: number;
+  vendorName: string;
+  amountDue: number;
+  soldOutBatches: number;
+  oldestDueDays: number;
 }
 
 /** Client margin data */
@@ -512,29 +522,62 @@ export const dashboardRouter = router({
       // Aging data fetched for potential future use in debt analysis
       await arApDb.calculateARAging();
 
-      // Combine debt and aging data
-      const allData: ClientDebt[] = await Promise.all(
-        receivables.map(
-          async (r: {
+      // Aggregate receivables by customer so each client appears once.
+      const debtByClient = receivables.reduce(
+        (
+          acc: Record<
+            number,
+            { currentDebt: number; oldestDebt: number; customerId: number }
+          >,
+          r: {
             customerId: number;
             amountDue: string | number;
             invoiceDate?: Date;
-          }) => {
-            // Calculate oldest debt days from invoice date
-            const invoiceDate = r.invoiceDate
-              ? new Date(r.invoiceDate)
-              : new Date();
-            const oldestDebtDays = differenceInDays(new Date(), invoiceDate);
+          }
+        ) => {
+          const customerId = Number(r.customerId);
+          if (!customerId) return acc;
 
-            return {
-              customerId: r.customerId,
-              customerName: `Customer ${r.customerId}`, // Will be updated with actual name below
-              currentDebt: Number(r.amountDue || 0),
-              oldestDebt: Math.max(0, oldestDebtDays),
+          const amountDue = Number(r.amountDue || 0);
+          const invoiceDate = r.invoiceDate
+            ? new Date(r.invoiceDate)
+            : new Date();
+          const debtAgeDays = Math.max(
+            0,
+            differenceInDays(new Date(), invoiceDate)
+          );
+
+          if (!acc[customerId]) {
+            acc[customerId] = {
+              customerId,
+              currentDebt: 0,
+              oldestDebt: 0,
             };
           }
-        )
+
+          acc[customerId].currentDebt += amountDue;
+          acc[customerId].oldestDebt = Math.max(
+            acc[customerId].oldestDebt,
+            debtAgeDays
+          );
+          return acc;
+        },
+        {}
       );
+
+      const allData: ClientDebt[] = Object.values(debtByClient)
+        .map(clientDebt => ({
+          customerId: clientDebt.customerId,
+          customerName: `Customer ${clientDebt.customerId}`, // Updated below
+          currentDebt: clientDebt.currentDebt,
+          oldestDebt: clientDebt.oldestDebt,
+        }))
+        .sort((a, b) => {
+          if (b.currentDebt !== a.currentDebt) {
+            return b.currentDebt - a.currentDebt;
+          }
+          return b.oldestDebt - a.oldestDebt;
+        });
 
       // Fetch actual client names for all customer IDs
       const customerIds = allData.map(d => d.customerId);
@@ -562,6 +605,108 @@ export const dashboardRouter = router({
         hasMore: input.offset + input.limit < total,
       };
     }),
+
+  // Vendors who need to get paid (sold-out consigned batches, still unpaid)
+  getVendorsNeedingPayment: protectedProcedure
+    .use(requirePermission("dashboard:read"))
+    .input(paginationInputSchema)
+    .query(
+      async ({ input }): Promise<PaginatedResponse<VendorNeedingPayment>> => {
+        const payablesResult = await payablesService.listPayables({
+          status: ["DUE", "PARTIAL"],
+          limit: 500,
+          offset: 0,
+        });
+
+        const now = new Date();
+
+        // Reduce payable rows to vendor-level risk rows.
+        const byVendor = payablesResult.items
+          // Only keep unpaid payables tied to batches that actually hit zero.
+          .filter(item => Number(item.amountDue || 0) > 0)
+          .filter(item => Boolean(item.inventoryZeroAt))
+          .reduce(
+            (
+              acc: Record<number, VendorNeedingPayment>,
+              item: {
+                vendorClientId: number;
+                vendorName?: string | null;
+                amountDue?: string | number | null;
+                inventoryZeroAt?: string | Date | null;
+                dueDate?: string | Date | null;
+                createdAt?: string | Date | null;
+              }
+            ) => {
+              const vendorClientId = Number(item.vendorClientId);
+              if (!vendorClientId) return acc;
+
+              const rowAmountDue = Number(item.amountDue || 0);
+              const dueReferenceDate = item.inventoryZeroAt
+                ? new Date(item.inventoryZeroAt)
+                : item.dueDate
+                  ? new Date(item.dueDate)
+                  : item.createdAt
+                    ? new Date(item.createdAt)
+                    : now;
+              const daysDue = Math.max(
+                0,
+                differenceInDays(now, dueReferenceDate)
+              );
+
+              if (!acc[vendorClientId]) {
+                acc[vendorClientId] = {
+                  vendorClientId,
+                  vendorName: item.vendorName || `Vendor ${vendorClientId}`,
+                  amountDue: 0,
+                  soldOutBatches: 0,
+                  oldestDueDays: 0,
+                };
+              }
+
+              acc[vendorClientId].amountDue += rowAmountDue;
+              acc[vendorClientId].soldOutBatches += 1;
+              acc[vendorClientId].oldestDueDays = Math.max(
+                acc[vendorClientId].oldestDueDays,
+                daysDue
+              );
+
+              return acc;
+            },
+            {}
+          );
+
+        const allData = Object.values(byVendor).sort((a, b) => {
+          if (b.amountDue !== a.amountDue) {
+            return b.amountDue - a.amountDue;
+          }
+          return b.oldestDueDays - a.oldestDueDays;
+        });
+
+        // Overwrite fallback names with canonical names where available.
+        const vendorIds = allData.map(v => v.vendorClientId);
+        const vendorNameMap = await fetchClientNamesMap(vendorIds);
+        allData.forEach(vendor => {
+          const canonicalName = vendorNameMap.get(vendor.vendorClientId);
+          if (canonicalName) {
+            vendor.vendorName = canonicalName;
+          }
+        });
+
+        const total = allData.length;
+        const paginatedData = allData.slice(
+          input.offset,
+          input.offset + input.limit
+        );
+
+        return {
+          data: paginatedData,
+          total,
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: input.offset + input.limit < total,
+        };
+      }
+    ),
 
   // Client Profit Margin
   getClientProfitMargin: protectedProcedure
@@ -625,7 +770,8 @@ export const dashboardRouter = router({
       for (const clientId of Object.keys(marginByClient)) {
         const data = marginByClient[Number(clientId)];
         const profit = data.revenue - data.cost;
-        data.profitMargin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
+        data.profitMargin =
+          data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
       }
 
       // Fetch actual client names for all customer IDs
@@ -797,14 +943,14 @@ export const dashboardRouter = router({
       const receivables = receivablesResult.invoices || [];
       const payables = payablesResult.bills || [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalAR = receivables.reduce(
-        (sum: number, r: any) => sum + Number(r.amountDue || 0),
+        (sum: number, r: { amountDue?: string | number | null }) =>
+          sum + Number(r.amountDue || 0),
         0
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalAP = payables.reduce(
-        (sum: number, p: any) => sum + Number(p.amountDue || 0),
+        (sum: number, p: { amountDue?: string | number | null }) =>
+          sum + Number(p.amountDue || 0),
         0
       );
 

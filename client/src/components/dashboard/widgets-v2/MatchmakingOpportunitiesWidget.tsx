@@ -18,6 +18,7 @@ import { useLocation } from "wouter";
 interface MatchItem {
   clientId: number;
   clientName: string;
+  batchId?: number;
   strain?: string;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   confidence: number;
@@ -107,7 +108,7 @@ export const MatchmakingOpportunitiesWidget = memo(
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg font-semibold">
-                Matchmaking Opportunities
+                Client Outreach Opportunities
               </CardTitle>
             </div>
             <Button
@@ -120,8 +121,8 @@ export const MatchmakingOpportunitiesWidget = memo(
             </Button>
           </div>
           <CardDescription>
-            {totalOpportunities} high-priority opportunities •{" "}
-            {urgentNeeds.length} urgent needs
+            {totalOpportunities} likely reorder or match opportunities •{" "}
+            {urgentNeeds.length} urgent gaps
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,9 +149,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                     Top Matches
                   </h4>
                   <div className="space-y-2">
-                    {topMatches.map((match, idx) => (
+                    {topMatches.map(match => (
                       <div
-                        key={`item-${idx}`}
+                        key={`${match.clientId}-${match.batchId}-${match.type}-${match.confidence}`}
                         className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${match.clientId}?tab=needs`)
@@ -194,9 +195,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                     Overdue Reorders
                   </h4>
                   <div className="space-y-2">
-                    {overdueReorders.map((prediction, idx) => (
+                    {overdueReorders.map(prediction => (
                       <div
-                        key={`item-${idx}`}
+                        key={`${prediction.clientId}-${prediction.strain || prediction.category || "regular"}-${prediction.daysUntilPredictedOrder}`}
                         className="border border-destructive/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${prediction.clientId}`)
@@ -235,9 +236,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                     Urgent Needs - No Good Matches
                   </h4>
                   <div className="space-y-2">
-                    {urgentNeeds.map((need, idx) => (
+                    {urgentNeeds.map(need => (
                       <div
-                        key={`item-${idx}`}
+                        key={`${need.clientId}-${need.strain || "any"}-${need.priority || "none"}`}
                         className="border border-orange-300/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${need.clientId}?tab=needs`)

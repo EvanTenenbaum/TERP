@@ -3,7 +3,7 @@
  * SPRINT-A Task 10: Added EmptyState component integration
  */
 
-import { useState, memo } from "react";
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -15,29 +15,16 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
 export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
   const [, setLocation] = useLocation();
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set()
-  );
-  const { data, isLoading, error } = trpc.dashboard.getInventorySnapshot.useQuery(
-    undefined,
-    { refetchInterval: 60000 }
-  );
-
-  const toggleCategory = (categoryName: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryName)) {
-      newExpanded.delete(categoryName);
-    } else {
-      newExpanded.add(categoryName);
-    }
-    setExpandedCategories(newExpanded);
-  };
+  const { data, isLoading, error } =
+    trpc.dashboard.getInventorySnapshot.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -49,6 +36,9 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
         <CardTitle className="text-lg font-semibold">
           Inventory Snapshot
         </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Current units and value by category. Click a row to open inventory.
+        </p>
       </CardHeader>
       <CardContent>
         {error ? (
@@ -56,7 +46,10 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
             variant="generic"
             size="sm"
             title="Failed to load inventory data"
-            description={error.message || "An error occurred while fetching inventory snapshot"}
+            description={
+              error.message ||
+              "An error occurred while fetching inventory snapshot"
+            }
           />
         ) : isLoading ? (
           <div className="space-y-2">
@@ -83,26 +76,14 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
                     <TableRow
                       key={category.name}
                       className="cursor-pointer hover:bg-muted/50 group"
-                      onClick={e => {
-                        // If clicking the chevron area, toggle. Otherwise, navigate
-                        if ((e.target as HTMLElement).closest(".toggle-icon")) {
-                          toggleCategory(category.name);
-                        } else {
-                          setLocation(
-                            `/inventory?category=${encodeURIComponent(category.name)}`
-                          );
-                        }
+                      onClick={() => {
+                        setLocation(
+                          `/inventory?category=${encodeURIComponent(category.name)}`
+                        );
                       }}
                     >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <span className="toggle-icon">
-                            {expandedCategories.has(category.name) ? (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </span>
                           <span>
                             {index + 1}. {category.name}
                           </span>

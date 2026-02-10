@@ -4246,29 +4246,31 @@ Order status machine only accepts PENDING/PACKED/SHIPPED. No workflow for proces
 ## 🎯 Customer Feedback (Jan 29, 2026 Meeting)
 
 > **Source:** `docs/meeting-analysis/2026-01-29/TERP_Customer_Meeting_Analysis_CLEANED.md`
-> **Status:** 15 actionable items identified after codebase cross-reference (17 removed as already implemented)
-> **Priority Focus:** Dashboard enhancements are customer's top priority
+> **Execution Spec:** `docs/roadmaps/MEET_CUSTOMER_FEEDBACK_EXECUTION_SPEC_2026-02-10.md`
+> **Reuse-First Plan:** `docs/roadmaps/MEET_WIDGET_REUSE_EXECUTION_PLAN_2026-02-10.md`
+> **Status:** Build-ready implementation details complete; reuse-first sequencing added
+> **Priority Focus:** Owner default experience using existing widgets, debt-risk visibility, payment safety controls
 
 ### NOW Priority Items
 
-| Task ID  | Description                                   | Domain    | Status | Est |
-| -------- | --------------------------------------------- | --------- | ------ | --- |
-| MEET-002 | Dashboard inventory snapshot by category      | Dashboard | ready  | 8h  |
-| MEET-004 | Dashboard payables summary (verify/enhance)   | Dashboard | ready  | 4h  |
-| MEET-008 | Debt warning system for at-risk clients (NEW) | Clients   | ready  | 16h |
-| MEET-026 | Payment permission levels (RBAC enhancement)  | Payments  | ready  | 4h  |
+| Task ID  | Description                                   | Domain    | Status | Est | Spec Anchor                                            |
+| -------- | --------------------------------------------- | --------- | ------ | --- | ------------------------------------------------------ |
+| MEET-002 | Dashboard inventory snapshot by category      | Dashboard | ready  | 16h | `#meet-002-dashboard-inventory-snapshot-by-category`   |
+| MEET-004 | Dashboard payables summary (verify/enhance)   | Dashboard | ready  | 8h  | `#meet-004-dashboard-payables-summary-verifyenhance`   |
+| MEET-008 | Debt warning system for at-risk clients (NEW) | Clients   | ready  | 24h | `#meet-008-debt-warning-system-for-at-risk-clients`    |
+| MEET-026 | Payment permission levels (RBAC enhancement)  | Payments  | ready  | 12h | `#meet-026-payment-permission-levels-rbac-enhancement` |
 
 ### NEXT Priority Items
 
-| Task ID  | Description                                 | Domain    | Status | Est |
-| -------- | ------------------------------------------- | --------- | ------ | --- |
-| MEET-006 | Cash on hand display (verify AvailableCash) | Dashboard | ready  | 2h  |
-| MEET-013 | Store client Metrc/login names              | Clients   | ready  | 4h  |
-| MEET-020 | Metric explanations for leaderboard         | UI/UX     | ready  | 4h  |
-| MEET-029 | Default landing page user preference        | Settings  | ready  | 4h  |
-| MEET-031 | Simplified price category filtering         | Inventory | ready  | 8h  |
+| Task ID  | Description                                 | Domain    | Status | Est | Spec Anchor                                           |
+| -------- | ------------------------------------------- | --------- | ------ | --- | ----------------------------------------------------- |
+| MEET-006 | Cash on hand display (verify AvailableCash) | Dashboard | ready  | 4h  | `#meet-006-cash-on-hand-display-verify-availablecash` |
+| MEET-013 | Store client Metrc/login names              | Clients   | ready  | 8h  | `#meet-013-store-client-metrclogin-names`             |
+| MEET-020 | Metric explanations for leaderboard         | UI/UX     | ready  | 12h | `#meet-020-metric-explanations-for-leaderboard`       |
+| MEET-029 | Default landing page user preference        | Settings  | ready  | 8h  | `#meet-029-default-landing-page-user-preference`      |
+| MEET-031 | Simplified price category filtering         | Inventory | ready  | 16h | `#meet-031-simplified-price-category-filtering`       |
 
-> **Note:** Full details including acceptance criteria and evidence in the source document.
+> **Note:** Use the execution spec as source of truth for: exact scope, API/data changes, acceptance criteria, and test plan.
 
 ---
 

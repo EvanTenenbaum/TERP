@@ -25,7 +25,7 @@ export const TotalDebtWidget = memo(function TotalDebtWidget() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold">Total Debt</CardTitle>
+        <CardTitle className="text-lg font-semibold">Debt Position</CardTitle>
         <Button
           variant="ghost"
           size="sm"
@@ -48,9 +48,7 @@ export const TotalDebtWidget = memo(function TotalDebtWidget() {
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setLocation("/clients?hasDebt=true")}
               >
-                <TableCell className="font-medium">
-                  Total Debt Owed to Me
-                </TableCell>
+                <TableCell className="font-medium">Clients Owe You</TableCell>
                 <TableCell className="text-right font-mono text-green-600">
                   {formatCurrency(data.totalDebtOwedToMe)}
                 </TableCell>
@@ -59,9 +57,7 @@ export const TotalDebtWidget = memo(function TotalDebtWidget() {
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setLocation("/accounting/bills")}
               >
-                <TableCell className="font-medium">
-                  Total Debt I Owe Vendors
-                </TableCell>
+                <TableCell className="font-medium">You Owe Vendors</TableCell>
                 <TableCell className="text-right font-mono text-red-600">
                   {formatCurrency(data.totalDebtIOwedToVendors)}
                 </TableCell>

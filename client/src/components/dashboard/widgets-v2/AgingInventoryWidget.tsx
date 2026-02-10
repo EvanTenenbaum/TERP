@@ -85,9 +85,17 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
     if (!data) return [];
     return [
       { name: "Fresh", value: data.summary.fresh.count, fill: COLORS.FRESH },
-      { name: "Moderate", value: data.summary.moderate.count, fill: COLORS.MODERATE },
+      {
+        name: "Moderate",
+        value: data.summary.moderate.count,
+        fill: COLORS.MODERATE,
+      },
       { name: "Aging", value: data.summary.aging.count, fill: COLORS.AGING },
-      { name: "Critical", value: data.summary.critical.count, fill: COLORS.CRITICAL },
+      {
+        name: "Critical",
+        value: data.summary.critical.count,
+        fill: COLORS.CRITICAL,
+      },
     ].filter(item => item.value > 0);
   }, [data]);
 
@@ -179,35 +187,38 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
       <CardContent className="space-y-4">
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 gap-2">
-          {(Object.entries(BRACKET_CONFIG) as [keyof typeof BRACKET_CONFIG, typeof BRACKET_CONFIG.fresh][]).map(
-            ([key, config]) => {
-              const summaryData = data.summary[key];
-              const Icon = config.icon;
-              return (
-                <button
-                  key={key}
-                  onClick={() => navigateToFilteredInventory(key)}
-                  className={`p-3 rounded-lg border ${config.bgColor} ${config.borderColor} text-left hover:opacity-80 transition-opacity group`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-4 w-4 ${config.color}`} />
-                      <span className={`text-xs font-medium ${config.color}`}>
-                        {config.label}
-                      </span>
-                    </div>
-                    <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          {(
+            Object.entries(BRACKET_CONFIG) as [
+              keyof typeof BRACKET_CONFIG,
+              typeof BRACKET_CONFIG.fresh,
+            ][]
+          ).map(([key, config]) => {
+            const summaryData = data.summary[key];
+            const Icon = config.icon;
+            return (
+              <button
+                key={key}
+                onClick={() => navigateToFilteredInventory(key)}
+                className={`p-3 rounded-lg border ${config.bgColor} ${config.borderColor} text-left hover:opacity-80 transition-opacity group`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-4 w-4 ${config.color}`} />
+                    <span className={`text-xs font-medium ${config.color}`}>
+                      {config.label}
+                    </span>
                   </div>
-                  <p className={`text-xl font-bold ${config.color} mt-1`}>
-                    {summaryData.count}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {summaryData.totalUnits.toFixed(0)} units
-                  </p>
-                </button>
-              );
-            }
-          )}
+                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className={`text-xl font-bold ${config.color} mt-1`}>
+                  {summaryData.count}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {summaryData.totalUnits.toFixed(0)} units
+                </p>
+              </button>
+            );
+          })}
         </div>
 
         {/* Aging Value Summary */}
@@ -219,7 +230,8 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                   Items Over 2 Weeks Old
                 </p>
                 <p className="text-xs text-orange-600">
-                  {data.agingItemsCount} batches - {formatCurrency(data.agingItemsValue)} value at risk
+                  {data.agingItemsCount} batches -{" "}
+                  {formatCurrency(data.agingItemsValue)} value at risk
                 </p>
               </div>
               <Button
@@ -248,8 +260,8 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  {chartData.map(entry => (
+                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -258,8 +270,10 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                 <Legend
                   verticalAlign="bottom"
                   height={36}
-                  formatter={(value) => (
-                    <span className="text-xs text-muted-foreground">{value}</span>
+                  formatter={value => (
+                    <span className="text-xs text-muted-foreground">
+                      {value}
+                    </span>
                   )}
                 />
               </PieChart>
@@ -275,7 +289,7 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
               Top 5 Oldest Items
             </h4>
             <div className="space-y-2">
-              {data.topAgingItems.map((item) => (
+              {data.topAgingItems.map(item => (
                 <button
                   key={item.id}
                   onClick={() => setLocation(`/inventory/${item.id}`)}
@@ -285,7 +299,10 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                     <p className="text-sm font-medium truncate max-w-[180px]">
                       {item.productName}
                     </p>
-                    <p className="text-xs text-muted-foreground">{item.sku}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.sku} · {item.onHandQty.toFixed(0)} units ·{" "}
+                      {formatCurrency(item.value)}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge

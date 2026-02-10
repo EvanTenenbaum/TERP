@@ -25,55 +25,62 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
   },
   operations: {
     id: "operations",
-    name: "Operations Dashboard",
-    description: "Complete view for day-to-day management",
+    name: "Owner Command Center",
+    description:
+      "Morning triage for inventory risk, payables, cash decisions, and quick action cards",
     widgets: [
-      { id: "sales-by-client", isVisible: true, isExpanded: false, size: "md" },
-      { id: "cash-flow", isVisible: true, isExpanded: false, size: "md" },
-      { id: "available-cash", isVisible: true, isExpanded: false, size: "md" },
-      {
-        id: "transaction-snapshot",
-        isVisible: true,
-        isExpanded: false,
-        size: "sm",
-      },
       {
         id: "inventory-snapshot",
         isVisible: true,
         isExpanded: false,
-        size: "sm",
+        size: "lg",
       },
-      { id: "total-debt", isVisible: true, isExpanded: false, size: "sm" },
       {
-        id: "sales-comparison",
-        isVisible: true,
-        isExpanded: false,
-        size: "md",
-      },
-      { id: "profitability", isVisible: true, isExpanded: false, size: "lg" },
-      {
-        id: "matchmaking-opportunities",
+        id: "aging-inventory",
         isVisible: true,
         isExpanded: false,
         size: "lg",
       },
-      { id: "workflow-queue", isVisible: true, isExpanded: false, size: "md" },
+      { id: "available-cash", isVisible: true, isExpanded: false, size: "md" },
+      { id: "total-debt", isVisible: true, isExpanded: false, size: "md" },
+      {
+        id: "client-debt-leaderboard",
+        isVisible: true,
+        isExpanded: false,
+        size: "md",
+      },
+      {
+        id: "matchmaking-opportunities",
+        isVisible: false,
+        isExpanded: false,
+        size: "lg",
+      },
+      {
+        id: "transaction-snapshot",
+        isVisible: true,
+        isExpanded: false,
+        size: "md",
+      },
+      { id: "inbox", isVisible: false, isExpanded: false, size: "md" },
+      { id: "sales-by-client", isVisible: false, isExpanded: false },
+      { id: "cash-flow", isVisible: false, isExpanded: false },
+      {
+        id: "sales-comparison",
+        isVisible: false,
+        isExpanded: false,
+        size: "md",
+      },
+      { id: "profitability", isVisible: false, isExpanded: false, size: "lg" },
+      { id: "workflow-queue", isVisible: false, isExpanded: false, size: "md" },
       {
         id: "workflow-activity",
         isVisible: false,
         isExpanded: false,
         size: "md",
       },
-      { id: "inbox", isVisible: true, isExpanded: false, size: "md" },
       // FE-QA-011: New widgets (hidden by default, can be enabled by users)
       {
         id: "cash-collected-leaderboard",
-        isVisible: false,
-        isExpanded: false,
-        size: "md",
-      },
-      {
-        id: "client-debt-leaderboard",
         isVisible: false,
         isExpanded: false,
         size: "md",
@@ -86,12 +93,6 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
       },
       {
         id: "top-strain-families",
-        isVisible: false,
-        isExpanded: false,
-        size: "md",
-      },
-      {
-        id: "aging-inventory",
         isVisible: false,
         isExpanded: false,
         size: "md",
@@ -153,22 +154,23 @@ export const WIDGET_METADATA = {
   },
   "cash-flow": {
     name: "Cash Flow",
-    description: "Cash collected vs spent",
+    description: "Cash in versus cash out",
     category: "financial",
   },
   "transaction-snapshot": {
-    name: "Transaction Snapshot",
-    description: "Recent transaction activity",
+    name: "Quick Cards",
+    description:
+      "Today sales, units sold, cash collected, and inbox preview in one card",
     category: "operations",
   },
   "inventory-snapshot": {
     name: "Inventory Snapshot",
-    description: "Current inventory levels",
+    description: "Inventory by category with units and value",
     category: "operations",
   },
   "total-debt": {
-    name: "Total Debt",
-    description: "Accounts receivable and payable",
+    name: "Debt Position",
+    description: "What clients owe you versus what you owe vendors",
     category: "financial",
   },
   "sales-comparison": {
@@ -182,8 +184,9 @@ export const WIDGET_METADATA = {
     category: "financial",
   },
   "matchmaking-opportunities": {
-    name: "Matchmaking Opportunities",
-    description: "Client needs and inventory matches",
+    name: "Client Outreach Opportunities",
+    description:
+      "Clients who may need outreach based on needs and reorder signals",
     category: "sales",
   },
   inbox: {
@@ -202,7 +205,7 @@ export const WIDGET_METADATA = {
     category: "operations",
   },
   "available-cash": {
-    name: "Available Cash",
+    name: "Cash Decision Panel",
     description: "Cash on hand, scheduled payables, and available balance",
     category: "financial",
   },
@@ -213,8 +216,8 @@ export const WIDGET_METADATA = {
     category: "financial",
   },
   "client-debt-leaderboard": {
-    name: "Client Debt Leaderboard",
-    description: "Clients with highest outstanding debt",
+    name: "Vendors Needing Payment",
+    description: "Vendors linked to sold-out batches with unpaid payables",
     category: "financial",
   },
   "client-profit-margin-leaderboard": {
@@ -229,7 +232,7 @@ export const WIDGET_METADATA = {
   },
   "aging-inventory": {
     name: "Aging Inventory",
-    description: "Inventory aging and turnover insights",
+    description: "Oldest inventory and value-at-risk by age bracket",
     category: "operations",
   },
   "smart-opportunities": {

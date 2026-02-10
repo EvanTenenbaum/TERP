@@ -36,7 +36,7 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">
-            Available Cash
+            Cash Decision Panel
           </CardTitle>
           <Button
             variant="ghost"
