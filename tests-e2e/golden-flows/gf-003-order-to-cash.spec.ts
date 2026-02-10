@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("GF-003: Order-to-Cash Flow", () => {
+test.describe("GF-003: Order-to-Cash Flow @dev-only @golden-flow", () => {
   test("complete order to cash flow", async ({ page }) => {
     await loginAsAdmin(page);
 

@@ -12,7 +12,7 @@ const openPurchaseOrders = async (page: Page): Promise<void> => {
   await page.waitForLoadState("networkidle");
 };
 
-test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
+test.describe("Golden Flow: GF-002 Procure-to-Pay @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
     await loginAsInventoryManager(page);
   });
@@ -27,21 +27,26 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
     );
 
     if (
-      await createButton
+      !(await createButton
         .first()
-        .isVisible()
-        .catch(() => false)
+        .isVisible({ timeout: 5000 })
+        .catch(() => false))
     ) {
-      await createButton.first().click();
-      await expect(page).toHaveURL(/purchase-orders\/(new|create)/, {
-        timeout: 5000,
-      });
-
-      const productSelector = page.locator(
-        '[data-testid="po-product-select"], select[name*="product"], input[placeholder*="Product"], input[aria-label*="Product"]'
-      );
-      await expect(productSelector.first()).toBeVisible({ timeout: 5000 });
+      test.skip(true, "Create PO button not available");
+      return;
     }
+
+    await createButton.first().click();
+    await page.waitForLoadState("networkidle");
+
+    await expect(page).toHaveURL(/purchase-orders\/(new|create)/, {
+      timeout: 5000,
+    });
+
+    const productSelector = page.locator(
+      '[data-testid="po-product-select"], select[name*="product"], input[placeholder*="Product"], input[aria-label*="Product"]'
+    );
+    await expect(productSelector.first()).toBeVisible({ timeout: 5000 });
   });
 
   test("should show receiving action for purchase orders", async ({
@@ -50,20 +55,27 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
     await openPurchaseOrders(page);
 
     const poRow = page.locator('[role="row"], tr').first();
-    if (await poRow.isVisible().catch(() => false)) {
-      await poRow.click();
-
-      const receiveButton = page.locator(
-        'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
-      );
-      if (
-        await receiveButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(receiveButton.first()).toBeVisible();
-      }
+    if (!(await poRow.isVisible({ timeout: 5000 }).catch(() => false))) {
+      test.skip(true, "No purchase orders available");
+      return;
     }
+
+    await poRow.click();
+    await page.waitForLoadState("networkidle");
+
+    const receiveButton = page.locator(
+      'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
+    );
+    if (
+      !(await receiveButton
+        .first()
+        .isVisible({ timeout: 5000 })
+        .catch(() => false))
+    ) {
+      test.skip(true, "Receive button not available for this PO");
+      return;
+    }
+
+    await expect(receiveButton.first()).toBeVisible();
   });
 });

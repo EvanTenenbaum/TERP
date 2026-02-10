@@ -7,7 +7,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Pick & Pack Workflow (WS-003)", () => {
+test.describe("Pick & Pack Workflow (WS-003) @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -58,7 +58,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
       const url = page.url();
       const hasFilterInUrl =
         url.includes("status") || url.includes("CONFIRMED");
-      expect(hasFilterInUrl || true).toBeTruthy(); // Soft check
+      expect(hasFilterInUrl).toBeTruthy();
     }
   });
 
@@ -191,7 +191,7 @@ test.describe("Pick & Pack Workflow (WS-003)", () => {
   });
 });
 
-test.describe("Pick & Pack - Printing", () => {
+test.describe("Pick & Pack - Printing @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -221,7 +221,7 @@ test.describe("Pick & Pack - Printing", () => {
   });
 });
 
-test.describe("Pick & Pack - Mobile Responsive", () => {
+test.describe("Pick & Pack - Mobile Responsive @prod-regression", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
   test.beforeEach(async ({ page }) => {

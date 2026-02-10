@@ -18,7 +18,18 @@
 import { test, expect } from "@playwright/test";
 import { loginAsInventoryManager, loginAsAuditor } from "../fixtures/auth";
 
-test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
+test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression @rbac", () => {
+  test.beforeEach(() => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
+  });
+
   test.describe("Inventory List Access", () => {
     test.beforeEach(async ({ page }) => {
       await loginAsInventoryManager(page);
@@ -84,7 +95,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await searchInput.isVisible().catch(() => false)) {
         await searchInput.fill("test");
-        await page.waitForTimeout(500); // Debounce time
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500); // Debounce time
 
         // Search should be applied (page should respond)
         await page.waitForLoadState("networkidle");
@@ -108,7 +119,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
           .catch(() => false)
       ) {
         await filterButton.first().click();
-        await page.waitForTimeout(300);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(300);
       }
     });
   });
@@ -139,7 +150,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
           await firstRow.click();
         }
 
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
         // Should see detail drawer or modal
         const detailPanel = page.locator(
@@ -151,12 +162,9 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
         const hasBatchIdInUrl = /\/inventory\/\d+/.test(url);
 
         // Either the detail panel is visible OR URL changed to batch detail
-        if (
-          hasBatchIdInUrl ||
-          (await detailPanel.isVisible().catch(() => false))
-        ) {
-          expect(true).toBe(true);
-        }
+        const detailViewOpened =
+          hasBatchIdInUrl || (await detailPanel.isVisible().catch(() => false));
+        expect(detailViewOpened).toBe(true);
       }
     });
 
@@ -175,7 +183,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await viewButton.isVisible().catch(() => false)) {
         await viewButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(1000);
 
         // Should see batch detail elements (SKU, status, quantities, etc.)
         const detailContent = page.locator(
@@ -189,7 +197,13 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
             .first()
             .isVisible()
             .catch(() => false);
-          expect(hasContent || true).toBe(true); // Soft assertion
+          if (!hasContent) {
+            test.skip(
+              true,
+              "Batch details panel did not show expected content - UI may have changed"
+            );
+          }
+          expect(hasContent).toBe(true);
         }
       }
     });
@@ -223,7 +237,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await intakeButton.isVisible().catch(() => false)) {
         await intakeButton.click();
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
         // Should see intake form/modal
         const intakeForm = page.locator(
@@ -243,7 +257,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await intakeButton.isVisible().catch(() => false)) {
         await intakeButton.click();
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
         // Check for typical intake form fields
         const modal = page.locator('[role="dialog"]');
@@ -276,7 +290,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await viewButton.isVisible().catch(() => false)) {
         await viewButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(1000);
 
         // Look for adjustment button/control in the detail panel
         const adjustButton = page.locator(
@@ -294,7 +308,13 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
           .isVisible()
           .catch(() => false);
 
-        expect(hasAdjust || hasEditControls || true).toBe(true); // Soft check - depends on UI state
+        if (!hasAdjust && !hasEditControls) {
+          test.skip(
+            true,
+            "No adjustment or edit controls found - UI may have changed or feature not implemented"
+          );
+        }
+        expect(hasAdjust || hasEditControls).toBe(true);
       }
     });
   });
@@ -341,7 +361,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await rowCheckbox.isVisible().catch(() => false)) {
         await rowCheckbox.click();
-        await page.waitForTimeout(300);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(300);
 
         // Look for bulk action bar to appear
         const bulkBar = page.locator(
@@ -436,7 +456,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
 
       if (await viewButton.isVisible().catch(() => false)) {
         await viewButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(1000);
 
         // Should see details without permission error
         const errorAlert = page.locator(
@@ -483,7 +503,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
       const searchInput = page.locator('input[placeholder*="Search"]');
       if (await searchInput.isVisible().catch(() => false)) {
         await searchInput.fill("test");
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
         // View a batch
         const viewButton = page
@@ -491,7 +511,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
           .first();
         if (await viewButton.isVisible().catch(() => false)) {
           await viewButton.click();
-          await page.waitForTimeout(500);
+          await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
           // Close detail view (click outside or close button)
           const closeButton = page.locator(
@@ -499,7 +519,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
           );
           if (await closeButton.isVisible().catch(() => false)) {
             await closeButton.click();
-            await page.waitForTimeout(300);
+            await page.waitForLoadState("networkidle"); // was: waitForTimeout(300);
           } else {
             await page.keyboard.press("Escape");
           }
@@ -526,7 +546,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows", () => {
       const searchInput = page.locator('input[placeholder*="Search"]');
       if (await searchInput.isVisible().catch(() => false)) {
         await searchInput.fill("xyznonexistent12345");
-        await page.waitForTimeout(600); // Wait for debounce
+        await page.waitForLoadState("networkidle"); // was: waitForTimeout(600); // Wait for debounce
 
         // Should see empty state message (if no results)
         // Note: This test depends on whether there's matching data

@@ -12,7 +12,7 @@ import { loginAsAdmin, loginAsSalesManager } from "./fixtures/auth";
  * Stats cards show total counts regardless of tab selection.
  */
 
-test.describe("Orders CRUD Operations", () => {
+test.describe("Orders CRUD Operations @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     // Login using centralized auth fixture with QA credentials
     await loginAsAdmin(page);
@@ -67,7 +67,7 @@ test.describe("Orders CRUD Operations", () => {
       .filter({ hasText: /confirmed/i })
       .first();
     await confirmedTab.click();
-    await page.waitForTimeout(500);
+    await page.waitForLoadState("networkidle");
 
     // Click on Draft Orders tab
     const draftTab = page
@@ -75,44 +75,20 @@ test.describe("Orders CRUD Operations", () => {
       .filter({ hasText: /draft/i })
       .first();
     await draftTab.click();
-    await page.waitForTimeout(500);
+    await page.waitForLoadState("networkidle");
 
     // Both tabs should be clickable without errors
-    expect(true).toBeTruthy();
+    await expect(draftTab).toBeVisible();
   });
 
   test("should display orders table or empty state", async ({ page }) => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(2000); // Wait for data loading
 
     // The orders page shows tabs (Draft/Confirmed) and stats cards
-    // Either a table should be visible, or the tab structure with stats
-    const hasTable = await page
-      .locator('table, [role="table"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasTabStructure = await page
-      .locator('[role="tab"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasStatsCards = await page
-      .locator('[aria-label*="Value"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasSearchInput = await page
-      .locator('input[placeholder*="Search"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    // At least one should be true - the page structure is valid
-    expect(
-      hasTable || hasTabStructure || hasStatsCards || hasSearchInput
-    ).toBeTruthy();
+    // Verify the core page structure exists
+    const tabStructure = page.locator('[role="tab"]').first();
+    await expect(tabStructure).toBeVisible({ timeout: 10000 });
   });
 
   test("should display order stats correctly", async ({ page }) => {
@@ -153,32 +129,22 @@ test.describe("Orders CRUD Operations", () => {
     await createButton.click();
 
     // Should navigate to order creator or open modal
-    await page.waitForTimeout(2000);
     await page.waitForLoadState("networkidle");
 
     // Check for order creation UI - could be a new page, modal, or client selection
-    const hasModal = await page
-      .locator('[role="dialog"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasCreatePage = await page
+    const modal = page.locator('[role="dialog"]').first();
+    const createPage = page
       .locator("h1, h2")
       .filter({ hasText: /create|new|order/i })
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasClientSelect = await page
+      .first();
+    const clientSelect = page
       .locator("text=Select Client, text=Choose Client, text=Client")
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const urlChanged = !page.url().endsWith("/orders");
+      .first();
 
-    // At least one indicator should be true
-    expect(
-      hasModal || hasCreatePage || hasClientSelect || urlChanged
-    ).toBeTruthy();
+    // At least one indicator should be visible
+    await expect(modal.or(createPage).or(clientSelect)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should have Export CSV button", async ({ page }) => {
@@ -216,15 +182,15 @@ test.describe("Orders CRUD Operations", () => {
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
 
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("ORD");
-      await page.waitForLoadState("networkidle");
-      // Search should filter results or show no results message
-      expect(true).toBeTruthy();
-    } else {
-      // Search may not be visible, skip
-      test.skip();
+    if (!(await searchInput.isVisible({ timeout: 5000 }).catch(() => false))) {
+      test.skip(true, "Search input not available");
+      return;
     }
+
+    await searchInput.fill("ORD");
+    await page.waitForLoadState("networkidle");
+    // Verify search input has value
+    await expect(searchInput).toHaveValue("ORD");
   });
 
   test("should filter orders by status", async ({ page }) => {
@@ -237,34 +203,33 @@ test.describe("Orders CRUD Operations", () => {
       .filter({ hasText: /status|filter|all statuses/i })
       .first();
 
-    if (await filterButton.isVisible().catch(() => false)) {
+    if (await filterButton.isVisible({ timeout: 5000 }).catch(() => false)) {
       await filterButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState("networkidle");
 
       // Check for filter options
-      const hasOptions = await page
+      const filterOptions = page
         .locator('[role="option"], option, [role="menuitem"]')
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasOptions).toBeTruthy();
+        .first();
+      await expect(filterOptions).toBeVisible({ timeout: 5000 });
     } else {
       // Filter may not be visible, check for status tabs instead
       const statusTabs = page
         .locator('button, [role="tab"]')
         .filter({ hasText: /pending|packed|shipped/i })
         .first();
-      await expect(statusTabs)
-        .toBeVisible({ timeout: 5000 })
-        .catch(() => {
-          // No filter available, skip
-          test.skip();
-        });
+
+      if (!(await statusTabs.isVisible({ timeout: 5000 }).catch(() => false))) {
+        test.skip(true, "No filter UI available");
+        return;
+      }
+
+      await expect(statusTabs).toBeVisible();
     }
   });
 });
 
-test.describe("Orders - Role-Based Access", () => {
+test.describe("Orders - Role-Based Access @prod-regression", () => {
   test("Sales Manager can view orders", async ({ page }) => {
     await loginAsSalesManager(page);
 

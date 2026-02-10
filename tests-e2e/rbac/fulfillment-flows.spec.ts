@@ -21,7 +21,18 @@ async function hasOrdersInTable(page: Page): Promise<boolean> {
   return count > 0;
 }
 
-test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
+test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows @prod-regression @rbac", () => {
+  test.beforeEach(() => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
+  });
+
   test.describe("Order List Access", () => {
     test.beforeEach(async ({ page }) => {
       await loginAsWarehouseStaff(page);
@@ -81,7 +92,7 @@ test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
 
       if (await viewButton.isVisible()) {
         await viewButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("networkidle");
 
         // STRICT: Should not see permission error
         const errorAlert = page.locator(
@@ -226,7 +237,7 @@ test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
       if (isVisible) {
         // If visible, clicking should show permission error
         await createButton.click();
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("networkidle");
 
         // Could result in error or redirect - both are acceptable
         // The key is no data should be created
@@ -249,7 +260,7 @@ test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
       if (hasFullAccess) {
         // If visible, clicking should fail
         await page.locator('button:has-text("Record Payment")').click();
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("networkidle");
 
         // Should see some indication of restriction
         // (error, redirect, or form won't submit)

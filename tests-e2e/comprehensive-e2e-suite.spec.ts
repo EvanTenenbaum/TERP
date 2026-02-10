@@ -13,6 +13,7 @@
  * 6. Accounting Module (invoices, payments, ledger)
  * 7. Security & Permissions (role-based access)
  *
+ * @tags @dev-only
  * @module tests-e2e/comprehensive-e2e-suite
  */
 
@@ -40,7 +41,7 @@ const TIMEOUTS = {
 // Helper function for waiting with network idle
 async function waitForPageReady(page: Page) {
   await page.waitForLoadState("networkidle", { timeout: TIMEOUTS.network });
-  await page.waitForTimeout(TIMEOUTS.animation);
+  // Allow animations to complete naturally without hardcoded wait
 }
 
 // Helper to take screenshots on failure (available for debugging)
@@ -119,7 +120,7 @@ test.describe("Authentication - Desktop", () => {
 
     // Click submit without filling form
     await page.click('button[type="submit"]');
-    await page.waitForTimeout(TIMEOUTS.animation);
+    await page.waitForLoadState("networkidle");
 
     // Check for validation indicator
     const hasValidation = await isElementVisible(
@@ -145,13 +146,17 @@ test.describe("Authentication - Desktop", () => {
     await page.click('button[type="submit"]');
 
     // Wait for error response
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState("networkidle");
 
     // Check for error message
-    const hasError = await isElementVisible(
-      page,
+    const errorLocator = page.locator(
       '[role="alert"], .error, .toast, .text-red-500, .text-destructive, [data-sonner-toast][data-type="error"]'
     );
+    const hasError = await errorLocator
+      .first()
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
+
     // Should show error or stay on login page
     const stillOnLogin = page.url().includes("/login");
     expect(hasError || stillOnLogin).toBeTruthy();
@@ -537,14 +542,11 @@ test.describe("Client Management - Desktop", () => {
       .first();
     if (await addButton.isVisible()) {
       await addButton.click();
-      await page.waitForTimeout(TIMEOUTS.animation);
+      await page.waitForLoadState("networkidle");
 
       // Check for modal or form
-      const hasModal = await isElementVisible(
-        page,
-        '[role="dialog"], .modal, form'
-      );
-      expect(hasModal).toBeTruthy();
+      const modalLocator = page.locator('[role="dialog"], .modal, form');
+      await expect(modalLocator.first()).toBeVisible({ timeout: 5000 });
     }
   });
 
@@ -562,7 +564,7 @@ test.describe("Client Management - Desktop", () => {
 
     if (hasSearch) {
       await searchInput.fill("test");
-      await page.waitForTimeout(500);
+      await page.waitForLoadState("networkidle");
       expect(await searchInput.inputValue()).toBe("test");
     }
   });

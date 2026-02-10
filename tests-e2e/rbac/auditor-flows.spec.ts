@@ -1,8 +1,16 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAuditor } from "../fixtures/auth";
 
-test.describe("Auditor Role RBAC Verification", () => {
+test.describe("Auditor Role RBAC Verification @prod-regression @rbac", () => {
   test.beforeEach(async ({ page }) => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
     await loginAsAuditor(page);
   });
 

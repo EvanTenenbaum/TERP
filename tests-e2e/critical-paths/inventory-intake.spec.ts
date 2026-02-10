@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Inventory Intake (WS-007)", () => {
+test.describe("Inventory Intake (WS-007) @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -132,7 +132,7 @@ test.describe("Inventory Intake (WS-007)", () => {
   });
 });
 
-test.describe("Inventory Batch Management", () => {
+test.describe("Inventory Batch Management @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -165,7 +165,7 @@ test.describe("Inventory Batch Management", () => {
       // Search should be applied (URL or results change)
       const url = page.url();
       const hasSearchInUrl = url.includes("search") || url.includes("q=");
-      expect(hasSearchInUrl || true).toBeTruthy(); // Soft check
+      expect(hasSearchInUrl).toBeTruthy();
     }
   });
 
@@ -211,7 +211,7 @@ test.describe("Inventory Batch Management", () => {
   });
 });
 
-test.describe("Inventory Low Stock Alerts (WS-008)", () => {
+test.describe("Inventory Low Stock Alerts (WS-008) @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -246,12 +246,12 @@ test.describe("Inventory Low Stock Alerts (WS-008)", () => {
       // Filter should be applied
       const url = page.url();
       const hasFilterInUrl = url.includes("lowStock") || url.includes("status");
-      expect(hasFilterInUrl || true).toBeTruthy();
+      expect(hasFilterInUrl).toBeTruthy();
     }
   });
 });
 
-test.describe("Inventory Photos (WS-010)", () => {
+test.describe("Inventory Photos (WS-010) @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

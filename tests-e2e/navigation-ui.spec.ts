@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "./fixtures/auth";
 
-test.describe("Navigation and UI Interactions", () => {
+test.describe("Navigation and UI Interactions @prod-smoke", () => {
   test.beforeEach(async ({ page }) => {
     // Login using centralized auth fixture
     await loginAsStandardUser(page);
@@ -127,19 +127,23 @@ test.describe("Navigation and UI Interactions", () => {
     await page.goto("/clients");
 
     const firstRow = page.locator("tbody tr").first();
-    if (await firstRow.isVisible()) {
-      await firstRow.click();
+    const hasData = await firstRow.isVisible().catch(() => false);
+    if (!hasData) {
+      test.skip(true, "No data rows available - precondition not met");
+      return;
+    }
 
-      // Check for breadcrumbs
-      const breadcrumbs = page
-        .locator('nav[aria-label*="breadcrumb" i], .breadcrumb')
-        .first();
+    await firstRow.click();
 
-      if (await breadcrumbs.isVisible()) {
-        const homeLink = breadcrumbs.locator("a").first();
-        await homeLink.click();
-        await expect(page).toHaveURL(/\/(dashboard)?$/);
-      }
+    // Check for breadcrumbs
+    const breadcrumbs = page
+      .locator('nav[aria-label*="breadcrumb" i], .breadcrumb')
+      .first();
+
+    if (await breadcrumbs.isVisible()) {
+      const homeLink = breadcrumbs.locator("a").first();
+      await homeLink.click();
+      await expect(page).toHaveURL(/\/(dashboard)?$/);
     }
   });
 

@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Leaderboard", () => {
+test.describe("Leaderboard @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -176,7 +176,7 @@ test.describe("Leaderboard", () => {
   });
 });
 
-test.describe("Leaderboard Widget", () => {
+test.describe("Leaderboard Widget @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

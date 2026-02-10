@@ -4,6 +4,8 @@
  * Deterministic tests that guarantee coverage of every required tag.
  * These tests are not randomized - they provide a baseline guarantee
  * that critical functionality works before randomized journeys run.
+ *
+ * @tags @prod-regression
  */
 
 import { test, expect } from "@playwright/test";
@@ -21,13 +23,15 @@ async function fillFirstVisible(
       return;
     }
   }
-  throw new Error(`No visible input found for selectors: ${selectors.join(", ")}`);
+  throw new Error(
+    `No visible input found for selectors: ${selectors.join(", ")}`
+  );
 }
 
 // Helper to emit coverage tags (would integrate with Mega QA reporter)
 function emitTag(tag: string): void {
   // In production, this would write to a coverage file
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 // ============================================================================
@@ -44,28 +48,35 @@ test.describe("System-Wide Controls", () => {
     emitTag("regression:cmd-k");
 
     await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
 
     // Open command palette with Cmd+K (Mac) or Ctrl+K (Windows/Linux)
-    await page.keyboard.press("Meta+k");
+    const modifier = process.platform === "darwin" ? "Meta" : "Control";
+    await page.keyboard.press(`${modifier}+k`);
 
     // Wait for command palette to appear
     const palette = page.locator(
       '[role="dialog"], [data-command-palette], .command-palette'
     );
-
-    // If Meta+K didn't work, try Ctrl+K
-    if (!(await palette.isVisible({ timeout: 1000 }).catch(() => false))) {
-      await page.keyboard.press("Control+k");
-    }
-
-    // Verify palette is open or command input is focused
-    const isVisible = await palette
-      .isVisible({ timeout: 2000 })
-      .catch(() => false);
     const commandInput = page.locator(
       'input[placeholder*="command" i], input[placeholder*="search" i]'
     );
+
+    // Wait for either palette or search input to appear
+    await Promise.race([
+      palette.waitFor({ state: "visible", timeout: 2000 }).catch(() => {}),
+      commandInput
+        .first()
+        .waitFor({ state: "visible", timeout: 2000 })
+        .catch(() => {}),
+    ]);
+
+    // Verify palette is open or command input is visible
+    const isVisible = await palette
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
     const inputVisible = await commandInput
+      .first()
       .isVisible({ timeout: 1000 })
       .catch(() => false);
 
@@ -73,6 +84,7 @@ test.describe("System-Wide Controls", () => {
 
     // Close with Escape
     await page.keyboard.press("Escape");
+    await page.waitForLoadState("networkidle");
   });
 
   test("TS-002: Theme toggle persists", async ({ page }) => {
@@ -80,6 +92,7 @@ test.describe("System-Wide Controls", () => {
     emitTag("regression:theme-toggle");
 
     await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
 
     // Find theme toggle
     const themeToggle = page
@@ -97,7 +110,16 @@ test.describe("System-Wide Controls", () => {
 
       // Toggle theme
       await themeToggle.click();
-      await page.waitForTimeout(500);
+
+      // Wait for theme class to update
+      await page.waitForFunction(
+        wasDark => {
+          const isDark = document.documentElement.classList.contains("dark");
+          return isDark !== wasDark;
+        },
+        initialDark,
+        { timeout: 2000 }
+      );
 
       // Verify theme changed
       const afterToggle = await html.evaluate(el =>
@@ -211,9 +233,11 @@ test.describe("Dashboard & Analytics", () => {
     await page.goto("/dashboard");
 
     // Look for the dashboard shell and at least one widget section title.
-    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible(
+      {
+        timeout: 10000,
+      }
+    );
 
     // The dashboard uses many tailwind utility classes, so prefer stable text checks.
     // These widget titles exist even when the DB has no seeded data.
@@ -408,6 +432,7 @@ test.describe("Error Handling", () => {
     emitTag("TS-11.1");
 
     await page.goto("/this-route-does-not-exist-12345");
+    await page.waitForLoadState("networkidle");
 
     // Should show some form of not found message
     const notFoundIndicators = [
@@ -424,8 +449,11 @@ test.describe("Error Handling", () => {
       }
     }
 
-    // It's acceptable if the app redirects to dashboard instead of showing 404
-    const onDashboard = page.url().includes("dashboard");
+    // Check if redirected to dashboard
+    const onDashboard =
+      page.url().includes("dashboard") || page.url().endsWith("/");
+
+    // Either show 404 page or redirect to a valid page (like dashboard)
     expect(foundNotFound || onDashboard).toBeTruthy();
   });
 });

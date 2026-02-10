@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "./fixtures/auth";
 
-test.describe("Workflows and Dashboard", () => {
+test.describe("Workflows and Dashboard @prod-smoke", () => {
   test.beforeEach(async ({ page }) => {
     // Login using centralized auth fixture
     await loginAsStandardUser(page);

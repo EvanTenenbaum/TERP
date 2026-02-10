@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Return Request Flow", () => {
+test.describe("Return Request Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -72,9 +72,7 @@ test.describe("Return Request Flow", () => {
 
         // Verify return form fields
         await expect(
-          page.locator(
-            '[data-testid="return-form"], form, [role="dialog"]'
-          )
+          page.locator('[data-testid="return-form"], form, [role="dialog"]')
         ).toBeVisible({ timeout: 5000 });
       }
     }
@@ -107,7 +105,12 @@ test.describe("Return Request Flow", () => {
           'input[type="checkbox"], [data-testid="return-item-select"]'
         );
 
-        if (await itemCheckbox.first().isVisible().catch(() => false)) {
+        if (
+          await itemCheckbox
+            .first()
+            .isVisible()
+            .catch(() => false)
+        ) {
           await itemCheckbox.first().check();
           await expect(itemCheckbox.first()).toBeChecked();
         }
@@ -150,7 +153,7 @@ test.describe("Return Request Flow", () => {
   });
 });
 
-test.describe("Return Processing Flow", () => {
+test.describe("Return Processing Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -242,7 +245,7 @@ test.describe("Return Processing Flow", () => {
   });
 });
 
-test.describe("Inventory Update from Return", () => {
+test.describe("Inventory Update from Return @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -325,7 +328,7 @@ test.describe("Inventory Update from Return", () => {
   });
 });
 
-test.describe("Return Reporting", () => {
+test.describe("Return Reporting @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

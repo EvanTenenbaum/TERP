@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Sales Sheet Workflow", () => {
+test.describe("Sales Sheet Workflow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -38,9 +38,7 @@ test.describe("Sales Sheet Workflow", () => {
 
       // Should show sales sheet form
       await expect(
-        page.locator(
-          '[data-testid="sales-sheet-form"], form, [role="dialog"]'
-        )
+        page.locator('[data-testid="sales-sheet-form"], form, [role="dialog"]')
       ).toBeVisible({ timeout: 5000 });
     }
   });
@@ -81,9 +79,7 @@ test.describe("Sales Sheet Workflow", () => {
 
       // Should show draft list or load draft
       await expect(
-        page.locator(
-          '[data-testid="draft-list"], [role="dialog"], .draft-item'
-        )
+        page.locator('[data-testid="draft-list"], [role="dialog"], .draft-item')
       ).toBeVisible({ timeout: 5000 });
     }
   });
@@ -124,7 +120,7 @@ test.describe("Sales Sheet Workflow", () => {
   });
 });
 
-test.describe("Quote Creation from Sales Sheet", () => {
+test.describe("Quote Creation from Sales Sheet @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -210,7 +206,7 @@ test.describe("Quote Creation from Sales Sheet", () => {
   });
 });
 
-test.describe("Sales Sheet Version Control", () => {
+test.describe("Sales Sheet Version Control @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

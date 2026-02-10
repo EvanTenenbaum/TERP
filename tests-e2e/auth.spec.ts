@@ -10,7 +10,7 @@ import {
   AUTH_ROUTES,
 } from "./fixtures/auth";
 
-test.describe("Authentication", () => {
+test.describe("Authentication @prod-smoke", () => {
   test("should display login page", async ({ page }) => {
     await page.goto(AUTH_ROUTES.login);
     // Wait for page to load
@@ -31,17 +31,13 @@ test.describe("Authentication", () => {
     await submitButton.click();
 
     // Expect either form validation or error message
-    // Give it time for validation to trigger
-    await page.waitForTimeout(500);
-    const hasValidation = await page
+    const validationElement = page
       .locator(
         'input:invalid, [role="alert"], .error, .text-red-500, .text-destructive'
       )
-      .first()
-      .isVisible()
-      .catch(() => false);
+      .first();
 
-    expect(hasValidation).toBeTruthy();
+    await expect(validationElement).toBeVisible({ timeout: 5000 });
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
@@ -184,7 +180,7 @@ test.describe("Authentication", () => {
   });
 });
 
-test.describe("Authentication - Role-Based Access", () => {
+test.describe("Authentication - Role-Based Access @prod-smoke", () => {
   test("Super Admin can access all areas", async ({ page }) => {
     await loginAsAdmin(page);
 

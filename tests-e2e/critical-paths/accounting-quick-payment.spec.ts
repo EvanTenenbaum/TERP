@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Accounting Quick Payment (WS-001)", () => {
+test.describe("Accounting Quick Payment (WS-001) @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -24,7 +24,14 @@ test.describe("Accounting Quick Payment (WS-001)", () => {
     );
 
     // If button exists on dashboard, verify it's clickable
-    if (await receivePaymentButton.isVisible().catch(() => false)) {
+    const buttonVisible = await receivePaymentButton
+      .isVisible()
+      .catch(() => false);
+    if (!buttonVisible) {
+      test.skip(true, "Receive Payment button not available on dashboard");
+      return;
+    }
+    if (buttonVisible) {
       await receivePaymentButton.click();
       // Should open a modal or navigate to payment form
       await expect(
@@ -58,28 +65,34 @@ test.describe("Accounting Quick Payment (WS-001)", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment"), [data-testid="receive-payment"]'
     );
 
-    if (await receivePaymentButton.isVisible().catch(() => false)) {
-      await receivePaymentButton.click();
-
-      // Verify form fields are present
-      await expect(
-        page.locator(
-          'select[name="client"], [data-testid="client-select"], input[placeholder*="client" i]'
-        )
-      ).toBeVisible({ timeout: 5000 });
-
-      await expect(
-        page.locator(
-          'input[name="amount"], [data-testid="amount-input"], input[type="number"]'
-        )
-      ).toBeVisible();
-
-      await expect(
-        page.locator(
-          'select[name="paymentType"], [data-testid="payment-type-select"]'
-        )
-      ).toBeVisible();
+    const buttonVisible = await receivePaymentButton
+      .isVisible()
+      .catch(() => false);
+    if (!buttonVisible) {
+      test.skip(true, "Receive Payment button not available");
+      return;
     }
+
+    await receivePaymentButton.click();
+
+    // Verify form fields are present
+    await expect(
+      page.locator(
+        'select[name="client"], [data-testid="client-select"], input[placeholder*="client" i]'
+      )
+    ).toBeVisible({ timeout: 5000 });
+
+    await expect(
+      page.locator(
+        'input[name="amount"], [data-testid="amount-input"], input[type="number"]'
+      )
+    ).toBeVisible();
+
+    await expect(
+      page.locator(
+        'select[name="paymentType"], [data-testid="payment-type-select"]'
+      )
+    ).toBeVisible();
   });
 
   test("should validate required fields before submission", async ({
@@ -91,22 +104,28 @@ test.describe("Accounting Quick Payment (WS-001)", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment")'
     );
 
-    if (await receivePaymentButton.isVisible().catch(() => false)) {
-      await receivePaymentButton.click();
-
-      // Try to submit without filling required fields
-      const submitButton = page.locator(
-        'button[type="submit"], button:has-text("Save")'
-      );
-      await submitButton.click();
-
-      // Should show validation errors
-      await expect(
-        page.locator(
-          '[role="alert"], .error, input:invalid, [data-testid="validation-error"]'
-        )
-      ).toBeVisible({ timeout: 3000 });
+    const buttonVisible = await receivePaymentButton
+      .isVisible()
+      .catch(() => false);
+    if (!buttonVisible) {
+      test.skip(true, "Receive Payment button not available");
+      return;
     }
+
+    await receivePaymentButton.click();
+
+    // Try to submit without filling required fields
+    const submitButton = page.locator(
+      'button[type="submit"], button:has-text("Save")'
+    );
+    await submitButton.click();
+
+    // Should show validation errors
+    await expect(
+      page.locator(
+        '[role="alert"], .error, input:invalid, [data-testid="validation-error"]'
+      )
+    ).toBeVisible({ timeout: 3000 });
   });
 
   test("should show balance preview before saving", async ({ page }) => {
@@ -116,37 +135,47 @@ test.describe("Accounting Quick Payment (WS-001)", () => {
       'button:has-text("Receive Payment"), a:has-text("Receive Payment")'
     );
 
-    if (await receivePaymentButton.isVisible().catch(() => false)) {
-      await receivePaymentButton.click();
+    const buttonVisible = await receivePaymentButton
+      .isVisible()
+      .catch(() => false);
+    if (!buttonVisible) {
+      test.skip(true, "Receive Payment button not available");
+      return;
+    }
 
-      // Select a client (first available)
-      const clientSelect = page.locator(
-        'select[name="client"], [data-testid="client-select"]'
+    await receivePaymentButton.click();
+
+    // Select a client (first available)
+    const clientSelect = page.locator(
+      'select[name="client"], [data-testid="client-select"]'
+    );
+    const selectVisible = await clientSelect.isVisible().catch(() => false);
+    if (selectVisible) {
+      await clientSelect.selectOption({ index: 1 });
+
+      // Enter amount
+      const amountInput = page.locator(
+        'input[name="amount"], [data-testid="amount-input"]'
       );
-      if (await clientSelect.isVisible().catch(() => false)) {
-        await clientSelect.selectOption({ index: 1 });
+      await amountInput.fill("1000");
 
-        // Enter amount
-        const amountInput = page.locator(
-          'input[name="amount"], [data-testid="amount-input"]'
-        );
-        await amountInput.fill("1000");
+      // Look for balance preview
+      const balancePreview = page.locator(
+        '[data-testid="balance-preview"], .balance-preview, :has-text("New Balance")'
+      );
 
-        // Look for balance preview
-        const balancePreview = page.locator(
-          '[data-testid="balance-preview"], .balance-preview, :has-text("New Balance")'
-        );
-
-        // Balance preview should be visible after client selection
-        if (await balancePreview.isVisible().catch(() => false)) {
-          await expect(balancePreview).toContainText(/balance|total/i);
-        }
+      // Balance preview should be visible after client selection
+      const previewVisible = await balancePreview
+        .isVisible()
+        .catch(() => false);
+      if (previewVisible) {
+        await expect(balancePreview).toContainText(/balance|total/i);
       }
     }
   });
 });
 
-test.describe("Accounting Module Navigation", () => {
+test.describe("Accounting Module Navigation @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -159,14 +188,18 @@ test.describe("Accounting Module Navigation", () => {
       'a:has-text("Chart of Accounts"), button:has-text("Chart of Accounts"), [data-testid="coa-link"]'
     );
 
-    if (await coaLink.isVisible().catch(() => false)) {
-      await coaLink.click();
-      await expect(
-        page.locator("table, [data-testid='accounts-table']")
-      ).toBeVisible({
-        timeout: 5000,
-      });
+    const linkVisible = await coaLink.isVisible().catch(() => false);
+    if (!linkVisible) {
+      test.skip(true, "Chart of Accounts link not available");
+      return;
     }
+
+    await coaLink.click();
+    await expect(
+      page.locator("table, [data-testid='accounts-table']")
+    ).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should navigate to invoices", async ({ page }) => {
@@ -176,14 +209,18 @@ test.describe("Accounting Module Navigation", () => {
       'a:has-text("Invoices"), button:has-text("Invoices"), [data-testid="invoices-link"]'
     );
 
-    if (await invoicesLink.isVisible().catch(() => false)) {
-      await invoicesLink.click();
-      await expect(
-        page.locator(
-          "table, [data-testid='invoices-table'], h2:has-text('Invoices')"
-        )
-      ).toBeVisible({ timeout: 5000 });
+    const linkVisible = await invoicesLink.isVisible().catch(() => false);
+    if (!linkVisible) {
+      test.skip(true, "Invoices link not available");
+      return;
     }
+
+    await invoicesLink.click();
+    await expect(
+      page.locator(
+        "table, [data-testid='invoices-table'], h2:has-text('Invoices')"
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should navigate to bills", async ({ page }) => {
@@ -193,11 +230,15 @@ test.describe("Accounting Module Navigation", () => {
       'a:has-text("Bills"), button:has-text("Bills"), [data-testid="bills-link"]'
     );
 
-    if (await billsLink.isVisible().catch(() => false)) {
-      await billsLink.click();
-      await expect(
-        page.locator("table, [data-testid='bills-table'], h2:has-text('Bills')")
-      ).toBeVisible({ timeout: 5000 });
+    const linkVisible = await billsLink.isVisible().catch(() => false);
+    if (!linkVisible) {
+      test.skip(true, "Bills link not available");
+      return;
     }
+
+    await billsLink.click();
+    await expect(
+      page.locator("table, [data-testid='bills-table'], h2:has-text('Bills')")
+    ).toBeVisible({ timeout: 5000 });
   });
 });

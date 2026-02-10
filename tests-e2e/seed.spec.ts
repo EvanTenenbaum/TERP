@@ -10,7 +10,7 @@ import { loginAsAdmin, loginAsStandardUser } from "./fixtures/auth";
  * Run this spec first to ensure test data and authentication are properly set up.
  */
 
-test.describe("Seed: Authentication & Base Setup", () => {
+test.describe("Seed: Authentication & Base Setup @prod-smoke", () => {
   test("should authenticate as admin user", async ({ page }) => {
     await loginAsAdmin(page);
 

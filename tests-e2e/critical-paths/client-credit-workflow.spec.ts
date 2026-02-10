@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Client Creation Flow", () => {
+test.describe("Client Creation Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -35,9 +35,7 @@ test.describe("Client Creation Flow", () => {
 
       // Should show client form
       await expect(
-        page.locator(
-          '[data-testid="client-form"], form, [role="dialog"]'
-        )
+        page.locator('[data-testid="client-form"], form, [role="dialog"]')
       ).toBeVisible({ timeout: 5000 });
     }
   });
@@ -94,7 +92,7 @@ test.describe("Client Creation Flow", () => {
   });
 });
 
-test.describe("Credit Setup Flow", () => {
+test.describe("Credit Setup Flow @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -141,9 +139,14 @@ test.describe("Credit Setup Flow", () => {
         '[data-testid="credit-status"], .credit-status, :text("Credit"), :text("Balance")'
       );
 
-      // May or may not show credit status
-      const count = await creditStatus.count();
-      expect(count).toBeGreaterThanOrEqual(0);
+      // Credit status may or may not be visible - skip if not present
+      const statusVisible = await creditStatus
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (!statusVisible) {
+        test.skip(true, "Credit status not visible for this client");
+      }
     }
   });
 
@@ -167,14 +170,19 @@ test.describe("Credit Setup Flow", () => {
         '[data-testid="credit-indicator"], .credit-indicator, .badge:has-text("Credit")'
       );
 
-      // May or may not have credit indicator
-      const count = await creditIndicator.count();
-      expect(count).toBeGreaterThanOrEqual(0);
+      // Credit indicator may or may not be visible - skip if not present
+      const indicatorVisible = await creditIndicator
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (!indicatorVisible) {
+        test.skip(true, "Credit indicator not visible for this client");
+      }
     }
   });
 });
 
-test.describe("Order with Credit Flow", () => {
+test.describe("Order with Credit Flow @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -197,9 +205,14 @@ test.describe("Order with Credit Flow", () => {
         '[data-testid="credit-warning"], .credit-warning, [role="alert"]:has-text("credit")'
       );
 
-      // May or may not show credit warning
-      const count = await creditWarning.count();
-      expect(count).toBeGreaterThanOrEqual(0);
+      // Credit warning may or may not be visible - this is expected behavior
+      const warningVisible = await creditWarning
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (!warningVisible) {
+        test.skip(true, "Credit warning not shown for this client");
+      }
     }
   });
 
@@ -212,9 +225,14 @@ test.describe("Order with Credit Flow", () => {
       '[data-testid="credit-limit-banner"], .credit-banner, [role="alert"]:has-text("limit")'
     );
 
-    // May or may not show credit banner
-    const count = await creditBanner.count();
-    expect(count).toBeGreaterThanOrEqual(0);
+    // Credit banner may or may not be visible - this is expected behavior
+    const bannerVisible = await creditBanner
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (!bannerVisible) {
+      test.skip(true, "Credit banner not shown");
+    }
   });
 
   test("should allow order creation within credit limit", async ({ page }) => {
@@ -261,13 +279,18 @@ test.describe("Order with Credit Flow", () => {
       '[data-testid="credit-exceeded"], .credit-exceeded, [role="alert"]:has-text("exceeded")'
     );
 
-    // May or may not show exceeded message
-    const count = await creditExceeded.count();
-    expect(count).toBeGreaterThanOrEqual(0);
+    // Credit exceeded message may or may not be visible - depends on client status
+    const exceededVisible = await creditExceeded
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (!exceededVisible) {
+      test.skip(true, "Credit exceeded message not shown");
+    }
   });
 });
 
-test.describe("Credit Override Flow", () => {
+test.describe("Credit Override Flow @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -281,9 +304,14 @@ test.describe("Credit Override Flow", () => {
       'button:has-text("Override"), button:has-text("Approve"), [data-testid="credit-override"]'
     );
 
-    // May or may not show override option
-    const count = await overrideButton.count();
-    expect(count).toBeGreaterThanOrEqual(0);
+    // Override option may or may not be visible - depends on permissions
+    const overrideVisible = await overrideButton
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (!overrideVisible) {
+      test.skip(true, "Credit override option not shown");
+    }
   });
 
   test("should display credit explanation", async ({ page }) => {
@@ -304,9 +332,14 @@ test.describe("Credit Override Flow", () => {
         '[data-testid="credit-explanation"], .credit-explanation, :text("Credit Score"), :text("Credit Limit")'
       );
 
-      // May or may not show explanation
-      const count = await creditExplanation.count();
-      expect(count).toBeGreaterThanOrEqual(0);
+      // Credit explanation may or may not be visible
+      const explanationVisible = await creditExplanation
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (!explanationVisible) {
+        test.skip(true, "Credit explanation not shown");
+      }
     }
   });
 });

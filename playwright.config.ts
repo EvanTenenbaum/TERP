@@ -21,7 +21,11 @@ const isCloud =
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["tests-e2e/**/*.spec.ts", "tests/e2e/**/*.spec.ts", "tests/smoke/**/*.spec.ts"],
+  testMatch: [
+    "tests-e2e/**/*.spec.ts",
+    "tests/e2e/**/*.spec.ts",
+    "tests/smoke/**/*.spec.ts",
+  ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -49,6 +53,26 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "prod-smoke",
+      grep: /@prod-smoke/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "prod-regression",
+      grep: /@prod-regression/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    // dev-only suite runs only when NOT in cloud/remote mode
+    ...(!isCloud
+      ? [
+          {
+            name: "dev-only",
+            grep: /@dev-only/,
+            use: { ...devices["Desktop Chrome"] },
+          },
+        ]
+      : []),
     {
       name: "smoke",
       testDir: "./tests/smoke",

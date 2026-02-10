@@ -124,6 +124,7 @@
     "test:e2e:ai:inventory": "SCENARIO=inventoryExplore playwright test tests-e2e/ai-generated/run-scenario.spec.ts",
     "test:e2e:ai:orders": "SCENARIO=orderWorkflow playwright test tests-e2e/ai-generated/run-scenario.spec.ts",
     "test:e2e:ai:navigation": "SCENARIO=navigationSmokeTest playwright test tests-e2e/ai-generated/run-scenario.spec.ts",
+    "e2e:cluster": "tsx scripts/e2e-failure-cluster.ts",
     "qa:pipeline": "tsx scripts/qa/index.ts",
     "qa:pipeline:local": "pnpm test:e2e && tsx scripts/qa/index.ts test-results.json",
     "qa:test:core": "ORACLE_RUN_MODE=tier1 playwright test tests-e2e/oracles/oracle-runner.spec.ts",

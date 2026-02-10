@@ -13,7 +13,7 @@ try {
 
 async function takeScreenshot(page: unknown, name: string): Promise<void> {
   if (argosScreenshot) {
-    await takeScreenshot(page, name);
+    await argosScreenshot(page, name);
   }
 }
 

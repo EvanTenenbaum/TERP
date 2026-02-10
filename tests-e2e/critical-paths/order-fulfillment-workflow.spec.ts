@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Order Creation Flow", () => {
+test.describe("Order Creation Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -93,7 +93,7 @@ test.describe("Order Creation Flow", () => {
   });
 });
 
-test.describe("Order Fulfillment Flow", () => {
+test.describe("Order Fulfillment Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -164,7 +164,12 @@ test.describe("Order Fulfillment Flow", () => {
         'input[type="checkbox"], [data-testid="pick-item"]'
       );
 
-      if (await itemCheckbox.first().isVisible().catch(() => false)) {
+      if (
+        await itemCheckbox
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
         await itemCheckbox.first().check();
         await expect(itemCheckbox.first()).toBeChecked();
       }
@@ -196,7 +201,7 @@ test.describe("Order Fulfillment Flow", () => {
   });
 });
 
-test.describe("Payment Flow", () => {
+test.describe("Payment Flow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -205,9 +210,7 @@ test.describe("Payment Flow", () => {
     await page.goto("/accounting/invoices");
 
     await expect(
-      page.locator(
-        'h1:has-text("Invoice"), [data-testid="invoices-page"]'
-      )
+      page.locator('h1:has-text("Invoice"), [data-testid="invoices-page"]')
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -273,9 +276,7 @@ test.describe("Payment Flow", () => {
 
         // Should show payment form
         await expect(
-          page.locator(
-            '[data-testid="payment-form"], form, [role="dialog"]'
-          )
+          page.locator('[data-testid="payment-form"], form, [role="dialog"]')
         ).toBeVisible({ timeout: 5000 });
       }
     }
@@ -316,7 +317,7 @@ test.describe("Payment Flow", () => {
   });
 });
 
-test.describe("Order Completion Flow", () => {
+test.describe("Order Completion Flow @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -414,7 +415,7 @@ test.describe("Order Completion Flow", () => {
   });
 });
 
-test.describe("Order Workflow Integration", () => {
+test.describe("Order Workflow Integration @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });

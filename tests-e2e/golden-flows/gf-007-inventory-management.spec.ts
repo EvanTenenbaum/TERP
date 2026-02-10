@@ -7,7 +7,7 @@
 import { expect, test } from "@playwright/test";
 import { loginAsInventoryManager } from "../fixtures/auth";
 
-test.describe("Golden Flow: GF-007 Inventory Management", (): void => {
+test.describe("Golden Flow: GF-007 Inventory Management @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
     await loginAsInventoryManager(page);
   });
@@ -22,20 +22,27 @@ test.describe("Golden Flow: GF-007 Inventory Management", (): void => {
     await expect(header).toBeVisible({ timeout: 5000 });
 
     const batchRow = page.locator('[role="row"], tr').first();
-    if (await batchRow.isVisible().catch(() => false)) {
-      await batchRow.click();
-
-      const adjustButton = page.locator(
-        'button:has-text("Adjust"), button:has-text("Edit"), button:has-text("Update Qty")'
-      );
-      if (
-        await adjustButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(adjustButton.first()).toBeVisible();
-      }
+    if (!(await batchRow.isVisible({ timeout: 5000 }).catch(() => false))) {
+      test.skip(true, "No inventory batches available");
+      return;
     }
+
+    await batchRow.click();
+    await page.waitForLoadState("networkidle");
+
+    const adjustButton = page.locator(
+      'button:has-text("Adjust"), button:has-text("Edit"), button:has-text("Update Qty")'
+    );
+    if (
+      !(await adjustButton
+        .first()
+        .isVisible({ timeout: 5000 })
+        .catch(() => false))
+    ) {
+      test.skip(true, "Adjust button not available for this batch");
+      return;
+    }
+
+    await expect(adjustButton.first()).toBeVisible();
   });
 });

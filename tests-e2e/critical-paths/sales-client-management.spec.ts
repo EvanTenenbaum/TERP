@@ -9,7 +9,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
 
-test.describe("Quick Customer Creation (WS-011)", () => {
+test.describe("Quick Customer Creation (WS-011) @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -122,7 +122,7 @@ test.describe("Quick Customer Creation (WS-011)", () => {
   });
 });
 
-test.describe("Customer Preferences (WS-012)", () => {
+test.describe("Customer Preferences (WS-012) @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -221,12 +221,12 @@ test.describe("Customer Preferences (WS-012)", () => {
 
       // May or may not have preferences data
       const isVisible = await strainPreferences.isVisible().catch(() => false);
-      expect(isVisible || true).toBeTruthy(); // Soft check
+      expect(isVisible).toBeTruthy();
     }
   });
 });
 
-test.describe("Customer Wishlist (WS-015)", () => {
+test.describe("Customer Wishlist (WS-015) @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -292,7 +292,7 @@ test.describe("Customer Wishlist (WS-015)", () => {
   });
 });
 
-test.describe("Client Search & Filtering", () => {
+test.describe("Client Search & Filtering @prod-regression", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
@@ -312,7 +312,7 @@ test.describe("Client Search & Filtering", () => {
       // Search should be applied
       const url = page.url();
       const hasSearchInUrl = url.includes("search") || url.includes("q=");
-      expect(hasSearchInUrl || true).toBeTruthy();
+      expect(hasSearchInUrl).toBeTruthy();
     }
   });
 

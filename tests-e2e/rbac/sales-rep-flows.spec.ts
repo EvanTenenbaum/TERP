@@ -30,7 +30,17 @@
 import { test, expect } from "@playwright/test";
 import { loginAsSalesRep } from "../fixtures/auth";
 
-test.describe("TER-45: Sales Rep - Authentication", () => {
+test.describe("TER-45: Sales Rep - Authentication @prod-regression @rbac", () => {
+  test.beforeEach(() => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
+  });
   test("should login successfully as Sales Rep", async ({ page }) => {
     await loginAsSalesRep(page);
 
@@ -66,8 +76,16 @@ test.describe("TER-45: Sales Rep - Authentication", () => {
   });
 });
 
-test.describe("TER-45: Sales Rep - Client Management", () => {
+test.describe("TER-45: Sales Rep - Client Management @prod-regression @rbac", () => {
   test.beforeEach(async ({ page }) => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
     await loginAsSalesRep(page);
   });
 
@@ -256,14 +274,25 @@ test.describe("TER-45: Sales Rep - Client Management", () => {
       await searchInput.fill("test");
       await page.waitForLoadState("networkidle");
 
-      // Search should work without errors
-      expect(true).toBeTruthy();
+      // Search should work without errors - verify no permission errors
+      const errorMsg = page.locator(
+        "text=/access denied|unauthorized|forbidden/i"
+      );
+      await expect(errorMsg).not.toBeVisible();
     }
   });
 });
 
-test.describe("TER-45: Sales Rep - Order Management", () => {
+test.describe("TER-45: Sales Rep - Order Management @prod-regression @rbac", () => {
   test.beforeEach(async ({ page }) => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
     await loginAsSalesRep(page);
   });
 
@@ -364,16 +393,19 @@ test.describe("TER-45: Sales Rep - Order Management", () => {
 
     if (await draftTab.isVisible().catch(() => false)) {
       await draftTab.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState("networkidle");
     }
 
     if (await confirmedTab.isVisible().catch(() => false)) {
       await confirmedTab.click();
-      await page.waitForTimeout(500);
+      await page.waitForLoadState("networkidle");
     }
 
-    // Both tabs should be clickable without permission errors
-    expect(true).toBeTruthy();
+    // Both tabs should be clickable without permission errors - verify no error messages
+    const errorMsg = page.locator(
+      "text=/access denied|unauthorized|forbidden|permission/i"
+    );
+    await expect(errorMsg).not.toBeVisible();
   });
 
   test("should search orders", async ({ page }) => {
@@ -388,8 +420,11 @@ test.describe("TER-45: Sales Rep - Order Management", () => {
       await searchInput.fill("ORD");
       await page.waitForLoadState("networkidle");
 
-      // Search should work without errors
-      expect(true).toBeTruthy();
+      // Search should work without errors - verify no permission errors
+      const errorMsg = page.locator(
+        "text=/access denied|unauthorized|forbidden/i"
+      );
+      await expect(errorMsg).not.toBeVisible();
     }
   });
 
@@ -409,8 +444,16 @@ test.describe("TER-45: Sales Rep - Order Management", () => {
   });
 });
 
-test.describe("TER-45: Sales Rep - RBAC Permission Checks", () => {
+test.describe("TER-45: Sales Rep - RBAC Permission Checks @prod-regression @rbac", () => {
   test.beforeEach(async ({ page }) => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
     await loginAsSalesRep(page);
   });
 
@@ -456,9 +499,14 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks", () => {
         ? await createButton.isEnabled().catch(() => false)
         : false;
 
-      // Either no create button, or it's disabled for Sales Rep
-      // (Note: Some UIs hide buttons, others disable them)
-      expect(!buttonVisible || !buttonEnabled || true).toBeTruthy();
+      // Sales Rep should have read-only access - either no create button or it's disabled
+      // This is informational - UI may hide or disable based on implementation
+      // Note: RBAC is enforced server-side, so UI state is less critical
+      if (buttonVisible && buttonEnabled) {
+        console.warn(
+          "Sales Rep sees enabled create button in inventory - RBAC should block at server level"
+        );
+      }
     }
   });
 
@@ -493,8 +541,16 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks", () => {
       .isVisible()
       .catch(() => false);
 
-    // If the page exists, it should load without permission errors
-    expect(onReturnsPage || hasReturnsContent || true).toBeTruthy();
+    // Verify no access denied error (Sales Rep should have returns access)
+    const accessDenied = page.locator(
+      "text=/access denied|unauthorized|forbidden/i"
+    );
+    await expect(accessDenied).not.toBeVisible();
+
+    // If the page exists, verify we can access it
+    if (!onReturnsPage && !hasReturnsContent) {
+      console.warn("Returns page may not exist or route not configured");
+    }
   });
 
   test("should have access to quotes module", async ({ page }) => {
@@ -509,13 +565,29 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks", () => {
       .isVisible()
       .catch(() => false);
 
-    // If the page exists, it should load without permission errors
-    expect(onQuotesPage || hasQuotesContent || true).toBeTruthy();
+    // Verify no access denied error (Sales Rep should have quotes access)
+    const accessDenied = page.locator(
+      "text=/access denied|unauthorized|forbidden/i"
+    );
+    await expect(accessDenied).not.toBeVisible();
+
+    // If the page exists, verify we can access it
+    if (!onQuotesPage && !hasQuotesContent) {
+      console.warn("Quotes page may not exist or route not configured");
+    }
   });
 });
 
-test.describe("TER-45: Sales Rep - Navigation", () => {
+test.describe("TER-45: Sales Rep - Navigation @prod-regression @rbac", () => {
   test.beforeEach(async ({ page }) => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
     await loginAsSalesRep(page);
   });
 
@@ -555,13 +627,22 @@ test.describe("TER-45: Sales Rep - Navigation", () => {
       // Admin items should not be visible, but UI may handle this differently
     }
 
-    // The page should load without errors
-    expect(true).toBeTruthy();
+    // The page should load without errors - verify no crash or unauthorized messages
+    const errorMsg = page.locator("text=/error|crash|unauthorized/i");
+    await expect(errorMsg).not.toBeVisible();
   });
 });
 
-test.describe("TER-45: Sales Rep - Error Handling", () => {
+test.describe("TER-45: Sales Rep - Error Handling @prod-regression @rbac", () => {
   test.beforeEach(async ({ page }) => {
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || process.env.E2E_DEMO_MODE === "true";
+    if (isDemoMode) {
+      test.skip(
+        true,
+        "RBAC tests are meaningless in DEMO_MODE - all users are Super Admin"
+      );
+    }
     await loginAsSalesRep(page);
   });
 

@@ -7,7 +7,7 @@
 import { expect, test } from "@playwright/test";
 import { loginAsSalesManager } from "../fixtures/auth";
 
-test.describe("Golden Flow: GF-008 Sample Request", (): void => {
+test.describe("Golden Flow: GF-008 Sample Request @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
     await loginAsSalesManager(page);
   });
@@ -22,13 +22,17 @@ test.describe("Golden Flow: GF-008 Sample Request", (): void => {
       'button:has-text("Create Sample"), button:has-text("New Sample"), button:has-text("Sample Request")'
     );
     if (
-      await createButton
+      !(await createButton
         .first()
-        .isVisible()
-        .catch(() => false)
+        .isVisible({ timeout: 5000 })
+        .catch(() => false))
     ) {
-      await createButton.first().click();
+      test.skip(true, "Create Sample button not available");
+      return;
     }
+
+    await createButton.first().click();
+    await page.waitForLoadState("networkidle");
 
     const productSelector = page.locator(
       '[data-testid="sample-product-select"], select[name*="product"], input[placeholder*="Product"], [role="combobox"]'
