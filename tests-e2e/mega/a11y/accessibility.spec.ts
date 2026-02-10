@@ -10,7 +10,7 @@ import { loginAsStandardUser } from "../../fixtures/auth";
 
 // Helper to emit coverage tags
 function emitTag(tag: string): void {
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 // Pages to scan for accessibility
@@ -43,9 +43,9 @@ test.describe("Accessibility - Axe Scans", () => {
 
       // Log violations for debugging
       if (accessibilityScanResults.violations.length > 0) {
-        console.log(`\n⚠️ Accessibility violations on ${pageInfo.name}:`);
+        console.info(`\n⚠️ Accessibility violations on ${pageInfo.name}:`);
         for (const violation of accessibilityScanResults.violations) {
-          console.log(
+          console.info(
             `  - ${violation.id}: ${violation.description} (${violation.nodes.length} instances)`
           );
         }
@@ -135,7 +135,11 @@ test.describe("Accessibility - Keyboard Navigation", () => {
 
     // Open command palette
     await page.keyboard.press("Meta+k");
-    await page.waitForTimeout(500);
+    await page
+      .locator('[role="dialog"], [data-command-palette], [cmdk-root]')
+      .first()
+      .waitFor({ state: "visible", timeout: 2000 })
+      .catch(() => {});
 
     const palette = page.locator(
       '[role="dialog"], [data-command-palette], .command-palette'
@@ -148,7 +152,7 @@ test.describe("Accessibility - Keyboard Navigation", () => {
     if (await palette.isVisible().catch(() => false)) {
       // Type to filter
       await page.keyboard.type("orders");
-      await page.waitForTimeout(300);
+      await page.waitForLoadState("networkidle");
 
       // Arrow down to select
       await page.keyboard.press("ArrowDown");

@@ -12,7 +12,7 @@ import { loginAsStandardUser } from "../../fixtures/auth";
 
 // Helper to emit coverage tags
 function emitTag(tag: string): void {
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 test.describe("Resilience - Offline Handling", () => {
@@ -60,7 +60,11 @@ test.describe("Resilience - Offline Handling", () => {
           await submitBtn.click();
 
           // Should show error (toast, alert, or error message)
-          await page.waitForTimeout(2000);
+          await page
+            .locator('[role="alert"], .toast, [data-sonner-toast]')
+            .first()
+            .waitFor({ state: "visible", timeout: 3000 })
+            .catch(() => {});
 
           const errorIndicators = [
             page.locator('[role="alert"]'),
@@ -106,7 +110,7 @@ test.describe("Resilience - Offline Handling", () => {
 
     // Go offline briefly
     await context.setOffline(true);
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000); // Intentional: simulating offline period duration
     await context.setOffline(false);
 
     // Page should recover - try navigation
@@ -233,7 +237,9 @@ test.describe("Resilience - Data Persistence", () => {
 
           // Note: This test checks if draft is preserved
           // Most apps don't persist draft on reload, so this is aspirational
-          console.log("[INFO] Draft persistence depends on app implementation");
+          console.info(
+            "[INFO] Draft persistence depends on app implementation"
+          );
         }
 
         await page.keyboard.press("Escape");

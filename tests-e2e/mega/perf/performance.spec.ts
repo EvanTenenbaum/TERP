@@ -30,7 +30,7 @@ const BUDGETS = {
 
 // Helper to emit coverage tags
 function emitTag(tag: string): void {
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 test.describe("Performance - Page Load Budgets", () => {
@@ -46,7 +46,7 @@ test.describe("Performance - Page Load Budgets", () => {
     await page.waitForLoadState("networkidle");
     const duration = Date.now() - start;
 
-    console.log(
+    console.info(
       `[PERF] Dashboard load: ${duration}ms (budget: ${BUDGETS.pageLoad.dashboard}ms)`
     );
     expect(duration).toBeLessThan(BUDGETS.pageLoad.dashboard);
@@ -60,7 +60,7 @@ test.describe("Performance - Page Load Budgets", () => {
     await page.waitForLoadState("networkidle");
     const duration = Date.now() - start;
 
-    console.log(
+    console.info(
       `[PERF] Orders load: ${duration}ms (budget: ${BUDGETS.pageLoad.orders}ms)`
     );
     expect(duration).toBeLessThan(BUDGETS.pageLoad.orders);
@@ -74,7 +74,7 @@ test.describe("Performance - Page Load Budgets", () => {
     await page.waitForLoadState("networkidle");
     const duration = Date.now() - start;
 
-    console.log(
+    console.info(
       `[PERF] Clients load: ${duration}ms (budget: ${BUDGETS.pageLoad.clients}ms)`
     );
     expect(duration).toBeLessThan(BUDGETS.pageLoad.clients);
@@ -88,7 +88,7 @@ test.describe("Performance - Page Load Budgets", () => {
     await page.waitForLoadState("networkidle");
     const duration = Date.now() - start;
 
-    console.log(
+    console.info(
       `[PERF] Inventory load: ${duration}ms (budget: ${BUDGETS.pageLoad.inventory}ms)`
     );
     expect(duration).toBeLessThan(BUDGETS.pageLoad.inventory);
@@ -102,7 +102,7 @@ test.describe("Performance - Page Load Budgets", () => {
     await page.waitForLoadState("networkidle");
     const duration = Date.now() - start;
 
-    console.log(
+    console.info(
       `[PERF] Analytics load: ${duration}ms (budget: ${BUDGETS.pageLoad.analytics}ms)`
     );
     expect(duration).toBeLessThan(BUDGETS.pageLoad.analytics);
@@ -131,7 +131,7 @@ test.describe("Performance - Interaction Budgets", () => {
       await modal.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
       const duration = Date.now() - start;
 
-      console.log(
+      console.info(
         `[PERF] Modal open: ${duration}ms (budget: ${BUDGETS.interaction.modalOpen}ms)`
       );
 
@@ -154,11 +154,10 @@ test.describe("Performance - Interaction Budgets", () => {
     if (await searchInput.isVisible().catch(() => false)) {
       const start = Date.now();
       await searchInput.fill("test");
-      await page.waitForTimeout(500); // Debounce
       await page.waitForLoadState("networkidle");
       const duration = Date.now() - start;
 
-      console.log(
+      console.info(
         `[PERF] Search: ${duration}ms (budget: ${BUDGETS.interaction.search}ms)`
       );
       expect(duration).toBeLessThan(BUDGETS.interaction.search);
@@ -179,7 +178,7 @@ test.describe("Performance - Interaction Budgets", () => {
       await page.waitForLoadState("networkidle");
       const duration = Date.now() - start;
 
-      console.log(`[PERF] Navigate to ${link}: ${duration}ms`);
+      console.info(`[PERF] Navigate to ${link}: ${duration}ms`);
       expect(duration).toBeLessThan(BUDGETS.interaction.navigation);
     }
   });
@@ -214,7 +213,7 @@ test.describe("Performance - Core Web Vitals", () => {
       });
     });
 
-    console.log(`[PERF] LCP: ${lcp}ms`);
+    console.info(`[PERF] LCP: ${lcp}ms`);
     // LCP should be under 2.5 seconds for "good"
     expect(lcp).toBeLessThan(4000); // Allow 4s for CI environments
   });

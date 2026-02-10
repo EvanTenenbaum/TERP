@@ -35,13 +35,69 @@ export function skipInProduction(reason?: string): void {
  * Skip the current test if NOT running against production.
  * Use for prod-only smoke checks.
  */
-export function skipUnlessProduction(reason?: string): void {
+export function skipIfNotProduction(reason?: string): void {
   if (!IS_PRODUCTION && !IS_REMOTE) {
     test.skip(
       true,
       reason || "Skipped: only runs against production/remote environment"
     );
   }
+}
+
+/**
+ * Verify at least one of the given selectors is visible. Skip if none found.
+ * Replaces the anti-pattern: expect(condA || condB).toBeTruthy()
+ */
+export async function requireOneOf(
+  page: Page,
+  selectors: string[],
+  reason?: string,
+  timeout = 5000
+): Promise<string | null> {
+  for (const selector of selectors) {
+    try {
+      await page
+        .locator(selector)
+        .first()
+        .waitFor({ state: "visible", timeout: Math.min(timeout, 2000) });
+      return selector;
+    } catch {
+      continue;
+    }
+  }
+  test.skip(
+    true,
+    reason || `None of the expected elements found: ${selectors.join(", ")}`
+  );
+  return null;
+}
+
+/**
+ * Assert at least one of the given selectors is visible.
+ * Unlike requireOneOf, this FAILS the test rather than skipping.
+ * Use for assertions where the element MUST exist.
+ */
+export async function assertOneVisible(
+  page: Page,
+  selectors: string[],
+  message?: string,
+  timeout = 5000
+): Promise<void> {
+  for (const selector of selectors) {
+    try {
+      await page
+        .locator(selector)
+        .first()
+        .waitFor({ state: "visible", timeout: Math.min(timeout, 2000) });
+      return;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(
+    message ||
+      `Expected one of [${selectors.join(", ")}] to be visible, but none were`
+  );
 }
 
 /**

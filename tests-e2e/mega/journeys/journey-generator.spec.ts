@@ -202,7 +202,11 @@ const ACTIONS: {
     tags: ["TS-001", "regression:cmd-k"],
     action: async ctx => {
       await ctx.page.keyboard.press("Meta+k");
-      await ctx.page.waitForTimeout(500);
+      await ctx.page
+        .locator('[role="dialog"], [data-command-palette], [cmdk-root]')
+        .first()
+        .waitFor({ state: "visible", timeout: 2000 })
+        .catch(() => {});
       await ctx.page.keyboard.press("Escape");
     },
   },
@@ -216,7 +220,7 @@ const ACTIONS: {
         .first();
       if (await toggle.isVisible().catch(() => false)) {
         await toggle.click();
-        await ctx.page.waitForTimeout(300);
+        await ctx.page.waitForLoadState("networkidle");
       }
     },
   },
@@ -260,7 +264,11 @@ const ACTIONS: {
         .first();
       if (await createBtn.isVisible().catch(() => false)) {
         await createBtn.click();
-        await ctx.page.waitForTimeout(500);
+        await ctx.page
+          .locator('[role="dialog"], [data-popover]')
+          .first()
+          .waitFor({ state: "visible", timeout: 2000 })
+          .catch(() => {});
         // Close any modal that opened
         await ctx.page.keyboard.press("Escape");
       }
@@ -277,7 +285,7 @@ const ACTIONS: {
       if (await searchInput.isVisible().catch(() => false)) {
         const terms = ["test", "invoice", "order", "client", "batch"];
         await searchInput.fill(ctx.rng.pick(terms));
-        await ctx.page.waitForTimeout(500);
+        await ctx.page.waitForLoadState("networkidle");
       }
     },
   },
@@ -315,7 +323,11 @@ const ACTIONS: {
         .first();
       if (await filterBtn.isVisible().catch(() => false)) {
         await filterBtn.click();
-        await ctx.page.waitForTimeout(300);
+        await ctx.page
+          .locator('[role="dialog"], [data-popover]')
+          .first()
+          .waitFor({ state: "visible", timeout: 2000 })
+          .catch(() => {});
         await ctx.page.keyboard.press("Escape");
       }
     },
@@ -403,7 +415,7 @@ async function runJourney(
     ctx.steps.push(step);
 
     // Small delay between actions
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(100); // Intentional: pacing between journey actions for reproducibility
   }
 
   return ctx;
@@ -436,13 +448,13 @@ for (let i = 0; i < Math.min(JOURNEY_COUNT, 100); i++) {
     const ctx = await runJourney(page, journeySeed, persona, STEPS_PER_JOURNEY);
 
     // Log journey summary
-    console.log(
+    console.info(
       `[JOURNEY ${i + 1}] seed=${journeySeed} persona=${persona} steps=${ctx.steps.length} tags=${ctx.coveredTags.size}`
     );
 
     // Log covered tags for coverage tracking
     ctx.coveredTags.forEach(tag => {
-      console.log(`[COVERAGE] ${tag}`);
+      console.info(`[COVERAGE] ${tag}`);
     });
 
     // Verify journey didn't crash completely

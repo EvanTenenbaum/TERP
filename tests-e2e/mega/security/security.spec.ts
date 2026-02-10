@@ -13,7 +13,7 @@ import {
 
 // Helper to emit coverage tags
 function emitTag(tag: string): void {
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 test.describe("Security - Authentication", () => {
@@ -67,7 +67,11 @@ test.describe("Security - Authentication", () => {
     await page.click('button[type="submit"]');
 
     // Should show error, not dashboard
-    await page.waitForTimeout(2000);
+    await page
+      .locator('[role="alert"], .toast, [data-sonner-toast]')
+      .first()
+      .waitFor({ state: "visible", timeout: 3000 })
+      .catch(() => {});
     await expect(page).not.toHaveURL(/dashboard/);
   });
 });
@@ -190,7 +194,7 @@ test.describe("Security - Input Validation", () => {
 
       for (const payload of payloads) {
         await searchInput.fill(payload);
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle");
 
         // Page should not crash
         await expect(page.locator("body")).toBeVisible();
@@ -218,7 +222,7 @@ test.describe("Security - Rate Limiting", () => {
         "wrongpassword"
       );
       await page.click('button[type="submit"]');
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(100); // Intentional: pacing between rapid login attempts for rate-limit testing
     }
 
     // Should still be able to load the page (not completely blocked)
@@ -227,7 +231,7 @@ test.describe("Security - Rate Limiting", () => {
     // May see rate limit message
     const content = await page.content();
     if (content.includes("rate") || content.includes("too many")) {
-      console.log("[SECURITY] Rate limiting is active");
+      console.info("[SECURITY] Rate limiting is active");
     }
   });
 });
@@ -250,9 +254,9 @@ test.describe("Security - Headers", () => {
 
     for (const header of securityHeaders) {
       if (headers[header]) {
-        console.log(`[SECURITY] ✅ ${header}: ${headers[header]}`);
+        console.info(`[SECURITY] ✅ ${header}: ${headers[header]}`);
       } else {
-        console.log(`[SECURITY] ⚠️  Missing: ${header}`);
+        console.info(`[SECURITY] ⚠️  Missing: ${header}`);
       }
     }
   });

@@ -71,6 +71,50 @@ test("live catalog admin", async ({ page }) => {
 });
 ```
 
+## Conditional Element Assertions
+
+When a test needs to verify that **at least one** of multiple possible elements is present, use the appropriate helper:
+
+### Skip if none found (precondition not met)
+
+```typescript
+import { requireOneOf } from "../utils/preconditions";
+
+test("dashboard has activity", async ({ page }) => {
+  // Skip test if neither element exists
+  await requireOneOf(
+    page,
+    ["[data-testid='recent-orders']", "[data-testid='dashboard-activity']"],
+    "Dashboard has no activity to test"
+  );
+});
+```
+
+### Assert one must exist (hard requirement)
+
+```typescript
+import { assertOneVisible } from "../utils/preconditions";
+
+test("critical banner displays", async ({ page }) => {
+  // Fail test if neither element exists
+  await assertOneVisible(
+    page,
+    ["[data-testid='warning-banner']", "[role='alert']"],
+    "Expected warning banner to be visible"
+  );
+});
+```
+
+**Anti-pattern to avoid:**
+
+```typescript
+// ❌ WRONG - always passes even if both are false
+expect(condA || condB).toBeTruthy();
+
+// ✅ CORRECT - use requireOneOf or assertOneVisible
+await requireOneOf(page, [selectorA, selectorB]);
+```
+
 ## RBAC Contract
 
 | Role              | Can Access                                   | Cannot Access                           |
@@ -133,3 +177,42 @@ test("live catalog admin", async ({ page }) => {
 | Animation settle   | Use `waitForLoadingComplete()` | -   |
 
 **NEVER use `page.waitForTimeout()`**. Use deterministic waits from `utils/wait-helpers.ts`.
+
+## Available Utility Modules
+
+### `utils/wait-helpers.ts`
+
+Deterministic wait helpers with real composite logic:
+
+- `waitForLoadingComplete(page, options?)` - Wait for skeleton/spinner to disappear
+- `waitForTableReady(page, options?)` - Combined skeleton + row appearance wait
+
+**Removed thin wrappers:** `waitForNetworkIdle`, `waitForToast`, `waitForNavigation`, `waitForDialog`, `waitForSearchResults` - use Playwright APIs directly instead.
+
+### `utils/preconditions.ts`
+
+Test precondition guards:
+
+- `skipUnless(condition, reason)` - Skip if condition false
+- `skipInProduction(reason?)` - Skip for data mutation tests
+- `skipIfNotProduction(reason?)` - Skip unless prod/remote (renamed from `skipUnlessProduction`)
+- `skipInDemoMode(reason?)` - Skip when DEMO_MODE active
+- `requireDataRows(page, options?)` - Verify data exists, skip if empty
+- `requireElement(page, selector, reason?, timeout?)` - Verify element exists
+- `requireAuthenticated(page)` - Verify not on login page
+- `requireFeature(page, selector, name, timeout?)` - Verify feature flag enabled
+- `requireOneOf(page, selectors[], reason?, timeout?)` - Skip if none of selectors visible
+- `assertOneVisible(page, selectors[], message?, timeout?)` - Fail if none of selectors visible
+
+### `utils/environment.ts`
+
+Environment detection constants:
+
+- `IS_PRODUCTION`, `IS_LOCAL`, `IS_REMOTE` - Environment flags
+- `BASE_URL` - Target application URL
+- `DEMO_MODE_EXPECTED` - Whether DEMO_MODE is active
+
+### Removed Modules
+
+- **`utils/selectors.ts`** - Pure abstraction layer over Playwright APIs (use Playwright directly)
+- **`utils/test-tags.ts`** - `tagSuite()` was broken (tags should be in `test.describe()` titles for `--grep` filtering)

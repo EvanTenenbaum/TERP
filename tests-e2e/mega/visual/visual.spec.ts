@@ -10,7 +10,7 @@ import { loginAsStandardUser } from "../../fixtures/auth";
 
 // Helper to emit coverage tags
 function emitTag(tag: string): void {
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 // Configure screenshot options
@@ -37,9 +37,6 @@ test.describe("Visual Regression - Core Pages", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    // Wait for any loaders to disappear
-    await page.waitForTimeout(1000);
-
     // Take screenshot
     await expect(page).toHaveScreenshot("dashboard.png", screenshotOptions);
   });
@@ -49,7 +46,6 @@ test.describe("Visual Regression - Core Pages", () => {
 
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot("orders-list.png", screenshotOptions);
   });
@@ -59,7 +55,6 @@ test.describe("Visual Regression - Core Pages", () => {
 
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot("clients-list.png", screenshotOptions);
   });
@@ -69,7 +64,6 @@ test.describe("Visual Regression - Core Pages", () => {
 
     await page.goto("/inventory");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot(
       "inventory-list.png",
@@ -82,7 +76,11 @@ test.describe("Visual Regression - Core Pages", () => {
 
     await page.goto("/analytics");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000); // Charts need extra time
+    await page
+      .locator('canvas, .chart-container, [data-testid*="chart"]')
+      .first()
+      .waitFor({ state: "visible", timeout: 5000 })
+      .catch(() => {});
 
     await expect(page).toHaveScreenshot("analytics.png", screenshotOptions);
   });
@@ -92,7 +90,6 @@ test.describe("Visual Regression - Core Pages", () => {
 
     await page.goto("/calendar");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot("calendar.png", screenshotOptions);
   });
@@ -102,7 +99,6 @@ test.describe("Visual Regression - Core Pages", () => {
 
     await page.goto("/settings");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot("settings.png", screenshotOptions);
   });
@@ -127,7 +123,7 @@ test.describe("Visual Regression - Theme Modes", () => {
         .first();
       if (await toggle.isVisible().catch(() => false)) {
         await toggle.click();
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle");
       }
     }
 
@@ -151,7 +147,7 @@ test.describe("Visual Regression - Theme Modes", () => {
         .first();
       if (await toggle.isVisible().catch(() => false)) {
         await toggle.click();
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("networkidle");
       }
     }
 
@@ -184,7 +180,6 @@ test.describe("Visual Regression - Components", () => {
       await modal.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
 
       if (await modal.isVisible().catch(() => false)) {
-        await page.waitForTimeout(300); // Animation
         await expect(modal).toHaveScreenshot("create-modal.png");
         await page.keyboard.press("Escape");
       }
@@ -211,7 +206,11 @@ test.describe("Visual Regression - Components", () => {
 
     // Open command palette
     await page.keyboard.press("Meta+k");
-    await page.waitForTimeout(500);
+    await page
+      .locator('[role="dialog"], [data-command-palette], [cmdk-root]')
+      .first()
+      .waitFor({ state: "visible", timeout: 2000 })
+      .catch(() => {});
 
     const palette = page
       .locator('[role="dialog"], [data-command-palette], .command-palette')
@@ -219,7 +218,11 @@ test.describe("Visual Regression - Components", () => {
 
     if (!(await palette.isVisible({ timeout: 1000 }).catch(() => false))) {
       await page.keyboard.press("Control+k");
-      await page.waitForTimeout(500);
+      await page
+        .locator('[role="dialog"], [data-command-palette], [cmdk-root]')
+        .first()
+        .waitFor({ state: "visible", timeout: 2000 })
+        .catch(() => {});
     }
 
     if (await palette.isVisible().catch(() => false)) {
@@ -238,7 +241,6 @@ test.describe("Visual Regression - Responsive", () => {
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot(
       "dashboard-mobile.png",
@@ -254,7 +256,6 @@ test.describe("Visual Regression - Responsive", () => {
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot(
       "dashboard-tablet.png",

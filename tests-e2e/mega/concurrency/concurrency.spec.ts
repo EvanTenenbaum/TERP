@@ -9,7 +9,7 @@ import { loginAsAdmin, loginAsStandardUser } from "../../fixtures/auth";
 
 // Helper to emit coverage tags
 function emitTag(tag: string): void {
-  console.log(`[COVERAGE] ${tag}`);
+  console.info(`[COVERAGE] ${tag}`);
 }
 
 test.describe("Concurrency - Parallel Sessions", () => {
@@ -133,7 +133,7 @@ test.describe("Concurrency - Navigation Race", () => {
     // Navigate rapidly without waiting
     for (const route of routes) {
       page.goto(route).catch(() => {}); // Intentionally not awaiting
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(100); // Intentional: pacing between rapid navigations for race condition testing
     }
 
     // Wait for last navigation to settle
@@ -182,7 +182,6 @@ test.describe("Concurrency - API Race Conditions", () => {
       await searchInput.pressSequentially("testquery", { delay: 50 });
 
       // Wait for debounce and requests to settle
-      await page.waitForTimeout(1000);
       await page.waitForLoadState("networkidle");
 
       // Page should not crash
