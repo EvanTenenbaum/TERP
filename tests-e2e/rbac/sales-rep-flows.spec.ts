@@ -29,6 +29,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsSalesRep } from "../fixtures/auth";
+import { requireElement, assertOneVisible } from "../utils/preconditions";
 
 test.describe("TER-45: Sales Rep - Authentication @prod-regression @rbac", () => {
   test.beforeEach(() => {
@@ -60,19 +61,22 @@ test.describe("TER-45: Sales Rep - Authentication @prod-regression @rbac", () =>
     await loginAsSalesRep(page);
 
     // Open user menu
+    await requireElement(
+      page,
+      '[data-testid="user-menu"], [aria-label="User menu"], button:has([data-testid="avatar"])',
+      "User menu not found"
+    );
+
     const userMenu = page.locator(
       '[data-testid="user-menu"], [aria-label="User menu"], button:has([data-testid="avatar"])'
     );
+    await userMenu.click();
 
-    if (await userMenu.isVisible().catch(() => false)) {
-      await userMenu.click();
-
-      // Look for role indicator - may show "Customer Service" or user email
-      const menuContent = page.locator(
-        '[role="menu"], [data-testid="user-dropdown"]'
-      );
-      await expect(menuContent).toBeVisible({ timeout: 5000 });
-    }
+    // Look for role indicator - may show "Customer Service" or user email
+    const menuContent = page.locator(
+      '[role="menu"], [data-testid="user-dropdown"]'
+    );
+    await expect(menuContent).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -107,21 +111,15 @@ test.describe("TER-45: Sales Rep - Client Management @prod-regression @rbac", ()
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
 
-    // Wait for table or list to load
-    const tableOrList = page.locator(
-      'table, [role="table"], [data-testid="clients-list"], .data-table'
-    );
-
     // Either table is visible or there's an empty state
-    const hasTable = await tableOrList.isVisible().catch(() => false);
-    const hasEmptyState = await page
-      .locator(
-        'text=/no clients/i, text=/no data/i, [data-testid="empty-state"]'
-      )
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasTable || hasEmptyState).toBeTruthy();
+    await assertOneVisible(
+      page,
+      [
+        'table, [role="table"], [data-testid="clients-list"], .data-table',
+        'text=/no clients/i, text=/no data/i, [data-testid="empty-state"]',
+      ],
+      "Expected either clients table or empty state to be visible"
+    );
   });
 
   test("should open client creation form", async ({ page }) => {
@@ -129,31 +127,29 @@ test.describe("TER-45: Sales Rep - Client Management @prod-regression @rbac", ()
     await page.waitForLoadState("networkidle");
 
     // Find and click the create client button
+    await requireElement(
+      page,
+      'button:has-text("Add"), button:has-text("New"), button:has-text("Create"), a:has-text("New Client")',
+      "Create client button not found"
+    );
+
     const createButton = page
       .locator(
         'button:has-text("Add"), button:has-text("New"), button:has-text("Create"), a:has-text("New Client")'
       )
       .first();
+    await createButton.click();
 
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
-
-      // Should open a modal or navigate to create page
-      const hasModal = await page
-        .locator('[role="dialog"], .modal')
-        .isVisible()
-        .catch(() => false);
-      const hasCreatePage = await page
-        .locator('h1:has-text("New Client"), h2:has-text("Create Client")')
-        .isVisible()
-        .catch(() => false);
-      const hasForm = await page
-        .locator('form, [data-testid="client-form"]')
-        .isVisible()
-        .catch(() => false);
-
-      expect(hasModal || hasCreatePage || hasForm).toBeTruthy();
-    }
+    // Should open a modal or navigate to create page
+    await assertOneVisible(
+      page,
+      [
+        '[role="dialog"], .modal',
+        'h1:has-text("New Client"), h2:has-text("Create Client")',
+        'form, [data-testid="client-form"]',
+      ],
+      "Expected client creation modal, form, or create page to appear"
+    );
   });
 
   test("should create a new client", async ({ page }) => {
@@ -161,72 +157,96 @@ test.describe("TER-45: Sales Rep - Client Management @prod-regression @rbac", ()
     await page.waitForLoadState("networkidle");
 
     // Click create button
+    await requireElement(
+      page,
+      'button:has-text("Add"), button:has-text("New"), button:has-text("Create")',
+      "Create button not found"
+    );
+
     const createButton = page
       .locator(
         'button:has-text("Add"), button:has-text("New"), button:has-text("Create")'
       )
       .first();
+    await createButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
-      await page.waitForLoadState("networkidle");
+    // Generate unique client name to avoid duplicates
+    const timestamp = Date.now();
+    const clientName = `E2E Test Client ${timestamp}`;
+    const clientEmail = `e2e-test-${timestamp}@example.com`;
 
-      // Generate unique client name to avoid duplicates
-      const timestamp = Date.now();
-      const clientName = `E2E Test Client ${timestamp}`;
-      const clientEmail = `e2e-test-${timestamp}@example.com`;
+    // Fill in client details
+    await requireElement(
+      page,
+      'input[name="name"], input[placeholder*="name" i], [data-testid="name-input"]',
+      "Name input not found"
+    );
+    const nameInput = page.locator(
+      'input[name="name"], input[placeholder*="name" i], [data-testid="name-input"]'
+    );
+    await nameInput.fill(clientName);
 
-      // Fill in client details
-      const nameInput = page.locator(
-        'input[name="name"], input[placeholder*="name" i], [data-testid="name-input"]'
+    const emailInput = page.locator(
+      'input[name="email"], input[type="email"], [data-testid="email-input"]'
+    );
+    try {
+      await emailInput.waitFor({ state: "visible", timeout: 3000 });
+      await emailInput.fill(clientEmail);
+    } catch {
+      // Email field is optional
+    }
+
+    const phoneInput = page.locator(
+      'input[name="phone"], input[type="tel"], [data-testid="phone-input"]'
+    );
+    try {
+      await phoneInput.waitFor({ state: "visible", timeout: 3000 });
+      await phoneInput.fill("555-0199");
+    } catch {
+      // Phone field is optional
+    }
+
+    // Submit the form
+    await requireElement(
+      page,
+      'button[type="submit"]:has-text("Create"), button[type="submit"]:has-text("Save"), button:has-text("Create Client")',
+      "Submit button not found"
+    );
+
+    const submitButton = page
+      .locator(
+        'button[type="submit"]:has-text("Create"), button[type="submit"]:has-text("Save"), button:has-text("Create Client")'
+      )
+      .first();
+    await submitButton.click();
+
+    // Wait for success or navigation
+    await page.waitForLoadState("networkidle");
+
+    // Check for success - could be toast, redirect, or updated list
+    const redirectedToClient = /\/clients\/\d+/.test(page.url());
+    let dialogClosed = false;
+    try {
+      await page
+        .locator('[role="dialog"]')
+        .waitFor({ state: "visible", timeout: 3000 });
+      dialogClosed = false;
+    } catch {
+      dialogClosed = true;
+    }
+
+    // Either we got a success indicator or the operation completed
+    if (!redirectedToClient && !dialogClosed) {
+      await assertOneVisible(
+        page,
+        [
+          '.toast, [role="alert"]:has-text(/success|created/i)',
+          "text=/client.*created/i",
+        ],
+        "Expected success indication after client creation",
+        5000
       );
-      if (await nameInput.isVisible().catch(() => false)) {
-        await nameInput.fill(clientName);
-      }
-
-      const emailInput = page.locator(
-        'input[name="email"], input[type="email"], [data-testid="email-input"]'
-      );
-      if (await emailInput.isVisible().catch(() => false)) {
-        await emailInput.fill(clientEmail);
-      }
-
-      const phoneInput = page.locator(
-        'input[name="phone"], input[type="tel"], [data-testid="phone-input"]'
-      );
-      if (await phoneInput.isVisible().catch(() => false)) {
-        await phoneInput.fill("555-0199");
-      }
-
-      // Submit the form
-      const submitButton = page
-        .locator(
-          'button[type="submit"]:has-text("Create"), button[type="submit"]:has-text("Save"), button:has-text("Create Client")'
-        )
-        .first();
-
-      if (await submitButton.isVisible().catch(() => false)) {
-        await submitButton.click();
-
-        // Wait for success or navigation
-        await page.waitForLoadState("networkidle");
-
-        // Check for success - could be toast, redirect, or updated list
-        const hasSuccessToast = await page
-          .locator('.toast, [role="alert"]')
-          .filter({ hasText: /success|created/i })
-          .isVisible({ timeout: 5000 })
-          .catch(() => false);
-        const redirectedToClient = /\/clients\/\d+/.test(page.url());
-        const dialogClosed = !(await page
-          .locator('[role="dialog"]')
-          .isVisible()
-          .catch(() => false));
-
-        expect(
-          hasSuccessToast || redirectedToClient || dialogClosed
-        ).toBeTruthy();
-      }
     }
   });
 
@@ -235,30 +255,31 @@ test.describe("TER-45: Sales Rep - Client Management @prod-regression @rbac", ()
     await page.waitForLoadState("networkidle");
 
     // Click on first client row to view details
+    await requireElement(
+      page,
+      'table tbody tr, [data-testid="client-row"]',
+      "No client rows found"
+    );
+
     const firstClient = page
       .locator('table tbody tr, [data-testid="client-row"]')
       .first();
+    await firstClient.click();
 
-    if (await firstClient.isVisible().catch(() => false)) {
-      await firstClient.click();
+    // Should navigate to client profile
+    await page.waitForLoadState("networkidle");
 
-      // Should navigate to client profile
-      await page.waitForLoadState("networkidle");
-
-      // Check if we're on a client detail page or modal opened
-      const isOnClientPage = /\/clients\/\d+/.test(page.url());
-      const hasClientDetail = await page
-        .locator(
-          '[data-testid="client-profile"], [data-testid="client-detail"]'
-        )
-        .isVisible()
-        .catch(() => false);
-      const hasModal = await page
-        .locator('[role="dialog"]')
-        .isVisible()
-        .catch(() => false);
-
-      expect(isOnClientPage || hasClientDetail || hasModal).toBeTruthy();
+    // Check if we're on a client detail page or modal opened
+    const isOnClientPage = /\/clients\/\d+/.test(page.url());
+    if (!isOnClientPage) {
+      await assertOneVisible(
+        page,
+        [
+          '[data-testid="client-profile"], [data-testid="client-detail"]',
+          '[role="dialog"]',
+        ],
+        "Expected client detail page, profile section, or modal to appear"
+      );
     }
   });
 
@@ -266,20 +287,24 @@ test.describe("TER-45: Sales Rep - Client Management @prod-regression @rbac", ()
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'input[type="search"], input[placeholder*="search" i]',
+      "Search input not found"
+    );
+
     const searchInput = page
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
 
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("test");
-      await page.waitForLoadState("networkidle");
+    await searchInput.fill("test");
+    await page.waitForLoadState("networkidle");
 
-      // Search should work without errors - verify no permission errors
-      const errorMsg = page.locator(
-        "text=/access denied|unauthorized|forbidden/i"
-      );
-      await expect(errorMsg).not.toBeVisible();
-    }
+    // Search should work without errors - verify no permission errors
+    const errorMsg = page.locator(
+      "text=/access denied|unauthorized|forbidden/i"
+    );
+    await expect(errorMsg).not.toBeVisible();
   });
 });
 
@@ -314,24 +339,16 @@ test.describe("TER-45: Sales Rep - Order Management @prod-regression @rbac", () 
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
-    // Orders page should display tabs or stats
-    const hasTabs = await page
-      .locator('[role="tab"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasStats = await page
-      .locator('[aria-label*="Value"], [data-testid*="stat"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasTable = await page
-      .locator('table, [role="table"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasTabs || hasStats || hasTable).toBeTruthy();
+    // Orders page should display tabs or stats or table
+    await assertOneVisible(
+      page,
+      [
+        '[role="tab"]',
+        '[aria-label*="Value"], [data-testid*="stat"]',
+        'table, [role="table"]',
+      ],
+      "Expected orders page to show tabs, stats, or table"
+    );
   });
 
   test("should see New Order button", async ({ page }) => {
@@ -352,28 +369,27 @@ test.describe("TER-45: Sales Rep - Order Management @prod-regression @rbac", () 
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      "button:has-text(/new order/i)",
+      "New Order button not found"
+    );
+
     const createButton = page
       .locator("button")
       .filter({ hasText: /new order/i })
       .first();
+    await createButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
-      await page.waitForLoadState("networkidle");
-
-      // Should navigate to order creation or open modal
-      const hasModal = await page
-        .locator('[role="dialog"]')
-        .isVisible()
-        .catch(() => false);
-      const urlChanged = !page.url().endsWith("/orders");
-      const hasClientSelect = await page
-        .locator("text=/select client/i, text=/choose client/i")
-        .first()
-        .isVisible()
-        .catch(() => false);
-
-      expect(hasModal || urlChanged || hasClientSelect).toBeTruthy();
+    // Should navigate to order creation or open modal
+    const urlChanged = !page.url().endsWith("/orders");
+    if (!urlChanged) {
+      await assertOneVisible(
+        page,
+        ['[role="dialog"]', "text=/select client/i, text=/choose client/i"],
+        "Expected order creation modal or client selection to appear"
+      );
     }
   });
 
@@ -391,14 +407,20 @@ test.describe("TER-45: Sales Rep - Order Management @prod-regression @rbac", () 
       .filter({ hasText: /confirmed/i })
       .first();
 
-    if (await draftTab.isVisible().catch(() => false)) {
+    try {
+      await draftTab.waitFor({ state: "visible", timeout: 3000 });
       await draftTab.click();
       await page.waitForLoadState("networkidle");
+    } catch {
+      // Draft tab may not exist or may not be visible
     }
 
-    if (await confirmedTab.isVisible().catch(() => false)) {
+    try {
+      await confirmedTab.waitFor({ state: "visible", timeout: 3000 });
       await confirmedTab.click();
       await page.waitForLoadState("networkidle");
+    } catch {
+      // Confirmed tab may not exist or may not be visible
     }
 
     // Both tabs should be clickable without permission errors - verify no error messages
@@ -412,35 +434,43 @@ test.describe("TER-45: Sales Rep - Order Management @prod-regression @rbac", () 
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'input[type="search"], input[placeholder*="search" i]',
+      "Search input not found"
+    );
+
     const searchInput = page
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
 
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("ORD");
-      await page.waitForLoadState("networkidle");
+    await searchInput.fill("ORD");
+    await page.waitForLoadState("networkidle");
 
-      // Search should work without errors - verify no permission errors
-      const errorMsg = page.locator(
-        "text=/access denied|unauthorized|forbidden/i"
-      );
-      await expect(errorMsg).not.toBeVisible();
-    }
+    // Search should work without errors - verify no permission errors
+    const errorMsg = page.locator(
+      "text=/access denied|unauthorized|forbidden/i"
+    );
+    await expect(errorMsg).not.toBeVisible();
   });
 
   test("should export orders CSV", async ({ page }) => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      "button:has-text(/export|csv/i)",
+      "Export button not found"
+    );
+
     const exportButton = page
       .locator("button")
       .filter({ hasText: /export|csv/i })
       .first();
 
-    if (await exportButton.isVisible().catch(() => false)) {
-      // Export button should be visible and clickable
-      await expect(exportButton).toBeEnabled();
-    }
+    // Export button should be visible and clickable
+    await expect(exportButton).toBeEnabled();
   });
 });
 
@@ -462,21 +492,19 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks @prod-regression @rbac
     await page.goto("/accounting");
     await page.waitForLoadState("networkidle");
 
-    // Should either redirect or show access denied
-    const isRedirected = !/\/accounting/.test(page.url());
-    const hasAccessDenied = await page
-      .locator(
-        "text=/access denied/i, text=/unauthorized/i, text=/forbidden/i, text=/permission/i"
-      )
-      .isVisible()
-      .catch(() => false);
-    const has404 = await page
-      .locator("text=/not found/i, text=/404/i")
-      .isVisible()
-      .catch(() => false);
-
-    // Any of these indicate proper RBAC restriction
-    expect(isRedirected || hasAccessDenied || has404).toBeTruthy();
+    // Verify RBAC restriction is enforced
+    const url = page.url();
+    const isRestricted = !url.includes("/accounting");
+    if (!isRestricted) {
+      await assertOneVisible(
+        page,
+        [
+          "text=/access denied/i, text=/forbidden/i, text=/not authorized/i, text=/permission/i",
+          "text=/404/i, text=/not found/i",
+        ],
+        "Expected RBAC restriction (redirect, access denied, or 404)"
+      );
+    }
   });
 
   test("should have read-only access to inventory", async ({ page }) => {
@@ -494,10 +522,23 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks @prod-regression @rbac
         )
         .first();
 
-      const buttonVisible = await createButton.isVisible().catch(() => false);
-      const buttonEnabled = buttonVisible
-        ? await createButton.isEnabled().catch(() => false)
-        : false;
+      let buttonVisible = false;
+      try {
+        await createButton.waitFor({ state: "visible", timeout: 3000 });
+        buttonVisible = true;
+      } catch {
+        buttonVisible = false;
+      }
+
+      let buttonEnabled = false;
+      if (buttonVisible) {
+        try {
+          await expect(createButton).toBeEnabled({ timeout: 1000 });
+          buttonEnabled = true;
+        } catch {
+          buttonEnabled = false;
+        }
+      }
 
       // Sales Rep should have read-only access - either no create button or it's disabled
       // This is informational - UI may hide or disable based on implementation
@@ -515,18 +556,19 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks @prod-regression @rbac
     await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
-    // Check if access is denied
-    const isRedirected = !/\/sales-sheets/.test(page.url());
-    const hasAccessDenied = await page
-      .locator("text=/access denied/i, text=/unauthorized/i, text=/forbidden/i")
-      .isVisible()
-      .catch(() => false);
-    const has404 = await page
-      .locator("text=/not found/i, text=/404/i")
-      .isVisible()
-      .catch(() => false);
-
-    expect(isRedirected || hasAccessDenied || has404).toBeTruthy();
+    // Verify RBAC restriction is enforced
+    const url = page.url();
+    const isRestricted = !url.includes("/sales-sheets");
+    if (!isRestricted) {
+      await assertOneVisible(
+        page,
+        [
+          "text=/access denied/i, text=/forbidden/i, text=/not authorized/i",
+          "text=/404/i, text=/not found/i",
+        ],
+        "Expected RBAC restriction for sales sheets"
+      );
+    }
   });
 
   test("should have access to returns module", async ({ page }) => {
@@ -536,10 +578,15 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks @prod-regression @rbac
 
     // Either returns page loads or the route may not exist
     const onReturnsPage = /\/returns/.test(page.url());
-    const hasReturnsContent = await page
-      .locator('h1:has-text("Return"), [data-testid="returns-page"]')
-      .isVisible()
-      .catch(() => false);
+    let hasReturnsContent = false;
+    try {
+      await page
+        .locator('h1:has-text("Return"), [data-testid="returns-page"]')
+        .waitFor({ state: "visible", timeout: 3000 });
+      hasReturnsContent = true;
+    } catch {
+      hasReturnsContent = false;
+    }
 
     // Verify no access denied error (Sales Rep should have returns access)
     const accessDenied = page.locator(
@@ -560,10 +607,15 @@ test.describe("TER-45: Sales Rep - RBAC Permission Checks @prod-regression @rbac
 
     // Either quotes page loads or shows valid content
     const onQuotesPage = /\/quotes/.test(page.url());
-    const hasQuotesContent = await page
-      .locator('h1:has-text("Quote"), [data-testid="quotes-page"]')
-      .isVisible()
-      .catch(() => false);
+    let hasQuotesContent = false;
+    try {
+      await page
+        .locator('h1:has-text("Quote"), [data-testid="quotes-page"]')
+        .waitFor({ state: "visible", timeout: 3000 });
+      hasQuotesContent = true;
+    } catch {
+      hasQuotesContent = false;
+    }
 
     // Verify no access denied error (Sales Rep should have quotes access)
     const accessDenied = page.locator(
@@ -603,8 +655,11 @@ test.describe("TER-45: Sales Rep - Navigation @prod-regression @rbac", () => {
         `nav a:has-text("${navItem}"), [data-testid="nav-${navItem.toLowerCase()}"], button:has-text("${navItem}")`
       );
       // Check if nav item is visible (may be in different forms: sidebar, menu, etc.)
-      const _isVisible = await navLink.isVisible().catch(() => false);
-      // Nav items may be in different forms, just ensure navigation works without errors
+      try {
+        await navLink.waitFor({ state: "visible", timeout: 3000 });
+      } catch {
+        // Nav items may be in different forms or locations
+      }
     }
 
     // Should be able to navigate to dashboard
@@ -623,8 +678,12 @@ test.describe("TER-45: Sales Rep - Navigation @prod-regression @rbac", () => {
         `nav a:has-text("${adminItem}"):visible, [data-testid="nav-${adminItem.toLowerCase().replace(" ", "-")}"]:visible`
       );
       // Check if admin nav item is visible (should not be for Sales Rep)
-      const _isVisible = await navLink.isVisible().catch(() => false);
-      // Admin items should not be visible, but UI may handle this differently
+      try {
+        await navLink.waitFor({ state: "visible", timeout: 3000 });
+        // If visible, that's unexpected but not a test failure - RBAC is server-side
+      } catch {
+        // Admin items should not be visible for Sales Rep
+      }
     }
 
     // The page should load without errors - verify no crash or unauthorized messages
@@ -656,12 +715,10 @@ test.describe("TER-45: Sales Rep - Error Handling @prod-regression @rbac", () =>
     expect(pageLoaded).toBeTruthy();
 
     // Should not show raw error stack
-    const hasRawError = await page
-      .locator("text=/TypeError/i, text=/ReferenceError/i, text=/at Object/i")
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasRawError).toBeFalsy();
+    const rawErrorLocator = page.locator(
+      "text=/TypeError/i, text=/ReferenceError/i, text=/at Object/i"
+    );
+    await expect(rawErrorLocator).not.toBeVisible();
   });
 
   test("should not expose sensitive data on console", async ({ page }) => {

@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Inventory Intake (WS-007) @dev-only", () => {
   test.beforeEach(async ({ page }) => {
@@ -26,109 +27,127 @@ test.describe("Inventory Intake (WS-007) @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for intake button or link
+    await requireElement(
+      page,
+      'button:has-text("Intake"), a:has-text("Intake"), button:has-text("Receive"), [data-testid="intake-button"]',
+      "Intake button not found"
+    );
+
     const intakeButton = page.locator(
       'button:has-text("Intake"), a:has-text("Intake"), button:has-text("Receive"), [data-testid="intake-button"]'
     );
+    await intakeButton.click();
 
-    if (await intakeButton.isVisible().catch(() => false)) {
-      await intakeButton.click();
-
-      // Should open intake form or navigate to intake page
-      await expect(
-        page.locator(
-          '[data-testid="intake-form"], form, [role="dialog"], h2:has-text("Intake")'
-        )
-      ).toBeVisible({ timeout: 5000 });
-    }
+    // Should open intake form or navigate to intake page
+    await expect(
+      page.locator(
+        '[data-testid="intake-form"], form, [role="dialog"], h2:has-text("Intake")'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should display intake form with required fields", async ({ page }) => {
     await page.goto("/inventory");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'button:has-text("Intake"), a:has-text("Intake"), button:has-text("Receive")',
+      "Intake button not found"
+    );
+
     const intakeButton = page.locator(
       'button:has-text("Intake"), a:has-text("Intake"), button:has-text("Receive")'
     );
+    await intakeButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await intakeButton.isVisible().catch(() => false)) {
-      await intakeButton.click();
-      await page.waitForLoadState("networkidle");
+    // Verify required fields are present
+    // Vendor selection
+    await expect(
+      page.locator(
+        'select[name="vendor"], [data-testid="vendor-select"], input[placeholder*="vendor" i]'
+      )
+    ).toBeVisible({ timeout: 5000 });
 
-      // Verify required fields are present
-      // Vendor selection
-      await expect(
-        page.locator(
-          'select[name="vendor"], [data-testid="vendor-select"], input[placeholder*="vendor" i]'
-        )
-      ).toBeVisible({ timeout: 5000 });
+    // Product/SKU selection
+    await expect(
+      page.locator(
+        'select[name="product"], [data-testid="product-select"], input[placeholder*="product" i], input[placeholder*="sku" i]'
+      )
+    ).toBeVisible();
 
-      // Product/SKU selection
-      await expect(
-        page.locator(
-          'select[name="product"], [data-testid="product-select"], input[placeholder*="product" i], input[placeholder*="sku" i]'
-        )
-      ).toBeVisible();
-
-      // Quantity field
-      await expect(
-        page.locator(
-          'input[name="quantity"], [data-testid="quantity-input"], input[type="number"]'
-        )
-      ).toBeVisible();
-    }
+    // Quantity field
+    await expect(
+      page.locator(
+        'input[name="quantity"], [data-testid="quantity-input"], input[type="number"]'
+      )
+    ).toBeVisible();
   });
 
   test("should allow adding multiple items to intake", async ({ page }) => {
     await page.goto("/inventory");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'button:has-text("Intake"), a:has-text("Intake")',
+      "Intake button not found"
+    );
+
     const intakeButton = page.locator(
       'button:has-text("Intake"), a:has-text("Intake")'
     );
+    await intakeButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await intakeButton.isVisible().catch(() => false)) {
-      await intakeButton.click();
-      await page.waitForLoadState("networkidle");
+    // Look for "Add Item" or "Add Line" button
+    await requireElement(
+      page,
+      'button:has-text("Add Item"), button:has-text("Add Line"), button:has-text("+ Add"), [data-testid="add-item"]',
+      "Add item button not found"
+    );
 
-      // Look for "Add Item" or "Add Line" button
-      const addItemButton = page.locator(
-        'button:has-text("Add Item"), button:has-text("Add Line"), button:has-text("+ Add"), [data-testid="add-item"]'
-      );
-
-      if (await addItemButton.isVisible().catch(() => false)) {
-        await expect(addItemButton).toBeEnabled();
-      }
-    }
+    const addItemButton = page.locator(
+      'button:has-text("Add Item"), button:has-text("Add Line"), button:has-text("+ Add"), [data-testid="add-item"]'
+    );
+    await expect(addItemButton).toBeEnabled();
   });
 
   test("should validate intake before submission", async ({ page }) => {
     await page.goto("/inventory");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'button:has-text("Intake"), a:has-text("Intake")',
+      "Intake button not found"
+    );
+
     const intakeButton = page.locator(
       'button:has-text("Intake"), a:has-text("Intake")'
     );
+    await intakeButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await intakeButton.isVisible().catch(() => false)) {
-      await intakeButton.click();
-      await page.waitForLoadState("networkidle");
+    // Try to submit without filling required fields
+    await requireElement(
+      page,
+      'button[type="submit"], button:has-text("Save"), button:has-text("Complete")',
+      "Submit button not found"
+    );
 
-      // Try to submit without filling required fields
-      const submitButton = page.locator(
-        'button[type="submit"], button:has-text("Save"), button:has-text("Complete")'
-      );
+    const submitButton = page.locator(
+      'button[type="submit"], button:has-text("Save"), button:has-text("Complete")'
+    );
+    await submitButton.click();
 
-      if (await submitButton.isVisible().catch(() => false)) {
-        await submitButton.click();
-
-        // Should show validation errors
-        await expect(
-          page.locator(
-            '[role="alert"], .error, input:invalid, [data-testid="validation-error"]'
-          )
-        ).toBeVisible({ timeout: 3000 });
-      }
-    }
+    // Should show validation errors
+    await expect(
+      page.locator(
+        '[role="alert"], .error, input:invalid, [data-testid="validation-error"]'
+      )
+    ).toBeVisible({ timeout: 3000 });
   });
 });
 
@@ -154,19 +173,22 @@ test.describe("Inventory Batch Management @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for search input
+    await requireElement(
+      page,
+      'input[type="search"], input[placeholder*="search" i], [data-testid="search-input"]',
+      "Search input not found"
+    );
+
     const searchInput = page.locator(
       'input[type="search"], input[placeholder*="search" i], [data-testid="search-input"]'
     );
+    await searchInput.fill("test");
+    await page.waitForLoadState("networkidle");
 
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.fill("test");
-      await page.waitForLoadState("networkidle");
-
-      // Search should be applied (URL or results change)
-      const url = page.url();
-      const hasSearchInUrl = url.includes("search") || url.includes("q=");
-      expect(hasSearchInUrl).toBeTruthy();
-    }
+    // Search should be applied (URL or results change)
+    const url = page.url();
+    const hasSearchInUrl = url.includes("search") || url.includes("q=");
+    expect(hasSearchInUrl).toBeTruthy();
   });
 
   test("should filter batches by status", async ({ page }) => {
@@ -174,19 +196,22 @@ test.describe("Inventory Batch Management @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for status filter
+    await requireElement(
+      page,
+      'select[name="status"], [data-testid="status-filter"], button:has-text("Active")',
+      "Status filter not found"
+    );
+
     const statusFilter = page.locator(
       'select[name="status"], [data-testid="status-filter"], button:has-text("Active")'
     );
-
-    if (await statusFilter.isVisible().catch(() => false)) {
-      if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
-        await statusFilter.selectOption({ index: 1 });
-      } else {
-        await page.locator('button:has-text("Active")').click();
-      }
-
-      await page.waitForLoadState("networkidle");
+    if (await statusFilter.evaluate(el => el.tagName === "SELECT")) {
+      await statusFilter.selectOption({ index: 1 });
+    } else {
+      await page.locator('button:has-text("Active")').click();
     }
+
+    await page.waitForLoadState("networkidle");
   });
 
   test("should view batch details", async ({ page }) => {
@@ -194,20 +219,23 @@ test.describe("Inventory Batch Management @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first batch
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='batch-item']",
+      "No batches found"
+    );
+
     const firstBatch = page
       .locator("table tbody tr, [data-testid='batch-item']")
       .first();
+    await firstBatch.click();
 
-    if (await firstBatch.isVisible().catch(() => false)) {
-      await firstBatch.click();
-
-      // Should show batch details
-      await expect(
-        page.locator(
-          '[data-testid="batch-details"], [role="dialog"], .batch-details'
-        )
-      ).toBeVisible({ timeout: 5000 });
-    }
+    // Should show batch details
+    await expect(
+      page.locator(
+        '[data-testid="batch-details"], [role="dialog"], .batch-details'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -235,19 +263,22 @@ test.describe("Inventory Low Stock Alerts (WS-008) @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for low stock filter
+    await requireElement(
+      page,
+      'button:has-text("Low Stock"), [data-testid="low-stock-filter"], input[type="checkbox"]:near(:text("Low Stock"))',
+      "Low stock filter not found"
+    );
+
     const lowStockFilter = page.locator(
       'button:has-text("Low Stock"), [data-testid="low-stock-filter"], input[type="checkbox"]:near(:text("Low Stock"))'
     );
+    await lowStockFilter.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await lowStockFilter.isVisible().catch(() => false)) {
-      await lowStockFilter.click();
-      await page.waitForLoadState("networkidle");
-
-      // Filter should be applied
-      const url = page.url();
-      const hasFilterInUrl = url.includes("lowStock") || url.includes("status");
-      expect(hasFilterInUrl).toBeTruthy();
-    }
+    // Filter should be applied
+    const url = page.url();
+    const hasFilterInUrl = url.includes("lowStock") || url.includes("status");
+    expect(hasFilterInUrl).toBeTruthy();
   });
 });
 
@@ -261,23 +292,26 @@ test.describe("Inventory Photos (WS-010) @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first batch
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='batch-item']",
+      "No batches found"
+    );
+
     const firstBatch = page
       .locator("table tbody tr, [data-testid='batch-item']")
       .first();
+    await firstBatch.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await firstBatch.isVisible().catch(() => false)) {
-      await firstBatch.click();
-      await page.waitForLoadState("networkidle");
+    // Look for photos section
+    const photosSection = page.locator(
+      '[data-testid="photos"], .photos, img[alt*="batch" i], img[alt*="product" i]'
+    );
 
-      // Look for photos section
-      const photosSection = page.locator(
-        '[data-testid="photos"], .photos, img[alt*="batch" i], img[alt*="product" i]'
-      );
-
-      // May or may not have photos
-      const count = await photosSection.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not have photos
+    const count = await photosSection.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 
   test("should have photo upload option", async ({ page }) => {
@@ -285,22 +319,28 @@ test.describe("Inventory Photos (WS-010) @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first batch
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='batch-item']",
+      "No batches found"
+    );
+
     const firstBatch = page
       .locator("table tbody tr, [data-testid='batch-item']")
       .first();
+    await firstBatch.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await firstBatch.isVisible().catch(() => false)) {
-      await firstBatch.click();
-      await page.waitForLoadState("networkidle");
+    // Look for upload button
+    await requireElement(
+      page,
+      'button:has-text("Upload"), button:has-text("Add Photo"), input[type="file"], [data-testid="photo-upload"]',
+      "Upload button not found"
+    );
 
-      // Look for upload button
-      const uploadButton = page.locator(
-        'button:has-text("Upload"), button:has-text("Add Photo"), input[type="file"], [data-testid="photo-upload"]'
-      );
-
-      if (await uploadButton.isVisible().catch(() => false)) {
-        await expect(uploadButton).toBeVisible();
-      }
-    }
+    const uploadButton = page.locator(
+      'button:has-text("Upload"), button:has-text("Add Photo"), input[type="file"], [data-testid="photo-upload"]'
+    );
+    await expect(uploadButton).toBeVisible();
   });
 });

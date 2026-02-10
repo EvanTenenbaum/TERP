@@ -6,6 +6,7 @@
 
 import { expect, test } from "@playwright/test";
 import { loginAsAccountant } from "../fixtures/auth";
+import { requireElement, requireOneOf } from "../utils/preconditions";
 
 test.describe("Golden Flow: GF-004 Invoice & Payment @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
@@ -23,41 +24,19 @@ test.describe("Golden Flow: GF-004 Invoice & Payment @dev-only @golden-flow", ()
     );
     await expect(invoiceHeader).toBeVisible({ timeout: 5000 });
 
-    const invoiceRow = page.locator('[role="row"], tr').first();
-    if (!(await invoiceRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No invoices available");
-      return;
-    }
+    await requireElement(page, '[role="row"], tr', "No invoices available");
 
+    const invoiceRow = page.locator('[role="row"], tr').first();
     await invoiceRow.click();
     await page.waitForLoadState("networkidle");
 
-    const sendButton = page.locator(
-      'button:has-text("Send"), button:has-text("Email")'
+    await requireOneOf(
+      page,
+      [
+        'button:has-text("Send"), button:has-text("Email")',
+        'button:has-text("Record Payment"), button:has-text("Payment")',
+      ],
+      "No invoice actions available for selected invoice"
     );
-    const sendButtonVisible = await sendButton
-      .first()
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-
-    const paymentButton = page.locator(
-      'button:has-text("Record Payment"), button:has-text("Payment")'
-    );
-    const paymentButtonVisible = await paymentButton
-      .first()
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-
-    if (!sendButtonVisible && !paymentButtonVisible) {
-      test.skip(true, "No invoice actions available for selected invoice");
-      return;
-    }
-
-    if (sendButtonVisible) {
-      await expect(sendButton.first()).toBeVisible();
-    }
-    if (paymentButtonVisible) {
-      await expect(paymentButton.first()).toBeVisible();
-    }
   });
 });

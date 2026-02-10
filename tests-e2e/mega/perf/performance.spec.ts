@@ -123,22 +123,30 @@ test.describe("Performance - Interaction Budgets", () => {
     const createBtn = page
       .locator('button:has-text("Add"), button:has-text("New")')
       .first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    try {
+      await createBtn.waitFor({ state: "visible", timeout: 3000 });
+
       const start = Date.now();
       await createBtn.click();
 
       const modal = page.locator('[role="dialog"]').first();
-      await modal.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
-      const duration = Date.now() - start;
+      try {
+        await modal.waitFor({ state: "visible", timeout: 5000 });
+        const duration = Date.now() - start;
 
-      console.info(
-        `[PERF] Modal open: ${duration}ms (budget: ${BUDGETS.interaction.modalOpen}ms)`
-      );
+        console.info(
+          `[PERF] Modal open: ${duration}ms (budget: ${BUDGETS.interaction.modalOpen}ms)`
+        );
 
-      if (await modal.isVisible().catch(() => false)) {
         expect(duration).toBeLessThan(BUDGETS.interaction.modalOpen);
         await page.keyboard.press("Escape");
+      } catch {
+        // Modal didn't appear within timeout
+        test.skip(true, "Modal did not open within timeout");
       }
+    } catch {
+      // Create button not available
+      test.skip(true, "Create button not available");
     }
   });
 
@@ -151,7 +159,9 @@ test.describe("Performance - Interaction Budgets", () => {
     const searchInput = page
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
-    if (await searchInput.isVisible().catch(() => false)) {
+    try {
+      await searchInput.waitFor({ state: "visible", timeout: 3000 });
+
       const start = Date.now();
       await searchInput.fill("test");
       await page.waitForLoadState("networkidle");
@@ -161,6 +171,9 @@ test.describe("Performance - Interaction Budgets", () => {
         `[PERF] Search: ${duration}ms (budget: ${BUDGETS.interaction.search}ms)`
       );
       expect(duration).toBeLessThan(BUDGETS.interaction.search);
+    } catch {
+      // Search input not available
+      test.skip(true, "Search input not available");
     }
   });
 

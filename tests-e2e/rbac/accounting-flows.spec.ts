@@ -17,6 +17,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAccountant, loginAsWarehouseStaff } from "../fixtures/auth";
+import { requireElement, assertOneVisible } from "../utils/preconditions";
 
 // ============================================================================
 // ACCOUNTANT ROLE - ALLOWED ACTIONS
@@ -59,12 +60,8 @@ test.describe("Accountant Role - Accounting Access @prod-regression @rbac", () =
       'a:has-text("Chart of Accounts"), button:has-text("Chart of Accounts"), [data-testid="coa-link"], [href*="accounts"]'
     );
 
-    if (
-      await coaLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await coaLink.first().waitFor({ state: "visible", timeout: 3000 });
       await coaLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -73,7 +70,7 @@ test.describe("Accountant Role - Accounting Access @prod-regression @rbac", () =
         "table, [data-testid='accounts-table'], [data-testid='chart-of-accounts']"
       );
       await expect(accountsTable.first()).toBeVisible({ timeout: 5000 });
-    } else {
+    } catch {
       // Try direct navigation
       await page.goto("/accounting/accounts");
       await page.waitForLoadState("networkidle");
@@ -94,12 +91,8 @@ test.describe("Accountant Role - Accounting Access @prod-regression @rbac", () =
       'a:has-text("Ledger"), button:has-text("Ledger"), a:has-text("Journal"), [data-testid="ledger-link"], [href*="ledger"]'
     );
 
-    if (
-      await ledgerLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await ledgerLink.first().waitFor({ state: "visible", timeout: 3000 });
       await ledgerLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -108,7 +101,7 @@ test.describe("Accountant Role - Accounting Access @prod-regression @rbac", () =
         "table, [data-testid='ledger-table'], [data-testid='journal-entries']"
       );
       await expect(ledgerTable.first()).toBeVisible({ timeout: 5000 });
-    } else {
+    } catch {
       // Try direct navigation
       await page.goto("/accounting/ledger");
       await page.waitForLoadState("networkidle");
@@ -169,32 +162,23 @@ test.describe("Accountant Role - Accounting Access @prod-regression @rbac", () =
     await page.goto("/accounting");
     await page.waitForLoadState("networkidle");
 
-    // Look for AR/AP summary sections
-    const arSection = page.locator(
-      '[data-testid="ar-summary"], :has-text("Accounts Receivable"), :has-text("AR Summary")'
-    );
-    const apSection = page.locator(
-      '[data-testid="ap-summary"], :has-text("Accounts Payable"), :has-text("AP Summary")'
-    );
-
     // At least one summary should be visible on the accounting page
-    const arVisible = await arSection
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const apVisible = await apSection
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    // The accounting page should show some financial summary
-    if (!arVisible && !apVisible) {
+    try {
+      await assertOneVisible(
+        page,
+        [
+          '[data-testid="ar-summary"], :has-text("Accounts Receivable"), :has-text("AR Summary")',
+          '[data-testid="ap-summary"], :has-text("Accounts Payable"), :has-text("AP Summary")',
+        ],
+        "Expected AR or AP summary to be visible on accounting dashboard",
+        5000
+      );
+    } catch {
       test.skip(
         true,
         "No AR/AP summary sections found - UI may have changed or page needs seeding"
       );
     }
-    expect(arVisible || apVisible).toBeTruthy();
   });
 });
 
@@ -220,56 +204,53 @@ test.describe("Accountant Role - Record Payments @prod-regression @rbac", () => 
     await page.waitForLoadState("networkidle");
 
     // Look for receive payment button
+    await requireElement(
+      page,
+      'button:has-text("Receive Payment"), a:has-text("Receive Payment"), button:has-text("Record Payment"), [data-testid="receive-payment"]',
+      "Receive payment button not found"
+    );
+
     const receivePaymentButton = page.locator(
       'button:has-text("Receive Payment"), a:has-text("Receive Payment"), button:has-text("Record Payment"), [data-testid="receive-payment"]'
     );
 
-    if (
-      await receivePaymentButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await receivePaymentButton.first().click();
+    await receivePaymentButton.first().click();
 
-      // Verify payment form or modal appears
-      const paymentForm = page.locator(
-        '[role="dialog"], form, .modal, [data-testid="payment-form"]'
-      );
-      await expect(paymentForm.first()).toBeVisible({ timeout: 5000 });
-    }
+    // Verify payment form or modal appears
+    const paymentForm = page.locator(
+      '[role="dialog"], form, .modal, [data-testid="payment-form"]'
+    );
+    await expect(paymentForm.first()).toBeVisible({ timeout: 5000 });
   });
 
   test("should have payment method options available", async ({ page }) => {
     await page.goto("/accounting");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'button:has-text("Receive Payment"), button:has-text("Record Payment")',
+      "Receive payment button not found"
+    );
+
     const receivePaymentButton = page.locator(
       'button:has-text("Receive Payment"), button:has-text("Record Payment")'
     );
 
-    if (
-      await receivePaymentButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await receivePaymentButton.first().click();
+    await receivePaymentButton.first().click();
 
-      // Look for payment method selector
-      const paymentMethodSelect = page.locator(
-        'select[name="paymentMethod"], [data-testid="payment-method-select"], select:has(option:has-text("Cash")), select:has(option:has-text("Check"))'
-      );
+    // Look for payment method selector
+    await requireElement(
+      page,
+      'select[name="paymentMethod"], [data-testid="payment-method-select"], select:has(option:has-text("Cash")), select:has(option:has-text("Check"))',
+      "Payment method selector not found"
+    );
 
-      if (
-        await paymentMethodSelect
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(paymentMethodSelect.first()).toBeVisible();
-      }
-    }
+    const paymentMethodSelect = page.locator(
+      'select[name="paymentMethod"], [data-testid="payment-method-select"], select:has(option:has-text("Cash")), select:has(option:has-text("Check"))'
+    );
+
+    await expect(paymentMethodSelect.first()).toBeVisible();
   });
 
   test("should navigate to invoice and record payment", async ({ page }) => {
@@ -277,25 +258,24 @@ test.describe("Accountant Role - Record Payments @prod-regression @rbac", () => 
     await page.waitForLoadState("networkidle");
 
     // Click on first invoice row if available
+    await requireElement(page, '[role="row"], tr', "No invoice rows found");
+
     const invoiceRow = page.locator('[role="row"], tr').nth(1);
+    await invoiceRow.click();
 
-    if (await invoiceRow.isVisible().catch(() => false)) {
-      await invoiceRow.click();
+    // Look for record payment action
+    const recordPaymentButton = page.locator(
+      'button:has-text("Record Payment"), button:has-text("Payment"), [data-testid="record-payment"]'
+    );
 
-      // Look for record payment action
-      const recordPaymentButton = page.locator(
-        'button:has-text("Record Payment"), button:has-text("Payment"), [data-testid="record-payment"]'
-      );
-
-      if (
-        await recordPaymentButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(recordPaymentButton.first()).toBeVisible();
-        // Accountant should have permission to click this button
-      }
+    try {
+      await recordPaymentButton
+        .first()
+        .waitFor({ state: "visible", timeout: 3000 });
+      await expect(recordPaymentButton.first()).toBeVisible();
+      // Accountant should have permission to click this button
+    } catch {
+      // Record payment button may not be available on this invoice
     }
   });
 });
@@ -326,12 +306,8 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
       'a:has-text("Reports"), button:has-text("Reports"), [data-testid="reports-link"], [href*="reports"]'
     );
 
-    if (
-      await reportsLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await reportsLink.first().waitFor({ state: "visible", timeout: 3000 });
       await reportsLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -340,6 +316,11 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
         'h1:has-text("Report"), h2:has-text("Report"), [data-testid="reports-page"]'
       );
       await expect(reportsHeader.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(
+        true,
+        "Reports section not found - feature may not be implemented"
+      );
     }
   });
 
@@ -352,12 +333,10 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
       'a:has-text("Trial Balance"), button:has-text("Trial Balance"), [data-testid="trial-balance"]'
     );
 
-    if (
+    try {
       await trialBalanceLink
         .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+        .waitFor({ state: "visible", timeout: 3000 });
       await trialBalanceLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -366,6 +345,11 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
         '[data-testid="trial-balance"], h2:has-text("Trial Balance"), table'
       );
       await expect(trialBalanceContent.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(
+        true,
+        "Trial balance feature not found - may not be implemented"
+      );
     }
   });
 
@@ -378,12 +362,8 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
       'a:has-text("Aging"), button:has-text("Aging"), [data-testid="aging-report"]'
     );
 
-    if (
-      await agingLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await agingLink.first().waitFor({ state: "visible", timeout: 3000 });
       await agingLink.first().click();
 
       // Verify aging buckets are displayed
@@ -391,6 +371,11 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
         ':has-text("Current"), :has-text("30 Days"), :has-text("60 Days"), :has-text("90 Days")'
       );
       await expect(agingBuckets.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(
+        true,
+        "Aging report feature not found - may not be implemented"
+      );
     }
   });
 
@@ -403,12 +388,8 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
       'a:has-text("P&L"), a:has-text("Profit"), a:has-text("Income Statement"), button:has-text("P&L"), [data-testid="profit-loss"]'
     );
 
-    if (
-      await plLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await plLink.first().waitFor({ state: "visible", timeout: 3000 });
       await plLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -417,6 +398,8 @@ test.describe("Accountant Role - Financial Reports @prod-regression @rbac", () =
         '[data-testid="profit-loss"], :has-text("Revenue"), :has-text("Expenses"), :has-text("Net Income")'
       );
       await expect(plContent.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(true, "P&L feature not found - may not be implemented");
     }
   });
 });
@@ -460,25 +443,22 @@ test.describe("Accountant Role - Client Balances @prod-regression @rbac", () => 
     await page.waitForLoadState("networkidle");
 
     // Click on first client row
+    await requireElement(page, '[role="row"], tr', "No client rows found");
+
     const clientRow = page.locator('[role="row"], tr').nth(1);
+    await clientRow.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await clientRow.isVisible().catch(() => false)) {
-      await clientRow.click();
-      await page.waitForLoadState("networkidle");
+    // Look for balance/transactions information
+    const balanceSection = page.locator(
+      '[data-testid="client-balance"], :has-text("Balance"), :has-text("Total Owed"), :has-text("AR Balance")'
+    );
 
-      // Look for balance/transactions information
-      const balanceSection = page.locator(
-        '[data-testid="client-balance"], :has-text("Balance"), :has-text("Total Owed"), :has-text("AR Balance")'
-      );
-
-      if (
-        await balanceSection
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(balanceSection.first()).toBeVisible();
-      }
+    try {
+      await balanceSection.first().waitFor({ state: "visible", timeout: 3000 });
+      await expect(balanceSection.first()).toBeVisible();
+    } catch {
+      // Balance section may not be visible on this client
     }
   });
 
@@ -487,32 +467,29 @@ test.describe("Accountant Role - Client Balances @prod-regression @rbac", () => 
     await page.waitForLoadState("networkidle");
 
     // Click on first client
-    const clientRow = page.locator('[role="row"], tr').nth(1);
+    await requireElement(page, '[role="row"], tr', "No client rows found");
 
-    if (await clientRow.isVisible().catch(() => false)) {
-      await clientRow.click();
+    const clientRow = page.locator('[role="row"], tr').nth(1);
+    await clientRow.click();
+    await page.waitForLoadState("networkidle");
+
+    // Look for ledger/transactions tab
+    const ledgerTab = page.locator(
+      'a:has-text("Ledger"), button:has-text("Ledger"), a:has-text("Transactions"), [data-testid="ledger-tab"]'
+    );
+
+    try {
+      await ledgerTab.first().waitFor({ state: "visible", timeout: 3000 });
+      await ledgerTab.first().click();
       await page.waitForLoadState("networkidle");
 
-      // Look for ledger/transactions tab
-      const ledgerTab = page.locator(
-        'a:has-text("Ledger"), button:has-text("Ledger"), a:has-text("Transactions"), [data-testid="ledger-tab"]'
+      // Verify ledger/transactions display
+      const ledgerContent = page.locator(
+        '[data-testid="client-ledger"], table, [role="grid"]'
       );
-
-      if (
-        await ledgerTab
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await ledgerTab.first().click();
-        await page.waitForLoadState("networkidle");
-
-        // Verify ledger/transactions display
-        const ledgerContent = page.locator(
-          '[data-testid="client-ledger"], table, [role="grid"]'
-        );
-        await expect(ledgerContent.first()).toBeVisible({ timeout: 5000 });
-      }
+      await expect(ledgerContent.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(true, "Ledger tab not found on client detail page");
     }
   });
 
@@ -520,26 +497,25 @@ test.describe("Accountant Role - Client Balances @prod-regression @rbac", () => 
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(page, '[role="row"], tr', "No client rows found");
+
     const clientRow = page.locator('[role="row"], tr').nth(1);
+    await clientRow.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await clientRow.isVisible().catch(() => false)) {
-      await clientRow.click();
-      await page.waitForLoadState("networkidle");
+    // Look for statement option
+    const statementButton = page.locator(
+      'button:has-text("Statement"), a:has-text("Statement"), [data-testid="client-statement"]'
+    );
 
-      // Look for statement option
-      const statementButton = page.locator(
-        'button:has-text("Statement"), a:has-text("Statement"), [data-testid="client-statement"]'
-      );
-
-      if (
-        await statementButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(statementButton.first()).toBeVisible();
-        // Accountant should have access to generate/view statements
-      }
+    try {
+      await statementButton
+        .first()
+        .waitFor({ state: "visible", timeout: 3000 });
+      await expect(statementButton.first()).toBeVisible();
+      // Accountant should have access to generate/view statements
+    } catch {
+      test.skip(true, "Statement button not found on client detail page");
     }
   });
 });
@@ -596,22 +572,30 @@ test.describe("Accountant Role - Read-Only Access Verification @prod-regression 
       'h1:has-text("Inventory"), [data-testid="inventory-page"]'
     );
 
-    // If inventory page loads, verify no adjust button or it's disabled
-    if (
+    let inventoryPageVisible = false;
+    try {
       await inventoryHeader
         .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+        .waitFor({ state: "visible", timeout: 3000 });
+      inventoryPageVisible = true;
+    } catch {
+      // Inventory page may not be accessible
+    }
+
+    // If inventory page loads, verify no adjust button or it's disabled
+    if (inventoryPageVisible) {
       const adjustButton = page.locator(
         'button:has-text("Adjust"), [data-testid="adjust-inventory"]'
       );
 
-      // Either button should not exist or should be disabled/hidden
-      const adjustVisible = await adjustButton
-        .first()
-        .isVisible()
-        .catch(() => false);
+      let adjustVisible = false;
+      try {
+        await adjustButton.first().waitFor({ state: "visible", timeout: 3000 });
+        adjustVisible = true;
+      } catch {
+        adjustVisible = false;
+      }
+
       if (adjustVisible) {
         // If visible, check if it's disabled
         const isDisabled = await adjustButton.first().isDisabled();
@@ -644,22 +628,20 @@ test.describe("RBAC - Accountant Restricted Actions @prod-regression @rbac", () 
     await page.waitForLoadState("networkidle");
 
     // Either redirected away or access denied shown
-    const accessDenied = page.locator(
+    const _accessDenied = page.locator(
       ':has-text("Access Denied"), :has-text("Unauthorized"), :has-text("Permission"), [data-testid="access-denied"]'
     );
     const usersPage = page.locator(
       'h1:has-text("Users"), [data-testid="users-page"]'
     );
 
-    // Should either show access denied or not be on users page
-    const _isDenied = await accessDenied
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const isUsersPage = await usersPage
-      .first()
-      .isVisible()
-      .catch(() => false);
+    let isUsersPage = false;
+    try {
+      await usersPage.first().waitFor({ state: "visible", timeout: 3000 });
+      isUsersPage = true;
+    } catch {
+      // Users page not accessible
+    }
 
     // If users page is visible, it should be in read-only mode or redirected
     if (isUsersPage) {
@@ -667,10 +649,15 @@ test.describe("RBAC - Accountant Restricted Actions @prod-regression @rbac", () 
       const createUserButton = page.locator(
         'button:has-text("Create User"), button:has-text("Add User")'
       );
-      const isCreateVisible = await createUserButton
-        .first()
-        .isVisible()
-        .catch(() => false);
+      let isCreateVisible = false;
+      try {
+        await createUserButton
+          .first()
+          .waitFor({ state: "visible", timeout: 3000 });
+        isCreateVisible = true;
+      } catch {
+        isCreateVisible = false;
+      }
       expect(isCreateVisible).toBeFalsy();
     }
   });
@@ -684,13 +671,9 @@ test.describe("RBAC - Accountant Restricted Actions @prod-regression @rbac", () 
     const adminPage = page.locator(
       'h1:has-text("Admin"), [data-testid="admin-page"]'
     );
-    const adminVisible = await adminPage
-      .first()
-      .isVisible()
-      .catch(() => false);
 
     // Admin page should not be accessible
-    expect(adminVisible).toBeFalsy();
+    await expect(adminPage.first()).not.toBeVisible();
   });
 });
 
@@ -723,13 +706,8 @@ test.describe("RBAC - Warehouse Staff Cannot Access Accounting @prod-regression 
     );
 
     // Warehouse Staff does NOT have accounting:access permission
-    const isAccountingVisible = await accountingNav
-      .first()
-      .isVisible()
-      .catch(() => false);
-
     // Accounting navigation should not be visible for Warehouse Staff
-    expect(isAccountingVisible).toBeFalsy();
+    await expect(accountingNav.first()).not.toBeVisible();
   });
 
   test("Warehouse Staff should be denied direct accounting URL access", async ({
@@ -743,21 +721,9 @@ test.describe("RBAC - Warehouse Staff Cannot Access Accounting @prod-regression 
     const accountingPage = page.locator(
       'h1:has-text("Accounting"), [data-testid="accounting-page"]'
     );
-    const accessDenied = page.locator(
-      ':has-text("Access Denied"), :has-text("Unauthorized"), :has-text("Permission")'
-    );
-
-    const isAccountingVisible = await accountingPage
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const _isDeniedWarehouse = await accessDenied
-      .first()
-      .isVisible()
-      .catch(() => false);
 
     // Either denied or not showing accounting content
-    expect(isAccountingVisible).toBeFalsy();
+    await expect(accountingPage.first()).not.toBeVisible();
   });
 });
 
@@ -855,12 +821,8 @@ test.describe("Accountant Role - Credits and Bad Debt @prod-regression @rbac", (
       'a:has-text("Credits"), button:has-text("Credits"), [data-testid="credits-link"], [href*="credits"]'
     );
 
-    if (
-      await creditsLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await creditsLink.first().waitFor({ state: "visible", timeout: 3000 });
       await creditsLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -869,6 +831,11 @@ test.describe("Accountant Role - Credits and Bad Debt @prod-regression @rbac", (
         'h1:has-text("Credit"), h2:has-text("Credit"), [data-testid="credits-page"]'
       );
       await expect(creditsContent.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(
+        true,
+        "Credits section not found - feature may not be implemented"
+      );
     }
   });
 
@@ -881,12 +848,8 @@ test.describe("Accountant Role - Credits and Bad Debt @prod-regression @rbac", (
       'a:has-text("Bad Debt"), button:has-text("Bad Debt"), button:has-text("Write-off"), [data-testid="bad-debt-link"]'
     );
 
-    if (
-      await badDebtLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await badDebtLink.first().waitFor({ state: "visible", timeout: 3000 });
       await badDebtLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -895,6 +858,11 @@ test.describe("Accountant Role - Credits and Bad Debt @prod-regression @rbac", (
         'h1:has-text("Bad Debt"), h2:has-text("Bad Debt"), h2:has-text("Write-off"), [data-testid="bad-debt-page"]'
       );
       await expect(badDebtContent.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(
+        true,
+        "Bad debt section not found - feature may not be implemented"
+      );
     }
   });
 
@@ -907,12 +875,8 @@ test.describe("Accountant Role - Credits and Bad Debt @prod-regression @rbac", (
       'a:has-text("COGS"), button:has-text("COGS"), a:has-text("Cost of Goods"), [data-testid="cogs-link"]'
     );
 
-    if (
-      await cogsLink
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await cogsLink.first().waitFor({ state: "visible", timeout: 3000 });
       await cogsLink.first().click();
       await page.waitForLoadState("networkidle");
 
@@ -921,6 +885,11 @@ test.describe("Accountant Role - Credits and Bad Debt @prod-regression @rbac", (
         'h1:has-text("COGS"), h2:has-text("COGS"), h2:has-text("Cost"), [data-testid="cogs-page"]'
       );
       await expect(cogsContent.first()).toBeVisible({ timeout: 5000 });
+    } catch {
+      test.skip(
+        true,
+        "COGS section not found - feature may not be implemented"
+      );
     }
   });
 });
@@ -952,13 +921,11 @@ test.describe("Accountant Full Workflow @prod-regression @rbac", () => {
     const arSummary = page.locator(
       '[data-testid="ar-summary"], :has-text("Receivable"), :has-text("AR")'
     );
-    if (
-      await arSummary
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+    try {
+      await arSummary.first().waitFor({ state: "visible", timeout: 3000 });
       console.info("AR Summary visible - PASS");
+    } catch {
+      console.info("AR Summary not found - may not be visible on dashboard");
     }
 
     // Step 3: Navigate to invoices

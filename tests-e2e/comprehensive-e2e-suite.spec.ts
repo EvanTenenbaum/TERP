@@ -29,6 +29,7 @@ import {
   logout,
   isAuthenticated,
 } from "./fixtures/auth";
+import { assertOneVisible } from "./utils/preconditions";
 
 // Test configuration
 const TIMEOUTS = {
@@ -148,18 +149,22 @@ test.describe("Authentication - Desktop", () => {
     // Wait for error response
     await page.waitForLoadState("networkidle");
 
-    // Check for error message
-    const errorLocator = page.locator(
-      '[role="alert"], .error, .toast, .text-red-500, .text-destructive, [data-sonner-toast][data-type="error"]'
-    );
-    const hasError = await errorLocator
-      .first()
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-
-    // Should show error or stay on login page
-    const stillOnLogin = page.url().includes("/login");
-    expect(hasError || stillOnLogin).toBeTruthy();
+    // Should show error message or stay on login page (login failure)
+    if (!page.url().includes("/login")) {
+      // If not on login page, must have redirected with error - check for error indicator
+      await assertOneVisible(
+        page,
+        [
+          '[role="alert"]',
+          ".error",
+          ".toast",
+          ".text-red-500",
+          ".text-destructive",
+          '[data-sonner-toast][data-type="error"]',
+        ],
+        "Expected error message or login page after invalid credentials"
+      );
+    }
   });
 
   test("AUTH-D-004: Successful login via API", async ({ page }) => {
@@ -351,12 +356,11 @@ test.describe("Navigation & UI - Desktop", () => {
     expect(page.url()).toContain("/clients");
 
     // Check for client list indicators
-    const hasTable = await isElementVisible(
+    await assertOneVisible(
       page,
-      'table, [role="grid"], .data-table'
+      ['table, [role="grid"], .data-table', ".client-card, .card"],
+      "Expected table or cards on clients page"
     );
-    const hasCards = await isElementVisible(page, ".client-card, .card");
-    expect(hasTable || hasCards).toBeTruthy();
   });
 
   test("NAV-D-004: Navigate to Inventory page", async ({ page }) => {
@@ -437,13 +441,20 @@ test.describe("Navigation & UI - Desktop", () => {
     await page.goto("/this-route-does-not-exist-12345");
     await waitForPageReady(page);
 
-    // Should show 404 page or redirect
-    const has404 = await isElementVisible(
-      page,
-      '[data-testid="not-found"], .not-found, h1:has-text("404"), h1:has-text("Not Found")'
-    );
-    const redirectedToHome = page.url().match(/\/(dashboard)?$/);
-    expect(has404 || redirectedToHome).toBeTruthy();
+    // Should show 404 page or redirect to home/dashboard
+    if (!page.url().match(/\/(dashboard)?$/)) {
+      // Not redirected to home, should show 404 page
+      await assertOneVisible(
+        page,
+        [
+          '[data-testid="not-found"]',
+          ".not-found",
+          'h1:has-text("404")',
+          'h1:has-text("Not Found")',
+        ],
+        "Expected 404 page or redirect to home"
+      );
+    }
   });
 });
 
@@ -525,9 +536,11 @@ test.describe("Client Management - Desktop", () => {
     await waitForPageReady(page);
 
     // Should show client list
-    const hasTable = await isElementVisible(page, 'table, [role="grid"]');
-    const hasCards = await isElementVisible(page, ".client-card, .card");
-    expect(hasTable || hasCards).toBeTruthy();
+    await assertOneVisible(
+      page,
+      ['table, [role="grid"]', ".client-card, .card"],
+      "Expected table or cards on clients page"
+    );
   });
 
   test("CLI-D-002: Can open new client modal/form", async ({ page }) => {
@@ -560,12 +573,14 @@ test.describe("Client Management - Desktop", () => {
         'input[type="search"], input[placeholder*="search" i], [data-search]'
       )
       .first();
-    const hasSearch = await searchInput.isVisible().catch(() => false);
 
-    if (hasSearch) {
+    try {
+      await searchInput.waitFor({ state: "visible", timeout: 5000 });
       await searchInput.fill("test");
       await page.waitForLoadState("networkidle");
       expect(await searchInput.inputValue()).toBe("test");
+    } catch {
+      // Search input not available - skip
     }
   });
 

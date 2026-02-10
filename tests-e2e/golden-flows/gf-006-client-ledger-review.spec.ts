@@ -6,6 +6,7 @@
 
 import { expect, test } from "@playwright/test";
 import { loginAsAccountant } from "../fixtures/auth";
+import { requireElement, requireOneOf } from "../utils/preconditions";
 
 test.describe("Golden Flow: GF-006 Client Ledger Review @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
@@ -18,28 +19,19 @@ test.describe("Golden Flow: GF-006 Client Ledger Review @dev-only @golden-flow",
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(page, '[role="row"], tr', "No clients available");
     const clientRow = page.locator('[role="row"], tr').first();
-    if (!(await clientRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No clients available");
-      return;
-    }
-
     await clientRow.click();
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'a:has-text("Ledger"), button:has-text("Ledger"), [data-testid="ledger-tab"]',
+      "Ledger tab not available for this client"
+    );
     const ledgerTab = page.locator(
       'a:has-text("Ledger"), button:has-text("Ledger"), [data-testid="ledger-tab"]'
     );
-    if (
-      !(await ledgerTab
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, "Ledger tab not available for this client");
-      return;
-    }
-
     await ledgerTab.first().click();
     await page.waitForLoadState("networkidle");
 
@@ -48,28 +40,14 @@ test.describe("Golden Flow: GF-006 Client Ledger Review @dev-only @golden-flow",
     );
     await expect(ledgerHeader.first()).toBeVisible({ timeout: 5000 });
 
-    const filterControl = page.locator(
-      '[data-testid="ledger-filter"], select:has-text("All"), button:has-text("Filter")'
-    );
-    const filterVisible = await filterControl
-      .first()
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-
-    const exportButton = page.locator(
-      'button:has-text("Export"), button:has-text("Download"), [data-testid="ledger-export"]'
-    );
-    const exportVisible = await exportButton
-      .first()
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-
     // At least one tool should be visible
-    if (filterVisible) {
-      await expect(filterControl.first()).toBeVisible();
-    }
-    if (exportVisible) {
-      await expect(exportButton.first()).toBeVisible();
-    }
+    await requireOneOf(
+      page,
+      [
+        '[data-testid="ledger-filter"], select:has-text("All"), button:has-text("Filter")',
+        'button:has-text("Export"), button:has-text("Download"), [data-testid="ledger-export"]',
+      ],
+      "Expected ledger filter or export button"
+    );
   });
 });

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "./fixtures/auth";
+import { requireElement } from "./utils/preconditions";
 
 test.describe("Inventory CRUD Operations @dev-only", () => {
   test.beforeEach(async ({ page }) => {
@@ -23,10 +24,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
     const firstRow = page
       .locator('tbody tr, [role="row"], .inventory-item')
       .first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     await expect(firstRow).toBeVisible();
   });
 
@@ -35,10 +37,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
     const firstRow = page
       .locator('tbody tr, [role="row"], .inventory-item')
       .first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
 
     const searchInput = page
       .locator('input[type="search"], input[placeholder*="search" i]')
@@ -73,10 +76,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
     const firstItem = page
       .locator('tbody tr, [role="row"], .inventory-item')
       .first();
-    if (!(await firstItem.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"], .inventory-item',
+      "No data rows available"
+    );
     await firstItem.click();
 
     // Should show details modal or navigate to detail page
@@ -122,10 +126,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
   test("should adjust inventory quantity", async ({ page }) => {
     await page.goto("/inventory");
     const firstItem = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstItem.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"], .inventory-item',
+      "No data rows available"
+    );
     await firstItem.click();
 
     // Look for adjust button
@@ -158,10 +163,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
     await page.goto("/inventory");
 
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
 
     const lowStockFilter = page
       .locator('button:has-text("Low Stock"), [data-filter="low-stock"]')
@@ -193,10 +199,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
     await page.goto("/inventory");
 
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
 
     const nameHeader = page
       .locator('th:has-text("Name"), [role="columnheader"]:has-text("Name")')
@@ -210,10 +217,11 @@ test.describe("Inventory CRUD Operations @dev-only", () => {
   test("should view inventory movement history", async ({ page }) => {
     await page.goto("/inventory");
     const firstItem = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstItem.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"], .inventory-item',
+      "No data rows available"
+    );
     await firstItem.click();
 
     // Look for history tab or button

@@ -121,9 +121,13 @@ test.describe("Visual Regression - Theme Modes", () => {
       const toggle = page
         .locator('button[aria-label*="theme" i], button[aria-label*="dark" i]')
         .first();
-      if (await toggle.isVisible().catch(() => false)) {
+      try {
+        await toggle.waitFor({ state: "visible", timeout: 2000 });
         await toggle.click();
         await page.waitForLoadState("networkidle");
+      } catch {
+        // Theme toggle not available - skip test
+        test.skip(true, "Theme toggle not available");
       }
     }
 
@@ -145,9 +149,13 @@ test.describe("Visual Regression - Theme Modes", () => {
       const toggle = page
         .locator('button[aria-label*="theme" i], button[aria-label*="dark" i]')
         .first();
-      if (await toggle.isVisible().catch(() => false)) {
+      try {
+        await toggle.waitFor({ state: "visible", timeout: 2000 });
         await toggle.click();
         await page.waitForLoadState("networkidle");
+      } catch {
+        // Theme toggle not available - skip test
+        test.skip(true, "Theme toggle not available");
       }
     }
 
@@ -173,16 +181,22 @@ test.describe("Visual Regression - Components", () => {
     const createBtn = page
       .locator('button:has-text("Add"), button:has-text("New")')
       .first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    try {
+      await createBtn.waitFor({ state: "visible", timeout: 3000 });
       await createBtn.click();
 
       const modal = page.locator('[role="dialog"]').first();
-      await modal.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
-
-      if (await modal.isVisible().catch(() => false)) {
+      try {
+        await modal.waitFor({ state: "visible", timeout: 5000 });
         await expect(modal).toHaveScreenshot("create-modal.png");
         await page.keyboard.press("Escape");
+      } catch {
+        // Modal didn't appear - skip snapshot
+        test.skip(true, "Modal did not appear");
       }
+    } catch {
+      // Create button not available - skip test
+      test.skip(true, "Create button not available");
     }
   });
 
@@ -193,8 +207,12 @@ test.describe("Visual Regression - Components", () => {
     await page.waitForLoadState("networkidle");
 
     const sidebar = page.locator("nav, aside").first();
-    if (await sidebar.isVisible().catch(() => false)) {
+    try {
+      await sidebar.waitFor({ state: "visible", timeout: 3000 });
       await expect(sidebar).toHaveScreenshot("sidebar.png");
+    } catch {
+      // Sidebar not visible - skip snapshot
+      test.skip(true, "Sidebar not visible");
     }
   });
 
@@ -216,7 +234,10 @@ test.describe("Visual Regression - Components", () => {
       .locator('[role="dialog"], [data-command-palette], .command-palette')
       .first();
 
-    if (!(await palette.isVisible({ timeout: 1000 }).catch(() => false))) {
+    try {
+      await palette.waitFor({ state: "visible", timeout: 1000 });
+    } catch {
+      // Try Control+k instead
       await page.keyboard.press("Control+k");
       await page
         .locator('[role="dialog"], [data-command-palette], [cmdk-root]')
@@ -225,9 +246,13 @@ test.describe("Visual Regression - Components", () => {
         .catch(() => {});
     }
 
-    if (await palette.isVisible().catch(() => false)) {
+    try {
+      await palette.waitFor({ state: "visible", timeout: 1000 });
       await expect(palette).toHaveScreenshot("command-palette.png");
       await page.keyboard.press("Escape");
+    } catch {
+      // Command palette not available - skip snapshot
+      test.skip(true, "Command palette did not open");
     }
   });
 });

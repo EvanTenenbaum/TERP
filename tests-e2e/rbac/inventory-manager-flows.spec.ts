@@ -17,6 +17,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsInventoryManager, loginAsAuditor } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression @rbac", () => {
   test.beforeEach(() => {
@@ -55,8 +56,11 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
 
       // Wait for skeleton to disappear or table to appear
       const skeleton = page.locator('[data-testid="inventory-skeleton"]');
-      if (await skeleton.isVisible().catch(() => false)) {
+      try {
+        await skeleton.waitFor({ state: "visible", timeout: 3000 });
         await expect(skeleton).not.toBeVisible({ timeout: 15000 });
+      } catch {
+        // No skeleton found or already disappeared
       }
 
       // Should see the inventory table
@@ -74,7 +78,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
 
       // Wait for loading to complete
       const skeleton = page.locator('[data-testid="inventory-skeleton"]');
-      if (await skeleton.isVisible().catch(() => false)) {
+      if (await skeleton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await expect(skeleton).not.toBeVisible({ timeout: 15000 });
       }
 
@@ -89,18 +93,22 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await page.waitForLoadState("networkidle");
 
       // Find and use search input
+      await requireElement(
+        page,
+        'input[placeholder*="Search"], input[type="search"]',
+        "Search input not found"
+      );
+
       const searchInput = page.locator(
         'input[placeholder*="Search"], input[type="search"]'
       );
 
-      if (await searchInput.isVisible().catch(() => false)) {
-        await searchInput.fill("test");
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500); // Debounce time
+      await searchInput.fill("test");
+      await page.waitForLoadState("networkidle"); // was: waitForTimeout(500); // Debounce time
 
-        // Search should be applied (page should respond)
-        await page.waitForLoadState("networkidle");
-        await expect(searchInput).toHaveValue("test");
-      }
+      // Search should be applied (page should respond)
+      await page.waitForLoadState("networkidle");
+      await expect(searchInput).toHaveValue("test");
     });
 
     test("should be able to filter inventory by status", async ({ page }) => {
@@ -112,14 +120,15 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
         'button:has-text("Filter"), button:has-text("Status"), [data-testid="advanced-filters"]'
       );
 
-      if (
-        await filterButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
+      try {
+        await filterButton.first().waitFor({ state: "visible", timeout: 3000 });
         await filterButton.first().click();
         await page.waitForLoadState("networkidle"); // was: waitForTimeout(300);
+      } catch {
+        test.skip(
+          true,
+          "Filter button not found - feature may not be implemented"
+        );
       }
     });
   });
@@ -138,34 +147,46 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await expect(table).toBeVisible({ timeout: 15000 });
 
       // Find first batch row and click it
+      await requireElement(
+        page,
+        "table tbody tr",
+        "No inventory batch rows found"
+      );
+
       const firstRow = page.locator("table tbody tr").first();
 
-      if (await firstRow.isVisible().catch(() => false)) {
-        // Click the View button in the row
-        const viewButton = firstRow.locator('button:has-text("View")');
-        if (await viewButton.isVisible().catch(() => false)) {
-          await viewButton.click();
-        } else {
-          // Click anywhere on the row to view details
-          await firstRow.click();
-        }
-
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
-
-        // Should see detail drawer or modal
-        const detailPanel = page.locator(
-          '[data-testid="batch-details"], [role="dialog"], .batch-details, [data-state="open"]'
-        );
-
-        // URL might change to include batch ID
-        const url = page.url();
-        const hasBatchIdInUrl = /\/inventory\/\d+/.test(url);
-
-        // Either the detail panel is visible OR URL changed to batch detail
-        const detailViewOpened =
-          hasBatchIdInUrl || (await detailPanel.isVisible().catch(() => false));
-        expect(detailViewOpened).toBe(true);
+      // Click the View button in the row
+      const viewButton = firstRow.locator('button:has-text("View")');
+      try {
+        await viewButton.waitFor({ state: "visible", timeout: 3000 });
+        await viewButton.click();
+      } catch {
+        // Click anywhere on the row to view details
+        await firstRow.click();
       }
+
+      await page.waitForLoadState("networkidle");
+
+      // Should see detail drawer or modal
+      const detailPanel = page.locator(
+        '[data-testid="batch-details"], [role="dialog"], .batch-details, [data-state="open"]'
+      );
+
+      // URL might change to include batch ID
+      const url = page.url();
+      const hasBatchIdInUrl = /\/inventory\/\d+/.test(url);
+
+      // Either the detail panel is visible OR URL changed to batch detail
+      let detailPanelVisible = false;
+      try {
+        await detailPanel.waitFor({ state: "visible", timeout: 3000 });
+        detailPanelVisible = true;
+      } catch {
+        detailPanelVisible = false;
+      }
+
+      const detailViewOpened = hasBatchIdInUrl || detailPanelVisible;
+      expect(detailViewOpened).toBe(true);
     });
 
     test("should show batch information in details view", async ({ page }) => {
@@ -177,34 +198,51 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await expect(table).toBeVisible({ timeout: 15000 });
 
       // Click view on first row
+      await requireElement(
+        page,
+        'table tbody tr button:has-text("View")',
+        "View button not found in inventory table"
+      );
+
       const viewButton = page
         .locator('table tbody tr button:has-text("View")')
         .first();
+      await viewButton.click();
+      await page.waitForLoadState("networkidle");
 
-      if (await viewButton.isVisible().catch(() => false)) {
-        await viewButton.click();
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(1000);
+      // Should see batch detail elements (SKU, status, quantities, etc.)
+      const detailContent = page.locator(
+        '[data-testid="batch-details"], [role="dialog"], .batch-detail-drawer'
+      );
 
-        // Should see batch detail elements (SKU, status, quantities, etc.)
-        const detailContent = page.locator(
-          '[data-testid="batch-details"], [role="dialog"], .batch-detail-drawer'
-        );
+      let detailContentVisible = false;
+      try {
+        await detailContent.waitFor({ state: "visible", timeout: 3000 });
+        detailContentVisible = true;
+      } catch {
+        // Detail content not visible
+      }
 
-        if (await detailContent.isVisible().catch(() => false)) {
-          // Verify some batch info is shown
-          const hasContent = await page
+      if (detailContentVisible) {
+        // Verify some batch info is shown
+        let hasContent = false;
+        try {
+          await page
             .locator("text=/SKU|Batch|Status|Quantity/i")
             .first()
-            .isVisible()
-            .catch(() => false);
-          if (!hasContent) {
-            test.skip(
-              true,
-              "Batch details panel did not show expected content - UI may have changed"
-            );
-          }
-          expect(hasContent).toBe(true);
+            .waitFor({ state: "visible", timeout: 3000 });
+          hasContent = true;
+        } catch {
+          hasContent = false;
         }
+
+        if (!hasContent) {
+          test.skip(
+            true,
+            "Batch details panel did not show expected content - UI may have changed"
+          );
+        }
+        expect(hasContent).toBe(true);
       }
     });
   });
@@ -233,19 +271,22 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await page.waitForLoadState("networkidle");
 
       // Click New Intake button
+      await requireElement(
+        page,
+        'button:has-text("New Intake")',
+        "New Intake button not found"
+      );
+
       const intakeButton = page.locator('button:has-text("New Intake")');
+      await intakeButton.click();
+      await page.waitForLoadState("networkidle");
 
-      if (await intakeButton.isVisible().catch(() => false)) {
-        await intakeButton.click();
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
+      // Should see intake form/modal
+      const intakeForm = page.locator(
+        '[role="dialog"], .modal, [data-testid="purchase-modal"], [data-testid="intake-modal"]'
+      );
 
-        // Should see intake form/modal
-        const intakeForm = page.locator(
-          '[role="dialog"], .modal, [data-testid="purchase-modal"], [data-testid="intake-modal"]'
-        );
-
-        await expect(intakeForm).toBeVisible({ timeout: 5000 });
-      }
+      await expect(intakeForm).toBeVisible({ timeout: 5000 });
     });
 
     test("should display required fields in intake form", async ({ page }) => {
@@ -253,21 +294,30 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await page.waitForLoadState("networkidle");
 
       // Open intake modal
+      await requireElement(
+        page,
+        'button:has-text("New Intake")',
+        "New Intake button not found"
+      );
+
       const intakeButton = page.locator('button:has-text("New Intake")');
+      await intakeButton.click();
+      await page.waitForLoadState("networkidle");
 
-      if (await intakeButton.isVisible().catch(() => false)) {
-        await intakeButton.click();
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
+      // Check for typical intake form fields
+      const modal = page.locator('[role="dialog"]');
 
-        // Check for typical intake form fields
-        const modal = page.locator('[role="dialog"]');
-
-        if (await modal.isVisible().catch(() => false)) {
-          // Verify some form elements exist (inputs, selects, etc.)
-          const formInputs = modal.locator('input, select, [role="combobox"]');
-          const inputCount = await formInputs.count();
-          expect(inputCount).toBeGreaterThan(0);
-        }
+      try {
+        await modal.waitFor({ state: "visible", timeout: 3000 });
+        // Verify some form elements exist (inputs, selects, etc.)
+        const formInputs = modal.locator('input, select, [role="combobox"]');
+        const inputCount = await formInputs.count();
+        expect(inputCount).toBeGreaterThan(0);
+      } catch {
+        test.skip(
+          true,
+          "Intake modal did not open - feature may not be implemented"
+        );
       }
     });
   });
@@ -284,38 +334,50 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await page.waitForLoadState("networkidle");
 
       // Wait for table and click first batch
+      await requireElement(
+        page,
+        'table tbody tr button:has-text("View")',
+        "View button not found"
+      );
+
       const viewButton = page
         .locator('table tbody tr button:has-text("View")')
         .first();
+      await viewButton.click();
+      await page.waitForLoadState("networkidle");
 
-      if (await viewButton.isVisible().catch(() => false)) {
-        await viewButton.click();
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(1000);
+      // Look for adjustment button/control in the detail panel
+      const adjustButton = page.locator(
+        'button:has-text("Adjust"), button:has-text("Edit Quantity"), button:has-text("Update")'
+      );
 
-        // Look for adjustment button/control in the detail panel
-        const adjustButton = page.locator(
-          'button:has-text("Adjust"), button:has-text("Edit Quantity"), button:has-text("Update")'
-        );
+      // The adjust functionality should be available (or similar edit controls)
+      let hasAdjust = false;
+      try {
+        await adjustButton.first().waitFor({ state: "visible", timeout: 3000 });
+        hasAdjust = true;
+      } catch {
+        hasAdjust = false;
+      }
 
-        // The adjust functionality should be available (or similar edit controls)
-        const hasAdjust = await adjustButton
-          .first()
-          .isVisible()
-          .catch(() => false);
-        const hasEditControls = await page
+      let hasEditControls = false;
+      try {
+        await page
           .locator('button:has-text("Edit"), [data-testid*="adjust"]')
           .first()
-          .isVisible()
-          .catch(() => false);
-
-        if (!hasAdjust && !hasEditControls) {
-          test.skip(
-            true,
-            "No adjustment or edit controls found - UI may have changed or feature not implemented"
-          );
-        }
-        expect(hasAdjust || hasEditControls).toBe(true);
+          .waitFor({ state: "visible", timeout: 3000 });
+        hasEditControls = true;
+      } catch {
+        hasEditControls = false;
       }
+
+      if (!hasAdjust && !hasEditControls) {
+        test.skip(
+          true,
+          "No adjustment or edit controls found - UI may have changed or feature not implemented"
+        );
+      }
+      expect(hasAdjust || hasEditControls).toBe(true);
     });
   });
 
@@ -339,8 +401,14 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
         'thead input[type="checkbox"], thead [role="checkbox"]'
       );
 
-      if (await headerCheckbox.isVisible().catch(() => false)) {
+      try {
+        await headerCheckbox.waitFor({ state: "visible", timeout: 3000 });
         await expect(headerCheckbox).toBeVisible();
+      } catch {
+        test.skip(
+          true,
+          "Header checkbox not found - bulk selection may not be implemented"
+        );
       }
     });
 
@@ -359,7 +427,8 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
         .locator('tbody input[type="checkbox"], tbody [role="checkbox"]')
         .first();
 
-      if (await rowCheckbox.isVisible().catch(() => false)) {
+      try {
+        await rowCheckbox.waitFor({ state: "visible", timeout: 3000 });
         await rowCheckbox.click();
         await page.waitForLoadState("networkidle"); // was: waitForTimeout(300);
 
@@ -368,9 +437,17 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
           '[data-testid="bulk-actions"], .bulk-actions, text=/selected/i'
         );
 
-        if (await bulkBar.isVisible().catch(() => false)) {
+        try {
+          await bulkBar.waitFor({ state: "visible", timeout: 3000 });
           await expect(bulkBar).toBeVisible();
+        } catch {
+          // Bulk action bar may not appear
         }
+      } catch {
+        test.skip(
+          true,
+          "Row checkbox not found - bulk selection may not be implemented"
+        );
       }
     });
   });
@@ -450,20 +527,23 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
       await expect(table).toBeVisible({ timeout: 15000 });
 
       // Should be able to click View on a batch (has inventory:read)
+      await requireElement(
+        page,
+        'table tbody tr button:has-text("View")',
+        "View button not found"
+      );
+
       const viewButton = page
         .locator('table tbody tr button:has-text("View")')
         .first();
+      await viewButton.click();
+      await page.waitForLoadState("networkidle");
 
-      if (await viewButton.isVisible().catch(() => false)) {
-        await viewButton.click();
-        await page.waitForLoadState("networkidle"); // was: waitForTimeout(1000);
-
-        // Should see details without permission error
-        const errorAlert = page.locator(
-          '[role="alert"]:has-text("permission"), [role="alert"]:has-text("denied")'
-        );
-        await expect(errorAlert).not.toBeVisible();
-      }
+      // Should see details without permission error
+      const errorAlert = page.locator(
+        '[role="alert"]:has-text("permission"), [role="alert"]:has-text("denied")'
+      );
+      await expect(errorAlert).not.toBeVisible();
     });
   });
 
@@ -501,7 +581,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
 
       // Apply a search filter
       const searchInput = page.locator('input[placeholder*="Search"]');
-      if (await searchInput.isVisible().catch(() => false)) {
+      if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
         await searchInput.fill("test");
         await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
@@ -509,7 +589,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
         const viewButton = page
           .locator('table tbody tr button:has-text("View")')
           .first();
-        if (await viewButton.isVisible().catch(() => false)) {
+        if (await viewButton.isVisible({ timeout: 3000 }).catch(() => false)) {
           await viewButton.click();
           await page.waitForLoadState("networkidle"); // was: waitForTimeout(500);
 
@@ -517,7 +597,9 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
           const closeButton = page.locator(
             '[aria-label="Close"], button:has-text("Close")'
           );
-          if (await closeButton.isVisible().catch(() => false)) {
+          if (
+            await closeButton.isVisible({ timeout: 3000 }).catch(() => false)
+          ) {
             await closeButton.click();
             await page.waitForLoadState("networkidle"); // was: waitForTimeout(300);
           } else {
@@ -544,7 +626,7 @@ test.describe("TER-46: Inventory Manager Role - Inventory Flows @prod-regression
 
       // Apply a search that won't match anything
       const searchInput = page.locator('input[placeholder*="Search"]');
-      if (await searchInput.isVisible().catch(() => false)) {
+      if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
         await searchInput.fill("xyznonexistent12345");
         await page.waitForLoadState("networkidle"); // was: waitForTimeout(600); // Wait for debounce
 

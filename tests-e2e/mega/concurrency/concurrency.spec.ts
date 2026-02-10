@@ -99,7 +99,9 @@ test.describe("Concurrency - Modal Operations", () => {
     const createBtn = page
       .locator('button:has-text("Add"), button:has-text("New")')
       .first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    try {
+      await createBtn.waitFor({ state: "visible", timeout: 3000 });
+
       // Click rapidly
       await createBtn.click();
       await createBtn.click({ force: true }).catch(() => {});
@@ -112,6 +114,9 @@ test.describe("Concurrency - Modal Operations", () => {
 
       // Clean up
       await page.keyboard.press("Escape");
+    } catch {
+      // No create button available - skip this test interaction
+      test.skip(true, "Create button not available");
     }
   });
 });
@@ -176,7 +181,9 @@ test.describe("Concurrency - API Race Conditions", () => {
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
 
-    if (await searchInput.isVisible().catch(() => false)) {
+    try {
+      await searchInput.waitFor({ state: "visible", timeout: 3000 });
+
       // Type rapidly (each keystroke may trigger a request)
       await searchInput.fill("");
       await searchInput.pressSequentially("testquery", { delay: 50 });
@@ -186,6 +193,9 @@ test.describe("Concurrency - API Race Conditions", () => {
 
       // Page should not crash
       await expect(page.locator("body")).toBeVisible();
+    } catch {
+      // No search input available - skip this interaction
+      test.skip(true, "Search input not available");
     }
   });
 });

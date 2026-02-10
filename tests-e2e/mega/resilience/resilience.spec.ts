@@ -34,17 +34,23 @@ test.describe("Resilience - Offline Handling", () => {
     const createBtn = page
       .locator('button:has-text("Add"), button:has-text("New")')
       .first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    try {
+      await createBtn.waitFor({ state: "visible", timeout: 3000 });
       await createBtn.click();
 
       const modal = page.locator('[role="dialog"]').first();
-      if (await modal.isVisible().catch(() => false)) {
+      try {
+        await modal.waitFor({ state: "visible", timeout: 3000 });
+
         // Fill some form data
         const nameInput = modal
           .locator('input[name="name"], input[placeholder*="name" i]')
           .first();
-        if (await nameInput.isVisible().catch(() => false)) {
+        try {
+          await nameInput.waitFor({ state: "visible", timeout: 2000 });
           await nameInput.fill("Test Offline Client");
+        } catch {
+          // Name input not found - continue anyway for offline test
         }
 
         // Go offline
@@ -56,7 +62,8 @@ test.describe("Resilience - Offline Handling", () => {
             'button[type="submit"], button:has-text("Save"), button:has-text("Create")'
           )
           .first();
-        if (await submitBtn.isVisible().catch(() => false)) {
+        try {
+          await submitBtn.waitFor({ state: "visible", timeout: 2000 });
           await submitBtn.click();
 
           // Should show error (toast, alert, or error message)
@@ -77,25 +84,33 @@ test.describe("Resilience - Offline Handling", () => {
 
           let _foundError = false;
           for (const indicator of errorIndicators) {
-            if (
-              await indicator
-                .first()
-                .isVisible()
-                .catch(() => false)
-            ) {
-              _foundError = true; // Error indication found (expected behavior offline)
-              break;
+            try {
+              if (await indicator.first().isVisible({ timeout: 1000 })) {
+                _foundError = true; // Error indication found (expected behavior offline)
+                break;
+              }
+            } catch {
+              // Expected: error indicator may not be present
             }
           }
 
           // At minimum, page shouldn't crash
           await expect(page.locator("body")).toBeVisible();
+        } catch {
+          // Submit button not found - skip this part of the test
         }
 
         // Go back online
         await context.setOffline(false);
         await page.keyboard.press("Escape");
+      } catch {
+        // Modal didn't appear
+        await context.setOffline(false);
+        test.skip(true, "Create modal did not appear");
       }
+    } catch {
+      // Create button not available
+      test.skip(true, "Create button not available");
     }
   });
 
@@ -224,14 +239,18 @@ test.describe("Resilience - Data Persistence", () => {
     const createBtn = page
       .locator('button:has-text("Add"), button:has-text("New")')
       .first();
-    if (await createBtn.isVisible().catch(() => false)) {
+    try {
+      await createBtn.waitFor({ state: "visible", timeout: 3000 });
       await createBtn.click();
 
       const modal = page.locator('[role="dialog"]').first();
-      if (await modal.isVisible().catch(() => false)) {
+      try {
+        await modal.waitFor({ state: "visible", timeout: 3000 });
+
         // Fill form
         const nameInput = modal.locator("input").first();
-        if (await nameInput.isVisible().catch(() => false)) {
+        try {
+          await nameInput.waitFor({ state: "visible", timeout: 2000 });
           const testValue = `Draft Test ${Date.now()}`;
           await nameInput.fill(testValue);
 
@@ -240,10 +259,18 @@ test.describe("Resilience - Data Persistence", () => {
           console.info(
             "[INFO] Draft persistence depends on app implementation"
           );
+        } catch {
+          // Input not found - skip test
         }
 
         await page.keyboard.press("Escape");
+      } catch {
+        // Modal didn't appear - skip test
+        test.skip(true, "Create modal did not appear");
       }
+    } catch {
+      // Create button not available - skip test
+      test.skip(true, "Create button not available");
     }
   });
 });

@@ -13,6 +13,7 @@
 
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsAdmin, loginAsWarehouseStaff } from "../fixtures/auth";
+import { requireElement, requireOneOf } from "../utils/preconditions";
 
 /**
  * Helper to check if the pick-pack page has orders
@@ -76,26 +77,14 @@ test.describe("TER-40: Complete Pick & Pack Flow @dev-only @golden-flow", () => 
       await page.waitForLoadState("networkidle");
 
       // STRICT: Search should exist (may be hidden behind a button)
-      const searchInput = page.locator(
-        '[data-testid="pick-pack-search-input"]'
+      await requireOneOf(
+        page,
+        [
+          '[data-testid="pick-pack-search-input"]',
+          'button[aria-label*="search" i], button:has-text("Search")',
+        ],
+        "Search functionality not available on this page"
       );
-      const searchButton = page.locator(
-        'button[aria-label*="search" i], button:has-text("Search")'
-      );
-
-      const searchInputVisible = await searchInput
-        .isVisible({ timeout: 5000 })
-        .catch(() => false);
-      const searchButtonVisible = await searchButton
-        .isVisible({ timeout: 5000 })
-        .catch(() => false);
-
-      if (!searchInputVisible && !searchButtonVisible) {
-        test.skip(true, "Search functionality not available on this page");
-        return;
-      }
-
-      expect(searchInputVisible || searchButtonVisible).toBe(true);
     });
   });
 
@@ -211,12 +200,11 @@ test.describe("TER-40: Complete Pick & Pack Flow @dev-only @golden-flow", () => 
         '[data-testid="pick-pack-search-input"]'
       );
 
-      if (
-        !(await searchInput.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "Search input not visible on this page");
-        return;
-      }
+      await requireElement(
+        page,
+        '[data-testid="pick-pack-search-input"]',
+        "Search input not visible on this page"
+      );
 
       // STRICT: Search should accept input
       await searchInput.fill("test-search-query");
@@ -237,12 +225,11 @@ test.describe("TER-40: Complete Pick & Pack Flow @dev-only @golden-flow", () => 
         '[data-testid="pick-pack-search-input"]'
       );
 
-      if (
-        !(await searchInput.isVisible({ timeout: 5000 }).catch(() => false))
-      ) {
-        test.skip(true, "Search input not visible on this page");
-        return;
-      }
+      await requireElement(
+        page,
+        '[data-testid="pick-pack-search-input"]',
+        "Search input not visible on this page"
+      );
 
       await searchInput.fill("xyznonexistent12345unique");
       await page.waitForLoadState("networkidle");

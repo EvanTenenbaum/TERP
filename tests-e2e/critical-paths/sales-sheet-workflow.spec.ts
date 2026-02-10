@@ -7,6 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Sales Sheet Workflow @dev-only", () => {
   test.beforeEach(async ({ page }) => {
@@ -28,19 +29,22 @@ test.describe("Sales Sheet Workflow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for new/create button
+    await requireElement(
+      page,
+      'button:has-text("New"), button:has-text("Create"), [data-testid="new-sales-sheet"]',
+      "Create button not found"
+    );
+
     const createButton = page.locator(
       'button:has-text("New"), button:has-text("Create"), [data-testid="new-sales-sheet"]'
     );
+    await createButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await createButton.isVisible().catch(() => false)) {
-      await createButton.click();
-      await page.waitForLoadState("networkidle");
-
-      // Should show sales sheet form
-      await expect(
-        page.locator('[data-testid="sales-sheet-form"], form, [role="dialog"]')
-      ).toBeVisible({ timeout: 5000 });
-    }
+    // Should show sales sheet form
+    await expect(
+      page.locator('[data-testid="sales-sheet-form"], form, [role="dialog"]')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should save sales sheet as draft", async ({ page }) => {
@@ -48,20 +52,23 @@ test.describe("Sales Sheet Workflow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for save draft button
+    await requireElement(
+      page,
+      'button:has-text("Save Draft"), button:has-text("Save"), [data-testid="save-draft"]',
+      "Save draft button not found"
+    );
+
     const saveDraftButton = page.locator(
       'button:has-text("Save Draft"), button:has-text("Save"), [data-testid="save-draft"]'
     );
+    await saveDraftButton.click();
 
-    if (await saveDraftButton.isVisible().catch(() => false)) {
-      await saveDraftButton.click();
-
-      // Should show success message or draft indicator
-      await expect(
-        page.locator(
-          '[data-testid="draft-saved"], .toast:has-text("saved"), [role="alert"]:has-text("saved")'
-        )
-      ).toBeVisible({ timeout: 5000 });
-    }
+    // Should show success message or draft indicator
+    await expect(
+      page.locator(
+        '[data-testid="draft-saved"], .toast:has-text("saved"), [role="alert"]:has-text("saved")'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should load existing draft", async ({ page }) => {
@@ -69,19 +76,22 @@ test.describe("Sales Sheet Workflow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for drafts list or load draft button
+    await requireElement(
+      page,
+      'button:has-text("Load Draft"), button:has-text("Drafts"), [data-testid="load-draft"]',
+      "Load draft button not found"
+    );
+
     const loadDraftButton = page.locator(
       'button:has-text("Load Draft"), button:has-text("Drafts"), [data-testid="load-draft"]'
     );
+    await loadDraftButton.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await loadDraftButton.isVisible().catch(() => false)) {
-      await loadDraftButton.click();
-      await page.waitForLoadState("networkidle");
-
-      // Should show draft list or load draft
-      await expect(
-        page.locator('[data-testid="draft-list"], [role="dialog"], .draft-item')
-      ).toBeVisible({ timeout: 5000 });
-    }
+    // Should show draft list or load draft
+    await expect(
+      page.locator('[data-testid="draft-list"], [role="dialog"], .draft-item')
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should add items to sales sheet", async ({ page }) => {
@@ -89,20 +99,23 @@ test.describe("Sales Sheet Workflow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for add item button
+    await requireElement(
+      page,
+      'button:has-text("Add Item"), button:has-text("Add Product"), [data-testid="add-item"]',
+      "Add item button not found"
+    );
+
     const addItemButton = page.locator(
       'button:has-text("Add Item"), button:has-text("Add Product"), [data-testid="add-item"]'
     );
+    await addItemButton.click();
 
-    if (await addItemButton.isVisible().catch(() => false)) {
-      await addItemButton.click();
-
-      // Should show item selection or form
-      await expect(
-        page.locator(
-          '[data-testid="item-selector"], [role="dialog"], select, input[placeholder*="product" i]'
-        )
-      ).toBeVisible({ timeout: 5000 });
-    }
+    // Should show item selection or form
+    await expect(
+      page.locator(
+        '[data-testid="item-selector"], [role="dialog"], select, input[placeholder*="product" i]'
+      )
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should convert sales sheet to quote", async ({ page }) => {
@@ -110,13 +123,16 @@ test.describe("Sales Sheet Workflow @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for convert to quote button
+    await requireElement(
+      page,
+      'button:has-text("Convert to Quote"), button:has-text("Create Quote"), [data-testid="convert-quote"]',
+      "Convert button not found"
+    );
+
     const convertButton = page.locator(
       'button:has-text("Convert to Quote"), button:has-text("Create Quote"), [data-testid="convert-quote"]'
     );
-
-    if (await convertButton.isVisible().catch(() => false)) {
-      await expect(convertButton).toBeEnabled();
-    }
+    await expect(convertButton).toBeEnabled();
   });
 });
 
@@ -138,23 +154,26 @@ test.describe("Quote Creation from Sales Sheet @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first quote if exists
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='quote-item']",
+      "No quotes found"
+    );
+
     const firstQuote = page
       .locator("table tbody tr, [data-testid='quote-item']")
       .first();
+    await firstQuote.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await firstQuote.isVisible().catch(() => false)) {
-      await firstQuote.click();
-      await page.waitForLoadState("networkidle");
+    // Look for discount display
+    const discountDisplay = page.locator(
+      '[data-testid="discount"], .discount, :text("Discount")'
+    );
 
-      // Look for discount display
-      const discountDisplay = page.locator(
-        '[data-testid="discount"], .discount, :text("Discount")'
-      );
-
-      // May or may not have discount
-      const count = await discountDisplay.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not have discount
+    const count = await discountDisplay.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 
   test("should display quote notes", async ({ page }) => {
@@ -162,23 +181,26 @@ test.describe("Quote Creation from Sales Sheet @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first quote if exists
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='quote-item']",
+      "No quotes found"
+    );
+
     const firstQuote = page
       .locator("table tbody tr, [data-testid='quote-item']")
       .first();
+    await firstQuote.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await firstQuote.isVisible().catch(() => false)) {
-      await firstQuote.click();
-      await page.waitForLoadState("networkidle");
+    // Look for notes display
+    const notesDisplay = page.locator(
+      '[data-testid="notes"], .notes, :text("Notes"), :text("Terms")'
+    );
 
-      // Look for notes display
-      const notesDisplay = page.locator(
-        '[data-testid="notes"], .notes, :text("Notes"), :text("Terms")'
-      );
-
-      // May or may not have notes
-      const count = await notesDisplay.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
+    // May or may not have notes
+    const count = await notesDisplay.count();
+    expect(count).toBeGreaterThanOrEqual(0);
   });
 
   test("should convert quote to order", async ({ page }) => {
@@ -186,23 +208,29 @@ test.describe("Quote Creation from Sales Sheet @dev-only", () => {
     await page.waitForLoadState("networkidle");
 
     // Click on first quote if exists
+    await requireElement(
+      page,
+      "table tbody tr, [data-testid='quote-item']",
+      "No quotes found"
+    );
+
     const firstQuote = page
       .locator("table tbody tr, [data-testid='quote-item']")
       .first();
+    await firstQuote.click();
+    await page.waitForLoadState("networkidle");
 
-    if (await firstQuote.isVisible().catch(() => false)) {
-      await firstQuote.click();
-      await page.waitForLoadState("networkidle");
+    // Look for convert to order button
+    await requireElement(
+      page,
+      'button:has-text("Convert to Order"), button:has-text("Create Order"), [data-testid="convert-order"]',
+      "Convert button not found"
+    );
 
-      // Look for convert to order button
-      const convertButton = page.locator(
-        'button:has-text("Convert to Order"), button:has-text("Create Order"), [data-testid="convert-order"]'
-      );
-
-      if (await convertButton.isVisible().catch(() => false)) {
-        await expect(convertButton).toBeEnabled();
-      }
-    }
+    const convertButton = page.locator(
+      'button:has-text("Convert to Order"), button:has-text("Create Order"), [data-testid="convert-order"]'
+    );
+    await expect(convertButton).toBeEnabled();
   });
 });
 
@@ -230,12 +258,15 @@ test.describe("Sales Sheet Version Control @prod-regression", () => {
     await page.waitForLoadState("networkidle");
 
     // Look for clone button
+    await requireElement(
+      page,
+      'button:has-text("Clone"), button:has-text("Duplicate"), [data-testid="clone"]',
+      "Clone button not found"
+    );
+
     const cloneButton = page.locator(
       'button:has-text("Clone"), button:has-text("Duplicate"), [data-testid="clone"]'
     );
-
-    if (await cloneButton.isVisible().catch(() => false)) {
-      await expect(cloneButton).toBeEnabled();
-    }
+    await expect(cloneButton).toBeEnabled();
   });
 });

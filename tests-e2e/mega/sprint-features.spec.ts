@@ -135,8 +135,12 @@ test.describe("Sprint B: Frontend UX", () => {
     let foundCount = 0;
     for (const item of expectedNavItems) {
       const navItem = page.locator(`a:has-text("${item}")`).first();
-      if (await navItem.isVisible().catch(() => false)) {
-        foundCount++;
+      try {
+        if (await navItem.isVisible({ timeout: 1000 })) {
+          foundCount++;
+        }
+      } catch {
+        // Nav item not found - this is expected for some role-restricted items
       }
     }
     // Should find most navigation items (some may be collapsed or role-gated)

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin, loginAsSalesManager } from "./fixtures/auth";
+import { requireElement, requireOneOf } from "./utils/preconditions";
 
 /**
  * Orders CRUD Operations E2E Tests
@@ -178,14 +179,15 @@ test.describe("Orders CRUD Operations @dev-only", () => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'input[type="search"], input[placeholder*="search" i]',
+      "Search input not available"
+    );
+
     const searchInput = page
       .locator('input[type="search"], input[placeholder*="search" i]')
       .first();
-
-    if (!(await searchInput.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "Search input not available");
-      return;
-    }
 
     await searchInput.fill("ORD");
     await page.waitForLoadState("networkidle");
@@ -197,13 +199,24 @@ test.describe("Orders CRUD Operations @dev-only", () => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
+    // At least one filter UI should be available
+    await requireOneOf(
+      page,
+      [
+        'button:has-text("Status"), button:has-text("Filter"), select:has-text("Status")',
+        'button:has-text("Pending"), button:has-text("Packed"), button:has-text("Shipped"), [role="tab"]:has-text("Pending")',
+      ],
+      "No filter UI available"
+    );
+
     // Look for status filter dropdown or buttons
     const filterButton = page
       .locator("button, select")
       .filter({ hasText: /status|filter|all statuses/i })
       .first();
 
-    if (await filterButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+    try {
+      await filterButton.waitFor({ state: "visible", timeout: 5000 });
       await filterButton.click();
       await page.waitForLoadState("networkidle");
 
@@ -212,17 +225,12 @@ test.describe("Orders CRUD Operations @dev-only", () => {
         .locator('[role="option"], option, [role="menuitem"]')
         .first();
       await expect(filterOptions).toBeVisible({ timeout: 5000 });
-    } else {
-      // Filter may not be visible, check for status tabs instead
+    } catch {
+      // Filter button not visible, check for status tabs instead
       const statusTabs = page
         .locator('button, [role="tab"]')
         .filter({ hasText: /pending|packed|shipped/i })
         .first();
-
-      if (!(await statusTabs.isVisible({ timeout: 5000 }).catch(() => false))) {
-        test.skip(true, "No filter UI available");
-        return;
-      }
 
       await expect(statusTabs).toBeVisible();
     }

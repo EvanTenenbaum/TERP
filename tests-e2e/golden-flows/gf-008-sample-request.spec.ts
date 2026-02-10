@@ -6,6 +6,7 @@
 
 import { expect, test } from "@playwright/test";
 import { loginAsSalesManager } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 test.describe("Golden Flow: GF-008 Sample Request @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
@@ -18,19 +19,15 @@ test.describe("Golden Flow: GF-008 Sample Request @dev-only @golden-flow", (): v
     await page.goto("/samples");
     await page.waitForLoadState("networkidle");
 
+    await requireElement(
+      page,
+      'button:has-text("Create Sample"), button:has-text("New Sample"), button:has-text("Sample Request")',
+      "Create Sample button not available"
+    );
+
     const createButton = page.locator(
       'button:has-text("Create Sample"), button:has-text("New Sample"), button:has-text("Sample Request")'
     );
-    if (
-      !(await createButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, "Create Sample button not available");
-      return;
-    }
-
     await createButton.first().click();
     await page.waitForLoadState("networkidle");
 

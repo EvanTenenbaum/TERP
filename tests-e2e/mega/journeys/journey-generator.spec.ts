@@ -218,9 +218,12 @@ const ACTIONS: {
       const toggle = ctx.page
         .locator('button[aria-label*="theme" i], button[aria-label*="dark" i]')
         .first();
-      if (await toggle.isVisible().catch(() => false)) {
+      try {
+        await toggle.waitFor({ state: "visible", timeout: 2000 });
         await toggle.click();
         await ctx.page.waitForLoadState("networkidle");
+      } catch {
+        // Theme toggle not available - skip this action
       }
     },
   },
@@ -262,7 +265,8 @@ const ACTIONS: {
           'button:has-text("Add"), button:has-text("New"), button:has-text("Create")'
         )
         .first();
-      if (await createBtn.isVisible().catch(() => false)) {
+      try {
+        await createBtn.waitFor({ state: "visible", timeout: 2000 });
         await createBtn.click();
         await ctx.page
           .locator('[role="dialog"], [data-popover]')
@@ -271,6 +275,8 @@ const ACTIONS: {
           .catch(() => {});
         // Close any modal that opened
         await ctx.page.keyboard.press("Escape");
+      } catch {
+        // Create button not available - skip this action
       }
     },
   },
@@ -282,10 +288,13 @@ const ACTIONS: {
       const searchInput = ctx.page
         .locator('input[type="search"], input[placeholder*="search" i]')
         .first();
-      if (await searchInput.isVisible().catch(() => false)) {
+      try {
+        await searchInput.waitFor({ state: "visible", timeout: 2000 });
         const terms = ["test", "invoice", "order", "client", "batch"];
         await searchInput.fill(ctx.rng.pick(terms));
         await ctx.page.waitForLoadState("networkidle");
+      } catch {
+        // Search input not available - skip this action
       }
     },
   },
@@ -307,9 +316,12 @@ const ACTIONS: {
       const breadcrumbs = ctx.page
         .locator('nav[aria-label*="breadcrumb" i] a, .breadcrumb a')
         .first();
-      if (await breadcrumbs.isVisible().catch(() => false)) {
+      try {
+        await breadcrumbs.waitFor({ state: "visible", timeout: 2000 });
         await breadcrumbs.click();
         await ctx.page.waitForLoadState("networkidle");
+      } catch {
+        // Breadcrumbs not available - skip this action
       }
     },
   },
@@ -321,7 +333,8 @@ const ACTIONS: {
       const filterBtn = ctx.page
         .locator('button:has-text("Filter"), button[aria-label*="filter" i]')
         .first();
-      if (await filterBtn.isVisible().catch(() => false)) {
+      try {
+        await filterBtn.waitFor({ state: "visible", timeout: 2000 });
         await filterBtn.click();
         await ctx.page
           .locator('[role="dialog"], [data-popover]')
@@ -329,6 +342,8 @@ const ACTIONS: {
           .waitFor({ state: "visible", timeout: 2000 })
           .catch(() => {});
         await ctx.page.keyboard.press("Escape");
+      } catch {
+        // Filter button not available - skip this action
       }
     },
   },

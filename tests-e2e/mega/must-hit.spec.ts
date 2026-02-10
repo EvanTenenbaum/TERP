@@ -10,6 +10,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser, AUTH_ROUTES, TEST_USERS } from "../fixtures/auth";
+import { assertOneVisible } from "../utils/preconditions";
 
 async function fillFirstVisible(
   page: import("@playwright/test").Page,
@@ -18,9 +19,13 @@ async function fillFirstVisible(
 ): Promise<void> {
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
-    if (await locator.isVisible().catch(() => false)) {
+    try {
+      await locator.waitFor({ state: "visible", timeout: 2000 });
       await locator.fill(value);
       return;
+    } catch {
+      // Try next selector
+      continue;
     }
   }
   throw new Error(
@@ -72,15 +77,17 @@ test.describe("System-Wide Controls", () => {
     ]);
 
     // Verify palette is open or command input is visible
-    const isVisible = await palette
-      .isVisible({ timeout: 2000 })
-      .catch(() => false);
-    const inputVisible = await commandInput
-      .first()
-      .isVisible({ timeout: 1000 })
-      .catch(() => false);
-
-    expect(isVisible || inputVisible).toBeTruthy();
+    await assertOneVisible(
+      page,
+      [
+        '[role="dialog"]',
+        "[data-command-palette]",
+        ".command-palette",
+        'input[placeholder*="command" i]',
+        'input[placeholder*="search" i]',
+      ],
+      "Expected command palette or search input to be visible"
+    );
 
     // Close with Escape
     await page.keyboard.press("Escape");
@@ -268,21 +275,33 @@ test.describe("Dashboard & Analytics", () => {
     const charts = page.locator("canvas, svg, .chart, .recharts-wrapper");
     const dataDisplays = page.locator("[data-analytics], .metric, .kpi");
 
-    // At least one should be visible
-    const _hasContent =
-      (await charts
-        .first()
-        .isVisible()
-        .catch(() => false)) ||
-      (await dataDisplays
-        .first()
-        .isVisible()
-        .catch(() => false));
+    // Try to find any content (charts, data displays, or heading)
+    let hasCharts = false;
+    let hasDataDisplays = false;
+    let hasHeading = false;
+
+    try {
+      hasCharts = await charts.first().isVisible({ timeout: 3000 });
+    } catch {
+      // Charts not found
+    }
+
+    try {
+      hasDataDisplays = await dataDisplays.first().isVisible({ timeout: 3000 });
+    } catch {
+      // Data displays not found
+    }
 
     // Don't fail if analytics is empty, but verify page loaded
     const heading = page.locator("h1, h2").filter({ hasText: /analytics/i });
-    if (!(await heading.isVisible().catch(() => false))) {
-      // If no analytics heading, at least verify we're not on 404
+    try {
+      hasHeading = await heading.isVisible({ timeout: 3000 });
+    } catch {
+      // Heading not found
+    }
+
+    if (!hasCharts && !hasDataDisplays && !hasHeading) {
+      // If no analytics content, at least verify we're not on 404
       await expect(page.locator("body")).not.toContainText("Page Not Found");
     }
   });
@@ -434,26 +453,33 @@ test.describe("Error Handling", () => {
     await page.goto("/this-route-does-not-exist-12345");
     await page.waitForLoadState("networkidle");
 
-    // Should show some form of not found message
-    const notFoundIndicators = [
-      page.locator("text=/not found/i"),
-      page.locator("text=/404/"),
-      page.locator('[data-testid="not-found"]'),
-    ];
+    // Should show some form of not found message OR redirect to a valid page
+    const url = page.url();
+    const onDashboard = url.includes("dashboard") || url.endsWith("/");
 
-    let foundNotFound = false;
-    for (const indicator of notFoundIndicators) {
-      if (await indicator.isVisible().catch(() => false)) {
-        foundNotFound = true;
-        break;
+    if (!onDashboard) {
+      // If not redirected, should show 404 indicators
+      const notFoundIndicators = [
+        page.locator("text=/not found/i"),
+        page.locator("text=/404/"),
+        page.locator('[data-testid="not-found"]'),
+      ];
+
+      let foundNotFound = false;
+      for (const indicator of notFoundIndicators) {
+        try {
+          if (await indicator.isVisible({ timeout: 2000 })) {
+            foundNotFound = true;
+            break;
+          }
+        } catch {
+          // Indicator not found - try next
+          continue;
+        }
       }
+
+      // Should show 404 if not redirected
+      expect(foundNotFound).toBeTruthy();
     }
-
-    // Check if redirected to dashboard
-    const onDashboard =
-      page.url().includes("dashboard") || page.url().endsWith("/");
-
-    // Either show 404 page or redirect to a valid page (like dashboard)
-    expect(foundNotFound || onDashboard).toBeTruthy();
   });
 });

@@ -13,6 +13,7 @@ import {
   selectAgGridFirstOption,
   waitForToast,
 } from "../utils/golden-flow-helpers";
+import { requireElement } from "../utils/preconditions";
 
 const createBrandName = (): string => `E2E Brand ${new Date().toISOString()}`;
 
@@ -24,12 +25,14 @@ test.describe("Golden Flow: GF-001 Direct Intake @dev-only @golden-flow", (): vo
     await page.waitForLoadState("networkidle");
 
     const addRowButton = page.getByRole("button", { name: "Add Row" });
-    if (await addRowButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+    try {
+      await addRowButton.waitFor({ state: "visible", timeout: 5000 });
       return;
+    } catch {
+      // Try alternate URL
+      await page.goto("/direct-intake");
+      await page.waitForLoadState("networkidle");
     }
-
-    await page.goto("/direct-intake");
-    await page.waitForLoadState("networkidle");
   };
 
   test.beforeEach(async ({ page }): Promise<void> => {
@@ -51,12 +54,13 @@ test.describe("Golden Flow: GF-001 Direct Intake @dev-only @golden-flow", (): vo
     await page.waitForLoadState("networkidle");
 
     // Precondition: Verify Add Row button is available
-    const addRowButton = page.getByRole("button", { name: "Add Row" });
-    if (!(await addRowButton.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "Add Row button not available");
-      return;
-    }
+    await requireElement(
+      page,
+      'button:has-text("Add Row")',
+      "Add Row button not available"
+    );
 
+    const addRowButton = page.getByRole("button", { name: "Add Row" });
     await addRowButton.click();
     await page.waitForLoadState("networkidle");
 

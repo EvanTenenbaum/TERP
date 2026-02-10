@@ -6,6 +6,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 import { loginAsInventoryManager } from "../fixtures/auth";
+import { requireElement } from "../utils/preconditions";
 
 const openPurchaseOrders = async (page: Page): Promise<void> => {
   await page.goto("/purchase-orders");
@@ -22,20 +23,15 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay @dev-only @golden-flow", (): v
   }): Promise<void> => {
     await openPurchaseOrders(page);
 
+    await requireElement(
+      page,
+      'button:has-text("New Purchase Order"), button:has-text("Create PO"), button:has-text("New PO")',
+      "Create PO button not available"
+    );
+
     const createButton = page.locator(
       'button:has-text("New Purchase Order"), button:has-text("Create PO"), button:has-text("New PO")'
     );
-
-    if (
-      !(await createButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, "Create PO button not available");
-      return;
-    }
-
     await createButton.first().click();
     await page.waitForLoadState("networkidle");
 
@@ -54,28 +50,25 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay @dev-only @golden-flow", (): v
   }): Promise<void> => {
     await openPurchaseOrders(page);
 
-    const poRow = page.locator('[role="row"], tr').first();
-    if (!(await poRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No purchase orders available");
-      return;
-    }
+    await requireElement(
+      page,
+      '[role="row"], tr',
+      "No purchase orders available"
+    );
 
+    const poRow = page.locator('[role="row"], tr').first();
     await poRow.click();
     await page.waitForLoadState("networkidle");
+
+    await requireElement(
+      page,
+      'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")',
+      "Receive button not available for this PO"
+    );
 
     const receiveButton = page.locator(
       'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
     );
-    if (
-      !(await receiveButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, "Receive button not available for this PO");
-      return;
-    }
-
     await expect(receiveButton.first()).toBeVisible();
   });
 });

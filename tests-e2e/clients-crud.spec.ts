@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "./fixtures/auth";
+import { requireElement } from "./utils/preconditions";
 
 test.describe("Clients CRUD Operations @dev-only", () => {
   test.beforeEach(async ({ page }) => {
@@ -21,21 +22,22 @@ test.describe("Clients CRUD Operations @dev-only", () => {
     await page.waitForSelector('table, [role="table"], .data-table', {
       timeout: 5000,
     });
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
     await expect(firstRow).toBeVisible();
   });
 
   test("should search for clients", async ({ page }) => {
     await page.goto("/clients");
-    const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
 
     const searchInput = page
       .locator('input[type="search"], input[placeholder*="search" i]')
@@ -104,11 +106,12 @@ test.describe("Clients CRUD Operations @dev-only", () => {
   test("should view client details", async ({ page }) => {
     await page.goto("/clients");
     // Click on first client row
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
     await firstRow.click();
 
     // Should navigate to client profile
@@ -117,11 +120,12 @@ test.describe("Clients CRUD Operations @dev-only", () => {
 
   test("should edit client information", async ({ page }) => {
     await page.goto("/clients");
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
     await firstRow.click();
 
     // Wait for profile page
@@ -153,11 +157,12 @@ test.describe("Clients CRUD Operations @dev-only", () => {
     await page.goto("/clients");
 
     // Wait for table to load
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
     await expect(firstRow).toBeVisible();
 
     // Find delete button (could be in actions menu or row actions)
@@ -186,11 +191,11 @@ test.describe("Clients CRUD Operations @dev-only", () => {
   test("should filter clients by status", async ({ page }) => {
     await page.goto("/clients");
 
-    const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
 
     // Look for filter dropdown
     const filterButton = page
@@ -213,11 +218,12 @@ test.describe("Clients CRUD Operations @dev-only", () => {
   test("should sort clients by name", async ({ page }) => {
     await page.goto("/clients");
 
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
 
     // Click on name column header
     const nameHeader = page
@@ -233,11 +239,12 @@ test.describe("Clients CRUD Operations @dev-only", () => {
   test("should paginate through clients", async ({ page }) => {
     await page.goto("/clients");
 
+    await requireElement(
+      page,
+      'tbody tr, [role="row"]',
+      "No data rows available"
+    );
     const firstRow = page.locator('tbody tr, [role="row"]').first();
-    if (!(await firstRow.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, "No data rows available");
-      return;
-    }
 
     // Look for next page button
     const nextButton = page

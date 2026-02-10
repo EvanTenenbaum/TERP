@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser } from "./fixtures/auth";
+import { requireElement } from "./utils/preconditions";
 
 test.describe("Navigation and UI Interactions @prod-smoke", () => {
   test.beforeEach(async ({ page }) => {
@@ -126,13 +127,12 @@ test.describe("Navigation and UI Interactions @prod-smoke", () => {
   test("should navigate using breadcrumbs", async ({ page }) => {
     await page.goto("/clients");
 
+    await requireElement(
+      page,
+      "tbody tr",
+      "No data rows available - precondition not met"
+    );
     const firstRow = page.locator("tbody tr").first();
-    const hasData = await firstRow.isVisible().catch(() => false);
-    if (!hasData) {
-      test.skip(true, "No data rows available - precondition not met");
-      return;
-    }
-
     await firstRow.click();
 
     // Check for breadcrumbs
