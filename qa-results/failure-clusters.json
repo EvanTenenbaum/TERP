@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-02-10T09:38:53.545Z",
+  "inputFile": "/tmp/test-no-error.json",
+  "totalTests": 1,
+  "totalPassed": 0,
+  "totalFailed": 1,
+  "totalSkipped": 0,
+  "passRate": "0.0%",
+  "clusters": [],
+  "fileFailureCounts": {},
+  "recommendations": []
+}
