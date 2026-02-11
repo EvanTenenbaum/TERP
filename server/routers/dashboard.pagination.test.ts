@@ -7,7 +7,7 @@
  * @module server/routers/dashboard.pagination.test.ts
  */
 
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
 
@@ -21,10 +21,12 @@ vi.mock("../services/permissionService", () => setupPermissionMock());
 vi.mock("../arApDb");
 vi.mock("../dashboardDb");
 vi.mock("../inventoryDb");
+vi.mock("../services/payablesService");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import * as arApDb from "../arApDb";
+import * as payablesService from "../services/payablesService";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -54,6 +56,16 @@ describe("Dashboard Pagination (RF-002)", () => {
 
   beforeAll(async () => {
     caller = await createCaller();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(payablesService.listPayables).mockReset();
+    vi.mocked(arApDb.getInvoices).mockReset();
+    vi.mocked(arApDb.getPayments).mockReset();
+    vi.mocked(arApDb.getOutstandingReceivables).mockReset();
+    vi.mocked(arApDb.calculateARAging).mockReset();
+    vi.useRealTimers();
   });
 
   describe("getSalesByClient with pagination", () => {
@@ -228,6 +240,64 @@ describe("Dashboard Pagination (RF-002)", () => {
       expect(result).toHaveProperty("total");
       expect(result.data.length).toBeLessThanOrEqual(10);
     });
+
+    it("should aggregate multiple invoices for the same client", async () => {
+      // Arrange
+      const today = new Date();
+      const fiftyDaysAgo = new Date(today);
+      fiftyDaysAgo.setDate(today.getDate() - 50);
+      const tenDaysAgo = new Date(today);
+      tenDaysAgo.setDate(today.getDate() - 10);
+
+      vi.mocked(arApDb.getOutstandingReceivables).mockResolvedValue({
+        invoices: [
+          {
+            id: 1,
+            customerId: 101,
+            amountDue: "1000.00",
+            invoiceDate: fiftyDaysAgo,
+          },
+          {
+            id: 2,
+            customerId: 101,
+            amountDue: "500.00",
+            invoiceDate: tenDaysAgo,
+          },
+          {
+            id: 3,
+            customerId: 202,
+            amountDue: "1200.00",
+            invoiceDate: tenDaysAgo,
+          },
+        ],
+        total: 3,
+      });
+      vi.mocked(arApDb.calculateARAging).mockResolvedValue({
+        current: 0,
+        days30: 0,
+        days60: 0,
+        days90: 0,
+        over90: 0,
+      });
+
+      // Act
+      const result = await caller.dashboard.getClientDebt({
+        limit: 10,
+        offset: 0,
+      });
+
+      // Assert
+      expect(result.total).toBe(2);
+
+      const client101 = result.data.find(client => client.customerId === 101);
+      expect(client101).toBeDefined();
+      expect(client101?.currentDebt).toBe(1500);
+      expect(client101?.oldestDebt).toBeGreaterThanOrEqual(49);
+
+      const client202 = result.data.find(client => client.customerId === 202);
+      expect(client202).toBeDefined();
+      expect(client202?.currentDebt).toBe(1200);
+    });
   });
 
   describe("getClientProfitMargin with pagination", () => {
@@ -254,6 +324,181 @@ describe("Dashboard Pagination (RF-002)", () => {
       expect(result).toHaveProperty("data");
       expect(result).toHaveProperty("total");
       expect(result.data.length).toBeLessThanOrEqual(15);
+    });
+  });
+
+  describe("getVendorsNeedingPayment with pagination", () => {
+    it("should aggregate sold-out unpaid payables by vendor", async () => {
+      // Arrange
+      vi.mocked(payablesService.listPayables).mockResolvedValue({
+        items: [
+          {
+            id: 1,
+            vendorClientId: 11,
+            vendorName: "North Coast Supply",
+            amountDue: "800.00",
+            status: "DUE",
+            inventoryZeroAt: new Date("2026-02-01"),
+            createdAt: new Date("2026-01-20"),
+          },
+          {
+            id: 2,
+            vendorClientId: 11,
+            vendorName: "North Coast Supply",
+            amountDue: "200.00",
+            status: "PARTIAL",
+            inventoryZeroAt: new Date("2026-01-28"),
+            createdAt: new Date("2026-01-19"),
+          },
+          {
+            id: 3,
+            vendorClientId: 22,
+            vendorName: "Ridgeline Farms",
+            amountDue: "500.00",
+            status: "DUE",
+            inventoryZeroAt: new Date("2026-02-05"),
+            createdAt: new Date("2026-01-25"),
+          },
+          {
+            id: 4,
+            vendorClientId: 33,
+            vendorName: "Already Paid Vendor",
+            amountDue: "0.00",
+            status: "DUE",
+            inventoryZeroAt: new Date("2026-02-05"),
+            createdAt: new Date("2026-01-25"),
+          },
+          {
+            id: 5,
+            vendorClientId: 44,
+            vendorName: "Not Sold-Out Yet",
+            amountDue: "900.00",
+            status: "DUE",
+            inventoryZeroAt: null,
+            createdAt: new Date("2026-01-22"),
+          },
+        ],
+        total: 5,
+      } as unknown as Awaited<ReturnType<typeof payablesService.listPayables>>);
+
+      // Act
+      const result = await caller.dashboard.getVendorsNeedingPayment({
+        limit: 10,
+        offset: 0,
+      });
+
+      // Assert
+      expect(result.total).toBe(2);
+      expect(result.data[0].vendorName).toBe("North Coast Supply");
+      expect(result.data[0].amountDue).toBe(1000);
+      expect(result.data[0].soldOutBatches).toBe(2);
+      expect(result.data[1].vendorName).toBe("Ridgeline Farms");
+      expect(result.data[1].amountDue).toBe(500);
+    });
+
+    it("should fetch all payable pages before aggregating vendors", async () => {
+      // Arrange
+      vi.mocked(payablesService.listPayables)
+        .mockResolvedValueOnce({
+          items: [
+            {
+              id: 101,
+              vendorClientId: 11,
+              vendorName: "North Coast Supply",
+              amountDue: "100.00",
+              status: "DUE",
+              inventoryZeroAt: new Date("2026-02-01"),
+              createdAt: new Date("2026-01-20"),
+            },
+          ],
+          total: 3,
+        } as unknown as Awaited<
+          ReturnType<typeof payablesService.listPayables>
+        >)
+        .mockResolvedValueOnce({
+          items: [
+            {
+              id: 102,
+              vendorClientId: 22,
+              vendorName: "Ridgeline Farms",
+              amountDue: "200.00",
+              status: "DUE",
+              inventoryZeroAt: new Date("2026-02-02"),
+              createdAt: new Date("2026-01-21"),
+            },
+          ],
+          total: 3,
+        } as unknown as Awaited<
+          ReturnType<typeof payablesService.listPayables>
+        >)
+        .mockResolvedValueOnce({
+          items: [
+            {
+              id: 103,
+              vendorClientId: 11,
+              vendorName: "North Coast Supply",
+              amountDue: "50.00",
+              status: "PARTIAL",
+              inventoryZeroAt: new Date("2026-02-03"),
+              createdAt: new Date("2026-01-22"),
+            },
+          ],
+          total: 3,
+        } as unknown as Awaited<
+          ReturnType<typeof payablesService.listPayables>
+        >);
+
+      // Act
+      const result = await caller.dashboard.getVendorsNeedingPayment({
+        limit: 10,
+        offset: 0,
+      });
+
+      // Assert
+      expect(payablesService.listPayables).toHaveBeenCalledTimes(3);
+      expect(result.total).toBe(2);
+
+      const vendor11 = result.data.find(v => v.vendorClientId === 11);
+      expect(vendor11).toBeDefined();
+      expect(vendor11?.amountDue).toBe(150);
+      expect(vendor11?.soldOutBatches).toBe(2);
+
+      const vendor22 = result.data.find(v => v.vendorClientId === 22);
+      expect(vendor22).toBeDefined();
+      expect(vendor22?.amountDue).toBe(200);
+    });
+
+    it("should prioritize dueDate age when dueDate exists", async () => {
+      // Arrange
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-02-20T12:00:00.000Z"));
+
+      vi.mocked(payablesService.listPayables).mockResolvedValue({
+        items: [
+          {
+            id: 201,
+            vendorClientId: 99,
+            vendorName: "Due Date Vendor",
+            amountDue: "300.00",
+            status: "DUE",
+            inventoryZeroAt: new Date("2026-02-19"), // 1 day ago
+            dueDate: new Date("2026-01-10"), // 41 days ago
+            createdAt: new Date("2026-01-01"),
+          },
+        ],
+        total: 1,
+      } as unknown as Awaited<ReturnType<typeof payablesService.listPayables>>);
+
+      // Act
+      const result = await caller.dashboard.getVendorsNeedingPayment({
+        limit: 10,
+        offset: 0,
+      });
+
+      // Assert
+      expect(result.total).toBe(1);
+      expect(result.data[0].vendorClientId).toBe(99);
+      expect(result.data[0].oldestDueDays).toBeGreaterThanOrEqual(40);
     });
   });
 

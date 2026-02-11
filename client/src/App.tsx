@@ -6,7 +6,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import DashboardV3 from "./pages/DashboardV3";
+import DashboardHomePage from "./pages/DashboardHomePage";
 // Legacy Inventory page removed - now using InventoryWorkSurface directly
 import ProductsPage from "@/pages/ProductsPage";
 import VendorsPage from "@/pages/VendorsPage";
@@ -165,10 +165,13 @@ function Router() {
           <ProtectedRoute>
             <AppShell>
               <Switch>
-                <Route path="/" component={withErrorBoundary(DashboardV3)} />
+                <Route
+                  path="/"
+                  component={withErrorBoundary(DashboardHomePage)}
+                />
                 <Route
                   path="/dashboard"
-                  component={withErrorBoundary(DashboardV3)}
+                  component={withErrorBoundary(DashboardHomePage)}
                 />
                 <Route
                   path="/inventory"
