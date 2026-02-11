@@ -15,10 +15,70 @@ export interface SchemaFingerprintCheckResult {
   complete: boolean;
   count: number;
   attempts: number;
+  checks: { key: string; passed: boolean }[];
+  missingChecks: string[];
   lastError?: string;
 }
 
-const FINGERPRINT_CANARY_COUNT = 7;
+const FINGERPRINT_CANARIES = [
+  {
+    key: "cron_leader_lock.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
+    )`,
+  },
+  {
+    key: "client_needs.strain_type.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'client_needs'
+        AND COLUMN_NAME = 'strain_type'
+    )`,
+  },
+  {
+    key: "products.nameCanonical.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'products'
+        AND COLUMN_NAME = 'nameCanonical'
+    )`,
+  },
+  {
+    key: "admin_impersonation_sessions.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
+    )`,
+  },
+  {
+    key: "feature_flags.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
+    )`,
+  },
+  {
+    key: "time_entries.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
+    )`,
+  },
+  {
+    key: "lots.supplier_client_id.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'lots'
+        AND COLUMN_NAME = 'supplier_client_id'
+    )`,
+  },
+] as const;
+
+const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
 
 async function runSchemaFingerprintCheck(
   dbConn: NonNullable<Awaited<ReturnType<typeof getDb>>>,
@@ -38,32 +98,23 @@ async function runSchemaFingerprintCheck(
         await dbConn.execute(sql`SELECT 1`);
       }
 
-      const [fpResult] = await dbConn.execute(sql`
-        SELECT COUNT(*) as cnt FROM (
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
-          UNION ALL
-          SELECT 1 FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_needs' AND COLUMN_NAME = 'strain_type'
-          UNION ALL
-          SELECT 1 FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_name'
-          UNION ALL
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
-          UNION ALL
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
-          UNION ALL
-          SELECT 1 FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
-          UNION ALL
-          SELECT 1 FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lots' AND COLUMN_NAME = 'supplier_client_id'
-        ) AS checks
-      `);
-      const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
-      const count = Number(row?.cnt ?? 0);
+      const checks = await Promise.all(
+        FINGERPRINT_CANARIES.map(async canary => {
+          const [result] = await dbConn.execute(
+            sql`SELECT ${canary.condition} AS passed`
+          );
+          const row = Array.isArray(result) ? result[0] : result;
+          return {
+            key: canary.key,
+            passed: Number(row?.passed ?? 0) === 1,
+          };
+        })
+      );
+
+      const count = checks.filter(check => check.passed).length;
+      const missingChecks = checks
+        .filter(check => !check.passed)
+        .map(check => check.key);
 
       if (count === FINGERPRINT_CANARY_COUNT) {
         if (typeof options.startTime === "number") {
@@ -76,16 +127,22 @@ async function runSchemaFingerprintCheck(
           complete: true,
           count,
           attempts: fpAttempt,
+          checks,
+          missingChecks: [],
         };
       }
 
       console.info(
-        `  ℹ️  Schema fingerprint: ${count}/${FINGERPRINT_CANARY_COUNT} canary checks passed - running full migrations`
+        `  ℹ️  Schema fingerprint: ${count}/${FINGERPRINT_CANARY_COUNT} canary checks passed; missing: ${missingChecks.join(
+          ", "
+        )}`
       );
       return {
         complete: false,
         count,
         attempts: fpAttempt,
+        checks,
+        missingChecks,
       };
     } catch (fpError) {
       lastError = fpError instanceof Error ? fpError.message : String(fpError);
@@ -107,6 +164,8 @@ async function runSchemaFingerprintCheck(
     complete: false,
     count: 0,
     attempts: retries,
+    checks: [],
+    missingChecks: [],
     lastError,
   };
 }
@@ -125,6 +184,8 @@ export async function checkSchemaFingerprint(
       complete: false,
       count: 0,
       attempts: 1,
+      checks: [],
+      missingChecks: [],
       lastError: "Database not available",
     };
   }

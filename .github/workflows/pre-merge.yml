@@ -174,12 +174,32 @@ jobs:
 
             const body = `# Pre-Merge Quality Gate\n\n${sections.join('\n\n---\n\n')}`;
 
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              body: body
-            });
+            const [ownerFromEnv, repoFromEnv] = (process.env.GITHUB_REPOSITORY || "").split("/");
+            const owner =
+              context.repo.owner ||
+              context.payload?.repository?.owner?.login ||
+              ownerFromEnv;
+            const repo =
+              context.repo.repo ||
+              context.repo.name ||
+              context.payload?.repository?.name ||
+              repoFromEnv;
+
+            if (!owner || !repo) {
+              core.warning("Skipping quality gate comment: unable to resolve owner/repo from workflow context.");
+              return;
+            }
+
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner,
+                repo,
+                body: body
+              });
+            } catch (error) {
+              core.warning(`Quality gate comment failed: ${error.message}`);
+            }
 
       # Block merge if security violations found
       - name: Block on Security Violations

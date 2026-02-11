@@ -27,6 +27,7 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           print_build_logs: "true"
           print_deploy_logs: "true"
+          app_spec_location: .do/app.preview.yaml
 
       - name: Comment on PR with preview URL
         uses: actions/github-script@v7
