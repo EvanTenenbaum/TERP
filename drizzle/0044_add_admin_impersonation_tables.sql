@@ -52,10 +52,10 @@ CREATE TABLE IF NOT EXISTS `admin_impersonation_actions` (
 --> statement-breakpoint
 
 -- Seed new permissions
-INSERT IGNORE INTO `permissions` (`name`, `description`, `module`, `created_at`, `updated_at`)
+INSERT IGNORE INTO `permissions` (`name`, `description`, `module`, `created_at`)
 VALUES 
-  ('admin:impersonate', 'Can impersonate clients in VIP portal with full audit logging', 'admin', NOW(), NOW()),
-  ('admin:impersonate:audit', 'Can view impersonation audit logs and session history', 'admin', NOW(), NOW());
+  ('admin:impersonate', 'Can impersonate clients in VIP portal with full audit logging', 'admin', NOW()),
+  ('admin:impersonate:audit', 'Can view impersonation audit logs and session history', 'admin', NOW());
 --> statement-breakpoint
 
 -- Assign permissions to Super Admin role
