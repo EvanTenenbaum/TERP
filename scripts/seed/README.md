@@ -18,6 +18,13 @@ pnpm seed:new --dry-run
 pnpm seed:new --size=small    # ~10 records per table
 pnpm seed:new --size=medium   # ~100 records per table (default)
 pnpm seed:new --size=large    # ~1000+ records per table
+
+# Complete seed including safe batch image backfill
+pnpm seed:new:complete
+
+# Preview/apply batch image backfill only
+pnpm seed:batch-images:safe
+pnpm seed:batch-images:apply
 ```
 
 ## Architecture
@@ -38,7 +45,8 @@ scripts/seed/
 │   ├── seed-batches.ts    # Batch seeder (depends on products, lots, vendors)
 │   ├── seed-orders.ts     # Order seeder (depends on clients, batches)
 │   ├── seed-invoices.ts   # Invoice seeder (depends on clients, orders)
-│   └── seed-payments.ts   # Payment seeder (depends on invoices, clients)
+│   ├── seed-payments.ts   # Payment seeder (depends on invoices, clients)
+│   └── seed-batch-images-safe.ts # Safe backfill for batch media in product_images
 └── README.md              # This documentation
 ```
 
@@ -76,6 +84,9 @@ scripts/seed/
 | `pnpm seed:new` | Seed all tables with default settings |
 | `pnpm seed:new:dry-run` | Preview seeding without executing |
 | `pnpm seed:new:rollback` | Rollback seeded data (Phase 2) |
+| `pnpm seed:new:complete` | Run canonical seed then safe batch image backfill |
+| `pnpm seed:batch-images:safe` | Dry-run preview for batch image backfill |
+| `pnpm seed:batch-images:apply` | Apply safe batch image backfill (`product_images`) |
 
 ### Options
 
@@ -97,6 +108,24 @@ scripts/seed/
 | `small` | ~10 | Quick testing, CI/CD |
 | `medium` | ~100 | Development (default) |
 | `large` | ~1000+ | Performance testing |
+
+## Media Seeding Canonical Path
+
+For inventory media completeness, run:
+
+1. `pnpm seed:new`
+2. `pnpm seed:batch-images:apply`
+
+Or run both in one command:
+
+```bash
+pnpm seed:new:complete
+```
+
+Notes:
+- `product_images` (batch-level media) is the canonical source for batch photography and catalog/media surfacing.
+- `productMedia` is legacy product-level fallback and should not be treated as the primary batch media source.
+- `seed-batch-images-safe.ts` is idempotent: it only fills batches that currently have zero `product_images` rows.
 
 ## Components
 
