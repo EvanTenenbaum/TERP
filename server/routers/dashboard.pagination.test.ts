@@ -500,6 +500,26 @@ describe("Dashboard Pagination (RF-002)", () => {
       expect(result.data[0].vendorClientId).toBe(99);
       expect(result.data[0].oldestDueDays).toBeGreaterThanOrEqual(40);
     });
+
+    it("should gracefully fallback when vendor_payables table is missing", async () => {
+      // Arrange
+      vi.mocked(payablesService.listPayables).mockRejectedValue({
+        code: "ER_NO_SUCH_TABLE",
+        message: "Table 'defaultdb.vendor_payables' doesn't exist",
+      });
+
+      // Act
+      const result = await caller.dashboard.getVendorsNeedingPayment({
+        limit: 10,
+        offset: 0,
+      });
+
+      // Assert
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.hasMore).toBe(false);
+      expect(payablesService.listPayables).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("pagination edge cases", () => {

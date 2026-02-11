@@ -5,6 +5,7 @@ import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
 import * as ordersDb from "../ordersDb";
 import * as payablesService from "../services/payablesService";
+import { getDb } from "../db";
 import { requirePermission } from "../_core/permissionMiddleware";
 import {
   fetchClientNamesMap,
@@ -12,8 +13,17 @@ import {
   calculateSalesComparison,
 } from "../dashboardHelpers";
 import { logger } from "../_core/logger";
-import type { Invoice, Payment } from "../../drizzle/schema";
+import {
+  batches,
+  clients,
+  lots,
+  paymentHistory,
+  sales as salesTable,
+  type Invoice,
+  type Payment,
+} from "../../drizzle/schema";
 import { subDays, differenceInDays } from "date-fns";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 // ============================================================================
 // Input Schema Constants
@@ -171,6 +181,190 @@ interface TotalDebtResponse {
   totalDebtOwedToMe: number;
   totalDebtIOwedToVendors: number;
   netPosition: number;
+}
+
+function isMissingTableError(
+  error: unknown,
+  tableHints: string[] = []
+): boolean {
+  const errorObj = error as Record<string, unknown> | null;
+  const code = String(errorObj?.code ?? errorObj?.errno ?? "");
+  const message = String(errorObj?.message ?? "").toLowerCase();
+
+  const missingTableSignal =
+    code === "1146" ||
+    code === "ER_NO_SUCH_TABLE" ||
+    message.includes("er_no_such_table") ||
+    (message.includes("table") &&
+      (message.includes("doesn't exist") ||
+        message.includes("does not exist")));
+
+  if (!missingTableSignal) return false;
+  if (tableHints.length === 0) return true;
+
+  return tableHints.some(hint => message.includes(hint.toLowerCase()));
+}
+
+/**
+ * Legacy fallback for environments where vendor_payables is not yet present.
+ * Uses existing sold-out consignment batches + sales + paymentHistory to infer
+ * vendors still owed money.
+ */
+async function getLegacyVendorsNeedingPayment(): Promise<
+  VendorNeedingPayment[]
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+
+  const soldOutRows = await db
+    .select({
+      batchId: batches.id,
+      vendorClientId: lots.supplierClientId,
+      vendorName: clients.name,
+      unitCogs: batches.unitCogs,
+      batchAmountPaid: batches.amountPaid,
+      batchUpdatedAt: batches.updatedAt,
+      batchCreatedAt: batches.createdAt,
+    })
+    .from(batches)
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
+    .where(
+      and(
+        sql`${batches.deletedAt} IS NULL`,
+        eq(batches.ownershipType, "CONSIGNED"),
+        sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) <= 0`,
+        sql`${lots.supplierClientId} IS NOT NULL`
+      )
+    );
+
+  if (!soldOutRows.length) {
+    return [];
+  }
+
+  const batchIds = soldOutRows.map(row => row.batchId);
+
+  const salesByBatch = new Map<
+    number,
+    { soldQty: number; lastSaleDate: Date | null }
+  >();
+  try {
+    const salesRows = await db
+      .select({
+        batchId: salesTable.batchId,
+        soldQty: sql<string>`COALESCE(SUM(CAST(${salesTable.quantity} AS DECIMAL(15,4))), 0)`,
+        lastSaleDate: sql<Date | null>`MAX(${salesTable.saleDate})`,
+      })
+      .from(salesTable)
+      .where(
+        and(
+          inArray(salesTable.batchId, batchIds),
+          sql`${salesTable.deletedAt} IS NULL`
+        )
+      )
+      .groupBy(salesTable.batchId);
+
+    salesRows.forEach(row => {
+      salesByBatch.set(Number(row.batchId), {
+        soldQty: Number(row.soldQty || 0),
+        lastSaleDate: row.lastSaleDate ? new Date(row.lastSaleDate) : null,
+      });
+    });
+  } catch (error) {
+    if (!isMissingTableError(error, ["sales"])) {
+      throw error;
+    }
+
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[Dashboard] sales table missing while computing legacy vendors needing payment"
+    );
+  }
+
+  const paymentsByBatchVendor = new Map<string, number>();
+  try {
+    const paymentRows = await db
+      .select({
+        batchId: paymentHistory.batchId,
+        vendorClientId: paymentHistory.vendorId,
+        amountPaid: sql<string>`COALESCE(SUM(CAST(${paymentHistory.amount} AS DECIMAL(15,2))), 0)`,
+      })
+      .from(paymentHistory)
+      .where(
+        and(
+          inArray(paymentHistory.batchId, batchIds),
+          sql`${paymentHistory.deletedAt} IS NULL`
+        )
+      )
+      .groupBy(paymentHistory.batchId, paymentHistory.vendorId);
+
+    paymentRows.forEach(row => {
+      const key = `${Number(row.batchId)}:${Number(row.vendorClientId)}`;
+      paymentsByBatchVendor.set(key, Number(row.amountPaid || 0));
+    });
+  } catch (error) {
+    if (!isMissingTableError(error, ["paymenthistory", "payment_history"])) {
+      throw error;
+    }
+
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[Dashboard] payment history table missing while computing legacy vendors needing payment"
+    );
+  }
+
+  const byVendor = soldOutRows.reduce(
+    (acc: Record<number, VendorNeedingPayment>, row) => {
+      const vendorClientId = Number(row.vendorClientId);
+      if (!vendorClientId) return acc;
+
+      const soldQty = salesByBatch.get(row.batchId)?.soldQty || 0;
+      if (soldQty <= 0) return acc;
+
+      const estimatedTotal = soldQty * Number(row.unitCogs || 0);
+      const paidKey = `${row.batchId}:${vendorClientId}`;
+      const historicalPaid =
+        paymentsByBatchVendor.get(paidKey) ?? Number(row.batchAmountPaid || 0);
+      const amountDue = Math.max(0, estimatedTotal - historicalPaid);
+      if (amountDue <= 0) return acc;
+
+      const referenceDate =
+        salesByBatch.get(row.batchId)?.lastSaleDate ||
+        (row.batchUpdatedAt ? new Date(row.batchUpdatedAt) : null) ||
+        (row.batchCreatedAt ? new Date(row.batchCreatedAt) : null) ||
+        now;
+      const dueDays = Math.max(0, differenceInDays(now, referenceDate));
+
+      if (!acc[vendorClientId]) {
+        acc[vendorClientId] = {
+          vendorClientId,
+          vendorName: row.vendorName || `Vendor ${vendorClientId}`,
+          amountDue: 0,
+          soldOutBatches: 0,
+          oldestDueDays: 0,
+        };
+      }
+
+      acc[vendorClientId].amountDue += amountDue;
+      acc[vendorClientId].soldOutBatches += 1;
+      acc[vendorClientId].oldestDueDays = Math.max(
+        acc[vendorClientId].oldestDueDays,
+        dueDays
+      );
+
+      return acc;
+    },
+    {}
+  );
+
+  return Object.values(byVendor).sort((a, b) => {
+    if (b.amountDue !== a.amountDue) {
+      return b.amountDue - a.amountDue;
+    }
+    return b.oldestDueDays - a.oldestDueDays;
+  });
 }
 
 export const dashboardRouter = router({
@@ -612,101 +806,116 @@ export const dashboardRouter = router({
     .input(paginationInputSchema)
     .query(
       async ({ input }): Promise<PaginatedResponse<VendorNeedingPayment>> => {
-        const pageSize = 500;
-        const payableItems: Array<{
-          vendorClientId: number;
-          vendorName?: string | null;
-          amountDue?: string | number | null;
-          inventoryZeroAt?: string | Date | null;
-          dueDate?: string | Date | null;
-          createdAt?: string | Date | null;
-        }> = [];
-        let totalPayables = 0;
-        let offset = 0;
+        let allData: VendorNeedingPayment[];
 
-        // Pull all payables pages so large datasets do not hide vendors.
-        do {
-          const page = await payablesService.listPayables({
-            status: ["DUE", "PARTIAL"],
-            limit: pageSize,
-            offset,
+        try {
+          const pageSize = 500;
+          const payableItems: Array<{
+            vendorClientId: number;
+            vendorName?: string | null;
+            amountDue?: string | number | null;
+            inventoryZeroAt?: string | Date | null;
+            dueDate?: string | Date | null;
+            createdAt?: string | Date | null;
+          }> = [];
+          let totalPayables = 0;
+          let offset = 0;
+
+          // Pull all payables pages so large datasets do not hide vendors.
+          do {
+            const page = await payablesService.listPayables({
+              status: ["DUE", "PARTIAL"],
+              limit: pageSize,
+              offset,
+            });
+
+            if (offset === 0) {
+              totalPayables = page.total || 0;
+            }
+
+            if (!page.items.length) {
+              break;
+            }
+
+            payableItems.push(...page.items);
+            offset += page.items.length;
+          } while (offset < totalPayables);
+
+          const now = new Date();
+
+          // Reduce payable rows to vendor-level risk rows.
+          const byVendor = payableItems
+            // Only keep unpaid payables tied to batches that actually hit zero.
+            .filter(item => Number(item.amountDue || 0) > 0)
+            .filter(item => Boolean(item.inventoryZeroAt))
+            .reduce(
+              (
+                acc: Record<number, VendorNeedingPayment>,
+                item: {
+                  vendorClientId: number;
+                  vendorName?: string | null;
+                  amountDue?: string | number | null;
+                  inventoryZeroAt?: string | Date | null;
+                  dueDate?: string | Date | null;
+                  createdAt?: string | Date | null;
+                }
+              ) => {
+                const vendorClientId = Number(item.vendorClientId);
+                if (!vendorClientId) return acc;
+
+                const rowAmountDue = Number(item.amountDue || 0);
+                const dueReferenceDate = item.dueDate
+                  ? new Date(item.dueDate)
+                  : item.inventoryZeroAt
+                    ? new Date(item.inventoryZeroAt)
+                    : item.createdAt
+                      ? new Date(item.createdAt)
+                      : now;
+                const daysDue = Math.max(
+                  0,
+                  differenceInDays(now, dueReferenceDate)
+                );
+
+                if (!acc[vendorClientId]) {
+                  acc[vendorClientId] = {
+                    vendorClientId,
+                    vendorName: item.vendorName || `Vendor ${vendorClientId}`,
+                    amountDue: 0,
+                    soldOutBatches: 0,
+                    oldestDueDays: 0,
+                  };
+                }
+
+                acc[vendorClientId].amountDue += rowAmountDue;
+                acc[vendorClientId].soldOutBatches += 1;
+                acc[vendorClientId].oldestDueDays = Math.max(
+                  acc[vendorClientId].oldestDueDays,
+                  daysDue
+                );
+
+                return acc;
+              },
+              {}
+            );
+
+          allData = Object.values(byVendor).sort((a, b) => {
+            if (b.amountDue !== a.amountDue) {
+              return b.amountDue - a.amountDue;
+            }
+            return b.oldestDueDays - a.oldestDueDays;
           });
-
-          if (offset === 0) {
-            totalPayables = page.total || 0;
+        } catch (error) {
+          if (!isMissingTableError(error, ["vendor_payables"])) {
+            throw error;
           }
 
-          if (!page.items.length) {
-            break;
-          }
-
-          payableItems.push(...page.items);
-          offset += page.items.length;
-        } while (offset < totalPayables);
-
-        const now = new Date();
-
-        // Reduce payable rows to vendor-level risk rows.
-        const byVendor = payableItems
-          // Only keep unpaid payables tied to batches that actually hit zero.
-          .filter(item => Number(item.amountDue || 0) > 0)
-          .filter(item => Boolean(item.inventoryZeroAt))
-          .reduce(
-            (
-              acc: Record<number, VendorNeedingPayment>,
-              item: {
-                vendorClientId: number;
-                vendorName?: string | null;
-                amountDue?: string | number | null;
-                inventoryZeroAt?: string | Date | null;
-                dueDate?: string | Date | null;
-                createdAt?: string | Date | null;
-              }
-            ) => {
-              const vendorClientId = Number(item.vendorClientId);
-              if (!vendorClientId) return acc;
-
-              const rowAmountDue = Number(item.amountDue || 0);
-              const dueReferenceDate = item.dueDate
-                ? new Date(item.dueDate)
-                : item.inventoryZeroAt
-                  ? new Date(item.inventoryZeroAt)
-                  : item.createdAt
-                    ? new Date(item.createdAt)
-                    : now;
-              const daysDue = Math.max(
-                0,
-                differenceInDays(now, dueReferenceDate)
-              );
-
-              if (!acc[vendorClientId]) {
-                acc[vendorClientId] = {
-                  vendorClientId,
-                  vendorName: item.vendorName || `Vendor ${vendorClientId}`,
-                  amountDue: 0,
-                  soldOutBatches: 0,
-                  oldestDueDays: 0,
-                };
-              }
-
-              acc[vendorClientId].amountDue += rowAmountDue;
-              acc[vendorClientId].soldOutBatches += 1;
-              acc[vendorClientId].oldestDueDays = Math.max(
-                acc[vendorClientId].oldestDueDays,
-                daysDue
-              );
-
-              return acc;
-            },
-            {}
+          logger.warn(
+            { error: error instanceof Error ? error.message : String(error) },
+            "[Dashboard] vendor_payables missing, using legacy vendors-needing-payment fallback"
           );
 
-        const allData = Object.values(byVendor).sort((a, b) => {
-          if (b.amountDue !== a.amountDue) {
-            return b.amountDue - a.amountDue;
-          }
-          return b.oldestDueDays - a.oldestDueDays;
-        });
+          allData = await getLegacyVendorsNeedingPayment();
+        }
 
         // Overwrite fallback names with canonical names where available.
         const vendorIds = allData.map(v => v.vendorClientId);

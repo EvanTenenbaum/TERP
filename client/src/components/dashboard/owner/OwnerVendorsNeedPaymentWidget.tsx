@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -25,11 +26,14 @@ interface VendorNeedingPaymentData {
 export const OwnerVendorsNeedPaymentWidget = memo(
   function OwnerVendorsNeedPaymentWidget() {
     const [, setLocation] = useLocation();
-    const { data: response, isLoading } =
-      trpc.dashboard.getVendorsNeedingPayment.useQuery(
-        {},
-        { refetchInterval: 60000 }
-      );
+    const {
+      data: response,
+      isLoading,
+      error,
+    } = trpc.dashboard.getVendorsNeedingPayment.useQuery(
+      {},
+      { refetchInterval: 60000 }
+    );
 
     const data = response?.data || [];
 
@@ -69,6 +73,13 @@ export const OwnerVendorsNeedPaymentWidget = memo(
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : error ? (
+            <EmptyState
+              variant="generic"
+              size="sm"
+              title="Unable to load vendor payment risk"
+              description="Please refresh to retry loading vendor payables"
+            />
           ) : data.length > 0 ? (
             <Table>
               <TableHeader>
