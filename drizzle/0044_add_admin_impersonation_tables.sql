@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS `admin_impersonation_sessions` (
   CONSTRAINT `fk_admin_imp_sessions_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_admin_imp_sessions_revoked_by` FOREIGN KEY (`revoked_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--> statement-breakpoint
 
 -- Create admin_impersonation_actions table
 CREATE TABLE IF NOT EXISTS `admin_impersonation_actions` (
@@ -48,12 +49,14 @@ CREATE TABLE IF NOT EXISTS `admin_impersonation_actions` (
   
   CONSTRAINT `fk_admin_imp_actions_session` FOREIGN KEY (`session_id`) REFERENCES `admin_impersonation_sessions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--> statement-breakpoint
 
 -- Seed new permissions
 INSERT IGNORE INTO `permissions` (`name`, `description`, `module`, `created_at`, `updated_at`)
 VALUES 
   ('admin:impersonate', 'Can impersonate clients in VIP portal with full audit logging', 'admin', NOW(), NOW()),
   ('admin:impersonate:audit', 'Can view impersonation audit logs and session history', 'admin', NOW(), NOW());
+--> statement-breakpoint
 
 -- Assign permissions to Super Admin role
 INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`, `created_at`)
