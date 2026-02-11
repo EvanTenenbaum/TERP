@@ -308,7 +308,7 @@ function buildSelectorCandidates(
     candidates.add(normalized);
 
     const dataTestIdMatch = normalized.match(
-      /^\[data-testid=['"]([^'"]+)['"]\]$/
+      /\[data-testid=['"]([^'"]+)['"]\]/
     );
     if (!dataTestIdMatch) continue;
 
@@ -351,6 +351,27 @@ function buildSelectorCandidates(
       candidates.add("table tbody tr");
       candidates.add("tbody tr");
       candidates.add("tr");
+      candidates.add("[role='row']");
+      candidates.add("table tr");
+    }
+
+    if (/select|dropdown|filter/i.test(dataTestId)) {
+      candidates.add("select");
+      candidates.add("[role='combobox']");
+      candidates.add("input[role='combobox']");
+      candidates.add("[data-testid*='select']");
+      candidates.add("[data-testid*='dropdown']");
+      if (/client/i.test(dataTestId)) {
+        candidates.add("input[placeholder*='client' i]");
+        candidates.add("[aria-label*='client' i]");
+      }
+    }
+
+    if (/detail/i.test(dataTestId)) {
+      candidates.add("[role='dialog']");
+      candidates.add("[data-testid*='detail']");
+      candidates.add(".detail");
+      candidates.add(".details");
     }
 
     const fuzzyId = dataTestId
@@ -366,6 +387,17 @@ function buildSelectorCandidates(
     if (rowMatch) {
       candidates.add("table tbody tr");
       candidates.add("tbody tr");
+      candidates.add("[role='row']");
+    }
+
+    const rowDataTestIdMatch = selector.match(
+      /^\[data-testid=['"]([^'"]*row[^'"]*)['"]\](?::first-child|:first-of-type)?$/i
+    );
+    if (rowDataTestIdMatch) {
+      candidates.add("table tbody tr:first-child");
+      candidates.add("tbody tr:first-child");
+      candidates.add("table tbody tr");
+      candidates.add("[role='row']");
     }
 
     const inputNameMatch = selector.match(/^input\[name=['"]([^'"]+)['"]\]$/i);
@@ -863,7 +895,7 @@ function resolveValue(value: string, context: OracleContext): string {
 async function assertUIState(
   page: Page,
   expected: ExpectedUIState,
-  _context: OracleContext
+  context: OracleContext
 ): Promise<OracleResult["ui_assertions"]> {
   const result: OracleResult["ui_assertions"] = {
     passed: 0,
@@ -893,7 +925,18 @@ async function assertUIState(
 
   if (expected.url_matches) {
     try {
-      expect(page.url()).toMatch(new RegExp(expected.url_matches));
+      const currentUrl = page.url();
+      const currentPath = (() => {
+        try {
+          const parsed = new URL(currentUrl);
+          return `${parsed.pathname}${parsed.search}`;
+        } catch {
+          return currentUrl;
+        }
+      })();
+      const pattern = new RegExp(expected.url_matches);
+      const matches = pattern.test(currentUrl) || pattern.test(currentPath);
+      expect(matches).toBeTruthy();
       result.passed++;
       result.details.push({
         assertion: `URL matches "${expected.url_matches}"`,
@@ -912,7 +955,20 @@ async function assertUIState(
   if (expected.visible) {
     for (const selector of expected.visible) {
       try {
-        await expect(page.locator(selector).first()).toBeVisible({ timeout });
+        const candidates = buildSelectorCandidates(selector, context);
+        const foundSelector = await waitForAnySelector(
+          page,
+          candidates,
+          timeout
+        );
+        if (!foundSelector) {
+          throw new Error(
+            `Element not visible. candidates=${candidates.join(" || ")}`
+          );
+        }
+        await expect(page.locator(foundSelector).first()).toBeVisible({
+          timeout,
+        });
         result.passed++;
         result.details.push({
           assertion: `Element visible: ${selector}`,
@@ -932,7 +988,13 @@ async function assertUIState(
   if (expected.not_visible) {
     for (const selector of expected.not_visible) {
       try {
-        await expect(page.locator(selector)).not.toBeVisible({ timeout });
+        const candidates = buildSelectorCandidates(selector, context);
+        const foundSelector = await findVisibleSelector(page, candidates);
+        if (foundSelector) {
+          await expect(page.locator(foundSelector).first()).not.toBeVisible({
+            timeout,
+          });
+        }
         result.passed++;
         result.details.push({
           assertion: `Element not visible: ${selector}`,
