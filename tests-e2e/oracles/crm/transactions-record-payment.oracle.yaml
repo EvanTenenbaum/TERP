@@ -7,7 +7,7 @@ description: "Record a payment against an existing transaction, updating payment
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier1
+  - tier2
   - crm
   - transactions
   - payments

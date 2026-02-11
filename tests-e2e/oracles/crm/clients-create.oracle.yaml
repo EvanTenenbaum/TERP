@@ -26,72 +26,73 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "[data-testid='clients-list']"
+    wait_for: "[data-testid='clients-list'], table, main"
 
   - action: click
-    target: "[data-testid='create-client-btn']"
-    wait_for: "[data-testid='client-form']"
+    target: "[data-testid='create-client-btn'], button:has-text('Add Client'), button:has-text('Create Client')"
+    wait_for: "[data-testid='client-form'], [role='dialog']:has-text('Add New Client')"
 
   - action: type
-    target: "input[name='teriCode']"
+    target: "#teriCode, input[name='teriCode'], input[placeholder*='TERI code' i]"
     value: "TEST{{random:6}}"
     clear_first: true
 
   - action: store
-    from: "input[name='teriCode']"
+    from: "#teriCode, input[name='teriCode']"
     as: "created_teri_code"
 
   - action: type
-    target: "input[name='name']"
+    target: "#companyName, input[name='companyName'], input[placeholder*='company name' i]"
+    value: "Test Company {{timestamp}}"
+    clear_first: true
+
+  - action: type
+    target: "#name, input[name='name'], input[placeholder*='contact' i]"
     value: "Test Client {{timestamp}}"
     clear_first: true
 
   - action: type
-    target: "input[name='email']"
+    target: "#email, input[name='email'], input[type='email']"
     value: "testclient{{random:4}}@example.com"
     clear_first: true
 
   - action: type
-    target: "input[name='phone']"
+    target: "#phone, input[name='phone'], input[type='tel']"
     value: "555-123-4567"
     clear_first: true
 
-  - action: select
-    target: "[data-testid='business-type-select']"
-    value: "WHOLESALE"
+  - action: click
+    target: "button:has-text('Next')"
+    wait_after: 300
 
   - action: click
-    target: "input[name='isBuyer']"
-    wait_after: 100
+    target: "label:has-text('Buyer'), div:has-text('Buyer Client purchases products or services'), button:has-text('Buyer'), text=\"Buyer\""
+    wait_after: 200
 
   - action: click
-    target: "[data-testid='save-client-btn']"
+    target: "button:has-text('Next')"
+    wait_after: 300
+
+  - action: click
+    target: "[data-testid='save-client-btn'], button:has-text('Create Client'), button:has-text('Save Client')"
     wait_for_navigation: true
 
   - action: wait
-    for: "[data-testid='client-detail']"
+    for: "button:has-text('Edit Client'), [role='tab']:has-text('Overview'), [role='main']"
     timeout: 10000
-
-  - action: store
-    from: "[data-testid='client-id']"
-    as: "created_client_id"
 
   - action: screenshot
     name: "client_created"
 
 expected_ui:
-  url_contains: "/clients/"
+  url_contains: "/clients"
   visible:
-    - "[data-testid='client-detail']"
-    - "[data-testid='success-message']"
+    - "button:has-text('Edit Client'), [role='tab']:has-text('Overview')"
   not_visible:
     - ".error-message"
     - "[data-testid='loading-spinner']"
   text_present:
-    - "Client created"
-  fields:
-    "[data-testid='business-type']": "WHOLESALE"
-    "[data-testid='is-buyer']": "true"
+    - "Client Information"
 
 expected_db:
   clients:

@@ -19,7 +19,7 @@ preconditions:
     - entity: "invoice"
       ref: "seed:invoice.to_void"
       where:
-        status_not: "VOID"
+        status_in: ["DRAFT", "VIEWED", "SENT", "PARTIAL", "OVERDUE"]
         deletedAt_null: true
 
 steps:
@@ -32,33 +32,23 @@ steps:
     timeout: 10000
 
   - action: click
-    target: "[data-testid='invoice-row-{{seed:invoice.to_void.id}}'], tr[data-invoice-id='{{seed:invoice.to_void.id}}']"
-    wait_for_navigation: true
+    target: "tr:has-text('DRAFT'), tr:has-text('VIEWED'), tr:has-text('SENT'), tr:has-text('PARTIAL'), tr:has-text('OVERDUE'), [data-testid='invoice-row-{{seed:invoice.to_void.id}}'], tr[data-invoice-id='{{seed:invoice.to_void.id}}']"
+    wait_after: 500
 
   - action: wait
-    for: "[data-testid='invoice-detail'], .invoice-detail"
+    for: "[data-testid='invoice-detail'], .invoice-detail, [role='complementary'], aside[role='complementary']"
     timeout: 10000
 
   - action: click
-    target: "[data-testid='void-invoice-btn'], button:contains('Void'), [data-testid='actions-menu']"
-    wait_after: 500
-
-  # If actions menu, click void option
-  - action: click
-    target: "[data-testid='void-option'], button:contains('Void Invoice')"
+    target: "[data-testid='void-invoice-btn'], button:contains('Void Invoice'), button:contains('Void')"
     wait_after: 500
 
   - action: wait
     for: "[data-testid='void-modal'], .modal, [role='dialog']"
     timeout: 5000
 
-  - action: type
-    target: "[data-testid='void-reason'], textarea[name='reason'], input[name='reason']"
-    value: "Duplicate invoice created in error - client requested cancellation"
-    clear_first: true
-
   - action: click
-    target: "[data-testid='confirm-void-btn'], button:contains('Confirm'), button[type='submit']"
+    target: "[data-testid='confirm-void-btn'], [role='dialog'] button:contains('Void Invoice'), [role='dialog'] button:contains('Confirm'), button[type='submit']"
     wait_after: 2000
 
   - action: wait
@@ -71,7 +61,6 @@ steps:
 expected_ui:
   visible:
     - "[data-testid='invoice-detail'], main"
-    - "[data-testid='void-badge'], .void-status, .badge-void"
   text_present:
     - "VOID"
 

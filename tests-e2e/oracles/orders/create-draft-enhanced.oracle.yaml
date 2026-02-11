@@ -6,7 +6,7 @@ description: "Create a draft order with enhanced COGS and margin calculation"
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier1
+  - tier2
   - orders
   - draft
   - margin

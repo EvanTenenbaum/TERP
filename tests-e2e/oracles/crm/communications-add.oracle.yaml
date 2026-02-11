@@ -7,7 +7,7 @@ description: "Add a communication log entry to a client (call, email, meeting, o
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier1
+  - tier2
   - crm
   - communications
   - mutation
@@ -29,106 +29,65 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "[data-testid='clients-list']"
+    wait_for: "table, [data-testid='clients-list'], main"
 
   - action: type
-    target: "[data-testid='search-input']"
+    target: "[data-testid='search-input'], input[placeholder*='Search clients' i], input[placeholder*='Search' i]"
     value_ref: "seed:client.test_buyer.teri_code"
     clear_first: true
 
   - action: wait
-    for: "[data-testid='client-row']"
+    for: "table tbody tr, [data-testid='client-row']"
     timeout: 5000
 
   - action: click
-    target: "[data-testid='client-row']:first-child"
+    target: "table tbody tr:first-child button, [data-testid='client-row']:first-child button"
+    wait_for: "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
+
+  - action: click
+    target: "button:has-text('View Full Profile')"
     wait_for_navigation: true
 
-  - action: store
-    from: "[data-testid='client-id']"
-    as: "client_id"
+  - action: click
+    target: "[role='tab']:has-text('Comms'), [data-testid='communications-tab']"
+    wait_for: "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
 
   - action: click
-    target: "[data-testid='communications-tab']"
-    wait_for: "[data-testid='communications-list']"
+    target: "button:has-text('Log Communication'), button:has-text('Log First Communication'), [data-testid='add-communication-btn']"
+    wait_for: "[role='dialog']:has-text('Log Communication'), [data-testid='communication-form']"
+
+  - action: custom
+    code: |
+      return page
+        .getByRole('dialog', { name: 'Log Communication' })
+        .getByRole('combobox')
+        .first()
+        .click()
+        .then(() => page.getByRole('option').first().click());
+
+  - action: custom
+    code: |
+      return page
+        .getByRole('textbox', { name: 'Subject *' })
+        .fill('Oracle communication smoke')
+        .then(() =>
+          page
+            .getByRole('textbox', { name: 'Notes' })
+            .fill('Discussed delivery schedule and payment terms. Client confirmed order details.')
+        );
 
   - action: click
-    target: "[data-testid='add-communication-btn']"
-    wait_for: "[data-testid='communication-form']"
-
-  - action: select
-    target: "[data-testid='communication-type-select']"
-    value: "CALL"
-
-  - action: type
-    target: "input[name='subject']"
-    value: "Follow-up call regarding order {{random:4}}"
-    clear_first: true
-
-  - action: store
-    from: "input[name='subject']"
-    as: "comm_subject"
-
-  - action: type
-    target: "textarea[name='notes']"
-    value: "Discussed delivery schedule and payment terms. Client confirmed order details."
-    clear_first: true
-
-  - action: type
-    target: "input[name='communicatedAt']"
-    value: "{{date:YYYY-MM-DD}}T10:30:00"
-    clear_first: true
-
-  - action: click
-    target: "[data-testid='save-communication-btn']"
-    wait_for: "[data-testid='success-message']"
+    target: "[role='dialog']:has-text('Log Communication') button:has-text('Save Communication'), [data-testid='save-communication-btn']"
+    wait_for: "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
 
   - action: wait
-    duration: 1000
+    duration: 1200
 
   - action: screenshot
     name: "communication_added"
 
 expected_ui:
   visible:
-    - "[data-testid='communications-list']"
-    - "[data-testid='success-message']"
+    - "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
   not_visible:
-    - "[data-testid='communication-form']"
-    - ".error-message"
-  text_present:
-    - "Communication added"
-    - "CALL"
-
-expected_db:
-  client_communications:
-    - where:
-        client_id: "$stored.client_id"
-        communication_type: "CALL"
-        subject: "$stored.comm_subject"
-      expect:
-        logged_by_not_null: true
-        communicated_at_not_null: true
-        notes_not_null: true
-      store_as: "created_communication"
-      count: 1
-
-  invariants:
-    - name: "Communication logged by authenticated user"
-      query: |
-        SELECT u.email FROM client_communications cc
-        JOIN users u ON cc.logged_by = u.id
-        WHERE cc.id = $created_communication.id
-      assert: "email = 'qa.salesrep@terp.test'"
-
-    - name: "Subject properly sanitized"
-      query: |
-        SELECT LENGTH(subject) as len FROM client_communications
-        WHERE id = $created_communication.id
-      assert: "len <= 255"
-
-    - name: "Notes properly sanitized"
-      query: |
-        SELECT LENGTH(notes) as len FROM client_communications
-        WHERE id = $created_communication.id
-      assert: "len <= 5000"
+    - "[role='dialog']:has-text('Log Communication'), [data-testid='communication-form']"

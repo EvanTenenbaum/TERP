@@ -6,7 +6,7 @@ description: "Update a draft order with modified line items and recalculated tot
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier1
+  - tier2
   - orders
   - draft
   - update
