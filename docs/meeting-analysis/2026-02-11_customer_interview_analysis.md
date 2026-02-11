@@ -1,4 +1,4 @@
-# TERP Customer Interview: Master Analysis
+# TERP Customer Interview: Master Analysis (V2)
 
 ## Introduction
 
@@ -212,282 +212,410 @@ The speaker's mental model is centered around speed and efficiency. They want to
     *   Fix all identified broken buttons and links.
     *   Fix the bug where clicking "Markup" closes the modal.
     *   Default intake forms to "Consignment" and "Main Warehouse".
-    *   Enable tabbing between fields on the intake form.
+    *   Enable tabbing between fields in the intake form.
 
 #### Phase 2: Core Workflow Enhancements (2-4 weeks)
 
-*   **Goal:** Improve the efficiency of the core sales and inventory workflows.
+*   **Goal:** Streamline the core sales and inventory workflows to improve user efficiency.
 *   **Tasks:**
     *   Add quick links to the sidebar.
-    *   Implement the "Quick Sale" button.
+    *   Allow the sidebar to be collapsed.
+    *   Improve search functionality.
     *   Allow inline editing in the sales view.
     *   Add quick filters to the sales view.
-    *   Allow hiding the sidebar.
-    *   Implement the ability to hide margin/profit information.
+    *   Hide margin/profit information from the customer view.
 
 #### Phase 3: New Feature Implementation (4-6 weeks)
 
 *   **Goal:** Introduce new features that address key user needs and provide significant new capabilities.
 *   **Tasks:**
-    *   Implement FIFO inventory management.
+    *   Implement a "Quick Sale" button.
+    *   Implement FIFO inventory.
     *   Consolidate the "Add Product" and "Add Batch" workflows.
-    *   Implement strain validation with a quick-create option.
-    *   Create the "Quick View"/"Draft" feature for saving filter sets.
+    *   Implement strain validation.
+    *   Create a "Quick View"/"Draft" feature for saving filter sets.
 
 #### Phase 4: Deprioritized & Future Considerations (Ongoing)
 
 *   **Goal:** Address lower-priority items and consider future enhancements.
 *   **Tasks:**
     *   Remove the "Comments" feature.
-    *   Continuously monitor user feedback for new feature requests and enhancement opportunities.
+    *   Investigate and address any remaining minor bugs or UI inconsistencies.
 
 ### New Features vs. Enhancements to Existing Components
 
-| Type         | Feature                                                                 |
-| ------------ | ----------------------------------------------------------------------- |
-| **New**      | "Quick Sale" button                                                     |
-|              | FIFO inventory management                                               |
-|              | Strain validation with quick-create                                     |
-|              | "Quick View"/"Draft" for saving filter sets                           |
-| **Enhancement** | Rename "Orders" to "Sales"                                              |
-|              | Add quick links to the sidebar                                          |
-|              | Allow hiding the sidebar                                                |
-|              | Improve search functionality                                            |
-|              | Allow inline editing in the sales view                                  |
-|              | Add quick filters to the sales view                                     |
-|              | Add ability to hide margin/profit information                           |
-|              | Standardize filtering across all browsing views                         |
-|              | Consolidate "Add Product" and "Add Batch" into a single intake flow     |
-|              | Default intake to "Consignment" and "Main Warehouse"                  |
-|              | Allow tabbing between intake fields                                     |
+| Type         | Feature                                       | Component/Area to be Modified                                     |
+|--------------|-----------------------------------------------|-------------------------------------------------------------------|
+| New          | Sidebar Quick Links                           | `navigation.ts`, Sidebar component                                |
+| New          | Collapsible Sidebar                           | Sidebar component, main layout component                          |
+| New          | Price Range Filter                            | `AdvancedFilters` component, sales view                           |
+| New          | Click-to-Select Input Fields                  | Global CSS or a new input component                               |
+| New          | Clear Discount Button                         | Sales view, discount component                                    |
+| New          | FIFO Inventory                                | Inventory management logic, batch processing                      |
+| New          | Save Button (Sales)                           | Sales creation view                                               |
+| New          | Undo/Edit Actions                             | Sales view, state management                                      |
+| New          | Quote Workflow                                | Sales creation view, order processing logic                       |
+| New          | Sales Sheet to Quote Conversion               | `SalesSheetCreatorPage`, quote creation logic                     |
+| New          | Smart Search (Intake)                         | Intake view, search component                                     |
+| New          | Create Vendor from Intake                     | Intake view, vendor creation modal/form                           |
+| New          | Multiple Pre-filled Rows in Intake            | Intake view                                                       |
+| Enhancement  | Rename "Orders" to "Sales"                    | `navigation.ts`, all pages/components using the term "Orders"     |
+| Enhancement  | Inline Editing (Quantity & Order Limit)       | Sales creation view, line item component                          |
+| Enhancement  | Quick Filters (Category/Subcategory)          | `AdvancedFilters` component, sales view                           |
+| Enhancement  | Hide Margin Toggle                            | `OrganizationSettings`, sales view                                |
+| Enhancement  | Layout Reorganization (Sales)                 | Sales creation view                                               |
+| Enhancement  | Customer View (Hide Margin/Profit)            | Customer-facing views, order preview component                    |
+| Enhancement  | Discount Default to Dollar                    | Sales view, discount component                                    |
+| Enhancement  | Editable Confirmed Sales                      | Sales view, order processing logic                                |
+| Enhancement  | Distribution Editing                          | Distribution component                                            |
+| Enhancement  | Standardized Filtering                        | All browsing views, `AdvancedFilters` component                   |
+| Enhancement  | Auto-Apply Pricing Rules                      | `PricingRulesPage`, sales creation view                           |
+| Enhancement  | Sales Sheet Redesign                          | `SalesSheetCreatorPage`                                           |
+| Enhancement  | Default Intake Type to Assignment             | Intake view                                                       |
+| Enhancement  | Consolidate Add Batch + Product               | `Add Product` and `Add Batch` flows, intake view                  |
+| Enhancement  | Default Location to Main                      | Intake view                                                       |
+| Enhancement  | Combine Strain + Product Name                 | Intake view, product creation form                                |
+| Enhancement  | Subcategory Priority                          | Intake view, product creation form                                |
+| Enhancement  | Default Payment Terms to Consignment          | Intake view                                                       |
+| Bug Fix      | Whole Unit Increment                          | Quantity input component                                          |
+| Bug Fix      | Discount Type Toggle Bug                      | Discount component                                                |
+| Bug Fix      | Markup Button Bug                             | Markup modal                                                      |
+| Bug Fix      | Estimated Profit Calculation Bug              | Order preview component, calculation logic                        |
 
 ## Part 3: UX/UI Design Recommendations
 
 ### Core Design Principles (derived from customer feedback)
 
-*   **Efficiency First:** The primary goal of the UI should be to enable users to complete tasks as quickly and with as few clicks as possible. This means prioritizing keyboard shortcuts, inline editing, and streamlined workflows over visually complex or multi-step processes.
-*   **Clarity and Consistency:** The language and design patterns used throughout the application should be consistent and unambiguous. This includes consistent terminology (e.g., "Sales" instead of "Orders"), predictable placement of UI elements, and clear visual hierarchy.
-*   **Information on Demand:** While the user wants access to a lot of data, it should be presented in a way that is not overwhelming. This means using techniques like progressive disclosure (e.g., expandable sections, modals for detailed views) and allowing the user to customize the information they see (e.g., hiding margin information).
-*   **Empower the User:** The application should empower users to make their own decisions by providing them with clear, accurate, and actionable data. The UI should not attempt to make decisions for the user or hide information that could be relevant to their workflow.
+*   **Speed and Efficiency are Paramount:** The user consistently emphasizes the need for speed and efficiency. They want to move quickly through the application, with clear and consistent workflows. The design should prioritize reducing clicks, consolidating related functionality, and providing clear, actionable data without unnecessary clutter.
+*   **Consistency is Key:** The user is frustrated by inconsistent terminology and workflows. The design should strive for consistency across the application, using the same language and patterns for similar actions.
+*   **Clarity and Simplicity:** The user is overwhelmed by the amount of information on the screen. The design should prioritize clarity and simplicity, presenting only the most relevant information by default and allowing the user to drill down for more details if needed.
+*   **Empower the User:** The user is a power user who wants to be in control. The design should empower the user to make their own decisions, providing them with the information they need to do so effectively. Avoid making assumptions or hiding information from the user.
 
 ### Specific Layout/Naming/Simplification Recommendations
 
-*   **Layout:**
-    *   Implement a persistent sidebar with quick links to the most frequently used sections of the application (Dashboard, New Sale, New Intake, Clients).
-    *   Allow the user to collapse the sidebar to maximize the content area.
-    *   In the sales view, consider moving the line items to a more prominent position (e.g., a right-hand panel) to keep them in view while browsing products.
-    *   The order preview should be automatically minimized to reduce visual clutter, with the option to expand it for more detail.
-
-*   **Naming:**
-    *   Standardize on the term "Sales" instead of "Orders" throughout the application.
-    *   Simplify the concept of "Quotes" and "Sale Drafts" into a single "Quote" entity that can be converted into a sale.
-
-*   **Simplification:**
-    *   Consolidate the "Add Product" and "Add Batch" workflows into a single, streamlined intake process.
-    *   Remove the "Comments" feature, as it is not being used and adds unnecessary complexity.
-    *   Implement a "smart search" feature that provides more relevant and powerful search capabilities.
-    *   Enable inline editing for key fields like quantity and order limit to reduce the need for modal dialogs.
+*   **Rename "Orders" to "Sales":** The user is adamant that the term "Orders" is confusing and should be replaced with "Sales" throughout the application.
+*   **Consolidate "Add Product" and "Add Batch":** The user wants to consolidate the "Add Product" and "Add Batch" workflows into a single, streamlined intake process.
+*   **Redesign the Sales Sheet:** The user wants to redesign the sales sheet to show available stock, not draft orders. The sales sheet should include the product name, vendor, price, and quantity.
+*   **Redesign the Sales Creation View:** The user wants to redesign the sales creation view to have the line items on the right, the product browsing as the main area, and the order preview below.
+*   **Simplify the Intake Form:** The user wants to simplify the intake form by combining the strain and product name fields, prioritizing the subcategory over the category, and defaulting the location to the main warehouse.
 
 ### What NOT to Build
 
-*   **AI/Recommendation Engines:** The user has explicitly stated that they do not want the system to make decisions for them. Avoid features like "Focus Items," "Needs Attention" badges, or any other system-generated priorities.
-*   **Unnecessary Clicks:** Any feature that adds extra steps or clicks to a core workflow should be carefully evaluated and likely avoided.
-*   **Overly Complex UI:** The UI should be as simple and intuitive as possible. Avoid adding features or UI elements that are not essential to the user's workflow.
+*   **No AI/Recommendation Engines:** The user explicitly states that they do not want AI or recommendation engines. They want the data presented clearly so they can make their own decisions. No "Focus Items," no "Needs Attention" badges, no system-generated priorities.
+*   **No Unnecessary Features:** The user is focused on the core tasks of creating sales, managing inventory, and generating reports. The design should avoid adding unnecessary features that would clutter the interface and distract from these core tasks.
 
 ## Part 4: Open Questions
 
 ### Unresolved threads and ambiguities needing follow-up
 
-*   **Next Page after Quote/Sale Creation:** The speaker was unsure about the page that should be displayed after creating a quote or sale. This needs to be defined to ensure a seamless user flow. `[14:30.8 - 14:34.8]` "I don't really know what the next page is so we need to sort that out."
-*   **Location of Saved Notes:** The speaker was unsure where notes are being saved in the system. This needs to be investigated to ensure that notes are being stored and can be retrieved when needed. `[27:28.2 - 27:33.2]` "Figure out where these notes are saved."
+*   `[14:30.8 - 14:34.8]` "I don't really know what the next page is so we need to sort that out." - This refers to the page after a quote is saved. The user is unsure of the expected workflow.
+*   `[27:28.2 - 27:33.2]` "Figure out where these notes are saved." - The user is unsure where the notes in the direct intake form are saved and if they are accessible later.
 
 ## Appendix A: Full Verbatim Transcript (timestamped, speaker-labeled)
 
-**Speaker Key:**
-*   **Dev:** The developer/product owner providing feedback.
-
-```
-[00:00.0 - 00:15.8] Dev: Okay, so first off, this doesn't actually search anything, this just takes us to search
-[00:15.8 - 00:30.8] Dev: this, it needs to be the same power as, or this needs to have the same power as this.
-[00:30.8 - 00:38.6] Dev: Get rid of comments, both for dashboard and anywhere else, it needs to be completely removed
-[00:38.6 - 00:50.3] Dev: from the system.
-[00:50.3 - 01:04.7] Dev: This sidebar should have above the sales, inventory, all the buckets, should just have
-[01:04.7 - 01:09.7] Dev: some quick links that are always visible.
-[01:09.7 - 01:25.1] Dev: One should be dashboard, two should be new sale, three should be new intake, four should
-[01:25.1 - 01:28.6] Dev: be clients.
-[01:28.6 - 01:58.6] Dev: New sale should take you to this, I guess, mm-hmm, no, this is for intake, nevermind,
-[01:58.6 - 02:06.4] Dev: this is for sales.
-[02:06.4 - 02:23.7] Dev: So orders needs to get changed to sales, all the terminology, and order is actually a sale.
-[02:23.7 - 02:27.0] Dev: So let's dig into just this, first of all, there should be orders here because there's
-[02:27.0 - 02:31.4] Dev: other data through the system, let's figure out whether that's just something wonky with
-[02:31.4 - 02:46.0] Dev: the data seeding or whether there's actually a wiring issue with the data.
-[02:46.0 - 03:10.0] Dev: The quick new sale should just bump immediately to here.
-[03:10.0 - 03:25.0] Dev: This needs to be editable in line right here in terms of how much they're getting.
-[03:25.0 - 03:37.2] Dev: Order limit needs to be quickly editable from here.
-[03:37.2 - 04:02.5] Dev: Category needs to have quick filters for category slash subcategory.
-[04:02.5 - 04:24.0] Dev: Basically all of these things, stock, price, it should be a price range, okay, when I
-[04:24.0 - 04:36.2] Dev: click here, it should select the whole thing, I don't want to have to just click in here.
-[04:36.2 - 05:03.5] Dev: This should add by whole units, when I click up, not by points, great.
-[05:03.5 - 05:24.9] Dev: There should be an ability to, maybe right here, quickly hide margin.
-[05:24.9 - 05:52.9] Dev: This is doubled up, so actually we just won't, I want ... There's too many things going on
-[06:23.9 - 06:24.9] Dev: right here.
-[06:24.9 - 06:44.8] Dev: Then we should have this below here along with order preview under this, which should
-[06:44.8 - 06:54.4] Dev: be automatically minimized, but then if they want, you should be able to expand it.
-[06:54.4 - 06:58.2] Dev: If this truly is order preview, the customer should definitely not be seeing any margin
-[06:58.2 - 07:23.3] Dev: here, or estimated profit.
-[07:23.3 - 07:30.8] Dev: This should automatically default to dollar, not percent, and I should be able to select
-[07:30.8 - 07:31.8] Dev: between the two.
-[07:31.8 - 07:32.8] Dev: Doesn't work right now.
-[07:32.8 - 07:55.8] Dev: I should be able to quickly clear it too.
-[08:25.8 - 08:43.6] Dev: Probably possible, because there should never be a product that has, that is the exact same
-[08:43.6 - 09:03.0] Dev: product name between two batches.
-[09:03.0 - 09:27.0] Dev: It should always default to FIFO.
-[09:57.0 - 10:16.0] Dev: Okay.
-[10:16.0 - 10:17.0] Dev: Seems like ...
-[10:18.0 - 10:19.0] Dev: Okay.
-[10:19.0 - 10:28.0] Dev: This should have a save button of some sort.
-[10:28.0 - 10:29.0] Dev: Okay.
-[10:29.0 - 10:30.0] Dev: That's also a bug.
-[10:30.0 - 10:31.0] Dev: When I click markup, it closes everything.
-[10:31.0 - 10:32.0] Dev: Yeah.
-[10:36.8 - 10:52.8] Dev: I like that this is floating though, that's cool.
-[10:52.8 - 11:05.8] Dev: AI again, this is what they're going to see, they definitely should not be able to see
-[11:05.8 - 11:12.8] Dev: they definitely should not be seeing any sort of information about the markups or a spending
-[11:12.8 - 11:13.8] Dev: profit.
-[11:13.8 - 11:15.8] Dev: profit.
-[11:44.8 - 11:54.8] Dev: Didn't really change anything related to the estimated profit I think, there's some sort of calculation wonkiness happening there.
-[12:04.8 - 12:08.8] Dev: I need to be able to hide the sidebar to get a bigger view of this.
-[12:13.8 - 12:26.8] Dev: So yeah again, the line items should be on the right, everything else underneath in the line items should be small enough that the main section is this basically.
-[12:43.8 - 13:09.8] Dev: You should be able to undo this, edit it, whatever.
-[13:09.8 - 13:12.8] Dev: Oh, that didn't work.
-[13:12.8 - 13:14.8] Dev: That needs to get fixed.
-[13:26.8 - 13:28.8] Dev: That didn't work either.
-[13:36.8 - 13:37.8] Dev: That didn't work either.
-[13:40.8 - 13:59.8] Dev: I think everything created here basically should just be treated as a quote.
-[14:00.8 - 14:08.8] Dev: No, let's get rid of the idea of quote and instead just have a sales draft.
-[14:08.8 - 14:12.8] Dev: Or no, nevermind, take that back.
-[14:22.8 - 14:23.8] Dev: Yeah.
-[14:30.8 - 14:34.8] Dev: I don't really know what the next page is so we need to sort that out.
-[14:46.8 - 14:52.8] Dev: This is also not correct, saving it as a quote should not finalize it as an order.
-[14:52.8 - 15:14.8] Dev: It should go, let's see, create this and you can either save it as a quote.
-[15:22.8 - 15:47.8] Dev: Let's just simplify it and have it basically just be sale.
-[15:52.8 - 16:03.8] Dev: It should just be a quote.
-[16:03.8 - 16:17.8] Dev: Everything created here is a quote until you click confirm and that is when it turns into an actual sale.
-[16:17.8 - 16:22.8] Dev: You should be able to go back and edit the sales.
-[16:22.8 - 16:25.8] Dev: Quotes you can save.
-[16:25.8 - 16:31.8] Dev: Let's get rid of like sales, a sale draft instead.
-[16:31.8 - 16:33.8] Dev: Quote should just take that place.
-[16:38.8 - 16:40.8] Dev: All right, that doesn't work.
-[16:42.8 - 16:44.8] Dev: We need to fix that.
-[16:48.8 - 16:56.8] Dev: You should also be able to click into a distribution here as well as edit this in line.
-[16:56.8 - 17:18.8] Dev: Or yeah, change this to like percentage by order, dollar value per order or a dollar value per unit sold.
-[17:27.8 - 17:31.8] Dev: Sale sheet.
-[17:37.8 - 17:50.8] Dev: Again, this needs to have the same standardized, much better filtering across everything that has browsing like this.
-[17:56.8 - 18:25.8] Dev: Okay, so this should, client should automatically pull up their pricing rules.
-[18:27.8 - 18:48.8] Dev: Same with sales too, you immediately pull up their pricing rules to change what the retail price is that it's showing here.
-[18:48.8 - 18:54.8] Dev: Okay, so you can do it like that, but that's, yeah, wonky.
-[18:55.8 - 19:08.8] Dev: Um, yeah, that needs to get sorted out so we can basically change the markup.
-[19:08.8 - 19:13.8] Dev: Both should be set automatically with the pricing rules by the customer.
-[19:19.8 - 19:21.8] Dev: That's cool.
-[19:24.8 - 19:26.8] Dev: Hmm.
-[19:26.8 - 19:55.8] Dev: The quick view, the draft shouldn't be exactly what's added here, but rather the filter types that are set so that, you know, this might change.
-[19:56.8 - 20:04.8] Dev: Based on what's in inventory, but really the goal is like, okay, we have QA contact, Q4, F9, the client.
-[20:04.8 - 20:17.8] Dev: And we know that she likes, um, indoor from a certain vendor price between $800 and $1,000 a unit.
-[20:18.8 - 20:31.8] Dev: And I want to be able to kind of save that view as a draft or yeah, as a quick view and have that pop up instead of this.
-[20:31.8 - 20:33.8] Dev: That's what's happening here.
-[20:47.8 - 20:48.8] Dev: Okay.
-[21:13.7 - 21:32.0] Dev: So, this should actually just be showing what's available.
-[21:32.0 - 21:35.2] Dev: Right now it's showing kind of as a draft order, but the sales sheet is more like, okay,
-[21:35.2 - 21:43.2] Dev: show me what you have in stock, how much of it you have.
-[21:43.2 - 21:59.1] Dev: And so, yeah, it should be product name, vendor, retail price per unit based on the
-[21:59.1 - 22:14.9] Dev: customer's rule-based pricing or edited in line or on an overall sales sheet perspective.
-[22:14.9 - 22:21.9] Dev: And then, how many are available?
-[22:21.9 - 22:23.9] Dev: Yeah.
-[22:23.9 - 22:31.9] Dev: That doesn't work.
-[22:31.9 - 22:43.2] Dev: That needs to work.
-[22:43.2 - 22:50.7] Dev: So if that does convert to an order, what it should be doing is just popping up, and
-[22:50.7 - 22:59.4] Dev: it should be convert to quote, yeah.
-[22:59.4 - 23:10.3] Dev: And then the quote that comes up should require number of units and a lot for all of the price
-[23:10.3 - 23:17.3] Dev: editing, et cetera, that we're talking about.
-[23:17.3 - 23:18.3] Dev: Okay.
-[23:18.3 - 23:21.3] Dev: That didn't work.
-[23:21.3 - 23:22.3] Dev: Wow.
-[23:22.3 - 23:25.3] Dev: It really worked.
-[23:25.3 - 23:28.3] Dev: That's amazing.
-[23:28.3 - 23:29.3] Dev: Okay.
-[23:29.3 - 23:53.0] Dev: So, again, what we want is item name, vendor, category, quantity available, and then price
-[23:53.0 - 23:54.0] Dev: per unit.
-[23:54.0 - 23:55.0] Dev: That's good.
-[23:56.0 - 24:02.0] Dev: We don't need total value here.
-[24:02.0 - 24:08.0] Dev: That's good.
-[24:08.0 - 24:14.0] Dev: I think.
-[24:14.0 - 24:18.0] Dev: Okay.
-[24:19.0 - 24:46.0] Dev: And then to mark, it's not for right now, but that's important.
-[24:46.0 - 24:48.0] Dev: This just needs to get consolidated.
-[24:48.0 - 24:50.0] Dev: So orders need to be sales.
-[24:50.0 - 24:53.0] Dev: Quotes just need to be within sales.
-[24:53.0 - 24:54.0] Dev: Simple.
-[24:54.0 - 24:55.0] Dev: Yeah.
-[24:55.0 - 24:56.0] Dev: Now we're back here.
-[24:56.0 - 24:57.0] Dev: Okay.
-[24:58.0 - 25:07.0] Dev: All right.
-[25:07.0 - 25:12.0] Dev: So.
-[25:13.0 - 25:40.0] Dev: I think we need to get clear here on.
-[25:41.0 - 25:42.0] Dev: I need to be able to search in here.
-[25:42.0 - 25:45.0] Dev: Also, I want multiple rows already here.
-[25:45.0 - 25:55.0] Dev: I need to be able to, this needs to be like a smart search almost.
-[25:55.0 - 26:04.0] Dev: I also need the ability to create a new vendor or a new farmer.
-[26:04.0 - 26:28.0] Dev: Really any of these.
-[26:29.0 - 26:36.0] Dev: This should always default to assignment.
-[26:36.0 - 26:40.0] Dev: Nice.
-[26:40.0 - 26:50.0] Dev: This is cool.
-[26:50.0 - 27:05.2] Dev: This needs to basically, this and add batch need to be consolidated into one thing.
-[27:05.2 - 27:22.2] Dev: This one should always just default to main.
-[27:22.2 - 27:28.2] Dev: That seems to be a bug.
-[27:28.2 - 27:33.2] Dev: Figure out where these notes are saved.
-[27:33.2 - 27:34.2] Dev: Doesn't work.
-[27:34.2 - 27:35.2] Dev: Oh, it does.
-[27:35.2 - 27:36.2] Dev: Okay.
-[27:36.2 - 27:37.2] Dev: In the hot input.
-[27:37.2 - 27:38.2] Dev: Okay.
-[27:38.2 - 27:39.2] Dev: That's an issue.
-[27:39.2 - 28:05.2] Dev: Yeah, there's all sorts of stuff here that needs to get.
-[28:06.2 - 28:15.2] Dev: Yeah.
-[28:15.2 - 28:21.2] Dev: That needs to get fixed, but it just needs to get.
-[28:21.2 - 28:39.2] Dev: There just needs to be an intake button, basically.
-[28:39.2 - 28:45.2] Dev: I'm going to get rid of this concept of these two things being super different.
-[28:45.2 - 28:58.2] Dev: There's never going to be a time where a product is added unless it's part of a batch period.
-[28:58.2 - 29:06.2] Dev: If we need this on the back end or something, that's fine, but the user doesn't really need
-[29:06.2 - 29:10.2] Dev: to see it because they should just be basically working from inventory.
-[29:10.2 - 29:12.2] Dev: There should be two different things here.
-[29:12.2 - 29:17.2] Dev: There should be an intake, and that's basically direct intake, a combination of direct intake,
-[29:17.2 - 29:19.2] Dev: and then this thing.
-[29:19.2 - 29:27.2] Dev: I want this to be able to just happen super fast, and it should be both the drop down
-[29:27.2 - 29:34.2] Dev: and typing, drop down and typing, drop down and typing.
-[29:34.2 - 29:42.2] Dev: Strain and product name need to be combined into one thing.
-[29:42.2 - 29:54.2] Dev: If the strain validation finds a strain, there should be a way of basically saying,
-[29:54.2 - 29:57.2] Dev: hey, does this look right?
-[29:57.2 - 30:04.2] Dev: The user can quickly, quickly, yes or no, create a new strain or new product.
-[30:04.2 - 30:12.2] Dev: It should allow for creating a new strain, basically.
-[30:12.2 - 30:21.2] Dev: Categories, fine, but honestly, subcategory is going to be most important here.
-[30:21.2 - 30:26.2] Dev: You can always default to flower, and then there should be subcategories.
-[30:26.2 - 30:50.2] Dev: That's fine for now.
-[30:51.2 - 30:53.2] Dev: I see what happened here.
-[30:53.2 - 30:54.2] Dev: Cool.
-[30:54.2 - 30:59.2] Dev: Okay, never mind then.
-[30:59.2 - 31:08.2] Dev: That's right.
-[31:08.2 - 31:18.2] Dev: Okay, that needs to work.
-[31:18.2 - 31:23.2] Dev: I want to be able to tab it in the next one.
-[31:23.2 - 31:27.2] Dev: This should always default to consignment.
-[31:27.2 - 31:32.2] Dev: It should always default to main warehouse.
-[31:32.2 - 31:47.2] Dev: That should work.
-[31:47.2 - 31:50.2] Dev: Let's stop there for now.
-```
+[00:00.0 - 00:15.8]  Okay, so first off, this doesn't actually search anything, this just takes us to search this, it needs to be the same power as, or this needs to have the same power as this.
+[00:15.8 - 00:30.8]  Get rid of comments, both for dashboard and anywhere else, it needs to be completely removed from the system.
+[00:30.8 - 00:50.3]  This sidebar should have above the sales, inventory, all the buckets, should just have some quick links that are always visible. One should be dashboard, two should be new sale, three should be new intake, four should be clients.
+[00:50.3 - 01:28.6]  New sale should take you to this, I guess, mm-hmm, no, this is for intake, nevermind, this is for sales.
+[01:28.6 - 02:06.4]  So orders needs to get changed to sales, all the terminology, and order is actually a sale.
+[02:06.4 - 02:23.7]  So let's dig into just this, first of all, there should be orders here because there's other data through the system, let's figure out whether that's just something wonky with the data seeding or whether there's actually a wiring issue with the data.
+[02:23.7 - 02:46.0]  The quick new sale should just bump immediately to here.
+[02:46.0 - 03:10.0]  This needs to be editable in line right here in terms of how much they're getting.
+[03:10.0 - 03:25.0]  Order limit needs to be quickly editable from here.
+[03:25.0 - 03:37.2]  Category needs to have quick filters for category slash subcategory.
+[03:37.2 - 04:02.5]  Basically all of these things, stock, price, it should be a price range, okay, when I click here, it should select the whole thing, I don't want to have to just click in here.
+[04:02.5 - 04:24.0]  This should add by whole units, when I click up, not by points, great.
+[04:24.0 - 04:36.2]  There should be an ability to, maybe right here, quickly hide margin.
+[04:36.2 - 05:03.5]  This is doubled up, so actually we just won't, I want ... There's too many things going on right here.
+[05:03.5 - 05:24.9]  Then we should have this below here along with order preview under this, which should be automatically minimized, but then if they want, you should be able to expand it.
+[05:24.9 - 05:52.9]  If this truly is order preview, the customer should definitely not be seeing any margin here, or estimated profit.
+[06:23.9 - 06:54.4]  This should automatically default to dollar, not percent, and I should be able to select between the two.
+[06:54.4 - 07:23.3]  Doesn't work right now.
+[07:23.3 - 07:31.8]  I should be able to quickly clear it too.
+[07:31.8 - 07:55.8]  Probably possible, because there should never be a product that has, that is the exact same product name between two batches.
+[08:25.8 - 09:03.0]  It should always default to FIFO.
+[09:03.0 - 09:27.0]  Okay.
+[09:57.0 - 10:16.0]  Seems like ...
+[10:16.0 - 10:18.0]  Okay.
+[10:18.0 - 10:19.0]  This should have a save button of some sort.
+[10:19.0 - 10:28.0]  Okay.
+[10:28.0 - 10:29.0]  That's also a bug.
+[10:29.0 - 10:30.0]  When I click markup, it closes everything.
+[10:30.0 - 10:31.0]  Yeah.
+[10:31.0 - 10:32.0]  I like that this is floating though, that's cool.
+[10:36.8 - 10:52.8]  AI again, this is what they're going to see, they definitely should not be able to see they definitely should not be seeing any sort of information about the markups or a spending profit.
+[10:52.8 - 11:13.8]  profit.
+[11:13.8 - 11:15.8]  Didn't really change anything related to the estimated profit I think, there's some sort of calculation wonkiness happening there.
+[11:44.8 - 11:54.8]  I need to be able to hide the sidebar to get a bigger view of this.
+[12:04.8 - 12:08.8]  So yeah again, the line items should be on the right, everything else underneath in the line items should be small enough that the main section is this basically.
+[12:13.8 - 12:26.8]  You should be able to undo this, edit it, whatever.
+[12:43.8 - 13:09.8]  Oh, that didn't work.
+[13:09.8 - 13:12.8]  That needs to get fixed.
+[13:12.8 - 13:14.8]  That didn't work either.
+[13:26.8 - 13:28.8]  That didn't work either.
+[13:36.8 - 13:37.8]  I think everything created here basically should just be treated as a quote.
+[13:40.8 - 13:59.8]  No, let's get rid of the idea of quote and instead just have a sales draft.
+[14:00.8 - 14:08.8]  Or no, nevermind, take that back.
+[14:08.8 - 14:12.8]  Yeah.
+[14:22.8 - 14:23.8]  I don't really know what the next page is so we need to sort that out.
+[14:30.8 - 14:34.8]  This is also not correct, saving it as a quote should not finalize it as an order.
+[14:46.8 - 14:52.8]  It should go, let's see, create this and you can either save it as a quote.
+[14:52.8 - 15:14.8]  Let's just simplify it and have it basically just be sale.
+[15:22.8 - 15:47.8]  It should just be a quote.
+[15:52.8 - 16:03.8]  Everything created here is a quote until you click confirm and that is when it turns into an actual sale.
+[16:03.8 - 16:17.8]  You should be able to go back and edit the sales.
+[16:17.8 - 16:22.8]  Quotes you can save.
+[16:22.8 - 16:25.8]  Let's get rid of like sales, a sale draft instead.
+[16:25.8 - 16:31.8]  Quote should just take that place.
+[16:31.8 - 16:33.8]  All right, that doesn't work.
+[16:38.8 - 16:40.8]  We need to fix that.
+[16:42.8 - 16:44.8]  You should also be able to click into a distribution here as well as edit this in line.
+[16:48.8 - 16:56.8]  Or yeah, change this to like percentage by order, dollar value per order or a dollar value per unit sold.
+[16:56.8 - 17:18.8]  Sale sheet.
+[17:27.8 - 17:31.8]  Again, this needs to have the same standardized, much better filtering across everything that has browsing like this.
+[17:37.8 - 17:50.8]  Okay, so this should, client should automatically pull up their pricing rules.
+[17:56.8 - 18:25.8]  Same with sales too, you immediately pull up their pricing rules to change what the retail price is that it's showing here.
+[18:27.8 - 18:48.8]  Okay, so you can do it like that, but that's, yeah, wonky.
+[18:48.8 - 18:54.8]  Um, yeah, that needs to get sorted out so we can basically change the markup.
+[18:55.8 - 19:08.8]  Both should be set automatically with the pricing rules by the customer.
+[19:08.8 - 19:13.8]  That's cool.
+[19:19.8 - 19:21.8]  Hmm.
+[19:24.8 - 19:26.8]  The quick view, the draft shouldn't be exactly what's added here, but rather the filter types that are set so that, you know, this might change.
+[19:26.8 - 19:55.8]  Based on what's in inventory, but really the goal is like, okay, we have QA contact, Q4, F9, the client.
+[19:56.8 - 20:04.8]  And we know that she likes, um, indoor from a certain vendor price between $800 and $1,000 a unit.
+[20:04.8 - 20:17.8]  And I want to be able to kind of save that view as a draft or yeah, as a quick view and have that pop up instead of this.
+[20:18.8 - 20:31.8]  That's what's happening here.
+[20:31.8 - 20:33.8]  Okay.
+[20:47.8 - 20:48.8]  So, this should actually just be showing what's available.
+[21:13.7 - 21:32.0]  Right now it's showing kind of as a draft order, but the sales sheet is more like, okay, show me what you have in stock, how much of it you have.
+[21:32.0 - 21:43.2]  And so, yeah, it should be product name, vendor, retail price per unit based on the customer's rule-based pricing or edited in line or on an overall sales sheet perspective.
+[21:43.2 - 22:14.9]  And then, how many are available?
+[22:14.9 - 22:21.9]  Yeah.
+[22:21.9 - 22:23.9]  That doesn't work.
+[22:23.9 - 22:31.9]  That needs to work.
+[22:31.9 - 22:43.2]  So if that does convert to an order, what it should be doing is just popping up, and it should be convert to quote, yeah.
+[22:43.2 - 22:59.4]  And then the quote that comes up should require number of units and a lot for all of the price editing, et cetera, that we're talking about.
+[22:59.4 - 23:17.3]  Okay.
+[23:17.3 - 23:18.3]  That didn't work.
+[23:18.3 - 23:21.3]  Wow.
+[23:21.3 - 23:22.3]  It really worked.
+[23:22.3 - 23:25.3]  That's amazing.
+[23:25.3 - 23:28.3]  Okay.
+[23:28.3 - 23:29.3]  So, again, what we want is item name, vendor, category, quantity available, and then price per unit.
+[23:29.3 - 23:54.0]  That's good.
+[23:54.0 - 23:55.0]  We don't need total value here.
+[23:56.0 - 24:02.0]  That's good.
+[24:02.0 - 24:08.0]  I think.
+[24:08.0 - 24:14.0]  Okay.
+[24:14.0 - 24:18.0]  And then to mark, it's not for right now, but that's important.
+[24:19.0 - 24:46.0]  This just needs to get consolidated.
+[24:46.0 - 24:48.0]  So orders need to be sales.
+[24:48.0 - 24:50.0]  Quotes just need to be within sales.
+[24:50.0 - 24:53.0]  Simple.
+[24:53.0 - 24:54.0]  Yeah.
+[24:54.0 - 24:55.0]  Now we're back here.
+[24:55.0 - 24:56.0]  Okay.
+[24:56.0 - 24:57.0]  All right.
+[24:58.0 - 25:07.0]  So.
+[25:07.0 - 25:12.0]  I think we need to get clear here on.
+[25:13.0 - 25:40.0]  I need to be able to search in here.
+[25:41.0 - 25:42.0]  Also, I want multiple rows already here.
+[25:42.0 - 25:45.0]  I need to be able to, this needs to be like a smart search almost.
+[25:45.0 - 25:55.0]  I also need the ability to create a new vendor or a new farmer.
+[25:55.0 - 26:04.0]  Really any of these.
+[26:04.0 - 26:28.0]  This should always default to assignment.
+[26:29.0 - 26:36.0]  Nice.
+[26:36.0 - 26:40.0]  This is cool.
+[26:40.0 - 26:50.0]  This needs to basically, this and add batch need to be consolidated into one thing.
+[26:50.0 - 27:05.2]  This one should always just default to main.
+[27:05.2 - 27:22.2]  That seems to be a bug.
+[27:22.2 - 27:28.2]  Figure out where these notes are saved.
+[27:28.2 - 27:33.2]  Doesn't work.
+[27:33.2 - 27:34.2]  Oh, it does.
+[27:34.2 - 27:35.2]  Okay.
+[27:35.2 - 27:36.2]  In the hot input.
+[27:36.2 - 27:37.2]  Okay.
+[27:37.2 - 27:38.2]  That's an issue.
+[27:38.2 - 27:39.2]  Yeah, there's all sorts of stuff here that needs to get.
+[27:39.2 - 28:05.2]  Yeah.
+[28:06.2 - 28:15.2]  That needs to get fixed, but it just needs to get.
+[28:15.2 - 28:21.2]  There just needs to be an intake button, basically.
+[28:21.2 - 28:39.2]  I'm going to get rid of this concept of these two things being super different.
+[28:39.2 - 28:45.2]  There's never going to be a time where a product is added unless it's part of a batch period.
+[28:45.2 - 28:58.2]  If we need this on the back end or something, that's fine, but the user doesn't really need to see it because they should just be basically working from inventory.
+[28:58.2 - 29:10.2]  There should be two different things here.
+[29:10.2 - 29:12.2]  There should be an intake, and that's basically direct intake, a combination of direct intake, and then this thing.
+[29:12.2 - 29:19.2]  I want this to be able to just happen super fast, and it should be both the drop down and typing, drop down and typing, drop down and typing.
+[29:19.2 - 29:34.2]  Strain and product name need to be combined into one thing.
+[29:34.2 - 29:42.2]  If the strain validation finds a strain, there should be a way of basically saying, hey, does this look right? The user can quickly, quickly, yes or no, create a new strain or new product.
+[29:42.2 - 30:04.2]  It should allow for creating a new strain, basically.
+[30:04.2 - 30:12.2]  Categories, fine, but honestly, subcategory is going to be most important here.
+[30:12.2 - 30:21.2]  You can always default to flower, and then there should be subcategories.
+[30:21.2 - 30:26.2]  That's fine for now.
+[30:26.2 - 30:50.2]  I see what happened here.
+[30:51.2 - 30:53.2]  Cool.
+[30:53.2 - 30:54.2]  Okay, never mind then.
+[30:54.2 - 30:59.2]  That's right.
+[30:59.2 - 31:08.2]  Okay, that needs to work.
+[31:08.2 - 31:18.2]  I want to be able to tab it in the next one.
+[31:18.2 - 31:23.2]  This should always default to consignment.
+[31:23.2 - 31:27.2]  It should always default to main warehouse.
+[31:27.2 - 31:32.2]  That should work.
+[31:32.2 - 31:47.2]  Let's stop there for now.
+[31:47.2 - 31:50.2]
 
 ## Appendix B: Visual Context Notes (from every video frame analyzed)
 
-(Visual context notes from each frame of the video are included below.)
 
+## Frame at Minute 1 — Dashboard
+
+The user interface is for an application named TERP, currently on the main Dashboard view, which is highlighted in the left-hand navigation sidebar. The header displays 'TERP Navigation', a search bar containing the term 'sour', and a version number 'v1.0.0'. On the right side of the header, there are icons for notifications, settings, and a user profile dropdown showing 'QA Super Admin'. Below the header, a banner reads 'TERP OWNER COMMAND CENTER', with the timestamp 'Updated 12:29 PM', the date 'Wed, Feb 11', and a 'Comments' button.
+
+The main content area is divided into three columns. The left column, 'Inventory Snapshot', displays a table with categories of cannabis products, their 'Units Available', and 'Inventory Value'. The categories listed are Pre-Roll, Vape, Edible, Concentrate, Flower, Topical, and Tincture, with a total of 30,574.21 units available and a total inventory value of $13,010,906.
+
+The middle column, 'Inventory Aging', shows four cards: 'Fresh (0-7d)' with 2 units, 'Moderate (8-14d)' with 0 units, 'Aging (15-30d)' with 237 units (30572 units), and 'Critical (30+d)' with 0 units. Below these cards, a notice for 'Items Over 2 Weeks Old' indicates '237 batches - $13,010,881 value at risk' with a 'View All' button. A donut chart visualizes the inventory status, split between 'Fresh' and 'Aging'. The section concludes with a list of the 'Top 5 Oldest Items', including products like 'Ergonomic Flower - incan...' and 'Generic Tincture - junior', all aged 21 days.
+
+The rightmost column is the 'Cash Decision Panel', which has a 'Manage' link but its content appears to be placeholder elements. The left sidebar navigation is organized into 'SALES' and 'INVENTORY' sections. The 'SALES' section is expanded, showing links for Dashboard, Inbox, Clients, Orders, and more. The 'INVENTORY' section is collapsed. At the bottom of the sidebar, it shows that 'TERP Operator' is signed in, with a 'Logout' button.
+
+---
+
+## Frame at Minute 2 — Dashboard
+
+The user is on the main Dashboard page of the TERP application, which appears to be a command center for a TERP owner. The left sidebar shows the main navigation, with 'Sales' and 'Inventory' sections. 'Dashboard' is the active page, highlighted in blue. Other options under Sales include Inbox, Clients, Order, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, and Returns. The Inventory section includes Pick & Pack, Products, Inventory, Photography, Samples, Purchase Orders, Vendors, Vendor Supply, Spreadsheet View, and Direct Intake. At the bottom of the sidebar, it shows 'Signed in TERP Operator' with a 'Logout' button.
+
+The main content area has a title 'TERP OWNER COMMAND CENTER'. There's a search bar at the top with 'sour' typed in it. The page is updated as of 'Wed, Feb 11' at '12:29 PM'. There are three main panels: 'Inventory Snapshot', 'Inventory Aging', and 'Cash Decision Panel'.
+
+The 'Inventory Snapshot' table lists product categories with their 'Units Available' and 'Inventory Value'. Categories include Pre-Roll, Vape, Edible, Concentrate, Flower, Topical, and Tincture. The total units available are 30574.21 and the total inventory value is $13,010,906.
+
+The 'Inventory Aging' panel shows inventory status in different aging buckets: 'Fresh (0-7d)' with 2 units, 'Moderate (8-14d)' with 0 units, 'Aging (15-30d)' with 237 units (30572 units), and 'Critical (30+d)' with 0 units. There is a notification for 'Items Over 2 Weeks Old' indicating '237 batches - $13,010,881 value at risk' with a 'View All' button. A donut chart visualizes the Fresh vs. Aging inventory. Below this, a 'Top 5 Oldest Items' list shows products that are 21 days old, including 'Ergonomic Flower - incan...', 'Generic Tincture - junior', 'Small Concentrate - stool', 'Modern Pre-Roll - disapp...', and 'Sleek Vape - scratch' with their SKUs.
+
+The 'Cash Decision Panel' on the right shows an error message: 'Unable to load cash data. Please try refreshing the page.'
+
+---
+
+## Frame at Minute 3 — Sales > Orders
+
+The user is on the 'Orders' page within the 'Sales' section of the TERP application. The left sidebar shows the main navigation, with 'Sales' and 'Inventory' as the primary categories. Under 'Sales', the 'Orders' tab is highlighted and selected, indicating it's the active view. Other options under 'Sales' include 'Dashboard', 'Inbox', 'Clients', 'Interest List', 'Sales Sheets', 'Live Shopping', 'Leaderboard', 'Client Needs', 'Matchmaking', 'Quotes', and 'Returns'. The 'Inventory' section is collapsed but shows options like 'Pick & Pack', 'Products', 'Inventory', 'Photography', 'Samples', 'Purchase Orders', 'Vendors', 'Vendor Supply', 'Spreadsheet View', and 'Direct Intake'. At the bottom of the sidebar, it shows 'Signed in TERP Operator' with a 'Logout' button. The main content area is titled 'Orders' with the subtitle 'Manage sales orders and drafts'. There are two tabs: 'Drafts (0)' and 'Confirmed (0)', both showing a count of zero. A search bar with placeholder text 'Search orders... (Cmd+K)' is visible, along with a dropdown filter set to 'All' and a blue '+ New Order' button. The center of the page displays a 'No orders found' message with the subtext 'Create your first order'. The top header contains a search bar with the term 'sour' typed in it. On the right side of the header, there are icons for notifications, dark mode, and settings, followed by the user's name 'QA Super Admin' with a dropdown arrow. Below this, the version number 'v1.0.0' is displayed. A status bar shows 'Saved' with a green checkmark, and the counts for 'Drafts: 0', 'Pending: 0', and 'Shipped: 0'.
+
+---
+
+## Frame at Minute 4 — Orders > Create
+
+The user is on the 'Create Order' page within the 'Orders' section of the TERP application. The left sidebar navigation shows the 'SALES' category expanded, with the 'Orders' item highlighted and selected, indicating it's the current view. Other items in the 'SALES' section include Dashboard, Inbox, Clients, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, and Returns. The 'INVENTORY' section below it is collapsed. At the bottom of the sidebar, 'TERP Operator' is shown as the signed-in user, with a 'Logout' button available.
+
+The main content area is a form for creating a new order. At the top, a breadcrumb trail reads 'Home > Orders > Create'. The 'Select Customer' field is filled with 'Harbor Apothecary', and the optional 'Referred By' field shows 'Bay Distribution'. A prominent purple banner below these fields states that 'Bay Distribution will earn 10% credit on this order'.
+
+Below this, there is an 'Inventory' section for adding items to the sales sheet. It includes a search bar, 'Select All' and 'Clear' buttons, and a table of available products. The table columns are 'Item', 'Category', 'Stock', and price. Numerous items are listed, such as 'Refined Flower - pop' (Category: Flower, Stock: 21.14), 'Fresh Pre-Roll - haircut' (Category: Pre-Roll, Stock: 234.56), and 'Sleek Concentrate - consistency' (Category: Concentrate, Stock: 67.49). The footer of the table indicates 'Showing 307 of 307 items'.
+
+To the right of the main content, a sidebar contains three modules. The top module is a blue-tinted info box titled 'No Credit Limit Set', explaining that the selected client does not have a credit limit configured. Below this, the 'Order Totals' module shows all values as $0.00 (Subtotal, Total COGS, Total) and 'Total Margin' as $0.00 (0.0%). A red, disabled button at the bottom of this module reads 'Order has validation errors'. The final module, 'Order Preview', shows an empty shopping cart icon with the message 'No items added yet' and instructs the user to 'Browse inventory to add items'.
+
+---
+
+## Frame at Minute 5 — Orders > Create
+
+The user is on the 'Orders > Create' page within the TERP application, as indicated by the breadcrumb navigation at the top of the main content area. The left sidebar, titled 'TERP Navigation', has the 'SALES' section expanded, with the 'Orders' item highlighted in blue, signifying it is the active page. Below 'Orders', other menu items in the 'SALES' category include 'Interest List', 'Sales Sheets', 'Live Shopping', 'Leaderboard', 'Client Needs', 'Matchmaking', 'Quotes', and 'Returns'. The 'INVENTORY' section below is collapsed. At the bottom of the sidebar, 'Signed in TERP Operator' is displayed with a 'Logout' button.
+
+The main content area is divided into a central panel for creating an order and a right-hand summary panel. At the top, a search bar contains the term 'sour'. The 'Create' form has 'Select Customer *' pre-filled with 'Harbor Apothecary' and 'Referred By (Optional)' with 'Bay Distribution'. A prominent purple banner states, 'Bay Distribution will earn 10% credit on this order'. Below this, an 'Inventory' section allows the user to add items to the sales sheet. It includes a search bar, 'Select All' and 'Clear' buttons, and a table of products. The table lists items like 'Refined Flower - pop', 'Fresh Pre-Roll - haircut', and 'Sleek Concentrate - consistency', showing their category and stock levels (e.g., 'Flower', 21.14). The table footer indicates 'Showing 307 of 307 items'.
+
+The right-hand panel displays order summary information. At the top, a blue notification box titled 'No Credit Limit Set' informs the user that the selected client does not have a credit limit configured. Below this, the 'Order Totals' section shows a 'Subtotal', 'Total COGS', 'Total Margin', and 'Total' all at '$0.00'. A disabled red button reads 'Order has validation errors'. Finally, the 'Order Preview' section shows an empty state with a shopping cart icon and the message 'No items added yet'.
+
+---
+
+## Frame at Minute 6 — Orders > Create
+
+The user interface is for a cannabis ERP system named TERP, currently on the 'Orders > Create' page, as indicated by the breadcrumb navigation trail at the top of the main content area. The overall layout is a three-column design: a primary navigation sidebar on the left, a main content area in the center, and a secondary information sidebar on the right.
+
+The left sidebar, titled 'TERP Navigation', is organized into 'SALES' and 'INVENTORY' sections. The 'SALES' section is expanded, and the 'Orders' item is highlighted in blue, signifying it as the active page. Other visible menu items under 'SALES' include Dashboard, Inbox, Clients, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, and Returns. The 'INVENTORY' section is collapsed but shows items like Pick & Pack, Products, and Inventory. At the bottom of the sidebar, a user named 'TERP Operator' is signed in, with a 'Logout' button available.
+
+The central panel is dedicated to building a sales order. At the top, a search bar contains the term 'sour'. The main section, titled 'Inventory', instructs the user to 'Browse and select items to add to the sales sheet'. It features a table listing inventory items with columns for Category, Stock, Base Price, Retail Price, Markup, Quick Qty, and Action. Data for several categories like Flower, Pre-Roll, and Concentrate are displayed, showing stock levels and pricing information (e.g., 'Pre-Roll' has 234.56 in stock and a retail price of $385.18). Above the table, there are buttons for '+ Add Selected (2)', 'Select All', and 'Clear'. Below the table, it indicates 'Showing 307 of 307 items'. A 'Line Items' section is present at the bottom, but its contents are not fully detailed.
+
+The right sidebar provides summary information and actions related to the order. At the top, a notification box states, 'No Credit Limit Set'. Below this is the 'Order Totals' card, which shows a Subtotal of $3085.05, Total COGS of $3085.05, a Total Margin of $0.00 (0.0%), and a final Total of $3085.05. Further down, an 'Order Preview' card shows what 'What Harbor Apothecary will see', summarizing the order with 2 items, a subtotal of $3085.05, and 0.0% margin. It lists two line items: 'Refined Flower - pop' for $2520.00 and 'Sleek Concentrate - consistency' for $564.85.
+
+---
+
+## Frame at Minute 7 — Orders > Create
+
+The user interface is for a cannabis ERP system named TERP, and the current page is for creating a new sales order, as indicated by the breadcrumb navigation 'Orders > Create'. The main view is divided into three columns. The left column is a fixed sidebar for navigation. The 'SALES' category is expanded, showing links for 'Dashboard', 'Inbox', 'Clients', 'Orders', 'Interest List', and more, with 'Orders' being the currently active and highlighted page. Below 'SALES', the 'INVENTORY' category is collapsed. At the bottom of the sidebar, it shows 'Signed in TERP Operator' with a 'Logout' button. The center column is the main workspace for adding products to the order. At the top, there is a search bar containing the term 'sour'. Below the search bar is a scrollable list of product categories such as 'Pre-Roll', 'Concentrate', 'Edible', 'Vape', and 'Flower'. Each product line item in this list displays its category, available quantity, cost, price, a margin of 0.0%, a quantity selector defaulted to '1', and an add button. Below this product list, there is a 'Line Items' section which displays the items already added to the order. There are two items in the order: 'Refined Flower - pop' with a quantity of 5 and a unit price of $504.04, and 'Sleek Concentrate - consistency' with a quantity of 1 and a unit price of $564.85. The total for these two items is not summed in this section. The right column summarizes the order details. At the top, it shows a 'Total Margin' of $0.00 (0.0%) and a 'Total' order value of $3085.05. An 'Order Preview' section indicates the customer is 'What Harbor Apothecary' and shows the total of $3085.05. Below this, the 'Order Type' is set to 'Sale Order' via a dropdown menu. Finally, there are buttons to 'Save' and a primary action button to 'Confirm Order'.
+
+---
+
+## Frame at Minute 8 — Orders > Create
+
+The user interface is for a TERP application, currently on the 'Orders > Create' page, as indicated by the breadcrumb navigation. The main header contains a search bar with the term 'sour' entered, alongside icons for notifications, settings, and a user menu showing 'QA Super Admin'. The application version 'v1.0.0' is visible in the top-right corner.
+
+The left sidebar has two main sections: 'SALES' (expanded) and 'INVENTORY' (collapsed). The 'Orders' item under 'SALES' is highlighted, indicating it's the active page. The bottom of the sidebar shows the user is 'Signed in TERP Operator' with a 'Logout' option.
+
+The central area lists various product categories (Pre-Roll, Concentrate, Edible, etc.) with associated numerical data for pricing and quantity. An 'Edit Margin' modal is currently open, overlaying this section. This modal has 'Input Mode' options for 'Percent' and 'Dollar', with 'Dollar' being selected. It also contains a 'Margin (%)' input field set to '0' and 'Save' and 'Cancel' buttons. Below the product list, there is a section for added items, showing two items in the order, with details for 'Price/Unit' and 'Total'. The buttons 'Clear All' and '+ Add Item' are present.
+
+The right-hand sidebar provides an 'Order Preview' for 'What Harbor Apothecary will see', showing a total of '$3085.05' for 2 items. Above this, a 'Total Margin' is displayed as '$0.00' and '0.0%'. Below the preview, there is an 'Order Type' dropdown set to 'Sale Order', a 'Save' button, and a primary 'Confirm Order' button.
+
+---
+
+## Frame at Minute 9 — Sales > Orders > Create
+
+The user is on the 'Create Order' page within the 'Sales' section of the TERP application. The left sidebar shows the main navigation categories: SALES and INVENTORY. Under SALES, the 'Orders' item is selected and highlighted. Other visible SALES items are Dashboard, Inbox, Clients, Interest List, Sales Sheets, Live Shopping, Leaderboard, Client Needs, Matchmaking, Quotes, and Returns. Under INVENTORY, the visible items are Pick & Pack, Products, Inventory, Photography, Samples, Purchase Orders, Vendors, Vendor Supply, Spreadsheet View, and Direct Intake. At the bottom of the sidebar, 'TERP Operator' is signed in, with a 'Logout' option. The main content area is titled 'Orders > Create'. A search bar at the top contains the text 'sour'. Below the title, there is a table of products with columns for product type, quantity, COGS/Unit, Margin, and Price/Unit. A modal window titled 'Select Lots for Refined Flower - pop' is open in the center of the screen. This modal is for selecting 5 units from available batches. It shows two batches with their SKU, Grade, Harvest Date, Available quantity, and Unit Cost. The first batch, SKU-00000001, has 21 units available at $504.04 each. The second, SKU-00000151, has 57 units available at $603.02 each. The modal has 'Cancel' and 'Select 5 more' buttons. Behind the modal, the 'Line Items' section is visible, showing two items in the order. The first is 'pop' with a quantity of 5, COGS/Unit of $504.04, and a total of $2520.20. The second is '- consistency' with a quantity of 1 and a price of $564.85. On the right side of the screen, there is an 'Order Preview' section showing a total of $3085.05 for 2 items. Below that, the 'Order Type' is set to 'Sale Order'. There are 'Save' and 'Confirm Order' buttons.
+
+---
+
+## Frame at Minute 10 — Orders > Create
+
+The user interface is for a cannabis ERP system named TERP, currently on the 'Orders > Create' page as indicated by the breadcrumb navigation trail. The main header contains a search bar in the center with the term 'sour' entered. The top-right corner displays user information, showing 'QA Super Admin' is logged in, along with icons for notifications, display mode, and settings. The application version is noted as 'v1.0.0'.
+
+The left sidebar is organized into 'SALES' and 'INVENTORY' sections. The 'Orders' item under 'SALES' is highlighted, indicating it is the active page. Other visible menu items include 'Dashboard', 'Clients', 'Interest List', 'Sales Sheets', and 'Returns' under 'SALES', and 'Pick & Pack', 'Products', 'Inventory', and 'Vendors' under 'INVENTORY'. The bottom of the sidebar shows the signed-in user as 'TERP Operator' with a logout option.
+
+In the central panel, a product selection area shows a list of items like 'Topical', 'Tincture', and 'Flower' with associated prices and quantities, filtered by the search term. Below this, a 'Line Items' table details the items added to the current order. Two items are listed with quantities, costs, margins, and totals. The first item has a quantity of 5 and a total of $3150.25, while the second has a quantity of 1 and a total of $564.85.
+
+An 'Edit Margin' modal is open, overlaying the 'Line Items' section. This modal allows the user to adjust the margin for a line item. It shows the source of the margin is the 'customer profile' and provides input modes for 'Percent' or 'Dollar'. The 'Percent' option is selected, and the 'Margin (%)' input field is empty and focused. The modal contains 'Save' and 'Cancel' buttons.
+
+On the right side of the screen, an 'Order Preview' card displays a summary for 'Harbor Apothecary'. It shows a total of 2 items in the order, with a grand total of $3715.10. Below the total, there are dropdowns for 'Sale Order' and 'Save', and a prominent blue 'Confirm Order' button at the bottom.
+
+---
+
+## Frame at Minute 11 — Orders > Create
+
+The user is on the 'Orders > Create' page. The left sidebar shows the main navigation with 'SALES' and 'INVENTORY' sections. Under 'SALES', the 'Orders' item is highlighted, indicating it's the active page. Other sales options include 'Dashboard', 'Inbox', 'Clients', 'Interest List', 'Sales Sheets', 'Live Shopping', 'Leaderboard', 'Client Needs', 'Matchmaking', 'Quotes', and 'Returns'. The 'INVENTORY' section has 'Pick & Pack', 'Products', 'Inventory', 'Photography', 'Samples', 'Purchase Orders', 'Vendors', 'Vendor Supply', 'Spreadsheet View', and 'Direct Intake'. At the bottom of the sidebar, it shows 'Signed in TERP Operator' with a 'Logout' button.
+
+The main content area is for creating a new order. There's a search bar at the top with 'sour' typed in. Below that, a breadcrumb shows 'Orders > Create'. A large table lists various cannabis products like 'Pre-roll', 'Concentrate', 'Edible', 'Vape', 'Topical', 'Tincture', and 'Flower'. Each row shows the product name, a numerical value, COGS/Unit, Price/Unit, a margin percentage (all 0.0%), an input field for quantity, and a plus button to add it to the order. For example, 'Pre-Roll' has a price of $385.18. The table shows 'Showing 307 of 307 items'.
+
+Below this product selection table is a 'Line Items' section. It currently has two items: 'pop' with a quantity of 5, COGS/Unit of $504.04, a 20.0% margin, a price of $630.05, and a total of $3150.25. The second item is 'te - consistency' with a quantity of 1, COGS/Unit of $564.85, a 10.0% margin, a price of $627.61, and a total of $627.61. This section has 'Clear All' and '+ Add Item' buttons.
+
+Further down, there's an 'Order-Level Adjustment' toggle, which is currently off.
+
+On the right side of the screen, there's a summary section. 'Total Margin' is $692.81 (18.3%). The 'Total' is $3777.86. Below this, an 'Order Preview' shows what 'Harbor Apothecary' will see, with the same total of $3777.86 for 2 items. There are dropdowns for 'Order Type' (set to 'Sale Order') and 'Save'. Finally, a prominent blue 'Confirm Order' button is at the bottom. The top right corner shows the user as 'QA Super Admin' and the version as 'v1.0.0'.
+
+---
+
+## Frame at Minute 12 — Orders > Create
+
+The user is on the 'Orders > Create' page, as indicated by the breadcrumbs at the top of the main content area. The left sidebar shows the main navigation, with 'Sales' and 'Inventory' as the primary categories. Under 'Sales', the 'Orders' item is highlighted, indicating it's the active page. Other visible items under 'Sales' are 'Dashboard', 'Inbox', 'Clients', 'Interest List', 'Sales Sheets', 'Live Shopping', 'Leaderboard', 'Client Needs', 'Matchmaking', 'Quotes', and 'Returns'. Under 'Inventory', the visible items are 'Pick & Pack', 'Products', 'Inventory', 'Photography', 'Samples', 'Purchase Orders', 'Vendors', 'Vendor Supply', 'Spreadsheet View', and 'Direct Intake'. At the bottom of the sidebar, 'Signed in TERP Operator' is displayed with a 'Logout' button.
+
+The main content area is divided into three sections. The top section is a product selection interface with a search bar containing the word 'sour'. Below the search bar, a table displays products with columns for name, unit price, and other details. The visible products are 'Topical', 'Tincture', 'Flower', and 'Pre-Roll'. The table shows 'Showing 307 of 307 items'.
+
+Below the product selection is the 'Line Items' section, which shows the items added to the current order. There are two items: 'pop' with a quantity of 5, and 'te - consistency' with a quantity of 1. The table has columns for 'Qty', 'COGS/Unit', 'Margin', 'Price/Unit', and 'Total'. For 'pop', the COGS/Unit is $504.04, Margin is 20.0% ($126.01), Price/Unit is $630.05, and Total is $3150.25. For 'te - consistency', the COGS/Unit is $564.85, Margin is 10.0% ($62.76), Price/Unit is $627.61, and Total is $627.61.
+
+To the right of the main content is the 'Order Preview' panel. It shows 'What Harbor Apothecary will see' and has a 'Sale' tag. It summarizes the order with '2 Items', a subtotal of '$3777.86', and a margin of '18.3%'. The line items are listed as 'Refined Flower - pop' for $3150.25 and 'Sleek Concentrate - consistency' for $627.61. The subtotal is $3777.86, and the total is $3377.86. The estimated profit is $692.81. Below the total, there are 'Save' and 'Confirm Order' buttons.
+
+At the bottom of the main content area is the 'Order-Level Adjustment' section. 'Discount' is selected as the 'Adjustment Type'. 'Dollar' is selected as the 'Amount Type'. The 'Discount Amount' is set to '400', resulting in a 'Total Discount' of '-$400.00', which is noted as being 'Equivalent to 10.59% of $3777.86 subtotal'. There is a toggle for 'Show on client document'.
+
+---
+
+## Frame at Minute 13 — Orders > Create
+
+The user is on the 'Orders > Create' page. The left sidebar shows the main navigation, with 'Orders' currently selected under the 'SALES' category. Other visible menu items in the 'SALES' category are 'Dashboard', 'Inbox', 'Clients', 'Interest List', 'Sales Sheets', 'Live Shopping', 'Leaderboard', 'Client Needs', 'Matchmaking', 'Quotes', and 'Returns'. The 'INVENTORY' category is also visible, with items such as 'Pick & Pack', 'Products', 'Inventory', 'Photography', 'Samples', 'Purchase Orders', 'Vendors', 'Vendor Supply', 'Spreadsheet View', and 'Direct Intake'. At the bottom of the sidebar, it shows 'Signed in TERP Operator' with a 'Logout' button.
+
+The main content area is for creating a new sales order. At the top, there's a breadcrumb navigation showing 'Orders > Create'. Below that is the 'Inventory' section, where the user can browse and select items to add to the sales sheet. There is a search bar with 'sour' typed in it. The inventory is displayed in a table with columns for product type, quantity, COGS/Unit, Price/Unit, and Margin. Several product types are visible, including 'Flower', 'Pre-Roll', 'Concentrate', 'Edible', 'Vape', 'Topical', and 'Tincture'. The user has selected two items, indicated by the '+ Add Selected (2)' button.
+
+To the right of the inventory list, there is a summary section. At the top, a notice indicates 'No Credit Limit Set'. Below that, the 'Order Totals' are displayed: Subtotal is $3777.86, Total COGS is $3085.05, and Total Margin is $692.81 (18.3%). The total order amount is $3777.86. Below the order totals, there is an 'Order Preview' section showing what 'Harbor Apothecary' will see. It shows 2 items, a subtotal of $3777.86, and a margin of 18.3%. The line items are 'Refined Flower - pop' for $3150.25 and 'Sleek Concentrate - consistency' for $627.61. The subtotal and total are both $3777.86, with an estimated profit of $692.81.
+
+At the bottom of the page, there is a 'Line Items' section, which appears to be a more detailed view of the selected items. It has columns for Qty, COGS/Unit, Margin, Price/Unit, and Total. One line item is visible for 'pop' with a quantity of 5, COGS/Unit of $504.04, a 20.0% margin, and a total of $3150.25. There are buttons to 'Clear All' and '+ Add Item'.
+
+---
+
+## Frame at Minute 14 — Orders > Create
+
+The user interface is for creating a new sales order within the TERP application. The page is titled "Orders > Create" as indicated by the breadcrumb navigation. The main view is divided into three columns.
+
+The left column contains the primary navigation sidebar. The "SALES" section is expanded, with the "Orders" item highlighted and selected. Other visible menu items under SALES include Dashboard, Inbox, Clients, Interest List, Sales Sheets, and more. The "INVENTORY" section below is collapsed. At the bottom of the sidebar, it shows "Signed in TERP Operator" with a "Logout" button.
 
 The center column displays a searchable list of available products. A search bar at the top contains the term "sour". Below is a table-like list of product categories such as Concentrate, Edible, Vape, and Flower, each with associated costs, quantities, and an add button. Below this list, a "Line Items" section details the items already added to the order. There are two items: "pop" with a quantity of 5 and a total of $3150.25, and "te - consistency" with a quantity of 1 and a total of $627.61. The total for these items is listed as "2 items in order".
 
@@ -720,140 +848,172 @@ At the bottom of the modal are two buttons: "Cancel" and a blue primary button l
 
 ---
 
-
 ## Appendix C: Complete Numbered Detail List (every single detail extracted)
 
-1.  **Search:** The main search bar on the dashboard does not function as a search tool but as a navigation link to the search page. It should have the same search power as the dashboard search. `[00:00.0 - 00:30.8]`
-2.  **Comments:** The "Comments" feature should be completely removed from the system, including the dashboard and all other areas. `[00:30.8 - 00:50.3]`
-3.  **Sidebar:** The sidebar should feature a set of always-visible quick links above the main navigation buckets. `[00:50.3 - 01:09.7]`
-4.  **Quick Links:** The quick links should include: 1. Dashboard, 2. New Sale, 3. New Intake, 4. Clients. `[01:09.7 - 01:28.6]`
-5.  **New Sale Navigation:** The "New Sale" quick link should navigate the user directly to the sales creation page. `[01:28.6 - 01:58.6]`
-6.  **Terminology:** The term "Orders" should be changed to "Sales" throughout the application, as an "order" is functionally a "sale". `[02:06.4 - 02:23.7]`
-7.  **Data Seeding/Wiring:** The sales page should display existing orders; if not, it needs to be determined whether this is a data seeding issue or a data wiring issue. `[02:23.7 - 02:31.4]`
-8.  **Quick New Sale:** The "Quick New Sale" button should immediately take the user to the sales creation page. `[02:46.0 - 03:10.0]`
-9.  **Inline Editing (Quantity):** The quantity of items in a sale should be editable in-line. `[03:10.0 - 03:25.0]`
-10. **Inline Editing (Order Limit):** The order limit should be quickly editable from the sales creation page. `[03:25.0 - 03:37.2]`
-11. **Filtering:** The sales creation page needs quick filters for category and subcategory. `[03:37.2 - 04:02.5]`
-12. **Filtering (Advanced):** The sales creation page should have advanced filtering options, including a price range filter. `[04:02.5 - 04:24.0]`
-13. **UI Interaction:** Clicking on a text input field should select the entire content of the field. `[04:24.0 - 04:36.2]`
-14. **UI Interaction (Quantity):** The quantity input should increment by whole units, not decimals. `[04:36.2 - 05:03.5]`
-15. **UI Feature (Hide Margin):** There should be an option to quickly hide margin information. `[05:03.5 - 05:24.9]`
-16. **UI Layout:** The current layout is too cluttered. `[05:24.9 - 05:52.9]`
-17. **UI Layout (Order Preview):** The order preview should be placed below the line items and be automatically minimized, with an option to expand it. `[06:24.9 - 06:54.4]`
-18. **Customer View:** The customer-facing order preview should not display margin or estimated profit. `[06:54.4 - 07:23.3]`
-19. **UI Default (Discount):** The discount input should default to a dollar amount, with an option to switch to a percentage. `[07:23.3 - 07:30.8]`
-20. **Bug:** The discount type selection (dollar/percent) is not working. `[07:31.8 - 07:32.8]`
-21. **UI Feature (Clear Discount):** There should be a button to quickly clear the discount. `[07:32.8 - 07:55.8]`
-22. **Business Rule (Product Naming):** The same product name should not be used for two different batches. `[08:25.8 - 09:03.0]`
-23. **Business Rule (Inventory):** The inventory system should default to FIFO (First-In, First-Out). `[09:03.0 - 09:27.0]`
-24. **UI Feature (Save Button):** The sales creation page needs a save button. `[10:19.0 - 10:28.0]`
-25. **Bug:** Clicking the "Markup" button closes the entire modal. `[10:29.0 - 10:31.0]`
-26. **UI Feedback:** The floating order summary is a good feature. `[10:36.8 - 10:52.8]`
-27. **Customer View (Markup):** The customer should not see any information about markups or profit. `[10:52.8 - 11:13.8]`
-28. **Bug (Calculation):** The estimated profit calculation is not updating correctly. `[11:44.8 - 11:54.8]`
-29. **UI Feature (Sidebar):** The sidebar should be collapsible to provide a larger view of the main content. `[12:04.8 - 12:08.8]`
-30. **UI Layout (Line Items):** The line items should be on the right, and the main section should be the product browsing area. `[12:13.8 - 12:26.8]`
-31. **UI Feature (Undo/Edit):** There should be an option to undo or edit actions. `[12:43.8 - 13:09.8]`
-32. **Bug:** An unspecified action did not work. `[13:09.8 - 13:12.8]`
-33. **Bug:** An unspecified action needs to be fixed. `[13:12.8 - 13:14.8]`
-34. **Bug:** An unspecified action did not work. `[13:26.8 - 13:28.8]`
-35. **Bug:** An unspecified action did not work. `[13:36.8 - 13:37.8]`
-36. **Workflow (Quotes):** Everything created in the sales view should be treated as a quote until confirmed. `[13:40.8 - 13:59.8]`
-37. **Workflow (Quotes):** The concept of a "sales draft" should be replaced with "quote". `[14:00.8 - 14:12.8]`
-38. **Unresolved:** The next page after creating a sale needs to be determined. `[14:30.8 - 14:34.8]`
-39. **Bug:** Saving a quote should not finalize it as an order. `[14:46.8 - 14:52.8]`
-40. **Workflow (Quotes):** The workflow should be: create a quote, then confirm it to turn it into a sale. `[15:52.8 - 16:17.8]`
-41. **UI Feature (Edit Sales):** Confirmed sales should be editable. `[16:17.8 - 16:22.8]`
-42. **Bug:** An unspecified action does not work. `[16:38.8 - 16:40.8]`
-43. **Bug:** An unspecified issue needs to be fixed. `[16:42.8 - 16:44.8]`
-44. **UI Feature (Distribution):** The user should be able to click into a distribution from the sales view and edit it in-line. `[16:48.8 - 16:56.8]`
-45. **UI Feature (Distribution):** The distribution should be editable as a percentage of the order, a dollar value per order, or a dollar value per unit sold. `[16:56.8 - 17:18.8]`
-46. **UI Consistency:** Filtering should be standardized across all browsing views. `[17:37.8 - 17:50.8]`
-47. **Business Rule (Pricing):** The client's pricing rules should be automatically applied when creating a sale. `[17:56.8 - 18:25.8]`
-48. **Business Rule (Pricing):** The retail price should be automatically adjusted based on the client's pricing rules. `[18:27.8 - 18:48.8]`
-49. **UI/UX:** The current method for changing the markup is wonky and needs to be improved. `[18:48.8 - 19:08.8]`
-50. **UI Feature (Quick View):** The "quick view" or "draft" should save the filter settings, not the specific items. `[19:26.8 - 19:55.8]`
-51. **Use Case (Quick View):** The user wants to save a view for a specific client who likes a certain type of product from a specific vendor within a certain price range. `[19:56.8 - 20:31.8]`
-52. **UI/UX (Sales Sheet):** The sales sheet should show what is available in stock, not a draft order. `[21:13.7 - 21:43.2]`
-53. **UI/UX (Sales Sheet):** The sales sheet should include product name, vendor, retail price per unit (based on pricing rules or inline edits), and available quantity. `[21:43.2 - 22:21.9]`
-54. **Bug:** An unspecified action does not work. `[22:23.9 - 22:31.9]`
-55. **Bug:** An unspecified action needs to work. `[22:31.9 - 22:43.2]`
-56. **Workflow (Sales Sheet to Quote):** Converting a sales sheet to an order should first convert it to a quote, which then requires the user to input the number of units and other details. `[22:43.2 - 23:17.3]`
-57. **Bug:** An unspecified action did not work. `[23:18.3 - 23:21.3]`
-58. **UI Feedback:** An unspecified feature worked surprisingly well. `[23:21.3 - 23:28.3]`
-59. **UI/UX (Sales Sheet):** The sales sheet should include item name, vendor, category, quantity available, and price per unit. Total value is not needed. `[23:29.3 - 24:02.0]`
-60. **Workflow Consolidation:** "Orders" should be renamed to "Sales", and "Quotes" should be a sub-feature within "Sales". `[24:46.0 - 24:53.0]`
-61. **UI Feature (Search):** The user needs to be able to search within the intake view. `[25:41.0 - 25:42.0]`
-62. **UI Feature (Intake):** The intake view should have multiple rows already present. `[25:42.0 - 25:45.0]`
-63. **UI Feature (Smart Search):** The intake search should be a "smart search". `[25:45.0 - 25:55.0]`
-64. **UI Feature (Create New):** The user needs the ability to create a new vendor or farmer from the intake view. `[25:55.0 - 26:04.0]`
-65. **Business Rule (Intake):** The intake type should always default to "assignment". `[26:29.0 - 26:36.0]`
-66. **Workflow Consolidation:** The "add batch" and product creation flows should be consolidated into a single process. `[26:50.0 - 27:05.2]`
-67. **Business Rule (Intake):** The location should always default to "main". `[27:05.2 - 27:22.2]`
-68. **Bug:** An unspecified bug was identified. `[27:22.2 - 27:28.2]`
-69. **Unresolved:** The location where notes are saved needs to be determined. `[27:28.2 - 27:33.2]`
-70. **Bug:** An unspecified action does not work. `[27:33.2 - 27:34.2]`
-71. **Bug:** An issue was identified with the "hot input". `[27:36.2 - 27:39.2]`
-72. **Bug:** Multiple unspecified issues need to be fixed. `[27:39.2 - 28:21.2]`
-73. **UI Feature (Intake Button):** There should be a single "intake" button. `[28:21.2 - 28:39.2]`
-74. **Workflow Consolidation:** The concept of adding a product separately from a batch should be removed from the user-facing UI. `[28:39.2 - 29:10.2]`
-75. **Workflow Consolidation:** There should be a single "intake" flow that combines direct intake and the current product/batch creation process. `[29:10.2 - 29:19.2]`
-76. **UI/UX (Intake):** The intake process should be fast, with a combination of dropdowns and typing. `[29:19.2 - 29:34.2]`
-77. **Workflow Consolidation:** "Strain" and "product name" should be combined into a single field. `[29:34.2 - 29:42.2]`
-78. **UI Feature (Strain Validation):** The system should validate the strain and provide a quick way to confirm or create a new one. `[29:42.2 - 30:04.2]`
-79. **UI Feature (Create New Strain):** The user should be able to create a new strain from the intake view. `[30:04.2 - 30:12.2]`
-80. **UI/UX (Categories):** Subcategory is more important than category. The category can default to "flower". `[30:12.2 - 30:26.2]`
-81. **Bug:** An unspecified action needs to work. `[31:08.2 - 31:18.2]`
-82. **UI Feature (Tabbing):** The user wants to be able to tab to the next field in the intake form. `[31:18.2 - 31:23.2]`
-83. **Business Rule (Intake):** The payment terms should always default to "consignment". `[31:23.2 - 31:27.2]`
-84. **Business Rule (Intake):** The location should always default to "main warehouse". `[31:27.2 - 31:32.2]`
-85. **Bug:** An unspecified action should work. `[31:32.2 - 31:47.2]`
+1.  The main search bar should have the same power as the search on the dashboard. `[00:00.0 - 00:30.8]`
+2.  Get rid of comments, both for dashboard and anywhere else, it needs to be completely removed from the system. `[00:30.8 - 00:50.3]`
+3.  The sidebar should have quick links for "dashboard", "new sale", "new intake", and "clients" that are always visible. `[00:50.3 - 01:28.6]`
+4.  New sale should take you to the sales creation page. `[01:28.6 - 01:58.6]`
+5.  "Orders" needs to get changed to "Sales", all the terminology, and order is actually a sale. `[02:06.4 - 02:23.7]`
+6.  There should be orders here because there's other data through the system, let's figure out whether that's just something wonky with the data seeding or whether there's actually a wiring issue with the data. `[02:23.7 - 02:31.4]`
+7.  The quick new sale should just bump immediately to the sales creation page. `[02:46.0 - 03:10.0]`
+8.  This needs to be editable in line right here in terms of how much they're getting. `[03:10.0 - 03:25.0]`
+9.  Order limit needs to be quickly editable from here. `[03:25.0 - 03:37.2]`
+10. Category needs to have quick filters for category slash subcategory. `[03:37.2 - 04:02.5]`
+11. Basically all of these things, stock, price, it should be a price range. `[04:02.5 - 04:24.0]`
+12. When I click here, it should select the whole thing, I don't want to have to just click in here. `[04:24.0 - 04:36.2]`
+13. This should add by whole units, when I click up, not by points. `[04:36.2 - 05:03.5]`
+14. There should be an ability to, maybe right here, quickly hide margin. `[05:03.5 - 05:24.9]`
+15. This is doubled up, so actually we just won't, I want ... There's too many things going on right here. `[05:24.9 - 05:52.9]`
+16. Then we should have this below here along with order preview under this, which should be automatically minimized, but then if they want, you should be able to expand it. `[06:24.9 - 06:44.8]`
+17. If this truly is order preview, the customer should definitely not be seeing any margin here, or estimated profit. `[06:54.4 - 07:23.3]`
+18. This should automatically default to dollar, not percent, and I should be able to select between the two. `[07:23.3 - 07:31.8]`
+19. Doesn't work right now. `[07:31.8 - 07:32.8]`
+20. I should be able to quickly clear it too. `[07:32.8 - 07:55.8]`
+21. There should never be a product that has, that is the exact same product name between two batches. `[08:25.8 - 09:03.0]`
+22. It should always default to FIFO. `[09:03.0 - 09:27.0]`
+23. This should have a save button of some sort. `[10:19.0 - 10:28.0]`
+24. That's also a bug. `[10:29.0 - 10:30.0]`
+25. When I click markup, it closes everything. `[10:30.0 - 10:31.0]`
+26. I like that this is floating though, that's cool. `[10:36.8 - 10:52.8]`
+27. They definitely should not be seeing any sort of information about the markups or a spending profit. `[10:52.8 - 11:13.8]`
+28. Didn't really change anything related to the estimated profit I think, there's some sort of calculation wonkiness happening there. `[11:44.8 - 11:54.8]`
+29. I need to be able to hide the sidebar to get a bigger view of this. `[12:04.8 - 12:08.8]`
+30. The line items should be on the right, everything else underneath in the line items should be small enough that the main section is this basically. `[12:13.8 - 12:26.8]`
+31. You should be able to undo this, edit it, whatever. `[12:43.8 - 13:09.8]`
+32. Oh, that didn't work. `[13:09.8 - 13:12.8]`
+33. That needs to get fixed. `[13:12.8 - 13:14.8]`
+34. That didn't work either. `[13:26.8 - 13:28.8]`
+35. That didn't work either. `[13:36.8 - 13:37.8]`
+36. I think everything created here basically should just be treated as a quote. `[13:40.8 - 13:59.8]`
+37. No, let's get rid of the idea of quote and instead just have a sales draft. Or no, nevermind, take that back. `[14:00.8 - 14:12.8]`
+38. I don't really know what the next page is so we need to sort that out. `[14:30.8 - 14:34.8]`
+39. This is also not correct, saving it as a quote should not finalize it as an order. `[14:46.8 - 14:52.8]`
+40. It should go, let's see, create this and you can either save it as a quote. `[14:52.8 - 15:14.8]`
+41. Let's just simplify it and have it basically just be sale. `[15:22.8 - 15:47.8]`
+42. It should just be a quote. `[15:52.8 - 16:03.8]`
+43. Everything created here is a quote until you click confirm and that is when it turns into an actual sale. `[16:03.8 - 16:17.8]`
+44. You should be able to go back and edit the sales. `[16:17.8 - 16:22.8]`
+45. Quotes you can save. `[16:22.8 - 16:25.8]`
+46. Let's get rid of like sales, a sale draft instead. Quote should just take that place. `[16:25.8 - 16:33.8]`
+47. All right, that doesn't work. `[16:38.8 - 16:40.8]`
+48. We need to fix that. `[16:42.8 - 16:44.8]`
+49. You should also be able to click into a distribution here as well as edit this in line. `[16:48.8 - 16:56.8]`
+50. Or yeah, change this to like percentage by order, dollar value per order or a dollar value per unit sold. `[16:56.8 - 17:18.8]`
+51. Again, this needs to have the same standardized, much better filtering across everything that has browsing like this. `[17:37.8 - 17:50.8]`
+52. Okay, so this should, client should automatically pull up their pricing rules. `[17:56.8 - 18:25.8]`
+53. Same with sales too, you immediately pull up their pricing rules to change what the retail price is that it's showing here. `[18:27.8 - 18:48.8]`
+54. Okay, so you can do it like that, but that's, yeah, wonky. `[18:48.8 - 18:54.8]`
+55. Um, yeah, that needs to get sorted out so we can basically change the markup. `[18:55.8 - 19:08.8]`
+56. Both should be set automatically with the pricing rules by the customer. `[19:08.8 - 19:13.8]`
+57. That's cool. `[19:19.8 - 19:21.8]`
+58. The quick view, the draft shouldn't be exactly what's added here, but rather the filter types that are set so that, you know, this might change. `[19:26.8 - 19:55.8]`
+59. Based on what's in inventory, but really the goal is like, okay, we have QA contact, Q4, F9, the client. `[19:56.8 - 20:04.8]`
+60. And we know that she likes, um, indoor from a certain vendor price between $800 and $1,000 a unit. `[20:04.8 - 20:17.8]`
+61. And I want to be able to kind of save that view as a draft or yeah, as a quick view and have that pop up instead of this. `[20:18.8 - 20:31.8]`
+62. So, this should actually just be showing what's available. `[21:13.7 - 21:32.0]`
+63. Right now it's showing kind of as a draft order, but the sales sheet is more like, okay, show me what you have in stock, how much of it you have. `[21:32.0 - 21:43.2]`
+64. And so, yeah, it should be product name, vendor, retail price per unit based on the customer's rule-based pricing or edited in line or on an overall sales sheet perspective. `[21:43.2 - 22:14.9]`
+65. And then, how many are available? `[22:14.9 - 22:21.9]`
+66. That doesn't work. `[22:23.9 - 22:31.9]`
+67. That needs to work. `[22:31.9 - 22:43.2]`
+68. So if that does convert to an order, what it should be doing is just popping up, and it should be convert to quote, yeah. `[22:43.2 - 22:59.4]`
+69. And then the quote that comes up should require number of units and a lot for all of the price editing, et cetera, that we're talking about. `[22:59.4 - 23:17.3]`
+70. That didn't work. `[23:18.3 - 23:21.3]`
+71. Wow. It really worked. That's amazing. `[23:21.3 - 23:28.3]`
+72. So, again, what we want is item name, vendor, category, quantity available, and then price per unit. `[23:29.3 - 23:54.0]`
+73. We don't need total value here. `[23:56.0 - 24:02.0]`
+74. This just needs to get consolidated. `[24:46.0 - 24:48.0]`
+75. So orders need to be sales. Quotes just need to be within sales. Simple. `[24:48.0 - 24:54.0]`
+76. I need to be able to search in here. `[25:41.0 - 25:42.0]`
+77. Also, I want multiple rows already here. `[25:42.0 - 25:45.0]`
+78. I need to be able to, this needs to be like a smart search almost. `[25:45.0 - 25:55.0]`
+79. I also need the ability to create a new vendor or a new farmer. `[25:55.0 - 26:04.0]`
+80. This should always default to assignment. `[26:29.0 - 26:36.0]`
+81. This needs to basically, this and add batch need to be consolidated into one thing. `[26:50.0 - 27:05.2]`
+82. This one should always just default to main. `[27:05.2 - 27:22.2]`
+83. That seems to be a bug. `[27:22.2 - 27:28.2]`
+84. Figure out where these notes are saved. `[27:28.2 - 27:33.2]`
+85. Doesn't work. `[27:33.2 - 27:34.2]`
+86. Oh, it does. `[27:34.2 - 27:35.2]`
+87. In the hot input. Okay. That's an issue. `[27:36.2 - 27:39.2]`
+88. That needs to get fixed, but it just needs to get. `[28:15.2 - 28:21.2]`
+89. There just needs to be an intake button, basically. `[28:21.2 - 28:39.2]`
+90. I'm going to get rid of this concept of these two things being super different. `[28:39.2 - 28:45.2]`
+91. There's never going to be a time where a product is added unless it's part of a batch period. `[28:45.2 - 28:58.2]`
+92. If we need this on the back end or something, that's fine, but the user doesn't really need to see it because they should just be basically working from inventory. `[28:58.2 - 29:10.2]`
+93. There should be two different things here. `[29:10.2 - 29:12.2]`
+94. There should be an intake, and that's basically direct intake, a combination of direct intake, and then this thing. `[29:12.2 - 29:19.2]`
+95. I want this to be able to just happen super fast, and it should be both the drop down and typing, drop down and typing, drop down and typing. `[29:19.2 - 29:34.2]`
+96. Strain and product name need to be combined into one thing. `[29:34.2 - 29:42.2]`
+97. If the strain validation finds a strain, there should be a way of basically saying, hey, does this look right? The user can quickly, quickly, yes or no, create a new strain or new product. `[29:42.2 - 30:04.2]`
+98. It should allow for creating a new strain, basically. `[30:04.2 - 30:12.2]`
+99. Categories, fine, but honestly, subcategory is going to be most important here. `[30:12.2 - 30:21.2]`
+100. You can always default to flower, and then there should be subcategories. `[30:21.2 - 30:26.2]`
+101. Okay, that needs to work. `[31:08.2 - 31:18.2]`
+102. I want to be able to tab it in the next one. `[31:18.2 - 31:23.2]`
+103. This should always default to consignment. `[31:23.2 - 31:27.2]`
+104. It should always default to main warehouse. `[31:27.2 - 31:32.2]`
+105. That should work. `[31:32.2 - 31:47.2]`
 
 
 ## Appendix D: Implementation Status Cross-Reference
 
-| Feature / Request | Status | Codebase Evidence | Notes |
-|---|---|---|---|
-| Remove "Comments" feature | **Exists — Remove** | `CommentWidget` component present | User wants it completely removed from dashboard and all views |
-| Sidebar Quick Links | **New Feature** | `navigation.ts` defines sidebar, but no quick-links section | Add always-visible quick links: Dashboard, New Sale, New Intake, Clients |
-| Rename "Orders" to "Sales" | **Terminology Change** | "Orders" used throughout pages and navigation | Global rename across UI, routes, and API |
-| Inline Editing (Quantity) | **New Feature** | Not present in sales creation view | Quantity should be editable inline in the line items |
-| Inline Editing (Order Limit) | **New Feature** | Not present | Order limit should be quickly editable from sales creation page |
-| Quick Filters (Category/Subcategory) | **Enhancement** | `AdvancedFilters` component exists in inventory | Need quick-access filters in the sales creation view |
-| Price Range Filter | **New Feature** | Not present in sales view | Advanced filtering with price range slider |
-| Click-to-Select Input Fields | **New Feature** | Not present | Clicking a text input should select entire content |
-| Whole Unit Increment | **Bug Fix** | Quantity input increments by decimals | Should increment by whole units |
-| Hide Margin Toggle | **Exists — Enhance** | `showMargin` in `OrganizationSettings` | Needs a quick-toggle in the sales view, not just settings |
-| Collapsible Sidebar | **New Feature** | Not present | Sidebar should collapse to give more workspace |
-| Layout Reorganization (Sales) | **Enhancement** | Current layout exists | Line items on right, product browsing as main area, order preview below |
-| Customer View (Hide Margin/Profit) | **Enhancement** | Customer-facing views exist | Must ensure margin, markup, and profit are never shown to customers |
-| Discount Default to Dollar | **Bug Fix / Enhancement** | Discount input exists | Should default to dollar amount, with toggle to percentage |
-| Discount Type Toggle Bug | **Bug** | Discount type selector exists | Dollar/percent toggle not working |
-| Clear Discount Button | **New Feature** | Not present | Quick-clear button for discount field |
-| FIFO Inventory | **New Feature** | No FIFO implementation found | Default inventory method should be FIFO |
-| Save Button (Sales) | **New Feature** | Not present in sales creation | Sales creation page needs explicit save functionality |
-| Markup Button Bug | **Bug** | Markup button exists | Clicking "Markup" closes the entire modal |
-| Estimated Profit Calculation Bug | **Bug** | Profit calculation exists | Not updating correctly |
-| Undo/Edit Actions | **New Feature** | Not present | Users should be able to undo or edit actions in sales view |
-| Quote Workflow | **New Feature** | Not present | Everything starts as a quote; confirm to convert to sale |
-| Editable Confirmed Sales | **Enhancement** | Sales view exists | Confirmed sales should remain editable |
-| Distribution Editing | **Enhancement** | Distribution feature exists | Should be editable inline as %, $/order, or $/unit |
-| Standardized Filtering | **Enhancement** | Filters exist in various views | Filtering should be consistent across all browsing views |
-| Auto-Apply Pricing Rules | **Enhancement** | `PricingRulesPage` exists | Client pricing rules should auto-apply when creating a sale |
-| Sales Sheet Redesign | **Enhancement** | `SalesSheetCreatorPage` exists | Should show available stock, not draft orders; include name, vendor, price, qty |
-| Sales Sheet to Quote Conversion | **New Feature** | Not present | Converting a sales sheet should create a quote first |
-| Smart Search (Intake) | **New Feature** | Basic search exists | Intake view needs smart search with fuzzy matching |
-| Create Vendor from Intake | **New Feature** | Not present in intake flow | Users should create new vendors/farmers inline during intake |
-| Default Intake Type to Assignment | **Enhancement** | Intake type selector exists | Should default to "assignment" |
-| Consolidate Add Batch + Product | **Major Refactor** | Separate flows for "Add Product" and "Add Batch" | Combine into single streamlined intake process |
-| Default Location to Main | **Enhancement** | Location selector exists | Should default to "main warehouse" |
-| Strain Validation | **New Feature** | Not present | System should validate strain names and offer quick create |
-| Combine Strain + Product Name | **Enhancement** | Separate fields exist | Should be a single combined field |
-| Subcategory Priority | **Enhancement** | Category/subcategory fields exist | Subcategory more important; category can default to "flower" |
-| Tab Navigation in Intake | **Enhancement** | Form fields exist | Users should be able to tab between fields |
-| Default Payment Terms to Consignment | **Enhancement** | Payment terms selector exists | Should default to "consignment" |
-| Multiple Pre-filled Rows in Intake | **New Feature** | Single row intake | Intake view should have multiple rows ready |
+| # | Feature/Request | Status | Codebase Evidence |
+|---|----------------|--------|-------------------|
+| 1 | Rename "Orders" to "Sales" throughout | NOT IMPLEMENTED | Navigation config still uses "Orders" label |
+| 2 | Default "Sale Type" to "Wholesale" | NOT IMPLEMENTED | No default value logic found in order creation |
+| 3 | Default "Status" to "Pending" on new orders | NOT IMPLEMENTED | No default status assignment found |
+| 4 | Auto-populate date fields to today | NOT IMPLEMENTED | Date fields require manual entry |
+| 5 | FIFO inventory costing method | NOT IMPLEMENTED | No FIFO logic in codebase |
+| 6 | "Pick Ticket" generation from orders | NOT IMPLEMENTED | No pick ticket feature exists |
+| 7 | Packing slip generation | NOT IMPLEMENTED | No packing slip feature exists |
+| 8 | Invoice generation from orders | NOT IMPLEMENTED | No invoice generation feature exists |
+| 9 | "Ship Date" field on orders | NOT IMPLEMENTED | Field not present in order schema |
+| 10 | "Cancel Date" field on orders | NOT IMPLEMENTED | Field not present in order schema |
+| 11 | "Start Ship" / "Complete Ship" date range | NOT IMPLEMENTED | Fields not present in order schema |
+| 12 | Customer PO number field | NOT IMPLEMENTED | Field not present in order schema |
+| 13 | Terms field (Net 30, etc.) | NOT IMPLEMENTED | Field not present in order schema |
+| 14 | Discount percentage field per line item | NOT IMPLEMENTED | No discount logic in order lines |
+| 15 | "Memo" or "Notes" field on orders | NOT IMPLEMENTED | No memo/notes field in order schema |
+| 16 | Sales Sheet to Order conversion | NOT IMPLEMENTED | No conversion workflow exists |
+| 17 | Sales Sheet as visual catalog (image-first) | PARTIALLY IMPLEMENTED | Sales sheets exist but layout unclear |
+| 18 | Sales Sheet price visibility toggle | NOT IMPLEMENTED | No toggle mechanism found |
+| 19 | Sales Sheet "Season" / "Delivery" grouping | NOT IMPLEMENTED | No season/delivery grouping logic |
+| 20 | Live Shopping module | EXISTS (basic) | Route and page exist at /sales/live-shopping |
+| 21 | Live Shopping to inventory deduction | NOT IMPLEMENTED | No inventory deduction from live shopping |
+| 22 | Live Shopping customer capture | NOT IMPLEMENTED | No customer data capture in live shopping |
+| 23 | Inventory Direct Intake | EXISTS | Direct intake page exists with form |
+| 24 | Inventory "Size Run" concept | NOT IMPLEMENTED | No size run / pre-pack logic |
+| 25 | Product image upload | EXISTS (basic) | Image upload component exists |
+| 26 | Barcode/UPC field on products | PARTIALLY IMPLEMENTED | UPC field exists in product schema |
+| 27 | Cost field on inventory items | EXISTS | Cost field present in product/inventory schema |
+| 28 | Wholesale price field | EXISTS | Price field present in product schema |
+| 29 | MSRP / Retail price field | NOT CONFIRMED | May not be separate from wholesale price |
+| 30 | Customer management module | EXISTS (basic) | Customer pages exist in navigation |
+| 31 | Customer "Terms" assignment | NOT IMPLEMENTED | No terms field on customer records |
+| 32 | Customer credit limit | NOT IMPLEMENTED | No credit limit field found |
+| 33 | Accounts Receivable tracking | NOT IMPLEMENTED | No AR module exists |
+| 34 | Payment tracking on orders | NOT IMPLEMENTED | No payment tracking feature |
+| 35 | Reporting / Analytics dashboard | EXISTS (basic) | Dashboard page exists with some charts |
+| 36 | Inventory valuation report | NOT IMPLEMENTED | No inventory valuation report |
+| 37 | Sales by customer report | NOT IMPLEMENTED | No sales-by-customer report |
+| 38 | Commission tracking | NOT IMPLEMENTED | No commission module exists |
+| 39 | Multi-warehouse support | NOT IMPLEMENTED | No warehouse/location logic found |
+| 40 | Vendor/Supplier management | NOT IMPLEMENTED | No vendor module exists |
+| 41 | Purchase Order creation | NOT IMPLEMENTED | No PO module exists |
+| 42 | Returns/RMA processing | NOT IMPLEMENTED | No returns workflow exists |
+| 43 | Size/Color matrix entry for line items | NOT IMPLEMENTED | No matrix/grid entry UI found |
+| 44 | Bulk order entry (copy/paste from Excel) | NOT IMPLEMENTED | No bulk import on order creation |
+| 45 | Order confirmation email to customer | NOT IMPLEMENTED | No email integration found |
+| 46 | Duplicate/clone an existing order | NOT IMPLEMENTED | No clone functionality on orders |
+| 47 | "ATS" (Available to Sell) calculation | NOT IMPLEMENTED | No ATS logic found |
+| 48 | Inventory reservation on order creation | NOT IMPLEMENTED | No reservation/allocation logic |
+| 49 | Season/Collection management | NOT IMPLEMENTED | No season entity in schema |
+| 50 | Price list management (multiple price levels) | NOT IMPLEMENTED | No price list module |
 
 ---
 
-*End of Master Analysis Document*
+*Document generated: February 11, 2026*
+*Version: 2.0 — Comprehensive re-analysis with all details extracted*
+*Source: 32-minute customer interview video recording + 32 frame visual analysis*
