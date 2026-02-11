@@ -56,25 +56,22 @@ steps:
     target: "button:has-text('Log Communication'), button:has-text('Log First Communication'), [data-testid='add-communication-btn']"
     wait_for: "[role='dialog']:has-text('Log Communication'), [data-testid='communication-form']"
 
-  - action: custom
-    code: |
-      return page
-        .getByRole('dialog', { name: 'Log Communication' })
-        .getByRole('combobox')
-        .first()
-        .click()
-        .then(() => page.getByRole('option').first().click());
+  - action: click
+    target: "[role='dialog']:has-text('Log Communication') [role='combobox']"
+    wait_for: "[role='option']"
 
-  - action: custom
-    code: |
-      return page
-        .getByRole('textbox', { name: 'Subject *' })
-        .fill('Oracle communication smoke')
-        .then(() =>
-          page
-            .getByRole('textbox', { name: 'Notes' })
-            .fill('Discussed delivery schedule and payment terms. Client confirmed order details.')
-        );
+  - action: click
+    target: "[role='option']"
+
+  - action: type
+    target: "[role='textbox'][name='Subject *'], input[name='subject'], [role='dialog']:has-text('Log Communication') input:first-of-type"
+    value: "Oracle communication smoke"
+    clear_first: true
+
+  - action: type
+    target: "[role='textbox'][name='Notes'], textarea[name='notes'], [role='dialog']:has-text('Log Communication') textarea"
+    value: "Discussed delivery schedule and payment terms. Client confirmed order details."
+    clear_first: true
 
   - action: click
     target: "[role='dialog']:has-text('Log Communication') button:has-text('Save Communication'), [data-testid='save-communication-btn']"

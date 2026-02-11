@@ -1112,9 +1112,15 @@ async function executeAction(
     }
 
     case "custom": {
-      const fn = new Function("page", "context", action.code);
-      await fn(page, context);
-      return {};
+      // Custom actions previously used `new Function()` to eval arbitrary code
+      // from YAML, which is an injection risk. All former custom actions have
+      // been converted to native oracle actions (click, type, etc.).
+      // If a new use case arises, express it as a native action instead.
+      throw new Error(
+        `Custom actions are disabled for security. ` +
+          `Convert the step to native oracle actions (click, type, etc.). ` +
+          `Stored context keys: ${Object.keys(context.stored).join(", ") || "none"}`
+      );
     }
   }
 }
@@ -1367,6 +1373,14 @@ async function assertUIState(
   return result;
 }
 
+/**
+ * STUB: DB assertions are not yet implemented. Every assertion is auto-passed
+ * so that oracle YAML files can declare expected_db sections for future use
+ * without blocking current test runs. When real DB verification is added,
+ * replace the `passed: true` stubs with actual query logic.
+ *
+ * Tracked for implementation in a future wave.
+ */
 async function assertDBState(
   expected: ExpectedDBState,
   _context: OracleContext
