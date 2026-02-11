@@ -288,6 +288,23 @@ function resolveTemplateString(
   return resolved;
 }
 
+function resolveTemplateValue(value: unknown, context: OracleContext): unknown {
+  if (typeof value === "string") {
+    return resolveTemplateString(value, context, "value");
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => resolveTemplateValue(item, context));
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      out[key] = resolveTemplateValue(nested, context);
+    }
+    return out;
+  }
+  return value;
+}
+
 function splitSelectorList(selector: string): string[] {
   return selector
     .split(",")
@@ -322,10 +339,18 @@ function buildSelectorCandidates(
     if (/(btn|button)$/i.test(dataTestId) && normalizedWords) {
       const label = titleCaseWords(normalizedWords);
       candidates.add(`button:has-text("${label}")`);
+      candidates.add(`a:has-text("${label}")`);
 
       if (normalizedWords.toLowerCase().startsWith("create ")) {
         const addLabel = label.replace(/^Create /, "Add ");
         candidates.add(`button:has-text("${addLabel}")`);
+        candidates.add(`a:has-text("${addLabel}")`);
+      }
+
+      if (normalizedWords.toLowerCase().startsWith("new ")) {
+        const addLabel = label.replace(/^New /, "Add ");
+        candidates.add(`button:has-text("${addLabel}")`);
+        candidates.add(`a:has-text("${addLabel}")`);
       }
     }
 
@@ -339,6 +364,16 @@ function buildSelectorCandidates(
       candidates.add("[role='dialog']");
       candidates.add("[role='dialog'] form");
       candidates.add("main form");
+    }
+
+    if (/client-form/i.test(dataTestId)) {
+      candidates.add("[role='dialog']");
+      candidates.add("[role='dialog']:has-text('Add New Client')");
+    }
+
+    if (/batch-form|intake-form/i.test(dataTestId)) {
+      candidates.add("[role='dialog']");
+      candidates.add("[role='dialog']:has-text('New Product Intake')");
     }
 
     if (/search/i.test(dataTestId)) {
@@ -367,8 +402,92 @@ function buildSelectorCandidates(
       }
     }
 
+    if (/business-type/i.test(dataTestId)) {
+      candidates.add("#businessType");
+      candidates.add("[role='dialog'] #businessType");
+      candidates.add("[role='dialog'] [role='combobox']");
+    }
+
+    if (/preferred-contact/i.test(dataTestId)) {
+      candidates.add("#preferredContact");
+      candidates.add("[role='dialog'] #preferredContact");
+    }
+
+    if (/save-client|create-client/i.test(dataTestId)) {
+      candidates.add("button:has-text('Create Client')");
+      candidates.add("button:has-text('Next')");
+      candidates.add("[role='dialog'] button:has-text('Create Client')");
+    }
+
+    if (/buyer|seller|brand|referee|contractor/i.test(dataTestId)) {
+      candidates.add("button:has-text('Buyer')");
+      candidates.add("button:has-text('Seller')");
+      candidates.add("button:has-text('Brand')");
+      candidates.add("button:has-text('Referee')");
+      candidates.add("button:has-text('Contractor')");
+      candidates.add('text="Buyer"');
+      candidates.add('text="Seller"');
+      candidates.add('text="Brand"');
+      candidates.add('text="Referee"');
+      candidates.add('text="Contractor"');
+    }
+
+    if (/check-overdue|run-overdue-check/i.test(dataTestId)) {
+      candidates.add("button:has-text('Check Overdue')");
+      candidates.add("button:has-text('Show AR Aging')");
+      candidates.add("button:has-text('Refresh')");
+    }
+
+    if (/mark-sent/i.test(dataTestId)) {
+      candidates.add("button:has-text('Mark Sent')");
+      candidates.add("button:has-text('Send Payment Reminder')");
+      candidates.add("button:has-text('Mark as Paid (Full)')");
+    }
+
+    if (/void-invoice|void-option/i.test(dataTestId)) {
+      candidates.add("button:has-text('Void Invoice')");
+      candidates.add("[role='dialog'] button:has-text('Void Invoice')");
+      candidates.add("[role='dialog'] button:has-text('Confirm')");
+      candidates.add("button:has-text('Void')");
+    }
+
+    if (/cogs/i.test(dataTestId)) {
+      candidates.add("#unitCogs");
+      candidates.add("input[id*='cogs' i]");
+      candidates.add("input[placeholder*='unit cost' i]");
+      candidates.add("input[placeholder*='cogs' i]");
+      candidates.add("[role='dialog'] #unitCogs");
+    }
+
+    if (/add-line-item|add-item/i.test(dataTestId)) {
+      candidates.add("button:has-text('Add Item')");
+      candidates.add("button:has-text('Add Line Item')");
+      candidates.add("button:has-text('Add Product')");
+    }
+
+    if (/transactions-tab/i.test(dataTestId)) {
+      candidates.add("[role='tab']:has-text('Transactions')");
+      candidates.add("button[role='tab']:has-text('Transactions')");
+    }
+
+    if (/transactions-list/i.test(dataTestId)) {
+      candidates.add("[role='tabpanel']");
+      candidates.add("table");
+      candidates.add("[role='main']");
+    }
+
+    if (/success|toast|message/i.test(dataTestId)) {
+      candidates.add("[role='status']");
+      candidates.add("[data-sonner-toast]");
+      candidates.add("[class*='toast']");
+      candidates.add("[class*='success']");
+    }
+
     if (/detail/i.test(dataTestId)) {
       candidates.add("[role='dialog']");
+      candidates.add("[role='complementary']");
+      candidates.add("aside[role='complementary']");
+      candidates.add("aside");
       candidates.add("[data-testid*='detail']");
       candidates.add(".detail");
       candidates.add(".details");
@@ -421,15 +540,20 @@ function buildSelectorCandidates(
         candidates.add('input[placeholder*="name" i]');
         candidates.add('input[placeholder*="company" i]');
         candidates.add('input[placeholder*="contact" i]');
+        candidates.add('input[aria-label*="name" i]');
+        candidates.add('input[aria-label*="company" i]');
+        candidates.add('input[aria-label*="contact" i]');
       }
       if (/email/.test(rawName.toLowerCase())) {
         candidates.add('input[type="email"]');
         candidates.add('input[placeholder*="email" i]');
         candidates.add('input[placeholder*="@" i]');
+        candidates.add('input[aria-label*="email" i]');
       }
       if (/phone/.test(rawName.toLowerCase())) {
         candidates.add('input[type="tel"]');
         candidates.add('input[placeholder*="phone" i]');
+        candidates.add('input[aria-label*="phone" i]');
       }
       if (/city/.test(rawName.toLowerCase())) {
         candidates.add('input[placeholder*="city" i]');
@@ -445,6 +569,14 @@ function buildSelectorCandidates(
         candidates.add('input[type="search"]');
         candidates.add('input[placeholder*="search" i]');
       }
+    }
+
+    if (/client-id|order-id|invoice-id|batch-id/i.test(selector)) {
+      candidates.add("[role='complementary'] h2");
+      candidates.add("[role='complementary'] [role='heading']");
+      candidates.add("[role='complementary'] [data-slot='card-title']");
+      candidates.add("[role='dialog'] h2");
+      candidates.add("main h2");
     }
   }
 
@@ -467,6 +599,38 @@ async function isAppShellReady(page: Page): Promise<boolean> {
     .first()
     .isVisible()
     .catch(() => false);
+}
+
+function isRowLikeSelector(rawSelector: string): boolean {
+  const normalized = rawSelector.toLowerCase();
+  return (
+    /\brow\b/.test(normalized) ||
+    /\btr\b/.test(normalized) ||
+    /tbody\s+tr/.test(normalized) ||
+    /table\s+tbody\s+tr/.test(normalized) ||
+    /data-(?!testid)[a-z0-9_-]*id/.test(normalized) ||
+    /\b(order|invoice|batch|client|pick-pack)\b/.test(normalized)
+  );
+}
+
+function hasEmptyStateText(text: string): boolean {
+  return (
+    /no (orders|invoices|batches|clients|results?) found/.test(text) ||
+    /no inventory found/.test(text) ||
+    /no data available/.test(text) ||
+    /create your first (order|invoice|batch|client)/.test(text) ||
+    /select a customer to begin/.test(text) ||
+    /nothing to show/.test(text) ||
+    /failed to load (clients|inventory|orders|invoices)/.test(text)
+  );
+}
+
+async function detectEmptyState(page: Page): Promise<boolean> {
+  const mainText = (
+    (await page.locator("main, [role='main'], body").first().textContent()) ||
+    ""
+  ).toLowerCase();
+  return hasEmptyStateText(mainText);
 }
 
 async function safeWaitForNetworkIdle(page: Page): Promise<void> {
@@ -496,20 +660,12 @@ async function waitForAnySelector(
   timeout: number
 ): Promise<string | undefined> {
   if (candidates.length === 0) return undefined;
-  const perSelectorTimeout = Math.max(
-    1200,
-    Math.floor(timeout / Math.max(candidates.length, 1))
-  );
-
-  for (const candidate of candidates) {
-    try {
-      await page.waitForSelector(candidate, { timeout: perSelectorTimeout });
-      return candidate;
-    } catch {
-      // Try next candidate.
-    }
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeout) {
+    const visible = await findVisibleSelector(page, candidates);
+    if (visible) return visible;
+    await page.waitForTimeout(150);
   }
-
   return undefined;
 }
 
@@ -519,23 +675,35 @@ async function resolveSelectorForAction(
   context: OracleContext,
   timeout: number
 ): Promise<string> {
-  const candidates = buildSelectorCandidates(rawSelector, context);
+  const baseCandidates = buildSelectorCandidates(rawSelector, context);
+  const candidates: string[] = [];
+  const dialogVisible = await page
+    .locator("[role='dialog']")
+    .first()
+    .isVisible()
+    .catch(() => false);
+
+  if (dialogVisible) {
+    for (const candidate of baseCandidates) {
+      if (
+        candidate.startsWith("text=") ||
+        candidate.startsWith("xpath=") ||
+        candidate.includes("[role='dialog']")
+      ) {
+        candidates.push(candidate);
+      } else {
+        candidates.push(`[role='dialog'] ${candidate}`);
+      }
+    }
+  }
+  candidates.push(...baseCandidates);
   const visibleNow = await findVisibleSelector(page, candidates);
   if (visibleNow) return visibleNow;
 
   const eventuallyVisible = await waitForAnySelector(page, candidates, timeout);
   if (eventuallyVisible) return eventuallyVisible;
 
-  const mainText = (
-    (await page.locator("main, [role='main'], body").first().textContent()) ||
-    ""
-  ).toLowerCase();
-  const rowLikeSelector =
-    /row|data-[a-z0-9_-]*id|order|invoice|batch|client/i.test(rawSelector);
-  const emptyState = /no (orders|invoices|batches|clients|results?) found/.test(
-    mainText
-  );
-  if (rowLikeSelector && emptyState) {
+  if (isRowLikeSelector(rawSelector) && (await detectEmptyState(page))) {
     throw new Error(
       `CANNOT_RESOLVE_ID for ${rawSelector}. Empty-state detected in live data.`
     );
@@ -546,6 +714,115 @@ async function resolveSelectorForAction(
       " || "
     )}`
   );
+}
+
+async function isNativeSelectElement(
+  page: Page,
+  selector: string
+): Promise<boolean> {
+  return page
+    .locator(selector)
+    .first()
+    .evaluate(el => {
+      if (el.tagName.toLowerCase() !== "select") return false;
+      const ariaHidden = el.getAttribute("aria-hidden") === "true";
+      const hiddenAttr = el.hasAttribute("hidden");
+      const style = window.getComputedStyle(el);
+      const hiddenByStyle =
+        style.display === "none" || style.visibility === "hidden";
+      return !(ariaHidden || hiddenAttr || hiddenByStyle);
+    })
+    .catch(() => false);
+}
+
+async function selectFromCombobox(
+  page: Page,
+  selector: string,
+  value: string,
+  optionIndex?: number
+): Promise<void> {
+  const trigger = page.locator(selector).first();
+  const expanded = await trigger
+    .getAttribute("aria-expanded")
+    .catch(() => null);
+  if (expanded !== "true") {
+    await trigger
+      .click({ timeout: DEFAULT_ACTION_TIMEOUT })
+      .catch(() => undefined);
+  }
+  await page.waitForTimeout(150);
+
+  if (value) {
+    await page.keyboard.type(value, { delay: 20 }).catch(() => undefined);
+    await page.waitForTimeout(150);
+  }
+
+  const optionGroups = [
+    page.locator("[role='option']"),
+    page.locator("[data-slot='select-item']"),
+    page.locator("[data-radix-collection-item]"),
+    page.locator("li[role='option']"),
+    page.locator("[cmdk-item]"),
+  ];
+
+  if (optionIndex !== undefined && optionIndex >= 0) {
+    for (const group of optionGroups) {
+      const count = await group.count().catch(() => 0);
+      if (count === 0) continue;
+      const boundedIndex = Math.min(optionIndex, count - 1);
+      const candidate = group.nth(boundedIndex);
+      if (await candidate.isVisible().catch(() => false)) {
+        await candidate.click({ timeout: DEFAULT_ACTION_TIMEOUT });
+        return;
+      }
+    }
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  if (normalizedValue.length === 0 && optionIndex === undefined) {
+    for (const group of optionGroups) {
+      const count = await group.count().catch(() => 0);
+      if (count === 0) continue;
+      for (let i = 0; i < Math.min(count, 40); i++) {
+        const candidate = group.nth(i);
+        if (await candidate.isVisible().catch(() => false)) {
+          await candidate.click({ timeout: DEFAULT_ACTION_TIMEOUT });
+          return;
+        }
+      }
+    }
+  }
+
+  if (normalizedValue.length > 0) {
+    for (const group of optionGroups) {
+      const count = await group.count().catch(() => 0);
+      if (count === 0) continue;
+      const max = Math.min(count, 80);
+      for (let i = 0; i < max; i++) {
+        const candidate = group.nth(i);
+        const visible = await candidate.isVisible().catch(() => false);
+        if (!visible) continue;
+        const text = (
+          (await candidate.innerText().catch(() => "")) ||
+          (await candidate.textContent().catch(() => "")) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+        if (
+          text === normalizedValue ||
+          text.includes(normalizedValue) ||
+          normalizedValue.includes(text)
+        ) {
+          await candidate.click({ timeout: DEFAULT_ACTION_TIMEOUT });
+          return;
+        }
+      }
+    }
+  }
+
+  // Fallback when options are keyboard-driven.
+  await page.keyboard.press("Enter").catch(() => undefined);
 }
 
 async function executePreconditions(
@@ -572,7 +849,10 @@ async function executePreconditions(
   if (preconditions.create) {
     for (const createCondition of preconditions.create) {
       console.info(`[Oracle] Would create temp entity: ${createCondition.ref}`);
-      context.temp[createCondition.ref] = { ...createCondition.data };
+      context.temp[createCondition.ref] = resolveTemplateValue(
+        createCondition.data,
+        context
+      ) as Record<string, unknown>;
     }
   }
 }
@@ -705,30 +985,26 @@ async function executeAction(
         "value"
       );
 
-      if (action.type_to_search) {
-        await page.locator(selector).first().click();
-        await page.waitForTimeout(200);
-        await page.keyboard.type(value);
-        await page.waitForTimeout(500);
-        const option = page.locator('[role="option"], .option').first();
-        if (await option.isVisible().catch(() => false)) {
-          await option.click();
-        } else {
-          await page.keyboard.press("Enter");
-        }
-      } else if (action.option_value) {
-        await page
-          .locator(selector)
-          .first()
-          .selectOption({
-            value: resolveTemplateString(action.option_value, context),
+      const optionValue = action.option_value
+        ? resolveTemplateString(action.option_value, context, "value")
+        : "";
+      const desired = optionValue || value;
+      const isNativeSelect = await isNativeSelectElement(page, selector);
+
+      if (isNativeSelect) {
+        if (action.option_index !== undefined) {
+          await page.locator(selector).first().selectOption({
+            index: action.option_index,
           });
-      } else if (action.option_index !== undefined) {
-        await page.locator(selector).first().selectOption({
-          index: action.option_index,
-        });
+        } else if (optionValue) {
+          await page.locator(selector).first().selectOption({
+            value: optionValue,
+          });
+        } else {
+          await page.locator(selector).first().selectOption({ label: value });
+        }
       } else {
-        await page.locator(selector).first().selectOption({ label: value });
+        await selectFromCombobox(page, selector, desired, action.option_index);
       }
       return {};
     }
@@ -799,6 +1075,11 @@ async function executeAction(
         const candidates = buildSelectorCandidates(action.for, context);
         const found = await waitForAnySelector(page, candidates, waitTimeout);
         if (!found) {
+          if (isRowLikeSelector(action.for) && (await detectEmptyState(page))) {
+            throw new Error(
+              `CANNOT_RESOLVE_ID for ${action.for}. Empty-state detected in live data.`
+            );
+          }
           throw new Error(`Wait selector not found: ${action.for}`);
         }
       } else if (action.duration) {

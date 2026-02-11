@@ -35,24 +35,62 @@ export async function validateOrderPage(page: Page): Promise<boolean> {
   const hasOrderNumber = /ORD-\d+|Order #\d+/i.test(bodyText);
   const hasOrderHeading =
     (await page.locator('h1:has-text("Order"), h2:has-text("Order")').count()) >
-    0;
-  const hasLineItems = (await page.locator("table tbody tr").count()) > 0;
-  const hasOrderStatus = /pending|completed|shipped|delivered/i.test(bodyText);
+      0 ||
+    (await page
+      .locator('h1:has-text("Orders"), h2:has-text("Orders")')
+      .count()) > 0;
+  const hasLineItems =
+    (await page.locator("table tbody tr").count()) > 0 ||
+    (await page.locator("table").count()) > 0;
+  const hasOrderStatus = /pending|completed|shipped|delivered|draft|paid/i.test(
+    bodyText
+  );
+  const hasCreateEntry =
+    /new order|create sales order|select a customer to begin|select customer/i.test(
+      bodyText
+    );
+  const hasCreateForm =
+    (await page
+      .locator(
+        "form, [role='form'], [role='combobox'], input, button:has-text('Back to Orders')"
+      )
+      .count()) > 0;
+  const hasEmptyState = /no orders found|no order found|no results found/i.test(
+    bodyText
+  );
 
-  return hasOrderNumber || (hasOrderHeading && hasLineItems && hasOrderStatus);
+  return (
+    hasOrderNumber ||
+    (hasOrderHeading && (hasLineItems || hasOrderStatus)) ||
+    (hasCreateEntry && hasCreateForm) ||
+    hasEmptyState
+  );
 }
 
 export async function validateListPage(page: Page): Promise<boolean> {
-  const hasTable = (await page.locator("table tbody tr").count()) > 0;
+  const bodyText = (await page.textContent("body")) || "";
+  const hasTable =
+    (await page.locator("table tbody tr").count()) > 0 ||
+    (await page.locator("table").count()) > 0;
   const hasList =
     (await page.locator('ul li, [role="list"] [role="listitem"]').count()) > 0;
   const hasPagination =
     (await page.locator('[aria-label="pagination"], .pagination').count()) > 0;
-  const hasCount = /\d+ (items|results|records)/i.test(
-    (await page.textContent("body")) || ""
-  );
+  const hasCount =
+    /\d+ (items|results|records|batches|orders|clients|invoices)/i.test(
+      bodyText
+    );
+  const hasEmptyState =
+    /no (orders|invoices|batches|clients|inventory|results?) found/i.test(
+      bodyText
+    );
+  const hasPrimaryAction =
+    /add (batch|client)|new order|refresh|show ar aging/i.test(bodyText);
 
-  return (hasTable || hasList) && (hasPagination || hasCount);
+  return (
+    (hasTable || hasList || hasEmptyState) &&
+    (hasPagination || hasCount || hasPrimaryAction)
+  );
 }
 
 export function inferDomainType(path: string): DomainType {

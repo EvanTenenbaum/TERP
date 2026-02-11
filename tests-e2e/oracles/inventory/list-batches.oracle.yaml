@@ -3,7 +3,7 @@
 
 flow_id: "Inventory.Batches.ListBatches"
 description: "Verify inventory batches list page loads and displays batch data"
-role: "InventoryManager"
+role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
   - tier1

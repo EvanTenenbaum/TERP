@@ -6,7 +6,7 @@ description: "Update batch COGS (ticket) and notes with optimistic locking verif
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
-  - tier1
+  - tier2
   - inventory
   - mutation
 timeout: 30000

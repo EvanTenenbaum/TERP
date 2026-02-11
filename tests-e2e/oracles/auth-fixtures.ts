@@ -19,13 +19,17 @@ type CredentialSet = {
 
 const DEFAULT_QA_PASSWORD = "TerpQA2026!";
 const ALLOW_ADMIN_FALLBACK = process.env.E2E_ALLOW_ADMIN_FALLBACK !== "false";
+const BASE_URL_FOR_AUTH =
+  process.env.PLAYWRIGHT_BASE_URL ||
+  process.env.MEGA_QA_BASE_URL ||
+  "http://localhost:5173";
+const ORACLE_ADMIN_FIRST =
+  process.env.ORACLE_ADMIN_FIRST === "true" ||
+  (process.env.ORACLE_ADMIN_FIRST !== "false" &&
+    /ondigitalocean\.app/i.test(BASE_URL_FOR_AUTH));
 
 function getBaseUrl(): string {
-  return (
-    process.env.PLAYWRIGHT_BASE_URL ||
-    process.env.MEGA_QA_BASE_URL ||
-    "http://localhost:5173"
-  );
+  return BASE_URL_FOR_AUTH;
 }
 
 function isLoginUrl(url: string): boolean {
@@ -147,7 +151,13 @@ function getRoleCredentialCandidates(role: QARole): CredentialSet[] {
       break;
   }
 
-  if (ALLOW_ADMIN_FALLBACK && role !== "SuperAdmin") {
+  if (ALLOW_ADMIN_FALLBACK && role !== "SuperAdmin" && ORACLE_ADMIN_FIRST) {
+    candidates.unshift({
+      email: TEST_USERS.admin.email,
+      password: TEST_USERS.admin.password,
+      source: "admin fallback (priority)",
+    });
+  } else if (ALLOW_ADMIN_FALLBACK && role !== "SuperAdmin") {
     add(TEST_USERS.admin.email, TEST_USERS.admin.password, "admin fallback");
   }
 

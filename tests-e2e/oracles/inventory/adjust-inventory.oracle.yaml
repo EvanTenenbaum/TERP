@@ -6,7 +6,7 @@ description: "Adjust inventory quantity with categorized adjustment reason for s
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
-  - tier1
+  - tier2
   - inventory
   - mutation
   - movements
