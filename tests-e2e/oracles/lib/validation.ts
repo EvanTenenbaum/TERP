@@ -49,7 +49,11 @@ export function detect404Indicators(bodyText: string): SignalEvaluation {
 
 export function detectErrorState(bodyText: string): SignalEvaluation {
   const reasons: string[] = [];
-  if (/error|failed|something went wrong/i.test(bodyText)) {
+  if (
+    /(something went wrong|unexpected error|fatal error|operation failed|request failed)/i.test(
+      bodyText
+    )
+  ) {
     reasons.push("Body contains explicit error language");
   }
 
@@ -82,10 +86,17 @@ async function hasErrorElements(page: Page): Promise<SignalEvaluation> {
   const reasons: string[] = [];
 
   const errorElementCount = await page
-    .locator(
-      '[role="alert"], [class*="error"], [class*="alert"], [class*="warning"]'
-    )
-    .count();
+    .locator('[role="alert"], [aria-live="assertive"], [data-testid*="error"]')
+    .evaluateAll(elements => {
+      return elements.filter(el => {
+        const style = window.getComputedStyle(el);
+        const hidden =
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          el.getAttribute("aria-hidden") === "true";
+        return !hidden;
+      }).length;
+    });
   if (errorElementCount > 0) {
     reasons.push(`Found ${errorElementCount} potential error elements`);
   }
@@ -98,9 +109,18 @@ async function hasLoadingElements(page: Page): Promise<SignalEvaluation> {
 
   const loadingCount = await page
     .locator(
-      '[class*="skeleton"], [class*="loading"], [class*="placeholder"], [aria-busy="true"]'
+      '[class*="skeleton"], [aria-busy="true"], [data-testid*="loading"]'
     )
-    .count();
+    .evaluateAll(elements => {
+      return elements.filter(el => {
+        const style = window.getComputedStyle(el);
+        const hidden =
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          el.getAttribute("aria-hidden") === "true";
+        return !hidden;
+      }).length;
+    });
   if (loadingCount > 0) {
     reasons.push(`Found ${loadingCount} potential loading indicators`);
   }

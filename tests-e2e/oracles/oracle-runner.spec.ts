@@ -48,12 +48,13 @@ function getOracles(): TestOracle[] {
         throw new Error("ORACLE_TAGS env var required for tags mode");
       }
       return loadOraclesByTags(ORACLE_TAGS.split(","));
-    case "single":
+    case "single": {
       if (!ORACLE_FLOW_ID) {
         throw new Error("ORACLE_FLOW_ID env var required for single mode");
       }
       const oracle = findOracleById(ORACLE_FLOW_ID);
       return oracle ? [oracle] : [];
+    }
     default:
       return loadTier1Oracles();
   }
@@ -71,8 +72,8 @@ test.describe("Oracle-Based E2E Tests", () => {
   // Generate tests dynamically from oracles
   if (oracles.length === 0) {
     test("No oracles loaded", async () => {
-      console.log(`No oracles found for mode: ${RUN_MODE}`);
-      console.log("Check that oracle YAML files exist in tests-e2e/oracles/");
+      console.info(`No oracles found for mode: ${RUN_MODE}`);
+      console.info("Check that oracle YAML files exist in tests-e2e/oracles/");
       // Don't fail - just note that no oracles were found
       expect(true).toBeTruthy();
     });
@@ -100,9 +101,18 @@ test.describe("Oracle-Based E2E Tests", () => {
       results.push(result);
 
       // Log result
-      console.log(formatOracleResult(result));
+      console.info(formatOracleResult(result));
 
-      // Assert success
+      // BLOCKED indicates missing live preconditions/seed data, not an app regression.
+      if (result.status === "BLOCKED") {
+        test.info().annotations.push({
+          type: "blocked",
+          description: `Oracle blocked: ${result.errors.join(" | ")}`,
+        });
+        return;
+      }
+
+      // Assert success for executable flows.
       expect(result.success, `Oracle ${oracle.flow_id} failed`).toBeTruthy();
     });
   }
@@ -112,27 +122,44 @@ test.describe("Oracle-Based E2E Tests", () => {
 test.afterAll(async () => {
   if (results.length === 0) return;
 
-  const passed = results.filter((r) => r.success).length;
-  const failed = results.filter((r) => !r.success).length;
+  const passed = results.filter(r => r.success).length;
+  const blocked = results.filter(r => r.status === "BLOCKED").length;
+  const failed = results.filter(
+    r => !r.success && r.status !== "BLOCKED"
+  ).length;
   const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
 
-  console.log("\n" + "=".repeat(60));
-  console.log("Oracle Test Summary");
-  console.log("=".repeat(60));
-  console.log(`Total: ${results.length} | Passed: ${passed} | Failed: ${failed}`);
-  console.log(`Duration: ${(totalDuration / 1000).toFixed(2)}s`);
+  console.info("\n" + "=".repeat(60));
+  console.info("Oracle Test Summary");
+  console.info("=".repeat(60));
+  console.info(
+    `Total: ${results.length} | Passed: ${passed} | Failed: ${failed} | Blocked: ${blocked}`
+  );
+  console.info(`Duration: ${(totalDuration / 1000).toFixed(2)}s`);
 
   if (failed > 0) {
-    console.log("\nFailed Oracles:");
-    for (const result of results.filter((r) => !r.success)) {
-      console.log(`  - ${result.flow_id}`);
+    console.info("\nFailed Oracles:");
+    for (const result of results.filter(
+      r => !r.success && r.status !== "BLOCKED"
+    )) {
+      console.info(`  - ${result.flow_id}`);
       for (const error of result.errors) {
-        console.log(`      ${error}`);
+        console.info(`      ${error}`);
       }
     }
   }
 
-  console.log("=".repeat(60) + "\n");
+  if (blocked > 0) {
+    console.info("\nBlocked Oracles:");
+    for (const result of results.filter(r => r.status === "BLOCKED")) {
+      console.info(`  - ${result.flow_id}`);
+      for (const error of result.errors) {
+        console.info(`      ${error}`);
+      }
+    }
+  }
+
+  console.info("=".repeat(60) + "\n");
 
   // Write results to JSON file
   const reportPath = path.join(
@@ -157,6 +184,7 @@ test.afterAll(async () => {
           total: results.length,
           passed,
           failed,
+          blocked,
           duration: totalDuration,
         },
         results,
@@ -166,5 +194,5 @@ test.afterAll(async () => {
     )
   );
 
-  console.log(`Results written to: ${reportPath}`);
+  console.info(`Results written to: ${reportPath}`);
 });

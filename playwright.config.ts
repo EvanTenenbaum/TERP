@@ -66,6 +66,16 @@ export default defineConfig({
       testDir: "./tests/smoke",
       use: { ...devices["Desktop Chrome"] },
     },
+    // Runtime regression checks that are safe to execute against live targets.
+    ...(isRemoteExecution
+      ? [
+          {
+            name: "runtime-oracle",
+            testMatch: /tests-e2e\/oracles\/oracle-runner\.spec\.ts/,
+            use: { ...devices["Desktop Chrome"] },
+          },
+        ]
+      : []),
     // Local-only projects: broad compatibility, dev flows, and viewport matrix.
     ...(isRemoteExecution
       ? []

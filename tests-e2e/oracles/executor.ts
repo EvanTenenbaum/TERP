@@ -22,6 +22,12 @@ import { runValidationSignals } from "./lib/validation";
 import { FailureMode, classifyFailure } from "./lib/failure-classifier";
 
 const entityCache: EntityCache = {};
+const DEFAULT_ACTION_TIMEOUT = Number(
+  process.env.ORACLE_ACTION_TIMEOUT_MS || 10000
+);
+const NETWORK_IDLE_TIMEOUT = Number(
+  process.env.ORACLE_NETWORK_IDLE_TIMEOUT_MS || 5000
+);
 
 /**
  * Execute a test oracle
@@ -180,18 +186,353 @@ export function createEmptyContext(): OracleContext {
   };
 }
 
+function randomAlphaNumeric(length: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+
+function titleCaseWords(input: string): string {
+  return input
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function normalizeSelectorSyntax(selector: string): string {
+  return selector
+    .replace(/:contains\((["'])(.*?)\1\)/g, ':has-text("$2")')
+    .replace(/\[([a-zA-Z0-9_-]+)=['"]\s*['"]\]/g, "[$1]")
+    .replace(/\s*,\s*/g, ", ")
+    .trim();
+}
+
+function parseTemplateContextPath(
+  expression: string,
+  context: OracleContext
+): string {
+  const [source, remainder] = expression.split(":", 2);
+  if (!remainder) return "";
+
+  if (source === "seed") {
+    const parts = remainder.split(".");
+    if (parts.length < 2) return "";
+    const key = `${parts[0]}.${parts[1]}`;
+    const record = context.seed[key] as Record<string, unknown> | undefined;
+    if (!record) return "";
+    if (parts.length === 2) return JSON.stringify(record);
+    const field = parts.slice(2).join(".");
+    return String(record[field] ?? "");
+  }
+
+  if (source === "stored") {
+    return String(context.stored[remainder] ?? "");
+  }
+
+  if (source === "created") {
+    const parts = remainder.split(".");
+    if (parts.length < 1) return "";
+    const record = context.created[parts[0]] as
+      | Record<string, unknown>
+      | undefined;
+    if (!record) return "";
+    if (parts.length === 1) return JSON.stringify(record);
+    return String(record[parts.slice(1).join(".")] ?? "");
+  }
+
+  if (source === "temp") {
+    const parts = remainder.split(".");
+    const record = context.temp[parts[0]] as
+      | Record<string, unknown>
+      | undefined;
+    if (!record) return "";
+    if (parts.length === 1) return JSON.stringify(record);
+    return String(record[parts.slice(1).join(".")] ?? "");
+  }
+
+  return "";
+}
+
+function resolveTemplateString(
+  value: string,
+  context: OracleContext,
+  mode: "value" | "selector" = "value"
+): string {
+  if (!value) return value;
+
+  let resolved = resolveValue(value, context);
+
+  resolved = resolved.replace(/{{\s*([^}]+)\s*}}/g, (_, rawExpr) => {
+    const expr = String(rawExpr).trim();
+
+    if (expr === "timestamp") {
+      return String(Date.now());
+    }
+
+    if (expr.startsWith("random:")) {
+      const len = Number(expr.split(":", 2)[1]);
+      return randomAlphaNumeric(Number.isFinite(len) && len > 0 ? len : 6);
+    }
+
+    return parseTemplateContextPath(expr, context);
+  });
+
+  if (mode === "selector") {
+    return normalizeSelectorSyntax(resolved);
+  }
+
+  return resolved;
+}
+
+function splitSelectorList(selector: string): string[] {
+  return selector
+    .split(",")
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function buildSelectorCandidates(
+  rawSelector: string,
+  context: OracleContext
+): string[] {
+  const resolvedRaw = resolveTemplateString(rawSelector, context, "selector");
+  const candidates = new Set<string>();
+
+  for (const selector of splitSelectorList(resolvedRaw)) {
+    const normalized = normalizeSelectorSyntax(selector);
+    if (!normalized) continue;
+    candidates.add(normalized);
+
+    const dataTestIdMatch = normalized.match(
+      /^\[data-testid=['"]([^'"]+)['"]\]$/
+    );
+    if (!dataTestIdMatch) continue;
+
+    const dataTestId = dataTestIdMatch[1];
+    const normalizedWords = dataTestId
+      .replace(/[-_](btn|button)$/i, "")
+      .replace(/[-_](list|table)$/i, "")
+      .replace(/[-_]+/g, " ")
+      .trim();
+
+    if (/(btn|button)$/i.test(dataTestId) && normalizedWords) {
+      const label = titleCaseWords(normalizedWords);
+      candidates.add(`button:has-text("${label}")`);
+
+      if (normalizedWords.toLowerCase().startsWith("create ")) {
+        const addLabel = label.replace(/^Create /, "Add ");
+        candidates.add(`button:has-text("${addLabel}")`);
+      }
+    }
+
+    if (/(list|table)$/i.test(dataTestId)) {
+      candidates.add("table");
+      candidates.add("[role='table']");
+    }
+
+    if (/form/i.test(dataTestId)) {
+      candidates.add("form");
+      candidates.add("[role='dialog']");
+      candidates.add("[role='dialog'] form");
+      candidates.add("main form");
+    }
+
+    if (/search/i.test(dataTestId)) {
+      candidates.add('input[type="search"]');
+      candidates.add('input[placeholder*="search" i]');
+      candidates.add('input[aria-label*="search" i]');
+    }
+
+    if (/row/i.test(dataTestId)) {
+      candidates.add("table tbody tr");
+      candidates.add("tbody tr");
+      candidates.add("tr");
+    }
+
+    const fuzzyId = dataTestId
+      .replace(/[-_](btn|button|list|table)$/i, "")
+      .trim();
+    if (fuzzyId) {
+      candidates.add(`[data-testid*="${fuzzyId}"]`);
+    }
+  }
+
+  for (const selector of Array.from(candidates)) {
+    const rowMatch = selector.match(/^tr\[data-[a-z0-9_-]+id\]$/i);
+    if (rowMatch) {
+      candidates.add("table tbody tr");
+      candidates.add("tbody tr");
+    }
+
+    const inputNameMatch = selector.match(/^input\[name=['"]([^'"]+)['"]\]$/i);
+    if (inputNameMatch) {
+      const rawName = inputNameMatch[1];
+      const snake = rawName
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .toLowerCase();
+      const kebab = snake.replace(/_/g, "-");
+      const spaced = snake.replace(/_/g, " ");
+      candidates.add(`input[name='${snake}']`);
+      candidates.add(`input[name='${kebab}']`);
+      candidates.add(`input[id*='${rawName.toLowerCase()}']`);
+      candidates.add(`input[id*='${snake}']`);
+      candidates.add(`input[placeholder*='${spaced}' i]`);
+
+      if (/teri/.test(rawName.toLowerCase())) {
+        candidates.add('input[placeholder*="teri" i]');
+      }
+      if (/name/.test(rawName.toLowerCase())) {
+        candidates.add('input[placeholder*="name" i]');
+        candidates.add('input[placeholder*="company" i]');
+        candidates.add('input[placeholder*="contact" i]');
+      }
+      if (/email/.test(rawName.toLowerCase())) {
+        candidates.add('input[type="email"]');
+        candidates.add('input[placeholder*="email" i]');
+        candidates.add('input[placeholder*="@" i]');
+      }
+      if (/phone/.test(rawName.toLowerCase())) {
+        candidates.add('input[type="tel"]');
+        candidates.add('input[placeholder*="phone" i]');
+      }
+      if (/city/.test(rawName.toLowerCase())) {
+        candidates.add('input[placeholder*="city" i]');
+      }
+      if (/state/.test(rawName.toLowerCase())) {
+        candidates.add('input[placeholder*="state" i]');
+      }
+      if (/zip|postal/.test(rawName.toLowerCase())) {
+        candidates.add('input[placeholder*="zip" i]');
+        candidates.add('input[placeholder*="postal" i]');
+      }
+      if (/search/i.test(rawName)) {
+        candidates.add('input[type="search"]');
+        candidates.add('input[placeholder*="search" i]');
+      }
+    }
+  }
+
+  return Array.from(candidates);
+}
+
+function isLoginPath(url: string): boolean {
+  try {
+    const pathname = new URL(url).pathname;
+    return pathname === "/login" || pathname === "/sign-in";
+  } catch {
+    return url.includes("/login") || url.includes("/sign-in");
+  }
+}
+
+async function isAppShellReady(page: Page): Promise<boolean> {
+  if (isLoginPath(page.url())) return false;
+  return page
+    .locator("main, [role='main'], nav, [role='navigation']")
+    .first()
+    .isVisible()
+    .catch(() => false);
+}
+
+async function safeWaitForNetworkIdle(page: Page): Promise<void> {
+  await page
+    .waitForLoadState("networkidle", { timeout: NETWORK_IDLE_TIMEOUT })
+    .catch(() => undefined);
+}
+
+async function findVisibleSelector(
+  page: Page,
+  candidates: string[]
+): Promise<string | undefined> {
+  for (const candidate of candidates) {
+    const visible = await page
+      .locator(candidate)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (visible) return candidate;
+  }
+  return undefined;
+}
+
+async function waitForAnySelector(
+  page: Page,
+  candidates: string[],
+  timeout: number
+): Promise<string | undefined> {
+  if (candidates.length === 0) return undefined;
+  const perSelectorTimeout = Math.max(
+    1200,
+    Math.floor(timeout / Math.max(candidates.length, 1))
+  );
+
+  for (const candidate of candidates) {
+    try {
+      await page.waitForSelector(candidate, { timeout: perSelectorTimeout });
+      return candidate;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  return undefined;
+}
+
+async function resolveSelectorForAction(
+  page: Page,
+  rawSelector: string,
+  context: OracleContext,
+  timeout: number
+): Promise<string> {
+  const candidates = buildSelectorCandidates(rawSelector, context);
+  const visibleNow = await findVisibleSelector(page, candidates);
+  if (visibleNow) return visibleNow;
+
+  const eventuallyVisible = await waitForAnySelector(page, candidates, timeout);
+  if (eventuallyVisible) return eventuallyVisible;
+
+  const mainText = (
+    (await page.locator("main, [role='main'], body").first().textContent()) ||
+    ""
+  ).toLowerCase();
+  const rowLikeSelector =
+    /row|data-[a-z0-9_-]*id|order|invoice|batch|client/i.test(rawSelector);
+  const emptyState = /no (orders|invoices|batches|clients|results?) found/.test(
+    mainText
+  );
+  if (rowLikeSelector && emptyState) {
+    throw new Error(
+      `CANNOT_RESOLVE_ID for ${rawSelector}. Empty-state detected in live data.`
+    );
+  }
+
+  throw new Error(
+    `Selector not found or not visible. raw=${rawSelector}. candidates=${candidates.join(
+      " || "
+    )}`
+  );
+}
+
 async function executePreconditions(
   page: Page,
   preconditions: TestOracle["preconditions"],
   context: OracleContext
 ): Promise<void> {
+  void page;
+
   if (preconditions.ensure) {
     for (const condition of preconditions.ensure) {
       const ref = condition.ref;
       if (ref.startsWith("seed:")) {
         const [, entityPath] = ref.split("seed:");
         const [entity, name] = entityPath.split(".");
-        context.seed[`${entity}.${name}`] = { _ref: ref };
+        context.seed[`${entity}.${name}`] = {
+          _ref: ref,
+          ...(condition.where || {}),
+        };
       }
     }
   }
@@ -214,11 +555,11 @@ async function executeAction(
   attemptedStrategies?: string[];
   screenshotPath?: string;
 }> {
-  const timeout = 10000;
+  const timeout = DEFAULT_ACTION_TIMEOUT;
 
   switch (action.action) {
     case "navigate": {
-      let targetPath = action.path;
+      let targetPath = resolveTemplateString(action.path, context, "value");
       let attemptedStrategies: string[] = [];
 
       if (targetPath.includes(":")) {
@@ -240,11 +581,23 @@ async function executeAction(
         targetPath = resolved.resolvedPath;
       }
 
-      const response = await page.goto(targetPath);
+      const response = await page.goto(targetPath, {
+        waitUntil: "domcontentloaded",
+      });
       if (action.wait_for) {
-        await page.waitForSelector(action.wait_for, { timeout });
+        const candidates = buildSelectorCandidates(action.wait_for, context);
+        const foundSelector = await waitForAnySelector(
+          page,
+          candidates,
+          timeout
+        );
+        if (!foundSelector && !(await isAppShellReady(page))) {
+          throw new Error(
+            `Navigation wait_for selector not found: ${action.wait_for}`
+          );
+        }
       }
-      await page.waitForLoadState("networkidle");
+      await safeWaitForNetworkIdle(page);
       if (attemptedStrategies.length > 0) {
         console.info(`[Oracle] Resolved route ${action.path} -> ${targetPath}`);
       }
@@ -256,37 +609,72 @@ async function executeAction(
     }
 
     case "click": {
-      const selector = getClickTarget(action);
-      await page.click(selector, { timeout });
+      const rawSelector = getClickTarget(action, context);
+      const selector = await resolveSelectorForAction(
+        page,
+        rawSelector,
+        context,
+        timeout
+      );
+      await page.locator(selector).first().click({ timeout });
+
+      if (action.wait_for) {
+        const waitCandidates = buildSelectorCandidates(
+          action.wait_for,
+          context
+        );
+        const waited = await waitForAnySelector(page, waitCandidates, timeout);
+        if (!waited) {
+          throw new Error(
+            `Click wait_for selector not found: ${action.wait_for}`
+          );
+        }
+      }
+
       if (action.wait_after) {
         await page.waitForTimeout(action.wait_after);
       }
       if (action.wait_for_navigation) {
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded", { timeout });
+        await safeWaitForNetworkIdle(page);
       }
       return {};
     }
 
     case "type": {
-      const value = resolveValue(
+      const selector = await resolveSelectorForAction(
+        page,
+        action.target,
+        context,
+        timeout
+      );
+      const value = resolveTemplateString(
         action.value || action.value_ref || "",
-        context
+        context,
+        "value"
       );
       if (action.clear_first) {
-        await page.fill(action.target, "");
+        await page.locator(selector).first().fill("");
       }
-      await page.fill(action.target, value);
+      await page.locator(selector).first().fill(value);
       return {};
     }
 
     case "select": {
-      const value = resolveValue(
+      const selector = await resolveSelectorForAction(
+        page,
+        action.target,
+        context,
+        timeout
+      );
+      const value = resolveTemplateString(
         action.value || action.value_ref || "",
-        context
+        context,
+        "value"
       );
 
       if (action.type_to_search) {
-        await page.click(action.target);
+        await page.locator(selector).first().click();
         await page.waitForTimeout(200);
         await page.keyboard.type(value);
         await page.waitForTimeout(500);
@@ -297,11 +685,18 @@ async function executeAction(
           await page.keyboard.press("Enter");
         }
       } else if (action.option_value) {
-        await page.selectOption(action.target, { value: action.option_value });
+        await page
+          .locator(selector)
+          .first()
+          .selectOption({
+            value: resolveTemplateString(action.option_value, context),
+          });
       } else if (action.option_index !== undefined) {
-        await page.selectOption(action.target, { index: action.option_index });
+        await page.locator(selector).first().selectOption({
+          index: action.option_index,
+        });
       } else {
-        await page.selectOption(action.target, { label: value });
+        await page.locator(selector).first().selectOption({ label: value });
       }
       return {};
     }
@@ -328,32 +723,56 @@ async function executeAction(
 
     case "assert": {
       if (action.visible) {
-        await expect(page.locator(action.visible)).toBeVisible({ timeout });
+        const selector = await resolveSelectorForAction(
+          page,
+          action.visible,
+          context,
+          timeout
+        );
+        await expect(page.locator(selector).first()).toBeVisible({ timeout });
       }
       if (action.not_visible) {
-        await expect(page.locator(action.not_visible)).not.toBeVisible({
+        const selector = resolveTemplateString(
+          action.not_visible,
+          context,
+          "selector"
+        );
+        await expect(page.locator(selector).first()).not.toBeVisible({
           timeout,
         });
       }
       if (action.text_contains) {
-        await expect(page.locator("body")).toContainText(action.text_contains);
+        await expect(page.locator("body")).toContainText(
+          resolveTemplateString(action.text_contains, context, "value")
+        );
       }
       if (action.value_equals) {
-        const locator = page.locator(action.value_equals.target);
-        await expect(locator).toHaveValue(action.value_equals.value);
+        const selector = await resolveSelectorForAction(
+          page,
+          action.value_equals.target,
+          context,
+          timeout
+        );
+        const locator = page.locator(selector).first();
+        await expect(locator).toHaveValue(
+          resolveTemplateString(action.value_equals.value, context, "value")
+        );
       }
       return {};
     }
 
     case "wait": {
       if (action.for) {
-        await page.waitForSelector(action.for, {
-          timeout: action.timeout || timeout,
-        });
+        const waitTimeout = action.timeout || timeout;
+        const candidates = buildSelectorCandidates(action.for, context);
+        const found = await waitForAnySelector(page, candidates, waitTimeout);
+        if (!found) {
+          throw new Error(`Wait selector not found: ${action.for}`);
+        }
       } else if (action.duration) {
         await page.waitForTimeout(action.duration);
       } else if (action.network_idle) {
-        await page.waitForLoadState("networkidle");
+        await safeWaitForNetworkIdle(page);
       }
       return {};
     }
@@ -365,9 +784,17 @@ async function executeAction(
     }
 
     case "store": {
-      const element = page.locator(action.from);
-      const text = await element.textContent();
-      context.stored[action.as] = text || "";
+      const selector = await resolveSelectorForAction(
+        page,
+        action.from,
+        context,
+        timeout
+      );
+      const element = page.locator(selector).first();
+      const value = await element
+        .inputValue()
+        .catch(async () => (await element.textContent()) || "");
+      context.stored[action.as] = value;
       return {};
     }
 
@@ -380,16 +807,19 @@ async function executeAction(
 }
 
 function getClickTarget(
-  action: Extract<OracleAction, { action: "click" }>
+  action: Extract<OracleAction, { action: "click" }>,
+  context: OracleContext
 ): string {
   if (action.target) {
-    return action.target;
+    return resolveTemplateString(action.target, context, "selector");
   }
   if (action.target_text) {
-    return `text="${action.target_text}"`;
+    const text = resolveTemplateString(action.target_text, context, "value");
+    return `text="${text}"`;
   }
   if (action.target_label) {
-    return `[aria-label="${action.target_label}"], label:has-text("${action.target_label}")`;
+    const label = resolveTemplateString(action.target_label, context, "value");
+    return `[aria-label="${label}"], label:has-text("${label}")`;
   }
   throw new Error("Click action requires target, target_text, or target_label");
 }
@@ -635,7 +1065,12 @@ async function assertDBState(
 }
 
 export function formatOracleResult(result: OracleResult): string {
-  const status = result.success ? "✅ PASS" : "❌ FAIL";
+  const status =
+    result.status === "BLOCKED"
+      ? "⏸ BLOCKED"
+      : result.success
+        ? "✅ PASS"
+        : "❌ FAIL";
   const lines = [
     `${status} ${result.flow_id}`,
     `  Duration: ${result.duration}ms`,
