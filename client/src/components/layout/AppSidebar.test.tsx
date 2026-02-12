@@ -92,20 +92,17 @@ describe("AppSidebar navigation", () => {
   });
 
   it("highlights active navigation item", () => {
-    mockLocation = "/orders";
+    mockLocation = "/sales";
     render(
       <ThemeProvider>
         <Sidebar open />
       </ThemeProvider>
     );
 
-    // TER-196: "Orders" renamed to "Sales" — find the nav link with aria-current
-    const salesLinks = screen.getAllByRole("link", { name: /Sales/i });
-    const activeLink = salesLinks.find(
-      link => link.getAttribute("aria-current") === "page"
-    );
-    expect(activeLink).toBeDefined();
-    expect(activeLink).toHaveAttribute("aria-current", "page");
+    const salesLink = screen.getByRole("link", {
+      name: /Manage orders, quotes, and returns/i,
+    });
+    expect(salesLink).toHaveAttribute("aria-current", "page");
   });
 
   it("shows user actions", () => {

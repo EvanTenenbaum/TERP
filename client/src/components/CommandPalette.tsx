@@ -18,19 +18,21 @@ import {
   ListTodo,
   HelpCircle,
   Plus,
-  Heart,
   DollarSign,
   Trophy, // NAV-014: Leaderboard
-  Target, // NAV-014: Client Needs
-  GitMerge, // NAV-014: Matchmaking
-  ClipboardList, // NAV-014: Quotes
-  RotateCcw, // NAV-014: Returns
-  Store, // NAV-014: Vendor Supply
+  GitMerge, // Consolidated demand/supply workspace
   Tag, // NAV-014: Pricing Rules
   Workflow, // NAV-014: Workflow Queue
   CreditCard, // NAV-017: Credits
   Clock, // MEET-048: Time Clock
 } from "lucide-react";
+import {
+  CREDITS_WORKSPACE,
+  DEMAND_SUPPLY_WORKSPACE,
+  INVENTORY_WORKSPACE,
+  RELATIONSHIPS_WORKSPACE,
+  SALES_WORKSPACE,
+} from "@/config/workspaces";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -55,18 +57,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
-          id: "orders",
-          label: "Orders",
+          id: "sales",
+          label: `${SALES_WORKSPACE.title} Workspace`,
           icon: ShoppingCart,
           shortcut: "O",
           action: () => {
-            setLocation("/orders");
+            setLocation("/sales");
             onOpenChange(false);
           },
         },
         {
           id: "inventory",
-          label: "Inventory",
+          label: `${INVENTORY_WORKSPACE.title} Workspace`,
           icon: Package,
           shortcut: "I",
           action: () => {
@@ -75,12 +77,21 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
-          id: "clients",
-          label: "Clients",
+          id: "relationships",
+          label: `${RELATIONSHIPS_WORKSPACE.title} Workspace`,
           icon: Users,
           shortcut: "C",
           action: () => {
-            setLocation("/clients");
+            setLocation("/relationships");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "demand-supply",
+          label: `${DEMAND_SUPPLY_WORKSPACE.title} Workspace`,
+          icon: GitMerge,
+          action: () => {
+            setLocation("/demand-supply");
             onOpenChange(false);
           },
         },
@@ -105,20 +116,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
-          id: "interest-list",
-          label: "Interest List",
-          icon: Heart,
-          action: () => {
-            setLocation("/interest-list");
-            onOpenChange(false);
-          },
-        },
-        {
           id: "invoices",
           label: "Invoices",
           icon: DollarSign,
           action: () => {
-            setLocation("/accounting?tab=invoices");
+            setLocation("/accounting/invoices");
             onOpenChange(false);
           },
         },
@@ -144,52 +146,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
-          // QA-002 FIX: Changed path from /client-needs to /needs
-          id: "client-needs",
-          label: "Client Needs",
-          icon: Target,
-          action: () => {
-            setLocation("/needs");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "matchmaking",
-          label: "Matchmaking",
-          icon: GitMerge,
-          action: () => {
-            setLocation("/matchmaking");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "quotes",
-          label: "Quotes",
-          icon: ClipboardList,
-          action: () => {
-            setLocation("/quotes");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "returns",
-          label: "Returns",
-          icon: RotateCcw,
-          action: () => {
-            setLocation("/returns");
-            onOpenChange(false);
-          },
-        },
-        {
-          id: "vendor-supply",
-          label: "Vendor Supply",
-          icon: Store,
-          action: () => {
-            setLocation("/vendor-supply");
-            onOpenChange(false);
-          },
-        },
-        {
           // QA-003 FIX: Changed path from /pricing-rules to /pricing/rules
           id: "pricing-rules",
           label: "Pricing Rules",
@@ -211,7 +167,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         {
           // NAV-017: Credits management page
           id: "credits",
-          label: "Credits",
+          label: `${CREDITS_WORKSPACE.title} Workspace`,
           icon: CreditCard,
           action: () => {
             setLocation("/credits");
