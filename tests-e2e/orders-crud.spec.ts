@@ -77,8 +77,9 @@ test.describe("Orders CRUD Operations", () => {
     await draftTab.click();
     await page.waitForTimeout(500);
 
-    // Both tabs should be clickable without errors
-    expect(true).toBeTruthy();
+    // Verify we're still on the orders page after tab switching
+    await expect(page).toHaveURL(/\/orders/);
+    await expect(draftTab).toBeVisible();
   });
 
   test("should display orders table or empty state", async ({ page }) => {
@@ -219,8 +220,8 @@ test.describe("Orders CRUD Operations", () => {
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill("ORD");
       await page.waitForLoadState("networkidle");
-      // Search should filter results or show no results message
-      expect(true).toBeTruthy();
+      // Verify search input retained its value (search was accepted)
+      await expect(searchInput).toHaveValue("ORD");
     } else {
       // Search may not be visible, skip
       test.skip();
@@ -254,12 +255,12 @@ test.describe("Orders CRUD Operations", () => {
         .locator('button, [role="tab"]')
         .filter({ hasText: /pending|packed|shipped/i })
         .first();
-      await expect(statusTabs)
-        .toBeVisible({ timeout: 5000 })
-        .catch(() => {
-          // No filter available, skip
-          test.skip();
-        });
+      const hasStatusTabs = await statusTabs.isVisible().catch(() => false);
+      if (!hasStatusTabs) {
+        test.skip();
+        return;
+      }
+      await expect(statusTabs).toBeVisible();
     }
   });
 });
