@@ -103,10 +103,36 @@ export const productCatalogueRouter = router({
     }),
 
   // Create a new product
+  // TER-226: Duplicate-name guardrails — check for existing product with same name/brand
+  // TER-227: Product additions should occur via batch/intake; direct creation is logged
   create: protectedProcedure
     .use(requirePermission("inventory:create"))
-    .input(productSchema)
+    .input(
+      productSchema.extend({
+        // TER-227: Track creation source for audit trail
+        source: z.enum(["intake", "catalogue", "import"]).default("catalogue"),
+      })
+    )
     .mutation(async ({ input }) => {
+      // TER-226: Check for duplicate product name within the same brand
+      const duplicate = await productsDb.findDuplicateProduct(
+        input.nameCanonical,
+        input.brandId
+      );
+      if (duplicate) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `A product named "${input.nameCanonical}" already exists for this brand (ID: ${duplicate.id}). Use the existing product or choose a different name.`,
+        });
+      }
+
+      // TER-227: Log when product is created outside intake context
+      if (input.source !== "intake") {
+        console.warn(
+          `[productCatalogue.create] Product "${input.nameCanonical}" created via ${input.source} (not intake). Consider using batch/intake flow.`
+        );
+      }
+
       const result = await productsDb.createProduct({
         brandId: input.brandId,
         strainId: input.strainId ?? null,
