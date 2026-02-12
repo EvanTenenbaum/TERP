@@ -218,6 +218,9 @@ function ClientInspectorContent({ client, onUpdate, onNavigate, onArchive }: Cli
     if (result.isValid) {
       onUpdate({ ...editForm, id: client.id, version: client.version });
       setEditMode(false);
+    } else {
+      // Surface validation feedback to the user
+      toast.error("Please fix validation errors before saving.");
     }
   };
 
@@ -488,19 +491,62 @@ export function ClientsWorkSurface() {
   });
 
   const archiveClient = trpc.clients.archive.useMutation({
-    onMutate: () => setSaving("Archiving client..."),
+    // Optimistic removal of the client from the list
+    onMutate: async ({ clientId }) => {
+      setSaving("Archiving client...");
+      inspector.close();
+      setIsArchiveDialogOpen(false);
+      setSelectedClientId(null);
+
+      const queryInput = {
+        limit,
+        offset: page * limit,
+        search: search || undefined,
+        clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
+      };
+      await utils.clients.list.cancel();
+      const previousData = utils.clients.list.getData(queryInput);
+
+      utils.clients.list.setData(queryInput, (old: any) => {
+        if (!old) return old;
+
+        // Handle array vs. unified response object
+        if (Array.isArray(old)) {
+          return old.filter((c: any) => c.id !== clientId);
+        }
+        if ("items" in (old as any) && Array.isArray((old as any).items)) {
+          return {
+            ...(old as any),
+            items: (old as any).items.filter((c: any) => c.id !== clientId),
+          };
+        }
+        return old;
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       toast.success("Client archived successfully");
       setSaved();
-      setIsArchiveDialogOpen(false);
-      setSelectedClientId(null);
-      inspector.close();
-      utils.clients.list.invalidate();
-      utils.clients.count.invalidate();
     },
-    onError: (err) => {
+    onError: (err, _input, context) => {
       toast.error(err.message || "Failed to archive client");
       setError(err.message);
+
+      // Rollback optimistic update
+      if (context?.previousData) {
+        const rollbackInput = {
+          limit,
+          offset: page * limit,
+          search: search || undefined,
+          clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
+        };
+        utils.clients.list.setData(rollbackInput, context.previousData as any);
+      }
+    },
+    onSettled: () => {
+      utils.clients.list.invalidate();
+      utils.clients.count.invalidate();
     },
   });
 
