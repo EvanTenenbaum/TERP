@@ -835,6 +835,7 @@ export async function getAllBatches(limit: number = 100) {
 /**
  * TER-225: Get batches in FIFO order (oldest first) for lot allocation.
  * Use this when selecting batches for orders, fulfillment, or COGS calculations.
+ * Only returns LIVE, non-deleted batches suitable for allocation.
  */
 export async function getBatchesFIFO(limit: number = 100) {
   const db = await getDb();
@@ -843,6 +844,7 @@ export async function getBatchesFIFO(limit: number = 100) {
   return await db
     .select()
     .from(batches)
+    .where(and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt)))
     .orderBy(asc(batches.createdAt))
     .limit(limit);
 }

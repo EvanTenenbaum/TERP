@@ -29,6 +29,7 @@ import {
 type QuoteStatus =
   | "DRAFT"
   | "SENT"
+  | "VIEWED"
   | "ACCEPTED"
   | "REJECTED"
   | "EXPIRED"
@@ -39,7 +40,8 @@ type FulfillmentStatus = "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED";
 /** TER-212: Canonical state transition map — mirrors server/ordersDb.ts */
 export const QUOTE_TRANSITIONS: Record<QuoteStatus, QuoteStatus[]> = {
   DRAFT: ["SENT", "ACCEPTED", "REJECTED", "EXPIRED"],
-  SENT: ["ACCEPTED", "REJECTED", "EXPIRED"],
+  SENT: ["VIEWED", "ACCEPTED", "REJECTED", "EXPIRED"],
+  VIEWED: ["ACCEPTED", "REJECTED", "EXPIRED"],
   ACCEPTED: ["CONVERTED"],
   REJECTED: [],
   EXPIRED: [],
@@ -77,6 +79,11 @@ interface StepConfig {
 const QUOTE_STEPS: StepConfig[] = [
   { key: "DRAFT", label: "Draft", icon: <FileText className="h-4 w-4" /> },
   { key: "SENT", label: "Sent", icon: <Send className="h-4 w-4" /> },
+  {
+    key: "VIEWED",
+    label: "Viewed",
+    icon: <CheckCircle2 className="h-4 w-4" />,
+  },
   {
     key: "ACCEPTED",
     label: "Accepted",
@@ -197,6 +204,23 @@ export function QuoteWorkflowTracker({ status, className }: QuoteTrackerProps) {
 
   const currentIndex = QUOTE_STEPS.findIndex(s => s.key === status);
 
+  // Fallback for unrecognized statuses — show raw status text instead of silent misrender
+  if (currentIndex === -1) {
+    return (
+      <div className={cn("flex items-center flex-wrap gap-y-1", className)}>
+        <WorkflowStep
+          step={{
+            key: status,
+            label: status,
+            icon: <AlertTriangle className="h-4 w-4" />,
+          }}
+          state="current"
+          isLast
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex items-center flex-wrap gap-y-1", className)}>
       {QUOTE_STEPS.map((step, i) => (
@@ -258,6 +282,23 @@ export function SaleWorkflowTracker({
     s =>
       s.key === saleStatus || (saleStatus === "OVERDUE" && s.key === "PENDING")
   );
+
+  // Fallback for unrecognized statuses — show raw text instead of silent misrender
+  if (fulfillmentIndex === -1 && paymentIndex === -1) {
+    return (
+      <div className={cn("space-y-2", className)}>
+        <WorkflowStep
+          step={{
+            key: fulfillmentStatus,
+            label: `${fulfillmentStatus} / ${saleStatus}`,
+            icon: <AlertTriangle className="h-4 w-4" />,
+          }}
+          state="current"
+          isLast
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-2", className)}>

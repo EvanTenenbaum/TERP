@@ -33,6 +33,7 @@ import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { INTAKE_DEFAULTS } from "@/lib/constants/intakeDefaults";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -183,15 +184,15 @@ const createEmptyRow = (defaults?: {
   vendorId: null,
   vendorName: "",
   brandName: "",
-  // TER-223: Default category to Flower
-  category: "Flower",
+  // TER-223/TER-228: Default category from centralized intake defaults
+  category: INTAKE_DEFAULTS.category,
   subcategory: "",
   item: "",
   productId: null,
   strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "CONSIGNMENT",
+  paymentTerms: INTAKE_DEFAULTS.paymentTerms,
   locationId: defaults?.locationId ?? null,
   locationName: defaults?.locationName ?? "",
   site: defaults?.site ?? "",
@@ -790,8 +791,9 @@ export function DirectIntakeWorkSurface() {
   );
   const mainWarehouse = useMemo(
     () =>
-      locations.find(l => l.site?.toLowerCase().includes("main")) ??
-      locations[0],
+      locations.find(l =>
+        l.site?.toLowerCase().includes(INTAKE_DEFAULTS.defaultWarehouseMatch)
+      ) ?? locations[0],
     [locations]
   );
   const defaultLocationOverrides = useMemo(
@@ -1031,6 +1033,9 @@ export function DirectIntakeWorkSurface() {
           if (!event.data.brandName) {
             event.node.setDataValue("brandName", vendor.name);
           }
+        } else {
+          // Clear stale vendorId when text no longer matches an existing vendor
+          event.node.setDataValue("vendorId", null);
         }
       }
 
@@ -1049,6 +1054,10 @@ export function DirectIntakeWorkSurface() {
           event.node.setDataValue("productId", product.id);
           event.node.setDataValue("strainId", product.strainId ?? null);
           event.node.setDataValue("category", product.category);
+        } else {
+          // Clear stale IDs when product text no longer matches an existing product
+          event.node.setDataValue("productId", null);
+          event.node.setDataValue("strainId", null);
         }
       }
 
@@ -1215,6 +1224,7 @@ export function DirectIntakeWorkSurface() {
           brandName: row.brandName,
           productName: row.item,
           category: row.category,
+          subcategory: row.subcategory || undefined,
           strainId: row.strainId,
           quantity: row.qty,
           cogsMode: "FIXED" as const,
@@ -1343,6 +1353,7 @@ export function DirectIntakeWorkSurface() {
           brandName: row.brandName,
           productName: row.item,
           category: row.category,
+          subcategory: row.subcategory || undefined,
           strainId: row.strainId,
           quantity: row.qty,
           cogsMode: "FIXED" as const,
