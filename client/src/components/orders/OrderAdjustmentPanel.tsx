@@ -5,9 +5,15 @@
  */
 
 import React, { useState } from "react";
-import { Percent, DollarSign, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  Percent,
+  DollarSign,
+  TrendingDown,
+  TrendingUp,
+  XCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -37,8 +43,9 @@ export function OrderAdjustmentPanel({
 }: OrderAdjustmentPanelProps) {
   const [isEnabled, setIsEnabled] = useState(!!value);
   const [amount, setAmount] = useState(value?.amount.toString() || "0");
+  // TER-207: Default to DOLLAR mode per user interview feedback
   const [type, setType] = useState<"PERCENT" | "DOLLAR">(
-    value?.type || "PERCENT"
+    value?.type || "DOLLAR"
   );
   const [mode, setMode] = useState<"DISCOUNT" | "MARKUP">(
     value?.mode || "DISCOUNT"
@@ -139,20 +146,36 @@ export function OrderAdjustmentPanel({
             </ToggleGroup>
           </div>
 
-          {/* Amount Input */}
+          {/* Amount Input + TER-207: one-click clear */}
           <div className="space-y-2">
             <Label htmlFor="adjustment-amount">
               {mode === "DISCOUNT" ? "Discount" : "Markup"} Amount
             </Label>
-            <Input
-              id="adjustment-amount"
-              type="number"
-              step={type === "PERCENT" ? "0.1" : "0.01"}
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              onBlur={() => handleUpdate()}
-              placeholder="0"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="adjustment-amount"
+                type="number"
+                step={type === "PERCENT" ? "0.1" : "0.01"}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                onBlur={() => handleUpdate()}
+                onFocus={e => e.target.select()}
+                placeholder="0"
+                className="flex-1"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setAmount("0");
+                  setIsEnabled(false);
+                  onChange(null);
+                }}
+                title="Clear adjustment"
+              >
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
           </div>
 
           {/* FEAT-004: Enhanced Calculated Amount with percentage equivalent */}

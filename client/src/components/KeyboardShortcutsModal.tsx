@@ -26,7 +26,7 @@ const shortcuts: KeyboardShortcut[] = [
   },
   {
     keys: ["Ctrl", "N"],
-    description: "Create new order",
+    description: "Create new sale",
     category: "Navigation",
   },
   {
@@ -86,20 +86,20 @@ export function KeyboardShortcutsModal({
               <div className="space-y-2">
                 {shortcuts
                   .filter(s => s.category === category)
-                  .map((shortcut, idx) => (
+                  .map(shortcut => (
                     <div
-                      key={`${category}-${shortcut.description}-${idx}`}
+                      key={`${category}-${shortcut.description}`}
                       className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50"
                     >
                       <span className="text-sm">{shortcut.description}</span>
                       <div className="flex items-center gap-1">
-                        {shortcut.keys.map((key, keyIdx) => (
+                        {shortcut.keys.map((key, ki) => (
                           <span
-                            key={`${key}-${keyIdx}`}
+                            key={`${shortcut.description}-key-${key}`}
                             className="flex items-center gap-1"
                           >
                             <Kbd>{key}</Kbd>
-                            {keyIdx < shortcut.keys.length - 1 && (
+                            {ki < shortcut.keys.length - 1 && (
                               <span className="text-muted-foreground text-xs">
                                 +
                               </span>
