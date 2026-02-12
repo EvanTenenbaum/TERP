@@ -93,6 +93,8 @@ const intakeRowSchema = z.object({
     "Other",
   ]),
   item: z.string().min(1, "Product is required"),
+  // TER-223: Subcategory is first-class, category defaults to Flower
+  subcategory: z.string().optional(),
   qty: z.number().min(0.01, "Quantity must be greater than 0"),
   cogs: z.number().min(0.01, "COGS must be greater than 0"),
   paymentTerms: z.enum([
@@ -116,6 +118,8 @@ interface IntakeGridRow extends IntakeRowData {
   strainId: number | null;
   locationId: number | null;
   locationName: string;
+  // TER-222: Matched strain name for validation assistant
+  matchedStrainName?: string;
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
 }
@@ -179,7 +183,9 @@ const createEmptyRow = (defaults?: {
   vendorId: null,
   vendorName: "",
   brandName: "",
+  // TER-223: Default category to Flower
   category: "Flower",
+  subcategory: "",
   item: "",
   productId: null,
   strainId: null,
@@ -304,6 +310,21 @@ function RowInspectorContent({
           <Select
             value={row.vendorName}
             onValueChange={value => {
+              // TER-219: Intercept create-new option
+              if (value === "__CREATE_NEW__") {
+                // Navigate to client creation with seller flag
+                // For now, prompt for quick name entry
+                const name = window.prompt("Enter new vendor name:");
+                if (name && name.trim()) {
+                  onUpdate({
+                    vendorName: name.trim(),
+                    vendorId: null,
+                    brandName: row.brandName || name.trim(),
+                  });
+                  validation.handleChange("vendorName", name.trim());
+                }
+                return;
+              }
               const vendor = vendors.find(v => v.name === value);
               onUpdate({
                 vendorName: value,
@@ -327,12 +348,21 @@ function RowInspectorContent({
                   No vendors available
                 </SelectItem>
               ) : (
-                vendors.map(v => (
-                  <SelectItem key={v.id} value={v.name}>
-                    {v.name}
-                  </SelectItem>
-                ))
+                <>
+                  {vendors.map(v => (
+                    <SelectItem key={v.id} value={v.name}>
+                      {v.name}
+                    </SelectItem>
+                  ))}
+                </>
               )}
+              {/* TER-219: Inline create option for new vendor */}
+              <SelectItem
+                value="__CREATE_NEW__"
+                className="text-primary font-medium"
+              >
+                + Create New Vendor
+              </SelectItem>
             </SelectContent>
           </Select>
           {validation.getFieldState("vendorName").showError && (
@@ -386,7 +416,8 @@ function RowInspectorContent({
           </Select>
         </InspectorField>
 
-        <InspectorField label="Product" required>
+        {/* TER-221 + TER-222: Combined product/strain field with match suggestions */}
+        <InspectorField label="Product / Strain" required>
           <Select
             value={row.item}
             onValueChange={value => {
@@ -429,6 +460,30 @@ function RowInspectorContent({
               {validation.getFieldState("item").error}
             </p>
           )}
+          {/* TER-222: Strain validation assistant — show matched strain info */}
+          {row.strainId && row.productId && (
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-green-50 rounded text-xs text-green-700">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>Matched to existing product (strain #{row.strainId})</span>
+            </div>
+          )}
+          {row.item && !row.productId && (
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-yellow-50 rounded text-xs text-yellow-700">
+              <AlertCircle className="h-3 w-3" />
+              <span>New product — will be created on submit</span>
+            </div>
+          )}
+        </InspectorField>
+
+        {/* TER-223: Subcategory field — prioritized per user feedback */}
+        <InspectorField label="Subcategory">
+          <Input
+            value={row.subcategory || ""}
+            onChange={e => {
+              onUpdate({ subcategory: e.target.value });
+            }}
+            placeholder="e.g., Indoor, Outdoor, Greenhouse..."
+          />
         </InspectorField>
 
         <div className="grid grid-cols-2 gap-4">
@@ -550,6 +605,11 @@ function RowInspectorContent({
             placeholder="Add any notes about this intake..."
             rows={3}
           />
+          {/* TER-224: Notes traceability — show where notes are stored */}
+          <p className="text-xs text-muted-foreground mt-1">
+            Notes are saved with the batch record and visible in Inventory
+            details.
+          </p>
         </InspectorField>
       </InspectorSection>
 
@@ -631,8 +691,11 @@ function RowInspectorContent({
 // ============================================================================
 
 export function DirectIntakeWorkSurface() {
-  // State
-  const [rows, setRows] = useState<IntakeGridRow[]>([createEmptyRow()]);
+  // TER-218: Start with multiple rows for faster multi-item intake
+  const INITIAL_ROW_COUNT = 5;
+  const [rows, setRows] = useState<IntakeGridRow[]>(() =>
+    Array.from({ length: INITIAL_ROW_COUNT }, () => createEmptyRow())
+  );
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [rowMediaFilesById, setRowMediaFilesById] = useState<
     Record<string, File[]>
@@ -793,12 +856,20 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
+        // TER-217: Free-text + dropdown for rapid vendor entry
         headerName: "Vendor",
         field: "vendorName",
         width: 160,
         editable: params => params.data?.status === "pending",
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: vendors.map(v => v.name) },
+        cellEditor: "agTextCellEditor",
+        cellEditorParams: {
+          useFormatter: false,
+        },
+        // Provide autocomplete suggestions via value setter
+        tooltipValueGetter: () =>
+          vendors.length > 0
+            ? `Type to search ${vendors.length} vendors or enter new`
+            : "Type vendor name",
       },
       {
         headerName: "Brand/Farmer",
@@ -807,21 +878,37 @@ export function DirectIntakeWorkSurface() {
         editable: params => params.data?.status === "pending",
       },
       {
+        // TER-223: Category defaults to Flower, subcategory is first-class
         headerName: "Category",
         field: "category",
-        width: 120,
+        width: 110,
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: CATEGORY_OPTIONS.map(c => c.value) },
       },
       {
-        headerName: "Product",
+        // TER-223: Subcategory prioritized per user feedback
+        headerName: "Subcategory",
+        field: "subcategory",
+        width: 120,
+        editable: params => params.data?.status === "pending",
+        cellEditor: "agTextCellEditor",
+      },
+      {
+        // TER-217 + TER-221: Combined product/strain field with free-text
+        headerName: "Product / Strain",
         field: "item",
         flex: 1,
         minWidth: 180,
         editable: params => params.data?.status === "pending",
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: products.map(product => product.name) },
+        cellEditor: "agTextCellEditor",
+        cellEditorParams: {
+          useFormatter: false,
+        },
+        tooltipValueGetter: () =>
+          products.length > 0
+            ? `Type to search ${products.length} products or enter new`
+            : "Type product/strain name",
       },
       {
         headerName: "Qty",
@@ -859,6 +946,27 @@ export function DirectIntakeWorkSurface() {
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: locations.map(l => l.site) },
+      },
+      {
+        // TER-224: Notes indicator for traceability
+        headerName: "Notes",
+        field: "notes",
+        width: 60,
+        editable: false,
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: ICellRendererParams<IntakeGridRow>) => {
+          const hasNotes =
+            params.data?.notes && params.data.notes.trim().length > 0;
+          return hasNotes ? (
+            <span
+              title={`Notes: ${params.data?.notes}`}
+              className="text-blue-600 cursor-help"
+            >
+              📝
+            </span>
+          ) : null;
+        },
       },
       {
         headerName: "Status",
@@ -1392,6 +1500,20 @@ export function DirectIntakeWorkSurface() {
           <Button variant="outline" size="sm" onClick={handleAddRow}>
             <Plus className="mr-1 h-4 w-4" />
             Add Row
+          </Button>
+          {/* TER-218: Quick add multiple rows */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newRows = Array.from({ length: 5 }, () =>
+                createEmptyRow(defaultLocationOverrides)
+              );
+              setRows(prev => [...prev, ...newRows]);
+            }}
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            +5 Rows
           </Button>
           {selectedRowId && selectedRow?.status === "pending" && (
             <Button

@@ -566,10 +566,6 @@ export function InventoryWorkSurface() {
     [updateStatusMutation]
   );
 
-  const handleOpenPurchaseModal = useCallback((): void => {
-    setShowPurchaseModal(true);
-  }, []);
-
   const handleClosePurchaseModal = useCallback((): void => {
     setShowPurchaseModal(false);
   }, []);
@@ -680,9 +676,10 @@ export function InventoryWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleOpenPurchaseModal}>
+        {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
+        <Button onClick={() => setLocation("/direct-intake")}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Batch
+          Intake
         </Button>
       </div>
 
