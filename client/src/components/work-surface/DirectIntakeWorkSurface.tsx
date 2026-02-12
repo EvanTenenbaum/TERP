@@ -12,7 +12,14 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useCallback, useMemo, useRef, type ChangeEvent } from "react";
+import {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+} from "react";
 import type {
   ColDef,
   CellValueChangedEvent,
@@ -163,7 +170,11 @@ const CATEGORY_OPTIONS = [
 // HELPER FUNCTIONS
 // ============================================================================
 
-const createEmptyRow = (): IntakeGridRow => ({
+const createEmptyRow = (defaults?: {
+  locationId?: number | null;
+  locationName?: string;
+  site?: string;
+}): IntakeGridRow => ({
   id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
   vendorId: null,
   vendorName: "",
@@ -174,10 +185,10 @@ const createEmptyRow = (): IntakeGridRow => ({
   strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "NET_30",
-  locationId: null,
-  locationName: "",
-  site: "",
+  paymentTerms: "CONSIGNMENT",
+  locationId: defaults?.locationId ?? null,
+  locationName: defaults?.locationName ?? "",
+  site: defaults?.site ?? "",
   notes: "",
   status: "pending",
 });
@@ -578,7 +589,7 @@ function RowInspectorContent({
               <div className="space-y-2">
                 {mediaFiles.map((file, index) => (
                   <div
-                    key={`${file.name}-${file.size}-${index}`}
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
                     className="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-md"
                   >
                     <span className="text-sm truncate">{file.name}</span>
@@ -714,6 +725,35 @@ export function DirectIntakeWorkSurface() {
     () => (Array.isArray(locationsData) ? locationsData : []),
     [locationsData]
   );
+  const mainWarehouse = useMemo(
+    () =>
+      locations.find(l => l.site?.toLowerCase().includes("main")) ??
+      locations[0],
+    [locations]
+  );
+  const defaultLocationOverrides = useMemo(
+    () =>
+      mainWarehouse
+        ? {
+            locationId: mainWarehouse.id,
+            locationName: mainWarehouse.site ?? "",
+            site: mainWarehouse.site ?? "",
+          }
+        : undefined,
+    [mainWarehouse]
+  );
+
+  // Apply main warehouse default to initial rows when locations data loads
+  useEffect(() => {
+    if (!defaultLocationOverrides) return;
+    setRows(prev =>
+      prev.map(row =>
+        row.locationId === null && row.status === "pending"
+          ? { ...row, ...defaultLocationOverrides }
+          : row
+      )
+    );
+  }, [defaultLocationOverrides]);
 
   const {
     data: productsData,
@@ -944,7 +984,7 @@ export function DirectIntakeWorkSurface() {
   );
 
   const handleAddRow = useCallback(() => {
-    const newRow = createEmptyRow();
+    const newRow = createEmptyRow(defaultLocationOverrides);
     setRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
 
@@ -956,7 +996,7 @@ export function DirectIntakeWorkSurface() {
         gridApiRef.current.setFocusedCell(rowIndex, "vendorName");
       }
     }, 50);
-  }, [rows.length]);
+  }, [rows.length, defaultLocationOverrides]);
 
   const handleRemoveRow = useCallback(
     (rowId: string) => {
@@ -1461,7 +1501,7 @@ export function DirectIntakeWorkSurface() {
             row={selectedRow}
             onUpdate={handleUpdateSelectedRow}
             mediaFiles={
-              selectedRow ? rowMediaFilesById[selectedRow.id] ?? [] : []
+              selectedRow ? (rowMediaFilesById[selectedRow.id] ?? []) : []
             }
             onMediaFilesChange={files => {
               if (!selectedRow) return;

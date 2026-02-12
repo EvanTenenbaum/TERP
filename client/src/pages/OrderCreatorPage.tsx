@@ -318,7 +318,7 @@ export default function OrderCreatorPageV2() {
   }, []);
 
   // Handlers
-  const handleSaveDraft = () => {
+  const handleSaveDraft = (overrideOrderType?: "SALE" | "QUOTE") => {
     if (!clientId) {
       toast.error("Please select a client");
       return;
@@ -330,7 +330,7 @@ export default function OrderCreatorPageV2() {
     }
 
     createDraftMutation.mutate({
-      orderType,
+      orderType: overrideOrderType ?? orderType,
       clientId,
       lineItems: items.map(item => ({
         batchId: item.batchId,
@@ -550,9 +550,7 @@ export default function OrderCreatorPageV2() {
                   {autoSaveStatus === "error" && (
                     <>
                       <CloudOff className="h-4 w-4 text-destructive" />
-                      <span className="text-destructive">
-                        Auto-save failed
-                      </span>
+                      <span className="text-destructive">Auto-save failed</span>
                     </>
                   )}
                 </div>
@@ -785,7 +783,9 @@ export default function OrderCreatorPageV2() {
                       <Button
                         className="w-full"
                         variant="outline"
-                        disabled={items.length === 0 || createDraftMutation.isPending}
+                        disabled={
+                          items.length === 0 || createDraftMutation.isPending
+                        }
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Save
@@ -795,15 +795,14 @@ export default function OrderCreatorPageV2() {
                     <DropdownMenuContent className="w-56">
                       <DropdownMenuLabel>Save Options</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSaveDraft}>
+                      <DropdownMenuItem onClick={() => handleSaveDraft()}>
                         <FileText className="h-4 w-4 mr-2" />
                         Save as Draft
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => {
                           setOrderType("QUOTE");
-                          // Use setTimeout to allow orderType state to update
-                          setTimeout(() => handleSaveDraft(), 0);
+                          handleSaveDraft("QUOTE");
                         }}
                       >
                         <Send className="h-4 w-4 mr-2" />
