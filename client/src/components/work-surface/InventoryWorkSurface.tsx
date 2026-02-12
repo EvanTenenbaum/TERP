@@ -751,7 +751,11 @@ export function InventoryWorkSurface() {
                   {displayItems.map((item: InventoryItem, index: number) => (
                     <TableRow
                       key={item.batch?.id}
-                      data-testid={`batch-row-${item.batch?.id}`}
+                      data-testid={
+                        item.batch?.id !== null && item.batch?.id !== undefined
+                          ? `batch-row-${item.batch.id}`
+                          : undefined
+                      }
                       data-batchid={item.batch?.id}
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",

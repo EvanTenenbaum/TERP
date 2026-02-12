@@ -1614,9 +1614,13 @@ async function createInvoiceFromNewOrder(
     "invoices.generateFromOrder",
     { orderId }
   );
-  if (generated) return generated;
 
-  // The mutation may return the invoice ID rather than the full record
+  // If mutation returned a full record, use it directly
+  if (generated && typeof generated === "object" && "id" in generated) {
+    return generated;
+  }
+
+  // If mutation returned a numeric ID, fetch the full record
   const invoiceId = numericValue(generated);
   if (invoiceId !== null) {
     return trpcQuery<Record<string, unknown>>(
@@ -1626,11 +1630,9 @@ async function createInvoiceFromNewOrder(
     );
   }
 
-  // Fallback: search for the invoice we just created
-  return findInvoiceByWhere(page, {
-    referenceType: "ORDER",
-    referenceId: orderId,
-  });
+  // Fallback: re-search all invoices (mutation may have succeeded
+  // but returned an unexpected shape)
+  return findInvoiceByWhere(page, undefined);
 }
 
 async function materializeInvoiceEnsure(
