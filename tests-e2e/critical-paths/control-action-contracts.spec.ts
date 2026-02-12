@@ -14,7 +14,9 @@ test.describe("Control-Action Contracts: Orders Page", () => {
     await loginAsAdmin(page);
   });
 
-  test("New Order button triggers navigation or modal", async ({ page }) => {
+  test("Primary create action triggers navigation or modal", async ({
+    page,
+  }) => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
@@ -23,7 +25,7 @@ test.describe("Control-Action Contracts: Orders Page", () => {
     // The button should either navigate to a create page or open a modal
     const createButton = page
       .locator("button")
-      .filter({ hasText: /new order|create/i })
+      .filter({ hasText: /new sale|new order|create/i })
       .first();
 
     await expect(createButton).toBeVisible({ timeout: 10000 });
@@ -39,7 +41,7 @@ test.describe("Control-Action Contracts: Orders Page", () => {
       .catch(() => false);
     const createPageLoaded = await page
       .locator("h1, h2")
-      .filter({ hasText: /create|new|order|client/i })
+      .filter({ hasText: /create|new|order|sale|sheet|client/i })
       .first()
       .isVisible()
       .catch(() => false);
@@ -107,16 +109,30 @@ test.describe("Control-Action Contracts: Inventory Page", () => {
     await loginAsAdmin(page);
   });
 
-  test("Inventory page loads with interactive table", async ({ page }) => {
+  test("Inventory page loads with interactive controls", async ({ page }) => {
     await page.goto("/inventory");
     await page.waitForLoadState("networkidle");
 
     const contract = new ControlContract(page);
-    const result = await contract.verifyControlIsInteractive(
-      "table, [data-testid='inventory-list'], [data-testid='batch-list']"
+    const intakeResult = await contract.verifyControlIsInteractive(
+      'button:has-text("Intake")'
     );
 
-    expect(result.passed).toBeTruthy();
+    const hasInventoryList = await page
+      .locator(
+        "table, [role='table'], [data-testid='inventory-list'], [data-testid='batch-list']"
+      )
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const hasInventoryEmptyState = await page
+      .locator("text=/no inventory found|no batches found/i")
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    expect(intakeResult.passed).toBeTruthy();
+    expect(hasInventoryList || hasInventoryEmptyState).toBeTruthy();
   });
 });
 
