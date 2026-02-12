@@ -17,29 +17,34 @@ test.describe("Sales Sheet Workflow", () => {
     await page.goto("/sales-sheets");
 
     await expect(
-      page.locator(
-        'h1:has-text("Sales Sheet"), [data-testid="sales-sheet-page"]'
-      )
+      page
+        .locator('[data-testid="sales-sheet-page"], main')
+        .filter({ hasText: /sales sheet creator|sales sheets/i })
+        .first()
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("should create a new sales sheet", async ({ page }) => {
+  test("should render sales sheet creator controls", async ({ page }) => {
     await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
-    // Look for new/create button
-    const createButton = page.locator(
-      'button:has-text("New"), button:has-text("Create"), [data-testid="new-sales-sheet"]'
-    );
-
-    await expect(createButton).toBeVisible({ timeout: 10000 });
-    await createButton.click();
-    await page.waitForLoadState("networkidle");
-
-    // Should show sales sheet form
+    // Current flow lands directly on the creator; validate core creation controls.
     await expect(
-      page.locator('[data-testid="sales-sheet-form"], form, [role="dialog"]')
-    ).toBeVisible({ timeout: 5000 });
+      page.locator("text=/sales sheet creator|select client/i").first()
+    ).toBeVisible({ timeout: 10000 });
+
+    const clientSelector = page.locator(
+      '[role="combobox"]:has-text("Choose a client"), [role="combobox"][aria-label*="client" i], [data-testid="client-select"]'
+    );
+    await expect(clientSelector.first()).toBeVisible({ timeout: 5000 });
+    await expect(clientSelector.first()).toBeEnabled();
+
+    await expect(page.locator('button:has-text("Load")')).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.locator('button:has-text("Save Draft")')).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test.skip("should save sales sheet as draft", async ({ page }) => {
