@@ -166,7 +166,7 @@ export default function OrderCreatorPageV2() {
           sessionStorage.removeItem("salesSheetToQuote");
         }
       } catch {
-        // Silently fail if sessionStorage data is invalid
+        toast.error("Failed to import items from sales sheet");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -49,9 +49,6 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 
-// Inventory Components
-import { PurchaseModal } from "@/components/inventory/PurchaseModal";
-
 // Icons
 import {
   Search,
@@ -349,7 +346,6 @@ export function InventoryWorkSurface() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const pageSize = 50;
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -565,15 +561,6 @@ export function InventoryWorkSurface() {
     },
     [updateStatusMutation]
   );
-
-  const handleClosePurchaseModal = useCallback((): void => {
-    setShowPurchaseModal(false);
-  }, []);
-
-  const handlePurchaseSuccess = useCallback((): void => {
-    handleClosePurchaseModal();
-    refetch();
-  }, [handleClosePurchaseModal, refetch]);
 
   const SortIcon = ({ column }: { column: string }) => {
     if (sortColumn !== column)
@@ -832,13 +819,6 @@ export function InventoryWorkSurface() {
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
-
-      {/* Purchase/Intake Modal */}
-      <PurchaseModal
-        open={showPurchaseModal}
-        onClose={handleClosePurchaseModal}
-        onSuccess={handlePurchaseSuccess}
-      />
     </div>
   );
 }

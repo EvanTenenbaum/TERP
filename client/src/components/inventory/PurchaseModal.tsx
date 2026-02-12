@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { INTAKE_DEFAULTS } from "@/lib/constants/intakeDefaults";
 import {
   Dialog,
   DialogContent,
@@ -48,8 +49,8 @@ export function PurchaseModal({
     unitCogs: "",
     unitCogsMin: "",
     unitCogsMax: "",
-    // TER-228: Default to Consignment per centralized intake defaults
-    paymentTerms: "CONSIGNMENT" as
+    // TER-228: Default from centralized intake defaults
+    paymentTerms: INTAKE_DEFAULTS.paymentTerms as
       | "COD"
       | "NET_7"
       | "NET_15"
@@ -143,7 +144,8 @@ export function PurchaseModal({
       unitCogs: "",
       unitCogsMin: "",
       unitCogsMax: "",
-      paymentTerms: "NET_30",
+      // TER-228: Match initial state default from centralized constants
+      paymentTerms: INTAKE_DEFAULTS.paymentTerms,
       amountPaid: "",
       locationSite: "",
     });
