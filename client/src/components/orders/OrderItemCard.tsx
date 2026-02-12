@@ -10,12 +10,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Trash2, Settings, Edit2, TrendingUp, Info } from "lucide-react";
+import { Trash2, Settings, Edit2, Info } from "lucide-react";
+
+interface OrderItem {
+  batchId: number;
+  displayName: string;
+  originalName: string;
+  quantity: number;
+  unitPrice: number;
+  unitCogs?: number;
+  cogsSource?: string;
+  isSample: boolean;
+  cogsMode?: string;
+  unitCogsMin?: string;
+  unitCogsMax?: string;
+}
 
 interface OrderItemCardProps {
-  item: any;
+  item: OrderItem;
   onRemove: () => void;
-  onUpdate: (updates: any) => void;
+  onUpdate: (updates: Partial<OrderItem>) => void;
   onAdjustCogs: () => void;
 }
 
@@ -152,7 +166,7 @@ export const OrderItemCard = memo(function OrderItemCard({
               onUpdate({
                 quantity: parseFloat(e.target.value) || 0,
                 lineTotal: parseFloat(e.target.value) * item.unitPrice,
-              })
+              } as any)
             }
             className="h-8 text-sm"
           />
@@ -169,7 +183,7 @@ export const OrderItemCard = memo(function OrderItemCard({
                 unitPrice: parseFloat(e.target.value) || 0,
                 lineTotal: item.quantity * parseFloat(e.target.value),
                 overridePrice: parseFloat(e.target.value),
-              })
+              } as any)
             }
             className="h-8 text-sm"
           />

@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { usePrint } from "../usePrint";
 
 describe("usePrint", () => {
@@ -167,7 +167,7 @@ describe("usePrint", () => {
 
       // Wait for the printing to complete
       await act(async () => {
-        await printingPromise!;
+        await printingPromise;
       });
 
       // After print completes, isPrinting should be false

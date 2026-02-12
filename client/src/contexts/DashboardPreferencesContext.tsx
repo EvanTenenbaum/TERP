@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
-import type { DashboardLayout, WidgetState } from '@/types/dashboard';
+import type { WidgetState } from '@/types/dashboard';
 import { LAYOUT_PRESETS, DEFAULT_LAYOUT_ID, WIDGET_METADATA } from '@/lib/constants/dashboardPresets';
 import { trpc } from '@/lib/trpc';
 
@@ -81,7 +81,7 @@ function convertFrontendToBackend(widgets: WidgetState[]): Array<{ id: string; i
 export function DashboardPreferencesProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DashboardPreferencesState>(loadPreferencesFromLocalStorage);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [saveTimeoutId, setSaveTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [saveTimeoutId, setSaveTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch preferences from backend
   const { data: serverPreferences, isLoading } = trpc.dashboardPreferences.getPreferences.useQuery(undefined, {
@@ -96,7 +96,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
     },
     onSuccess: () => {
       if (import.meta.env.DEV) {
-        console.log('Dashboard preferences synced to server');
+        console.info('Dashboard preferences synced to server');
       }
     },
     onError: (error) => {
@@ -111,7 +111,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   const resetMutation = trpc.dashboardPreferences.resetPreferences.useMutation({
     onSuccess: () => {
       if (import.meta.env.DEV) {
-        console.log('Dashboard preferences reset on server');
+        console.info('Dashboard preferences reset on server');
       }
       // Reset local state to defaults
       setState({
@@ -144,12 +144,12 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
       });
 
       if (import.meta.env.DEV) {
-        console.log('Loaded dashboard preferences from server');
+        console.info('Loaded dashboard preferences from server');
       }
     } else if (serverPreferences && serverPreferences.id === 0) {
       // No saved preferences on server, use localStorage or defaults
       if (import.meta.env.DEV) {
-        console.log('No saved preferences on server, using localStorage/defaults');
+        console.info('No saved preferences on server, using localStorage/defaults');
       }
     }
   }, [serverPreferences]);
@@ -267,7 +267,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   const reorderWidgets = useCallback((newOrder: string[]) => {
     setState((prev) => {
       const widgetMap = new Map(prev.widgets.map((w) => [w.id, w]));
-      const newWidgets = newOrder.map((id) => widgetMap.get(id)!).filter(Boolean);
+      const newWidgets = newOrder.map((id) => widgetMap.get(id)).filter((w): w is NonNullable<typeof w> => w !== undefined);
       
       return {
         ...prev,

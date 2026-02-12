@@ -1,5 +1,3 @@
-/* global NodeJS */
-
 import mysql from "mysql2/promise";
 import { logger } from "./logger";
 
@@ -31,7 +29,7 @@ interface PoolInternals {
  */
 
 let pool: mysql.Pool | null = null;
-let statsInterval: NodeJS.Timeout | null = null;
+let statsInterval: ReturnType<typeof setInterval> | null = null;
 
 export interface PoolConfig {
   connectionLimit?: number;

@@ -1,9 +1,10 @@
 import bcrypt from "bcrypt";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 async function createAdminUser() {
-  console.log("Creating admin user with admin/admin credentials...");
+  logger.info("Creating admin user with admin/admin credentials...");
   
   const db = await getDb();
   
@@ -12,10 +13,10 @@ async function createAdminUser() {
   
   // Check if admin user already exists
   const existingUsers = await db.execute(sql`SELECT * FROM users WHERE email = 'admin'`);
-  const existing = existingUsers[0] as any[];
+  const existing = existingUsers[0] as unknown as Array<{ id: number }>;
   
   if (existing && existing.length > 0) {
-    console.log("Admin user already exists, updating password...");
+    logger.info("Admin user already exists, updating password...");
     
     // Update existing user
     await db.execute(sql`
@@ -27,14 +28,14 @@ async function createAdminUser() {
     `);
     
     const userId = existing[0].id;
-    console.log(`Updated user ID: ${userId}`);
+    logger.info(`Updated user ID: ${userId}`);
     
     // Check if user has Super Admin role
     const roleCheck = await db.execute(sql`
       SELECT * FROM user_roles 
       WHERE user_id = ${userId} AND role_id = 1
     `);
-    const hasRole = (roleCheck[0] as any[]).length > 0;
+    const hasRole = (roleCheck[0] as unknown as Array<unknown>).length > 0;
     
     if (!hasRole) {
       // Assign Super Admin role (role_id = 1)
@@ -42,12 +43,12 @@ async function createAdminUser() {
         INSERT INTO user_roles (user_id, role_id, assigned_by) 
         VALUES (${userId}, 1, 'system')
       `);
-      console.log("Assigned Super Admin role");
+      logger.info("Assigned Super Admin role");
     } else {
-      console.log("User already has Super Admin role");
+      logger.info("User already has Super Admin role");
     }
   } else {
-    console.log("Creating new admin user...");
+    logger.info("Creating new admin user...");
     
     // Create new user
     await db.execute(sql`
@@ -57,17 +58,17 @@ async function createAdminUser() {
     
     // Get the newly created user ID
     const newUserResult = await db.execute(sql`SELECT id FROM users WHERE email = 'admin'`);
-    const newUser = (newUserResult[0] as any[])[0];
+    const newUser = (newUserResult[0] as unknown as Array<{ id: number }>)[0];
     const userId = newUser.id;
     
-    console.log(`Created user ID: ${userId}`);
+    logger.info(`Created user ID: ${userId}`);
     
     // Assign Super Admin role (role_id = 1)
     await db.execute(sql`
       INSERT INTO user_roles (user_id, role_id, assigned_by) 
       VALUES (${userId}, 1, 'system')
     `);
-    console.log("Assigned Super Admin role");
+    logger.info("Assigned Super Admin role");
   }
   
   // Verify the setup
@@ -79,9 +80,9 @@ async function createAdminUser() {
     WHERE u.email = 'admin'
   `);
   
-  console.log("\n✅ Admin user setup complete!");
-  console.log("Credentials: admin / admin");
-  console.log("User details:", verifyResult[0]);
+  logger.info("✅ Admin user setup complete!");
+  logger.info("Credentials: admin / admin");
+  logger.info("User details:", verifyResult[0]);
   
   process.exit(0);
 }

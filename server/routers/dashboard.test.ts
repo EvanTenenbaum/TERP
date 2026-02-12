@@ -29,8 +29,8 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    req: { headers: {} } as any,
-    res: {} as any,
+    req: { headers: {} } as Record<string, unknown>,
+    res: {} as Record<string, unknown>,
   });
 
   return appRouter.createCaller({

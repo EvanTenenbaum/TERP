@@ -12,7 +12,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -221,8 +221,8 @@ function QuoteInspectorContent({
           <p className="text-sm text-muted-foreground">No items</p>
         ) : (
           <div className="space-y-2">
-            {items.map((item, index) => (
-              <div key={index} className="p-3 border rounded-lg bg-muted/30">
+            {items.map((item) => (
+              <div key={`quote-item-${item.displayName}`} className="p-3 border rounded-lg bg-muted/30">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{item.displayName}</p>
@@ -332,7 +332,7 @@ export function QuotesWorkSurface() {
   const [sendCustomMessage, setSendCustomMessage] = useState("");     // API-016
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Data queries
@@ -484,7 +484,7 @@ export function QuotesWorkSurface() {
     setSelectedQuoteId(quoteId);
     setShowConvertDialog(true);
   };
-  const handleDuplicate = (quoteId: number) => toast.info("Duplicate quote functionality coming soon");
+  const handleDuplicate = (_quoteId: number) => toast.info("Duplicate quote functionality coming soon");
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);

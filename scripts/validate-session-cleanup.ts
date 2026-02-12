@@ -54,10 +54,12 @@ function getActiveSessions(): Map<string, string[]> {
       const match = file.match(/Session-\d{8}-([A-Z]+-\d{3})-/);
       if (match) {
         const taskId = match[1];
-        if (!taskSessions.has(taskId)) {
-          taskSessions.set(taskId, []);
+        let sessions = taskSessions.get(taskId);
+        if (!sessions) {
+          sessions = [];
+          taskSessions.set(taskId, sessions);
         }
-        taskSessions.get(taskId)!.push(file);
+        sessions.push(file);
       }
     }
   } catch (error) {

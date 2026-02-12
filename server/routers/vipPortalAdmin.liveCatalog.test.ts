@@ -17,10 +17,10 @@ vi.mock("drizzle-orm", async (importOriginal) => {
   const actual = await importOriginal<typeof import("drizzle-orm")>();
   return {
     ...actual,
-    eq: (col: any, val: any) => ({ op: 'eq', col, val }),
-    and: (...args: any[]) => ({ op: 'and', args }),
-    or: (...args: any[]) => ({ op: 'or', args }),
-    inArray: (col: any, values: any[]) => ({ op: 'inArray', col, values }),
+    eq: (col: unknown, val: unknown) => ({ op: 'eq', col, val }),
+    and: (...args: unknown[]) => ({ op: 'and', args }),
+    or: (...args: unknown[]) => ({ op: 'or', args }),
+    inArray: (col: unknown, values: unknown[]) => ({ op: 'inArray', col, values }),
   };
 });
 
@@ -51,8 +51,8 @@ const mockAdminUser = {
 const createCaller = () => {
   return appRouter.createCaller({
     user: mockAdminUser,
-    req: {} as any,
-    res: {} as any,
+    req: {},
+    res: {},
   });
 };
 

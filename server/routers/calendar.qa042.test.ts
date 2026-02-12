@@ -19,9 +19,9 @@ describe("QA-042: Event Form Redesign", () => {
 
   describe("Event Type Consolidation", () => {
     it("should accept TASK event type (consolidated from TASK and DEADLINE)", async () => {
-      const caller = calendarRouter.createCaller({
+      const _caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       const eventData = {
         title: "Complete project",

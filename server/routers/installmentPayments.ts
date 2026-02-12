@@ -18,6 +18,8 @@ import {
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
+
+
 import { clients, invoices, orders, payments } from "../../drizzle/schema";
 import {
   installmentPlans,
@@ -312,7 +314,7 @@ export const installmentPaymentsRouter = router({
         .where(and(...conditions));
 
       return {
-        items: plans.map(p => ({
+        items: plans.map((p: { plan: typeof installmentPlans.$inferSelect; client: { id: number | null; name: string | null; teriCode: string | null } | null }) => ({
           ...p.plan,
           client: p.client,
         })),
@@ -451,7 +453,7 @@ export const installmentPaymentsRouter = router({
         .orderBy(asc(installments.dueDate));
 
       // Update status to OVERDUE for these installments
-      const overdueIds = overdueList.map(o => o.installment.id);
+      const overdueIds = overdueList.map((o: typeof overdueList[0]) => o.installment.id);
       if (overdueIds.length > 0) {
         await db
           .update(installments)
@@ -467,10 +469,10 @@ export const installmentPaymentsRouter = router({
       // Filter by client if specified
       let filteredList = overdueList;
       if (input?.clientId) {
-        filteredList = overdueList.filter(o => o.client?.id === input.clientId);
+        filteredList = overdueList.filter((o: typeof overdueList[0]) => o.client?.id === input.clientId);
       }
 
-      return filteredList.map(o => {
+      return filteredList.map((o: typeof overdueList[0]) => {
         const dueDate = new Date(o.installment.dueDate);
         const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
         const amountDue = parseFloat(o.installment.amountDue || "0");

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
+
+interface Calendar {
+  id: number;
+  name: string;
+  description?: string;
+  color: string;
+  isDefault: boolean;
+  isArchived: boolean;
+  accessLevel: string;
+}
 
 /**
  * CalendarGeneralSettings Component
@@ -34,7 +45,7 @@ import { Badge } from "@/components/ui/badge";
  */
 export function CalendarGeneralSettings() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCalendar, setEditingCalendar] = useState<any>(null);
+  const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
   const { data: calendars, refetch } = trpc.calendarsManagement.list.useQuery({
@@ -100,7 +111,7 @@ export function CalendarGeneralSettings() {
           </DialogTrigger>
           <DialogContent>
             <CalendarForm
-              onSubmit={(data) => createMutation.mutate(data)}
+              onSubmit={(data: any) => createMutation.mutate(data)}
               onCancel={() => setIsDialogOpen(false)}
               isLoading={createMutation.isPending}
             />
@@ -222,8 +233,8 @@ function CalendarForm({
   onCancel,
   isLoading,
 }: {
-  initialData?: any;
-  onSubmit: (data: any) => void;
+  initialData?: Calendar;
+  onSubmit: (data: Record<string, unknown>) => void;
   onCancel: () => void;
   isLoading: boolean;
 }) {
@@ -232,7 +243,7 @@ function CalendarForm({
   const [color, setColor] = useState(initialData?.color || "#3B82F6");
   const [isDefault, setIsDefault] = useState(initialData?.isDefault || false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSubmit({ name, description, color, isDefault });
   };

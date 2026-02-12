@@ -94,10 +94,12 @@ export const rbacPermissionsRouter = router({
         // Group role names by permission ID
         const rolesByPermission = new Map<number, { roleId: number; roleName: string }[]>();
         for (const ra of roleAssignments) {
-          if (!rolesByPermission.has(ra.permissionId)) {
-            rolesByPermission.set(ra.permissionId, []);
+          let roleList = rolesByPermission.get(ra.permissionId);
+          if (!roleList) {
+            roleList = [];
+            rolesByPermission.set(ra.permissionId, roleList);
           }
-          rolesByPermission.get(ra.permissionId)!.push({
+          roleList.push({
             roleId: ra.roleId,
             roleName: ra.roleName,
           });
@@ -335,7 +337,7 @@ export const rbacPermissionsRouter = router({
         }
 
         // Update permission
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.description !== undefined) updateData.description = input.description;
         if (input.module !== undefined) updateData.module = input.module;
@@ -441,10 +443,12 @@ export const rbacPermissionsRouter = router({
         }>>();
 
         for (const perm of allPermissions) {
-          if (!moduleMap.has(perm.module)) {
-            moduleMap.set(perm.module, []);
+          let modulePerms = moduleMap.get(perm.module);
+          if (!modulePerms) {
+            modulePerms = [];
+            moduleMap.set(perm.module, modulePerms);
           }
-          moduleMap.get(perm.module)!.push({
+          modulePerms.push({
             id: perm.id,
             name: perm.name,
             description: perm.description,

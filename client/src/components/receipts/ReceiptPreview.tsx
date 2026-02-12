@@ -23,7 +23,6 @@ import {
   Link,
   Check,
   Loader2,
-  X,
 } from "lucide-react";
 
 interface ReceiptPreviewProps {

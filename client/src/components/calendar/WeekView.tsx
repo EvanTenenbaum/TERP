@@ -53,7 +53,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
       {/* Header with days */}
       <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
         <div className="border-r border-gray-200 p-3"></div>
-        {weekDays.map((day, index) => {
+        {weekDays.map((day, _dayIdx) => {
           const isToday =
             day.getDate() === today.getDate() &&
             day.getMonth() === today.getMonth() &&
@@ -61,7 +61,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
 
           return (
             <div
-              key={`day-${index}`}
+              key={`weekday-${day.toISOString()}`}
               className={`border-r border-gray-200 p-3 text-center last:border-r-0 ${
                 isToday ? "bg-blue-50" : ""
               }`}
@@ -93,12 +93,12 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
             </div>
 
             {/* Day columns */}
-            {weekDays.map((day, dayIndex) => {
+            {weekDays.map((day, _dayIndex) => {
               const dayEvents = getEventsForDayAndHour(day, slot.hour, events);
 
               return (
                 <div
-                  key={dayIndex}
+                  key={`timeslot-${day.toISOString()}-${slot.hour}`}
                   className="relative min-h-[60px] border-r border-gray-200 p-1 last:border-r-0"
                 >
                   {dayEvents.map((event) => (

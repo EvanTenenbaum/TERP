@@ -7,10 +7,10 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { VendorWithBrands } from "./VendorBrandInfo";
-import { getBrandLabel } from "@/lib/nomenclature";
+
 
 interface VendorContextPanelProps {
   /**
@@ -497,8 +497,8 @@ function SupplyHistoryTab({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lot.products.map((product, idx) => (
-                    <TableRow key={`${lot.lotId}-${product.batchCode}-${idx}`}>
+                  {lot.products.map((product) => (
+                    <TableRow key={`lot-${lot.lotId}-${product.batchCode}`}>
                       <TableCell>
                         <div>
                           <div className="font-medium">{product.productName}</div>
@@ -553,7 +553,7 @@ export function VendorContextPanel({
           <Skeleton className="h-4 w-32" />
           <div className="grid grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={`skeleton-${i}`} className="h-20" />
+              <Skeleton key={`vendor-skeleton-${i}`} className="h-20" />
             ))}
           </div>
           <Skeleton className="h-64" />

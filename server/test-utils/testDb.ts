@@ -8,21 +8,26 @@
 import { vi } from 'vitest';
 
 // Helper to get table name from object
-function getTableName(table: any) {
+function getTableName(table: unknown): string {
     if (typeof table === 'string') return table;
-    const symbols = Object.getOwnPropertySymbols(table || {});
+    if (!table) return 'unknown';
+    const symbols = Object.getOwnPropertySymbols(table);
     for (const sym of symbols) {
         if (sym.toString() === 'Symbol(drizzle:Name)') {
-            return table[sym];
+            return (table as Record<symbol, string>)[sym];
         }
     }
-    if (table?._?.name) return table._.name;
+    const t = table as Record<string, unknown>;
+    if (t._ && typeof t._ === 'object' && t._ !== null) {
+        const underscore = t._ as Record<string, unknown>;
+        if (underscore.name) return String(underscore.name);
+    }
     return 'unknown';
 }
 
-function getColValue(rowCtx: any, col: any) {
+function getColValue(rowCtx: Record<string, unknown>, col: { table?: unknown; name: string }): unknown {
     const tableName = getTableName(col.table);
-    const row = rowCtx[tableName];
+    const row = rowCtx[tableName] as Record<string, unknown> | undefined;
     if (!row) return undefined;
     return row[col.name];
 }
@@ -37,19 +42,19 @@ export function createMockDb() {
       return [];
   };
 
-  const mockDb: any = {
+  const mockDb: Record<string, unknown> & { transaction: typeof vi.fn; query: Record<string, unknown> } = {
     select: vi.fn((selection) => {
-        let currentRows: any[] = [];
+        let currentRows: Array<Record<string, unknown>> = [];
         let isJoined = false;
 
-        const builder: any = {
+        const builder: Record<string, unknown> = {
             from: vi.fn((table) => {
                 const tableName = getTableName(table);
                 // Start with wrapped rows: { [tableName]: row }
                 currentRows = (storage[tableName] || []).map(row => ({ [tableName]: row }));
                 return builder;
             }),
-            leftJoin: vi.fn((table, condition) => {
+            leftJoin: vi.fn((table: unknown, condition: unknown) => {
                 isJoined = true;
                 const joinTableName = getTableName(table);
                 const joinRows = storage[joinTableName] || [];
@@ -59,31 +64,32 @@ export function createMockDb() {
                     let matchFound = false;
 
                     joinRows.forEach(joinRow => {
-                         let matches = true;
+                         const matches = true;
 
-                         const check = (cond: any) => {
+                         const checkCond = (cond: { op: string; col: { table?: unknown; name: string }; val?: unknown; args?: Array<{ op: string; col: { table?: unknown; name: string }; val?: unknown }> | undefined }): boolean => {
                              if (!cond) return true;
                              if (cond.op === 'eq') {
-                                 const leftVal = getColValue(mainRow, cond.col);
+                                 const leftVal = getColValue(mainRow, cond.col as { table?: unknown; name: string });
 
-                                 let rightVal = cond.val;
-                                 if (cond.val && typeof cond.val === 'object' && cond.val.table) {
-                                     if (getTableName(cond.val.table) === joinTableName) {
-                                         rightVal = joinRow[cond.val.name];
+                                 let rightVal: unknown = cond.val;
+                                 if (cond.val && typeof cond.val === 'object' && 'table' in cond.val && (cond.val as { table?: unknown }).table) {
+                                     const valObj = cond.val as { table?: unknown; name: string };
+                                     if (getTableName(valObj.table) === joinTableName) {
+                                         rightVal = (joinRow as Record<string, unknown>)[valObj.name];
                                      } else {
-                                         rightVal = getColValue(mainRow, cond.val);
+                                         rightVal = getColValue(mainRow, valObj);
                                      }
                                  }
 
                                  return leftVal == rightVal;
                              }
                              if (cond.op === 'and') {
-                                 return cond.args.every(check);
+                                 return cond.args?.every(checkCond) ?? true;
                              }
                              return true;
                          };
 
-                         if (check(condition)) {
+                         if (checkCond(condition as { op: string; col: { table?: unknown; name: string }; val?: unknown; args?: Array<{ op: string; col: { table?: unknown; name: string }; val?: unknown }> | undefined })) {
                              newRows.push({ ...mainRow, [joinTableName]: joinRow });
                              matchFound = true;
                          }
@@ -153,7 +159,7 @@ export function createMockDb() {
         let currentRows: any[] = [];
 
         const builder: any = {
-            from: vi.fn((table) => {
+            from: vi.fn((table: unknown) => {
                 const tableName = getTableName(table);
                 currentRows = (storage[tableName] || []).map(row => ({ [tableName]: row }));
                 return builder;

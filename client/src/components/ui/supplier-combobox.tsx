@@ -134,7 +134,7 @@ export function SupplierCombobox({
 }: SupplierComboboxProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   // BUG-073 FIX: Track request ID from debounced search (prevents race conditions)
-  const [inputValue, debouncedSearch, setInputValue, searchRequestId] =
+  const [inputValue, debouncedSearch, setInputValue, _searchRequestId] =
     useDebouncedSearch(debounceMs);
   const listRef = useRef<HTMLDivElement>(null);
 

@@ -9,10 +9,9 @@ import {
   calendarUserAccess,
   calendarAvailability,
   calendarBlockedDates,
-  timeOffRequests,
   clients,
 } from "../../drizzle/schema";
-import { and, eq, gte, lte, desc, asc, isNull, inArray, sql } from "drizzle-orm";
+import { and, eq, desc, isNull, inArray, sql } from "drizzle-orm";
 import { sendNotification } from "../services/notificationService";
 
 /**

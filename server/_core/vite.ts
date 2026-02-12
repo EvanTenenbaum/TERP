@@ -78,7 +78,7 @@ export function serveStatic(app: Express) {
     logger.info({ distPath, cwd: process.cwd() }, "Resolving static file path");
   } catch {
     // Logger might not be initialized yet, use console as fallback
-    console.log(
+    logger.info(
       `[serveStatic] Resolving static file path: ${distPath} (cwd: ${process.cwd()})`
     );
   }
@@ -112,7 +112,7 @@ export function serveStatic(app: Express) {
         "Serving static files from build directory"
       );
     } catch {
-      console.log(`[serveStatic] Serving static files from: ${distPath}`);
+      logger.info(`[serveStatic] Serving static files from: ${distPath}`);
     }
   }
 

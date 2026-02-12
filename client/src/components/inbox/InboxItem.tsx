@@ -7,7 +7,6 @@ import {
   Archive,
   Trash2,
   MoreVertical,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

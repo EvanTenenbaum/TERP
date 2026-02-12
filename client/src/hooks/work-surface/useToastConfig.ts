@@ -365,7 +365,7 @@ export const crudToast = {
  */
 export const bulkToast = {
   /** Bulk operation started */
-  started: (count: number, operation: string) =>
+  started: (count: number, _operation: string) =>
     toast.loading(`Processing ${count} items...`, { duration: Infinity }),
   /** Bulk operation complete */
   complete: (count: number, operation: string) =>

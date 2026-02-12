@@ -42,9 +42,8 @@ export function useVersionCheck() {
           setHasUpdate(true);
           // Don't show multiple toasts - let the component handle it
         }
-      } catch (error) {
+      } catch {
         // Silently fail - network errors shouldn't interrupt the app
-        console.debug("Version check failed:", error);
       }
     };
 

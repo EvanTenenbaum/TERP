@@ -11,6 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -453,7 +454,7 @@ export function ClientsWorkSurface() {
     clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
   });
 
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData as any)?.items ?? [];
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData as { items?: unknown[] })?.items ?? [];
 
   const { data: totalCount } = trpc.clients.count.useQuery({
     search: search || undefined,

@@ -147,10 +147,12 @@ export function groupStrainsByFamily(strains: Array<{ id: number; name: string }
   for (const strain of strains) {
     const baseName = extractBaseStrainName(strain.name);
     if (baseName) {
-      if (!families.has(baseName)) {
-        families.set(baseName, []);
+      let family = families.get(baseName);
+      if (!family) {
+        family = [];
+        families.set(baseName, family);
       }
-      families.get(baseName)!.push(strain);
+      family.push(strain);
     }
   }
   

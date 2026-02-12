@@ -1,6 +1,6 @@
-import { eq, and, or, desc, asc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { clientNeeds, clients, users } from "../drizzle/schema";
+import { clientNeeds, clients } from "../drizzle/schema";
 import type { ClientNeed, InsertClientNeed } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 
@@ -18,7 +18,7 @@ export async function createClientNeed(need: InsertClientNeed): Promise<ClientNe
     const [created] = await db
       .select()
       .from(clientNeeds)
-      .where(eq(clientNeeds.id, inserted.insertId as any));
+      .where(eq(clientNeeds.id, inserted.insertId as number));
     
     return created;
   } catch (error) {
@@ -94,7 +94,7 @@ export async function getClientNeeds(filters?: {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     const needs = await query.orderBy(desc(clientNeeds.createdAt));

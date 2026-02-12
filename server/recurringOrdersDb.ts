@@ -11,7 +11,7 @@ export async function createRecurringOrder(data: {
   frequency: string;
   dayOfWeek?: number;
   dayOfMonth?: number;
-  orderTemplate: any;
+  orderTemplate: Record<string, unknown>;
   startDate: string;
   endDate?: string;
   notifyClient?: boolean;
@@ -32,17 +32,18 @@ export async function createRecurringOrder(data: {
 
     const [result] = await db.insert(recurringOrders).values({
       clientId: data.clientId,
-      frequency: data.frequency as any,
+      frequency: data.frequency as 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY',
       dayOfWeek: data.dayOfWeek,
       dayOfMonth: data.dayOfMonth,
       orderTemplate: data.orderTemplate,
       startDate: data.startDate,
       endDate: data.endDate,
-      nextGenerationDate: nextGenerationDate as any,
+      nextGenerationDate: nextGenerationDate as unknown as Date,
       notifyClient: data.notifyClient ?? true,
       notifyEmail: data.notifyEmail,
       createdBy: data.createdBy,
       status: "ACTIVE",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return { success: true, recurringOrderId: result.insertId };
@@ -65,7 +66,7 @@ export async function updateRecurringOrder(
     frequency?: string;
     dayOfWeek?: number;
     dayOfMonth?: number;
-    orderTemplate?: any;
+    orderTemplate?: Record<string, unknown>;
     endDate?: string;
     notifyClient?: boolean;
     notifyEmail?: string;
@@ -85,7 +86,7 @@ export async function updateRecurringOrder(
       return { success: false, error: "Recurring order not found" };
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (data.frequency) updateData.frequency = data.frequency;
     if (data.dayOfWeek !== undefined) updateData.dayOfWeek = data.dayOfWeek;
     if (data.dayOfMonth !== undefined) updateData.dayOfMonth = data.dayOfMonth;
@@ -175,7 +176,7 @@ export async function resumeRecurringOrder(recurringOrderId: number) {
       .update(recurringOrders)
       .set({
         status: "ACTIVE",
-        nextGenerationDate: nextGenerationDate as any,
+        nextGenerationDate: nextGenerationDate as unknown as Date,
       })
       .where(eq(recurringOrders.id, recurringOrderId));
 
@@ -277,8 +278,8 @@ export async function markRecurringOrderGenerated(recurringOrderId: number) {
     await db
       .update(recurringOrders)
       .set({
-        lastGeneratedDate: today as any,
-        nextGenerationDate: nextGenerationDate as any,
+        lastGeneratedDate: today as unknown as Date,
+        nextGenerationDate: nextGenerationDate as unknown as Date,
       })
       .where(eq(recurringOrders.id, recurringOrderId));
 
@@ -321,12 +322,12 @@ export async function listRecurringOrdersForClient(clientId: number) {
 /**
  * List all recurring orders
  */
-export async function listAllRecurringOrders(status?: string) {
+export async function listAllRecurringOrders(_status?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    let query = db
+    const query = db
       .select({
         recurringOrder: recurringOrders,
         client: clients,

@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -22,7 +23,7 @@ export interface Template {
   name: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  content: any; // Tiptap JSON content
+  content: Record<string, unknown>; // Tiptap JSON content
 }
 
 export const templates: Template[] = [

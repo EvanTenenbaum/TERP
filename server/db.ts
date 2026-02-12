@@ -16,6 +16,7 @@ export async function getDb(): Promise<MySql2Database<typeof schema>> {
       // Note: getConnectionPool() caches the pool, so this is safe to call multiple times
       // Even if process.env.DATABASE_URL is not available at runtime, the cached pool will be returned
       const pool = getConnectionPool();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       _db = drizzle(pool as any, { schema, mode: 'default' }); // Pool is compatible with drizzle
       logger.info("Database connection established with connection pooling");
     } catch (error) {
@@ -34,6 +35,7 @@ function initSyncDb(): MySql2Database<typeof schema> {
   if (!_syncDb) {
     try {
       const pool = getConnectionPool();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       _syncDb = drizzle(pool as any, { schema, mode: 'default' });
     } catch (error) {
       // In development/test environments without a database, create a placeholder

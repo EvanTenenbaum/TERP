@@ -27,7 +27,8 @@ export const TableSkeleton = React.memo(function TableSkeleton({
         >
           {Array.from({ length: columns }).map((_, index) => (
             <Skeleton
-              key={`header-${index}`}
+              // eslint-disable-next-line react/no-array-index-key
+              key={`table-header-${index}`}
               className="h-4 col-span-3 rounded"
               data-testid="skeleton-header-cell"
             />
@@ -38,7 +39,8 @@ export const TableSkeleton = React.memo(function TableSkeleton({
       <div className="space-y-3">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div
-            key={`row-${rowIndex}`}
+            // eslint-disable-next-line react/no-array-index-key
+            key={`table-row-${rowIndex}`}
             className="grid gap-3"
             style={{
               gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
@@ -47,7 +49,8 @@ export const TableSkeleton = React.memo(function TableSkeleton({
           >
             {Array.from({ length: columns }).map((_, columnIndex) => (
               <Skeleton
-                key={`cell-${rowIndex}-${columnIndex}`}
+                // eslint-disable-next-line react/no-array-index-key
+                key={`table-cell-${rowIndex}-${columnIndex}`}
                 className="h-4 col-span-3 rounded"
                 data-testid="skeleton-cell"
               />

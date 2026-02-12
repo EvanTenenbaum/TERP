@@ -512,9 +512,9 @@ function MonthView({
       </div>
 
       {/* Calendar Grid */}
-      {weeks.map((week, weekIndex) => (
+      {weeks.map((week) => (
         <div
-          key={weekIndex}
+          key={`week-${week[0]?.toISOString()}`}
           className="grid grid-cols-7 border-b last:border-b-0"
         >
           {week.map(day => {

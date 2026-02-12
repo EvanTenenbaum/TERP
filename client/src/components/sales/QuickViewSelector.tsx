@@ -4,7 +4,7 @@
  * SALES-SHEET-IMPROVEMENTS: New component for saved views functionality
  */
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,7 +109,7 @@ export function QuickViewSelector({
         });
         toast.success(`Loaded: ${view.name}`);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load view");
     }
   };

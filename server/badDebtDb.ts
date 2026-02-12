@@ -12,12 +12,10 @@
 import { getDb } from "./db";
 import { 
   transactions,
-  transactionLinks,
   clients,
   ledgerEntries,
   type Transaction,
-  type InsertTransaction,
-  type InsertLedgerEntry
+
 } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import * as transactionsDb from "./transactionsDb";

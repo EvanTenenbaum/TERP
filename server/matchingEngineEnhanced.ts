@@ -1,4 +1,4 @@
-import { eq, and, sql, isNull } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   clientNeeds,

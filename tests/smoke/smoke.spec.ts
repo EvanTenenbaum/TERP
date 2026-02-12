@@ -108,10 +108,14 @@ test.describe("Smoke Tests - Critical Paths", () => {
     // Handle authentication if needed
     await loginIfNeeded(page);
 
-    // Wait for dashboard to load - check for heading or main content
-    await expect(
-      page.getByRole("heading", { name: /dashboard/i }).first()
-    ).toBeVisible({ timeout: 20000 });
+    // Wait for dashboard route/content to load.
+    await expect(page).toHaveURL(/\/($|dashboard)/, { timeout: 20000 });
+    const dashboardContent = page
+      .getByText(/TERP OWNER COMMAND CENTER/i)
+      .or(page.getByText(/Inventory Snapshot/i))
+      .or(page.getByText(/Inventory Aging/i));
+
+    await expect(dashboardContent.first()).toBeVisible({ timeout: 20000 });
 
     // Verify no error states
     await expect(page.getByText(/error/i).first())

@@ -51,7 +51,7 @@ class SimpleAuthService {
   verifySessionToken(token: string): SessionPayload | null {
     try {
       return jwt.verify(token, getJwtSecret()) as SessionPayload;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -82,7 +82,7 @@ class SimpleAuthService {
       }
 
       return user;
-    } catch (error) {
+    } catch (_error) {
       // Error logging handled by error handling middleware
       throw ForbiddenError("Authentication failed");
     }
@@ -229,7 +229,7 @@ export function registerSimpleAuthRoutes(app: Express) {
     try {
       const user = await simpleAuth.authenticateRequest(req);
       res.json({ user: { name: user.name, email: user.email } });
-    } catch (error) {
+    } catch {
       res.status(401).json({ error: "Not authenticated" });
     }
   });

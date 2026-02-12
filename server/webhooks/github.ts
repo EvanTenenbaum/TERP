@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { getDb } from "../db";
 import { deployments } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 interface GitHubPushPayload {
   ref: string;
@@ -57,12 +58,12 @@ function verifyGitHubSignature(
  */
 export async function handleGitHubWebhook(req: Request, res: Response) {
   try {
-    console.log("[WEBHOOK] Received webhook request");
+    logger.info("[WEBHOOK] Received webhook request");
     // Get webhook secret from environment
     // Note: GitHub Secrets can't start with "github", so we use WEBHOOK_SECRET
     const webhookSecret = process.env.WEBHOOK_SECRET || process.env.GITHUB_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error("WEBHOOK_SECRET not configured");
+      logger.error("WEBHOOK_SECRET not configured");
       return res.status(500).json({ error: "Webhook secret not configured" });
     }
 
@@ -72,10 +73,10 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     const deliveryId = req.headers["x-github-delivery"] as string;
 
     // Verify signature
-    console.log("[WEBHOOK] Verifying signature");
+    logger.info("[WEBHOOK] Verifying signature");
     const payload = JSON.stringify(req.body);
     if (!verifyGitHubSignature(payload, signature, webhookSecret)) {
-      console.error("Invalid GitHub webhook signature");
+      logger.error("Invalid GitHub webhook signature");
       return res.status(403).json({ error: "Invalid signature" });
     }
 
@@ -96,7 +97,7 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       return res.status(200).json({ message: "Not TERP repository" });
     }
 
-    console.log("[WEBHOOK] Passed all validation checks, extracting commit info");
+    logger.info("[WEBHOOK] Passed all validation checks, extracting commit info");
     // Extract commit information
     const { head_commit, pusher } = pushPayload;
     if (!head_commit) {
@@ -104,13 +105,13 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     }
 
     // Create deployment record
-    console.log("[WEBHOOK] Getting database connection");
+    logger.info("[WEBHOOK] Getting database connection");
     const db = await getDb();
     if (!db) {
-      console.error("[WEBHOOK] Database not available");
+      logger.error("[WEBHOOK] Database not available");
       return res.status(500).json({ error: "Database not available" });
     }
-    console.log("[WEBHOOK] Database connection obtained, inserting deployment");
+    logger.info("[WEBHOOK] Database connection obtained, inserting deployment");
     const result = await db.insert(deployments).values({
       commitSha: head_commit.id,
       commitMessage: head_commit.message,
@@ -126,8 +127,8 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     // Extract insertId from MySQL result (returns [ResultSetHeader, FieldPacket[]])
     const insertId = Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0;
 
-    console.log("[WEBHOOK] Deployment record inserted successfully");
-    console.log(`Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`);
+    logger.info("[WEBHOOK] Deployment record inserted successfully");
+    logger.info(`Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`);
 
     // Trigger background job to poll DigitalOcean API
     // Schedule polling to start after 30 seconds (give DO time to start the build)
@@ -143,9 +144,9 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
   } catch (error) {
     // Log error details - Pino requires error as direct property
     if (error instanceof Error) {
-      console.error({ err: error, msg: "GitHub webhook error" });
+      logger.error({ err: error, msg: "GitHub webhook error" });
     } else {
-      console.error({ error, msg: "GitHub webhook error (non-Error)" });
+      logger.error({ error, msg: "GitHub webhook error (non-Error)" });
     }
     // Return 500 during development to see errors in GitHub webhook deliveries
     return res.status(500).json({ error: "Internal server error" });
@@ -163,12 +164,12 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
 
   const poll = async () => {
     pollCount++;
-    console.log(`[WEBHOOK] Polling deployment status (attempt ${pollCount}/${MAX_POLLS})`);
+    logger.info(`[WEBHOOK] Polling deployment status (attempt ${pollCount}/${MAX_POLLS})`);
 
     try {
       const db = await getDb();
       if (!db) {
-        console.error("[WEBHOOK] Database not available for polling");
+        logger.error("[WEBHOOK] Database not available for polling");
         return;
       }
 
@@ -180,12 +181,12 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
         .limit(1);
 
       if (!deployment) {
-        console.error("[WEBHOOK] Deployment record not found");
+        logger.error("[WEBHOOK] Deployment record not found");
         return;
       }
 
       if (deployment.status === "success" || deployment.status === "failed") {
-        console.log(`[WEBHOOK] Deployment ${commitSha.substring(0, 7)} completed with status: ${deployment.status}`);
+        logger.info(`[WEBHOOK] Deployment ${commitSha.substring(0, 7)} completed with status: ${deployment.status}`);
         return; // Stop polling
       }
 
@@ -193,7 +194,7 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
       if (pollCount < MAX_POLLS) {
         setTimeout(poll, POLL_INTERVAL_MS);
       } else {
-        console.warn(`[WEBHOOK] Max polls reached for deployment ${commitSha.substring(0, 7)}`);
+        logger.warn(`[WEBHOOK] Max polls reached for deployment ${commitSha.substring(0, 7)}`);
         // Mark as unknown status
         await db
           .update(deployments)
@@ -201,7 +202,7 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
           .where(eq(deployments.id, deploymentId));
       }
     } catch (error) {
-      console.error("[WEBHOOK] Error polling deployment status:", error);
+      logger.error({ msg: "[WEBHOOK] Error polling deployment status", error: error instanceof Error ? error.message : String(error) });
       // Continue polling on error
       if (pollCount < MAX_POLLS) {
         setTimeout(poll, POLL_INTERVAL_MS);
@@ -211,5 +212,5 @@ function scheduleDeploymentPolling(commitSha: string, deploymentId: number): voi
 
   // Start polling after initial delay
   setTimeout(poll, POLL_INTERVAL_MS);
-  console.log(`[WEBHOOK] Scheduled deployment polling for ${commitSha.substring(0, 7)}`);
+  logger.info(`[WEBHOOK] Scheduled deployment polling for ${commitSha.substring(0, 7)}`);
 }

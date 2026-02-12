@@ -29,7 +29,8 @@ export const CardSkeleton = React.memo(function CardSkeleton({
         <div className="space-y-3">
           {Array.from({ length: lines }).map((_, index) => (
             <Skeleton
-              key={`line-${index}`}
+              // eslint-disable-next-line react/no-array-index-key
+              key={`card-line-${index}`}
               className="h-3 w-full"
               data-testid="card-skeleton-line"
             />

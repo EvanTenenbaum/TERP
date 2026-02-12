@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,9 +31,9 @@ interface MarketplaceSupplyProps {
   config: any;
 }
 
-export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) {
+export function MarketplaceSupply({ clientId, config: _config }: MarketplaceSupplyProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingSupply, setEditingSupply] = useState<any>(null);
+  const [editingSupply, setEditingSupply] = useState<any | null>(null);
   const [cancelSupplyId, setCancelSupplyId] = useState<number | null>(null);
 
   // Form state

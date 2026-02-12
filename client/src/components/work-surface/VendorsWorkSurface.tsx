@@ -12,7 +12,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,6 @@ import {
   Phone,
   ExternalLink,
   Package,
-  DollarSign,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,

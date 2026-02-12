@@ -14,15 +14,16 @@
 import { getDb } from "../db";
 import { workflowStatuses, batchStatusHistory, batches } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 async function setupWorkflowQueue() {
   const db = getDb();
   
-  console.log("🚀 Starting Workflow Queue Production Setup...\n");
+  logger.info("🚀 Starting Workflow Queue Production Setup...\n");
 
   try {
     // Step 1: Create workflow_statuses table
-    console.log("📋 Step 1: Creating workflow_statuses table...");
+    logger.info("📋 Step 1: Creating workflow_statuses table...");
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS workflow_statuses (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -38,10 +39,10 @@ async function setupWorkflowQueue() {
         INDEX idx_active (isActive)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log("✅ workflow_statuses table ready\n");
+    logger.info("✅ workflow_statuses table ready\n");
 
     // Step 2: Create batch_status_history table
-    console.log("📋 Step 2: Creating batch_status_history table...");
+    logger.info("📋 Step 2: Creating batch_status_history table...");
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS batch_status_history (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -59,27 +60,27 @@ async function setupWorkflowQueue() {
         FOREIGN KEY (changedBy) REFERENCES users(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log("✅ batch_status_history table ready\n");
+    logger.info("✅ batch_status_history table ready\n");
 
     // Step 3: Add statusId column to batches table
-    console.log("📋 Step 3: Adding statusId column to batches table...");
+    logger.info("📋 Step 3: Adding statusId column to batches table...");
     try {
       await db.execute(sql`
         ALTER TABLE batches 
         ADD COLUMN statusId INT AFTER batchStatus,
         ADD FOREIGN KEY (statusId) REFERENCES workflow_statuses(id) ON DELETE SET NULL;
       `);
-      console.log("✅ statusId column added to batches table\n");
+      logger.info("✅ statusId column added to batches table\n");
     } catch (error) {
       if (error instanceof Error ? error.message : String(error)?.includes("Duplicate column")) {
-        console.log("ℹ️  statusId column already exists, skipping\n");
+        logger.info("ℹ️  statusId column already exists, skipping\n");
       } else {
         throw error;
       }
     }
 
     // Step 4: Seed default workflow statuses
-    console.log("📋 Step 4: Seeding default workflow statuses...");
+    logger.info("📋 Step 4: Seeding default workflow statuses...");
     
     const defaultStatuses = [
       { name: "Intake Queue", description: "Newly received batches awaiting initial processing", color: "#EF4444", order: 1 },
@@ -100,15 +101,15 @@ async function setupWorkflowQueue() {
             color = VALUES(color),
             \`order\` = VALUES(\`order\`);
         `);
-        console.log(`  ✓ ${status.name}`);
+        logger.info(`  ✓ ${status.name}`);
       } catch (error) {
-        console.log(`  ⚠️  ${status.name} - ${error.message}`);
+        logger.warn(`  ⚠️  ${status.name} - ${error.message}`);
       }
     }
-    console.log("✅ Default workflow statuses seeded\n");
+    logger.info("✅ Default workflow statuses seeded\n");
 
     // Step 5: Migrate existing batches to workflow statuses
-    console.log("📋 Step 5: Migrating existing batches to workflow statuses...");
+    logger.info("📋 Step 5: Migrating existing batches to workflow statuses...");
     
     // Get status IDs
     const statusMap = await db.execute(sql`SELECT id, name FROM workflow_statuses`);
@@ -131,9 +132,9 @@ async function setupWorkflowQueue() {
     const batchesToMigrate = (countResult.rows[0] as any).count;
 
     if (batchesToMigrate === 0) {
-      console.log("ℹ️  All batches already have workflow statuses assigned\n");
+      logger.info("ℹ️  All batches already have workflow statuses assigned\n");
     } else {
-      console.log(`  Found ${batchesToMigrate} batches to migrate`);
+      logger.info(`  Found ${batchesToMigrate} batches to migrate`);
 
       // Migrate batches based on quantity (intelligent distribution)
       // Ready for Sale: 0 quantity (sold out)
@@ -171,11 +172,11 @@ async function setupWorkflowQueue() {
         WHERE statusId IS NULL
       `);
 
-      console.log("✅ Batches migrated to workflow statuses\n");
+      logger.info("✅ Batches migrated to workflow statuses\n");
     }
 
     // Step 6: Verify migration
-    console.log("📋 Step 6: Verifying migration...");
+    logger.info("📋 Step 6: Verifying migration...");
     const verifyResult = await db.execute(sql`
       SELECT 
         ws.name,
@@ -188,23 +189,23 @@ async function setupWorkflowQueue() {
       ORDER BY ws.\`order\`
     `);
 
-    console.log("\n📊 Workflow Queue Distribution:");
-    console.log("─".repeat(60));
+    logger.info("\n📊 Workflow Queue Distribution:");
+    logger.info("─".repeat(60));
     
     let totalBatches = 0;
     for (const row of verifyResult.rows as Array<{ name: string; color: string; batch_count: number; avg_quantity: number }>) {
       const percentage = totalBatches > 0 ? ((row.batch_count / totalBatches) * 100).toFixed(1) : "0.0";
-      console.log(`${row.name.padEnd(20)} │ ${String(row.batch_count).padStart(4)} batches │ Avg: ${Math.round(row.avg_quantity).toString().padStart(4)} units`);
+      logger.info(`${row.name.padEnd(20)} │ ${String(row.batch_count).padStart(4)} batches │ Avg: ${Math.round(row.avg_quantity).toString().padStart(4)} units`);
       totalBatches += row.batch_count;
     }
     
-    console.log("─".repeat(60));
-    console.log(`${"TOTAL".padEnd(20)} │ ${String(totalBatches).padStart(4)} batches`);
-    console.log("─".repeat(60));
+    logger.info("─".repeat(60));
+    logger.info(`${"TOTAL".padEnd(20)} │ ${String(totalBatches).padStart(4)} batches`);
+    logger.info("─".repeat(60));
 
-    console.log("\n✅ Workflow Queue Setup Complete!");
-    console.log("\n🎉 The workflow queue system is now ready to use!");
-    console.log("   Navigate to /workflow-queue to see your batches\n");
+    logger.info("\n✅ Workflow Queue Setup Complete!");
+    logger.info("\n🎉 The workflow queue system is now ready to use!");
+    logger.info("   Navigate to /workflow-queue to see your batches\n");
 
   } catch (error) {
     console.error("\n❌ Error during setup:", error);
@@ -215,7 +216,7 @@ async function setupWorkflowQueue() {
 // Run the setup
 setupWorkflowQueue()
   .then(() => {
-    console.log("✅ Setup completed successfully");
+    logger.info("✅ Setup completed successfully");
     process.exit(0);
   })
   .catch((error) => {

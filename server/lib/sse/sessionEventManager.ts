@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
-// Note: Logger and features can be imported when needed
+import { logger } from "../../_core/logger";
+// Note: features can be imported when needed
 // import { features } from "../../_core/features";
 
 // Event Types - SSE-001: Fixed event naming consistency
@@ -38,7 +39,7 @@ export interface SsePayload {
   type: SseEventType;
   sessionId: number;
   timestamp: string;
-  data: any;
+  data: unknown;
 }
 
 /**
@@ -77,7 +78,7 @@ class SessionEventManager extends EventEmitter {
   /**
    * Emit a generic event to a session room
    */
-  private emitToSession(sessionId: number, type: SseEventType, data: any) {
+  private emitToSession(sessionId: number, type: SseEventType, data: unknown) {
     const payload: SsePayload = {
       type,
       sessionId,
@@ -92,7 +93,7 @@ class SessionEventManager extends EventEmitter {
     
     // Debug log for development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`SSE Emitted: ${type}`, roomId, payload);
+      logger.info({ msg: `SSE Emitted: ${type}`, roomId, payload });
     }
   }
 
@@ -100,7 +101,7 @@ class SessionEventManager extends EventEmitter {
   // PUBLIC EMITTERS
   // ==========================================================================
 
-  public emitCartUpdate(sessionId: number, cartItems: any[]) {
+  public emitCartUpdate(sessionId: number, cartItems: Array<Record<string, unknown>>) {
     this.emitToSession(sessionId, "CART_UPDATED", { items: cartItems });
   }
 
@@ -223,7 +224,7 @@ class SessionEventManager extends EventEmitter {
    * Subscribe to a session's events
    * Used by SSE endpoints to subscribe to session updates
    */
-  public subscribe(sessionId: number, listener: (event: { type: string; data: any }) => void): void {
+  public subscribe(sessionId: number, listener: (event: { type: string; data: unknown }) => void): void {
     const roomId = this.getRoomId(sessionId);
     this.on(roomId, (payload: SsePayload) => {
       listener({ type: payload.type, data: payload.data });
@@ -234,9 +235,9 @@ class SessionEventManager extends EventEmitter {
    * Unsubscribe from a session's events
    * Used when SSE connection closes
    */
-  public unsubscribe(sessionId: number, listener: (event: { type: string; data: any }) => void): void {
+  public unsubscribe(sessionId: number, listener: (event: { type: string; data: unknown }) => void): void {
     const roomId = this.getRoomId(sessionId);
-    this.off(roomId, listener as any);
+    this.off(roomId, listener as (payload: SsePayload) => void);
   }
 }
 

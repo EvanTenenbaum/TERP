@@ -103,8 +103,8 @@ export function OrderTotalsPanel({
           <>
             <Separator />
             <div className="space-y-2">
-              {warnings.map((warning, index) => (
-                <Alert key={`warning-${index}-${warning.substring(0, 30)}`} variant="default" className="py-2">
+              {warnings.map((warning, _index) => (
+                <Alert key={`warning-${warning.substring(0, 40)}`} variant="default" className="py-2">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-xs">
                     {warning}

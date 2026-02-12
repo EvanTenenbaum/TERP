@@ -17,13 +17,13 @@ export function SearchHighlight({ text, query }: SearchHighlightProps) {
   
   return (
     <>
-      {parts.map((part, index) =>
+      {parts.map((part, _index) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={`highlight-${index}-${part}`} className="bg-yellow-200 dark:bg-yellow-900 font-semibold">
+          <mark key={`highlight-${part}`} className="bg-yellow-200 dark:bg-yellow-900 font-semibold">
             {part}
           </mark>
         ) : (
-          <span key={`text-${index}-${part.substring(0, 10)}`}>{part}</span>
+          <span key={`text-${part.substring(0, 20)}`}>{part}</span>
         )
       )}
     </>

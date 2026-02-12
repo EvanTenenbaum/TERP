@@ -26,15 +26,14 @@ import {
 import {
   DollarSign,
   AlertTriangle,
-  CheckCircle,
   ChevronDown,
   ChevronUp,
   Tag,
   Percent,
   Clock,
   Package,
-  Info,
   CreditCard,
+  Info,
 } from "lucide-react";
 
 interface PricingContextPanelProps {

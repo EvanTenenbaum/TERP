@@ -28,7 +28,7 @@ vi.mock('../_core/logger', () => ({
 }));
 
 describe('priceAlertsService', () => {
-  let mockDb: any;
+  let mockDb: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -146,7 +146,7 @@ describe('priceAlertsService', () => {
       vi.mocked(calculateRetailPrice).mockResolvedValue({
         retailPrice: 95,
         appliedRules: [],
-      } as any);
+      } as ReturnType<typeof vi.fn>);
 
       const triggeredAlerts = await priceAlertsService.checkPriceAlerts();
 
@@ -186,7 +186,7 @@ describe('priceAlertsService', () => {
       vi.mocked(calculateRetailPrice).mockResolvedValue({
         retailPrice: 100,
         appliedRules: [],
-      } as any);
+      } as ReturnType<typeof vi.fn>);
 
       const triggeredAlerts = await priceAlertsService.checkPriceAlerts();
 

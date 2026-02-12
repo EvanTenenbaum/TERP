@@ -5,7 +5,7 @@ import PermissionService from "../_core/permissionService";
 import { getDb } from "../db";
 import { calendarReminders } from "../../drizzle/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 import { idSchema } from "../_core/validationSchemas";
 
 /**

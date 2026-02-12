@@ -156,7 +156,8 @@ export const calendarFinancialsRouter = router({
 
       for (const inv of overdueInvoices) {
         const amount = parseFloat(inv.totalAmount ?? "0");
-        const dueDate = new Date(inv.dueDate!);
+        if (!inv.dueDate) continue;
+        const dueDate = new Date(inv.dueDate);
         const daysPastDue = Math.floor(
           (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
         );

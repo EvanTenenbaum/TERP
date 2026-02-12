@@ -221,9 +221,9 @@ export function ProductConnections({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredConnections.map((connection, idx) => (
+                    {filteredConnections.map((connection, _idx) => (
                       <TableRow
-                        key={`${connection.clientId}-${connection.connectionType}-${idx}`}
+                        key={`connection-${connection.clientId}-${connection.connectionType}`}
                       >
                         <TableCell>
                           <div>

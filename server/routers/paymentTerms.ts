@@ -14,11 +14,11 @@ import { TRPCError } from "@trpc/server";
 import {
   router,
   protectedProcedure,
-  getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+
 import { getDb } from "../db";
-import { clients, orders, invoices } from "../../drizzle/schema";
+import { clients } from "../../drizzle/schema";
 import { clientPaymentTermsConfig } from "../../drizzle/schema-sprint5-trackd";
 import { eq, and, sql, isNull, desc } from "drizzle-orm";
 import { logger } from "../_core/logger";

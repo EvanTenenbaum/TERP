@@ -40,8 +40,8 @@ export function WidgetExplainer({ explainer }: WidgetExplainerProps) {
           <div>
             <h4 className="text-sm font-semibold mb-2">Use Cases</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              {explainer.useCases.map((useCase, index) => (
-                <li key={`item-${index}`}>{useCase}</li>
+              {explainer.useCases.map((useCase, _index) => (
+                <li key={`usecase-${useCase.substring(0, 30)}`}>{useCase}</li>
               ))}
             </ul>
           </div>
@@ -49,8 +49,8 @@ export function WidgetExplainer({ explainer }: WidgetExplainerProps) {
             <div>
               <h4 className="text-sm font-semibold mb-2">Related Widgets</h4>
               <div className="flex flex-wrap gap-2">
-                {explainer.relatedWidgets.map((widget, index) => (
-                  <Badge key={`item-${index}`} variant="secondary">
+                {explainer.relatedWidgets.map((widget) => (
+                  <Badge key={`widget-${widget.substring(0, 30)}`} variant="secondary">
                     {widget}
                   </Badge>
                 ))}

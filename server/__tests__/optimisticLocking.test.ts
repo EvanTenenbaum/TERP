@@ -7,7 +7,7 @@
  * Unit tests using mocked database for CI environments.
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, type MockedFunction } from "vitest";
 
 // Mock database before imports
 vi.mock("../db", () => ({
@@ -23,10 +23,10 @@ import {
 } from "../_core/optimisticLocking";
 
 describe("Optimistic Locking - ST-026", () => {
-  let mockDb: any;
-  let mockClientData: any;
-  let mockOrderData: any;
-  let mockBatchData: any;
+  let mockDb: Record<string, MockedFunction>;
+  let mockClientData: Record<string, unknown>;
+  let mockOrderData: Record<string, unknown>;
+  let mockBatchData: Record<string, unknown>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -81,7 +81,7 @@ describe("Optimistic Locking - ST-026", () => {
       })),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as any);
+    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
   });
 
   describe("checkVersion", () => {
@@ -234,7 +234,7 @@ describe("Optimistic Locking - ST-026", () => {
 
     it("should handle scenario: User B refreshes and applies their changes", async () => {
       // Track version and data changes
-      let clientData = { ...mockClientData, version: 1 };
+      const clientData = { ...mockClientData, version: 1 };
 
       mockDb.limit.mockImplementation(() => Promise.resolve([{ ...clientData }]));
 

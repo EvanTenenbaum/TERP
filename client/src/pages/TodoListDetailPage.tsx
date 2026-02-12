@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useParams } from "wouter";
 import { useLocation } from "wouter";
@@ -49,7 +50,7 @@ export function TodoListDetailPage() {
     );
   
   // Extract items from paginated response - handle both array and object formats
-  const tasks: any[] = tasksData ? (Array.isArray(tasksData) ? tasksData : ((tasksData as any)?.items ?? [])) : [];
+  const tasks: any[] = tasksData ? (Array.isArray(tasksData) ? tasksData : ((tasksData as { items?: any[] })?.items ?? [])) : [];
 
   const { data: stats } = trpc.todoTasks.getListStats.useQuery(
     { listId: Number(listId) },
@@ -208,10 +209,10 @@ export function TodoListDetailPage() {
           {tasks.map(task => (
             <TaskCard
               key={task.id}
-              task={task}
-              onClick={() => setEditingTask(task)}
+              task={task as any}
+              onClick={() => setEditingTask(task as any)}
               onToggleComplete={() => handleToggleComplete({ id: task.id, status: task.status })}
-              onEdit={() => setEditingTask(task)}
+              onEdit={() => setEditingTask(task as any)}
               onDelete={() => setTaskToDelete(task.id)}
             />
           ))}

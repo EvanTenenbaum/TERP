@@ -2,7 +2,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import * as dashboardAnalytics from "../dashboardAnalytics";
 import * as inventoryAlerts from "../inventoryAlerts";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 
 // ============================================================================
 // TYPE DEFINITIONS

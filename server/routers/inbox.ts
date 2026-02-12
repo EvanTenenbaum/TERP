@@ -7,11 +7,11 @@
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import * as inboxDb from "../inboxDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { getDb } from "../db";
+import * as inboxDb from "../inboxDb";
+
 import {
-  paginationInputSchema,
-  createPaginatedResponse,
   createSafeUnifiedResponse,
   DEFAULT_PAGE_SIZE,
 } from "../_core/pagination";

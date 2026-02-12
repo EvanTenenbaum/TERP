@@ -21,7 +21,7 @@ import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 
 describe("Calendar Database v3.2 - New Functions", () => {
-  let mockDb: any;
+  let mockDb: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     vi.clearAllMocks();

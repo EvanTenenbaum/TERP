@@ -273,8 +273,8 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                     </div>
                     <p className="text-gray-600 mb-4">{section.description}</p>
                     <ul className="space-y-2">
-                      {section.topics.map((topic, index) => (
-                        <li key={`page-item-${index}`} className="flex items-start gap-2">
+                      {section.topics.map((topic) => (
+                        <li key={`topic-${topic.substring(0, 30)}`} className="flex items-start gap-2">
                           <span className="text-blue-600 mt-1">•</span>
                           <span className="text-sm text-gray-700">{topic}</span>
                         </li>
