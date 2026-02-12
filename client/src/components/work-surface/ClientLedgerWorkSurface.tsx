@@ -32,11 +32,7 @@ import {
   Filter,
   Calendar,
   User,
-  Search,
   ExternalLink,
-  X,
-  Hash,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -582,7 +578,7 @@ export function ClientLedgerWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Save state
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { saveState: _saveState, setSaving: _setSaving, setSaved: _setSaved, setError: _setError, SaveStateIndicator } = useSaveState();
 
   // Queries
   const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({
@@ -597,7 +593,7 @@ export function ClientLedgerWorkSurface() {
     refetch: refetchLedger,
   } = trpc.clientLedger.getLedger.useQuery(
     {
-      clientId: selectedClientId!,
+      clientId: selectedClientId ?? 0,
       startDate: dateRange.from,
       endDate: dateRange.to,
       transactionTypes: selectedTypes.length > 0 ? selectedTypes : undefined,
@@ -611,7 +607,7 @@ export function ClientLedgerWorkSurface() {
 
   const exportQuery = trpc.clientLedger.exportLedger.useQuery(
     {
-      clientId: selectedClientId!,
+      clientId: selectedClientId ?? 0,
       startDate: dateRange.from,
       endDate: dateRange.to,
       transactionTypes: selectedTypes.length > 0 ? selectedTypes : undefined,
@@ -692,7 +688,7 @@ export function ClientLedgerWorkSurface() {
         URL.revokeObjectURL(url);
         toast.success(`Exported ${result.data.totalTransactions} transactions`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to export ledger');
     } finally {
       setIsExporting(false);

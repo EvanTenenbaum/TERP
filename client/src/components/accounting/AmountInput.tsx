@@ -57,6 +57,7 @@ export function AmountInput({
   };
 
   // Update display value when prop value changes
+  // LINT-001: All dependencies included for exhaustive-deps compliance
   React.useEffect(() => {
     if (!isFocused) {
       const numValue = typeof value === "string" ? parseFloat(value) : value;

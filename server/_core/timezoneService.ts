@@ -14,7 +14,7 @@ import { DateTime, IANAZone } from "luxon";
  * This is a subset of commonly used timezones
  * For production, consider using a complete list or validation library
  */
-const VALID_TIMEZONES = [
+const _VALID_TIMEZONES = [
   "America/New_York",
   "America/Chicago",
   "America/Denver",
@@ -32,7 +32,7 @@ const VALID_TIMEZONES = [
   "UTC",
 ] as const;
 
-export type ValidTimezone = typeof VALID_TIMEZONES[number];
+export type ValidTimezone = typeof _VALID_TIMEZONES[number];
 
 /**
  * Timezone Service
@@ -46,7 +46,7 @@ export class TimezoneService {
     try {
       const zone = IANAZone.create(timezone);
       return zone.isValid;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

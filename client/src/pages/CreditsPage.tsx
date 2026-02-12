@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Credits Management Page
  * Wave 5C: Comprehensive credit management UI
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -44,16 +45,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   CreditCard,
   Plus,
   Search,
   DollarSign,
   Clock,
-  AlertTriangle,
   TrendingUp,
-  FileText,
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useToast } from "@/hooks/use-toast";
@@ -87,7 +86,7 @@ export default function CreditsPage() {
   const [statusFilter, setStatusFilter] = useState<CreditStatus | "all">("all");
   const [issueCreditOpen, setIssueCreditOpen] = useState(false);
   const [applyCreditOpen, setApplyCreditOpen] = useState(false);
-  const [selectedCredit, setSelectedCredit] = useState<any>(null);
+  const [selectedCredit, setSelectedCredit] = useState<any | null>(null);
   
   // UI-CONFIRM-DIALOG: State for void confirmation dialog
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);

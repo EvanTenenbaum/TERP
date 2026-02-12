@@ -244,7 +244,7 @@ describe("DashboardPreferencesContext", () => {
     it("should toggle widget visibility and switch to custom layout", () => {
       const { result } = renderHook(() => useDashboardPreferences(), { wrapper });
 
-      const initialLayoutId = result.current.activeLayoutId;
+      const _initialLayoutId = result.current.activeLayoutId;
       const firstWidget = result.current.widgets[0];
       const initialVisibility = firstWidget.isVisible;
 

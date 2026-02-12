@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
+
+interface AppointmentType {
+  id: number;
+  name: string;
+  description?: string;
+  color: string;
+  duration: number;
+  bufferBefore: number;
+  bufferAfter: number;
+  isActive: boolean;
+}
 
 /**
  * CalendarAppointmentTypes Component
@@ -35,13 +47,13 @@ import { Badge } from "@/components/ui/badge";
 export function CalendarAppointmentTypes() {
   const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingType, setEditingType] = useState<any>(null);
+  const [editingType, setEditingType] = useState<AppointmentType | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
   const { data: calendars } = trpc.calendarsManagement.list.useQuery({});
   const { data: appointmentTypes, refetch } =
     trpc.calendarsManagement.listAppointmentTypes.useQuery(
-      { calendarId: selectedCalendarId!, includeInactive: showInactive },
+      { calendarId: selectedCalendarId ?? 0, includeInactive: showInactive },
       { enabled: !!selectedCalendarId }
     );
 
@@ -93,7 +105,7 @@ export function CalendarAppointmentTypes() {
             value={selectedCalendarId || ""}
             onChange={(e) => setSelectedCalendarId(Number(e.target.value))}
           >
-            {calendars?.map((cal: any) => (
+            {calendars?.map((cal: { id: number; name: string }) => (
               <option key={cal.id} value={cal.id}>
                 {cal.name}
               </option>
@@ -117,8 +129,8 @@ export function CalendarAppointmentTypes() {
             </DialogTrigger>
             <DialogContent className="w-full sm:max-w-md">
               <AppointmentTypeForm
-                calendarId={selectedCalendarId!}
-                onSubmit={(data) => createMutation.mutate(data)}
+                calendarId={selectedCalendarId ?? 0}
+                onSubmit={(data: any) => createMutation.mutate(data)}
                 onCancel={() => setIsDialogOpen(false)}
                 isLoading={createMutation.isPending}
               />
@@ -167,7 +179,7 @@ export function CalendarAppointmentTypes() {
                 <Dialog open={true} onOpenChange={() => setEditingType(null)}>
                   <DialogContent className="w-full sm:max-w-md">
                     <AppointmentTypeForm
-                      calendarId={selectedCalendarId!}
+                      calendarId={selectedCalendarId ?? 0}
                       initialData={type}
                       onSubmit={(data) =>
                         updateMutation.mutate({ id: type.id, ...data })
@@ -232,8 +244,8 @@ function AppointmentTypeForm({
   isLoading,
 }: {
   calendarId: number;
-  initialData?: any;
-  onSubmit: (data: any) => void;
+  initialData?: AppointmentType;
+  onSubmit: (data: Record<string, unknown>) => void;
   onCancel: () => void;
   isLoading: boolean;
 }) {
@@ -242,8 +254,8 @@ function AppointmentTypeForm({
   const [duration, setDuration] = useState(initialData?.duration || 30);
   const [bufferBefore, setBufferBefore] = useState(initialData?.bufferBefore || 0);
   const [bufferAfter, setBufferAfter] = useState(initialData?.bufferAfter || 0);
-  const [minNoticeHours, setMinNoticeHours] = useState(initialData?.minNoticeHours || 24);
-  const [maxAdvanceDays, setMaxAdvanceDays] = useState(initialData?.maxAdvanceDays || 30);
+  const [minNoticeHours, setMinNoticeHours] = useState((initialData as any)?.minNoticeHours || 24);
+  const [maxAdvanceDays, setMaxAdvanceDays] = useState((initialData as any)?.maxAdvanceDays || 30);
   const [color, setColor] = useState(initialData?.color || "#F59E0B");
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
 

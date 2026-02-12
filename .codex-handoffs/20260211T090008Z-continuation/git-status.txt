@@ -1,0 +1,33 @@
+ M tests-e2e/oracles/accounting/mark-invoice-sent.oracle.yaml
+ M tests-e2e/oracles/accounting/update-batch-cogs.oracle.yaml
+ M tests-e2e/oracles/accounting/update-invoice-status.oracle.yaml
+ M tests-e2e/oracles/accounting/void-invoice.oracle.yaml
+ M tests-e2e/oracles/auth-fixtures.ts
+ M tests-e2e/oracles/clients/create-client.oracle.yaml
+ M tests-e2e/oracles/clients/list-clients.oracle.yaml
+ M tests-e2e/oracles/crm/clients-archive.oracle.yaml
+ M tests-e2e/oracles/crm/clients-create.oracle.yaml
+ M tests-e2e/oracles/crm/clients-delete.oracle.yaml
+ M tests-e2e/oracles/crm/clients-update.oracle.yaml
+ M tests-e2e/oracles/crm/communications-add.oracle.yaml
+ M tests-e2e/oracles/crm/tags-add.oracle.yaml
+ M tests-e2e/oracles/crm/transactions-create.oracle.yaml
+ M tests-e2e/oracles/crm/transactions-record-payment.oracle.yaml
+ M tests-e2e/oracles/executor.ts
+ M tests-e2e/oracles/inventory/adjust-inventory.oracle.yaml
+ M tests-e2e/oracles/inventory/create-batch.oracle.yaml
+ M tests-e2e/oracles/inventory/list-batches.oracle.yaml
+ M tests-e2e/oracles/inventory/record-movement.oracle.yaml
+ M tests-e2e/oracles/inventory/update-batch.oracle.yaml
+ M tests-e2e/oracles/inventory/update-status.oracle.yaml
+ M tests-e2e/oracles/lib/domain-validators.ts
+ M tests-e2e/oracles/orders/confirm-draft-order.oracle.yaml
+ M tests-e2e/oracles/orders/confirm-order.oracle.yaml
+ M tests-e2e/oracles/orders/create-draft-enhanced.oracle.yaml
+ M tests-e2e/oracles/orders/create-order.oracle.yaml
+ M tests-e2e/oracles/orders/finalize-draft.oracle.yaml
+ M tests-e2e/oracles/orders/fulfill-order.oracle.yaml
+ M tests-e2e/oracles/orders/update-draft-enhanced.oracle.yaml
+ M tests-e2e/oracles/orders/update-order-status.oracle.yaml
+?? .codex-handoffs/
+?? tests-e2e/prod-regression/

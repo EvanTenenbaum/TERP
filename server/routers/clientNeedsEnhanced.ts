@@ -3,7 +3,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import * as clientNeedsDb from "../clientNeedsDbEnhanced";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as needsMatchingService from "../needsMatchingService";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 
 /**
  * Client Needs Router (Enhanced Version)
@@ -40,6 +40,7 @@ export const clientNeedsEnhancedRouter = router({
           ...input,
           neededBy: input.neededBy ? new Date(input.neededBy) : undefined,
           expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
 
         return {
@@ -207,7 +208,7 @@ export const clientNeedsEnhancedRouter = router({
       try {
         const { id, ...updates } = input;
         
-        const processedUpdates: any = { ...updates };
+        const processedUpdates: Record<string, unknown> = { ...updates };
         if (updates.neededBy) {
           processedUpdates.neededBy = new Date(updates.neededBy);
         }
@@ -352,14 +353,15 @@ export const clientNeedsEnhancedRouter = router({
       z.object({
         clientId: z.number(),
         clientNeedId: z.number().optional(),
-        matches: z.array(z.any()),
+        matches: z.array(z.unknown()),
         userId: z.number(),
         matchRecordId: z.number().optional(),
       })
     )
     .mutation(async ({ input }) => {
       try {
-        const result = await needsMatchingService.createQuoteFromMatch(input);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await needsMatchingService.createQuoteFromMatch(input as any);
 
         return result;
       } catch (error) {

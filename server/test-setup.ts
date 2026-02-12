@@ -9,6 +9,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from '../drizzle/schema';
 import * as vipPortalSchema from '../drizzle/schema-vip-portal';
+import { logger } from './_core/logger';
 
 // Create in-memory SQLite database
 const sqlite = new Database(':memory:');
@@ -152,7 +153,7 @@ export async function setupTestDatabase() {
     );
   `);
 
-  console.log('✓ Test database schema created');
+  logger.info('✓ Test database schema created');
 }
 
 /**
@@ -224,7 +225,7 @@ export async function seedTestData() {
       (1, 'Q-2024-001', 1, 1, 'QUOTE', '[]');
   `);
 
-  console.log('✓ Test data seeded');
+  logger.info('✓ Test data seeded');
 }
 
 /**
@@ -232,7 +233,7 @@ export async function seedTestData() {
  */
 export async function teardownTestDatabase() {
   sqlite.close();
-  console.log('✓ Test database closed');
+  logger.info('✓ Test database closed');
 }
 
 /**
@@ -251,5 +252,5 @@ export async function resetTestDatabase() {
     DELETE FROM products;
     DELETE FROM clients;
   `);
-  console.log('✓ Test database reset');
+  logger.info('✓ Test database reset');
 }

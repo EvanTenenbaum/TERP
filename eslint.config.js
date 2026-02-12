@@ -48,8 +48,25 @@ export default [
         HTMLDivElement: 'readonly',
         HTMLElement: 'readonly',
         HTMLInputElement: 'readonly',
+        HTMLButtonElement: 'readonly',
+        HTMLTextAreaElement: 'readonly',
+        HTMLIFrameElement: 'readonly',
+        HTMLStyleElement: 'readonly',
         MouseEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        BeforeUnloadEvent: 'readonly',
+        MediaQueryListEvent: 'readonly',
+        MediaQueryList: 'readonly',
         Event: 'readonly',
+        Element: 'readonly',
+        Document: 'readonly',
+        // Animation & Timing APIs
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        // SSE APIs
+        EventSource: 'readonly',
+        // Observer APIs
+        ResizeObserver: 'readonly',
         
         // Storage APIs
         localStorage: 'readonly',
@@ -64,6 +81,8 @@ export default [
         exports: 'readonly',
         Buffer: 'readonly',
         global: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
       },
     },
     rules: {
@@ -121,6 +140,28 @@ export default [
     settings: {
       react: {
         version: 'detect',
+      },
+    },
+  },
+  {
+    // Test files - Vitest globals and DOM types
+    files: ['**/*.test.ts', '**/*.test.tsx'],
+    languageOptions: {
+      globals: {
+        // Vitest globals
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+        // Test utilities
+        db: 'readonly',
+        mockDb: 'readonly',
+        // DOM types used in tests
+        HTMLButtonElement: 'readonly',
       },
     },
   },

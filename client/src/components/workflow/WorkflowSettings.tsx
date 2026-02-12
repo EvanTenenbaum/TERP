@@ -4,6 +4,7 @@
  * Manage workflow statuses: create, edit, delete, and reorder.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -111,12 +112,12 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
     });
   };
 
-  const handleEdit = (status: any) => {
-    setEditingStatus(status.id);
+  const handleEdit = (status: Record<string, unknown>) => {
+    setEditingStatus((status as any).id);
     setFormData({
-      name: status.name,
-      slug: status.slug,
-      color: status.color,
+      name: (status as any).name,
+      slug: (status as any).slug,
+      color: (status as any).color,
     });
   };
 

@@ -14,7 +14,7 @@ import {
   customFinanceStatuses,
   locations,
 } from "../../drizzle/schema";
-import { eq, and, isNull, desc, asc } from "drizzle-orm";
+import { eq, and, isNull, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 // ============================================================================

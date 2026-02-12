@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { eq, sql, desc, inArray, and, isNull } from "drizzle-orm";
+import { eq, inArray, and, isNull, desc } from "drizzle-orm";
 import {
   pricingRules,
   pricingProfiles,

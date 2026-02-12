@@ -48,7 +48,7 @@ describe('Data Card Preferences', () => {
       const prefs = { inventory: ['metric1', 'metric2'] };
       savePreferences(prefs);
       
-      const saved = JSON.parse(global.localStorage.getItem('terp_data_card_preferences')!);
+      const saved = JSON.parse(global.localStorage.getItem('terp_data_card_preferences') || '{}');
       expect(saved).toEqual(prefs);
     });
 
@@ -56,14 +56,14 @@ describe('Data Card Preferences', () => {
       savePreferences({ inventory: ['old'] });
       savePreferences({ inventory: ['new'] });
       
-      const saved = JSON.parse(global.localStorage.getItem('terp_data_card_preferences')!);
+      const saved = JSON.parse(global.localStorage.getItem('terp_data_card_preferences') || '{}');
       expect(saved).toEqual({ inventory: ['new'] });
     });
 
     it('should handle empty preferences', () => {
       savePreferences({});
       
-      const saved = JSON.parse(global.localStorage.getItem('terp_data_card_preferences')!);
+      const saved = JSON.parse(global.localStorage.getItem('terp_data_card_preferences') || '{}');
       expect(saved).toEqual({});
     });
   });

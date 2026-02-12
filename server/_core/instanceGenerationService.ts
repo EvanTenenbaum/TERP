@@ -6,7 +6,7 @@
  * Version 2.0 - Post-Adversarial QA
  */
 
-import { eq, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   calendarEvents,
@@ -14,7 +14,8 @@ import {
   calendarRecurrenceInstances,
   type CalendarRecurrenceRule,
 } from "../../drizzle/schema";
-import TimezoneService from "./timezoneService";
+// TimezoneService import removed - unused
+// import TimezoneService from "./timezoneService";
 
 /**
  * Instance Generation Service
@@ -89,7 +90,7 @@ export class InstanceGenerationService {
    * Calculate recurrence instances based on rule
    */
   private static calculateInstances(
-    event: any,
+    event: { id: number; startDate: Date; startTime: string | null; endTime: string | null; timezone: string | null },
     rule: CalendarRecurrenceRule,
     endDate: Date
   ): Array<{
@@ -113,7 +114,7 @@ export class InstanceGenerationService {
     const ruleEndDate = rule.endDate ? new Date(rule.endDate) : endDate;
     const maxEndDate = ruleEndDate < endDate ? ruleEndDate : endDate;
 
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     let count = 0;
     const maxCount = rule.count || 1000; // Safety limit
 

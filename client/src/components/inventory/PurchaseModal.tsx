@@ -61,8 +61,8 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   // BUG-073 FIX: Track request IDs to prevent race conditions in debounced search
   const vendorRequestIdRef = React.useRef(0);
   const brandRequestIdRef = React.useRef(0);
-  const [vendorRequestId, setVendorRequestId] = useState(0);
-  const [brandRequestId, setBrandRequestId] = useState(0);
+  const [_vendorRequestId, setVendorRequestId] = useState(0);
+  const [_brandRequestId, setBrandRequestId] = useState(0);
 
   // BUG-073 FIX: Increment request ID when debounced search changes
   React.useEffect(() => {
@@ -562,7 +562,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               <Label htmlFor="paymentTerms">Payment Terms *</Label>
               <Select
                 value={formData.paymentTerms}
-                onValueChange={(value: any) => setFormData({ ...formData, paymentTerms: value })}
+                onValueChange={(value: "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL") => setFormData({ ...formData, paymentTerms: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -637,7 +637,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               {mediaFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {mediaFiles.map((file, index) => (
-                    <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <div key={`purchase-media-${file.name}-${file.size}`} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                       <span className="text-sm truncate flex-1">{file.name}</span>
                       <Button
                         type="button"

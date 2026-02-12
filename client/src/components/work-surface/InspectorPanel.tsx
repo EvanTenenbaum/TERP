@@ -172,7 +172,6 @@ function useFocusTrap(
     }
 
     // Handle Tab key to trap focus
-    // eslint-disable-next-line no-undef
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
 
@@ -256,7 +255,6 @@ export function InspectorPanel({
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
 
-    // eslint-disable-next-line no-undef
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();

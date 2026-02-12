@@ -174,7 +174,7 @@ export function ReceiptCapture({
   const [screenshot, setScreenshot] = useState<CapturedScreenshot | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [_isSendingEmail, setIsSendingEmail] = useState(false);
   const [receiptData, setReceiptData] = useState<{
     html: string;
     pdfDataUri?: string;

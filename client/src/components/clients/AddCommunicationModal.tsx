@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import {
   Dialog,
@@ -70,24 +70,10 @@ export function AddCommunicationModal({
       
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to log communication');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to log communication';
+      toast.error(errorMessage);
       console.error(error);
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'CALL':
-        return <Phone className="h-4 w-4" />;
-      case 'EMAIL':
-        return <Mail className="h-4 w-4" />;
-      case 'MEETING':
-        return <Calendar className="h-4 w-4" />;
-      case 'NOTE':
-        return <FileText className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
     }
   };
 
@@ -101,7 +87,7 @@ export function AddCommunicationModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="type">Communication Type</Label>
-            <Select value={type} onValueChange={(value: any) => setType(value)}>
+            <Select value={type} onValueChange={(value: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE') => setType(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

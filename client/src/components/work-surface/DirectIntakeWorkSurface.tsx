@@ -578,7 +578,7 @@ function RowInspectorContent({
               <div className="space-y-2">
                 {mediaFiles.map((file, index) => (
                   <div
-                    key={`${file.name}-${file.size}-${index}`}
+                    key={`intake-media-${file.name}-${file.size}`}
                     className="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-md"
                   >
                     <span className="text-sm truncate">{file.name}</span>

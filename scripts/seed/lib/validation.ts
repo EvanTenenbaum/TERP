@@ -123,8 +123,9 @@ export class SchemaValidator {
    * Get cached columns for a table
    */
   private async getColumns(tableName: string): Promise<ColumnMetadata[]> {
-    if (this.isCacheValid(tableName) && this.cache.columns.has(tableName)) {
-      return this.cache.columns.get(tableName)!;
+    const cached = this.cache.columns.get(tableName);
+    if (this.isCacheValid(tableName) && cached) {
+      return cached;
     }
 
     const columns = await getTableColumns(this.db, tableName);
@@ -137,8 +138,9 @@ export class SchemaValidator {
    * Get cached foreign keys for a table
    */
   private async getForeignKeys(tableName: string): Promise<ForeignKeyMetadata[]> {
-    if (this.isCacheValid(tableName) && this.cache.foreignKeys.has(tableName)) {
-      return this.cache.foreignKeys.get(tableName)!;
+    const cached = this.cache.foreignKeys.get(tableName);
+    if (this.isCacheValid(tableName) && cached) {
+      return cached;
     }
 
     const fks = await getForeignKeys(this.db, tableName);

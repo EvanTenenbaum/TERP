@@ -55,7 +55,7 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <div className="space-y-4">
-        {topItems.map((item, index) => {
+        {topItems.map((item) => {
           const percentage = (item.value / maxValue) * 100;
 
           return (

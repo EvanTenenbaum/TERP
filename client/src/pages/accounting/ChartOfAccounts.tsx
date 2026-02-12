@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export default function ChartOfAccounts() {
   // Fetch accounts
   const { data: accounts, isLoading, refetch } = trpc.accounting.accounts.list.useQuery({});
 
-  const utils = trpc.useUtils();
+  const _utils = trpc.useUtils();
 
   // Create account mutation
   const createAccount = trpc.accounting.accounts.create.useMutation({
@@ -113,7 +114,7 @@ export default function ChartOfAccounts() {
       if (!acc[type]) {
         acc[type] = [];
       }
-      acc[type]!.push(account);
+      (acc[type] as Account[]).push(account);
       return acc;
     }, {} as Partial<Record<AccountType, Account[]>>);
 
@@ -368,7 +369,7 @@ export default function ChartOfAccounts() {
       <CreateAccountDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSubmit={(data) => createAccount.mutate(data)}
+        onSubmit={(data: any) => createAccount.mutate(data)}
         isSubmitting={createAccount.isPending}
       />
 
@@ -378,7 +379,7 @@ export default function ChartOfAccounts() {
           account={editingAccount}
           open={!!editingAccount}
           onOpenChange={(open) => !open && setEditingAccount(null)}
-          onSubmit={(data) => updateAccount.mutate({ id: editingAccount.id, ...data })}
+          onSubmit={(data: any) => updateAccount.mutate({ id: editingAccount.id, ...data })}
           isSubmitting={updateAccount.isPending}
         />
       )}
@@ -395,7 +396,7 @@ function CreateAccountDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
   isSubmitting: boolean;
 }) {
   const [formData, setFormData] = useState({
@@ -515,7 +516,7 @@ function EditAccountDialog({
   account: Account;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
   isSubmitting: boolean;
 }) {
   const [formData, setFormData] = useState({

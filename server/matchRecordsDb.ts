@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { matchRecords } from "../drizzle/schema";
 import type { MatchRecord, InsertMatchRecord } from "../drizzle/schema";
@@ -18,7 +18,7 @@ export async function recordMatch(match: InsertMatchRecord): Promise<MatchRecord
     const [created] = await db
       .select()
       .from(matchRecords)
-      .where(eq(matchRecords.id, inserted.insertId as any));
+      .where(eq(matchRecords.id, inserted.insertId as number));
     
     return created;
   } catch (error) {
@@ -90,7 +90,7 @@ export async function getMatchRecords(filters?: {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     const records = await query.orderBy(desc(matchRecords.createdAt));

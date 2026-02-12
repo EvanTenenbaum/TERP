@@ -5,9 +5,36 @@
  * Provides consistent soft delete functionality across all tables
  */
 
-import { eq, isNull, not, SQL, and } from "drizzle-orm";
+import { eq, isNull, not, SQL, and, sql } from "drizzle-orm";
 import { MySqlTable } from "drizzle-orm/mysql-core";
 import { getDb } from "../db";
+
+// Type definitions for table access
+interface TableWithId {
+  id: ReturnType<typeof eq> extends infer R ? R : never;
+}
+
+interface TableWithDeletedAt {
+  deletedAt: ReturnType<typeof isNull> extends infer R ? R : never;
+}
+
+interface ResultSetHeader {
+  affectedRows: number;
+}
+
+/**
+ * Helper to safely access table.id with proper typing
+ */
+function getTableId<T extends MySqlTable>(table: T): Parameters<typeof eq>[0] {
+  return (table as T & TableWithId).id;
+}
+
+/**
+ * Helper to safely access table.deletedAt with proper typing
+ */
+function getTableDeletedAt<T extends MySqlTable>(table: T): Parameters<typeof isNull>[0] {
+  return (table as T & TableWithDeletedAt).deletedAt;
+}
 
 /**
  * Soft delete a record by setting deletedAt timestamp
@@ -24,11 +51,11 @@ export async function softDelete<T extends MySqlTable>(
 
   const result = await db
     .update(table)
-    .set({ deletedAt: new Date() } as any)
-    .where(eq((table as any).id, id));
+    .set({ deletedAt: new Date() } as Record<string, unknown>)
+    .where(eq(getTableId(table), id));
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
   return affectedRows || 0;
 }
 
@@ -47,15 +74,19 @@ export async function softDeleteMany<T extends MySqlTable>(
 
   if (ids.length === 0) return 0;
 
+  const tableId = getTableId(table);
   const result = await db
     .update(table)
-    .set({ deletedAt: new Date() } as any)
+    .set({ deletedAt: new Date() } as Record<string, unknown>)
     .where(
-      (table as any).id.in ? (table as any).id.in(ids) : eq((table as any).id, ids[0])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (tableId as unknown as { in: (ids: number[]) => SQL }).in 
+        ? (tableId as unknown as { in: (ids: number[]) => SQL }).in(ids) 
+        : eq(tableId, ids[0])
     );
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
   return affectedRows || 0;
 }
 
@@ -74,11 +105,11 @@ export async function restoreDeleted<T extends MySqlTable>(
 
   const result = await db
     .update(table)
-    .set({ deletedAt: null } as any)
-    .where(eq((table as any).id, id));
+    .set({ deletedAt: null } as Record<string, unknown>)
+    .where(eq(getTableId(table), id));
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
   return affectedRows || 0;
 }
 
@@ -96,10 +127,10 @@ export async function hardDelete<T extends MySqlTable>(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.delete(table).where(eq((table as any).id, id));
+  const result = await db.delete(table).where(eq(getTableId(table), id));
 
   // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
-  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  const affectedRows = Array.isArray(result) ? (result[0] as ResultSetHeader)?.affectedRows : 0;
   return affectedRows || 0;
 }
 
@@ -110,7 +141,7 @@ export async function hardDelete<T extends MySqlTable>(
  * @returns SQL condition to exclude deleted records
  */
 export function excludeDeleted<T extends MySqlTable>(table: T): SQL {
-  return isNull((table as any).deletedAt);
+  return isNull(getTableDeletedAt(table));
 }
 
 /**
@@ -120,7 +151,7 @@ export function excludeDeleted<T extends MySqlTable>(table: T): SQL {
  * @returns SQL condition to include only deleted records
  */
 export function onlyDeleted<T extends MySqlTable>(table: T): SQL {
-  return not(isNull((table as any).deletedAt));
+  return not(isNull(getTableDeletedAt(table)));
 }
 
 /**
@@ -170,7 +201,7 @@ export async function isDeleted<T extends MySqlTable>(
 export async function getDeleted<T extends MySqlTable>(
   table: T,
   limit: number = 100
-): Promise<any[]> {
+): Promise<unknown[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -193,7 +224,8 @@ export async function countDeleted<T extends MySqlTable>(
   if (!db) throw new Error("Database not available");
 
   const result = await db
-    .select({ count: (table as any).id })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .select({ count: sql<number>`count(*)` })
     .from(table)
     .where(onlyDeleted(table));
 

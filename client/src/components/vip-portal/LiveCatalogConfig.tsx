@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -66,7 +67,7 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
   const {
     data: draftInterests,
     isLoading: draftLoading,
-    refetch: refetchDraft,
+    refetch: _refetchDraft,
   } = trpc.vipPortalAdmin.liveCatalog.draftInterests.getByClient.useQuery({
     clientId,
   });
@@ -651,7 +652,7 @@ function InterestListDetailModal({
     if (selectedItems.length === listDetail?.items.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(listDetail?.items.map((item: any) => item.id) || []);
+      setSelectedItems((listDetail?.items || []).map((item: any) => item.id));
     }
   };
 

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TRPCError } from "@trpc/server";
-import { createErrorHandlingMiddleware, errorTracking, ErrorSeverity } from "./errorHandling";
+import { createErrorHandlingMiddleware, errorTracking } from "./errorHandling";
 import { logger } from "./logger";
 
 // Mock logger
@@ -60,7 +60,7 @@ describe("Error Handling Middleware", () => {
       ).rejects.toThrow(TRPCError);
 
       expect(logger.error).toHaveBeenCalled();
-      const logCall = (logger.error as any).mock.calls[0];
+      const logCall = (logger.error as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0]).toMatchObject({
         code: "INTERNAL_SERVER_ERROR",
         message: "Test error",
@@ -85,7 +85,7 @@ describe("Error Handling Middleware", () => {
       ).rejects.toThrow(TRPCError);
 
       expect(logger.error).toHaveBeenCalled();
-      const logCall = (logger.error as any).mock.calls[0];
+      const logCall = (logger.error as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0].code).toBe("INTERNAL_SERVER_ERROR");
       expect(logCall[0].message).toBe("Regular error");
     });
@@ -107,7 +107,7 @@ describe("Error Handling Middleware", () => {
         })
       ).rejects.toThrow();
 
-      const logCall = (logger.info as any).mock.calls[0];
+      const logCall = (logger.info as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0].errorId).toMatch(/^err_\d+_[a-z0-9]+$/);
     });
 
@@ -155,7 +155,7 @@ describe("Error Handling Middleware", () => {
         })
       ).rejects.toThrow();
 
-      const logCall = (logger.error as any).mock.calls[0];
+      const logCall = (logger.error as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0]).toMatchObject({
         userId: 456,
         userRole: "user",
@@ -181,7 +181,7 @@ describe("Error Handling Middleware", () => {
         })
       ).rejects.toThrow();
 
-      const logCall = (logger.info as any).mock.calls[0];
+      const logCall = (logger.info as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0].input).toEqual(testInput);
     });
   });
@@ -197,7 +197,7 @@ describe("Error Handling Middleware", () => {
 
       expect(errorId).toMatch(/^err_\d+_[a-z0-9]+$/);
       expect(logger.warn).toHaveBeenCalled();
-      const logCall = (logger.warn as any).mock.calls[0];
+      const logCall = (logger.warn as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0]).toMatchObject({
         operation: "testOperation",
         userId: 789,
@@ -215,7 +215,7 @@ describe("Error Handling Middleware", () => {
 
       expect(errorId).toMatch(/^err_\d+_[a-z0-9]+$/);
       expect(logger.info).toHaveBeenCalled();
-      const logCall = (logger.info as any).mock.calls[0];
+      const logCall = (logger.info as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0]).toMatchObject({
         field: "email",
         value: "invalid-email",
@@ -233,7 +233,7 @@ describe("Error Handling Middleware", () => {
 
       expect(errorId).toMatch(/^err_\d+_[a-z0-9]+$/);
       expect(logger.info).toHaveBeenCalled();
-      const logCall = (logger.info as any).mock.calls[0];
+      const logCall = (logger.info as unknown as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0];
       expect(logCall[0]).toMatchObject({
         operation: "orderCreation",
         reason: "Insufficient inventory",

@@ -6,21 +6,19 @@
  * @module client/src/components/dashboard/widgets-v2/SalesByClientWidget.test.tsx
  */
 
-import { describe, it, expect, vi } from "vitest";
+import * as React from "react";
+import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { SalesByClientWidget } from "./SalesByClientWidget";
 
 describe("SalesByClientWidget React.memo optimization", () => {
   it("should be wrapped with React.memo", () => {
-    // Check if the component has the memo wrapper
-    const componentName = SalesByClientWidget.displayName || SalesByClientWidget.name;
-    
     // React.memo components have a specific structure
     expect(SalesByClientWidget).toBeDefined();
     
     // If properly memoized, the component should not re-render when props don't change
     // This is tested by checking the component type
-    const type = (SalesByClientWidget as any).$$typeof;
+    const type = (SalesByClientWidget as React.MemoExoticComponent<typeof SalesByClientWidget>).$$typeof;
     expect(type).toBeDefined();
   });
 

@@ -50,7 +50,7 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
   // Check for active sessions
   const { data: activeSessions, isLoading: checkingActive } =
     trpc.vipPortalLiveShopping.getActiveSession?.useQuery(
-      { clientId: clientId! },
+      { clientId: clientId ?? 0 },
       {
         enabled: !!clientId && isInitialized,
         refetchInterval: 10000, // Check every 10 seconds

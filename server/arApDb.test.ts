@@ -5,7 +5,7 @@
  * Unit tests using mocked database for CI environments.
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, type MockedFunction } from "vitest";
 
 // Mock the database module before imports
 vi.mock("./db", () => ({
@@ -68,8 +68,8 @@ describe("arApDb Soft-Delete Filtering", () => {
   };
 
   // Helper to create a thenable mock chain
-  const _createMockChain = (result: any[]) => {
-    const chain: any = {
+  const _createMockChain = (result: unknown[]) => {
+    const chain: Record<string, MockedFunction> = {
       select: vi.fn().mockReturnThis(),
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
@@ -79,7 +79,7 @@ describe("arApDb Soft-Delete Filtering", () => {
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockReturnThis(),
       groupBy: vi.fn().mockReturnThis(),
-      then: (resolve: any) => resolve(result),
+      then: (resolve: (value: unknown[]) => void) => resolve(result),
     };
     // Make all methods return the chain
     Object.keys(chain).forEach(key => {
@@ -101,30 +101,30 @@ describe("arApDb Soft-Delete Filtering", () => {
       const mockDb = {
         select: vi.fn().mockImplementation(() => {
           callCount++;
-          const chain: any = {
+          const chain: Record<string, MockedFunction> = {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             orderBy: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
             offset: vi.fn().mockReturnThis(),
-            then: (resolve: any) => {
+            then: vi.fn().mockImplementation((resolve: (value: unknown[]) => void) => {
               // First call is count, second is data
               if (callCount === 1) {
                 resolve([{ count: 1 }]);
               } else {
                 resolve([activeInvoice]);
               }
-            },
+            }) as MockedFunction,
           };
           Object.keys(chain).forEach(key => {
             if (key !== 'then' && typeof chain[key]?.mockReturnValue === 'function') {
-              chain[key].mockReturnValue(chain);
+              (chain[key] as MockedFunction).mockReturnValue(chain);
             }
           });
           return chain;
         }),
       };
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const result = await getInvoices({ customerId: testClientId });
@@ -134,12 +134,12 @@ describe("arApDb Soft-Delete Filtering", () => {
       expect(Array.isArray(result.invoices)).toBe(true);
 
       // Should find the active invoice
-      const active = result.invoices.find((inv: any) => inv.id === activeInvoiceId);
+      const active = result.invoices.find((inv: { id: number; deletedAt: null }) => inv.id === activeInvoiceId);
       expect(active).toBeDefined();
       expect(active?.deletedAt).toBeNull();
 
       // Should NOT find the deleted invoice
-      const deleted = result.invoices.find((inv: any) => inv.id === deletedInvoiceId);
+      const deleted = result.invoices.find((inv: { id: number }) => inv.id === deletedInvoiceId);
       expect(deleted).toBeUndefined();
     });
 
@@ -149,29 +149,29 @@ describe("arApDb Soft-Delete Filtering", () => {
       const mockDb = {
         select: vi.fn().mockImplementation(() => {
           callCount++;
-          const chain: any = {
+          const chain: Record<string, MockedFunction> = {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             orderBy: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
             offset: vi.fn().mockReturnThis(),
-            then: (resolve: any) => {
+            then: vi.fn().mockImplementation((resolve: (value: unknown[]) => void) => {
               if (callCount === 1) {
                 resolve([{ count: 1 }]);
               } else {
                 resolve([activeInvoice]);
               }
-            },
+            }) as MockedFunction,
           };
           Object.keys(chain).forEach(key => {
             if (key !== 'then' && typeof chain[key]?.mockReturnValue === 'function') {
-              chain[key].mockReturnValue(chain);
+              (chain[key] as MockedFunction).mockReturnValue(chain);
             }
           });
           return chain;
         }),
       };
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const result = await getInvoices({
@@ -181,7 +181,7 @@ describe("arApDb Soft-Delete Filtering", () => {
 
       // Assert - Should only return active SENT invoices
       expect(result.invoices.length).toBeGreaterThanOrEqual(0);
-      result.invoices.forEach((inv: any) => {
+      result.invoices.forEach((inv: { deletedAt: null; status: string }) => {
         expect(inv.deletedAt).toBeNull();
         expect(inv.status).toBe("SENT");
       });
@@ -195,29 +195,29 @@ describe("arApDb Soft-Delete Filtering", () => {
       const mockDb = {
         select: vi.fn().mockImplementation(() => {
           callCount++;
-          const chain: any = {
+          const chain: Record<string, MockedFunction> = {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             orderBy: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
             offset: vi.fn().mockReturnThis(),
-            then: (resolve: any) => {
+            then: vi.fn().mockImplementation((resolve: (value: unknown[]) => void) => {
               if (callCount === 1) {
                 resolve([{ count: 1 }]);
               } else {
                 resolve([activePayment]);
               }
-            },
+            }) as MockedFunction,
           };
           Object.keys(chain).forEach(key => {
             if (key !== 'then' && typeof chain[key]?.mockReturnValue === 'function') {
-              chain[key].mockReturnValue(chain);
+              (chain[key] as MockedFunction).mockReturnValue(chain);
             }
           });
           return chain;
         }),
       };
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const result = await getPayments({ customerId: testClientId });
@@ -227,12 +227,12 @@ describe("arApDb Soft-Delete Filtering", () => {
       expect(Array.isArray(result.payments)).toBe(true);
 
       // Should find the active payment
-      const active = result.payments.find((pmt: any) => pmt.id === activePaymentId);
+      const active = result.payments.find((pmt: { id: number; deletedAt: null }) => pmt.id === activePaymentId);
       expect(active).toBeDefined();
       expect(active?.deletedAt).toBeNull();
 
       // Should NOT find the deleted payment
-      const deleted = result.payments.find((pmt: any) => pmt.id === deletedPaymentId);
+      const deleted = result.payments.find((pmt: { id: number }) => pmt.id === deletedPaymentId);
       expect(deleted).toBeUndefined();
     });
 
@@ -242,29 +242,29 @@ describe("arApDb Soft-Delete Filtering", () => {
       const mockDb = {
         select: vi.fn().mockImplementation(() => {
           callCount++;
-          const chain: any = {
+          const chain: Record<string, MockedFunction> = {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             orderBy: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
             offset: vi.fn().mockReturnThis(),
-            then: (resolve: any) => {
+            then: vi.fn().mockImplementation((resolve: (value: unknown[]) => void) => {
               if (callCount === 1) {
                 resolve([{ count: 1 }]);
               } else {
                 resolve([activePayment]);
               }
-            },
+            }) as MockedFunction,
           };
           Object.keys(chain).forEach(key => {
             if (key !== 'then' && typeof chain[key]?.mockReturnValue === 'function') {
-              chain[key].mockReturnValue(chain);
+              (chain[key] as MockedFunction).mockReturnValue(chain);
             }
           });
           return chain;
         }),
       };
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const result = await getPayments({
@@ -274,7 +274,7 @@ describe("arApDb Soft-Delete Filtering", () => {
 
       // Assert
       expect(result.payments.length).toBeGreaterThanOrEqual(0);
-      result.payments.forEach((pmt: any) => {
+      result.payments.forEach((pmt: { deletedAt: null; paymentType: string }) => {
         expect(pmt.deletedAt).toBeNull();
         expect(pmt.paymentType).toBe("RECEIVED");
       });
@@ -286,35 +286,35 @@ describe("arApDb Soft-Delete Filtering", () => {
       const mockDb = {
         select: vi.fn().mockImplementation(() => {
           callCount++;
-          const chain: any = {
+          const chain: Record<string, MockedFunction> = {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             orderBy: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
             offset: vi.fn().mockReturnThis(),
-            then: (resolve: any) => {
+            then: vi.fn().mockImplementation((resolve: (value: unknown[]) => void) => {
               if (callCount === 1) {
                 resolve([{ count: 1 }]);
               } else {
                 resolve([activePayment]);
               }
-            },
+            }) as MockedFunction,
           };
           Object.keys(chain).forEach(key => {
             if (key !== 'then' && typeof chain[key]?.mockReturnValue === 'function') {
-              chain[key].mockReturnValue(chain);
+              (chain[key] as MockedFunction).mockReturnValue(chain);
             }
           });
           return chain;
         }),
       };
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const result = await getPayments({ invoiceId: activeInvoiceId });
 
       // Assert
-      result.payments.forEach((pmt: any) => {
+      result.payments.forEach((pmt: { deletedAt: null; paymentType: string }) => {
         expect(pmt.deletedAt).toBeNull();
         expect(pmt.invoiceId).toBe(activeInvoiceId);
       });
@@ -326,7 +326,7 @@ describe("arApDb Soft-Delete Filtering", () => {
  * Extended tests for additional soft-delete filtering functions
  */
 describe("arApDb Extended Soft-Delete Filtering", () => {
-  let mockDb: any;
+  let mockDb: Record<string, MockedFunction>;
   const testClientId = 1;
   const activeInvoiceId = 101;
   const deletedInvoiceId = 102;
@@ -394,7 +394,7 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
       groupBy: vi.fn().mockReturnThis(),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as any);
+    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
   });
 
   describe("getInvoiceById", () => {
@@ -427,7 +427,7 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
     it("should only include active invoices in outstanding receivables", async () => {
       // Arrange
       const thenableMock = {
-        then: (resolve: any) => resolve([activeInvoice]),
+        then: (resolve: (value: unknown[]) => void) => resolve([activeInvoice]),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
       mockDb.offset = vi.fn().mockReturnValue(thenableMock);
@@ -440,11 +440,11 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
       expect(result.invoices).toBeDefined();
 
       // Should include active invoice
-      const active = result.invoices.find((inv: any) => inv.id === activeInvoiceId);
+      const active = result.invoices.find((inv: { id: number }) => inv.id === activeInvoiceId);
       expect(active).toBeDefined();
 
       // Should NOT include deleted invoice
-      const deleted = result.invoices.find((inv: any) => inv.id === deletedInvoiceId);
+      const deleted = result.invoices.find((inv: { id: number }) => inv.id === deletedInvoiceId);
       expect(deleted).toBeUndefined();
     });
   });
@@ -459,7 +459,7 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
 
       // Create thenable mock for the query chain
       const thenableMock = {
-        then: (resolve: any) => resolve(mockInvoices),
+        then: (resolve: (value: unknown[]) => void) => resolve(mockInvoices),
       };
       mockDb.where.mockReturnValue(thenableMock);
 
@@ -506,7 +506,7 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
     it("should only return active bills (exclude soft-deleted)", async () => {
       // Arrange
       const thenableMock = {
-        then: (resolve: any) => resolve([activeBill]),
+        then: (resolve: (value: unknown[]) => void) => resolve([activeBill]),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
       mockDb.offset = vi.fn().mockReturnValue(thenableMock);
@@ -519,11 +519,11 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
       expect(result.bills).toBeDefined();
 
       // Should include active bill
-      const active = result.bills.find((bill: any) => bill.id === activeBillId);
+      const active = result.bills.find((bill: { id: number }) => bill.id === activeBillId);
       expect(active).toBeDefined();
 
       // Should NOT include deleted bill
-      const deleted = result.bills.find((bill: any) => bill.id === deletedBillId);
+      const deleted = result.bills.find((bill: { id: number }) => bill.id === deletedBillId);
       expect(deleted).toBeUndefined();
     });
   });
@@ -558,7 +558,7 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
     it("should only include active bills in outstanding payables", async () => {
       // Arrange
       const thenableMock = {
-        then: (resolve: any) => resolve([activeBill]),
+        then: (resolve: (value: unknown[]) => void) => resolve([activeBill]),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
       mockDb.offset = vi.fn().mockReturnValue(thenableMock);
@@ -571,11 +571,11 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
       expect(result.bills).toBeDefined();
 
       // Should include active bill
-      const active = result.bills.find((bill: any) => bill.id === activeBillId);
+      const active = result.bills.find((bill: { id: number }) => bill.id === activeBillId);
       expect(active).toBeDefined();
 
       // Should NOT include deleted bill
-      const deleted = result.bills.find((bill: any) => bill.id === deletedBillId);
+      const deleted = result.bills.find((bill: { id: number }) => bill.id === deletedBillId);
       expect(deleted).toBeUndefined();
     });
   });
@@ -590,7 +590,7 @@ describe("arApDb Extended Soft-Delete Filtering", () => {
 
       // Create thenable mock for the query chain
       const thenableMock = {
-        then: (resolve: any) => resolve(mockBills),
+        then: (resolve: (value: unknown[]) => void) => resolve(mockBills),
       };
       mockDb.where.mockReturnValue(thenableMock);
 
@@ -652,7 +652,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const invoiceNumber = await generateInvoiceNumber();
@@ -699,7 +699,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const invoiceNumber = await generateInvoiceNumber();
@@ -724,7 +724,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert
       await expect(generateInvoiceNumber()).rejects.toThrow("Failed to generate invoice number: Lock timeout");
@@ -761,7 +761,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const billNumber = await generateBillNumber();
@@ -801,7 +801,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const paymentNumber = await generatePaymentNumber("RECEIVED");
@@ -839,7 +839,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       const paymentNumber = await generatePaymentNumber("SENT");
@@ -881,7 +881,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: mockTransaction,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       await generateInvoiceNumber();
@@ -916,7 +916,7 @@ describe("arApDb Atomic Sequence Generation (FIN-001)", () => {
         transaction: transactionMock,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act
       await generateInvoiceNumber();
@@ -956,7 +956,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockInvoice]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Try to pay $1500 on $1000 invoice
       await expect(recordInvoicePayment(1, 1500)).rejects.toThrow(
@@ -983,7 +983,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockInvoice]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Try to pay $250 when only $200 is due
       await expect(recordInvoicePayment(2, 250)).rejects.toThrow(
@@ -1017,7 +1017,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         update: updateMock,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act - Pay exactly $1000
       await expect(recordInvoicePayment(3, 1000)).resolves.not.toThrow();
@@ -1052,7 +1052,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         update: updateMock,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act - Pay $100.01 (within tolerance)
       await expect(recordInvoicePayment(4, 100.01)).resolves.not.toThrow();
@@ -1077,7 +1077,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockInvoice]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Pay $100.02 (exceeds tolerance)
       await expect(recordInvoicePayment(5, 100.02)).rejects.toThrow(
@@ -1104,7 +1104,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockInvoice]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Try to pay any amount on paid invoice
       await expect(recordInvoicePayment(6, 50)).rejects.toThrow(
@@ -1133,7 +1133,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockBill]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Try to pay $2000 when only $1500 is due
       await expect(recordBillPayment(1, 2000)).rejects.toThrow(
@@ -1160,7 +1160,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockBill]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Try to pay $300 when only $200 is due
       await expect(recordBillPayment(2, 300)).rejects.toThrow(
@@ -1194,7 +1194,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         update: updateMock,
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act - Pay exactly $1500
       await expect(recordBillPayment(3, 1500)).resolves.not.toThrow();
@@ -1222,7 +1222,7 @@ describe("arApDb Payment Over-Allocation Validation (ST-061)", () => {
         limit: vi.fn().mockResolvedValue([mockBill]),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Act & Assert - Try to pay $350 (would total $1050, exceeding $1000)
       await expect(recordBillPayment(4, 350)).rejects.toThrow(

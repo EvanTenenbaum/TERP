@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+
 import {
   AlertTriangle,
   TrendingDown,
@@ -53,7 +54,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
 } from "recharts";
 
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"];
@@ -78,6 +78,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
   variant = "full",
 }: ShrinkageReportProps) {
   const [, setLocation] = useLocation();
+
   const [startDate, setStartDate] = useState<string>(
     format(subDays(new Date(), 30), "yyyy-MM-dd")
   );
@@ -87,7 +88,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
   const [category, setCategory] = useState<string>("all");
   const [minShrinkage, setMinShrinkage] = useState<number>(0);
 
-  const { data, isLoading, refetch } = trpc.inventoryMovements.getShrinkageReport.useQuery({
+  const { data, isLoading, refetch: _refetch } = trpc.inventoryMovements.getShrinkageReport.useQuery({
     startDate,
     endDate,
     category: category !== "all" ? category : undefined,
@@ -340,7 +341,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                             `${name} (${(percent * 100).toFixed(0)}%)`
                           }
                         >
-                          {chartDataByReason.map((entry, index) => (
+                          {chartDataByReason.map((entry, _index) => (
                             <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                           ))}
                         </Pie>

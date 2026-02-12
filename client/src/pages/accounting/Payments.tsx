@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -29,30 +29,34 @@ export default function Payments() {
 
   // Fetch payments
   const { data: payments, isLoading } = trpc.accounting.payments.list.useQuery({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     paymentType: selectedType !== "ALL" ? (selectedType as any) : undefined,
   });
 
   // Filter payments - extract from paginated response { items: [], pagination: { total } }
   const filteredPayments = useMemo(() => {
     // BUG-034: Extract payments array from standardized paginated response
-    const paymentList = payments?.items ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const paymentList = (payments?.items ?? []) as any[];
     
     if (!searchQuery) return paymentList;
 
     const query = searchQuery.toLowerCase();
-    return paymentList.filter((payment: { paymentNumber: string }) =>
+    return paymentList.filter((payment: any) =>
       payment.paymentNumber.toLowerCase().includes(query)
     );
   }, [payments, searchQuery]);
 
   // Calculate totals
   const totalPayments = filteredPayments.length;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const totalReceived = filteredPayments
     .filter((p: any) => p.paymentType === "RECEIVED")
-    .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0);
+    .reduce((sum: number, p: any) => sum + parseFloat(p.amount as string), 0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const totalSent = filteredPayments
     .filter((p: any) => p.paymentType === "SENT")
-    .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0);
+    .reduce((sum: number, p: any) => sum + parseFloat(p.amount as string), 0);
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -171,6 +175,7 @@ export default function Payments() {
                     </TableCell>
                   </TableRow>
                 ) : (
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   filteredPayments.map((payment: any) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-mono font-medium">

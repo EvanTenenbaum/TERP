@@ -65,7 +65,7 @@ export default function InvitationSettingsDialog({
         notifyOnAutoAccept,
       });
       refetch();
-      console.log("Settings saved successfully");
+      console.info("Settings saved successfully");
       onClose();
     } catch (error: unknown) {
       const errorMessage =

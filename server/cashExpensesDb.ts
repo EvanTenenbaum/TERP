@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, asc, sql, or, like, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, like } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   bankAccounts,
@@ -6,13 +6,9 @@ import {
   expenses,
   expenseCategories,
   InsertBankAccount,
-  BankAccount,
   InsertBankTransaction,
-  BankTransaction,
   InsertExpense,
-  Expense,
   InsertExpenseCategory,
-  ExpenseCategory,
 } from "../drizzle/schema";
 
 // ============================================================================
@@ -40,7 +36,7 @@ export async function getBankAccounts(filters?: {
   }
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   return query.orderBy(asc(bankAccounts.accountName));
@@ -154,14 +150,14 @@ export async function getBankTransactions(filters?: {
       or(
         like(bankTransactions.description, `%${filters.searchTerm}%`),
         like(bankTransactions.referenceNumber, `%${filters.searchTerm}%`)
-      )!
+      ) ?? undefined
     );
   }
 
   let query = db.select().from(bankTransactions);
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   // Get total count
@@ -174,13 +170,13 @@ export async function getBankTransactions(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(bankTransactions.transactionDate), desc(bankTransactions.id)) as any;
+  query = query.orderBy(desc(bankTransactions.transactionDate), desc(bankTransactions.id)) as typeof query;
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as any;
+    query = query.limit(filters.limit) as typeof query;
   }
   if (filters?.offset) {
-    query = query.offset(filters.offset) as any;
+    query = query.offset(filters.offset) as typeof query;
   }
 
   const transactions = await query;
@@ -293,7 +289,7 @@ export async function getExpenseCategories(filters?: { isActive?: boolean }) {
   let query = db.select().from(expenseCategories);
 
   if (filters?.isActive !== undefined) {
-    query = query.where(eq(expenseCategories.isActive, filters.isActive)) as any;
+    query = query.where(eq(expenseCategories.isActive, filters.isActive)) as typeof query;
   }
 
   return query.orderBy(asc(expenseCategories.categoryName));
@@ -375,14 +371,14 @@ export async function getExpenses(filters?: {
       or(
         like(expenses.expenseNumber, `%${filters.searchTerm}%`),
         like(expenses.description, `%${filters.searchTerm}%`)
-      )!
+      ) ?? undefined
     );
   }
 
   let query = db.select().from(expenses);
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   // Get total count
@@ -395,13 +391,13 @@ export async function getExpenses(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(expenses.expenseDate), desc(expenses.id)) as any;
+  query = query.orderBy(desc(expenses.expenseDate), desc(expenses.id)) as typeof query;
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as any;
+    query = query.limit(filters.limit) as typeof query;
   }
   if (filters?.offset) {
-    query = query.offset(filters.offset) as any;
+    query = query.offset(filters.offset) as typeof query;
   }
 
   const expenseList = await query;
@@ -438,7 +434,8 @@ export async function updateExpense(id: number, data: Partial<InsertExpense>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(expenses).set(data).where(eq(expenses.id, id));
+  const result = await db.update(expenses).set(data).where(eq(expenses.id, id));
+  return result;
 }
 
 /**

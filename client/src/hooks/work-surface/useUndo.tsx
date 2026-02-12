@@ -127,7 +127,7 @@ export function useUndo(options: UseUndoOptions = {}): UseUndoReturn {
   } = options;
 
   const [actions, setActions] = useState<UndoAction[]>([]);
-  const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const toastIdsRef = useRef<Map<string, string | number>>(new Map());
 
   // Clean up timers on unmount

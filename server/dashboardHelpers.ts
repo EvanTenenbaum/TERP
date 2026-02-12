@@ -4,7 +4,7 @@
  */
 
 import * as clientsDb from "./clientsDb";
-import type { Invoice, Payment } from "../drizzle/schema";
+import type { Invoice } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 
 /**

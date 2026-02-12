@@ -53,7 +53,7 @@ describe("Calendar Financials Router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock db.query.invoices.findMany to return empty array
-    const mockDb = db as any;
+    const mockDb = db as Record<string, unknown>;
     if (mockDb.query?.invoices?.findMany) {
       vi.mocked(mockDb.query.invoices.findMany).mockResolvedValue([]);
     }

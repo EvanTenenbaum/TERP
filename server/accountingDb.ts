@@ -1,4 +1,5 @@
-import { eq, and, gte, lte, desc, asc, sql, or, like } from "drizzle-orm";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { eq, and, desc, asc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   accounts,
@@ -6,10 +7,8 @@ import {
   fiscalPeriods,
   InsertAccount,
   Account,
-  InsertLedgerEntry,
-  LedgerEntry,
   InsertFiscalPeriod,
-  FiscalPeriod,
+  InsertLedgerEntry,
 } from "../drizzle/schema";
 import { isFiscalPeriodLocked } from "./_core/fiscalPeriod";
 
@@ -46,7 +45,7 @@ export async function getAccounts(filters?: {
   }
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   return query.orderBy(asc(accounts.accountNumber));
@@ -159,7 +158,8 @@ export async function getChartOfAccounts() {
 
   // Second pass: build hierarchy
   allAccounts.forEach((account) => {
-    const accountWithChildren = accountMap.get(account.id)!;
+    const accountWithChildren = accountMap.get(account.id);
+    if (!accountWithChildren) return;
     if (account.parentAccountId === null) {
       rootAccounts.push(accountWithChildren);
     } else {
@@ -223,7 +223,7 @@ export async function getLedgerEntries(filters?: {
   let query = db.select().from(ledgerEntries);
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   // Get total count
@@ -236,13 +236,13 @@ export async function getLedgerEntries(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination
-  query = query.orderBy(desc(ledgerEntries.entryDate), desc(ledgerEntries.id)) as any;
+  query = query.orderBy(desc(ledgerEntries.entryDate), desc(ledgerEntries.id)) as typeof query;
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as any;
+    query = query.limit(filters.limit) as typeof query;
   }
   if (filters?.offset) {
-    query = query.offset(filters.offset) as any;
+    query = query.offset(filters.offset) as typeof query;
   }
 
   const entries = await query;
@@ -470,7 +470,7 @@ export async function getFiscalPeriods(filters?: {
   }
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   return query.orderBy(desc(fiscalPeriods.startDate));

@@ -161,7 +161,9 @@ export const PointsDisplay = React.memo(function PointsDisplay({
             {historyLoading ? (
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={`skeleton-${i}`} className="h-12 w-full" />
+                  <Skeleton
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={`points-skeleton-${i}`} className="h-12 w-full" />
                 ))}
               </div>
             ) : history?.entries.length === 0 ? (

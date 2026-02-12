@@ -14,8 +14,6 @@ import {
   CheckCircle,
   CheckCircle2,
   Tag,
-  FileText,
-  XCircle,
   Truck,
   Wallet,
   Receipt,
@@ -28,6 +26,7 @@ import {
   Percent,
 } from "lucide-react";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { MetricConfig, ModuleConfig } from "./types";
 
 // ============================================================================
@@ -156,7 +155,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     category: 'analytical',
     destination: {
       path: '/inventory',
-      getParams: (data) => ({ category: data?.topCategory || '' }),
+      getParams: (data: any) => ({ category: data?.topCategory || '' }),
     },
   },
   
@@ -518,7 +517,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     category: 'analytical',
     destination: {
       path: '/vendor-supply',
-      getParams: (data) => ({ vendor: data?.topVendor || '' }),
+      getParams: (data: any) => ({ vendor: data?.topVendor || '' }),
     },
   },
   

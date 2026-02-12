@@ -1,5 +1,6 @@
 import { getDb } from "../db";
 import { seedRBACDefaults } from "./seedRBAC";
+import { logger } from "../_core/logger";
 import {
   locations,
   categories,
@@ -24,24 +25,24 @@ import { eq } from "drizzle-orm";
 export async function seedDefaultLocations() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
-    console.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
-    console.log("⏭️  SKIP_SEEDING is set - skipping location seeding");
+    logger.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
+    logger.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping location seeding");
     return;
   }
 
-  console.log("🌱 Seeding default locations...");
+  logger.info("🌱 Seeding default locations...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping location seeding");
+    logger.warn("Database not available, skipping location seeding");
     return;
   }
 
   // Check if locations already exist
   const existing = await db.select().from(locations).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Locations already seeded, skipping...");
+    logger.info("✅ Locations already seeded, skipping...");
     return;
   }
 
@@ -122,16 +123,16 @@ export async function seedDefaultLocations() {
   for (const location of locationsData) {
     try {
       await db.insert(locations).values(location);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a duplicate, skip it (though locations don't have unique constraints)
       // Log other errors but continue
-      if (!error.message?.includes("Duplicate entry")) {
-        console.warn(`Failed to insert location:`, error.message || error);
+      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+        logger.warn({ msg: "Failed to insert location", error: error instanceof Error ? error.message : String(error) });
       }
     }
   }
 
-  console.log("✅ Default locations seeded");
+  logger.info("✅ Default locations seeded");
 }
 
 /**
@@ -142,22 +143,22 @@ export async function seedDefaultLocations() {
 export async function seedDefaultCategories() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.log("⏭️  SKIP_SEEDING is set - skipping category seeding");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping category seeding");
     return;
   }
 
-  console.log("🌱 Seeding default categories...");
+  logger.info("🌱 Seeding default categories...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping category seeding");
+    logger.warn("Database not available, skipping category seeding");
     return;
   }
 
   // Check if categories already exist
   const existing = await db.select().from(categories).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Categories already seeded, skipping...");
+    logger.info("✅ Categories already seeded, skipping...");
     return;
   }
 
@@ -218,7 +219,7 @@ export async function seedDefaultCategories() {
       });
     } catch (error: any) {
       // If it's a duplicate key error, that's fine - category already exists
-      if (!error.message?.includes("Duplicate entry")) {
+      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
         throw error;
       }
     }
@@ -231,7 +232,7 @@ export async function seedDefaultCategories() {
       .limit(1);
 
     if (!category) {
-      console.error(`Failed to find category: ${categoryData.name}`);
+      logger.error(`Failed to find category: ${categoryData.name}`);
       continue;
     }
 
@@ -244,14 +245,14 @@ export async function seedDefaultCategories() {
         });
       } catch (error: any) {
         // If it's a duplicate, skip it
-        if (!error.message?.includes("Duplicate entry")) {
-          console.warn(`Failed to insert subcategory ${subName}:`, error);
+        if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+          logger.warn(`Failed to insert subcategory ${subName}:`, error);
         }
       }
     }
   }
 
-  console.log("✅ Default categories seeded");
+  logger.info("✅ Default categories seeded");
 }
 
 /**
@@ -262,22 +263,22 @@ export async function seedDefaultCategories() {
 export async function seedDefaultGrades() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.log("⏭️  SKIP_SEEDING is set - skipping grade seeding");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping grade seeding");
     return;
   }
 
-  console.log("🌱 Seeding default grades...");
+  logger.info("🌱 Seeding default grades...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping grade seeding");
+    logger.warn("Database not available, skipping grade seeding");
     return;
   }
 
   // Check if grades already exist
   const existing = await db.select().from(grades).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Grades already seeded, skipping...");
+    logger.info("✅ Grades already seeded, skipping...");
     return;
   }
 
@@ -294,13 +295,13 @@ export async function seedDefaultGrades() {
       await db.insert(grades).values(grade);
     } catch (error: any) {
       // If it's a duplicate, skip it
-      if (!error.message?.includes("Duplicate entry")) {
-        console.warn(`Failed to insert grade ${grade.name}:`, error.message || error);
+      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+        logger.warn(`Failed to insert grade ${grade.name}:`, error.message || error);
       }
     }
   }
 
-  console.log("✅ Default grades seeded");
+  logger.info("✅ Default grades seeded");
 }
 
 /**
@@ -311,22 +312,22 @@ export async function seedDefaultGrades() {
 export async function seedDefaultExpenseCategories() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.log("⏭️  SKIP_SEEDING is set - skipping expense category seeding");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping expense category seeding");
     return;
   }
 
-  console.log("🌱 Seeding default expense categories...");
+  logger.info("🌱 Seeding default expense categories...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping expense category seeding");
+    logger.warn("Database not available, skipping expense category seeding");
     return;
   }
 
   // Check if expense categories already exist
   const existing = await db.select().from(expenseCategories).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Expense categories already seeded, skipping...");
+    logger.info("✅ Expense categories already seeded, skipping...");
     return;
   }
 
@@ -369,7 +370,7 @@ export async function seedDefaultExpenseCategories() {
       });
     } catch (error: any) {
       // If it's a duplicate, that's fine - category already exists
-      if (!error.message?.includes("Duplicate entry")) {
+      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
         throw error;
       }
     }
@@ -382,7 +383,7 @@ export async function seedDefaultExpenseCategories() {
       .limit(1);
 
     if (!parent) {
-      console.error(`Failed to find expense category: ${categoryData.name}`);
+      logger.error(`Failed to find expense category: ${categoryData.name}`);
       continue;
     }
 
@@ -395,14 +396,14 @@ export async function seedDefaultExpenseCategories() {
         });
       } catch (error: any) {
         // If it's a duplicate, skip it
-        if (!error.message?.includes("Duplicate entry")) {
-          console.warn(`Failed to insert expense category ${childName}:`, error);
+        if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+          logger.warn(`Failed to insert expense category ${childName}:`, error);
         }
       }
     }
   }
 
-  console.log("✅ Default expense categories seeded");
+  logger.info("✅ Default expense categories seeded");
 }
 
 /**
@@ -413,22 +414,22 @@ export async function seedDefaultExpenseCategories() {
 export async function seedDefaultChartOfAccounts() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.log("⏭️  SKIP_SEEDING is set - skipping chart of accounts seeding");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping chart of accounts seeding");
     return;
   }
 
-  console.log("🌱 Seeding default chart of accounts...");
+  logger.info("🌱 Seeding default chart of accounts...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping chart of accounts seeding");
+    logger.warn("Database not available, skipping chart of accounts seeding");
     return;
   }
 
   // Check if accounts already exist
   const existing = await db.select().from(accounts).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Chart of accounts already seeded, skipping...");
+    logger.info("✅ Chart of accounts already seeded, skipping...");
     return;
   }
 
@@ -504,13 +505,13 @@ export async function seedDefaultChartOfAccounts() {
       await db.insert(accounts).values(account);
     } catch (error: any) {
       // If it's a duplicate, skip it
-      if (!error.message?.includes("Duplicate entry")) {
-        console.warn(`Failed to insert account ${account.accountNumber}:`, error.message || error);
+      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+        logger.warn(`Failed to insert account ${account.accountNumber}:`, error.message || error);
       }
     }
   }
 
-  console.log("✅ Default chart of accounts seeded");
+  logger.info("✅ Default chart of accounts seeded");
 }
 
 /**
@@ -521,22 +522,22 @@ export async function seedDefaultChartOfAccounts() {
 export async function seedDefaultUnitTypes() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.log("⏭️  SKIP_SEEDING is set - skipping unit types seeding");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping unit types seeding");
     return;
   }
 
-  console.log("🌱 Seeding default unit types...");
+  logger.info("🌱 Seeding default unit types...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping unit types seeding");
+    logger.warn("Database not available, skipping unit types seeding");
     return;
   }
 
   // Check if unit types already exist
   const existing = await db.select().from(unitTypes).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Unit types already seeded, skipping...");
+    logger.info("✅ Unit types already seeded, skipping...");
     return;
   }
 
@@ -570,13 +571,13 @@ export async function seedDefaultUnitTypes() {
       await db.insert(unitTypes).values(unitType);
     } catch (error: any) {
       // If it's a duplicate, skip it
-      if (!error.message?.includes("Duplicate entry")) {
-        console.warn(`Failed to insert unit type ${unitType.code}:`, error.message || error);
+      if (!(error instanceof Error && error.message?.includes("Duplicate entry"))) {
+        logger.warn(`Failed to insert unit type ${unitType.code}:`, error.message || error);
       }
     }
   }
 
-  console.log("✅ Default unit types seeded");
+  logger.info("✅ Default unit types seeded");
 }
 
 /**
@@ -596,18 +597,18 @@ export async function seedAllDefaults() {
   // Bypass seeding if SKIP_SEEDING environment variable is set (case-insensitive)
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
-    console.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
-    console.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
-    console.log("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
+    logger.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
+    logger.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
+    logger.info("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
     return;
   }
 
-  console.log("🌱 Starting default data seeding...");
+  logger.info("🌱 Starting default data seeding...");
 
   // Validate database connection first
   const db = await getDb();
   if (!db) {
-    console.error("❌ Database connection not available - skipping seeding");
+    logger.error("❌ Database connection not available - skipping seeding");
     return;
   }
 
@@ -623,46 +624,46 @@ export async function seedAllDefaults() {
 
   try {
     // Seed RBAC first (roles and permissions must exist before user-role assignments)
-    console.log("📝 Seeding RBAC...");
+    logger.info("📝 Seeding RBAC...");
     await seedRBACDefaults();
     seedingResults.rbac = true;
 
-    console.log("📍 Seeding locations...");
+    logger.info("📍 Seeding locations...");
     await seedDefaultLocations();
     seedingResults.locations = true;
 
-    console.log("📂 Seeding categories...");
+    logger.info("📂 Seeding categories...");
     await seedDefaultCategories();
     seedingResults.categories = true;
 
-    console.log("🎯 Seeding grades...");
+    logger.info("🎯 Seeding grades...");
     await seedDefaultGrades();
     seedingResults.grades = true;
 
-    console.log("💰 Seeding expense categories...");
+    logger.info("💰 Seeding expense categories...");
     await seedDefaultExpenseCategories();
     seedingResults.expenseCategories = true;
 
-    console.log("📊 Seeding chart of accounts...");
+    logger.info("📊 Seeding chart of accounts...");
     await seedDefaultChartOfAccounts();
     seedingResults.accounts = true;
 
-    console.log("📦 Seeding unit types...");
+    logger.info("📦 Seeding unit types...");
     await seedDefaultUnitTypes();
     seedingResults.unitTypes = true;
 
-    console.log("✅ All defaults seeded successfully!");
-    console.log("📋 Seeding summary:", seedingResults);
+    logger.info("✅ All defaults seeded successfully!");
+    logger.info({ msg: "Seeding summary", results: seedingResults });
   } catch (error) {
     // Log the error but DON'T throw - seeding failure should not crash the server
     // This is critical for deployment health checks to succeed
-    console.error(
-      "❌ Error seeding defaults (non-fatal, server will continue):",
-      error
-    );
-    console.warn(
+    logger.error({
+      msg: "Error seeding defaults (non-fatal, server will continue)",
+      error: error instanceof Error ? error.message : String(error),
+    });
+    logger.warn(
       "⚠️ Some default data may be missing - the app will still function but some features may be unavailable"
     );
-    console.log("📋 Partial seeding summary:", seedingResults);
+    logger.info({ msg: "Partial seeding summary", results: seedingResults });
   }
 }

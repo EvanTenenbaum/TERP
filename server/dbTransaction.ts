@@ -1,3 +1,5 @@
+import { logger } from "./_core/logger";
+
 /**
  * Database Transaction Utilities
  * Provides transaction support for critical operations
@@ -75,7 +77,7 @@ export async function withRetry<T>(
       const delay = initialDelay * Math.pow(2, attempt);
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      console.log(`Retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      logger.info(`Retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
     }
   }
   

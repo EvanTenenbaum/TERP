@@ -314,11 +314,14 @@ export default function VipLiveSessionPage() {
                        <button 
                          className="px-2 py-1 text-gray-500 hover:bg-gray-100"
                          disabled={sessionStatus !== "ACTIVE"}
-                         onClick={() => updateQtyMutation.mutate({
-                           sessionId: session!.id,
-                           cartItemId: item.id,
-                           quantity: parseFloat(item.quantity.toString()) - 1
-                         })}
+                         onClick={() => {
+                           if (!session) return;
+                           updateQtyMutation.mutate({
+                             sessionId: session.id,
+                             cartItemId: item.id,
+                             quantity: parseFloat(item.quantity.toString()) - 1
+                           });
+                         }}
                        >
                          -
                        </button>
@@ -326,11 +329,14 @@ export default function VipLiveSessionPage() {
                        <button 
                          className="px-2 py-1 text-gray-500 hover:bg-gray-100"
                          disabled={sessionStatus !== "ACTIVE"}
-                         onClick={() => updateQtyMutation.mutate({
-                           sessionId: session!.id,
-                           cartItemId: item.id,
-                           quantity: parseFloat(item.quantity.toString()) + 1
-                         })}
+                         onClick={() => {
+                           if (!session) return;
+                           updateQtyMutation.mutate({
+                             sessionId: session.id,
+                             cartItemId: item.id,
+                             quantity: parseFloat(item.quantity.toString()) + 1
+                           });
+                         }}
                        >
                          +
                        </button>
@@ -339,10 +345,13 @@ export default function VipLiveSessionPage() {
                      <button 
                         className="text-xs text-red-500 hover:text-red-700 underline"
                         disabled={sessionStatus !== "ACTIVE"}
-                        onClick={() => removeMutation.mutate({
-                           sessionId: session!.id,
-                           cartItemId: item.id
-                        })}
+                        onClick={() => {
+                          if (!session) return;
+                          removeMutation.mutate({
+                            sessionId: session.id,
+                            cartItemId: item.id
+                          });
+                        }}
                      >
                        Remove
                      </button>

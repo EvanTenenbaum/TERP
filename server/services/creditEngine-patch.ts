@@ -11,7 +11,6 @@ import {
   clientTransactions,
   clientCreditLimits,
   creditSignalHistory,
-  creditSystemSettings,
   creditAuditLog,
 } from "../../drizzle/schema";
 // Phase 1 Imports

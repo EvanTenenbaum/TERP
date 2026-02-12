@@ -234,9 +234,9 @@ export function QuickCreateClient({
             nameSuggestions?.suggestions &&
             nameSuggestions.suggestions.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {nameSuggestions.suggestions.map((s, idx) => (
+                {nameSuggestions.suggestions.map((s, _idx) => (
                   <button
-                    key={`name-suggestion-${s.value}-${idx}`}
+                    key={`name-suggestion-${s.value}-${s.clientName}`}
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                     onClick={() => {
@@ -275,9 +275,9 @@ export function QuickCreateClient({
             emailSuggestions?.suggestions &&
             emailSuggestions.suggestions.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {emailSuggestions.suggestions.map((s, idx) => (
+                {emailSuggestions.suggestions.map((s, _idx) => (
                   <button
-                    key={`email-suggestion-${s.value}-${idx}`}
+                    key={`email-suggestion-${s.value}`}
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                     onClick={() => {
@@ -313,9 +313,9 @@ export function QuickCreateClient({
             phoneSuggestions?.suggestions &&
             phoneSuggestions.suggestions.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {phoneSuggestions.suggestions.map((s, idx) => (
+                {phoneSuggestions.suggestions.map((s, _idx) => (
                   <button
-                    key={`phone-suggestion-${s.value}-${idx}`}
+                    key={`phone-suggestion-${s.value}`}
                     type="button"
                     className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                     onClick={() => {

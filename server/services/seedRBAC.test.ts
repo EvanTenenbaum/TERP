@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // Hoist mock storage
 const { mockStorage } = vi.hoisted(() => ({
-  mockStorage: {} as Record<string, any[]>
+  mockStorage: {} as Record<string, unknown[]>
 }));
 
 // Mock DB

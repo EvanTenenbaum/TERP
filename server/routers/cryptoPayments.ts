@@ -17,6 +17,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+
 import { getDb } from "../db";
 import { clients, payments } from "../../drizzle/schema";
 import {

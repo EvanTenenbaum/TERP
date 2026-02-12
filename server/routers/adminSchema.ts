@@ -34,7 +34,7 @@ export const adminSchemaRouter = router({
           const reportPath = path.join(process.cwd(), 'schema-validation-report.json');
           const reportData = await fs.readFile(reportPath, 'utf-8');
           report = JSON.parse(reportData);
-        } catch (e) {
+        } catch (_e) {
           // Report file not generated yet
         }
         

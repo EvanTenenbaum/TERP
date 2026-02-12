@@ -128,7 +128,7 @@ export function useValidationTiming<T extends z.ZodType>({
   const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
 
   // Typing timeout refs
-  const typingTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const typingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // ============================================================================
   // Validate a single field against schema

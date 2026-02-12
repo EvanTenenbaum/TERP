@@ -73,7 +73,7 @@ class WarehouseEventManager extends EventEmitter {
    */
   public unsubscribe(listener: (event: { type: string; data: unknown }) => void): void {
     this.off("PICK_LIST_UPDATE", listener as any);
-    this.off("NEW_PICK_ITEM", listener as any);
+    this.off("NEW_PICK_ITEM", listener as (event: { type: string; data: unknown }) => void);
     this.off("ITEM_REMOVED", listener as any);
   }
 }
@@ -170,7 +170,7 @@ export const sessionPickListService = {
     // Get location details for items from batchLocations table
     const batchIds = [...new Set(items.map((i) => i.batchId))];
 
-    let locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
+    const locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
 
     if (batchIds.length > 0) {
       const locationData = await db
@@ -331,7 +331,7 @@ export const sessionPickListService = {
     // Get location details from batchLocations table
     const batchIds = [...new Set(items.map((i) => i.batchId))];
 
-    let locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
+    const locationMap: Record<number, { site: string; zone: string | null; shelf: string | null; bin: string | null }> = {};
 
     if (batchIds.length > 0) {
       const locationData = await db

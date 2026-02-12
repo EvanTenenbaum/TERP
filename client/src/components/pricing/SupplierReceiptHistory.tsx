@@ -33,7 +33,6 @@ import {
   FileText,
   Calendar,
   Package,
-  DollarSign,
   ExternalLink,
   ChevronRight,
   Search,

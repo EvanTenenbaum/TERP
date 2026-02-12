@@ -3,13 +3,12 @@
  * Simpler dropdown-based UI for customizing data card metrics
  */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Settings, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,

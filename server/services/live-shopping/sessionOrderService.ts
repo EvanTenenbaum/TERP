@@ -119,8 +119,8 @@ export const sessionOrderService = {
           newOrder.id,
           session.roomCode
         );
-      } catch (e: any) {
-        warnings.push(`Failed to generate sales sheet: ${e.message}`);
+      } catch (e: unknown) {
+        warnings.push(`Failed to generate sales sheet: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 

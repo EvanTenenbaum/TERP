@@ -232,7 +232,9 @@ async function getMetricsForClients(
     if (cached) {
       metricsMap.set(client.id, cached);
     } else {
-      const metrics = await calculateAllMetrics(client.id, clientTypes.get(client.id)!);
+      const clientType = clientTypes.get(client.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const metrics = await calculateAllMetrics(client.id, (clientType ?? "CUSTOMER") as any);
       metricsMap.set(client.id, metrics);
       await cacheMetrics(client.id, metrics);
     }

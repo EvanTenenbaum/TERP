@@ -129,7 +129,7 @@ describe("updateWithVersion", () => {
 
   it("should throw OptimisticLockError when version doesn't match (no rows affected)", async () => {
     // Mock update with no affected rows (version mismatch)
-    mockDb.where.mockResolvedValueOnce([{ affectedRows: 0 }]);
+    mockDb.where.mockReturnValue({ limit: mockDb.limit });
     // Mock the follow-up query to get current version
     mockDb.limit.mockResolvedValueOnce([{ version: 6 }]);
 
@@ -147,7 +147,7 @@ describe("updateWithVersion", () => {
 
   it("should throw NOT_FOUND when record doesn't exist during version mismatch check", async () => {
     // Mock update with no affected rows
-    mockDb.where.mockResolvedValueOnce([{ affectedRows: 0 }]);
+    mockDb.where.mockReturnValue({ limit: mockDb.limit });
     // Mock the follow-up query returning no record
     mockDb.limit.mockResolvedValueOnce([]);
 
@@ -164,7 +164,7 @@ describe("updateWithVersion", () => {
 
     try {
       // Reset mocks for second attempt
-      mockDb.where.mockResolvedValueOnce([{ affectedRows: 0 }]);
+      mockDb.where.mockReturnValue({ limit: mockDb.limit });
       mockDb.limit.mockResolvedValueOnce([]);
 
       await updateWithVersion(
@@ -191,6 +191,7 @@ describe("Concurrent Edit Scenarios", () => {
 
     // User B's check: record now has version 2, but User B has version 1
     mockDb.limit.mockResolvedValue([{ id: 1, version: 2 }]);
+    mockDb.where.mockReturnValue({ limit: mockDb.limit });
 
     await expect(
       checkVersion(mockDb as any, mockTable as any, "Order", 1, 1) // User B's version is 1

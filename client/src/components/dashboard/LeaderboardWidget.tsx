@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Trophy,
@@ -144,7 +144,9 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: limit }).map((_, i) => (
-              <Skeleton key={`skeleton-${i}`} className="h-10 w-full" />
+              <Skeleton
+                // eslint-disable-next-line react/no-array-index-key
+                key={`leaderboard-skeleton-${i}`} className="h-10 w-full" />
             ))}
           </div>
         )}

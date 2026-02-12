@@ -4,7 +4,7 @@
  * 2. Visibility & Enforcement - Control UI visibility and enforcement behavior
  */
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

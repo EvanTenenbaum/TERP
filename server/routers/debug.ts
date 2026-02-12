@@ -81,12 +81,13 @@ export const debugRouter = router({
           data: countRows,
           method: 'query (text protocol)',
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string; code?: string; errno?: number };
         results.tests.countQuery = {
           success: false,
-          error: err.message,
-          code: err.code,
-          errno: err.errno,
+          error: error.message,
+          code: error.code,
+          errno: error.errno,
         };
       }
 
@@ -98,12 +99,13 @@ export const debugRouter = router({
           data: minimalRows,
           method: 'query (text protocol)',
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string; code?: string; errno?: number };
         results.tests.minimalSelect = {
           success: false,
-          error: err.message,
-          code: err.code,
-          errno: err.errno,
+          error: error.message,
+          code: error.code,
+          errno: error.errno,
         };
       }
 
@@ -117,12 +119,13 @@ export const debugRouter = router({
           data: enumRows,
           method: 'query (text protocol)',
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string; code?: string; errno?: number };
         results.tests.enumSelect = {
           success: false,
-          error: err.message,
-          code: err.code,
-          errno: err.errno,
+          error: error.message,
+          code: error.code,
+          errno: error.errno,
         };
       }
 
@@ -131,16 +134,17 @@ export const debugRouter = router({
         const [fullRows] = await connection.query('SELECT * FROM clients LIMIT 1');
         results.tests.fullSelect = {
           success: true,
-          rowCount: (fullRows as any[]).length,
-          sampleKeys: (fullRows as any[])[0] ? Object.keys((fullRows as any[])[0]) : [],
+          rowCount: (fullRows as Array<Record<string, unknown>>).length,
+          sampleKeys: (fullRows as Array<Record<string, unknown>>)[0] ? Object.keys((fullRows as Array<Record<string, unknown>>)[0]) : [],
           method: 'query (text protocol)',
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string; code?: string; errno?: number };
         results.tests.fullSelect = {
           success: false,
-          error: err.message,
-          code: err.code,
-          errno: err.errno,
+          error: error.message,
+          code: error.code,
+          errno: error.errno,
         };
       }
 
@@ -149,25 +153,26 @@ export const debugRouter = router({
         const [execRows] = await connection.execute('SELECT * FROM clients LIMIT 1');
         results.tests.fullSelectPrepared = {
           success: true,
-          rowCount: (execRows as any[]).length,
-          sampleKeys: (execRows as any[])[0] ? Object.keys((execRows as any[])[0]) : [],
+          rowCount: (execRows as Array<Record<string, unknown>>).length,
+          sampleKeys: (execRows as Array<Record<string, unknown>>)[0] ? Object.keys((execRows as Array<Record<string, unknown>>)[0]) : [],
           method: 'execute (binary protocol)',
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string; code?: string; errno?: number };
         results.tests.fullSelectPrepared = {
           success: false,
-          error: err.message,
-          code: err.code,
-          errno: err.errno,
+          error: error.message,
+          code: error.code,
+          errno: error.errno,
         };
       }
 
       connection.release();
       results.connectionReleased = true;
       results.success = true;
-    } catch (poolErr: any) {
+    } catch (poolErr: unknown) {
       results.success = false;
-      results.poolError = poolErr.message;
+      results.poolError = poolErr instanceof Error ? poolErr.message : String(poolErr);
     }
 
     return results;
@@ -198,11 +203,12 @@ export const debugRouter = router({
         success: true,
         data: count,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message: string; cause?: { message?: string } | string };
       results.tests.drizzleCount = {
         success: false,
-        error: err.message,
-        cause: err.cause?.message || err.cause,
+        error: error.message,
+        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
       };
     }
 
@@ -216,11 +222,12 @@ export const debugRouter = router({
         success: true,
         data: minimal,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message: string; cause?: { message?: string } | string };
       results.tests.drizzleMinimal = {
         success: false,
-        error: err.message,
-        cause: err.cause?.message || err.cause,
+        error: error.message,
+        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
       };
     }
 
@@ -236,11 +243,12 @@ export const debugRouter = router({
         success: true,
         data: withEnums,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message: string; cause?: { message?: string } | string };
       results.tests.drizzleWithEnums = {
         success: false,
-        error: err.message,
-        cause: err.cause?.message || err.cause,
+        error: error.message,
+        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
       };
     }
 
@@ -252,11 +260,12 @@ export const debugRouter = router({
         rowCount: full.length,
         sampleKeys: full[0] ? Object.keys(full[0]) : [],
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message: string; cause?: { message?: string } | string };
       results.tests.drizzleFull = {
         success: false,
-        error: err.message,
-        cause: err.cause?.message || err.cause,
+        error: error.message,
+        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
       };
     }
 
@@ -286,10 +295,11 @@ export const debugRouter = router({
           success: true,
           columns: describeRows as unknown[],
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string };
         results.tests.tableStructure = {
           success: false,
-          error: err.message,
+          error: error.message,
         };
       }
 
@@ -300,10 +310,11 @@ export const debugRouter = router({
           success: true,
           data: selectRows,
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string };
         results.tests.selectClientType = {
           success: false,
-          error: err.message,
+          error: error.message,
         };
       }
 
@@ -314,19 +325,20 @@ export const debugRouter = router({
           success: true,
           data: selectRows,
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { message: string };
         results.tests.selectLeaderboardClientType = {
           success: false,
-          error: err.message,
+          error: error.message,
         };
       }
 
       connection.release();
       results.connectionReleased = true;
       results.success = true;
-    } catch (poolErr: any) {
+    } catch (poolErr: unknown) {
       results.success = false;
-      results.poolError = poolErr.message;
+      results.poolError = poolErr instanceof Error ? poolErr.message : String(poolErr);
     }
 
     return results;
@@ -378,9 +390,9 @@ export const debugRouter = router({
 
       connection.release();
       results.success = true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       results.success = false;
-      results.error = err.message;
+      results.error = err instanceof Error ? err.message : String(err);
     }
 
     return results;
@@ -414,27 +426,27 @@ export const debugRouter = router({
         try {
           const [rows] = await connection.query(`SHOW TABLES LIKE '${table}'`);
           results.tests[table] = {
-            exists: (rows as any[]).length > 0,
+            exists: (rows as Array<Record<string, unknown>>).length > 0,
           };
-          
-          if ((rows as any[]).length > 0) {
+
+          if ((rows as Array<Record<string, unknown>>).length > 0) {
             // Get column info
             const [cols] = await connection.query(`DESCRIBE ${table}`);
-            results.tests[table].columns = (cols as any[]).map((c: any) => c.Field);
+            results.tests[table].columns = (cols as Array<{ Field: string }>).map((c) => c.Field);
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           results.tests[table] = {
             exists: false,
-            error: err.message,
+            error: err instanceof Error ? err.message : String(err),
           };
         }
       }
 
       connection.release();
       results.success = true;
-    } catch (poolErr: any) {
+    } catch (poolErr: unknown) {
       results.success = false;
-      results.poolError = poolErr.message;
+      results.poolError = poolErr instanceof Error ? poolErr.message : String(poolErr);
     }
 
     return results;
@@ -520,10 +532,10 @@ export const debugRouter = router({
             : null,
         ].filter(Boolean),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
       };
     }
@@ -570,14 +582,15 @@ export const debugRouter = router({
           payments: Number(paymentsCount[0]?.count || 0),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // FIX-009: Extract cause from DrizzleQueryError
-      const cause = error.cause || {};
+      const err = error as { message: string; code?: string; cause?: { sqlMessage?: string; message?: string; code?: string } };
+      const cause = err.cause || {};
       return {
         success: false,
-        error: error.message,
+        error: err.message,
         mysqlError: cause.sqlMessage || cause.message,
-        code: cause.code || error.code,
+        code: cause.code || err.code,
       };
     }
   }),

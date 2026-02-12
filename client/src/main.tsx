@@ -22,9 +22,11 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: (failureCount, error: any) => {
+      retry: (failureCount, error: unknown) => {
         // Don't retry on 401 (auth), 403 (forbidden), 404 (not found), or 429 (rate limit)
-        const status = error?.data?.httpStatus || error?.status;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as any;
+        const status = err?.data?.httpStatus || err?.status;
         if ([401, 403, 404, 429].includes(status)) {
           return false;
         }
@@ -35,19 +37,21 @@ const queryClient = new QueryClient({
       // onError removed - use onError in individual queries if needed
     },
     mutations: {
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         // SECURITY: Only log detailed errors in development mode
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as any;
         if (import.meta.env.DEV) {
           console.error('[tRPC Mutation Error]', {
-            message: error?.message || 'Unknown error',
-            code: error?.data?.code,
-            httpStatus: error?.data?.httpStatus,
-            path: error?.data?.path,
-            stack: error?.stack,
+            message: err?.message || 'Unknown error',
+            code: err?.data?.code,
+            httpStatus: err?.data?.httpStatus,
+            path: err?.data?.path,
+            stack: err?.stack,
           });
         } else {
           // In production, log minimal info without exposing sensitive details
-          console.error('[Error]', error?.data?.code || 'UNKNOWN');
+          console.error('[Error]', err?.data?.code || 'UNKNOWN');
         }
       },
     },
@@ -93,11 +97,11 @@ const trpcClient = trpc.createClient({
         }
         return {};
       },
-      fetch(input, init) {
+      fetch(input: RequestInfo | URL, init?: RequestInit) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
-        });
+        } as RequestInit);
       },
     }),
   ],

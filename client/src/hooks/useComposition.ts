@@ -1,4 +1,5 @@
-import { useRef } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useRef } from "react";
 import { usePersistFn } from "./usePersistFn";
 
 export interface UseCompositionReturn<
@@ -33,7 +34,7 @@ export function useComposition<
   const timer = useRef<TimerResponse | null>(null);
   const timer2 = useRef<TimerResponse | null>(null);
 
-  const onCompositionStart = usePersistFn((e: React.CompositionEvent<T>) => {
+  const onCompositionStart = usePersistFn(((e: React.CompositionEvent<T>) => {
     if (timer.current) {
       clearTimeout(timer.current);
       timer.current = null;
@@ -44,9 +45,9 @@ export function useComposition<
     }
     c.current = true;
     originalOnCompositionStart?.(e);
-  });
+  }) as any);
 
-  const onCompositionEnd = usePersistFn((e: React.CompositionEvent<T>) => {
+  const onCompositionEnd = usePersistFn(((e: React.CompositionEvent<T>) => {
     // 使用两层 setTimeout 来处理 Safari 浏览器中 compositionEnd 先于 onKeyDown 触发的问题
     timer.current = setTimeout(() => {
       timer2.current = setTimeout(() => {
@@ -54,9 +55,9 @@ export function useComposition<
       });
     });
     originalOnCompositionEnd?.(e);
-  });
+  }) as any);
 
-  const onKeyDown = usePersistFn((e: React.KeyboardEvent<T>) => {
+  const onKeyDown = usePersistFn(((e: React.KeyboardEvent<T>) => {
     // 在 composition 状态下，阻止 ESC 和 Enter（非 shift+Enter）事件的冒泡
     if (
       c.current &&
@@ -66,7 +67,7 @@ export function useComposition<
       return;
     }
     originalOnKeyDown?.(e);
-  });
+  }) as any);
 
   const isComposing = usePersistFn(() => {
     return c.current;

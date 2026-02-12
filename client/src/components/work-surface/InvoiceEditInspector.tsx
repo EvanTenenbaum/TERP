@@ -41,7 +41,6 @@ import {
 import {
   InspectorPanel,
   InspectorSection,
-  InspectorField,
 } from './InspectorPanel';
 
 // ============================================================================

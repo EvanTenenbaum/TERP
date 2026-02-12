@@ -61,6 +61,7 @@ function calculateStaticAvailableQty(batch: {
  * Get "soft hold" quantity - items in active session carts that haven't been converted to orders yet
  * This prevents overselling during concurrent live shopping sessions
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getSoftHoldQty(tx: any, batchId: number, excludeSessionId?: number): Promise<string> {
   // Build where conditions
   const conditions = [
@@ -88,6 +89,7 @@ async function getSoftHoldQty(tx: any, batchId: number, excludeSessionId?: numbe
  * Calculate net available quantity accounting for soft holds
  */
 async function calculateNetAvailableQty(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tx: any, 
   batch: {
     onHandQty: string | null;

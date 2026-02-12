@@ -1,4 +1,5 @@
 import { z } from "zod";
+import crypto from "crypto";
 import { protectedProcedure, router, vipPortalProcedure } from "../_core/trpc";
 import { invalidateVipSession } from "../_core/tokenInvalidation";
 import { getDb } from "../db";
@@ -209,10 +210,12 @@ async function buildAvailableSlots(
   const availabilityByDay = availabilityRules.reduce<
     Map<number, Array<{ start: string; end: string }>>
   >((acc, rule) => {
-    if (!acc.has(rule.dayOfWeek)) {
-      acc.set(rule.dayOfWeek, []);
+    let dayRules = acc.get(rule.dayOfWeek);
+    if (!dayRules) {
+      dayRules = [];
+      acc.set(rule.dayOfWeek, dayRules);
     }
-    acc.get(rule.dayOfWeek)!.push({
+    dayRules.push({
       start: rule.startTime,
       end: rule.endTime,
     });

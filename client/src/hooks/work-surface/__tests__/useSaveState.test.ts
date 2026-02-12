@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useSaveState, SaveStateStatus } from "../useSaveState";
 
 describe("useSaveState", () => {
@@ -134,7 +134,7 @@ describe("useSaveState", () => {
           result.current.setSaved();
         });
 
-        expect(result.current.saveState.lastSaved!.getTime()).toBeGreaterThanOrEqual(
+        expect(result.current.saveState.lastSaved?.getTime()).toBeGreaterThanOrEqual(
           beforeSave.getTime()
         );
       });

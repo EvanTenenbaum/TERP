@@ -10,28 +10,18 @@ import {
   calendarViews,
   calendarEventPermissions,
   clientMeetingHistory,
-  type CalendarEvent,
   type InsertCalendarEvent,
-  type CalendarRecurrenceRule,
   type InsertCalendarRecurrenceRule,
-  type CalendarRecurrenceInstance,
   type InsertCalendarRecurrenceInstance,
-  type CalendarEventParticipant,
   type InsertCalendarEventParticipant,
-  type CalendarReminder,
   type InsertCalendarReminder,
-  type CalendarEventHistoryEntry,
   type InsertCalendarEventHistoryEntry,
-  type CalendarEventAttachment,
   type InsertCalendarEventAttachment,
-  type CalendarView,
   type InsertCalendarView,
-  type CalendarEventPermission,
   type InsertCalendarEventPermission,
-  type ClientMeetingHistoryEntry,
   type InsertClientMeetingHistoryEntry,
 } from "../drizzle/schema";
-import { eq, and, or, gte, lte, inArray, isNull, desc } from "drizzle-orm";
+import { eq, and, or, gte, lte, isNull, desc, type SQL } from "drizzle-orm";
 
 /**
  * Calendar Database Access Layer
@@ -49,7 +39,7 @@ import { eq, and, or, gte, lte, inArray, isNull, desc } from "drizzle-orm";
 export async function getEventsByDateRange(
   startDate: string,
   endDate: string,
-  filters?: {
+  _filters?: {
     modules?: string[];
     eventTypes?: string[];
     statuses?: string[];
@@ -62,7 +52,7 @@ export async function getEventsByDateRange(
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
-  let query = db
+  const query = db
     .select()
     .from(calendarEvents)
     .where(
@@ -290,7 +280,7 @@ export async function getInstancesByEvent(
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
-  let query = db
+  const query = db
     .select()
     .from(calendarRecurrenceInstances)
     .where(eq(calendarRecurrenceInstances.parentEventId, eventId));
@@ -895,14 +885,14 @@ export async function checkConflicts(params: {
   if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
-  const { startDate, startTime, endDate, endTime, excludeEventId } = params;
+  const { startDate, endDate, excludeEventId } = params;
   
   // Convert string dates to Date objects
   const startDateObj = new Date(startDate);
   const endDateObj = new Date(endDate);
 
   // Build conditions
-  const conditions: any[] = [
+  const conditions: Array<SQL<unknown> | undefined> = [
     // Not cancelled
     or(
       eq(calendarEvents.status, "SCHEDULED"),
@@ -950,6 +940,7 @@ export async function checkConflicts(params: {
  * @returns Result of callback
  */
 export async function withTransaction<T>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback: (tx: any) => Promise<T>
 ): Promise<T> {
   const db = await getDb();

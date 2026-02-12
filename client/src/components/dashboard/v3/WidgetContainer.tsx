@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,9 +13,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { Expand, Minimize2, Info } from 'lucide-react';
+import { Expand, Minimize2 } from 'lucide-react';
 import { WidgetExplainer } from './WidgetExplainer';
-import type { WidgetSize, WidgetExplainer as WidgetExplainerType } from '@/types/dashboard';
+import type { WidgetExplainer as WidgetExplainerType } from '@/types/dashboard';
 
 interface WidgetContainerProps {
   id: string;
@@ -25,19 +25,16 @@ interface WidgetContainerProps {
   explainer?: WidgetExplainerType;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  size?: WidgetSize;
   footer?: ReactNode;
 }
 
 export function WidgetContainer({
-  id,
   title,
   icon,
   children,
   explainer,
   isExpanded,
   onToggleExpand,
-  size = 'md',
   footer,
 }: WidgetContainerProps) {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;

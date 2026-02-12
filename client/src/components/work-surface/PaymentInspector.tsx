@@ -23,7 +23,6 @@ import {
   CheckCircle2,
   Calendar,
   FileText,
-  X,
   Hash,
   User,
 } from 'lucide-react';
@@ -42,7 +41,6 @@ import {
 import {
   InspectorPanel,
   InspectorSection,
-  InspectorField,
 } from './InspectorPanel';
 
 // ============================================================================

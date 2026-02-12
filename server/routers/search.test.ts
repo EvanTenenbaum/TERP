@@ -372,7 +372,7 @@ describe("Search Relevance Scoring", () => {
       where: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue(mockProducts),
     };
-    (db!.select as any).mockReturnValue(mockChain);
+    ((db as typeof mockDb).select as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
   });
 
   it("should return results sorted by relevance", async () => {
@@ -409,7 +409,7 @@ describe("Search Error Handling", () => {
       where: vi.fn().mockReturnThis(),
       limit: vi.fn().mockRejectedValue(new Error("Database error")),
     };
-    (db!.select as any).mockReturnValue(mockChain);
+    ((db as typeof mockDb).select as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
 
     // Act
     const result = await caller.search.global({

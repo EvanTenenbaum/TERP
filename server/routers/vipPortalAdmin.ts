@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+
 import * as vipPortalAdminService from "../services/vipPortalAdminService";
 import {
   idSchema,
@@ -363,7 +364,7 @@ export const vipPortalAdminRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         return await vipPortalAdminService.createAuditedImpersonationSession({
-          adminUserId: ctx.user!.id,
+          adminUserId: ctx.user.id,
           clientId: input.clientId,
           reason: input.reason,
           ipAddress: ctx.req?.ip || undefined,
@@ -424,7 +425,7 @@ export const vipPortalAdminRouter = router({
       .mutation(async ({ input, ctx }) => {
         return await vipPortalAdminService.revokeImpersonationSession({
           sessionGuid: input.sessionGuid,
-          revokedByUserId: ctx.user!.id,
+          revokedByUserId: ctx.user.id,
           reason: input.reason,
         });
       }),

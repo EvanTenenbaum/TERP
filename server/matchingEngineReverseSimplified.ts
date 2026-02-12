@@ -1,6 +1,6 @@
 import { getDb } from "./db";
 import { clientNeeds, batches, products, clients, vendorSupply, vendors } from "../drizzle/schema";
-import { eq, and, or, lte, gte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { logger } from "./_core/logger";
 
 /**
