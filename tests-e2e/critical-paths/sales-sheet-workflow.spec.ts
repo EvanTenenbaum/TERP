@@ -14,7 +14,7 @@ test.describe("Sales Sheet Workflow", () => {
   });
 
   test("should navigate to sales sheet creator", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
 
     await expect(
       page.locator(
@@ -24,7 +24,7 @@ test.describe("Sales Sheet Workflow", () => {
   });
 
   test("should create a new sales sheet", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for new/create button
@@ -38,15 +38,13 @@ test.describe("Sales Sheet Workflow", () => {
 
       // Should show sales sheet form
       await expect(
-        page.locator(
-          '[data-testid="sales-sheet-form"], form, [role="dialog"]'
-        )
+        page.locator('[data-testid="sales-sheet-form"], form, [role="dialog"]')
       ).toBeVisible({ timeout: 5000 });
     }
   });
 
   test("should save sales sheet as draft", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for save draft button
@@ -67,7 +65,7 @@ test.describe("Sales Sheet Workflow", () => {
   });
 
   test("should load existing draft", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for drafts list or load draft button
@@ -81,15 +79,13 @@ test.describe("Sales Sheet Workflow", () => {
 
       // Should show draft list or load draft
       await expect(
-        page.locator(
-          '[data-testid="draft-list"], [role="dialog"], .draft-item'
-        )
+        page.locator('[data-testid="draft-list"], [role="dialog"], .draft-item')
       ).toBeVisible({ timeout: 5000 });
     }
   });
 
   test("should add items to sales sheet", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for add item button
@@ -110,7 +106,7 @@ test.describe("Sales Sheet Workflow", () => {
   });
 
   test("should convert sales sheet to quote", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for convert to quote button
@@ -216,7 +212,7 @@ test.describe("Sales Sheet Version Control", () => {
   });
 
   test("should display version number", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for version indicator
@@ -230,7 +226,7 @@ test.describe("Sales Sheet Version Control", () => {
   });
 
   test("should have clone functionality", async ({ page }) => {
-    await page.goto("/sales-sheet");
+    await page.goto("/sales-sheets");
     await page.waitForLoadState("networkidle");
 
     // Look for clone button
