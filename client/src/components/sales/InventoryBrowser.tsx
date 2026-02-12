@@ -208,9 +208,10 @@ export function InventoryBrowser({
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <CardTitle>Inventory</CardTitle>
+            {/* TER-213: Redesigned as availability catalog */}
+            <CardTitle>Availability Catalog</CardTitle>
             <CardDescription>
-              Browse and select items to add to the sales sheet
+              Browse available inventory — filter by vendor, category, and stock
             </CardDescription>
           </div>
           {selectedIds.size > 0 && (
@@ -248,10 +249,12 @@ export function InventoryBrowser({
               <TableRow>
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Item</TableHead>
+                {/* TER-213: Vendor column for availability catalog */}
+                <TableHead>Vendor</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Base Price</TableHead>
-                <TableHead>Retail Price</TableHead>
+                <TableHead>Qty Available</TableHead>
+                <TableHead>Price/Unit</TableHead>
+                <TableHead>Client Price</TableHead>
                 <TableHead>Markup</TableHead>
                 <TableHead className="w-24">Quick Qty</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -261,7 +264,7 @@ export function InventoryBrowser({
               {filteredInventory.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className="text-center text-muted-foreground"
                   >
                     No inventory items found
@@ -329,6 +332,10 @@ export function InventoryBrowser({
                               </span>
                             )}
                         </div>
+                      </TableCell>
+                      {/* TER-213: Vendor column */}
+                      <TableCell className="text-muted-foreground text-sm">
+                        {item.vendor || "—"}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">

@@ -12,6 +12,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
+import type { ReactNode } from "react";
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -60,6 +61,9 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 
+// TER-212: Workflow state machine visualization
+import { QuoteWorkflowTracker } from "@/components/orders/WorkflowStatusTracker";
+
 // Icons
 import {
   Search,
@@ -81,6 +85,11 @@ import {
 // ============================================================================
 // TYPES
 // ============================================================================
+
+interface ClientItem {
+  id: number;
+  name: string;
+}
 
 interface Quote {
   id: number;
@@ -114,12 +123,27 @@ const QUOTE_STATUSES = [
   { value: "EXPIRED", label: "Expired" },
 ];
 
-const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
-  DRAFT: { icon: <FileText className="h-4 w-4" />, color: "bg-gray-100 text-gray-800" },
-  SENT: { icon: <Clock className="h-4 w-4" />, color: "bg-blue-100 text-blue-800" },
-  ACCEPTED: { icon: <CheckCircle2 className="h-4 w-4" />, color: "bg-green-100 text-green-800" },
-  REJECTED: { icon: <XCircle className="h-4 w-4" />, color: "bg-red-100 text-red-800" },
-  EXPIRED: { icon: <AlertTriangle className="h-4 w-4" />, color: "bg-orange-100 text-orange-800" },
+const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
+  DRAFT: {
+    icon: <FileText className="h-4 w-4" />,
+    color: "bg-gray-100 text-gray-800",
+  },
+  SENT: {
+    icon: <Clock className="h-4 w-4" />,
+    color: "bg-blue-100 text-blue-800",
+  },
+  ACCEPTED: {
+    icon: <CheckCircle2 className="h-4 w-4" />,
+    color: "bg-green-100 text-green-800",
+  },
+  REJECTED: {
+    icon: <XCircle className="h-4 w-4" />,
+    color: "bg-red-100 text-red-800",
+  },
+  EXPIRED: {
+    icon: <AlertTriangle className="h-4 w-4" />,
+    color: "bg-orange-100 text-orange-800",
+  },
 };
 
 // ============================================================================
@@ -128,7 +152,10 @@ const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = 
 
 const formatCurrency = (value: string | number): string => {
   const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 const formatDate = (dateString: string | undefined): string => {
@@ -200,6 +227,11 @@ function QuoteInspectorContent({
           </InspectorField>
         </div>
 
+        {/* TER-212: Workflow state machine tracker */}
+        <InspectorField label="Workflow">
+          <QuoteWorkflowTracker status={quote.quoteStatus} />
+        </InspectorField>
+
         <InspectorField label="Client">
           <p className="font-medium">{clientName}</p>
         </InspectorField>
@@ -221,12 +253,17 @@ function QuoteInspectorContent({
           <p className="text-sm text-muted-foreground">No items</p>
         ) : (
           <div className="space-y-2">
-            {items.map((item, index) => (
-              <div key={index} className="p-3 border rounded-lg bg-muted/30">
+            {items.map(item => (
+              <div
+                key={`${item.displayName}-${item.quantity}`}
+                className="p-3 border rounded-lg bg-muted/30"
+              >
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-medium">{item.displayName}</p>
-                    <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Qty: {item.quantity}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-mono">{formatCurrency(item.price)}</p>
@@ -256,13 +293,17 @@ function QuoteInspectorContent({
           {parseFloat(quote.discount) > 0 && (
             <div className="flex justify-between text-sm text-green-600">
               <span>Discount</span>
-              <span className="font-mono">-{formatCurrency(quote.discount)}</span>
+              <span className="font-mono">
+                -{formatCurrency(quote.discount)}
+              </span>
             </div>
           )}
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span className="font-mono text-lg">{formatCurrency(quote.total)}</span>
+            <span className="font-mono text-lg">
+              {formatCurrency(quote.total)}
+            </span>
           </div>
         </div>
       </InspectorSection>
@@ -277,23 +318,39 @@ function QuoteInspectorContent({
         <div className="space-y-2">
           {quote.quoteStatus === "DRAFT" && (
             <>
-              <Button variant="outline" className="w-full justify-start" onClick={() => onEdit(quote.id)}>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => onEdit(quote.id)}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Quote
               </Button>
-              <Button variant="default" className="w-full justify-start" onClick={() => onSend(quote.id)}>
+              <Button
+                variant="default"
+                className="w-full justify-start"
+                onClick={() => onSend(quote.id)}
+              >
                 <Send className="h-4 w-4 mr-2" />
                 Send to Client
               </Button>
             </>
           )}
           {quote.quoteStatus === "ACCEPTED" && (
-            <Button variant="default" className="w-full justify-start" onClick={() => onConvert(quote.id)}>
+            <Button
+              variant="default"
+              className="w-full justify-start"
+              onClick={() => onConvert(quote.id)}
+            >
               <ArrowRight className="h-4 w-4 mr-2" />
               Convert to Sale
             </Button>
           )}
-          <Button variant="outline" className="w-full justify-start" onClick={() => onDuplicate(quote.id)}>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => onDuplicate(quote.id)}
+          >
             <Copy className="h-4 w-4 mr-2" />
             Duplicate Quote
           </Button>
@@ -328,16 +385,20 @@ export function QuotesWorkSurface() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showSendDialog, setShowSendDialog] = useState(false);        // API-016
-  const [sendCustomMessage, setSendCustomMessage] = useState("");     // API-016
+  const [showSendDialog, setShowSendDialog] = useState(false); // API-016
+  const [sendCustomMessage, setSendCustomMessage] = useState(""); // API-016
 
   // Work Surface hooks
-  const { saveState, setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Data queries
   const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData as any)?.items ?? [];
+  const clients: ClientItem[] = useMemo(() => {
+    if (Array.isArray(clientsData)) return clientsData;
+    const paginated = clientsData as { items?: ClientItem[] } | undefined;
+    return paginated?.items ?? [];
+  }, [clientsData]);
 
   const {
     data: quotesData,
@@ -347,12 +408,16 @@ export function QuotesWorkSurface() {
     orderType: "QUOTE",
     quoteStatus: statusFilter === "ALL" ? undefined : statusFilter,
   });
-  const quotes: Quote[] = Array.isArray(quotesData) ? quotesData : (quotesData as any)?.items ?? [];
+  const quotes: Quote[] = useMemo(() => {
+    if (Array.isArray(quotesData)) return quotesData;
+    const paginated = quotesData as { items?: Quote[] } | undefined;
+    return paginated?.items ?? [];
+  }, [quotesData]);
 
   // Helpers
   const getClientName = useCallback(
     (clientId: number) => {
-      const client = clients.find((c: any) => c.id === clientId);
+      const client = clients.find((c: ClientItem) => c.id === clientId);
       return client?.name || "Unknown";
     },
     [clients]
@@ -362,7 +427,7 @@ export function QuotesWorkSurface() {
   const displayQuotes = useMemo(() => {
     if (!search) return quotes;
     const searchLower = search.toLowerCase();
-    return quotes.filter((quote) => {
+    return quotes.filter(quote => {
       const clientName = getClientName(quote.clientId);
       return (
         quote.orderNumber.toLowerCase().includes(searchLower) ||
@@ -373,16 +438,16 @@ export function QuotesWorkSurface() {
 
   // Selected quote
   const selectedQuote = useMemo(
-    () => displayQuotes.find((q) => q.id === selectedQuoteId) || null,
+    () => displayQuotes.find(q => q.id === selectedQuoteId) || null,
     [displayQuotes, selectedQuoteId]
   );
 
   // Statistics
   const stats = useMemo(
     () => ({
-      draft: quotes.filter((q) => q.quoteStatus === "DRAFT").length,
-      sent: quotes.filter((q) => q.quoteStatus === "SENT").length,
-      accepted: quotes.filter((q) => q.quoteStatus === "ACCEPTED").length,
+      draft: quotes.filter(q => q.quoteStatus === "DRAFT").length,
+      sent: quotes.filter(q => q.quoteStatus === "SENT").length,
+      accepted: quotes.filter(q => q.quoteStatus === "ACCEPTED").length,
       total: quotes.length,
     }),
     [quotes]
@@ -398,7 +463,7 @@ export function QuotesWorkSurface() {
       setShowConvertDialog(false);
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message || "Failed to convert quote");
       setError(err.message);
     },
@@ -407,11 +472,13 @@ export function QuotesWorkSurface() {
   // API-016: Send quote via email
   const sendQuoteMutation = trpc.quotes.send.useMutation({
     onMutate: () => setSaving("Sending quote..."),
-    onSuccess: (result) => {
+    onSuccess: result => {
       if (result.emailSent) {
         toast.success("Quote sent successfully");
       } else {
-        toast.info("Quote marked as sent (email not configured or no client email)");
+        toast.info(
+          "Quote marked as sent (email not configured or no client email)"
+        );
       }
       setSaved();
       refetchQuotes();
@@ -419,7 +486,7 @@ export function QuotesWorkSurface() {
       setSendCustomMessage("");
       inspector.close();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message || "Failed to send quote");
       setError(err.message);
     },
@@ -431,33 +498,33 @@ export function QuotesWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": (e) => {
+      "cmd+k": e => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "ctrl+k": (e) => {
+      "ctrl+k": e => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "cmd+n": (e) => {
+      "cmd+n": e => {
         e.preventDefault();
         setLocation("/orders/create");
       },
-      arrowdown: (e) => {
+      arrowdown: e => {
         e.preventDefault();
         const newIndex = Math.min(displayQuotes.length - 1, selectedIndex + 1);
         setSelectedIndex(newIndex);
         const quote = displayQuotes[newIndex];
         if (quote) setSelectedQuoteId(quote.id);
       },
-      arrowup: (e) => {
+      arrowup: e => {
         e.preventDefault();
         const newIndex = Math.max(0, selectedIndex - 1);
         setSelectedIndex(newIndex);
         const quote = displayQuotes[newIndex];
         if (quote) setSelectedQuoteId(quote.id);
       },
-      enter: (e) => {
+      enter: e => {
         if (selectedQuote) {
           e.preventDefault();
           inspector.open();
@@ -473,7 +540,8 @@ export function QuotesWorkSurface() {
   });
 
   // Handlers
-  const handleEdit = (quoteId: number) => setLocation(`/orders/create?quoteId=${quoteId}`);
+  const handleEdit = (quoteId: number) =>
+    setLocation(`/orders/create?quoteId=${quoteId}`);
   // API-016: Open send dialog
   const handleSend = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
@@ -484,7 +552,8 @@ export function QuotesWorkSurface() {
     setSelectedQuoteId(quoteId);
     setShowConvertDialog(true);
   };
-  const handleDuplicate = (quoteId: number) => toast.info("Duplicate quote functionality coming soon");
+  const handleDuplicate = (_quoteId: number) =>
+    toast.info("Duplicate quote functionality coming soon");
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);
@@ -499,19 +568,30 @@ export function QuotesWorkSurface() {
             <FileText className="h-6 w-6" />
             Sales Quotes
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage quotes and convert them to orders</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage quotes and convert them to orders
+          </p>
         </div>
         <div className="flex items-center gap-4">
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Draft: <span className="font-semibold text-foreground">{stats.draft}</span>
+              Draft:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.draft}
+              </span>
             </span>
             <span>
-              Sent: <span className="font-semibold text-foreground">{stats.sent}</span>
+              Sent:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.sent}
+              </span>
             </span>
             <span>
-              Accepted: <span className="font-semibold text-foreground">{stats.accepted}</span>
+              Accepted:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.accepted}
+              </span>
             </span>
           </div>
         </div>
@@ -527,7 +607,7 @@ export function QuotesWorkSurface() {
                 ref={searchInputRef}
                 placeholder="Search quotes... (Cmd+K)"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -536,7 +616,7 @@ export function QuotesWorkSurface() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                {QUOTE_STATUSES.map((s) => (
+                {QUOTE_STATUSES.map(s => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
                   </SelectItem>
@@ -553,7 +633,12 @@ export function QuotesWorkSurface() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        <div className={cn("flex-1 overflow-auto transition-all duration-200", inspector.isOpen && "mr-96")}>
+        <div
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-200",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -564,7 +649,9 @@ export function QuotesWorkSurface() {
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No quotes found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search ? "Try adjusting your search" : "Create your first quote"}
+                  {search
+                    ? "Try adjusting your search"
+                    : "Create your first quote"}
                 </p>
               </div>
             </div>
@@ -588,7 +675,8 @@ export function QuotesWorkSurface() {
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedQuoteId === quote.id && "bg-muted",
-                      selectedIndex === index && "ring-1 ring-inset ring-primary"
+                      selectedIndex === index &&
+                        "ring-1 ring-inset ring-primary"
                     )}
                     onClick={() => {
                       setSelectedQuoteId(quote.id);
@@ -596,14 +684,18 @@ export function QuotesWorkSurface() {
                       inspector.open();
                     }}
                   >
-                    <TableCell className="font-medium">{quote.orderNumber}</TableCell>
+                    <TableCell className="font-medium">
+                      {quote.orderNumber}
+                    </TableCell>
                     <TableCell>{getClientName(quote.clientId)}</TableCell>
                     <TableCell>{formatDate(quote.createdAt)}</TableCell>
                     <TableCell>{formatDate(quote.validUntil)}</TableCell>
                     <TableCell>
                       <QuoteStatusBadge status={quote.quoteStatus} />
                     </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(quote.total)}</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(quote.total)}
+                    </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <ChevronRight className="h-4 w-4" />
@@ -621,11 +713,15 @@ export function QuotesWorkSurface() {
           isOpen={inspector.isOpen}
           onClose={inspector.close}
           title={selectedQuote?.orderNumber || "Quote Details"}
-          subtitle={selectedQuote ? getClientName(selectedQuote.clientId) : undefined}
+          subtitle={
+            selectedQuote ? getClientName(selectedQuote.clientId) : undefined
+          }
         >
           <QuoteInspectorContent
             quote={selectedQuote}
-            clientName={selectedQuote ? getClientName(selectedQuote.clientId) : ""}
+            clientName={
+              selectedQuote ? getClientName(selectedQuote.clientId) : ""
+            }
             onEdit={handleEdit}
             onSend={handleSend}
             onConvert={handleConvert}
@@ -641,13 +737,22 @@ export function QuotesWorkSurface() {
           <DialogHeader>
             <DialogTitle>Convert Quote to Sale</DialogTitle>
           </DialogHeader>
-          <p>Convert this quote to a sales order? This will create a new order and mark the quote as accepted.</p>
+          <p>
+            Convert this quote to a sales order? This will create a new order
+            and mark the quote as accepted.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConvertDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowConvertDialog(false)}
+            >
               Cancel
             </Button>
             <Button
-              onClick={() => selectedQuoteId && convertMutation.mutate({ quoteId: selectedQuoteId })}
+              onClick={() =>
+                selectedQuoteId &&
+                convertMutation.mutate({ quoteId: selectedQuoteId })
+              }
               disabled={convertMutation.isPending}
             >
               {convertMutation.isPending ? "Converting..." : "Convert to Sale"}
@@ -662,12 +767,21 @@ export function QuotesWorkSurface() {
           <DialogHeader>
             <DialogTitle>Delete Quote</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete this quote? This action cannot be undone.</p>
+          <p>
+            Are you sure you want to delete this quote? This action cannot be
+            undone.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => toast.info("Delete functionality coming soon")}>
+            <Button
+              variant="destructive"
+              onClick={() => toast.info("Delete functionality coming soon")}
+            >
               Delete
             </Button>
           </DialogFooter>
@@ -680,7 +794,8 @@ export function QuotesWorkSurface() {
           <DialogHeader>
             <DialogTitle>Send Quote to Client</DialogTitle>
             <DialogDescription>
-              Send this quote via email to the client. You can add an optional personalized message.
+              Send this quote via email to the client. You can add an optional
+              personalized message.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -690,7 +805,7 @@ export function QuotesWorkSurface() {
                 id="customMessage"
                 placeholder="Add a personal note to include with the quote email..."
                 value={sendCustomMessage}
-                onChange={(e) => setSendCustomMessage(e.target.value)}
+                onChange={e => setSendCustomMessage(e.target.value)}
                 rows={4}
               />
             </div>
