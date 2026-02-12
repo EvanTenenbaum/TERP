@@ -481,8 +481,8 @@ export default function OrderCreatorPageV2() {
       const marginPercent =
         cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
 
-      // FEAT-003: Use orderQuantity from InventoryBrowser if provided, otherwise default to 1
-      const quantity = item.orderQuantity || 1;
+      // FEAT-003 + TER-233: Use orderQuantity from InventoryBrowser, or quantity from Sales Sheet bridge, or default to 1
+      const quantity = item.orderQuantity || item.quantity || 1;
 
       // Use calculateLineItem to ensure proper structure
       const calculated = calculateLineItem(
