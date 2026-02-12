@@ -7,7 +7,7 @@ description: "Delete (soft delete) a client - requires Super Admin role, sets de
 role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - crm
   - clients
   - mutation

@@ -6,7 +6,7 @@ description: "Create a new inventory batch through the intake process with vendo
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - inventory
   - mutation
   - smoke

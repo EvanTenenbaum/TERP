@@ -1,95 +1,71 @@
-# Linear Roadmap Sync Protocol
+# Linear Roadmap Sync + Active QA Handoff
 
-**Purpose:** Keep the GitHub roadmap markdown file synchronized with Linear (the source of truth).
+## Active Handoff (2026-02-12)
 
----
+This section is the source of truth for the currently paused non-lint QA remediation stream on:
 
-## When to Sync
+- Branch: `claude/complete-tasks-qa-verification-yGgh3`
+- Branch URL: https://github.com/EvanTenenbaum/TERP/tree/claude/complete-tasks-qa-verification-yGgh3
+- Workspace path: `/Users/evan/spec-erp-docker/TERP/TERP-qa-yGgh3`
+- Baseline referenced by plan: head `0497f0d4ff1723889888b3f8146450ee43ab339e` (2026-02-11)
 
-The GitHub roadmap (`docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`) should be synced whenever:
+### What was completed in this wave
 
-1. **Tasks are created, updated, or completed** in Linear
-2. **Milestones are modified** (target dates, descriptions)
-3. **Task priorities or statuses change**
-4. **After completing a wave of work**
-5. **Before major PRs or releases**
+- Auth fixture hardening in `tests-e2e/oracles/auth-fixtures.ts`:
+  - Admin fallback now opt-in via explicit env (`E2E_ALLOW_ADMIN_FALLBACK`)
+  - Role-mismatch tolerance now opt-in (`E2E_ALLOW_ROLE_MISMATCH`)
+  - Added credential canary checks and v2 role email candidate support
+- Oracle executor hardening in `tests-e2e/oracles/executor.ts`:
+  - Bounded navigation retry logic
+  - Deterministic precondition materialization coverage expanded (`client`, `batch`, `invoice`, plus improved `order`)
+  - Precondition elevation fallback path (default `SuperAdmin`)
+  - Added broader row extraction and snake/camel alias support for template paths
+- Selector and flow fixes across CRM/Inventory/Orders/Accounting oracle YAMLs.
+- New guard tests added:
+  - `tests/contracts/oracle-metadata-contract.test.ts`
+  - `tests/unit/server/oracles/auth-fixtures.test.ts`
 
----
+### Latest verification snapshot (non-lint)
 
-## How to Sync
+- `pnpm -s check`: pass
+- `pnpm -s test tests/unit/server/oracles/auth-fixtures.test.ts`: pass
+- Targeted flow reruns:
+  - `CRM.Clients.Communications.Add`: pass
+  - `Accounting.COGS.UpdateBatchCogs`: pass
+- Last full `ORACLE_RUN_MODE=all` snapshot: `17 passed / 21 failed` (38 total)
 
-### Automatic Sync (Recommended)
+### Current blocker profile
 
-Run the sync script from the repository root:
+- Order-domain backend instability on live env (multiple 500s on order list/create flows) is still a major blocker for order-derived oracle paths.
+- Remaining failures are concentrated in:
+  - Accounting invoice flows (`MarkSent`, `UpdateStatus`, `Void`, `CheckOverdue`)
+  - CRM mutation flows (`Delete`, `Tags.Add`, `Transactions.Create`, `Transactions.RecordPayment`)
+  - Inventory mutation flows (`AdjustInventory`, `CreateBatch`, `RecordMovement`, `UpdateBatch`, `UpdateStatus`, `DeleteBatch`, `ReverseMovement`, `CreateStrain`)
+  - Orders flows (`Create`, `CreateDraftEnhanced`, `ConfirmDraftOrder`, `FulfillOrder`, `ListOrders`)
 
-```bash
-python3 scripts/sync_linear_to_github_roadmap.py
-```
+## Linear Task Map (for next agent)
 
-This will:
-- Query all tasks from the Linear project
-- Group them by milestone and status
-- Generate an updated markdown roadmap
-- Write to `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`
+- Umbrella execution tracker: [TER-173](https://linear.app/terpcorp/issue/TER-173/execution-deploy-latest-v4-qa-hardening-to-production-and-validate)
+- Precondition materialization stream: [TER-182](https://linear.app/terpcorp/issue/TER-182/continuation-unblock-oracle-shipped-order-seed-complete-v4-qa-before)
+- Selector drift stream: [TER-178](https://linear.app/terpcorp/issue/TER-178/stabilize-v4-oracle-selectors-against-live-ui-drift)
+- RBAC role-contract stream: [TER-126](https://linear.app/terpcorp/issue/TER-126/systemic-reconcile-rbac-test-contracts-with-live-role-assignments)
+- Credential source-of-truth stream: [TER-176](https://linear.app/terpcorp/issue/TER-176/unify-qa-credential-source-of-truth-with-production-test-users)
+- Precondition framework stream: [TER-121](https://linear.app/terpcorp/issue/TER-121/systemic-add-deterministic-precondition-guards-for-live-production)
+- Selector guardrails stream: [TER-122](https://linear.app/terpcorp/issue/TER-122/systemic-standardize-resilient-selector-strategy-across-e2e-specs)
+- New policy ticket created for this gap: [TER-231](https://linear.app/terpcorp/issue/TER-231/reinstate-oracle-criticality-policy-tier1-expected-db-mutation)
 
-### Manual Sync
+## Required next steps to close this stream
 
-If the script fails, you can manually update the roadmap by:
-
-1. Opening the [Linear project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
-2. Reviewing the current state of all milestones
-3. Editing `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md` to match
-4. Updating the "Last Updated" timestamp
-
----
-
-## After Syncing
-
-**Always commit and push the updated roadmap:**
-
-```bash
-git add docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md
-git commit -m "docs: sync roadmap from Linear"
-git push origin main
-```
-
----
-
-## For TERP PM Agents
-
-When completing a task or wave:
-
-1. ✅ Update task status in Linear
-2. ✅ Run sync script: `python3 scripts/sync_linear_to_github_roadmap.py`
-3. ✅ Commit and push the updated roadmap
-4. ✅ Mention the sync in your completion report
-
----
-
-## Troubleshooting
-
-### Script fails with "Module not found"
-
-The script uses `manus-mcp-cli` which requires Linear MCP integration. If you don't have access:
-
-- Ask a user with Linear access to run the sync
-- Or manually update the roadmap based on Linear web UI
-
-### Script times out
-
-Linear has many tasks. The script paginates through all results. Be patient or increase the timeout.
-
-### Roadmap looks wrong
-
-1. Check the Linear project URL is correct in the script
-2. Verify the milestone names match exactly
-3. Re-run the script to regenerate from scratch
+1. Finish invoice/order/inventory remediations and re-run all previously failing flows individually.
+2. Reach strict non-lint gates:
+   - `ORACLE_RUN_MODE=tier1`: 16/16 pass, 0 blocked
+   - `ORACLE_RUN_MODE=all`: 38/38 pass, 0 blocked
+   - `pnpm check`, `pnpm test`, `pnpm build`, `pnpm test:e2e:prod-regression`
+3. Keep lint debt out of scope for this cycle.
+4. Post final evidence back to `TER-173` and close child streams only after gates are green.
 
 ---
 
-## Notes
+## Ongoing Sync Protocol
 
-- **Linear is always the source of truth**
-- The GitHub roadmap is a **backup only**
-- Agents should query Linear for current task status
-- The GitHub roadmap is for human reference and version control
+Linear remains source-of-truth. Keep this file aligned with active handoff state and ensure `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md` is regenerated when roadmap status changes materially.

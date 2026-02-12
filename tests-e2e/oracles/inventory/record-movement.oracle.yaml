@@ -6,7 +6,7 @@ description: "Record a manual inventory movement with full audit trail"
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - inventory
   - mutation
   - movements

@@ -6,7 +6,7 @@ description: "Transition batch status from AWAITING_INTAKE to LIVE, testing vali
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - inventory
   - mutation
   - state-transition

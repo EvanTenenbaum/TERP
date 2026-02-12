@@ -7,7 +7,7 @@ description: "Add a communication log entry to a client (call, email, meeting, o
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - crm
   - communications
   - mutation
@@ -28,25 +28,8 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/clients"
-    wait_for: "table, [data-testid='clients-list'], main"
-
-  - action: type
-    target: "[data-testid='search-input'], input[placeholder*='Search clients' i], input[placeholder*='Search' i]"
-    value_ref: "seed:client.test_buyer.teri_code"
-    clear_first: true
-
-  - action: wait
-    for: "table tbody tr, [data-testid='client-row']"
-    timeout: 5000
-
-  - action: click
-    target: "table tbody tr:first-child button, [data-testid='client-row']:first-child button"
-    wait_for: "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
-
-  - action: click
-    target: "button:has-text('View Full Profile')"
-    wait_for_navigation: true
+    path: "/clients/{{seed:client.test_buyer.id}}"
+    wait_for: "main, [role='tab']:has-text('Comms')"
 
   - action: click
     target: "[role='tab']:has-text('Comms'), [data-testid='communications-tab']"
@@ -64,12 +47,12 @@ steps:
     target: "[role='option']"
 
   - action: type
-    target: "[role='textbox'][name='Subject *'], input[name='subject'], [role='dialog']:has-text('Log Communication') input:first-of-type"
+    target: "[role='dialog']:has-text('Log Communication') #subject, [role='dialog']:has-text('Log Communication') input#subject"
     value: "Oracle communication smoke"
     clear_first: true
 
   - action: type
-    target: "[role='textbox'][name='Notes'], textarea[name='notes'], [role='dialog']:has-text('Log Communication') textarea"
+    target: "[role='dialog']:has-text('Log Communication') #notes, [role='dialog']:has-text('Log Communication') textarea#notes"
     value: "Discussed delivery schedule and payment terms. Client confirmed order details."
     clear_first: true
 
@@ -86,5 +69,11 @@ steps:
 expected_ui:
   visible:
     - "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
-  not_visible:
-    - "[role='dialog']:has-text('Log Communication'), [data-testid='communication-form']"
+
+expected_db:
+  client_communications:
+    - where:
+        client_id: "$seed:client.test_buyer.id"
+      expect:
+        id_not_null: true
+      count_gte: 1

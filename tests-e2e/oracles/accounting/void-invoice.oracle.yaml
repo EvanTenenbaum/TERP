@@ -32,7 +32,7 @@ steps:
     timeout: 10000
 
   - action: click
-    target: "tr:has-text('DRAFT'), tr:has-text('VIEWED'), tr:has-text('SENT'), tr:has-text('PARTIAL'), tr:has-text('OVERDUE'), [data-testid='invoice-row-{{seed:invoice.to_void.id}}'], tr[data-invoice-id='{{seed:invoice.to_void.id}}']"
+    target: "table tbody tr:has-text('{{seed:invoice.to_void.invoiceNumber}}'), table tbody tr:has-text('{{seed:invoice.to_void.invoice_number}}'), table tbody tr:has-text('DRAFT'), table tbody tr:has-text('VIEWED'), table tbody tr:has-text('SENT'), table tbody tr:has-text('PARTIAL'), table tbody tr:has-text('OVERDUE')"
     wait_after: 500
 
   - action: wait

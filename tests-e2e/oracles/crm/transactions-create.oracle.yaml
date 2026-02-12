@@ -7,7 +7,7 @@ description: "Create a client transaction (invoice, payment, order, etc.) and ve
 role: "SalesManager"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - crm
   - transactions
   - mutation
@@ -85,3 +85,12 @@ expected_ui:
     - "text=No transactions found"
   text_present:
     - "1500"
+
+expected_db:
+  client_transactions:
+    - where:
+        client_id: "$seed:client.test_buyer.id"
+        amount: "1500.00"
+      expect:
+        id_not_null: true
+      count_gte: 1

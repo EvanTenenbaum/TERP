@@ -6,7 +6,7 @@ description: "Create a new order with line items using the basic create mutation
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - orders
   - crud
   - mutation

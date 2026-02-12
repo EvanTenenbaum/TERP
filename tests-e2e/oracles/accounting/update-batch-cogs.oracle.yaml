@@ -3,7 +3,7 @@
 
 flow_id: "Accounting.COGS.UpdateBatchCogs"
 description: "Validate that batch cost information is visible from inventory batch detail"
-role: "AccountingManager"
+role: "InventoryManager"
 seed_profile: "inventory_costing"
 tags:
   - tier1

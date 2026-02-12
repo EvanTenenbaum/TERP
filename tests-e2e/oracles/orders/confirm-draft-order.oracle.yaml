@@ -6,7 +6,7 @@ description: "Confirm a draft order by setting payment terms and triggering inve
 role: "SalesManager"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - orders
   - draft
   - state-transition

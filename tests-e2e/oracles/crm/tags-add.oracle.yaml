@@ -7,7 +7,7 @@ description: "Add a tag to a client, verifying idempotent behavior and activity 
 role: "SalesManager"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - crm
   - tags
   - mutation

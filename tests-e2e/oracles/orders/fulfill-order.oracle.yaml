@@ -6,7 +6,7 @@ description: "Fulfill an order by recording picked quantities for all items"
 role: "Fulfillment"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - orders
   - fulfillment
   - pick-pack

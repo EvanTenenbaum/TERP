@@ -6,7 +6,7 @@ description: "Confirm a pending SALE order, validating inventory availability"
 role: "Fulfillment"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - orders
   - fulfillment
   - state-transition

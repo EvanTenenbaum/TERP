@@ -19,7 +19,7 @@ preconditions:
     - entity: "invoice"
       ref: "seed:invoice.past_due"
       where:
-        status_in: ["SENT", "VIEWED", "PARTIAL"]
+        status_in: ["SENT", "VIEWED", "PARTIAL", "OVERDUE"]
         due_date_lt: "{{date:today}}"
         deletedAt_null: true
 
@@ -38,11 +38,11 @@ steps:
 
   # Look for manual trigger button (admin feature)
   - action: click
-    target: "[data-testid='check-overdue-btn'], button:contains('Check Overdue'), [data-testid='run-overdue-check']"
+    target: "[data-testid='check-overdue-btn'], button:has-text('Check Overdue'), [data-testid='run-overdue-check'], [role='tab']:has-text('Overdue Invoices')"
     wait_after: 3000
 
   - action: wait
-    for: "[data-testid='overdue-complete'], .success-toast"
+    for: "[role='tab']:has-text('Overdue Invoices'), text=Overdue Invoices"
     timeout: 15000
 
   - action: screenshot

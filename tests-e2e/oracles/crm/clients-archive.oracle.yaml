@@ -63,3 +63,10 @@ expected_ui:
     - "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
   not_visible:
     - "[role='dialog']:has-text('Archive Client')"
+
+expected_db:
+  clients:
+    - where:
+        id: "$seed:client.test_buyer.id"
+      expect:
+        deleted_at_null: true

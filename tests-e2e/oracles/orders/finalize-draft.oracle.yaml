@@ -6,7 +6,7 @@ description: "Finalize a draft order, locking it for editing and setting confirm
 role: "SalesRep"
 seed_profile: "basic_sales"
 tags:
-  - tier2
+  - tier1
   - orders
   - draft
   - state-transition

@@ -80,3 +80,10 @@ expected_ui:
     - "[role='dialog']:has-text('Edit Client')"
   text_present:
     - "555-000-1234"
+
+expected_db:
+  clients:
+    - where:
+        id: "$seed:client.test_buyer.id"
+      expect:
+        phone: "555-000-1234"
