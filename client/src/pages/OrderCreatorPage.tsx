@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
@@ -97,6 +98,10 @@ interface InventoryItemForOrder {
 }
 
 export default function OrderCreatorPageV2() {
+  // TER-216: Navigation after save/finalize
+  const [, setLocation] = useLocation();
+  const searchString = useSearch();
+
   // State
   const [clientId, setClientId] = useState<number | null>(null);
   const [items, setItems] = useState<LineItem[]>([]);
@@ -138,6 +143,34 @@ export default function OrderCreatorPageV2() {
   // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
   // before finalization completes
   const isFinalizingRef = useRef(false);
+
+  // TER-215: Import items from Sales Sheet when navigating with ?fromSalesSheet=true
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    if (params.get("fromSalesSheet") === "true") {
+      try {
+        const raw = sessionStorage.getItem("salesSheetToQuote");
+        if (raw) {
+          const data = JSON.parse(raw) as {
+            clientId: number;
+            items: InventoryItemForOrder[];
+          };
+          setClientId(data.clientId);
+          setOrderType("QUOTE");
+          // Convert will happen after inventory loads, but pre-set client
+          // Items will be added via convertInventoryToLineItems once available
+          const lineItems = convertInventoryToLineItems(data.items);
+          if (lineItems.length > 0) {
+            setItems(lineItems);
+          }
+          sessionStorage.removeItem("salesSheetToQuote");
+        }
+      } catch {
+        toast.error("Failed to import items from sales sheet");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // QA-W2-005: Track unsaved changes - consider both items and auto-save status
   // Warning should show when there are items OR when auto-save is pending/failed
@@ -208,10 +241,10 @@ export default function OrderCreatorPageV2() {
         // BUG-045 FIX: Pass version 1 for newly created drafts (optimistic locking)
         finalizeMutation.mutate({ orderId: data.orderId, version: 1 });
       } else {
-        // Just saving draft - show success and reset
+        // TER-216: After saving draft, navigate to orders list
         toast.success(`Draft order #${data.orderId} saved successfully`);
-        setItems([]);
-        setAdjustment(null);
+        setHasUnsavedChanges(false);
+        setLocation("/orders");
       }
     },
     onError: error => {
@@ -226,11 +259,13 @@ export default function OrderCreatorPageV2() {
       // BUG-093 FIX: Reset finalization flag and form after successful finalization
       isFinalizingRef.current = false;
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
-      // Now it's safe to reset the form
-      setItems([]);
-      setAdjustment(null);
-      setClientId(null);
-      setReferredByClientId(null);
+      // TER-216: Navigate to appropriate destination after confirmation
+      setHasUnsavedChanges(false);
+      if (orderType === "QUOTE") {
+        setLocation("/quotes");
+      } else {
+        setLocation("/orders");
+      }
     },
     onError: error => {
       // BUG-093 FIX: Reset flag on error, but preserve form data so user can retry
@@ -318,7 +353,7 @@ export default function OrderCreatorPageV2() {
   }, []);
 
   // Handlers
-  const handleSaveDraft = () => {
+  const handleSaveDraft = (overrideOrderType?: "SALE" | "QUOTE") => {
     if (!clientId) {
       toast.error("Please select a client");
       return;
@@ -330,7 +365,7 @@ export default function OrderCreatorPageV2() {
     }
 
     createDraftMutation.mutate({
-      orderType,
+      orderType: overrideOrderType ?? orderType,
       clientId,
       lineItems: items.map(item => ({
         batchId: item.batchId,
@@ -446,8 +481,8 @@ export default function OrderCreatorPageV2() {
       const marginPercent =
         cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
 
-      // FEAT-003: Use orderQuantity from InventoryBrowser if provided, otherwise default to 1
-      const quantity = item.orderQuantity || 1;
+      // FEAT-003 + TER-233: Use orderQuantity from InventoryBrowser, or quantity from Sales Sheet bridge, or default to 1
+      const quantity = item.orderQuantity || item.quantity || 1;
 
       // Use calculateLineItem to ensure proper structure
       const calculated = calculateLineItem(
@@ -522,9 +557,9 @@ export default function OrderCreatorPageV2() {
               <div className="flex items-center gap-3">
                 <ShoppingCart className="h-6 w-6" />
                 <div>
-                  <CardTitle className="text-2xl">Create Sales Order</CardTitle>
+                  <CardTitle className="text-2xl">Create Sale</CardTitle>
                   <CardDescription>
-                    Build order with COGS visibility and margin management
+                    Build sale with COGS visibility and margin management
                   </CardDescription>
                 </div>
               </div>
@@ -550,9 +585,7 @@ export default function OrderCreatorPageV2() {
                   {autoSaveStatus === "error" && (
                     <>
                       <CloudOff className="h-4 w-4 text-destructive" />
-                      <span className="text-destructive">
-                        Auto-save failed
-                      </span>
+                      <span className="text-destructive">Auto-save failed</span>
                     </>
                   )}
                 </div>
@@ -730,32 +763,39 @@ export default function OrderCreatorPageV2() {
                 isValid={isValid}
               />
 
-              {/* Order Preview - Relocated to be more visible (ENH-006) */}
-              <FloatingOrderPreview
-                clientName={clientDetails?.name || "Client"}
-                items={items}
-                subtotal={totals.subtotal}
-                adjustmentAmount={totals.adjustmentAmount}
-                adjustmentLabel={
-                  adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
-                }
-                showAdjustment={showAdjustmentOnDocument}
-                total={totals.total}
-                orderType={orderType}
-                showInternalMetrics={true}
-                onUpdateItem={(batchId, updates) => {
-                  setItems(prevItems =>
-                    prevItems.map(item =>
-                      item.batchId === batchId ? { ...item, ...updates } : item
-                    )
-                  );
-                }}
-                onRemoveItem={batchId => {
-                  setItems(prevItems =>
-                    prevItems.filter(item => item.batchId !== batchId)
-                  );
-                }}
-              />
+              {/* TER-206: Collapsible order preview */}
+              <details open>
+                <summary className="cursor-pointer text-sm font-medium text-muted-foreground mb-2 select-none">
+                  Order Preview
+                </summary>
+                <FloatingOrderPreview
+                  clientName={clientDetails?.name || "Client"}
+                  items={items}
+                  subtotal={totals.subtotal}
+                  adjustmentAmount={totals.adjustmentAmount}
+                  adjustmentLabel={
+                    adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
+                  }
+                  showAdjustment={showAdjustmentOnDocument}
+                  total={totals.total}
+                  orderType={orderType}
+                  showInternalMetrics={true}
+                  onUpdateItem={(batchId, updates) => {
+                    setItems(prevItems =>
+                      prevItems.map(item =>
+                        item.batchId === batchId
+                          ? { ...item, ...updates }
+                          : item
+                      )
+                    );
+                  }}
+                  onRemoveItem={batchId => {
+                    setItems(prevItems =>
+                      prevItems.filter(item => item.batchId !== batchId)
+                    );
+                  }}
+                />
+              </details>
 
               {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
               <Card>
@@ -785,7 +825,9 @@ export default function OrderCreatorPageV2() {
                       <Button
                         className="w-full"
                         variant="outline"
-                        disabled={items.length === 0 || createDraftMutation.isPending}
+                        disabled={
+                          items.length === 0 || createDraftMutation.isPending
+                        }
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Save
@@ -795,15 +837,14 @@ export default function OrderCreatorPageV2() {
                     <DropdownMenuContent className="w-56">
                       <DropdownMenuLabel>Save Options</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSaveDraft}>
+                      <DropdownMenuItem onClick={() => handleSaveDraft()}>
                         <FileText className="h-4 w-4 mr-2" />
                         Save as Draft
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => {
                           setOrderType("QUOTE");
-                          // Use setTimeout to allow orderType state to update
-                          setTimeout(() => handleSaveDraft(), 0);
+                          handleSaveDraft("QUOTE");
                         }}
                       >
                         <Send className="h-4 w-4 mr-2" />

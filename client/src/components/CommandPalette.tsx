@@ -235,7 +235,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       items: [
         {
           id: "new-order",
-          label: "Create New Order",
+          label: "Create New Sale",
           icon: Plus,
           shortcut: "N",
           action: () => {

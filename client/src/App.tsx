@@ -521,7 +521,7 @@ function App() {
       key: "n",
       ctrl: true,
       callback: () => setLocation("/orders/create"),
-      description: "Create new order",
+      description: "Create new sale",
     },
     {
       key: "t",

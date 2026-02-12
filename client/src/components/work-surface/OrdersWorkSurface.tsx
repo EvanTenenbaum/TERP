@@ -786,10 +786,10 @@ export function OrdersWorkSurface() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <ShoppingCart className="h-6 w-6" />
-            Orders
+            Sales
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage sales orders and drafts
+            Manage sales and drafts
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -860,7 +860,7 @@ export function OrdersWorkSurface() {
               )}
               <Button onClick={() => setLocation("/orders/create")}>
                 <Plus className="h-4 w-4 mr-2" />
-                New Order
+                New Sale
               </Button>
             </div>
           </div>
@@ -880,14 +880,22 @@ export function OrdersWorkSurface() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : displayOrders.length === 0 ? (
-            <div className="flex items-center justify-center h-64" data-testid="orders-empty-state">
+            <div
+              className="flex items-center justify-center h-64"
+              data-testid="orders-empty-state"
+            >
               <div className="text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                {/* TER-229: Improved empty state with diagnostic context */}
                 <p className="font-medium">No orders found</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {search
                     ? "Try adjusting your search"
-                    : "Create your first order"}
+                    : statusFilter !== "ALL"
+                      ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
+                      : activeTab === "draft"
+                        ? "No draft orders. Create a new order to get started."
+                        : "No confirmed orders yet. Confirm a draft order to see it here."}
                 </p>
               </div>
             </div>

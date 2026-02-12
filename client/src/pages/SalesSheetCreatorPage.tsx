@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FileText, Save } from "lucide-react";
+import { FileText, Save, ArrowRight } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { SalesSheetPreview } from "@/components/sales/SalesSheetPreview";
@@ -42,6 +43,7 @@ import {
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
 export default function SalesSheetCreatorPage() {
+  const [, setLocation] = useLocation();
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<PricedInventoryItem[]>([]);
 
@@ -100,14 +102,14 @@ export default function SalesSheetCreatorPage() {
 
   // Save draft mutation
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setCurrentDraftId(data.draftId);
       setLastSaveTime(new Date());
       setHasUnsavedChanges(false);
       refetchDrafts();
       toast.success("Draft saved");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to save draft: " + error.message);
     },
   });
@@ -118,7 +120,7 @@ export default function SalesSheetCreatorPage() {
       refetchDrafts();
       toast.success("Draft deleted");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to delete draft: " + error.message);
     },
   });
@@ -127,7 +129,7 @@ export default function SalesSheetCreatorPage() {
   useEffect(() => {
     if (selectedClientId && savedViews && savedViews.length > 0) {
       const defaultView = savedViews.find(
-        (v) => v.clientId === selectedClientId && v.isDefault
+        v => v.clientId === selectedClientId && v.isDefault
       );
       if (defaultView) {
         setFilters(defaultView.filters);
@@ -195,10 +197,7 @@ export default function SalesSheetCreatorPage() {
         return;
       }
 
-      const totalValue = items.reduce(
-        (sum, item) => sum + item.retailPrice,
-        0
-      );
+      const totalValue = items.reduce((sum, item) => sum + item.retailPrice, 0);
 
       saveDraftMutation.mutate({
         draftId: draftId ?? undefined,
@@ -214,7 +213,13 @@ export default function SalesSheetCreatorPage() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, selectedClientId, selectedItems, draftName, saveDraftMutation]);
+  }, [
+    hasUnsavedChanges,
+    selectedClientId,
+    selectedItems,
+    draftName,
+    saveDraftMutation,
+  ]);
 
   // Handle save draft
   const handleSaveDraft = useCallback(() => {
@@ -281,9 +286,9 @@ export default function SalesSheetCreatorPage() {
 
   // Handle add items to sheet
   const handleAddItems = useCallback((items: PricedInventoryItem[]) => {
-    setSelectedItems((prev) => {
+    setSelectedItems(prev => {
       const newItems = items.filter(
-        (item) => !prev.some((selected) => selected.id === item.id)
+        item => !prev.some(selected => selected.id === item.id)
       );
       return [...prev, ...newItems];
     });
@@ -291,7 +296,7 @@ export default function SalesSheetCreatorPage() {
 
   // Handle remove item from sheet
   const handleRemoveItem = useCallback((itemId: number) => {
-    setSelectedItems((prev) => prev.filter((item) => item.id !== itemId));
+    setSelectedItems(prev => prev.filter(item => item.id !== itemId));
   }, []);
 
   // Handle clear all items
@@ -350,7 +355,7 @@ export default function SalesSheetCreatorPage() {
   })();
 
   // Format drafts for dialog
-  const formattedDrafts: DraftInfo[] = (drafts ?? []).map((d) => ({
+  const formattedDrafts: DraftInfo[] = (drafts ?? []).map(d => ({
     id: d.id,
     name: d.name,
     clientId: d.clientId,
@@ -455,14 +460,55 @@ export default function SalesSheetCreatorPage() {
               </div>
 
               {/* Right Panel: Sales Sheet Preview (40%) */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 space-y-4">
                 <SalesSheetPreview
                   items={selectedItems}
                   onRemoveItem={handleRemoveItem}
                   onClearAll={handleClearAll}
-                  onReorderItems={handleReorderItems as unknown as (items: { id: number; name: string; category?: string; quantity: number; basePrice: number; retailPrice: number; priceOverride?: number }[]) => void}
+                  onReorderItems={
+                    handleReorderItems as unknown as (
+                      items: {
+                        id: number;
+                        name: string;
+                        category?: string;
+                        quantity: number;
+                        basePrice: number;
+                        retailPrice: number;
+                        priceOverride?: number;
+                      }[]
+                    ) => void
+                  }
                   clientId={selectedClientId}
                 />
+
+                {/* TER-215: Convert selected items to a Quote */}
+                {selectedItems.length > 0 && selectedClientId && (
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      // Store selected items in sessionStorage for OrderCreatorPage to pick up
+                      sessionStorage.setItem(
+                        "salesSheetToQuote",
+                        JSON.stringify({
+                          clientId: selectedClientId,
+                          items: selectedItems.map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            basePrice: item.basePrice,
+                            retailPrice: item.retailPrice,
+                            quantity: item.quantity,
+                            category: item.category,
+                            vendor: item.vendor,
+                          })),
+                        })
+                      );
+                      setLocation("/orders/create?fromSalesSheet=true");
+                    }}
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Convert to Quote ({selectedItems.length} items)
+                  </Button>
+                )}
               </div>
             </div>
           ) : (
@@ -495,7 +541,7 @@ export default function SalesSheetCreatorPage() {
           filters={filters}
           sort={sort}
           columnVisibility={columnVisibility}
-          onSaved={(viewId) => setCurrentViewId(viewId)}
+          onSaved={viewId => setCurrentViewId(viewId)}
         />
       )}
     </div>

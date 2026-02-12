@@ -106,7 +106,8 @@ export const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
   retailPrice: true,
   markup: true,
   grade: false,
-  vendor: false,
+  // TER-213: Vendor visible by default for availability catalog
+  vendor: true,
   strain: false,
 };
 

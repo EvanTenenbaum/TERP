@@ -88,11 +88,13 @@ export const LineItemRow = memo(function LineItemRow({
       e.preventDefault();
       handleQuantityBlur();
       // Focus next editable quantity field for quick entry
-      const currentRow = (e.target as HTMLElement).closest('tr');
+      const currentRow = (e.target as HTMLElement).closest("tr");
       const nextRow = currentRow?.nextElementSibling;
       if (nextRow) {
         // Click the next row's quantity cell to enable editing
-        const nextQtyCell = nextRow.querySelector('td:nth-child(3) > div') as HTMLElement;
+        const nextQtyCell = nextRow.querySelector(
+          "td:nth-child(3) > div"
+        ) as HTMLElement;
         nextQtyCell?.click();
       }
     } else if (e.key === "Escape") {
@@ -102,7 +104,11 @@ export const LineItemRow = memo(function LineItemRow({
   };
 
   // Handle COGS change
-  const handleCOGSChange = (newCOGS: number, isOverridden: boolean, reason?: string) => {
+  const handleCOGSChange = (
+    newCOGS: number,
+    isOverridden: boolean,
+    reason?: string
+  ) => {
     const updated = calculateLineItem(
       item.batchId,
       item.quantity,
@@ -118,7 +124,10 @@ export const LineItemRow = memo(function LineItemRow({
   };
 
   // Handle margin change
-  const handleMarginChange = (newMarginPercent: number, isOverridden: boolean) => {
+  const handleMarginChange = (
+    newMarginPercent: number,
+    isOverridden: boolean
+  ) => {
     const updated = calculateLineItem(
       item.batchId,
       item.quantity,
@@ -153,7 +162,9 @@ export const LineItemRow = memo(function LineItemRow({
             ID: {item.batchId}
           </span>
           {item.isSample && (
-            <Badge variant="secondary" className="w-fit mt-1">Sample</Badge>
+            <Badge variant="secondary" className="w-fit mt-1">
+              Sample
+            </Badge>
           )}
         </div>
       </TableCell>
@@ -165,11 +176,12 @@ export const LineItemRow = memo(function LineItemRow({
             <Input
               type="number"
               min="0"
-              step="0.01"
+              step="1"
               value={qtyInput}
-              onChange={(e) => setQtyInput(e.target.value)}
+              onChange={e => setQtyInput(e.target.value)}
               onBlur={handleQuantityBlur}
               onKeyDown={handleQuantityKeyDown}
+              onFocus={e => e.target.select()}
               className="w-20 h-8 text-right"
               autoFocus
             />
@@ -212,7 +224,10 @@ export const LineItemRow = memo(function LineItemRow({
         <div className="flex flex-col items-end">
           <span className="font-medium">{fmt(item.unitPrice)}</span>
           {(hasLowMargin || hasNegativeMargin) && (
-            <Badge variant={hasNegativeMargin ? "destructive" : "secondary"} className="text-xs mt-1">
+            <Badge
+              variant={hasNegativeMargin ? "destructive" : "secondary"}
+              className="text-xs mt-1"
+            >
               {hasNegativeMargin ? "Loss" : "Low margin"}
             </Badge>
           )}

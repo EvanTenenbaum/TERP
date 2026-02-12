@@ -26,7 +26,7 @@ const shortcuts: KeyboardShortcut[] = [
   },
   {
     keys: ["Ctrl", "N"],
-    description: "Create new order",
+    description: "Create new sale",
     category: "Navigation",
   },
   {
