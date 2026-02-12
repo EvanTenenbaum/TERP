@@ -53,7 +53,13 @@ import { toast } from "sonner";
  * - Take action (create quotes, contact clients, reserve supply)
  */
 
-export default function MatchmakingServicePage() {
+interface MatchmakingServicePageProps {
+  embedded?: boolean;
+}
+
+export default function MatchmakingServicePage({
+  embedded = false,
+}: MatchmakingServicePageProps) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
@@ -273,7 +279,9 @@ export default function MatchmakingServicePage() {
 
   return (
     <div className="space-y-6 p-6">
-      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+      {!embedded && (
+        <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+      )}
       {/* Header */}
       <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">

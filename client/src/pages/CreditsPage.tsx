@@ -58,8 +58,21 @@ import { BackButton } from "@/components/common/BackButton";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-type CreditStatus = "ACTIVE" | "PARTIALLY_USED" | "FULLY_USED" | "EXPIRED" | "VOID";
-type CreditReason = "RETURN" | "PRICE_ADJUSTMENT" | "GOODWILL" | "PROMOTIONAL" | "REFUND" | "DAMAGE_CLAIM" | "BILLING_ERROR" | "OTHER";
+type CreditStatus =
+  | "ACTIVE"
+  | "PARTIALLY_USED"
+  | "FULLY_USED"
+  | "EXPIRED"
+  | "VOID";
+type CreditReason =
+  | "RETURN"
+  | "PRICE_ADJUSTMENT"
+  | "GOODWILL"
+  | "PROMOTIONAL"
+  | "REFUND"
+  | "DAMAGE_CLAIM"
+  | "BILLING_ERROR"
+  | "OTHER";
 
 const statusColors: Record<CreditStatus, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -80,14 +93,32 @@ const reasonLabels: Record<CreditReason, string> = {
   OTHER: "Other",
 };
 
-export default function CreditsPage() {
+interface CreditsPageProps {
+  embedded?: boolean;
+}
+
+interface CreditListItem {
+  id: number;
+  creditNumber: string;
+  clientId: number;
+  clientName?: string | null;
+  creditReason?: string | null;
+  creditAmount: number | string;
+  amountRemaining: number | string;
+  creditStatus: CreditStatus;
+  expirationDate: Date | string | null;
+}
+
+export default function CreditsPage({ embedded = false }: CreditsPageProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<CreditStatus | "all">("all");
   const [issueCreditOpen, setIssueCreditOpen] = useState(false);
   const [applyCreditOpen, setApplyCreditOpen] = useState(false);
-  const [selectedCredit, setSelectedCredit] = useState<any | null>(null);
-  
+  const [selectedCredit, setSelectedCredit] = useState<CreditListItem | null>(
+    null
+  );
+
   // UI-CONFIRM-DIALOG: State for void confirmation dialog
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [creditToVoid, setCreditToVoid] = useState<number | null>(null);
@@ -109,7 +140,11 @@ export default function CreditsPage() {
   });
 
   // Fetch credits data
-  const { data: credits, isLoading, refetch } = trpc.credits.list.useQuery({
+  const {
+    data: credits,
+    isLoading,
+    refetch,
+  } = trpc.credits.list.useQuery({
     status: statusFilter === "all" ? undefined : statusFilter,
     searchTerm: searchTerm || undefined,
     limit: 50,
@@ -122,11 +157,21 @@ export default function CreditsPage() {
     onSuccess: () => {
       toast({ title: "Credit issued successfully" });
       setIssueCreditOpen(false);
-      setNewCredit({ clientId: "", amount: "", reason: "", description: "", notes: "" });
+      setNewCredit({
+        clientId: "",
+        amount: "",
+        reason: "",
+        description: "",
+        notes: "",
+      });
       refetch();
     },
-    onError: (error) => {
-      toast({ title: "Error issuing credit", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error issuing credit",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -138,8 +183,12 @@ export default function CreditsPage() {
       setSelectedCredit(null);
       refetch();
     },
-    onError: (error) => {
-      toast({ title: "Error applying credit", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error applying credit",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -148,8 +197,12 @@ export default function CreditsPage() {
       toast({ title: "Credit voided successfully" });
       refetch();
     },
-    onError: (error) => {
-      toast({ title: "Error voiding credit", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error voiding credit",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -169,7 +222,10 @@ export default function CreditsPage() {
 
   const handleIssueCredit = () => {
     if (!newCredit.clientId || !newCredit.amount || !newCredit.reason) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -184,7 +240,10 @@ export default function CreditsPage() {
 
   const handleApplyCredit = () => {
     if (!selectedCredit || !applyForm.invoiceId || !applyForm.amount) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -196,20 +255,26 @@ export default function CreditsPage() {
     });
   };
 
-  const openApplyDialog = (credit: any) => {
+  const openApplyDialog = (credit: CreditListItem) => {
     setSelectedCredit(credit);
-    setApplyForm({ invoiceId: "", amount: credit.amountRemaining.toString(), notes: "" });
+    setApplyForm({
+      invoiceId: "",
+      amount: credit.amountRemaining.toString(),
+      notes: "",
+    });
     setApplyCreditOpen(true);
   };
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <BackButton label="Back to Dashboard" to="/" />
+      {!embedded && <BackButton label="Back to Dashboard" to="/" />}
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Credits Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Credits Management
+          </h1>
           <p className="text-muted-foreground mt-1">
             Issue, track, and apply customer credits
           </p>
@@ -225,44 +290,60 @@ export default function CreditsPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Credits Issued</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Credits Issued
+              </CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(summary.totalCreditsIssued)}</div>
-              <p className="text-xs text-muted-foreground">{summary.creditCount} credits</p>
+              <div className="text-2xl font-bold">
+                {formatCurrency(summary.totalCreditsIssued)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {summary.creditCount} credits
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Available Credits</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Available Credits
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(summary.totalCreditsRemaining)}
               </div>
-              <p className="text-xs text-muted-foreground">Can be applied to invoices</p>
+              <p className="text-xs text-muted-foreground">
+                Can be applied to invoices
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Credits Used
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
                 {formatCurrency(summary.totalCreditsUsed)}
               </div>
-              <p className="text-xs text-muted-foreground">Applied to invoices</p>
+              <p className="text-xs text-muted-foreground">
+                Applied to invoices
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Expiring Soon
+              </CardTitle>
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
@@ -288,13 +369,13 @@ export default function CreditsPage() {
                 <Input
                   placeholder="Search credits..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-8 w-[200px]"
                 />
               </div>
               <Select
                 value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as CreditStatus | "all")}
+                onValueChange={v => setStatusFilter(v as CreditStatus | "all")}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Filter by status" />
@@ -329,26 +410,40 @@ export default function CreditsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {credits.items.map((credit: any) => (
+                {(credits.items as CreditListItem[]).map(credit => (
                   <TableRow key={credit.id}>
-                    <TableCell className="font-mono">{credit.creditNumber}</TableCell>
-                    <TableCell>{credit.clientName || `Client #${credit.clientId}`}</TableCell>
-                    <TableCell>
-                      {credit.creditReason ? reasonLabels[credit.creditReason as CreditReason] || credit.creditReason : "-"}
+                    <TableCell className="font-mono">
+                      {credit.creditNumber}
                     </TableCell>
-                    <TableCell className="font-mono">{formatCurrency(credit.creditAmount)}</TableCell>
+                    <TableCell>
+                      {credit.clientName || `Client #${credit.clientId}`}
+                    </TableCell>
+                    <TableCell>
+                      {credit.creditReason
+                        ? reasonLabels[credit.creditReason as CreditReason] ||
+                          credit.creditReason
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {formatCurrency(credit.creditAmount)}
+                    </TableCell>
                     <TableCell className="font-mono font-bold">
                       {formatCurrency(credit.amountRemaining)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusColors[credit.creditStatus as CreditStatus]}>
+                      <Badge
+                        className={
+                          statusColors[credit.creditStatus as CreditStatus]
+                        }
+                      >
                         {credit.creditStatus}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(credit.expirationDate)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {(credit.creditStatus === "ACTIVE" || credit.creditStatus === "PARTIALLY_USED") && (
+                        {(credit.creditStatus === "ACTIVE" ||
+                          credit.creditStatus === "PARTIALLY_USED") && (
                           <>
                             <Button
                               variant="outline"
@@ -377,7 +472,9 @@ export default function CreditsPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-muted-foreground text-center py-4">No credits found</p>
+            <p className="text-muted-foreground text-center py-4">
+              No credits found
+            </p>
           )}
         </CardContent>
       </Card>
@@ -398,7 +495,9 @@ export default function CreditsPage() {
                 id="clientId"
                 type="number"
                 value={newCredit.clientId}
-                onChange={(e) => setNewCredit({ ...newCredit, clientId: e.target.value })}
+                onChange={e =>
+                  setNewCredit({ ...newCredit, clientId: e.target.value })
+                }
                 placeholder="Enter client ID"
               />
             </div>
@@ -409,7 +508,9 @@ export default function CreditsPage() {
                 type="number"
                 step="0.01"
                 value={newCredit.amount}
-                onChange={(e) => setNewCredit({ ...newCredit, amount: e.target.value })}
+                onChange={e =>
+                  setNewCredit({ ...newCredit, amount: e.target.value })
+                }
                 placeholder="0.00"
               />
             </div>
@@ -417,14 +518,18 @@ export default function CreditsPage() {
               <Label htmlFor="reason">Reason *</Label>
               <Select
                 value={newCredit.reason}
-                onValueChange={(v) => setNewCredit({ ...newCredit, reason: v as CreditReason })}
+                onValueChange={v =>
+                  setNewCredit({ ...newCredit, reason: v as CreditReason })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select reason" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(reasonLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -434,7 +539,9 @@ export default function CreditsPage() {
               <Input
                 id="description"
                 value={newCredit.description}
-                onChange={(e) => setNewCredit({ ...newCredit, description: e.target.value })}
+                onChange={e =>
+                  setNewCredit({ ...newCredit, description: e.target.value })
+                }
                 placeholder="Brief description"
               />
             </div>
@@ -443,7 +550,9 @@ export default function CreditsPage() {
               <Textarea
                 id="notes"
                 value={newCredit.notes}
-                onChange={(e) => setNewCredit({ ...newCredit, notes: e.target.value })}
+                onChange={e =>
+                  setNewCredit({ ...newCredit, notes: e.target.value })
+                }
                 placeholder="Additional notes"
               />
             </div>
@@ -452,7 +561,10 @@ export default function CreditsPage() {
             <Button variant="outline" onClick={() => setIssueCreditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleIssueCredit} disabled={issueCreditMutation.isPending}>
+            <Button
+              onClick={handleIssueCredit}
+              disabled={issueCreditMutation.isPending}
+            >
               {issueCreditMutation.isPending ? "Issuing..." : "Issue Credit"}
             </Button>
           </DialogFooter>
@@ -471,7 +583,10 @@ export default function CreditsPage() {
           <div className="grid gap-4 py-4">
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm">
-                Available: <span className="font-bold">{formatCurrency(selectedCredit?.amountRemaining)}</span>
+                Available:{" "}
+                <span className="font-bold">
+                  {formatCurrency(selectedCredit?.amountRemaining)}
+                </span>
               </p>
             </div>
             <div className="grid gap-2">
@@ -480,7 +595,9 @@ export default function CreditsPage() {
                 id="invoiceId"
                 type="number"
                 value={applyForm.invoiceId}
-                onChange={(e) => setApplyForm({ ...applyForm, invoiceId: e.target.value })}
+                onChange={e =>
+                  setApplyForm({ ...applyForm, invoiceId: e.target.value })
+                }
                 placeholder="Enter invoice ID"
               />
             </div>
@@ -491,7 +608,9 @@ export default function CreditsPage() {
                 type="number"
                 step="0.01"
                 value={applyForm.amount}
-                onChange={(e) => setApplyForm({ ...applyForm, amount: e.target.value })}
+                onChange={e =>
+                  setApplyForm({ ...applyForm, amount: e.target.value })
+                }
                 placeholder="0.00"
               />
             </div>
@@ -500,7 +619,9 @@ export default function CreditsPage() {
               <Textarea
                 id="applyNotes"
                 value={applyForm.notes}
-                onChange={(e) => setApplyForm({ ...applyForm, notes: e.target.value })}
+                onChange={e =>
+                  setApplyForm({ ...applyForm, notes: e.target.value })
+                }
                 placeholder="Notes for this application"
               />
             </div>
@@ -509,25 +630,31 @@ export default function CreditsPage() {
             <Button variant="outline" onClick={() => setApplyCreditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApplyCredit} disabled={applyCreditMutation.isPending}>
+            <Button
+              onClick={handleApplyCredit}
+              disabled={applyCreditMutation.isPending}
+            >
               {applyCreditMutation.isPending ? "Applying..." : "Apply Credit"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* UI-CONFIRM-DIALOG: Void Credit Confirmation Dialog */}
       <AlertDialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Void Credit?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to void this credit? This action cannot be undone.
+              Are you sure you want to void this credit? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCreditToVoid(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel onClick={() => setCreditToVoid(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 if (creditToVoid !== null) {
                   voidCreditMutation.mutate({ creditId: creditToVoid });

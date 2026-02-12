@@ -2,7 +2,13 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,7 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MatchBadge } from "@/components/needs/MatchBadge";
-import { Search, Plus, Loader2, Package, TrendingUp, Users } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Loader2,
+  Package,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 // UX-012: Import centralized date formatting utility
@@ -24,70 +37,108 @@ import { formatDate } from "@/lib/utils";
  * Central page for managing all client needs across the system
  */
 
-export default function NeedsManagementPage() {
+interface NeedsManagementPageProps {
+  embedded?: boolean;
+}
+
+type NeedStatus = "ACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
+type NeedPriority = "URGENT" | "HIGH" | "MEDIUM" | "LOW";
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+interface NeedItem {
+  id: number;
+  clientId: number;
+  clientName?: string;
+  status: NeedStatus;
+  priority: NeedPriority;
+  strain?: string;
+  category?: string;
+  subcategory?: string;
+  grade?: string;
+  quantityMin?: number;
+  quantityMax?: number;
+  priceMax?: number;
+  matchCount: number;
+  neededBy?: string | Date | null;
+  createdAt?: string | Date | null;
+}
+
+interface OpportunityItem {
+  id?: number;
+  clientId: number;
+  clientName?: string;
+  needDescription: string;
+  priority?: NeedPriority;
+  bestMatchType?: "EXACT" | "PARTIAL" | "ALTERNATIVE";
+  bestConfidence?: number;
+  matchCount: number;
+  potentialRevenue?: string | number;
+}
+
+export default function NeedsManagementPage({
+  embedded = false,
+}: NeedsManagementPageProps) {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
-  const [priorityFilter, setPriorityFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<NeedStatus>("ACTIVE");
+  const [priorityFilter, setPriorityFilter] = useState<
+    NeedPriority | undefined
+  >(undefined);
 
   // Fetch needs with matches
-  const { data: needsData, isLoading } = trpc.clientNeeds.getAllWithMatches.useQuery({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    status: statusFilter as any,
-  });
+  const { data: needsData, isLoading } =
+    trpc.clientNeeds.getAllWithMatches.useQuery({
+      status: statusFilter,
+    });
 
   // Fetch smart opportunities
-  const { data: opportunitiesData } = trpc.clientNeeds.getSmartOpportunities.useQuery({
-    limit: 10,
-  });
+  const { data: opportunitiesData } =
+    trpc.clientNeeds.getSmartOpportunities.useQuery({
+      limit: 10,
+    });
 
-  const needs = needsData?.data || [];
-  const opportunities = opportunitiesData?.data || [];
+  const needs = (needsData?.data || []) as NeedItem[];
+  const opportunities = (opportunitiesData?.data || []) as OpportunityItem[];
 
   // Filter needs based on search and priority
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filteredNeeds = needs.filter((need: any) => {
+  const filteredNeeds = needs.filter(need => {
     const matchesSearch =
       !searchQuery ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (need.strain as string)?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (need.category as string)?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (need.clientName as string)?.toLowerCase().includes(searchQuery.toLowerCase());
+      need.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      need.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      need.clientName?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matchesPriority = !priorityFilter || need.priority === priorityFilter;
 
     return matchesSearch && matchesPriority;
   });
 
   const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    const variants: Record<string, BadgeVariant> = {
       URGENT: "destructive",
       HIGH: "default",
       MEDIUM: "secondary",
       LOW: "outline",
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return <Badge variant={variants[priority] || "outline" as any}>{priority}</Badge>;
+    return <Badge variant={variants[priority] || "outline"}>{priority}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    const variants: Record<string, BadgeVariant> = {
       ACTIVE: "default",
       FULFILLED: "secondary",
       EXPIRED: "outline",
       CANCELLED: "destructive",
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return <Badge variant={variants[status] || "outline" as any}>{status}</Badge>;
+    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
   return (
     <div className="space-y-6 p-6">
-      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+      {!embedded && (
+        <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -111,8 +162,7 @@ export default function NeedsManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {needs.filter((n: any) => n.status === "ACTIVE").length}
+              {needs.filter(n => n.status === "ACTIVE").length}
             </div>
           </CardContent>
         </Card>
@@ -124,8 +174,7 @@ export default function NeedsManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {needs.filter((n: any) => (n.matchCount as number) > 0).length}
+              {needs.filter(n => n.matchCount > 0).length}
             </div>
           </CardContent>
         </Card>
@@ -137,8 +186,7 @@ export default function NeedsManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {needs.filter((n: any) => n.priority === "URGENT").length}
+              {needs.filter(n => n.priority === "URGENT").length}
             </div>
           </CardContent>
         </Card>
@@ -163,7 +211,7 @@ export default function NeedsManagementPage() {
               <Input
                 placeholder="Search by strain, category, or client..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -178,7 +226,12 @@ export default function NeedsManagementPage() {
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter || "all"} onValueChange={(v) => setPriorityFilter(v === "all" ? undefined : v)}>
+            <Select
+              value={priorityFilter || "all"}
+              onValueChange={v =>
+                setPriorityFilter(v === "all" ? undefined : v)
+              }
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
@@ -197,7 +250,9 @@ export default function NeedsManagementPage() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="all">All Needs ({filteredNeeds.length})</TabsTrigger>
+          <TabsTrigger value="all">
+            All Needs ({filteredNeeds.length})
+          </TabsTrigger>
           <TabsTrigger value="opportunities">
             Smart Opportunities ({opportunities.length})
           </TabsTrigger>
@@ -223,88 +278,70 @@ export default function NeedsManagementPage() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {filteredNeeds.map((need: any) => (
+              {filteredNeeds.map(need => (
                 <Card
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  key={need.id as number}
+                  key={need.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onClick={() => setLocation(`/clients/${need.clientId as number}?tab=needs`)}
+                  onClick={() =>
+                    setLocation(`/clients/${need.clientId}?tab=needs`)
+                  }
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {(need.strain as string) || (need.category as string) || "General Need"}
+                            {need.strain || need.category || "General Need"}
                           </CardTitle>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {getPriorityBadge(need.priority as string)}
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {getStatusBadge(need.status as string)}
+                          {getPriorityBadge(need.priority)}
+                          {getStatusBadge(need.status)}
                         </div>
                         <CardDescription>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          Client: {(need.clientName as string) || `#${need.clientId as number}`}
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {need.category && ` • ${need.category as string}`}
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {need.subcategory && ` • ${need.subcategory as string}`}
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {need.grade && ` • Grade ${need.grade as string}`}
+                          Client: {need.clientName || `#${need.clientId}`}
+                          {need.category && ` • ${need.category}`}
+                          {need.subcategory && ` • ${need.subcategory}`}
+                          {need.grade && ` • Grade ${need.grade}`}
                         </CardDescription>
                       </div>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(need.matchCount as number) > 0 && (
+                      {need.matchCount > 0 && (
                         <Badge variant="secondary">
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {need.matchCount as number} {(need.matchCount as number) === 1 ? "match" : "matches"}
+                          {need.matchCount}{" "}
+                          {need.matchCount === 1 ? "match" : "matches"}
                         </Badge>
                       )}
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-4 gap-4 text-sm">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {need.quantityMin && (
                         <div>
                           <p className="text-muted-foreground">Quantity</p>
                           <p className="font-medium">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {need.quantityMin as number}
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {need.quantityMax && ` - ${need.quantityMax as number}`} units
+                            {need.quantityMin}
+                            {need.quantityMax && ` - ${need.quantityMax}`} units
                           </p>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {need.priceMax && (
                         <div>
                           <p className="text-muted-foreground">Max Price</p>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <p className="font-medium">${need.priceMax as number}/unit</p>
+                          <p className="font-medium">${need.priceMax}/unit</p>
                         </div>
                       )}
                       {/* UX-012: Use standardized date formatting */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {need.neededBy && (
                         <div>
                           <p className="text-muted-foreground">Needed By</p>
                           <p className="font-medium">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {formatDate(need.neededBy as string)}
+                            {formatDate(need.neededBy)}
                           </p>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {need.createdAt && (
                         <div>
                           <p className="text-muted-foreground">Created</p>
                           <p className="font-medium">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {formatDate(need.createdAt as string)}
+                            {formatDate(need.createdAt)}
                           </p>
                         </div>
                       )}
@@ -324,41 +361,36 @@ export default function NeedsManagementPage() {
                 <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">No opportunities found</p>
                 <p className="text-sm text-muted-foreground">
-                  Opportunities will appear when needs have high-confidence matches
+                  Opportunities will appear when needs have high-confidence
+                  matches
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {opportunities.map((opp: any, idx: number) => (
+              {opportunities.map(opp => (
                 <Card
-                  key={`page-item-${idx}`}
+                  key={`${opp.id ?? "opp"}-${opp.clientId}-${opp.needDescription}`}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  onClick={() => setLocation(`/clients/${opp.clientId as number}?tab=needs`)}
+                  onClick={() =>
+                    setLocation(`/clients/${opp.clientId}?tab=needs`)
+                  }
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-base">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {(opp.clientName as string) || `Client #${opp.clientId as number}`}
+                            {opp.clientName || `Client #${opp.clientId}`}
                           </CardTitle>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {opp.priority && getPriorityBadge(opp.priority as string)}
+                          {opp.priority && getPriorityBadge(opp.priority)}
                         </div>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <CardDescription>{opp.needDescription as string}</CardDescription>
+                        <CardDescription>{opp.needDescription}</CardDescription>
                       </div>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {opp.bestMatchType && opp.bestConfidence && (
                         <MatchBadge
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          matchType={opp.bestMatchType as "EXACT" | "CLOSE" | "HISTORICAL"}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          confidence={opp.bestConfidence as number}
+                          matchType={opp.bestMatchType}
+                          confidence={opp.bestConfidence}
                         />
                       )}
                     </div>
@@ -368,16 +400,15 @@ export default function NeedsManagementPage() {
                       <div className="flex items-center gap-6 text-sm">
                         <div>
                           <p className="text-muted-foreground">Matches</p>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <p className="font-medium">{opp.matchCount as number}</p>
+                          <p className="font-medium">{opp.matchCount}</p>
                         </div>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {opp.potentialRevenue && (
                           <div>
-                            <p className="text-muted-foreground">Potential Revenue</p>
+                            <p className="text-muted-foreground">
+                              Potential Revenue
+                            </p>
                             <p className="font-medium text-green-600">
-                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                              ${parseFloat(opp.potentialRevenue as string).toFixed(2)}
+                              ${parseFloat(opp.potentialRevenue).toFixed(2)}
                             </p>
                           </div>
                         )}
@@ -394,4 +425,3 @@ export default function NeedsManagementPage() {
     </div>
   );
 }
-

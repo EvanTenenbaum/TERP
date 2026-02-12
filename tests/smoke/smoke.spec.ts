@@ -6,7 +6,7 @@
  * - BUG-040: Order Creator loads inventory
  * - BUG-041: Batch Detail View opens without crash
  * - BUG-042: Global Search returns results
- * - QA-049: Products page shows products
+ * - QA-049: Inventory products tab shows products
  * - QA-050: Samples page shows samples
  *
  * Usage:
@@ -89,9 +89,48 @@ async function loginIfNeeded(page: Page): Promise<void> {
   await submitButton.first().click();
 
   // Wait for redirect to dashboard or main app
-  await page.waitForURL(/\/($|dashboard|inventory|orders)/, { timeout: 20000 });
+  await page.waitForURL(/\/($|dashboard|inventory|sales|relationships)/, {
+    timeout: 20000,
+  });
 
   console.info("✓ Login successful");
+}
+
+async function hasCriticalPageFailure(page: Page): Promise<boolean> {
+  const has404 = await page
+    .getByText(/404|page not found/i)
+    .first()
+    .isVisible({ timeout: 1000 })
+    .catch(() => false);
+  const hasCriticalError = await page
+    .getByText(/something went wrong|fatal error|application error/i)
+    .first()
+    .isVisible({ timeout: 1000 })
+    .catch(() => false);
+
+  return has404 || hasCriticalError;
+}
+
+async function gotoFirstValidPath(
+  page: Page,
+  paths: string[]
+): Promise<string | null> {
+  for (const path of paths) {
+    try {
+      await page.goto(`${BASE_URL}${path}`);
+      await loginIfNeeded(page);
+      await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
+
+      const hasFailure = await hasCriticalPageFailure(page);
+      if (!hasFailure) {
+        return path;
+      }
+    } catch {
+      // Try next candidate path.
+    }
+  }
+
+  return null;
 }
 
 test.describe("Smoke Tests - Critical Paths", () => {
@@ -102,7 +141,7 @@ test.describe("Smoke Tests - Critical Paths", () => {
     page.setDefaultNavigationTimeout(IS_PRODUCTION ? 30000 : 15000);
   });
 
-  test("Dashboard loads successfully", async ({ page }) => {
+  test("Home workspace shell loads successfully", async ({ page }) => {
     await page.goto(`${BASE_URL}/`);
 
     // Handle authentication if needed
@@ -125,14 +164,15 @@ test.describe("Smoke Tests - Critical Paths", () => {
         console.info("Note: 'error' text found on page - verify if expected");
       });
 
-    console.info("✓ Dashboard loaded successfully");
+    console.info("✓ Home workspace shell loaded successfully");
   });
 
-  test("Products page shows products (QA-049)", async ({ page }) => {
-    await page.goto(`${BASE_URL}/products`);
-
-    // Handle authentication if needed
-    await loginIfNeeded(page);
+  test("Inventory products tab shows products (QA-049)", async ({ page }) => {
+    const targetPath = await gotoFirstValidPath(page, [
+      "/inventory?tab=products",
+      "/products",
+    ]);
+    expect(targetPath).not.toBeNull();
 
     // Wait for loading to complete
     await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {
@@ -160,7 +200,9 @@ test.describe("Smoke Tests - Critical Paths", () => {
     const rowCount = await rows.count();
 
     expect(rowCount).toBeGreaterThan(0);
-    console.info(`✓ Products page shows ${rowCount} products`);
+    console.info(
+      `✓ Product listing shows ${rowCount} products (${targetPath})`
+    );
   });
 
   test("Samples page shows samples (QA-050)", async ({ page }) => {
@@ -224,10 +266,11 @@ test.describe("Smoke Tests - Critical Paths", () => {
   test("Inventory page and batch navigation (BUG-041 prerequisite)", async ({
     page,
   }) => {
-    await page.goto(`${BASE_URL}/inventory`);
-
-    // Handle authentication if needed
-    await loginIfNeeded(page);
+    const targetPath = await gotoFirstValidPath(page, [
+      "/inventory?tab=inventory",
+      "/inventory",
+    ]);
+    expect(targetPath).not.toBeNull();
 
     // Wait for skeleton to disappear
     const skeleton = page.locator('[data-testid="inventory-skeleton"]');
@@ -255,9 +298,13 @@ test.describe("Smoke Tests - Critical Paths", () => {
     const rowCount = await rows.count();
 
     if (rowCount > 0) {
-      console.info(`✓ Inventory page shows ${rowCount} batches`);
+      console.info(
+        `✓ Inventory page shows ${rowCount} batches (${targetPath})`
+      );
     } else {
-      console.info("✓ Inventory page loaded (no batches in current view)");
+      console.info(
+        `✓ Inventory page loaded (no batches in current view) (${targetPath})`
+      );
     }
   });
 
@@ -315,15 +362,22 @@ test.describe("Smoke Tests - Critical Paths", () => {
   });
 
   test("All main navigation links work", async ({ page }) => {
-    const navLinks = [
-      { path: "/", name: "Dashboard" },
-      { path: "/clients", name: "Clients" },
-      { path: "/orders", name: "Orders" },
-      { path: "/invoices", name: "Invoices" },
-      { path: "/inventory", name: "Inventory" },
-      { path: "/products", name: "Products" },
-      { path: "/samples", name: "Samples" },
-      { path: "/settings", name: "Settings" },
+    const navLinkGroups = [
+      { paths: ["/", "/dashboard"], name: "Dashboard" },
+      { paths: ["/sales", "/orders"], name: "Sales Workspace" },
+      {
+        paths: ["/relationships", "/clients"],
+        name: "Relationships Workspace",
+      },
+      {
+        paths: ["/demand-supply", "/interest-list", "/needs", "/matchmaking"],
+        name: "Demand & Supply Workspace",
+      },
+      { paths: ["/inventory", "/products"], name: "Inventory" },
+      { paths: ["/accounting/invoices", "/invoices"], name: "Invoices" },
+      { paths: ["/credits", "/credit-settings"], name: "Credits Workspace" },
+      { paths: ["/samples"], name: "Samples" },
+      { paths: ["/settings", "/system-settings"], name: "System Settings" },
     ];
 
     const results: Array<{ name: string; status: string }> = [];
@@ -332,34 +386,18 @@ test.describe("Smoke Tests - Critical Paths", () => {
     await page.goto(`${BASE_URL}/`);
     await loginIfNeeded(page);
 
-    for (const link of navLinks) {
-      await page.goto(`${BASE_URL}${link.path}`);
-
-      // Wait for page to start loading
-      await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
-
-      // Check for 404 or critical errors
-      const has404 = await page
-        .getByText(/404|page not found/i)
-        .first()
-        .isVisible({ timeout: 1000 })
-        .catch(() => false);
-      const hasCriticalError = await page
-        .getByText(/something went wrong|fatal error|application error/i)
-        .first()
-        .isVisible({ timeout: 1000 })
-        .catch(() => false);
-
-      if (has404) {
-        results.push({ name: link.name, status: "404" });
-        console.info(`✗ ${link.name} (${link.path}) - 404 Not Found`);
-      } else if (hasCriticalError) {
-        results.push({ name: link.name, status: "error" });
-        console.info(`✗ ${link.name} (${link.path}) - Critical Error`);
-      } else {
-        results.push({ name: link.name, status: "ok" });
-        console.info(`✓ ${link.name} (${link.path}) loads correctly`);
+    for (const group of navLinkGroups) {
+      const validPath = await gotoFirstValidPath(page, group.paths);
+      if (validPath) {
+        results.push({ name: group.name, status: "ok" });
+        console.info(`✓ ${group.name} (${validPath}) loads correctly`);
+        continue;
       }
+
+      results.push({ name: group.name, status: "error" });
+      console.info(
+        `✗ ${group.name} (${group.paths.join(", ")}) - no valid route loaded`
+      );
     }
 
     // Verify all pages loaded without 404s
@@ -440,17 +478,18 @@ test.describe("Smoke Tests - Error Scenarios", () => {
     expect(criticalErrors.length).toBe(0);
   });
 
-  test("No console errors on products page", async ({ page }) => {
+  test("No console errors on inventory products tab", async ({ page }) => {
     const errors: string[] = [];
 
     page.on("pageerror", error => {
       errors.push(error.message);
     });
 
-    await page.goto(`${BASE_URL}/products`);
-
-    // Handle authentication if needed
-    await loginIfNeeded(page);
+    const targetPath = await gotoFirstValidPath(page, [
+      "/inventory?tab=products",
+      "/products",
+    ]);
+    expect(targetPath).not.toBeNull();
 
     await page
       .waitForLoadState("networkidle", { timeout: 15000 })
@@ -464,10 +503,12 @@ test.describe("Smoke Tests - Error Scenarios", () => {
     );
 
     if (criticalErrors.length > 0) {
-      console.info("JavaScript errors found on Products page:");
+      console.info("JavaScript errors found on product listing route:");
       criticalErrors.forEach(e => console.info(`  - ${e}`));
     } else {
-      console.info("✓ No critical JavaScript errors on Products page");
+      console.info(
+        `✓ No critical JavaScript errors on product listing route (${targetPath})`
+      );
     }
 
     expect(criticalErrors.length).toBe(0);
