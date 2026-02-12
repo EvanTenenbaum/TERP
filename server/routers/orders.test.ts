@@ -351,6 +351,28 @@ describe("Orders Router", () => {
         })
       );
     });
+
+    // TER-229: Regression test — orders with client data must be returned correctly
+    it("should return orders with client association data", async () => {
+      const mockOrders = [
+        {
+          id: 1,
+          orderNumber: "S-2026-001",
+          orderType: "SALE",
+          clientId: 42,
+          isDraft: false,
+          total: "1500.00",
+          client: { id: 42, name: "Acme Corp" },
+        },
+      ];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
+
+      const result = await caller.orders.getAll({ isDraft: false });
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].clientId).toBe(42);
+      expect(result.items[0].client).toEqual({ id: 42, name: "Acme Corp" });
+    });
   });
 
   describe("update", () => {

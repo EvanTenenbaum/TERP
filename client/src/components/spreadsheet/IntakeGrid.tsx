@@ -73,7 +73,8 @@ const createEmptyRow = (): IntakeGridRow => ({
   strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "NET_30",
+  // TER-228: Default to Consignment per centralized intake defaults
+  paymentTerms: "CONSIGNMENT",
   locationId: null,
   locationName: "",
   site: "",
