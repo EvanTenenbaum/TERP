@@ -76,7 +76,7 @@ export async function reorderFromPrevious(data: {
       items: newItems as any,
       subtotal: subtotal.toString(),
       total: subtotal.toString(),
-      paymentTerms: originalOrder.paymentTerms,
+      paymentTerms: originalOrder.paymentTerms || "NET_30",
       saleStatus: "PENDING",
       notes: `Reordered from Order #${originalOrder.orderNumber}`,
       createdBy: data.createdBy,
@@ -231,4 +231,3 @@ export async function getClientPaymentTerms(clientId: number) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
-

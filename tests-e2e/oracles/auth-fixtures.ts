@@ -8,6 +8,7 @@
  */
 
 import { type Page } from "@playwright/test";
+import superjson from "superjson";
 import { TEST_USERS } from "../fixtures/auth";
 import type { QARole } from "./types";
 
@@ -75,7 +76,8 @@ function isRetryableNavigationError(error: unknown): boolean {
   return (
     message.includes("ERR_TIMED_OUT") ||
     message.includes("net::ERR_") ||
-    message.includes("Navigation timeout")
+    message.includes("Navigation timeout") ||
+    /Timeout \d+ms exceeded/i.test(message)
   );
 }
 
@@ -327,16 +329,31 @@ export function getRoleCredentialCandidates(role: QARole): CredentialSet[] {
 }
 
 async function getAuthenticatedEmail(page: Page): Promise<string | null> {
-  try {
-    const response = await page.request.get(`${getBaseUrl()}/api/auth/me`);
-    if (!response.ok()) return null;
-    const payload = (await response.json()) as {
-      user?: { email?: string };
-    };
-    return payload.user?.email ?? null;
-  } catch {
-    return null;
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await page.request.get(`${getBaseUrl()}/api/auth/me`);
+      if (response.ok()) {
+        const payload = (await response.json()) as {
+          user?: { email?: string };
+        };
+        return payload.user?.email ?? null;
+      }
+
+      const retryableStatus =
+        response.status() === 408 ||
+        response.status() === 429 ||
+        response.status() >= 500;
+      if (!retryableStatus || attempt === maxAttempts) return null;
+    } catch {
+      if (attempt === maxAttempts) return null;
+    }
+
+    await page.waitForTimeout(200 * attempt);
   }
+
+  return null;
 }
 
 async function assertRoleFidelity(
@@ -388,13 +405,18 @@ type TrpcEnvelope<T> = {
   result?: { data?: { json?: T } };
 };
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
 function extractTrpcJson<T>(payload: unknown): T | null {
-  const direct = payload as TrpcEnvelope<T> | undefined;
+  const direct = asRecord(payload) as TrpcEnvelope<T> | null;
   const directJson = direct?.result?.data?.json;
   if (directJson !== undefined) return directJson;
 
   if (Array.isArray(payload) && payload.length > 0) {
-    const first = payload[0] as TrpcEnvelope<T> | undefined;
+    const first = asRecord(payload[0]) as TrpcEnvelope<T> | null;
     const firstJson = first?.result?.data?.json;
     if (firstJson !== undefined) return firstJson;
   }
@@ -402,16 +424,20 @@ function extractTrpcJson<T>(payload: unknown): T | null {
   return null;
 }
 
+function getTrpcUrl(path: string, input?: unknown): string {
+  const url = new URL(`/api/trpc/${path.replace(/^\//, "")}`, getBaseUrl());
+  if (input !== undefined) {
+    url.searchParams.set("input", JSON.stringify(superjson.serialize(input)));
+  }
+  return url.toString();
+}
+
 async function trpcQuery<T>(
   page: Page,
   path: string,
   input: Record<string, unknown> = {}
 ): Promise<T | null> {
-  const url = new URL(`/api/trpc/${path}`, getBaseUrl());
-  url.searchParams.set("batch", "1");
-  url.searchParams.set("input", JSON.stringify({ 0: { json: input } }));
-
-  const response = await page.request.get(url.toString());
+  const response = await page.request.get(getTrpcUrl(path, input));
   if (!response.ok()) return null;
 
   const payload = (await response.json()) as unknown;
@@ -423,8 +449,8 @@ async function trpcMutation<T>(
   path: string,
   input: Record<string, unknown>
 ): Promise<{ ok: boolean; data: T | null; rawText?: string }> {
-  const response = await page.request.post(`${getBaseUrl()}/api/trpc/${path}`, {
-    data: { json: input },
+  const response = await page.request.post(getTrpcUrl(path), {
+    data: superjson.serialize(input),
     headers: { "Content-Type": "application/json" },
   });
 
@@ -594,7 +620,7 @@ async function tryApiLogin(
   page: Page,
   credentials: CredentialSet
 ): Promise<boolean> {
-  const maxAttempts = 2;
+  const maxAttempts = 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -610,6 +636,14 @@ async function tryApiLogin(
       );
 
       if (!response.ok()) {
+        const retryableStatus =
+          response.status() === 408 ||
+          response.status() === 429 ||
+          response.status() >= 500;
+        if (retryableStatus && attempt < maxAttempts) {
+          await page.waitForTimeout(400 * attempt);
+          continue;
+        }
         return false;
       }
 

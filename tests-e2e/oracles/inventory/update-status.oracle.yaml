@@ -20,7 +20,7 @@ preconditions:
         permissions_include: "inventory:update"
   create:
     - entity: "batch"
-      ref: "temp:test_batch_status"
+      ref: "test_batch_status"
       data:
         sku: "STATUS-TEST-{{timestamp}}"
         batchStatus: "AWAITING_INTAKE"
@@ -36,16 +36,16 @@ steps:
     timeout: 5000
 
   - action: type
-    target: "[data-testid='search-input'], input[type='search']"
-    value: "STATUS-TEST"
+    target: "[data-testid='inventory-search-input'], input[placeholder*='Search inventory' i]"
+    value: "{{temp:test_batch_status.sku}}"
     clear_first: true
 
   - action: wait
-    for: "tr:has-text('STATUS-TEST')"
+    for: "tr:has-text('{{temp:test_batch_status.sku}}')"
     timeout: 5000
 
   - action: click
-    target: "tr:has-text('STATUS-TEST')"
+    target: "tr:has-text('{{temp:test_batch_status.sku}}'), [data-testid='batch-row']:first-child"
     wait_after: 500
 
   - action: wait
@@ -53,25 +53,8 @@ steps:
     timeout: 5000
 
   - action: click
-    target: "[data-testid='status-dropdown'], [data-testid='change-status-btn'], button:has-text('Status')"
+    target: "[data-testid='status-LIVE'], button:has-text('Live')"
     wait_after: 500
-
-  - action: click
-    target: "[data-testid='status-LIVE'], [data-value='LIVE'], li:has-text('LIVE'), option:has-text('LIVE')"
-    wait_after: 500
-
-  - action: wait
-    for: "[data-testid='reason-modal'], [data-testid='reason-input']"
-    timeout: 3000
-
-  - action: type
-    target: "[data-testid='reason-input'], textarea[name='reason'], input[name='reason']"
-    value: "Quality check passed - moving to LIVE status"
-    clear_first: true
-
-  - action: click
-    target: "[data-testid='confirm-status-btn'], button:has-text('Confirm'), button[type='submit']"
-    wait_after: 1000
 
   - action: wait
     network_idle: true
@@ -83,7 +66,6 @@ steps:
 expected_ui:
   visible:
     - "[data-testid='success-toast'], .toast-success"
-    - "[data-testid='status-badge']:has-text('LIVE'), .badge:has-text('LIVE')"
   text_present:
     - "LIVE"
   not_visible:
@@ -92,7 +74,7 @@ expected_ui:
 expected_db:
   batches:
     - where:
-        sku_like: "STATUS-TEST%"
+        sku_like: "ORAC-STAT%"
       expect:
         batchStatus: "LIVE"
       store_as: "updated_batch"

@@ -13,7 +13,6 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -22,6 +21,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -51,6 +59,7 @@ import {
 
 // Inventory Components
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
+import { EditBatchModal } from "@/components/inventory/EditBatchModal";
 
 // Icons
 import {
@@ -181,12 +190,14 @@ function BatchStatusBadge({ status }: { status: string }) {
 interface BatchInspectorProps {
   item: InventoryItem | null;
   onEdit: (batchId: number) => void;
+  onAdjustQty: () => void;
   onStatusChange: (batchId: number, status: string) => void;
 }
 
 function BatchInspectorContent({
   item,
   onEdit,
+  onAdjustQty,
   onStatusChange,
 }: BatchInspectorProps) {
   if (!item || !item.batch) {
@@ -250,7 +261,7 @@ function BatchInspectorContent({
 
       <InspectorSection title="Quantities" defaultOpen>
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-muted/50 rounded-lg">
+          <div className="p-3 bg-muted/50 rounded-lg" data-testid="on-hand-qty">
             <p className="text-xs text-muted-foreground">On Hand</p>
             <p className="font-semibold text-lg">{formatQuantity(onHand)}</p>
           </div>
@@ -304,6 +315,7 @@ function BatchInspectorContent({
           ).map(status => (
             <Button
               key={status.value}
+              data-testid={`status-${status.value}`}
               variant="outline"
               size="sm"
               onClick={() => onStatusChange(batch.id, status.value)}
@@ -318,6 +330,15 @@ function BatchInspectorContent({
       <InspectorSection title="Actions">
         <div className="space-y-2">
           <Button
+            data-testid="adjust-qty-btn"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={onAdjustQty}
+          >
+            Adjust Quantity
+          </Button>
+          <Button
+            data-testid="edit-batch-btn"
             variant="outline"
             className="w-full justify-start"
             onClick={() => onEdit(batch.id)}
@@ -336,7 +357,6 @@ function BatchInspectorContent({
 // ============================================================================
 
 export function InventoryWorkSurface() {
-  const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // State
@@ -350,6 +370,10 @@ export function InventoryWorkSurface() {
   const [page, setPage] = useState(0);
   const pageSize = 50;
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [editingBatchId, setEditingBatchId] = useState<number | null>(null);
+  const [showQtyAdjust, setShowQtyAdjust] = useState(false);
+  const [qtyAdjustment, setQtyAdjustment] = useState("");
+  const [qtyReason, setQtyReason] = useState("");
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -390,24 +414,7 @@ export function InventoryWorkSurface() {
     cursor: page * pageSize,
   });
 
-  // DEBUG: Log the raw data from tRPC
-  console.info("[InventoryWorkSurface] inventoryData:", inventoryData);
-  console.info(
-    "[InventoryWorkSurface] inventoryData type:",
-    typeof inventoryData
-  );
-  console.info(
-    "[InventoryWorkSurface] inventoryData keys:",
-    inventoryData ? Object.keys(inventoryData) : "null"
-  );
-  console.info(
-    "[InventoryWorkSurface] inventoryData.items:",
-    inventoryData?.items
-  );
-  console.info("[InventoryWorkSurface] isLoading:", isLoading);
-
   const rawItems = inventoryData?.items ?? [];
-  console.info("[InventoryWorkSurface] rawItems length:", rawItems.length);
   // Cast to our local interface type for easier manipulation
   const items = rawItems as unknown as InventoryItem[];
   // Note: inventory.list returns { items, hasMore, nextCursor }, not pagination.total
@@ -462,6 +469,24 @@ export function InventoryWorkSurface() {
   }, [items, sortColumn, sortDirection]);
 
   // Mutations
+  const adjustQtyMutation = trpc.inventory.adjustQty.useMutation({
+    onMutate: () => setSaving("Adjusting quantity..."),
+    onSuccess: () => {
+      toast.success("Quantity adjusted");
+      setSaved();
+      setShowQtyAdjust(false);
+      setQtyAdjustment("");
+      setQtyReason("");
+      refetch();
+    },
+    onError: (err: { message: string }) => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to adjust quantity");
+        setError(err.message);
+      }
+    },
+  });
+
   const updateStatusMutation = trpc.inventory.updateStatus.useMutation({
     onMutate: () => setSaving("Updating status..."),
     onSuccess: () => {
@@ -543,10 +568,51 @@ export function InventoryWorkSurface() {
 
   const handleEdit = useCallback(
     (batchId: number): void => {
-      setLocation(`/inventory/${batchId}`);
+      setEditingBatchId(batchId);
     },
-    [setLocation]
+    []
   );
+
+  const handleOpenAdjustQty = useCallback((): void => {
+    if (!selectedItem?.batch) {
+      return;
+    }
+    setShowQtyAdjust(true);
+  }, [selectedItem]);
+
+  const handleCloseEditModal = useCallback((): void => {
+    setEditingBatchId(null);
+  }, []);
+
+  const handleEditSuccess = useCallback((): void => {
+    setEditingBatchId(null);
+    refetch();
+  }, [refetch]);
+
+  const handleSubmitQtyAdjustment = useCallback((): void => {
+    if (!selectedItem?.batch) {
+      return;
+    }
+
+    const adjustment = Number(qtyAdjustment);
+    if (!Number.isFinite(adjustment) || adjustment === 0 || !qtyReason.trim()) {
+      toast.error("Please enter an adjustment amount and reason");
+      return;
+    }
+
+    adjustQtyMutation.mutate({
+      id: selectedItem.batch.id,
+      field: "onHandQty",
+      adjustment,
+      reason: qtyReason.trim(),
+    });
+  }, [adjustQtyMutation, qtyAdjustment, qtyReason, selectedItem]);
+
+  const handleCloseQtyAdjust = useCallback((): void => {
+    setShowQtyAdjust(false);
+    setQtyAdjustment("");
+    setQtyReason("");
+  }, []);
 
   type BatchStatus =
     | "AWAITING_INTAKE"
@@ -841,10 +907,71 @@ export function InventoryWorkSurface() {
           <BatchInspectorContent
             item={selectedItem}
             onEdit={handleEdit}
+            onAdjustQty={handleOpenAdjustQty}
             onStatusChange={handleStatusChange}
           />
         </InspectorPanel>
       </div>
+
+      <Dialog open={showQtyAdjust} onOpenChange={setShowQtyAdjust}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Quantity</DialogTitle>
+            <DialogDescription>
+              Enter a positive or negative value to adjust on-hand quantity.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="qty-adjustment">Adjustment Amount</Label>
+              <Input
+                id="qty-adjustment"
+                data-testid="qty-adjustment"
+                type="number"
+                step="0.01"
+                placeholder="e.g. -5 or 10"
+                value={qtyAdjustment}
+                onChange={e => setQtyAdjustment(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Current on-hand:{" "}
+                {selectedItem?.batch
+                  ? formatQuantity(selectedItem.batch.onHandQty)
+                  : "0.00"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qty-reason">Reason</Label>
+              <Input
+                id="qty-reason"
+                data-testid="qty-reason"
+                placeholder="Why is this adjustment needed?"
+                value={qtyReason}
+                onChange={e => setQtyReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseQtyAdjust}>
+              Cancel
+            </Button>
+            <Button
+              data-testid="submit-adjustment"
+              onClick={handleSubmitQtyAdjustment}
+              disabled={adjustQtyMutation.isPending}
+            >
+              {adjustQtyMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <EditBatchModal
+        open={editingBatchId !== null}
+        batchId={editingBatchId ?? 0}
+        onClose={handleCloseEditModal}
+        onSuccess={handleEditSuccess}
+      />
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />

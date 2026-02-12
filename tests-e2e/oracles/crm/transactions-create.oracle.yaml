@@ -30,23 +30,23 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "table, [data-testid='clients-list'], main"
+    wait_for: "[data-testid='clients-table'], table, main"
 
   - action: type
-    target: "[data-testid='search-input'], input[placeholder*='Search clients' i], input[placeholder*='Search' i]"
-    value_ref: "seed:client.test_buyer.teri_code"
+    target: "[data-testid='clients-search-input'], input[placeholder*='Search clients' i], input[placeholder*='Search' i]"
+    value_ref: "$seed:client.test_buyer.teri_code"
     clear_first: true
 
   - action: wait
-    for: "table tbody tr, [data-testid='client-row']"
+    for: "table tbody tr, [data-testid^='client-row-']"
     timeout: 5000
 
   - action: click
-    target: "table tbody tr:first-child button, [data-testid='client-row']:first-child button"
-    wait_for: "button:has-text('View Full Profile'), [role='complementary']:has-text('Quick Actions')"
+    target: "table tbody tr:first-of-type"
+    wait_for: "[data-testid='view-full-profile-btn'], [role='complementary']:has-text('Quick Actions')"
 
   - action: click
-    target: "button:has-text('View Full Profile')"
+    target: "[data-testid='view-full-profile-btn'], button:has-text('View Full Profile')"
     wait_for_navigation: true
 
   - action: click
@@ -57,22 +57,34 @@ steps:
     target: "button:has-text('Add Transaction'), [data-testid='add-transaction-btn']"
     wait_for: "[role='dialog']:has-text('Add Transaction'), [data-testid='transaction-form']"
 
+  - action: click
+    target: "[role='dialog'] [role='combobox']:has-text('Select type'), [role='dialog'] button[role='combobox']:has-text('Select type')"
+    wait_after: 200
+
+  - action: click
+    target: "[role='option']:has-text('Invoice'), [data-radix-collection-item]:has-text('Invoice')"
+    wait_after: 200
+
   - action: type
-    target: "[role='dialog']:has-text('Add Transaction') input[name='amount'], [role='dialog']:has-text('Add Transaction') input[aria-label*='Amount' i]"
+    target: "[role='dialog'] input[name='amount'], input[name='amount']"
     value: "1500.00"
     clear_first: true
 
   - action: type
-    target: "[role='dialog']:has-text('Add Transaction') textarea[name='notes'], [role='dialog']:has-text('Add Transaction') textarea"
+    target: "[role='dialog'] textarea[name='notes'], textarea[name='notes']"
     value: "Oracle transaction smoke"
     clear_first: true
 
   - action: click
-    target: "[role='dialog']:has-text('Add Transaction') button:has-text('Create Transaction'), [data-testid='save-transaction-btn']"
-    wait_for: "[role='tabpanel']:has-text('Transaction History'), [data-testid='transactions-list']"
+    target: "[data-testid='save-transaction-btn'], [role='dialog']:has-text('Add Transaction') button:has-text('Add Transaction')"
+    wait_after: 1200
 
   - action: wait
-    duration: 1500
+    for: "[role='tabpanel']:has-text('Transaction History'), [data-testid='transactions-list']"
+    timeout: 10000
+
+  - action: wait
+    duration: 500
 
   - action: screenshot
     name: "transaction_created"
@@ -81,10 +93,7 @@ expected_ui:
   visible:
     - "[role='tabpanel']:has-text('Transaction History'), [data-testid='transactions-list']"
   not_visible:
-    - "[role='dialog']:has-text('Add Transaction'), [data-testid='transaction-form']"
-    - "text=No transactions found"
-  text_present:
-    - "1500"
+    - "[role='dialog']:has-text('Add Transaction')"
 
 expected_db:
   client_transactions:

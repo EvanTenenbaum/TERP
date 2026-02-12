@@ -442,6 +442,7 @@ function ClientInspectorContent({
             type="button"
             variant="outline"
             className="w-full justify-start"
+            data-testid="view-full-profile-btn"
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
@@ -458,6 +459,7 @@ function ClientInspectorContent({
             type="button"
             variant="outline"
             className="w-full justify-start text-red-600 hover:text-red-700"
+            data-testid="delete-client-btn"
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
@@ -1020,7 +1022,7 @@ export function ClientsWorkSurface() {
 
       {/* Archive Confirmation Dialog */}
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
-        <DialogContent>
+        <DialogContent data-testid="confirm-delete-modal">
           <DialogHeader>
             <DialogTitle>Archive Client</DialogTitle>
           </DialogHeader>
@@ -1037,6 +1039,7 @@ export function ClientsWorkSurface() {
             </Button>
             <Button
               variant="destructive"
+              data-testid="confirm-delete-btn"
               onClick={confirmArchive}
               disabled={archiveClient.isPending}
             >

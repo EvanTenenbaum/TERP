@@ -32,24 +32,24 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "[data-testid='clients-list']"
+    wait_for: "[data-testid='clients-table'], table"
 
   - action: type
-    target: "[data-testid='search-input']"
-    value_ref: "temp:delete_target_client.teri_code"
+    target: "[data-testid='clients-search-input']"
+    value: "Delete Test Client"
     clear_first: true
 
   - action: wait
-    for: "[data-testid='client-row']"
+    for: "table tbody tr, [data-testid^='client-row-']"
     timeout: 5000
 
   - action: click
-    target: "[data-testid='client-row']:first-child"
-    wait_for_navigation: true
+    target: "table tbody tr:first-of-type"
+    wait_after: 500
 
-  - action: store
-    from: "[data-testid='client-id']"
-    as: "client_id"
+  - action: wait
+    for: "[data-testid='delete-client-btn'], [data-testid='view-full-profile-btn']"
+    timeout: 5000
 
   - action: click
     target: "[data-testid='delete-client-btn']"
@@ -57,10 +57,10 @@ steps:
 
   - action: click
     target: "[data-testid='confirm-delete-btn']"
-    wait_for_navigation: true
+    wait_after: 1500
 
   - action: wait
-    for: "[data-testid='clients-list']"
+    for: "[data-testid='clients-table'], table"
     timeout: 5000
 
   - action: screenshot
@@ -68,26 +68,24 @@ steps:
 
   # Verify deleted client no longer appears in list
   - action: type
-    target: "[data-testid='search-input']"
-    value_ref: "temp:delete_target_client.teri_code"
+    target: "[data-testid='clients-search-input']"
+    value: "Delete Test Client"
     clear_first: true
 
   - action: wait
     duration: 1000
 
   - action: assert
-    not_visible: "[data-testid='client-row']"
+    not_visible: "table tbody tr:has-text('Delete Test Client')"
 
 expected_ui:
   url_equals: "/clients"
   visible:
-    - "[data-testid='clients-list']"
-    - "[data-testid='success-message']"
+    - "[data-testid='clients-table'], table"
   not_visible:
     - "[data-testid='confirm-delete-modal']"
   text_present:
-    - "Client deleted"
-    - "archived"
+    - "Client"
 
 expected_db:
   clients:

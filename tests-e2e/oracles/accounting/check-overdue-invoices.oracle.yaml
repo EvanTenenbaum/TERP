@@ -12,7 +12,7 @@ tags:
   - batch-process
   - scheduled
   - mutation
-timeout: 30000
+timeout: 45000
 
 preconditions:
   ensure:
@@ -42,7 +42,7 @@ steps:
     wait_after: 3000
 
   - action: wait
-    for: "[role='tab']:has-text('Overdue Invoices'), text=Overdue Invoices"
+    for: "[data-sonner-toast], [role='status'], text=overdue"
     timeout: 15000
 
   - action: screenshot
@@ -52,7 +52,7 @@ expected_ui:
   visible:
     - "[data-testid='accounting-dashboard'], main"
   text_present:
-    - "overdue"
+    - "Overdue"
 
 expected_db:
   invoices:

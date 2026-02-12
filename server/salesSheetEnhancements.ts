@@ -272,6 +272,7 @@ export async function createBulkOrdersFromSalesSheet(
         tax: "0",
         discount: "0",
         total: subtotal.toString(),
+        paymentTerms: "NET_30",
         notes: clientOrder.notes || `Created from sales sheet template #${templateId}`,
         createdBy
       });
@@ -390,4 +391,3 @@ export async function getSalesSheetUsageStats(
     throw new Error(`Failed to get usage stats: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
-

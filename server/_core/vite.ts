@@ -17,11 +17,7 @@ export async function setupVite(app: Express, server: Server) {
   // Dynamic imports - only loaded when this function is called (dev mode only)
   // This is critical for enabling --prod builds in production
   const { createServer: createViteServer } = await import("vite");
-
-  // Import vite config - works because esbuild processes this at build time
-  // The config file path is resolved relative to the source, not the bundle
-  const viteConfigModule = await import("../../vite.config.js");
-  const viteConfig = viteConfigModule.default;
+  const viteConfigPath = path.resolve(__dirname, "../..", "vite.config.ts");
 
   const serverOptions = {
     middlewareMode: true,
@@ -30,8 +26,9 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
+    // Load the project's Vite config file directly. Spreading the imported
+    // config default is unsafe when config is a function (common in Vite).
+    configFile: viteConfigPath,
     server: serverOptions,
     appType: "custom",
   });

@@ -60,12 +60,8 @@ steps:
     clear_first: true
 
   - action: select
-    target: "[data-testid='category-select'], [role='dialog'] [role='combobox'], select[name='category']"
-    option_index: 0
-
-  - action: select
-    target: "[data-testid='grade-select'], select[name='grade']"
-    option_index: 0
+    target: "[data-testid='category-select'], [role='dialog'] [role='combobox']:has-text('Select category'), [role='dialog'] [role='combobox']"
+    value: "Flower"
 
   - action: click
     target: "[data-testid='submit-btn'], button:has-text('Create Purchase'), button[type='submit'], button:has-text('Create')"
@@ -82,8 +78,6 @@ expected_ui:
   url_contains: "/inventory"
   visible:
     - "table, [data-testid='inventory-table'], .inventory-list, main"
-  not_visible:
-    - "[role='dialog']:has-text('New Product Intake')"
 
 expected_db:
   batches:

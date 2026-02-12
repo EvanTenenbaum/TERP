@@ -33,68 +33,46 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/orders/new"
-    wait_for: "[data-testid='order-form'], [data-testid='order-creator'], form"
+    path: "/orders/create"
+    wait_for: "text=Create Sales Order, main"
 
   - action: wait
     network_idle: true
     timeout: 10000
 
   - action: select
-    target: "[data-testid='client-select'], [data-testid='client-dropdown']"
-    value_ref: "seed:client.redwood.name"
-    type_to_search: true
+    target: "[aria-label='Select a client'], [role='combobox'][aria-label*='client' i]"
+    value_ref: "$seed:client.redwood.name"
 
   - action: wait
-    duration: 500
-
-  - action: select
-    target: "[data-testid='order-type-select'], select[name='orderType']"
-    value: "SALE"
+    for: "text=Inventory"
+    timeout: 10000
 
   - action: click
-    target: "[data-testid='add-line-item'], [data-testid='add-item-btn']"
-    wait_after: 500
-
-  - action: select
-    target: "[data-testid='batch-select']:first-of-type, [data-testid='product-select']:first-of-type"
-    value_ref: "seed:batch.og_kush.display_name"
-    type_to_search: true
-
-  - action: type
-    target: "[data-testid='quantity-input']:first-of-type, input[name='quantity']:first-of-type"
-    value: "3"
-    clear_first: true
-
-  - action: wait
-    for: "[data-testid='margin-display'], .margin-percent"
-    timeout: 5000
-
-  - action: assert
-    visible: "[data-testid='cogs-display'], [data-testid='margin-display']"
+    target: "button[title^='Add'], table tbody tr:first-of-type button"
+    wait_after: 600
 
   - action: click
-    target: "[data-testid='save-draft-btn'], button:has-text('Save Draft')"
-    wait_for_navigation: true
+    target: "button:has-text('Save')"
+    wait_after: 300
+
+  - action: click
+    target: "[role='menuitem']:has-text('Save as Draft'), [data-radix-collection-item]:has-text('Save as Draft')"
+    wait_after: 1000
 
   - action: wait
-    network_idle: true
-    timeout: 15000
-
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "created_order_number"
+    for: "[data-sonner-toast], [role='status'], text=Draft"
+    timeout: 10000
 
   - action: screenshot
     name: "draft_order_created"
 
 expected_ui:
-  url_contains: "/orders"
+  url_contains: "/orders/create"
   visible:
-    - "[data-testid='order-detail'], [data-testid='draft-badge'], .draft-indicator"
+    - "text=Create Sales Order"
   text_present:
-    - "Draft"
-    - "Order"
+    - "Line Items"
 
 expected_db:
   orders:

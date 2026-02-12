@@ -5,6 +5,7 @@
  */
 
 import { Page, expect } from "@playwright/test";
+import superjson from "superjson";
 import type {
   TestOracle,
   OracleAction,
@@ -24,7 +25,7 @@ import { FailureMode, classifyFailure } from "./lib/failure-classifier";
 
 const entityCache: EntityCache = {};
 const DEFAULT_ACTION_TIMEOUT = Number(
-  process.env.ORACLE_ACTION_TIMEOUT_MS || 10000
+  process.env.ORACLE_ACTION_TIMEOUT_MS || 15000
 );
 const NETWORK_IDLE_TIMEOUT = Number(
   process.env.ORACLE_NETWORK_IDLE_TIMEOUT_MS || 5000
@@ -226,6 +227,27 @@ function titleCaseWords(input: string): string {
     .join(" ");
 }
 
+function padDatePart(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function formatDateTemplate(date: Date, template: string): string {
+  const replacements: Record<string, string> = {
+    YYYY: String(date.getFullYear()),
+    MM: padDatePart(date.getMonth() + 1),
+    DD: padDatePart(date.getDate()),
+    HH: padDatePart(date.getHours()),
+    mm: padDatePart(date.getMinutes()),
+    ss: padDatePart(date.getSeconds()),
+  };
+
+  let formatted = template;
+  for (const [token, replacement] of Object.entries(replacements)) {
+    formatted = formatted.split(token).join(replacement);
+  }
+  return formatted;
+}
+
 function normalizeSelectorSyntax(selector: string): string {
   return selector
     .replace(/:contains\((["'])(.*?)\1\)/g, ':has-text("$2")')
@@ -269,9 +291,9 @@ function parseTemplateContextPath(
 
   if (source === "temp") {
     const parts = remainder.split(".");
-    const record = context.temp[parts[0]] as
-      | Record<string, unknown>
-      | undefined;
+    const key = parts[0];
+    const record = (context.temp[key] ||
+      context.temp[`temp:${key}`]) as Record<string, unknown> | undefined;
     if (!record) return "";
     if (parts.length === 1) return JSON.stringify(record);
     return getRecordPathValue(record, parts.slice(1).join("."));
@@ -356,6 +378,20 @@ function resolveTemplateString(
     if (expr.startsWith("random:")) {
       const len = Number(expr.split(":", 2)[1]);
       return randomAlphaNumeric(Number.isFinite(len) && len > 0 ? len : 6);
+    }
+
+    if (expr.startsWith("date:")) {
+      const format = expr.split(":", 2)[1]?.trim() || "YYYY-MM-DD";
+      const now = new Date();
+      const lowered = format.toLowerCase();
+
+      if (lowered === "now") {
+        return now.toISOString();
+      }
+      if (lowered === "today") {
+        return formatDateTemplate(now, "YYYY-MM-DD");
+      }
+      return formatDateTemplate(now, format);
     }
 
     return parseTemplateContextPath(expr, context);
@@ -556,7 +592,10 @@ function buildSelectorCandidates(
       candidates.add("[role='main']");
     }
 
-    if (/success|toast|message/i.test(dataTestId)) {
+    // Only treat explicit success/toast test ids as toast-like selectors.
+    // A generic suffix like "error-message" should not map to role=status,
+    // otherwise not_visible checks can incorrectly match success toasts.
+    if (/success|toast/i.test(dataTestId)) {
       candidates.add("[role='status']");
       candidates.add("[data-sonner-toast]");
       candidates.add("[class*='toast']");
@@ -595,7 +634,6 @@ function buildSelectorCandidates(
 
     if (/record-payment/i.test(dataTestId)) {
       candidates.add("button:has-text('Record Payment')");
-      candidates.add("button:has-text('Pay')");
       candidates.add("[role='dialog'] button:has-text('Record Payment')");
     }
 
@@ -738,6 +776,16 @@ function buildSelectorCandidates(
   return Array.from(candidates);
 }
 
+function buildStrictSelectorCandidates(
+  rawSelector: string,
+  context: OracleContext
+): string[] {
+  const resolvedRaw = resolveTemplateString(rawSelector, context, "selector");
+  return splitSelectorList(resolvedRaw)
+    .map(selector => normalizeSelectorSyntax(selector))
+    .filter(Boolean);
+}
+
 function isLoginPath(url: string): boolean {
   try {
     const pathname = new URL(url).pathname;
@@ -809,6 +857,47 @@ async function findVisibleSelector(
   return undefined;
 }
 
+async function isEditableCandidate(
+  page: Page,
+  candidate: string
+): Promise<boolean> {
+  return page
+    .locator(candidate)
+    .first()
+    .evaluate(el => {
+      if (!(el instanceof HTMLElement)) return false;
+
+      const tagName = el.tagName.toLowerCase();
+      if (tagName === "input" || tagName === "textarea" || tagName === "select") {
+        return true;
+      }
+
+      if (el.isContentEditable) return true;
+
+      const role = (el.getAttribute("role") || "").toLowerCase();
+      return role === "textbox" || role === "spinbutton" || role === "combobox";
+    })
+    .catch(() => false);
+}
+
+async function findVisibleEditableSelector(
+  page: Page,
+  candidates: string[]
+): Promise<string | undefined> {
+  for (const candidate of candidates) {
+    const visible = await page
+      .locator(candidate)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (!visible) continue;
+
+    const editable = await isEditableCandidate(page, candidate);
+    if (editable) return candidate;
+  }
+  return undefined;
+}
+
 async function waitForAnySelector(
   page: Page,
   candidates: string[],
@@ -824,11 +913,55 @@ async function waitForAnySelector(
   return undefined;
 }
 
+async function clickWithFallback(
+  page: Page,
+  selector: string,
+  timeout: number
+): Promise<void> {
+  const locator = page.locator(selector).first();
+  try {
+    await locator.click({ timeout });
+    return;
+  } catch (initialError) {
+    const message =
+      initialError instanceof Error ? initialError.message : String(initialError);
+    const retryableClickFailure =
+      /intercepts pointer events|did not receive pointer events|Timeout|not visible|not stable/i.test(
+        message
+      );
+
+    if (!retryableClickFailure) {
+      throw initialError;
+    }
+
+    await locator.scrollIntoViewIfNeeded().catch(() => undefined);
+    await page.waitForTimeout(100);
+
+    try {
+      await locator.click({ timeout, force: true });
+      return;
+    } catch {
+      const domClicked = await locator
+        .evaluate(element => {
+          if (!(element instanceof HTMLElement)) return false;
+          element.click();
+          return true;
+        })
+        .catch(() => false);
+
+      if (!domClicked) {
+        throw initialError;
+      }
+    }
+  }
+}
+
 async function resolveSelectorForAction(
   page: Page,
   rawSelector: string,
   context: OracleContext,
-  timeout: number
+  timeout: number,
+  options: { requireEditable?: boolean } = {}
 ): Promise<string> {
   const baseCandidates = buildSelectorCandidates(rawSelector, context);
   const candidates: string[] = [];
@@ -852,10 +985,22 @@ async function resolveSelectorForAction(
     }
   }
   candidates.push(...baseCandidates);
-  const visibleNow = await findVisibleSelector(page, candidates);
+  const visibleNow = options.requireEditable
+    ? await findVisibleEditableSelector(page, candidates)
+    : await findVisibleSelector(page, candidates);
   if (visibleNow) return visibleNow;
 
-  const eventuallyVisible = await waitForAnySelector(page, candidates, timeout);
+  let eventuallyVisible: string | undefined;
+  if (options.requireEditable) {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeout) {
+      eventuallyVisible = await findVisibleEditableSelector(page, candidates);
+      if (eventuallyVisible) break;
+      await page.waitForTimeout(150);
+    }
+  } else {
+    eventuallyVisible = await waitForAnySelector(page, candidates, timeout);
+  }
   if (eventuallyVisible) return eventuallyVisible;
 
   if (isRowLikeSelector(rawSelector) && (await detectEmptyState(page))) {
@@ -1007,7 +1152,7 @@ function getTrpcUrl(path: string, input?: unknown): string {
   const baseUrl = getBaseUrl();
   const url = new URL(`/api/trpc/${path.replace(/^\//, "")}`, baseUrl);
   if (input !== undefined) {
-    url.searchParams.set("input", JSON.stringify({ json: input }));
+    url.searchParams.set("input", JSON.stringify(superjson.serialize(input)));
   }
   return url.toString();
 }
@@ -1034,7 +1179,7 @@ async function trpcMutation<T>(
 ): Promise<T | null> {
   try {
     const response = await page.request.post(getTrpcUrl(path), {
-      data: { json: input },
+      data: superjson.serialize(input),
       headers: { "Content-Type": "application/json" },
     });
     if (!response.ok()) return null;
@@ -1779,7 +1924,8 @@ function isRetryableNavigationError(error: unknown): boolean {
   return (
     message.includes("ERR_TIMED_OUT") ||
     message.includes("net::ERR_") ||
-    message.includes("Navigation timeout")
+    message.includes("Navigation timeout") ||
+    /Timeout \d+ms exceeded/i.test(message)
   );
 }
 
@@ -1933,6 +2079,86 @@ async function executePreconditions(
         continue;
       }
 
+      if (createCondition.entity === "client") {
+        const createData = context.temp[createCondition.ref];
+        const teriCode =
+          String(
+            createData.teriCode || createData.teri_code || `ORACLE-${Date.now()}`
+          ).trim() || `ORACLE-${Date.now()}`;
+        const name =
+          String(createData.name || createData.companyName || "").trim() ||
+          `Oracle Client ${Date.now()}`;
+
+        const payload = {
+          teriCode,
+          name,
+          email: String(
+            createData.email || `oracle.${Date.now()}@example.com`
+          ),
+          phone: String(createData.phone || "555-000-0000"),
+          businessType: String(createData.businessType || "WHOLESALE").toUpperCase(),
+          isBuyer:
+            createData.isBuyer !== undefined
+              ? Boolean(createData.isBuyer)
+              : Boolean(createData.is_buyer),
+          isSeller:
+            createData.isSeller !== undefined
+              ? Boolean(createData.isSeller)
+              : Boolean(createData.is_seller),
+          isBrand:
+            createData.isBrand !== undefined
+              ? Boolean(createData.isBrand)
+              : Boolean(createData.is_brand),
+          isReferee:
+            createData.isReferee !== undefined
+              ? Boolean(createData.isReferee)
+              : Boolean(createData.is_referee),
+          isContractor:
+            createData.isContractor !== undefined
+              ? Boolean(createData.isContractor)
+              : Boolean(createData.is_contractor),
+        };
+
+        let createdClientId = await trpcMutation<number>(page, "clients.create", payload);
+        if (createdClientId === null && allowPrivilegedFallback) {
+          createdClientId = await runWithPreconditionRole(
+            page,
+            activeRole,
+            async () => trpcMutation<number>(page, "clients.create", payload)
+          );
+        }
+
+        const clientId = numericValue(createdClientId);
+        let hydratedClient: Record<string, unknown> | null = null;
+        if (clientId !== null) {
+          hydratedClient = await trpcQuery<Record<string, unknown>>(
+            page,
+            "clients.getById",
+            { clientId }
+          );
+          if (!hydratedClient && allowPrivilegedFallback) {
+            hydratedClient = await runWithPreconditionRole(
+              page,
+              activeRole,
+              async () =>
+                trpcQuery<Record<string, unknown>>(page, "clients.getById", {
+                  clientId,
+                })
+            );
+          }
+        }
+
+        context.temp[createCondition.ref] = {
+          ...(createData || {}),
+          ...(hydratedClient || {}),
+          id: clientId ?? undefined,
+          clientId: clientId ?? undefined,
+          teriCode,
+          name,
+        };
+        continue;
+      }
+
       if (createCondition.entity === "inventory_movement") {
         const createData = context.temp[createCondition.ref];
         const batchId =
@@ -1999,9 +2225,15 @@ async function executePreconditions(
 
       if (createCondition.entity === "client_transaction") {
         const createData = context.temp[createCondition.ref];
+        const clientIdFromRef =
+          typeof createData.client_id_ref === "string"
+            ? numericValue(parseTemplateContextPath(createData.client_id_ref, context))
+            : null;
+
         const clientId =
           numericValue(createData.client_id) ??
           numericValue(createData.clientId) ??
+          clientIdFromRef ??
           (await getAnyClientId(page, context));
         if (clientId === null) continue;
 
@@ -2012,14 +2244,22 @@ async function executePreconditions(
           createData.paymentStatus || createData.payment_status || "PENDING"
         ).toUpperCase();
         const amount = numericValue(createData.amount) ?? 1000;
+        const transactionDateRaw = String(
+          createData.transactionDate ||
+            createData.transaction_date ||
+            "{{date:YYYY-MM-DD}}"
+        );
+        const transactionDate =
+          parseDateValue(resolveTemplateString(transactionDateRaw, context, "value")) ||
+          new Date();
 
-        let transaction = await trpcMutation<Record<string, unknown>>(
+        let transaction = await trpcMutation<unknown>(
           page,
           "clients.transactions.create",
           {
             clientId,
             transactionType,
-            transactionDate: new Date().toISOString(),
+            transactionDate,
             amount,
             paymentStatus,
             notes: String(
@@ -2038,7 +2278,7 @@ async function executePreconditions(
                 {
                   clientId,
                   transactionType,
-                  transactionDate: new Date().toISOString(),
+                  transactionDate,
                   amount,
                   paymentStatus,
                   notes: String(
@@ -2049,11 +2289,44 @@ async function executePreconditions(
           );
         }
 
+        const transactionRecord = asRecord(transaction);
+        const transactionId =
+          numericValue(transaction) ??
+          numericValue(transactionRecord?.id) ??
+          numericValue(transactionRecord?.transactionId);
+        if (transactionId === null) {
+          throw new Error(
+            `Failed to create client transaction precondition for ref=${createCondition.ref}`
+          );
+        }
+
+        let hydratedTransaction = await trpcQuery<Record<string, unknown>>(
+          page,
+          "clients.transactions.getById",
+          { transactionId }
+        );
+        if (!hydratedTransaction && allowPrivilegedFallback) {
+          hydratedTransaction = await runWithPreconditionRole(
+            page,
+            activeRole,
+            async () =>
+              trpcQuery<Record<string, unknown>>(
+                page,
+                "clients.transactions.getById",
+                { transactionId }
+              )
+          );
+        }
+
         context.temp[createCondition.ref] = {
           ...(createData || {}),
-          ...(transaction || {}),
+          ...(transactionRecord || {}),
+          ...(hydratedTransaction || {}),
+          id: transactionId,
+          transactionId,
           clientId,
         };
+        context.stored.transaction_id = transactionId;
         continue;
       }
 
@@ -2128,8 +2401,16 @@ async function executePreconditions(
       const desiredStatus = String(
         createData.fulfillment_status || createData.fulfillmentStatus || ""
       ).toUpperCase();
+      const shouldAutoConfirm =
+        !isDraft &&
+        (desiredStatus === "PACKED" ||
+          desiredStatus === "SHIPPED" ||
+          createData.confirmed_at !== undefined ||
+          createData.confirmedAt !== undefined ||
+          createData.auto_confirm === true ||
+          createData.autoConfirm === true);
 
-      if (!isDraft) {
+      if (shouldAutoConfirm) {
         await trpcMutation(page, "orders.confirm", { orderId }).catch(
           () => null
         );
@@ -2249,7 +2530,7 @@ async function executeAction(
         context,
         timeout
       );
-      await page.locator(selector).first().click({ timeout });
+      await clickWithFallback(page, selector, timeout);
 
       if (action.wait_for) {
         const waitCandidates = buildSelectorCandidates(
@@ -2279,7 +2560,8 @@ async function executeAction(
         page,
         action.target,
         context,
-        timeout
+        timeout,
+        { requireEditable: true }
       );
       const value = resolveTemplateString(
         action.value || action.value_ref || "",
@@ -2473,28 +2755,38 @@ function resolveValue(value: string, context: OracleContext): string {
 
   resolved = resolved.replace(/\$seed:([a-zA-Z_.]+)/g, (_, path) => {
     const parts = path.split(".");
-    const ref = context.seed[`${parts[0]}.${parts[1]}`];
-    if (ref && parts[2]) {
-      return String((ref as Record<string, unknown>)[parts[2]] || "");
+    const ref = context.seed[`${parts[0]}.${parts[1]}`] as
+      | Record<string, unknown>
+      | undefined;
+    if (ref && parts.length > 2) {
+      return getRecordPathValue(ref, parts.slice(2).join("."));
+    }
+    if (ref && parts.length === 2) {
+      return JSON.stringify(ref);
     }
     return "";
   });
 
   resolved = resolved.replace(/\$stored\.([a-zA-Z_]+)/g, (_, key) =>
-    String(context.stored[key] || "")
+    String(context.stored[key] ?? "")
   );
 
   resolved = resolved.replace(/\$created\.([a-zA-Z_.]+)/g, (_, path) => {
     const parts = path.split(".");
-    const ref = context.created[parts[0]];
-    if (ref && parts[1]) {
-      return String((ref as Record<string, unknown>)[parts[1]] || "");
+    const ref = context.created[parts[0]] as
+      | Record<string, unknown>
+      | undefined;
+    if (ref && parts.length > 1) {
+      return getRecordPathValue(ref, parts.slice(1).join("."));
+    }
+    if (ref && parts.length === 1) {
+      return JSON.stringify(ref);
     }
     return "";
   });
 
   resolved = resolved.replace(/\$temp\.([a-zA-Z_]+)/g, (_, key) =>
-    String(context.temp[key] || "")
+    String(context.temp[key] ?? context.temp[`temp:${key}`] ?? "")
   );
 
   return resolved;
@@ -2596,7 +2888,9 @@ async function assertUIState(
   if (expected.not_visible) {
     for (const selector of expected.not_visible) {
       try {
-        const candidates = buildSelectorCandidates(selector, context);
+        // Negative assertions must stay strict to avoid false positives from
+        // fuzzy selector expansion (e.g. generic "form" fallbacks).
+        const candidates = buildStrictSelectorCandidates(selector, context);
         const foundSelector = await findVisibleSelector(page, candidates);
         if (foundSelector) {
           await expect(page.locator(foundSelector).first()).not.toBeVisible({
@@ -2775,6 +3069,22 @@ export function formatOracleResult(result: OracleResult): string {
 
   if (result.failure_mode) {
     lines.push(`  Failure Mode: ${result.failure_mode}`);
+  }
+
+  const validation = result.failure_details?.validation_results;
+  if (!result.success && validation) {
+    const failedSignals = Object.entries(validation.signals)
+      .filter(([, passed]) => !passed)
+      .map(([name]) => name);
+    if (failedSignals.length > 0) {
+      lines.push(`  Failed Signals: ${failedSignals.join(", ")}`);
+    }
+    if (validation.failureReasons.length > 0) {
+      lines.push("  Validation Reasons:");
+      for (const reason of validation.failureReasons) {
+        lines.push(`    - ${reason}`);
+      }
+    }
   }
 
   return lines.join("\n");

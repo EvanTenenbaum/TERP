@@ -2,7 +2,7 @@
 # Create a custom strain
 
 flow_id: "Inventory.Strains.CreateStrain"
-description: "Create a new custom strain with category and optional aliases"
+description: "Create a new custom strain from the intake strain picker"
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
@@ -28,48 +28,29 @@ steps:
     network_idle: true
     timeout: 5000
 
-  # Navigate to strains section - may be a tab or separate page
   - action: click
-    target: "[data-testid='strains-tab'], a:has-text('Strains'), [data-testid='strains-link']"
-    wait_after: 1000
-
-  - action: wait
-    for: "[data-testid='strains-list'], .strains-table, [data-testid='strains-page']"
-    timeout: 5000
-
-  - action: click
-    target: "[data-testid='new-strain-btn'], button:has-text('New Strain'), button:has-text('Add Strain')"
+    target: "[data-testid='new-batch-btn'], button:has-text('Add Batch'), button:has-text('New Batch'), a:has-text('Add Batch')"
     wait_after: 500
 
   - action: wait
-    for: "[data-testid='strain-form'], form, .strain-modal"
+    for: "[role='dialog']:has-text('New Product Intake'), [data-testid='batch-form'], form"
     timeout: 5000
 
+  - action: click
+    target: "[role='dialog'] button[role='combobox']:has-text('Search for a strain'), [role='dialog'] button[role='combobox']:has-text('Select strain'), [role='dialog'] button[role='combobox']:has-text('Enter strain name')"
+    wait_after: 300
+
   - action: type
-    target: "[data-testid='strain-name-input'], input[name='name']"
+    target: "[role='dialog'] input[placeholder*='Type strain name' i]"
     value: "Purple Haze Test {{timestamp}}"
     clear_first: true
 
-  - action: select
-    target: "[data-testid='strain-category-select'], select[name='category']"
-    value: "sativa"
-
-  - action: type
-    target: "[data-testid='strain-description-input'], textarea[name='description']"
-    value: "A classic sativa strain known for its creative and euphoric effects"
-    clear_first: true
-
-  - action: type
-    target: "[data-testid='strain-aliases-input'], input[name='aliases']"
-    value: "Purple Haze, P Haze, PH"
-    clear_first: true
-
   - action: click
-    target: "[data-testid='submit-strain'], button[type='submit'], button:has-text('Create')"
+    target: "[cmdk-item]:has-text('Create new:'), [role='option']:has-text('Create new:')"
     wait_after: 1000
 
   - action: wait
-    network_idle: true
+    for: "[role='dialog'] button[role='combobox']:has-text('Purple Haze Test')"
     timeout: 5000
 
   - action: screenshot
@@ -77,10 +58,9 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='success-toast'], .toast-success"
+    - "[role='dialog'] button[role='combobox']:has-text('Purple Haze Test')"
   text_present:
     - "Purple Haze"
-    - "sativa"
   not_visible:
     - "[data-testid='error-message']"
 

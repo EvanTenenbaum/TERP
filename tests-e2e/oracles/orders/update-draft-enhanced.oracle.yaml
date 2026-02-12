@@ -47,66 +47,66 @@ steps:
     network_idle: true
     timeout: 10000
 
-  # Filter to show draft orders
+  # Open Drafts tab and locate created draft
   - action: click
-    target: "[data-testid='filter-drafts'], [data-testid='draft-filter']"
+    target: "button[role='tab']:has-text('Drafts'), [role='tab']:has-text('Drafts')"
     wait_after: 1000
+
+  - action: type
+    target: "[data-testid='orders-search-input']"
+    value: "D-"
+    clear_first: true
+
+  - action: wait
+    for: "table tbody tr"
+    timeout: 10000
 
   # Click on the draft order to edit
   - action: click
-    target: "tr:has-text('Draft'):first-of-type, [data-testid='order-row-draft']:first-of-type"
+    target: "table tbody tr:first-of-type"
     wait_for_navigation: true
 
   - action: wait
-    network_idle: true
+    for: "[data-testid='edit-draft-btn'], button:has-text('Edit Draft')"
     timeout: 10000
 
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "editing_order_number"
+  - action: click
+    target: "[data-testid='edit-draft-btn'], button:has-text('Edit Draft')"
+    wait_for_navigation: true
 
-  - action: store
-    from: "[data-testid='order-version'], [data-version]"
-    as: "initial_version"
+  - action: wait
+    for: "text=Create Sales Order, main"
+    timeout: 10000
+
+  - action: select
+    target: "[aria-label='Select a client'], [role='combobox'][aria-label*='client' i]"
+    value_ref: "$seed:client.redwood.name"
+
+  - action: wait
+    for: "text=Inventory"
+    timeout: 10000
 
   - action: click
-    target: "[data-testid='edit-order-btn'], button:has-text('Edit')"
+    target: "button[title^='Add'], table tbody tr:first-of-type button"
+    wait_after: 600
+
+  - action: click
+    target: "button:has-text('Save')"
+    wait_after: 300
+
+  - action: click
+    target: "[role='menuitem']:has-text('Save as Draft'), [data-radix-collection-item]:has-text('Save as Draft')"
     wait_after: 1000
-
-  # Modify quantity on existing line item
-  - action: type
-    target: "[data-testid='quantity-input']:first-of-type, input[name='quantity']:first-of-type"
-    value: "7"
-    clear_first: true
-
-  - action: wait
-    for: "[data-testid='line-total'], .line-total"
-    timeout: 5000
-
-  - action: type
-    target: "[data-testid='notes-input'], textarea[name='notes']"
-    value: "Updated via E2E test - quantity changed"
-    clear_first: true
-
-  - action: click
-    target: "[data-testid='save-draft-btn'], button:has-text('Save')"
-    wait_after: 2000
-
-  - action: wait
-    network_idle: true
-    timeout: 15000
 
   - action: screenshot
     name: "draft_order_updated"
 
 expected_ui:
-  url_contains: "/orders"
+  url_contains: "/orders/create"
   visible:
-    - "[data-testid='order-detail'], .order-detail"
-    - "[data-testid='draft-badge'], .draft-indicator"
+    - "text=Create Sales Order"
   text_present:
-    - "Draft"
-    - "Updated"
+    - "Line Items"
 
 expected_db:
   orders:

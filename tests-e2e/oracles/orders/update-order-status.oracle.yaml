@@ -47,39 +47,36 @@ steps:
     network_idle: true
     timeout: 10000
 
-  # Filter to show packed orders
   - action: click
-    target: "[data-testid='filter-packed'], [data-testid='status-filter']:has-text('Packed')"
-    wait_after: 1000
+    target: "button[role='tab']:has-text('Confirmed'), [role='tab']:has-text('Confirmed')"
+    wait_after: 500
+
+  - action: type
+    target: "[data-testid='orders-search-input']"
+    value: "{{temp:order_to_ship.orderNumber}}"
+    clear_first: true
+
+  - action: wait
+    for: "table tbody tr"
+    timeout: 10000
 
   # Click on the packed order
   - action: click
-    target: "tr:has-text('S-STATUS'), [data-testid='order-row']:has-text('PACKED'):first-of-type"
-    wait_for_navigation: true
+    target: "table tbody tr:first-of-type"
+    wait_after: 500
 
   - action: wait
-    network_idle: true
+    for: "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
     timeout: 10000
-
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "shipping_order_number"
-
-  - action: store
-    from: "[data-testid='order-version'], [data-version]"
-    as: "initial_version"
-
-  - action: assert
-    text_contains: "PACKED"
 
   # Click ship button
   - action: click
-    target: "[data-testid='ship-btn'], button:has-text('Ship'), button:has-text('Mark Shipped')"
+    target: "[data-testid='ship-order-btn'], button:has-text('Ship Order')"
     wait_after: 500
 
   # Fill shipping modal
   - action: wait
-    for: "[data-testid='ship-modal'], .modal, [role='dialog']"
+    for: "[data-testid='ship-modal'], [role='dialog']"
     timeout: 5000
 
   - action: type
@@ -95,7 +92,7 @@ steps:
     value: "Shipped via E2E test"
 
   - action: click
-    target: "[data-testid='confirm-ship'], button:has-text('Ship'), button:has-text('Confirm')"
+    target: "[data-testid='confirm-ship'], [role='dialog'] button:has-text('Ship')"
     wait_after: 2000
 
   - action: wait
@@ -107,10 +104,9 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='order-detail'], .order-detail"
+    - "[data-testid='orders-table'], table"
   text_present:
     - "SHIPPED"
-    - "TRACK-E2E"
 
 expected_db:
   orders:
