@@ -104,6 +104,7 @@ interface Quote {
   validUntil?: string;
   notes?: string;
   items?: Array<{
+    batchId?: number;
     displayName: string;
     quantity: number;
     price: string;
@@ -255,7 +256,7 @@ function QuoteInspectorContent({
           <div className="space-y-2">
             {items.map((item) => (
               <div
-                key={`quote-item-${item.displayName}`}
+                key={`quote-item-${item.batchId ?? item.displayName}-${item.quantity}-${item.price}`}
                 className="p-3 border rounded-lg bg-muted/30"
               >
                 <div className="flex justify-between items-start">
