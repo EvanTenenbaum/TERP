@@ -858,7 +858,10 @@ export function OrdersWorkSurface() {
                   </SelectContent>
                 </Select>
               )}
-              <Button onClick={() => setLocation("/orders/create")}>
+              <Button
+                onClick={() => setLocation("/orders/create")}
+                data-testid="new-order-button"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 New Order
               </Button>
@@ -880,7 +883,10 @@ export function OrdersWorkSurface() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : displayOrders.length === 0 ? (
-            <div className="flex items-center justify-center h-64" data-testid="orders-empty-state">
+            <div
+              className="flex items-center justify-center h-64"
+              data-testid="orders-empty-state"
+            >
               <div className="text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No orders found</p>
@@ -907,6 +913,8 @@ export function OrdersWorkSurface() {
                 {displayOrders.map((order: Order, index: number) => (
                   <TableRow
                     key={order.id}
+                    data-testid={`order-row-${order.id}`}
+                    data-orderid={order.id}
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedOrderId === order.id && "bg-muted",

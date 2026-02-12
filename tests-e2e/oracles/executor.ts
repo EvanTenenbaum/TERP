@@ -573,6 +573,81 @@ function buildSelectorCandidates(
       candidates.add(".details");
     }
 
+    if (/generate-invoice/i.test(dataTestId)) {
+      candidates.add("button:has-text('Generate Invoice')");
+      candidates.add("button:has-text('Create Invoice')");
+      candidates.add("[role='dialog'] button:has-text('Generate Invoice')");
+    }
+
+    if (/invoice-number/i.test(dataTestId)) {
+      candidates.add("[data-testid*='invoice-number']");
+      candidates.add("[data-testid*='invoiceNumber']");
+      candidates.add("span:has-text('INV-')");
+      candidates.add("[class*='invoice-number']");
+      candidates.add("code:has-text('INV-')");
+    }
+
+    if (/add-transaction/i.test(dataTestId)) {
+      candidates.add("button:has-text('Add Transaction')");
+      candidates.add("button:has-text('New Transaction')");
+      candidates.add("button:has-text('Record Transaction')");
+    }
+
+    if (/record-payment/i.test(dataTestId)) {
+      candidates.add("button:has-text('Record Payment')");
+      candidates.add("button:has-text('Pay')");
+      candidates.add("[role='dialog'] button:has-text('Record Payment')");
+    }
+
+    if (/adjust-qty|adjust-quantity|adjust-inventory/i.test(dataTestId)) {
+      candidates.add("button:has-text('Adjust')");
+      candidates.add("button:has-text('Adjust Quantity')");
+      candidates.add("button:has-text('Adjust Inventory')");
+    }
+
+    if (/movements-tab/i.test(dataTestId)) {
+      candidates.add("[role='tab']:has-text('Movements')");
+      candidates.add("button[role='tab']:has-text('Movements')");
+      candidates.add("[role='tab']:has-text('History')");
+    }
+
+    if (/record-movement/i.test(dataTestId)) {
+      candidates.add("button:has-text('Record Movement')");
+      candidates.add("button:has-text('New Movement')");
+      candidates.add("button:has-text('Add Movement')");
+    }
+
+    if (/tags-section|tags-list/i.test(dataTestId)) {
+      candidates.add("[data-testid*='tag']");
+      candidates.add("div:has-text('Tags')");
+      candidates.add("[role='tab']:has-text('Tags')");
+    }
+
+    if (/add-tag/i.test(dataTestId)) {
+      candidates.add("button:has-text('Add Tag')");
+      candidates.add("button:has-text('New Tag')");
+      candidates.add("button:has-text('+')");
+    }
+
+    if (/confirm-order/i.test(dataTestId)) {
+      candidates.add("button:has-text('Confirm Order')");
+      candidates.add("button:has-text('Confirm')");
+      candidates.add("[role='dialog'] button:has-text('Confirm Order')");
+    }
+
+    if (/edit-batch|update-batch/i.test(dataTestId)) {
+      candidates.add("button:has-text('Edit')");
+      candidates.add("button:has-text('Edit Batch')");
+      candidates.add("button:has-text('Update')");
+    }
+
+    if (/status-dropdown|status-select/i.test(dataTestId)) {
+      candidates.add("select");
+      candidates.add("[role='combobox']");
+      candidates.add("[data-testid*='status']");
+      candidates.add("button:has-text('Status')");
+    }
+
     const fuzzyId = dataTestId
       .replace(/[-_](btn|button|list|table)$/i, "")
       .trim();
@@ -1526,9 +1601,42 @@ async function findInvoiceByWhere(
   return null;
 }
 
+async function createInvoiceFromNewOrder(
+  page: Page,
+  context: OracleContext
+): Promise<Record<string, unknown> | null> {
+  const order = await createShippedSaleOrder(page, context);
+  const orderId = getOrderId(order);
+  if (orderId === null) return null;
+
+  const generated = await trpcMutation<Record<string, unknown>>(
+    page,
+    "invoices.generateFromOrder",
+    { orderId }
+  );
+  if (generated) return generated;
+
+  // The mutation may return the invoice ID rather than the full record
+  const invoiceId = numericValue(generated);
+  if (invoiceId !== null) {
+    return trpcQuery<Record<string, unknown>>(
+      page,
+      "accounting.invoices.getById",
+      { id: invoiceId }
+    );
+  }
+
+  // Fallback: search for the invoice we just created
+  return findInvoiceByWhere(page, {
+    referenceType: "ORDER",
+    referenceId: orderId,
+  });
+}
+
 async function materializeInvoiceEnsure(
   page: Page,
-  where: Record<string, unknown> | undefined
+  where: Record<string, unknown> | undefined,
+  context?: OracleContext
 ): Promise<Record<string, unknown> | null> {
   let invoice = await findInvoiceByWhere(page, where);
   if (invoice) return invoice;
@@ -1539,6 +1647,46 @@ async function materializeInvoiceEnsure(
     );
     invoice = await findInvoiceByWhere(page, where);
     if (invoice) return invoice;
+  }
+
+  // If no invoice found, try to create one via shipped order → generate invoice
+  if (context) {
+    const created = await createInvoiceFromNewOrder(page, context);
+    if (created) {
+      // If the where clause requires a specific status, try to match it
+      const desiredStatuses = Array.isArray(where?.status_in)
+        ? (where.status_in as string[])
+        : where?.status
+          ? [String(where.status)]
+          : null;
+
+      if (
+        desiredStatuses &&
+        !desiredStatuses.map(s => s.toUpperCase()).includes("DRAFT")
+      ) {
+        // Transition the invoice to a matching status if needed
+        const invoiceId = numericValue(getInvoiceField(created, "id"));
+        if (invoiceId !== null) {
+          for (const status of desiredStatuses) {
+            const upper = status.toUpperCase();
+            if (upper === "SENT" || upper === "VIEWED" || upper === "PARTIAL") {
+              await trpcMutation(page, "invoices.updateStatus", {
+                id: invoiceId,
+                status: upper,
+              }).catch(() => null);
+              break;
+            }
+          }
+        }
+      }
+
+      // Re-search to get the updated record
+      invoice = await findInvoiceByWhere(page, where);
+      if (invoice) return invoice;
+
+      // Return the created invoice even if it doesn't match all where criteria
+      return created;
+    }
   }
 
   return null;
@@ -1717,7 +1865,8 @@ async function executePreconditions(
         if (entity === "invoice") {
           let invoice = await materializeInvoiceEnsure(
             page,
-            condition.where as Record<string, unknown> | undefined
+            condition.where as Record<string, unknown> | undefined,
+            context
           );
           if (!invoice && allowPrivilegedFallback) {
             invoice = await runWithPreconditionRole(
@@ -1726,7 +1875,8 @@ async function executePreconditions(
               async () =>
                 materializeInvoiceEnsure(
                   page,
-                  condition.where as Record<string, unknown> | undefined
+                  condition.where as Record<string, unknown> | undefined,
+                  context
                 )
             );
           }
@@ -1842,6 +1992,66 @@ async function executePreconditions(
           }
         }
 
+        continue;
+      }
+
+      if (createCondition.entity === "client_transaction") {
+        const createData = context.temp[createCondition.ref];
+        const clientId =
+          numericValue(createData.client_id) ??
+          numericValue(createData.clientId) ??
+          (await getAnyClientId(page, context));
+        if (clientId === null) continue;
+
+        const transactionType = String(
+          createData.transactionType || createData.transaction_type || "INVOICE"
+        ).toUpperCase();
+        const paymentStatus = String(
+          createData.paymentStatus || createData.payment_status || "PENDING"
+        ).toUpperCase();
+        const amount = numericValue(createData.amount) ?? 1000;
+
+        let transaction = await trpcMutation<Record<string, unknown>>(
+          page,
+          "clients.transactions.create",
+          {
+            clientId,
+            transactionType,
+            transactionDate: new Date().toISOString(),
+            amount,
+            paymentStatus,
+            notes: String(
+              createData.notes || "Oracle precondition transaction"
+            ),
+          }
+        );
+        if (!transaction && allowPrivilegedFallback) {
+          transaction = await runWithPreconditionRole(
+            page,
+            activeRole,
+            async () =>
+              trpcMutation<Record<string, unknown>>(
+                page,
+                "clients.transactions.create",
+                {
+                  clientId,
+                  transactionType,
+                  transactionDate: new Date().toISOString(),
+                  amount,
+                  paymentStatus,
+                  notes: String(
+                    createData.notes || "Oracle precondition transaction"
+                  ),
+                }
+              )
+          );
+        }
+
+        context.temp[createCondition.ref] = {
+          ...(createData || {}),
+          ...(transaction || {}),
+          clientId,
+        };
         continue;
       }
 

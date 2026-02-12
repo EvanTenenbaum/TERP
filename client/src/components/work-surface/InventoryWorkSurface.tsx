@@ -641,6 +641,7 @@ export function InventoryWorkSurface() {
                 setPage(0);
               }}
               className="pl-10"
+              data-testid="inventory-search-input"
             />
           </div>
           <Select
@@ -680,7 +681,10 @@ export function InventoryWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleOpenPurchaseModal}>
+        <Button
+          onClick={handleOpenPurchaseModal}
+          data-testid="add-batch-button"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Batch
         </Button>
@@ -699,7 +703,10 @@ export function InventoryWorkSurface() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : displayItems.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
+            <div
+              className="flex items-center justify-center h-64"
+              data-testid="inventory-empty-state"
+            >
               <div className="text-center">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No inventory found</p>
@@ -707,7 +714,7 @@ export function InventoryWorkSurface() {
             </div>
           ) : (
             <>
-              <Table>
+              <Table data-testid="inventory-table">
                 <TableHeader>
                   <TableRow>
                     <TableHead>SKU</TableHead>
@@ -744,6 +751,8 @@ export function InventoryWorkSurface() {
                   {displayItems.map((item: InventoryItem, index: number) => (
                     <TableRow
                       key={item.batch?.id}
+                      data-testid={`batch-row-${item.batch?.id}`}
+                      data-batchid={item.batch?.id}
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",
                         selectedBatchId === item.batch?.id && "bg-muted",

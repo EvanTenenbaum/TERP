@@ -794,6 +794,7 @@ export function InvoicesWorkSurface() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-10"
+                data-testid="invoices-search-input"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -810,11 +811,19 @@ export function InvoicesWorkSurface() {
             </Select>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowAging(!showAging)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowAging(!showAging)}
+              data-testid="show-ar-aging-button"
+            >
               <CalendarClock className="h-4 w-4 mr-2" />
               {showAging ? "Hide" : "Show"} AR Aging
             </Button>
-            <Button variant="outline" onClick={() => refetchInvoices()}>
+            <Button
+              variant="outline"
+              onClick={() => refetchInvoices()}
+              data-testid="refresh-invoices-button"
+            >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -849,7 +858,10 @@ export function InvoicesWorkSurface() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : displayInvoices.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
+            <div
+              className="flex items-center justify-center h-64"
+              data-testid="invoices-empty-state"
+            >
               <div className="text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No invoices found</p>
@@ -861,7 +873,7 @@ export function InvoicesWorkSurface() {
               </div>
             </div>
           ) : (
-            <Table>
+            <Table data-testid="invoices-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Invoice #</TableHead>
@@ -878,6 +890,8 @@ export function InvoicesWorkSurface() {
                 {displayInvoices.map((invoice, index) => (
                   <TableRow
                     key={invoice.id}
+                    data-testid={`invoice-row-${invoice.id}`}
+                    data-invoiceid={invoice.id}
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedInvoiceId === invoice.id && "bg-muted",
