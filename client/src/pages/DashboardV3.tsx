@@ -5,7 +5,6 @@ import {
 } from "@/contexts/DashboardPreferencesContext";
 import { DashboardLayoutManager } from "@/components/dashboard/v3/DashboardLayoutManager";
 import { CustomizationPanel } from "@/components/dashboard/v3/CustomizationPanel";
-import { CommentWidget } from "@/components/comments/CommentWidget";
 import { InboxWidget } from "@/components/inbox/InboxWidget";
 import { Button } from "@/components/ui/button";
 
@@ -28,7 +27,6 @@ import {
   ClientProfitMarginLeaderboard,
   TopStrainFamiliesWidget,
   AgingInventoryWidget,
-  SmartOpportunitiesWidget,
 } from "@/components/dashboard/widgets-v2";
 
 function DashboardContent() {
@@ -73,8 +71,6 @@ function DashboardContent() {
         return <TopStrainFamiliesWidget key={widgetId} />;
       case "aging-inventory":
         return <AgingInventoryWidget key={widgetId} />;
-      case "smart-opportunities":
-        return <SmartOpportunitiesWidget key={widgetId} />;
       default:
         return null;
     }
@@ -101,7 +97,6 @@ function DashboardContent() {
             <Settings className="h-4 w-4 mr-2" />
             Customize
           </Button>
-          <CommentWidget commentableType="dashboard" commentableId={1} />
         </div>
       </div>
 

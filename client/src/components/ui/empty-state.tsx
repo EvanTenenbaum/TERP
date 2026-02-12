@@ -212,12 +212,12 @@ export const EmptyStatePresets = {
   NoOrders: (props: { onCreateOrder?: () => void }) => (
     <EmptyState
       variant="orders"
-      title="No orders yet"
-      description="Create your first order to start tracking sales"
+      title="No sales yet"
+      description="Create your first sale to start tracking"
       action={
         props.onCreateOrder
           ? {
-              label: "Create Order",
+              label: "Create Sale",
               onClick: props.onCreateOrder,
             }
           : undefined

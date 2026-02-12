@@ -6,7 +6,6 @@ import { OwnerCashDecisionPanel } from "@/components/dashboard/owner/OwnerCashDe
 import { OwnerDebtPositionWidget } from "@/components/dashboard/owner/OwnerDebtPositionWidget";
 import { OwnerVendorsNeedPaymentWidget } from "@/components/dashboard/owner/OwnerVendorsNeedPaymentWidget";
 import { OwnerQuickCardsWidget } from "@/components/dashboard/owner/OwnerQuickCardsWidget";
-import { CommentWidget } from "@/components/comments/CommentWidget";
 import { Badge } from "@/components/ui/badge";
 
 export default function OwnerCommandCenterDashboard() {
@@ -43,7 +42,6 @@ export default function OwnerCommandCenterDashboard() {
           >
             {todayLabel}
           </Badge>
-          <CommentWidget commentableType="dashboard" commentableId={1} />
         </div>
       </div>
 

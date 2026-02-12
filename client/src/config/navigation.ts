@@ -70,7 +70,8 @@ export const navigationItems: NavigationItem[] = [
     ariaLabel: "Notifications and messages inbox",
   },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
-  { name: "Orders", path: "/orders", icon: ShoppingCart, group: "sales" },
+  // TER-196: Renamed "Orders" to "Sales" per user interview feedback
+  { name: "Sales", path: "/orders", icon: ShoppingCart, group: "sales" },
   // NAV-001: Added Interest List for tracking client product interests
   {
     name: "Interest List",

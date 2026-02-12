@@ -322,6 +322,7 @@ export function FloatingOrderPreview({
                                 min="1"
                                 value={editQuantity}
                                 onChange={e => setEditQuantity(e.target.value)}
+                                onFocus={e => e.target.select()}
                                 className="h-8"
                               />
                             </div>
@@ -335,6 +336,7 @@ export function FloatingOrderPreview({
                                 step="0.01"
                                 value={editPrice}
                                 onChange={e => setEditPrice(e.target.value)}
+                                onFocus={e => e.target.select()}
                                 className="h-8"
                               />
                             </div>

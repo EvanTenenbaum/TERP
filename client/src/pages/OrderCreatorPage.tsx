@@ -522,9 +522,9 @@ export default function OrderCreatorPageV2() {
               <div className="flex items-center gap-3">
                 <ShoppingCart className="h-6 w-6" />
                 <div>
-                  <CardTitle className="text-2xl">Create Sales Order</CardTitle>
+                  <CardTitle className="text-2xl">Create Sale</CardTitle>
                   <CardDescription>
-                    Build order with COGS visibility and margin management
+                    Build sale with COGS visibility and margin management
                   </CardDescription>
                 </div>
               </div>
@@ -728,32 +728,39 @@ export default function OrderCreatorPageV2() {
                 isValid={isValid}
               />
 
-              {/* Order Preview - Relocated to be more visible (ENH-006) */}
-              <FloatingOrderPreview
-                clientName={clientDetails?.name || "Client"}
-                items={items}
-                subtotal={totals.subtotal}
-                adjustmentAmount={totals.adjustmentAmount}
-                adjustmentLabel={
-                  adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
-                }
-                showAdjustment={showAdjustmentOnDocument}
-                total={totals.total}
-                orderType={orderType}
-                showInternalMetrics={true}
-                onUpdateItem={(batchId, updates) => {
-                  setItems(prevItems =>
-                    prevItems.map(item =>
-                      item.batchId === batchId ? { ...item, ...updates } : item
-                    )
-                  );
-                }}
-                onRemoveItem={batchId => {
-                  setItems(prevItems =>
-                    prevItems.filter(item => item.batchId !== batchId)
-                  );
-                }}
-              />
+              {/* TER-206: Collapsible order preview */}
+              <details open>
+                <summary className="cursor-pointer text-sm font-medium text-muted-foreground mb-2 select-none">
+                  Order Preview
+                </summary>
+                <FloatingOrderPreview
+                  clientName={clientDetails?.name || "Client"}
+                  items={items}
+                  subtotal={totals.subtotal}
+                  adjustmentAmount={totals.adjustmentAmount}
+                  adjustmentLabel={
+                    adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
+                  }
+                  showAdjustment={showAdjustmentOnDocument}
+                  total={totals.total}
+                  orderType={orderType}
+                  showInternalMetrics={true}
+                  onUpdateItem={(batchId, updates) => {
+                    setItems(prevItems =>
+                      prevItems.map(item =>
+                        item.batchId === batchId
+                          ? { ...item, ...updates }
+                          : item
+                      )
+                    );
+                  }}
+                  onRemoveItem={batchId => {
+                    setItems(prevItems =>
+                      prevItems.filter(item => item.batchId !== batchId)
+                    );
+                  }}
+                />
+              </details>
 
               {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
               <Card>
