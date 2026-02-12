@@ -31,8 +31,8 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    req: { headers: Record<string, string> },
-    res: Record<string, unknown>,
+    req: { headers: {} as Record<string, string> },
+    res: {} as Record<string, unknown>,
   });
   return appRouter.createCaller({
     ...ctx,
@@ -193,7 +193,9 @@ describe("RBAC Users Router", () => {
         values: mockValues,
       } as unknown as ReturnType<typeof db.select>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
       const result = await caller.rbacUsers.assignRole({ userId, roleId });
@@ -201,7 +203,9 @@ describe("RBAC Users Router", () => {
       // Assert
       expect(result.success).toBe(true);
       expect(db.insert).toHaveBeenCalled();
-      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(userId);
+      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
+        userId
+      );
     });
 
     it("should throw error if role does not exist", async () => {
@@ -277,7 +281,9 @@ describe("RBAC Users Router", () => {
         where: mockDeleteWhere,
       } as unknown as ReturnType<typeof db.select>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
       const result = await caller.rbacUsers.removeRole({ userId, roleId });
@@ -285,7 +291,9 @@ describe("RBAC Users Router", () => {
       // Assert
       expect(result.success).toBe(true);
       expect(db.delete).toHaveBeenCalled();
-      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(userId);
+      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
+        userId
+      );
     });
   });
 
@@ -314,15 +322,22 @@ describe("RBAC Users Router", () => {
         onDuplicateKeyUpdate: mockOnDuplicateKeyUpdate,
       } as unknown as ReturnType<typeof db.select>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
-      const result = await caller.rbacUsers.grantPermission({ userId, permissionId });
+      const result = await caller.rbacUsers.grantPermission({
+        userId,
+        permissionId,
+      });
 
       // Assert
       expect(result.success).toBe(true);
       expect(db.insert).toHaveBeenCalled();
-      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(userId);
+      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
+        userId
+      );
     });
   });
 
@@ -351,14 +366,21 @@ describe("RBAC Users Router", () => {
         onDuplicateKeyUpdate: mockOnDuplicateKeyUpdate,
       } as unknown as ReturnType<typeof db.select>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
-      const result = await caller.rbacUsers.revokePermission({ userId, permissionId });
+      const result = await caller.rbacUsers.revokePermission({
+        userId,
+        permissionId,
+      });
 
       // Assert
       expect(result.success).toBe(true);
-      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(userId);
+      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
+        userId
+      );
     });
   });
 
@@ -393,15 +415,22 @@ describe("RBAC Users Router", () => {
         values: mockValues,
       } as unknown as ReturnType<typeof db.select>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
-      const result = await caller.rbacUsers.bulkAssignRoles({ userId, roleIds });
+      const result = await caller.rbacUsers.bulkAssignRoles({
+        userId,
+        roleIds,
+      });
 
       // Assert
       expect(result.success).toBe(true);
       expect(result.assignedCount).toBe(3);
-      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(userId);
+      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
+        userId
+      );
     });
   });
 
@@ -435,7 +464,9 @@ describe("RBAC Users Router", () => {
         values: mockValues,
       } as unknown as ReturnType<typeof db.select>);
 
-      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(undefined);
+      vi.mocked(permissionService.clearPermissionCache).mockReturnValue(
+        undefined
+      );
 
       // Act
       const result = await caller.rbacUsers.replaceRoles({ userId, roleIds });
@@ -444,7 +475,9 @@ describe("RBAC Users Router", () => {
       expect(result.success).toBe(true);
       expect(db.delete).toHaveBeenCalled();
       expect(db.insert).toHaveBeenCalled();
-      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(userId);
+      expect(permissionService.clearPermissionCache).toHaveBeenCalledWith(
+        userId
+      );
     });
   });
 });

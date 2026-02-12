@@ -1,8 +1,8 @@
 /**
  * Inventory Integration Tests
- * 
+ *
  * Tests critical inventory intake and movement flows.
- * 
+ *
  * Task: ST-010
  * Session: Session-20251114-testing-infra-687ceb
  */
@@ -17,6 +17,7 @@ vi.mock("./services/permissionService", () => setupPermissionMock());
 
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
+import { db } from "./db";
 
 describe("Inventory Integration Tests", () => {
   const mockUser = {
@@ -131,7 +132,9 @@ describe("Inventory Integration Tests", () => {
       const updatedSource = { id: 1, quantity: 80 };
       const updatedDest = { id: 2, quantity: 70 };
 
-      expect(updatedSource.quantity).toBe(sourceLocation.quantity - moveQuantity);
+      expect(updatedSource.quantity).toBe(
+        sourceLocation.quantity - moveQuantity
+      );
       expect(updatedDest.quantity).toBe(destLocation.quantity + moveQuantity);
     });
 
@@ -158,10 +161,7 @@ describe("Inventory Integration Tests", () => {
         { type: "sale", quantity: -20 },
       ];
 
-      const currentLevel = transactions.reduce(
-        (sum, t) => sum + t.quantity,
-        0
-      );
+      const currentLevel = transactions.reduce((sum, t) => sum + t.quantity, 0);
 
       expect(currentLevel).toBe(100);
     });

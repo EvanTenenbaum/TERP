@@ -1,8 +1,8 @@
 /**
  * Order CRUD Integration Tests
- * 
+ *
  * Tests critical order creation, retrieval, update, and deletion flows.
- * 
+ *
  * Task: ST-010
  * Session: Session-20251114-testing-infra-687ceb
  */
@@ -17,6 +17,7 @@ vi.mock("./services/permissionService", () => setupPermissionMock());
 
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
+import { db } from "./db";
 
 describe("Order CRUD Integration Tests", () => {
   const mockUser = {
