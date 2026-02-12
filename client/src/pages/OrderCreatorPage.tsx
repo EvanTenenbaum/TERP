@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
@@ -97,6 +98,10 @@ interface InventoryItemForOrder {
 }
 
 export default function OrderCreatorPageV2() {
+  // TER-216: Navigation after save/finalize
+  const [, setLocation] = useLocation();
+  const searchString = useSearch();
+
   // State
   const [clientId, setClientId] = useState<number | null>(null);
   const [items, setItems] = useState<LineItem[]>([]);
@@ -138,6 +143,34 @@ export default function OrderCreatorPageV2() {
   // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
   // before finalization completes
   const isFinalizingRef = useRef(false);
+
+  // TER-215: Import items from Sales Sheet when navigating with ?fromSalesSheet=true
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    if (params.get("fromSalesSheet") === "true") {
+      try {
+        const raw = sessionStorage.getItem("salesSheetToQuote");
+        if (raw) {
+          const data = JSON.parse(raw) as {
+            clientId: number;
+            items: InventoryItemForOrder[];
+          };
+          setClientId(data.clientId);
+          setOrderType("QUOTE");
+          // Convert will happen after inventory loads, but pre-set client
+          // Items will be added via convertInventoryToLineItems once available
+          const lineItems = convertInventoryToLineItems(data.items);
+          if (lineItems.length > 0) {
+            setItems(lineItems);
+          }
+          sessionStorage.removeItem("salesSheetToQuote");
+        }
+      } catch {
+        // Silently fail if sessionStorage data is invalid
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // QA-W2-005: Track unsaved changes - consider both items and auto-save status
   // Warning should show when there are items OR when auto-save is pending/failed
@@ -208,10 +241,10 @@ export default function OrderCreatorPageV2() {
         // BUG-045 FIX: Pass version 1 for newly created drafts (optimistic locking)
         finalizeMutation.mutate({ orderId: data.orderId, version: 1 });
       } else {
-        // Just saving draft - show success and reset
+        // TER-216: After saving draft, navigate to orders list
         toast.success(`Draft order #${data.orderId} saved successfully`);
-        setItems([]);
-        setAdjustment(null);
+        setHasUnsavedChanges(false);
+        setLocation("/orders");
       }
     },
     onError: error => {
@@ -226,11 +259,13 @@ export default function OrderCreatorPageV2() {
       // BUG-093 FIX: Reset finalization flag and form after successful finalization
       isFinalizingRef.current = false;
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
-      // Now it's safe to reset the form
-      setItems([]);
-      setAdjustment(null);
-      setClientId(null);
-      setReferredByClientId(null);
+      // TER-216: Navigate to appropriate destination after confirmation
+      setHasUnsavedChanges(false);
+      if (orderType === "QUOTE") {
+        setLocation("/quotes");
+      } else {
+        setLocation("/orders");
+      }
     },
     onError: error => {
       // BUG-093 FIX: Reset flag on error, but preserve form data so user can retry
