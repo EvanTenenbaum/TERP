@@ -84,6 +84,8 @@ export default function ClientProfilePage() {
   const [transactionSearch, setTransactionSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
+  const [newTag, setNewTag] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
 
   // Credit visibility settings
   const { shouldShowCreditWidgetInProfile } = useCreditVisibility();
@@ -159,6 +161,13 @@ export default function ClientProfilePage() {
     });
   const recordPaymentMutation =
     trpc.clients.transactions.recordPayment.useMutation();
+  const addTagMutation = trpc.clients.tags.add.useMutation({
+    onSuccess: () => {
+      refetchClient();
+      setNewTag("");
+      setShowTagInput(false);
+    },
+  });
 
   if (clientLoading) {
     return <PageSkeleton variant="dashboard" />;
@@ -286,6 +295,12 @@ export default function ClientProfilePage() {
     setSelectedTransaction(null);
   };
 
+  const handleAddTag = async () => {
+    const tag = newTag.trim();
+    if (!tag) return;
+    await addTagMutation.mutateAsync({ clientId, tag });
+  };
+
   return (
     <PageErrorBoundary pageName="ClientProfile">
       <div className="space-y-6">
@@ -298,7 +313,9 @@ export default function ClientProfilePage() {
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <CardTitle className="text-3xl">{client.teriCode}</CardTitle>
+                  <CardTitle className="text-3xl" data-testid="client-id">
+                    {client.teriCode}
+                  </CardTitle>
                   <div className="flex gap-2">
                     {getClientTypeBadges().map(badge => (
                       <Badge key={badge.label} variant={badge.variant}>
@@ -406,6 +423,7 @@ export default function ClientProfilePage() {
             <CardContent>
               <div
                 className={`text-2xl font-bold ${parseFloat(client.totalOwed as string) > 0 ? "text-destructive" : ""}`}
+                data-testid="total-owed"
               >
                 {formatCurrency(client.totalOwed || 0)}
               </div>
@@ -438,6 +456,7 @@ export default function ClientProfilePage() {
               )}
               <TabsTrigger
                 value="transactions"
+                data-testid="transactions-tab"
                 className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
               >
                 Transactions
@@ -552,7 +571,7 @@ export default function ClientProfilePage() {
                     </Label>
                     <p className="text-base">{client.phone || "-"}</p>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2" data-testid="tags-section">
                     <Label className="text-sm font-medium text-muted-foreground">
                       Address
                     </Label>
@@ -562,7 +581,7 @@ export default function ClientProfilePage() {
                     <Label className="text-sm font-medium text-muted-foreground">
                       Tags
                     </Label>
-                    <div className="flex flex-wrap gap-2 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1" data-testid="tags-list">
                       {client.tags &&
                       Array.isArray(client.tags) &&
                       client.tags.length > 0 ? (
@@ -573,6 +592,46 @@ export default function ClientProfilePage() {
                         ))
                       ) : (
                         <span className="text-muted-foreground">No tags</span>
+                      )}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {showTagInput ? (
+                        <>
+                          <Input
+                            data-testid="tag-input"
+                            value={newTag}
+                            onChange={e => setNewTag(e.target.value)}
+                            placeholder="Enter tag"
+                            className="w-48"
+                          />
+                          <Button
+                            size="sm"
+                            data-testid="save-tag-btn"
+                            onClick={handleAddTag}
+                            disabled={addTagMutation.isPending || !newTag.trim()}
+                          >
+                            {addTagMutation.isPending ? "Saving..." : "Save Tag"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setShowTagInput(false);
+                              setNewTag("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-testid="add-tag-btn"
+                          onClick={() => setShowTagInput(true)}
+                        >
+                          Add Tag
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -653,13 +712,16 @@ export default function ClientProfilePage() {
                       All transactions (invoices, quotes, orders, etc.)
                     </CardDescription>
                   </div>
-                  <Button onClick={() => setTransactionDialogOpen(true)}>
+                  <Button
+                    data-testid="add-transaction-btn"
+                    onClick={() => setTransactionDialogOpen(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Transaction
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4" data-testid="transactions-list">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -701,7 +763,11 @@ export default function ClientProfilePage() {
                       <TableBody>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {transactions.map((txn: any) => (
-                          <TableRow key={txn.id}>
+                          <TableRow
+                            key={txn.id}
+                            data-testid={`transaction-row-${txn.id}`}
+                            data-status={txn.paymentStatus}
+                          >
                             <TableCell className="font-medium">
                               {txn.transactionNumber || "-"}
                             </TableCell>
@@ -730,6 +796,7 @@ export default function ClientProfilePage() {
                             <TableCell className="text-right">
                               {txn.paymentStatus !== "PAID" && (
                                 <Button
+                                  data-testid="record-payment-btn"
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
@@ -902,7 +969,7 @@ export default function ClientProfilePage() {
 
         {/* Record Payment Dialog */}
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-          <DialogContent>
+          <DialogContent data-testid="payment-form">
             <DialogHeader>
               <DialogTitle>Record Payment</DialogTitle>
               <DialogDescription>
@@ -958,7 +1025,9 @@ export default function ClientProfilePage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Record Payment</Button>
+                <Button type="submit" data-testid="submit-payment-btn">
+                  Record Payment
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -1122,7 +1191,10 @@ export default function ClientProfilePage() {
           open={transactionDialogOpen}
           onOpenChange={setTransactionDialogOpen}
         >
-          <DialogContent className="w-full sm:max-w-2xl">
+          <DialogContent
+            className="w-full sm:max-w-2xl"
+            data-testid="transaction-form"
+          >
             <DialogHeader>
               <DialogTitle>Add Transaction</DialogTitle>
               <DialogDescription>
@@ -1230,6 +1302,7 @@ export default function ClientProfilePage() {
                 </Button>
                 <Button
                   type="submit"
+                  data-testid="save-transaction-btn"
                   disabled={createTransactionMutation.isPending}
                 >
                   {createTransactionMutation.isPending

@@ -3,7 +3,7 @@
 
 flow_id: "CRM.Clients.ListClients"
 description: "Verify clients list page loads and displays client data"
-role: "SalesRep"
+role: "SalesManager"
 seed_profile: "basic_sales"
 tags:
   - tier1

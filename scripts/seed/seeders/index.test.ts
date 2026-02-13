@@ -24,6 +24,7 @@ const FK_DEPENDENCIES: Record<string, string[]> = {
   products: ["vendors"], // products depend on vendors (via brands)
   purchaseOrders: ["vendors", "products"],
   batches: ["products", "vendors"],
+  product_images: ["batches", "products"],
   orders: ["clients", "batches"],
   client_transactions: ["clients", "orders"],
   invoices: ["clients", "orders"],
@@ -82,6 +83,18 @@ describe("Seeder Index Properties", () => {
       expect(batchesIndex).toBeLessThan(ordersIndex);
     });
 
+    it("should have batches before product_images", () => {
+      const batchesIndex = SEEDING_ORDER.indexOf("batches");
+      const productImagesIndex = SEEDING_ORDER.indexOf("product_images");
+      expect(batchesIndex).toBeLessThan(productImagesIndex);
+    });
+
+    it("should have products before product_images", () => {
+      const productsIndex = SEEDING_ORDER.indexOf("products");
+      const productImagesIndex = SEEDING_ORDER.indexOf("product_images");
+      expect(productsIndex).toBeLessThan(productImagesIndex);
+    });
+
     it("should have orders before invoices", () => {
       const ordersIndex = SEEDING_ORDER.indexOf("orders");
       const invoicesIndex = SEEDING_ORDER.indexOf("invoices");
@@ -120,6 +133,7 @@ describe("Seeder Index Properties", () => {
         "clients",
         "products",
         "batches",
+        "product_images",
         "orders",
         "invoices",
         "payments",

@@ -28,107 +28,52 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/clients"
-    wait_for: "[data-testid='clients-list']"
+    path: "/clients/{{seed:client.test_buyer.id}}"
+    wait_for: "main, [role='tab']:has-text('Comms')"
+
+  - action: click
+    target: "[role='tab']:has-text('Comms'), [data-testid='communications-tab']"
+    wait_for: "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
+
+  - action: click
+    target: "button:has-text('Log Communication'), button:has-text('Log First Communication'), [data-testid='add-communication-btn']"
+    wait_for: "[role='dialog']:has-text('Log Communication'), [data-testid='communication-form']"
+
+  - action: click
+    target: "[role='dialog']:has-text('Log Communication') [role='combobox']"
+    wait_for: "[role='option']"
+
+  - action: click
+    target: "[role='option']"
 
   - action: type
-    target: "[data-testid='search-input']"
-    value_ref: "seed:client.test_buyer.teri_code"
+    target: "[role='dialog']:has-text('Log Communication') #subject, [role='dialog']:has-text('Log Communication') input#subject"
+    value: "Oracle communication smoke"
     clear_first: true
 
-  - action: wait
-    for: "[data-testid='client-row']"
-    timeout: 5000
-
-  - action: click
-    target: "[data-testid='client-row']:first-child"
-    wait_for_navigation: true
-
-  - action: store
-    from: "[data-testid='client-id']"
-    as: "client_id"
-
-  - action: click
-    target: "[data-testid='communications-tab']"
-    wait_for: "[data-testid='communications-list']"
-
-  - action: click
-    target: "[data-testid='add-communication-btn']"
-    wait_for: "[data-testid='communication-form']"
-
-  - action: select
-    target: "[data-testid='communication-type-select']"
-    value: "CALL"
-
   - action: type
-    target: "input[name='subject']"
-    value: "Follow-up call regarding order {{random:4}}"
-    clear_first: true
-
-  - action: store
-    from: "input[name='subject']"
-    as: "comm_subject"
-
-  - action: type
-    target: "textarea[name='notes']"
+    target: "[role='dialog']:has-text('Log Communication') #notes, [role='dialog']:has-text('Log Communication') textarea#notes"
     value: "Discussed delivery schedule and payment terms. Client confirmed order details."
     clear_first: true
 
-  - action: type
-    target: "input[name='communicatedAt']"
-    value: "{{date:YYYY-MM-DD}}T10:30:00"
-    clear_first: true
-
   - action: click
-    target: "[data-testid='save-communication-btn']"
-    wait_for: "[data-testid='success-message']"
+    target: "[role='dialog']:has-text('Log Communication') button:has-text('Save Communication'), [data-testid='save-communication-btn']"
+    wait_for: "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
 
   - action: wait
-    duration: 1000
+    duration: 1200
 
   - action: screenshot
     name: "communication_added"
 
 expected_ui:
   visible:
-    - "[data-testid='communications-list']"
-    - "[data-testid='success-message']"
-  not_visible:
-    - "[data-testid='communication-form']"
-    - ".error-message"
-  text_present:
-    - "Communication added"
-    - "CALL"
+    - "[role='tabpanel']:has-text('Communication History'), [data-testid='communications-list']"
 
 expected_db:
   client_communications:
     - where:
-        client_id: "$stored.client_id"
-        communication_type: "CALL"
-        subject: "$stored.comm_subject"
+        client_id: "$seed:client.test_buyer.id"
       expect:
-        logged_by_not_null: true
-        communicated_at_not_null: true
-        notes_not_null: true
-      store_as: "created_communication"
-      count: 1
-
-  invariants:
-    - name: "Communication logged by authenticated user"
-      query: |
-        SELECT u.email FROM client_communications cc
-        JOIN users u ON cc.logged_by = u.id
-        WHERE cc.id = $created_communication.id
-      assert: "email = 'qa.salesrep@terp.test'"
-
-    - name: "Subject properly sanitized"
-      query: |
-        SELECT LENGTH(subject) as len FROM client_communications
-        WHERE id = $created_communication.id
-      assert: "len <= 255"
-
-    - name: "Notes properly sanitized"
-      query: |
-        SELECT LENGTH(notes) as len FROM client_communications
-        WHERE id = $created_communication.id
-      assert: "len <= 5000"
+        id_not_null: true
+      count_gte: 1

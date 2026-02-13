@@ -82,6 +82,7 @@ export async function createOrderFromInterestList(
     items: orderItemsJson,
     subtotal: subtotal.toFixed(2),
     total: subtotal.toFixed(2),
+    paymentTerms: "NET_30",
     notes: input.source ? `Created from ${input.source}` : null,
     createdBy: 1, // System user - should be passed from context in production
   });

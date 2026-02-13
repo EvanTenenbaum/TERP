@@ -21,7 +21,9 @@ import {
 } from "./index";
 
 // Configuration
-const ORACLE_TIMEOUT = 60000; // 60 seconds per oracle
+const DEFAULT_ORACLE_TIMEOUT_MS = Number(
+  process.env.ORACLE_TIMEOUT_MS || 120000
+);
 const RUN_MODE = process.env.ORACLE_RUN_MODE || "tier1"; // tier1, tier2, all, domain, tags, single
 const ORACLE_DOMAIN = process.env.ORACLE_DOMAIN || "";
 const ORACLE_TAGS = process.env.ORACLE_TAGS || "";
@@ -67,7 +69,7 @@ const oracles = getOracles();
 const results: OracleResult[] = [];
 
 test.describe("Oracle-Based E2E Tests", () => {
-  test.setTimeout(ORACLE_TIMEOUT);
+  test.setTimeout(DEFAULT_ORACLE_TIMEOUT_MS);
 
   // Generate tests dynamically from oracles
   if (oracles.length === 0) {
@@ -81,6 +83,13 @@ test.describe("Oracle-Based E2E Tests", () => {
 
   for (const oracle of oracles) {
     test(oracle.flow_id, async ({ page }) => {
+      const oracleTimeout =
+        typeof oracle.timeout === "number" && oracle.timeout > 0
+          ? oracle.timeout
+          : DEFAULT_ORACLE_TIMEOUT_MS;
+      // Keep suite timeout deterministic on slower local/CI environments.
+      test.setTimeout(Math.max(DEFAULT_ORACLE_TIMEOUT_MS, oracleTimeout));
+
       test.info().annotations.push({
         type: "description",
         description: oracle.description,

@@ -11,6 +11,19 @@ import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
+
 export const vipPortalLiveShoppingRouter = router({
   // ============================================================================
   // SESSION DISCOVERY
@@ -239,7 +252,7 @@ export const vipPortalLiveShoppingRouter = router({
       } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err instanceof Error ? err.message : "Failed to add item",
+          message: getErrorMessage(err, "Failed to add item"),
         });
       }
     }),
@@ -281,7 +294,7 @@ export const vipPortalLiveShoppingRouter = router({
       } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err instanceof Error ? err.message : "Failed to update quantity",
+          message: getErrorMessage(err, "Failed to update quantity"),
         });
       }
     }),
@@ -447,7 +460,7 @@ export const vipPortalLiveShoppingRouter = router({
       } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e instanceof Error ? e.message : "Failed to add item",
+          message: getErrorMessage(e, "Failed to add item"),
         });
       }
     }),

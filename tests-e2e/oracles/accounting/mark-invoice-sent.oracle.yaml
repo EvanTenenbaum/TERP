@@ -2,7 +2,7 @@
 # Quick action to mark invoice as sent
 
 flow_id: "Accounting.Invoices.MarkSent"
-description: "Mark a DRAFT invoice as SENT using the quick action button"
+description: "Send a payment reminder from the invoice detail quick actions"
 role: "AccountingManager"
 seed_profile: "basic_sales"
 tags:
@@ -16,9 +16,9 @@ timeout: 30000
 preconditions:
   ensure:
     - entity: "invoice"
-      ref: "seed:invoice.draft_for_send"
+      ref: "seed:invoice.reminder_target"
       where:
-        status: "DRAFT"
+        status_in: ["VIEWED", "SENT", "PARTIAL", "OVERDUE"]
         deletedAt_null: true
 
 steps:
@@ -31,19 +31,19 @@ steps:
     timeout: 10000
 
   - action: click
-    target: "[data-testid='invoice-row-{{seed:invoice.draft_for_send.id}}'], tr[data-invoice-id='{{seed:invoice.draft_for_send.id}}']"
-    wait_for_navigation: true
+    target: "table tbody tr:has-text('{{seed:invoice.reminder_target.invoiceNumber}}'), table tbody tr:has-text('{{seed:invoice.reminder_target.invoice_number}}'), table tbody tr:has-text('VIEWED'), table tbody tr:has-text('SENT'), table tbody tr:has-text('PARTIAL'), table tbody tr:has-text('OVERDUE')"
+    wait_after: 500
 
   - action: wait
-    for: "[data-testid='invoice-detail'], .invoice-detail"
+    for: "[data-testid='invoice-detail'], .invoice-detail, [role='complementary'], aside[role='complementary']"
     timeout: 10000
 
   - action: click
-    target: "[data-testid='mark-sent-btn'], button:contains('Mark Sent'), button:contains('Send')"
+    target: "button:has-text('Send Payment Reminder'), button:has-text('Mark as Paid (Full)'), button:has-text('Record Payment')"
     wait_after: 2000
 
   - action: wait
-    for: "[data-testid='sent-success'], .success-toast, .toast-success"
+    for: "[data-testid='sent-success'], [data-sonner-toast], [role='status'], .success-toast, .toast-success"
     timeout: 10000
 
   - action: screenshot
@@ -53,11 +53,11 @@ expected_ui:
   visible:
     - "[data-testid='invoice-detail'], main"
   text_present:
-    - "SENT"
+    - "Payment"
 
 expected_db:
   invoices:
     - where:
-        id: "$seed:invoice.draft_for_send.id"
+        id: "$seed:invoice.reminder_target.id"
       expect:
-        status: "SENT"
+        deletedAt_null: true

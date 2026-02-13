@@ -3,6 +3,7 @@ import {
   protectedProcedure,
   router,
   strictlyProtectedProcedure,
+  getAuthenticatedUserId,
 } from "../_core/trpc";
 import * as samplesDb from "../samplesDb";
 import * as samplesAnalytics from "../samplesAnalytics";
@@ -143,7 +144,7 @@ export const samplesRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        requestedBy: z.number(),
+        requestedBy: z.number().optional(), // deprecated: actor is derived from auth context
         products: z.array(
           z.object({
             productId: z.number(),
@@ -153,10 +154,11 @@ export const samplesRouter = router({
         notes: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const requestedBy = getAuthenticatedUserId(ctx);
       return await samplesDb.createSampleRequest(
         input.clientId,
-        input.requestedBy,
+        requestedBy,
         input.products,
         input.notes
       );

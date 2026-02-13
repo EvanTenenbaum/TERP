@@ -744,7 +744,7 @@ export async function convertToOrder(
 
   // Map order type to isDraft flag
   const isDraft = orderType === "DRAFT" ? 1 : 0;
-  const dbOrderType = orderType === "QUOTE" ? "QUOTE" : "ORDER";
+  const dbOrderType = orderType === "QUOTE" ? "QUOTE" : "SALE";
 
   // Create the order
   const result = await db.insert(orders).values({
@@ -758,6 +758,7 @@ export async function convertToOrder(
     totalCogs: "0",
     totalMargin: "0",
     avgMarginPercent: "0",
+    paymentTerms: "NET_30",
     createdBy: userId,
     convertedFromSalesSheetId: sheetId,
   });

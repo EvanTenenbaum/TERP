@@ -15,27 +15,52 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/clients/new"
-    wait_for: "form, [data-testid='client-form']"
-
-  - action: wait
-    network_idle: true
-
-  - action: type
-    target: "input[name='name'], [data-testid='client-name']"
-    value: "Test Client {{timestamp}}"
-    clear_first: true
-
-  - action: type
-    target: "input[name='teri_code'], input[name='teriCode'], [data-testid='teri-code']"
-    value: "TEST{{random:4}}"
-    clear_first: true
-
-  - action: screenshot
-    name: "client_form_filled"
+    path: "/clients"
+    wait_for: "table, [data-testid='clients-list'], main"
 
   - action: click
-    target: "button[type='submit'], [data-testid='save-client'], button:has-text('Save'), button:has-text('Create')"
+    target: "[data-testid='create-client-btn'], button:has-text('Add Client'), button:has-text('Create Client')"
+    wait_for: "[data-testid='client-form'], [role='dialog']:has-text('Add New Client')"
+
+  - action: type
+    target: "#teriCode, input[placeholder*='TERI code' i]"
+    value: "TEST{{random:6}}"
+    clear_first: true
+
+  - action: type
+    target: "#companyName, input[placeholder*='company name' i]"
+    value: "QA Company {{random:4}}"
+    clear_first: true
+
+  - action: type
+    target: "#name, input[placeholder*='contact' i]"
+    value: "QA Contact {{random:4}}"
+    clear_first: true
+
+  - action: type
+    target: "#email, input[type='email']"
+    value: "qa.client.{{random:5}}@example.com"
+    clear_first: true
+
+  - action: type
+    target: "#phone, input[type='tel']"
+    value: "555123{{random:4}}"
+    clear_first: true
+
+  - action: click
+    target: "button:has-text('Next')"
+    wait_after: 400
+
+  - action: click
+    target: "label:has-text('Buyer'), div:has-text('Buyer Client purchases products or services'), button:has-text('Buyer'), text=\"Buyer\""
+    wait_after: 200
+
+  - action: click
+    target: "button:has-text('Next')"
+    wait_after: 400
+
+  - action: click
+    target: "button:has-text('Create Client'), button:has-text('Save Client')"
     wait_for_navigation: true
 
   - action: wait
@@ -47,4 +72,6 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='client-detail'], [data-testid='success-message'], .toast-success, [role='status']"
+    - "button:has-text('Edit Client'), [role='tab']:has-text('Overview'), [role='main']"
+  text_present:
+    - "Client Information"

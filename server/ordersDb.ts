@@ -302,7 +302,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       avgMarginPercent: avgMarginPercent.toString(),
       validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
       quoteStatus: input.orderType === "QUOTE" ? "DRAFT" : undefined,
-      paymentTerms: input.paymentTerms,
+      paymentTerms: input.paymentTerms || "NET_30",
       cashPayment: input.cashPayment?.toString() || "0",
       dueDate: dueDate,
       saleStatus:

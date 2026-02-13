@@ -10,6 +10,7 @@
 
 import { logger } from "../_core/logger";
 import cache from "../_core/cache";
+import { getHeapStatistics } from "node:v8";
 
 interface MemoryStats {
   used: number;
@@ -39,9 +40,17 @@ function getMemoryLimit(): number {
     }
   }
 
-  // Fallback: use actual heap total (more accurate than hardcoded value)
+  // Use V8 heap limit instead of current heap allocation.
+  // heapTotal reflects "currently allocated" memory and can make normal usage
+  // look falsely critical when used as a denominator.
+  const heapLimit = getHeapStatistics().heap_size_limit;
+  if (Number.isFinite(heapLimit) && heapLimit > 0) {
+    return heapLimit;
+  }
+
+  // Defensive fallback
   const memUsage = process.memoryUsage();
-  return memUsage.heapTotal;
+  return Math.max(memUsage.heapTotal, memUsage.rss, 1);
 }
 
 /**
@@ -207,8 +216,13 @@ export function emergencyMemoryCleanup(): void {
 
   // Clear any global caches if they exist
   try {
+    const globalWithRequire = globalThis as { require?: NodeRequire };
+    if (typeof globalWithRequire.require !== "function") {
+      return;
+    }
+
     // Clear strain service cache
-    const strainModule = require("../services/strainService");
+    const strainModule = globalWithRequire.require("../services/strainService");
     if (
       strainModule?.strainService &&
       typeof strainModule.strainService.clearCache === "function"
@@ -217,7 +231,9 @@ export function emergencyMemoryCleanup(): void {
     }
 
     // Clear permission cache
-    const permModule = require("../services/permissionService");
+    const permModule = globalWithRequire.require(
+      "../services/permissionService"
+    );
     if (
       permModule?.clearPermissionCache &&
       typeof permModule.clearPermissionCache === "function"

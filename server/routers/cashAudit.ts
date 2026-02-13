@@ -24,27 +24,7 @@ import {
 import { eq, and, sql, inArray, desc, gte, lte } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
-
-function isMissingTableError(
-  error: unknown,
-  tableHints: string[] = []
-): boolean {
-  const errorObj = error as Record<string, unknown> | null;
-  const code = String(errorObj?.code ?? errorObj?.errno ?? "");
-  const msg = String(errorObj?.message ?? "").toLowerCase();
-
-  const missingTableSignal =
-    code === "1146" ||
-    code === "ER_NO_SUCH_TABLE" ||
-    msg.includes("er_no_such_table") ||
-    (msg.includes("table") &&
-      (msg.includes("doesn't exist") || msg.includes("does not exist")));
-
-  if (!missingTableSignal) return false;
-  if (tableHints.length === 0) return true;
-
-  return tableHints.some(hint => msg.includes(hint.toLowerCase()));
-}
+import { isMissingTableError } from "../_core/dbErrors";
 
 // ============================================================================
 // MEET-001: Dashboard Available Money API

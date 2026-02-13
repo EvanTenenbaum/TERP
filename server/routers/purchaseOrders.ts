@@ -11,6 +11,7 @@ import {
   supplierProfiles,
   products,
   clients,
+  vendors,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
@@ -202,21 +203,19 @@ export const purchaseOrdersRouter = router({
 
       // If only supplierClientId provided, try to resolve vendorId for backward compat
       if (resolvedSupplierClientId && !resolvedVendorId) {
-        const [profile] = await db
-          .select()
-          .from(supplierProfiles)
-          .where(eq(supplierProfiles.clientId, resolvedSupplierClientId))
-          .limit(1);
-        if (profile?.legacyVendorId) {
-          resolvedVendorId = profile.legacyVendorId;
-        }
+        resolvedVendorId = await resolveOrCreateLegacyVendorId(
+          db,
+          resolvedSupplierClientId
+        );
       }
 
       // Validate that we have at least vendorId (required by schema for now)
       if (!resolvedVendorId) {
-        throw new Error(
-          "Unable to resolve vendor ID for purchase order. Supplier may not have a legacy vendor mapping."
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Unable to resolve vendor mapping for this supplier. Please verify supplier setup.",
+        });
       }
 
       // Generate PO number
@@ -839,6 +838,94 @@ export const purchaseOrdersRouter = router({
       };
     }),
 });
+
+async function resolveOrCreateLegacyVendorId(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  supplierClientId: number
+): Promise<number> {
+  const [supplierClient] = await db
+    .select({ id: clients.id, name: clients.name })
+    .from(clients)
+    .where(eq(clients.id, supplierClientId))
+    .limit(1);
+
+  if (!supplierClient) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Client with ID ${supplierClientId} not found`,
+    });
+  }
+
+  const [existingProfile] = await db
+    .select({ id: supplierProfiles.id, legacyVendorId: supplierProfiles.legacyVendorId })
+    .from(supplierProfiles)
+    .where(eq(supplierProfiles.clientId, supplierClientId))
+    .limit(1);
+
+  if (existingProfile?.legacyVendorId) {
+    return existingProfile.legacyVendorId;
+  }
+
+  let resolvedVendorId: number | null = null;
+  const [existingVendor] = await db
+    .select({ id: vendors.id })
+    .from(vendors)
+    .where(eq(vendors.name, supplierClient.name))
+    .limit(1);
+
+  if (existingVendor) {
+    resolvedVendorId = existingVendor.id;
+  } else {
+    try {
+      const [createdVendor] = await db
+        .insert(vendors)
+        .values({ name: supplierClient.name })
+        .$returningId();
+      resolvedVendorId = createdVendor.id;
+
+      logger.warn(
+        { supplierClientId, vendorId: resolvedVendorId, supplierName: supplierClient.name },
+        "[PO] Auto-provisioned legacy vendor mapping for supplier"
+      );
+    } catch (error) {
+      const [vendorAfterRace] = await db
+        .select({ id: vendors.id })
+        .from(vendors)
+        .where(eq(vendors.name, supplierClient.name))
+        .limit(1);
+      if (!vendorAfterRace) {
+        throw error;
+      }
+      resolvedVendorId = vendorAfterRace.id;
+    }
+  }
+
+  if (!resolvedVendorId) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Unable to create or resolve legacy vendor mapping",
+    });
+  }
+
+  if (existingProfile) {
+    await db
+      .update(supplierProfiles)
+      .set({ legacyVendorId: resolvedVendorId })
+      .where(eq(supplierProfiles.id, existingProfile.id));
+  } else {
+    await db.insert(supplierProfiles).values({
+      clientId: supplierClientId,
+      legacyVendorId: resolvedVendorId,
+    });
+  }
+
+  logger.info(
+    { supplierClientId, vendorId: resolvedVendorId },
+    "[PO] Linked supplier profile to legacy vendor"
+  );
+
+  return resolvedVendorId;
+}
 
 // Helper function to generate PO number
 async function generatePONumber(

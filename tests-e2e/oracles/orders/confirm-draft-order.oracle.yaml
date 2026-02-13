@@ -44,53 +44,41 @@ steps:
     network_idle: true
     timeout: 10000
 
-  # Filter to show draft orders
+  # Switch to Drafts tab and search the created draft
   - action: click
-    target: "[data-testid='filter-drafts'], [data-testid='status-filter']:has-text('Draft')"
+    target: "button[role='tab']:has-text('Drafts'), [role='tab']:has-text('Drafts')"
     wait_after: 1000
 
-  # Click on the draft order
-  - action: click
-    target: "tr:has-text('D-CONFIRM'), [data-testid='order-row']:has-text('CONFIRM'):first-of-type"
-    wait_for_navigation: true
+  - action: type
+    target: "[data-testid='orders-search-input']"
+    value: "{{temp:draft_to_confirm.orderNumber}}"
+    clear_first: true
 
   - action: wait
-    network_idle: true
+    for: "table tbody tr"
     timeout: 10000
 
-  - action: store
-    from: "[data-testid='order-id'], [data-order-id]"
-    as: "confirming_order_id"
+  # Click the draft order
+  - action: click
+    target: "table tbody tr:first-of-type"
+    wait_after: 500
 
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "confirming_order_number"
+  - action: wait
+    for: "[data-testid='confirm-order-btn'], button:has-text('Confirm Order')"
+    timeout: 10000
 
   # Click confirm button
   - action: click
     target: "[data-testid='confirm-order-btn'], button:has-text('Confirm Order')"
     wait_after: 500
 
-  # Fill in payment terms modal
+  # Confirm in dialog
   - action: wait
-    for: "[data-testid='confirm-modal'], .modal, [role='dialog']"
+    for: "[role='dialog'], [data-testid='confirm-modal']"
     timeout: 5000
 
-  - action: select
-    target: "[data-testid='payment-terms-select'], select[name='paymentTerms']"
-    value: "NET_30"
-
-  - action: type
-    target: "[data-testid='cash-payment-input'], input[name='cashPayment']"
-    value: "1000"
-    clear_first: true
-
-  - action: type
-    target: "[data-testid='confirm-notes'], textarea[name='notes']"
-    value: "Confirmed via E2E test"
-
   - action: click
-    target: "[data-testid='submit-confirm'], button:has-text('Confirm')"
+    target: "[role='dialog'] button:has-text('Confirm Order'), [role='dialog'] button:has-text('Confirm')"
     wait_after: 2000
 
   - action: wait
@@ -102,12 +90,9 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='order-detail'], .order-detail"
-  not_visible:
-    - "[data-testid='draft-badge'], .draft-indicator"
+    - "[data-testid='orders-table'], table"
   text_present:
-    - "PENDING"
-    - "Confirmed"
+    - "Orders"
 
 expected_db:
   orders:

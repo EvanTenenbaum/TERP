@@ -41,6 +41,7 @@ interface GLEntriesViewerProps {
   showTitle?: boolean;
   compact?: boolean;
   maxEntries?: number;
+  hidePermissionErrors?: boolean;
 }
 
 interface GLEntry {
@@ -66,6 +67,7 @@ export function GLEntriesViewer({
   showTitle = true,
   compact = false,
   maxEntries = 50,
+  hidePermissionErrors = false,
 }: GLEntriesViewerProps) {
   const {
     data: result,
@@ -110,6 +112,17 @@ export function GLEntriesViewer({
   }
 
   if (error) {
+    const isPermissionError = /permission|unauthorized|forbidden/i.test(
+      String(error.message || "")
+    );
+    if (hidePermissionErrors && isPermissionError) {
+      return (
+        <div className="p-3 text-xs text-muted-foreground border rounded-lg">
+          Ledger entries are not available for this role.
+        </div>
+      );
+    }
+
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
