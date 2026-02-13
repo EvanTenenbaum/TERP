@@ -813,6 +813,7 @@ export function ClientsWorkSurface() {
                         setSelectedIndex(index);
                         inspector.open();
                       }}
+                      onDoubleClick={() => setLocation(`/clients/${client.id}`)}
                     >
                       <TableCell className="font-medium">{client.name}</TableCell>
                       <TableCell><ClientTypeBadges client={client} /></TableCell>
@@ -827,7 +828,17 @@ export function ClientsWorkSurface() {
                       </TableCell>
                       <TableCell className="text-right">{client.orderCount || 0}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setLocation(`/clients/${client.id}`);
+                          }}
+                          aria-label={`Open ${client.name}`}
+                        >
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </TableCell>

@@ -9,12 +9,12 @@ import { z } from "zod";
  * Common validation patterns
  */
 const patterns = {
-  // Alphanumeric with spaces, hyphens, underscores
-  name: /^[a-zA-Z0-9\s_-]+$/,
+  // Entity names: allow common business punctuation
+  name: /^[a-zA-Z0-9\s_\-.'&(),:/+]+$/,
   // Positive decimal number (up to 2 decimal places)
   decimal: /^\d+(\.\d{1,2})?$/,
-  // Site code (e.g., "SITE-A", "WAREHOUSE-1")
-  siteCode: /^[A-Z0-9_-]+$/,
+  // Site value (supports both code-like and human-readable names)
+  siteCode: /^[A-Za-z0-9\s_-]+$/,
   // Location code (alphanumeric with hyphens)
   locationCode: /^[A-Z0-9-]+$/,
 };
@@ -55,7 +55,7 @@ export const validators = {
     .max(255, "Name must be 255 characters or less")
     .regex(
       patterns.name,
-      "Name can only contain letters, numbers, spaces, hyphens, and underscores"
+      "Name can only contain letters, numbers, spaces, and common punctuation (- _ . ' & ( ) , : / +)"
     ),
 
   /**
@@ -63,11 +63,12 @@ export const validators = {
    */
   siteCode: z
     .string()
+    .trim()
     .min(1, "Site is required")
     .max(50, "Site code must be 50 characters or less")
     .regex(
       patterns.siteCode,
-      "Site code must be uppercase alphanumeric with hyphens or underscores"
+      "Site must be alphanumeric and may include spaces, hyphens, or underscores"
     ),
 
   /**

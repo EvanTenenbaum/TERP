@@ -421,7 +421,6 @@ export default function SampleManagement() {
 
       await createSampleMutation.mutateAsync({
         clientId: values.clientId,
-        requestedBy: user.id,
         products: [{ productId: values.productId, quantity: values.quantity }],
         notes: notesWithDueDate,
       });
