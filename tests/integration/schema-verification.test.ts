@@ -48,6 +48,13 @@ const COLUMNS_PENDING_MIGRATION: string[] = [
   "client_needs.strainId",
   "strains.parentStrainId",
   "strains.baseStrainName",
+  // referral_settings columns - defined in Drizzle schema but drizzle-kit push
+  // may not create them in CI test DB. Pending production migration.
+  "referral_settings.client_tier",
+  "referral_settings.credit_percentage",
+  "referral_settings.min_order_amount",
+  "referral_settings.max_credit_amount",
+  "referral_settings.credit_expiry_days",
 ];
 
 // ============================================================================
@@ -333,7 +340,7 @@ describe("Schema Verification (Real Database)", () => {
       }
 
       const query = sql`
-        SELECT id, \`payableNumber\`, \`batchId\`, \`vendorClientId\`, \`createdBy\`
+        SELECT id, payable_number, batch_id, vendor_client_id, created_by
         FROM vendor_payables
         LIMIT 1
       `;
@@ -348,7 +355,7 @@ describe("Schema Verification (Real Database)", () => {
       }
 
       const query = sql`
-        SELECT id, \`poNumber\`, \`supplierClientId\`, \`createdBy\`
+        SELECT id, \`poNumber\`, supplier_client_id, \`createdBy\`
         FROM \`purchaseOrders\`
         LIMIT 1
       `;

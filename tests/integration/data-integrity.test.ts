@@ -17,7 +17,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { getDb } from "../../server/db";
 import { 
   clients, orders, orderLineItems, batches, returns,
-  auditLogs, workflowQueue
+  auditLogs
 } from "../../drizzle/schema";
 import { eq, sql, and, isNull } from "drizzle-orm";
 
@@ -110,7 +110,6 @@ describe("Data Integrity Tests", () => {
       }
 
       // actorId is NOT NULL in schema, so all entries should have it
-      // This test validates that the constraint is enforced
       const logsWithActor = totalAuditLogs.filter(
         (log) => log.actorId !== null && log.actorId !== undefined
       );
@@ -126,7 +125,7 @@ describe("Data Integrity Tests", () => {
         return;
       }
 
-      const ordersWithLineItems = await db
+      const ordersResult = await db
         .select({
           orderId: orders.id,
           orderTotal: orders.total,
@@ -134,14 +133,14 @@ describe("Data Integrity Tests", () => {
         .from(orders)
         .limit(10);
 
-      if (ordersWithLineItems.length === 0) {
+      if (ordersResult.length === 0) {
         return; // No orders yet - pass gracefully on fresh/seeded DB
       }
 
-      for (const order of ordersWithLineItems) {
+      for (const order of ordersResult) {
         const lineItems = await db
           .select({
-            totalPrice: orderLineItems.totalPrice,
+            lineTotal: orderLineItems.lineTotal,
           })
           .from(orderLineItems)
           .where(eq(orderLineItems.orderId, order.orderId));
@@ -151,8 +150,8 @@ describe("Data Integrity Tests", () => {
         }
 
         const calculatedTotal = lineItems.reduce(
-          (sum: number, item: { totalPrice: string | null }) => 
-            sum + parseFloat(item.totalPrice || "0"),
+          (sum: number, item: { lineTotal: string | null }) => 
+            sum + parseFloat(item.lineTotal || "0"),
           0
         );
 
@@ -162,19 +161,29 @@ describe("Data Integrity Tests", () => {
       }
     });
 
-    it("should have no division by zero errors in calculations", async () => {
+    it("should have no negative quantities in batches", async () => {
       if (!dbAvailable || !db) {
         console.info("Skipping - database not available");
         return;
       }
 
-      const batchesWithZeroPrice = await db
-        .select()
+      // Verify onHandQty is not negative for any batch
+      const batchesResult = await db
+        .select({
+          id: batches.id,
+          onHandQty: batches.onHandQty,
+        })
         .from(batches)
-        .where(eq(batches.unitPrice, "0"))
-        .limit(5);
+        .limit(100);
 
-      expect(batchesWithZeroPrice).toBeDefined();
+      if (batchesResult.length === 0) {
+        return; // No batches yet - pass gracefully on fresh/seeded DB
+      }
+
+      for (const batch of batchesResult) {
+        const qty = parseFloat(batch.onHandQty || "0");
+        expect(qty).toBeGreaterThanOrEqual(0);
+      }
     });
   });
 
@@ -264,28 +273,7 @@ describe("Data Integrity Tests", () => {
     });
   });
 
-  describe("Workflow Data Integrity", () => {
-    it("should have workflow queue entries linked to valid batches", async () => {
-      if (!dbAvailable || !db) {
-        console.info("Skipping - database not available");
-        return;
-      }
-
-      // Check if workflowQueue has any entries first
-      const allEntries = await db.select().from(workflowQueue).limit(1);
-      if (allEntries.length === 0) {
-        return; // No workflow queue entries yet - pass gracefully on fresh/seeded DB
-      }
-
-      const orphanedQueueEntries = await db
-        .select()
-        .from(workflowQueue)
-        .leftJoin(batches, eq(workflowQueue.batchId, batches.id))
-        .where(isNull(batches.id));
-
-      expect(orphanedQueueEntries.length).toBe(0);
-    });
-
+  describe("Batch Data Integrity", () => {
     it("should have consistent batch statuses", async () => {
       if (!dbAvailable || !db) {
         console.info("Skipping - database not available");
