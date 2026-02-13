@@ -55,9 +55,9 @@ interface NeedItem {
   category?: string;
   subcategory?: string;
   grade?: string;
-  quantityMin?: number;
-  quantityMax?: number;
-  priceMax?: number;
+  quantityMin?: number | string | null;
+  quantityMax?: number | string | null;
+  priceMax?: number | string | null;
   matchCount: number;
   neededBy?: string | Date | null;
   createdAt?: string | Date | null;
@@ -69,11 +69,29 @@ interface OpportunityItem {
   clientName?: string;
   needDescription: string;
   priority?: NeedPriority;
-  bestMatchType?: "EXACT" | "PARTIAL" | "ALTERNATIVE";
+  bestMatchType?: "EXACT" | "PARTIAL" | "ALTERNATIVE" | "CLOSE" | "HISTORICAL";
   bestConfidence?: number;
   matchCount: number;
   potentialRevenue?: string | number;
 }
+
+const formatCurrencyValue = (value: string | number | undefined): string | null => {
+  if (value === undefined || value === null) return null;
+  const parsed =
+    typeof value === "number" ? value : Number.parseFloat(value);
+  if (Number.isNaN(parsed)) return null;
+  return parsed.toFixed(2);
+};
+
+const normalizeMatchType = (
+  value: OpportunityItem["bestMatchType"]
+): "EXACT" | "CLOSE" | "HISTORICAL" => {
+  if (value === "EXACT" || value === "CLOSE" || value === "HISTORICAL") {
+    return value;
+  }
+  if (value === "PARTIAL") return "CLOSE";
+  return "HISTORICAL";
+};
 
 export default function NeedsManagementPage({
   embedded = false,
@@ -98,8 +116,9 @@ export default function NeedsManagementPage({
       limit: 10,
     });
 
-  const needs = (needsData?.data || []) as NeedItem[];
-  const opportunities = (opportunitiesData?.data || []) as OpportunityItem[];
+  const needs = ((needsData?.data ?? []) as unknown) as NeedItem[];
+  const opportunities =
+    ((opportunitiesData?.data ?? []) as unknown) as OpportunityItem[];
 
   // Filter needs based on search and priority
   const filteredNeeds = needs.filter(need => {
@@ -215,7 +234,10 @@ export default function NeedsManagementPage({
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={value => setStatusFilter(value as NeedStatus)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -229,7 +251,9 @@ export default function NeedsManagementPage({
             <Select
               value={priorityFilter || "all"}
               onValueChange={v =>
-                setPriorityFilter(v === "all" ? undefined : v)
+                setPriorityFilter(
+                  v === "all" ? undefined : (v as NeedPriority)
+                )
               }
             >
               <SelectTrigger className="w-[180px]">
@@ -389,7 +413,7 @@ export default function NeedsManagementPage({
                       </div>
                       {opp.bestMatchType && opp.bestConfidence && (
                         <MatchBadge
-                          matchType={opp.bestMatchType}
+                          matchType={normalizeMatchType(opp.bestMatchType)}
                           confidence={opp.bestConfidence}
                         />
                       )}
@@ -402,13 +426,13 @@ export default function NeedsManagementPage({
                           <p className="text-muted-foreground">Matches</p>
                           <p className="font-medium">{opp.matchCount}</p>
                         </div>
-                        {opp.potentialRevenue && (
+                        {formatCurrencyValue(opp.potentialRevenue) && (
                           <div>
                             <p className="text-muted-foreground">
                               Potential Revenue
                             </p>
                             <p className="font-medium text-green-600">
-                              ${parseFloat(opp.potentialRevenue).toFixed(2)}
+                              ${formatCurrencyValue(opp.potentialRevenue)}
                             </p>
                           </div>
                         )}
