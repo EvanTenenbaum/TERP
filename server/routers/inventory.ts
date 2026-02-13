@@ -654,7 +654,11 @@ export const inventoryRouter = router({
           // Generate storage key
           const timestamp = Date.now();
           const storageKey = `batch-media/${input.batchId || "temp"}/${timestamp}-${sanitizedFileName}`;
-          const uploaded = await storagePut(storageKey, fileBuffer, input.fileType);
+          const uploaded = await storagePut(
+            storageKey,
+            fileBuffer,
+            input.fileType
+          );
           url = uploaded.url;
         }
 
@@ -860,7 +864,14 @@ export const inventoryRouter = router({
         if (!db) throw new Error("Database not available");
 
         const { batches } = await import("../../drizzle/schema");
-        const { eq, and } = await import("drizzle-orm");
+        const { eq, and, asc, desc } = await import("drizzle-orm");
+        const { LOT_ALLOCATION_POLICY } = await import("../inventoryDb");
+
+        // TER-237: Order by LOT_ALLOCATION_POLICY (FIFO = oldest first by createdAt)
+        const orderByClause =
+          LOT_ALLOCATION_POLICY === "FIFO"
+            ? asc(batches.createdAt)
+            : desc(batches.createdAt);
 
         // Get batches for product with LIVE status
         const productBatches = await db
@@ -886,7 +897,7 @@ export const inventoryRouter = router({
               eq(batches.batchStatus, "LIVE")
             )
           )
-          .orderBy(batches.createdAt);
+          .orderBy(orderByClause);
 
         // Calculate available quantity and filter
         type BatchRow = (typeof productBatches)[number];

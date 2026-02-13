@@ -12,10 +12,16 @@
  * - Status filtering and search
  */
 
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { trpc } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Package,
   CheckCircle,
@@ -32,29 +38,29 @@ import {
   Loader2,
   CheckSquare,
   PackageCheck,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { useWorkSurfaceKeyboard } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
-import { useSaveState } from '@/hooks/work-surface/useSaveState';
-import { useConcurrentEditDetection } from '@/hooks/work-surface/useConcurrentEditDetection';
-import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
-import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
+import { useSaveState } from "@/hooks/work-surface/useSaveState";
+import { useConcurrentEditDetection } from "@/hooks/work-surface/useConcurrentEditDetection";
+import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type PickPackStatus = 'PENDING' | 'PICKING' | 'PACKED' | 'READY';
+type PickPackStatus = "PENDING" | "PICKING" | "PACKED" | "READY";
 
 interface OrderItem {
   id: number;
@@ -122,15 +128,31 @@ interface PickPackOrderEntity {
 
 function StatusBadge({ status }: { status: PickPackStatus }) {
   const config = {
-    PENDING: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'Pending' },
-    PICKING: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Package, label: 'Picking' },
-    PACKED: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'Packed' },
-    READY: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Truck, label: 'Ready' },
+    PENDING: {
+      color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      icon: Clock,
+      label: "Pending",
+    },
+    PICKING: {
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+      icon: Package,
+      label: "Picking",
+    },
+    PACKED: {
+      color: "bg-green-100 text-green-800 border-green-200",
+      icon: CheckCircle,
+      label: "Packed",
+    },
+    READY: {
+      color: "bg-purple-100 text-purple-800 border-purple-200",
+      icon: Truck,
+      label: "Ready",
+    },
   };
   const { color, icon: Icon, label } = config[status] || config.PENDING;
 
   return (
-    <Badge variant="outline" className={cn('flex items-center gap-1', color)}>
+    <Badge variant="outline" className={cn("flex items-center gap-1", color)}>
       <Icon className="w-3 h-3" />
       {label}
     </Badge>
@@ -148,20 +170,26 @@ interface OrderListRowProps {
   onClick: () => void;
 }
 
-function OrderListRow({ order, isSelected, isFocused, onClick }: OrderListRowProps) {
-  const progress = order.itemCount > 0
-    ? (order.packedCount / order.itemCount) * 100
-    : 0;
+function OrderListRow({
+  order,
+  isSelected,
+  isFocused,
+  onClick,
+}: OrderListRowProps) {
+  const progress =
+    order.itemCount > 0 ? (order.packedCount / order.itemCount) * 100 : 0;
 
   return (
     <div
       onClick={onClick}
       data-testid="order-queue-row"
       className={cn(
-        'p-4 border-b cursor-pointer transition-colors',
-        isSelected && 'bg-blue-50 border-l-4 border-l-blue-500',
-        isFocused && !isSelected && 'bg-gray-100 ring-2 ring-inset ring-blue-400',
-        !isSelected && !isFocused && 'hover:bg-gray-50'
+        "p-4 border-b cursor-pointer transition-colors",
+        isSelected && "bg-blue-50 border-l-4 border-l-blue-500",
+        isFocused &&
+          !isSelected &&
+          "bg-gray-100 ring-2 ring-inset ring-blue-400",
+        !isSelected && !isFocused && "hover:bg-gray-50"
       )}
       role="row"
       tabIndex={-1}
@@ -200,19 +228,25 @@ interface ItemRowProps {
   onInspect: () => void;
 }
 
-function ItemRow({ item, isSelected, isFocused, onToggle, onInspect }: ItemRowProps) {
+function ItemRow({
+  item,
+  isSelected,
+  isFocused,
+  onToggle,
+  onInspect,
+}: ItemRowProps) {
   return (
     <div
       onClick={() => !item.isPacked && onToggle()}
       onDoubleClick={onInspect}
       className={cn(
-        'p-3 border rounded-lg transition-all',
+        "p-3 border rounded-lg transition-all",
         item.isPacked
-          ? 'bg-green-50 border-green-200 cursor-default'
+          ? "bg-green-50 border-green-200 cursor-default"
           : isSelected
-          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200 cursor-pointer'
-          : 'bg-white hover:bg-gray-50 cursor-pointer',
-        isFocused && 'ring-2 ring-blue-400'
+            ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200 cursor-pointer"
+            : "bg-white hover:bg-gray-50 cursor-pointer",
+        isFocused && "ring-2 ring-blue-400"
       )}
       role="row"
       tabIndex={-1}
@@ -222,12 +256,12 @@ function ItemRow({ item, isSelected, isFocused, onToggle, onInspect }: ItemRowPr
         {/* Selection checkbox */}
         <div
           className={cn(
-            'w-5 h-5 rounded border flex items-center justify-center flex-shrink-0',
+            "w-5 h-5 rounded border flex items-center justify-center flex-shrink-0",
             item.isPacked
-              ? 'bg-green-500 border-green-500'
+              ? "bg-green-500 border-green-500"
               : isSelected
-              ? 'bg-blue-500 border-blue-500'
-              : 'border-gray-300'
+                ? "bg-blue-500 border-blue-500"
+                : "border-gray-300"
           )}
         >
           {(item.isPacked || isSelected) && (
@@ -237,7 +271,9 @@ function ItemRow({ item, isSelected, isFocused, onToggle, onInspect }: ItemRowPr
 
         {/* Item Info */}
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-gray-900 truncate">{item.productName}</div>
+          <div className="font-medium text-gray-900 truncate">
+            {item.productName}
+          </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
             <span>Qty: {item.quantity}</span>
             <span className="flex items-center gap-1">
@@ -249,7 +285,10 @@ function ItemRow({ item, isSelected, isFocused, onToggle, onInspect }: ItemRowPr
 
         {/* Bag indicator */}
         {item.isPacked && item.bagIdentifier && (
-          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-700 border-green-200"
+          >
             {item.bagIdentifier}
           </Badge>
         )}
@@ -259,7 +298,7 @@ function ItemRow({ item, isSelected, isFocused, onToggle, onInspect }: ItemRowPr
           variant="ghost"
           size="sm"
           className="opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             onInspect();
           }}
@@ -308,8 +347,12 @@ function ItemInspector({ item, onClose }: ItemInspectorProps) {
           </div>
           {item.unitPrice && (
             <div>
-              <h4 className="text-sm font-medium text-gray-500 mb-1">Unit Price</h4>
-              <p className="text-lg font-semibold">${item.unitPrice.toFixed(2)}</p>
+              <h4 className="text-sm font-medium text-gray-500 mb-1">
+                Unit Price
+              </h4>
+              <p className="text-lg font-semibold">
+                ${item.unitPrice.toFixed(2)}
+              </p>
             </div>
           )}
         </div>
@@ -353,13 +396,18 @@ function ItemInspector({ item, onClose }: ItemInspectorProps) {
 // ============================================================================
 
 interface OrderInspectorProps {
-  order: OrderDetails['order'];
-  summary: OrderDetails['summary'];
+  order: OrderDetails["order"];
+  summary: OrderDetails["summary"];
   bags: Bag[];
   onClose: () => void;
 }
 
-function OrderInspector({ order, summary, bags, onClose }: OrderInspectorProps) {
+function OrderInspector({
+  order,
+  summary,
+  bags,
+  onClose,
+}: OrderInspectorProps) {
   return (
     <InspectorPanel title="Order Details" onClose={onClose}>
       <div className="space-y-6">
@@ -394,22 +442,26 @@ function OrderInspector({ order, summary, bags, onClose }: OrderInspectorProps) 
             <p className="text-sm">
               {order.createdAt
                 ? new Date(order.createdAt).toLocaleDateString()
-                : '-'}
+                : "-"}
             </p>
           </div>
         </div>
 
         {/* Progress */}
         <div>
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Packing Progress</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-2">
+            Packing Progress
+          </h4>
           <div className="flex items-center gap-4">
             <div className="flex-1 bg-gray-200 rounded-full h-3">
               <div
                 className="bg-green-500 h-3 rounded-full transition-all"
                 style={{
-                  width: `${summary.totalItems > 0
-                    ? (summary.packedItems / summary.totalItems) * 100
-                    : 0}%`
+                  width: `${
+                    summary.totalItems > 0
+                      ? (summary.packedItems / summary.totalItems) * 100
+                      : 0
+                  }%`,
                 }}
               />
             </div>
@@ -426,7 +478,7 @@ function OrderInspector({ order, summary, bags, onClose }: OrderInspectorProps) 
               Bags ({bags.length})
             </h4>
             <div className="space-y-2">
-              {bags.map((bag) => (
+              {bags.map(bag => (
                 <div
                   key={bag.id}
                   className="p-3 border rounded-lg bg-gray-50 flex items-center gap-3"
@@ -434,7 +486,9 @@ function OrderInspector({ order, summary, bags, onClose }: OrderInspectorProps) 
                   <Box className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
                     <p className="font-medium">{bag.identifier}</p>
-                    <p className="text-sm text-gray-500">{bag.itemCount} items</p>
+                    <p className="text-sm text-gray-500">
+                      {bag.itemCount} items
+                    </p>
                   </div>
                 </div>
               ))}
@@ -464,12 +518,16 @@ export function PickPackWorkSurface() {
   // State
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  const [statusFilter, setStatusFilter] = useState<PickPackStatus | 'ALL'>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<PickPackStatus | "ALL">(
+    "ALL"
+  );
+  const [searchQuery, setSearchQuery] = useState("");
   const [focusedOrderIndex, setFocusedOrderIndex] = useState(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState(0);
-  const [focusZone, setFocusZone] = useState<'list' | 'items'>('list');
-  const [inspectorMode, setInspectorMode] = useState<'item' | 'order' | null>(null);
+  const [focusZone, setFocusZone] = useState<"list" | "items">("list");
+  const [inspectorMode, setInspectorMode] = useState<"item" | "order" | null>(
+    null
+  );
   const [inspectedItemId, setInspectedItemId] = useState<number | null>(null);
 
   // Refs
@@ -482,11 +540,12 @@ export function PickPackWorkSurface() {
     isLoading: pickListLoading,
     refetch: refetchPickList,
   } = trpc.pickPack.getPickList.useQuery({
-    filters: statusFilter !== 'ALL' ? { status: statusFilter } : undefined,
+    filters: statusFilter !== "ALL" ? { status: statusFilter } : undefined,
     limit: 50,
   });
 
-  const { data: stats, refetch: refetchStats } = trpc.pickPack.getStats.useQuery();
+  const { data: stats, refetch: refetchStats } =
+    trpc.pickPack.getStats.useQuery();
 
   const {
     data: orderDetails,
@@ -517,7 +576,9 @@ export function PickPackWorkSurface() {
   // Cast to access version if available from API response
   useEffect(() => {
     if (orderDetails?.order) {
-      const order = orderDetails.order as typeof orderDetails.order & { version?: number };
+      const order = orderDetails.order as typeof orderDetails.order & {
+        version?: number;
+      };
       if (order.version !== undefined) {
         trackVersion({ id: order.id, version: order.version });
       }
@@ -533,12 +594,12 @@ export function PickPackWorkSurface() {
       refetchPickList();
       refetchStats();
       setSaved();
-      toast.success('Items packed successfully');
+      toast.success("Items packed successfully");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(error)) {
-        setError(error.message || 'Failed to pack items');
+        setError(error.message || "Failed to pack items");
         toast.error(`Failed to pack items: ${error.message}`);
       }
     },
@@ -551,12 +612,12 @@ export function PickPackWorkSurface() {
       refetchPickList();
       refetchStats();
       setSaved();
-      toast.success('All items packed');
+      toast.success("All items packed");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(error)) {
-        setError(error.message || 'Failed to pack items');
+        setError(error.message || "Failed to pack items");
         toast.error(`Failed to pack items: ${error.message}`);
       }
     },
@@ -569,12 +630,12 @@ export function PickPackWorkSurface() {
       refetchPickList();
       refetchStats();
       setSaved();
-      toast.success('Order marked ready for shipping');
+      toast.success("Order marked ready for shipping");
     },
     onError: (error: { message: string }) => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(error)) {
-        setError(error.message || 'Failed to mark ready');
+        setError(error.message || "Failed to mark ready");
         toast.error(`Failed to mark ready: ${error.message}`);
       }
     },
@@ -584,7 +645,7 @@ export function PickPackWorkSurface() {
   const filteredPickList = useMemo(() => {
     if (!pickList) return [];
     return pickList.filter(
-      (order) =>
+      order =>
         order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.clientName.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -593,21 +654,21 @@ export function PickPackWorkSurface() {
   // Get unpacked items for current order
   const unpackedItems = useMemo(() => {
     if (!orderDetails) return [];
-    return orderDetails.items.filter((item) => !item.isPacked);
+    return orderDetails.items.filter(item => !item.isPacked);
   }, [orderDetails]);
 
   // Handlers
   const handleSelectOrder = useCallback((orderId: number) => {
     setSelectedOrderId(orderId);
     setSelectedItems([]);
-    setFocusZone('items');
+    setFocusZone("items");
     setFocusedItemIndex(0);
   }, []);
 
   const toggleItemSelection = useCallback((itemId: number) => {
-    setSelectedItems((prev) =>
+    setSelectedItems(prev =>
       prev.includes(itemId)
-        ? prev.filter((id) => id !== itemId)
+        ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     );
   }, []);
@@ -615,8 +676,8 @@ export function PickPackWorkSurface() {
   const selectAllUnpacked = useCallback(() => {
     if (orderDetails) {
       const unpackedIds = orderDetails.items
-        .filter((item) => !item.isPacked)
-        .map((item) => item.id);
+        .filter(item => !item.isPacked)
+        .map(item => item.id);
       setSelectedItems(unpackedIds);
     }
   }, [orderDetails]);
@@ -644,11 +705,11 @@ export function PickPackWorkSurface() {
 
   const openItemInspector = useCallback((itemId: number) => {
     setInspectedItemId(itemId);
-    setInspectorMode('item');
+    setInspectorMode("item");
   }, []);
 
   const openOrderInspector = useCallback(() => {
-    setInspectorMode('order');
+    setInspectorMode("order");
   }, []);
 
   const closeInspector = useCallback(() => {
@@ -657,125 +718,136 @@ export function PickPackWorkSurface() {
   }, []);
 
   // Keyboard configuration
-  const keyboardConfig = useMemo(() => ({
-    customHandlers: {
-      arrowup: () => {
-        if (focusZone === 'list') {
-          setFocusedOrderIndex((prev) => Math.max(0, prev - 1));
-        } else if (orderDetails) {
-          setFocusedItemIndex((prev) => Math.max(0, prev - 1));
-        }
-      },
-      arrowdown: () => {
-        if (focusZone === 'list') {
-          setFocusedOrderIndex((prev) =>
-            Math.min(filteredPickList.length - 1, prev + 1)
-          );
-        } else if (orderDetails) {
-          setFocusedItemIndex((prev) =>
-            Math.min(orderDetails.items.length - 1, prev + 1)
-          );
-        }
-      },
-      arrowleft: () => {
-        if (focusZone === 'items') {
-          setFocusZone('list');
-        }
-      },
-      arrowright: () => {
-        if (focusZone === 'list' && selectedOrderId) {
-          setFocusZone('items');
-        }
-      },
-      enter: () => {
-        if (focusZone === 'list' && filteredPickList[focusedOrderIndex]) {
-          handleSelectOrder(filteredPickList[focusedOrderIndex].orderId);
-        } else if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
-          const item = orderDetails.items[focusedItemIndex];
-          if (!item.isPacked) {
-            toggleItemSelection(item.id);
+  const keyboardConfig = useMemo(
+    () => ({
+      customHandlers: {
+        arrowup: () => {
+          if (focusZone === "list") {
+            setFocusedOrderIndex(prev => Math.max(0, prev - 1));
+          } else if (orderDetails) {
+            setFocusedItemIndex(prev => Math.max(0, prev - 1));
           }
-        }
+        },
+        arrowdown: () => {
+          if (focusZone === "list") {
+            setFocusedOrderIndex(prev =>
+              Math.min(filteredPickList.length - 1, prev + 1)
+            );
+          } else if (orderDetails) {
+            setFocusedItemIndex(prev =>
+              Math.min(orderDetails.items.length - 1, prev + 1)
+            );
+          }
+        },
+        arrowleft: () => {
+          if (focusZone === "items") {
+            setFocusZone("list");
+          }
+        },
+        arrowright: () => {
+          if (focusZone === "list" && selectedOrderId) {
+            setFocusZone("items");
+          }
+        },
+        enter: () => {
+          if (focusZone === "list" && filteredPickList[focusedOrderIndex]) {
+            handleSelectOrder(filteredPickList[focusedOrderIndex].orderId);
+          } else if (
+            focusZone === "items" &&
+            orderDetails?.items[focusedItemIndex]
+          ) {
+            const item = orderDetails.items[focusedItemIndex];
+            if (!item.isPacked) {
+              toggleItemSelection(item.id);
+            }
+          }
+        },
+        tab: () => {
+          if (focusZone === "list") {
+            setFocusZone("items");
+          } else {
+            setFocusZone("list");
+          }
+        },
+        "cmd+k": (e: KeyboardEvent) => {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+        },
+        "ctrl+k": (e: KeyboardEvent) => {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+        },
+        " ": () => {
+          if (focusZone === "items" && orderDetails?.items[focusedItemIndex]) {
+            const item = orderDetails.items[focusedItemIndex];
+            if (!item.isPacked) {
+              toggleItemSelection(item.id);
+            }
+          }
+        },
+        p: () => handlePackSelected(),
+        a: () => selectAllUnpacked(),
+        r: () => handleMarkReady(),
+        i: () => {
+          if (focusZone === "items" && orderDetails?.items[focusedItemIndex]) {
+            openItemInspector(orderDetails.items[focusedItemIndex].id);
+          } else if (selectedOrderId) {
+            openOrderInspector();
+          }
+        },
       },
-      tab: () => {
-        if (focusZone === 'list') {
-          setFocusZone('items');
+      onCancel: () => {
+        if (inspectorMode) {
+          closeInspector();
+        } else if (focusZone === "items") {
+          setFocusZone("list");
+          setSelectedItems([]);
         } else {
-          setFocusZone('list');
+          setSelectedOrderId(null);
         }
       },
-      'cmd+k': () => {
-        searchInputRef.current?.focus();
-      },
-      'ctrl+k': () => {
-        searchInputRef.current?.focus();
-      },
-      ' ': () => {
-        if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
-          const item = orderDetails.items[focusedItemIndex];
-          if (!item.isPacked) {
-            toggleItemSelection(item.id);
-          }
-        }
-      },
-      'p': () => handlePackSelected(),
-      'a': () => selectAllUnpacked(),
-      'r': () => handleMarkReady(),
-      'i': () => {
-        if (focusZone === 'items' && orderDetails?.items[focusedItemIndex]) {
-          openItemInspector(orderDetails.items[focusedItemIndex].id);
-        } else if (selectedOrderId) {
-          openOrderInspector();
-        }
-      },
-    },
-    onCancel: () => {
-      if (inspectorMode) {
-        closeInspector();
-      } else if (focusZone === 'items') {
-        setFocusZone('list');
-        setSelectedItems([]);
-      } else {
-        setSelectedOrderId(null);
-      }
-    },
-    containerRef,
-  }), [
-    focusZone,
-    focusedOrderIndex,
-    focusedItemIndex,
-    filteredPickList,
-    orderDetails,
-    selectedOrderId,
-    inspectorMode,
-    handleSelectOrder,
-    toggleItemSelection,
-    closeInspector,
-    handlePackSelected,
-    selectAllUnpacked,
-    handleMarkReady,
-    openItemInspector,
-    openOrderInspector,
-    containerRef,
-  ]);
+      containerRef,
+    }),
+    [
+      focusZone,
+      focusedOrderIndex,
+      focusedItemIndex,
+      filteredPickList,
+      orderDetails,
+      selectedOrderId,
+      inspectorMode,
+      handleSelectOrder,
+      toggleItemSelection,
+      closeInspector,
+      handlePackSelected,
+      selectAllUnpacked,
+      handleMarkReady,
+      openItemInspector,
+      openOrderInspector,
+      containerRef,
+    ]
+  );
 
   useWorkSurfaceKeyboard(keyboardConfig);
 
   // Get inspected item
   const inspectedItem = useMemo(() => {
-    if (inspectorMode === 'item' && inspectedItemId && orderDetails) {
-      return orderDetails.items.find((item) => item.id === inspectedItemId);
+    if (inspectorMode === "item" && inspectedItemId && orderDetails) {
+      return orderDetails.items.find(item => item.id === inspectedItemId);
     }
     return null;
   }, [inspectorMode, inspectedItemId, orderDetails]);
 
   // Status counts
-  const statusCounts = useMemo(() => ({
-    pending: stats?.pending || 0,
-    picking: stats?.picking || 0,
-    packed: stats?.packed || 0,
-    ready: stats?.ready || 0,
-  }), [stats]);
+  const statusCounts = useMemo(
+    () => ({
+      pending: stats?.pending || 0,
+      picking: stats?.picking || 0,
+      packed: stats?.packed || 0,
+      ready: stats?.ready || 0,
+    }),
+    [stats]
+  );
 
   return (
     <div ref={containerRef} className="flex h-full bg-gray-50" tabIndex={0}>
@@ -806,19 +878,27 @@ export function PickPackWorkSurface() {
           {/* Stats */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             <div className="text-center p-2 bg-yellow-50 rounded-lg">
-              <div className="text-lg font-bold text-yellow-600">{statusCounts.pending}</div>
+              <div className="text-lg font-bold text-yellow-600">
+                {statusCounts.pending}
+              </div>
               <div className="text-xs text-yellow-700">Pending</div>
             </div>
             <div className="text-center p-2 bg-blue-50 rounded-lg">
-              <div className="text-lg font-bold text-blue-600">{statusCounts.picking}</div>
+              <div className="text-lg font-bold text-blue-600">
+                {statusCounts.picking}
+              </div>
               <div className="text-xs text-blue-700">Picking</div>
             </div>
             <div className="text-center p-2 bg-green-50 rounded-lg">
-              <div className="text-lg font-bold text-green-600">{statusCounts.packed}</div>
+              <div className="text-lg font-bold text-green-600">
+                {statusCounts.packed}
+              </div>
               <div className="text-xs text-green-700">Packed</div>
             </div>
             <div className="text-center p-2 bg-purple-50 rounded-lg">
-              <div className="text-lg font-bold text-purple-600">{statusCounts.ready}</div>
+              <div className="text-lg font-bold text-purple-600">
+                {statusCounts.ready}
+              </div>
               <div className="text-xs text-purple-700">Ready</div>
             </div>
           </div>
@@ -833,13 +913,13 @@ export function PickPackWorkSurface() {
                 data-testid="pick-pack-search-input"
                 placeholder="Search orders... (Cmd+K)"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as PickPackStatus | 'ALL')}
+              onValueChange={v => setStatusFilter(v as PickPackStatus | "ALL")}
             >
               <SelectTrigger className="w-[130px]">
                 <SelectValue placeholder="Status" />
@@ -862,11 +942,17 @@ export function PickPackWorkSurface() {
           data-testid="order-queue"
         >
           {pickListLoading ? (
-            <div className="flex items-center justify-center h-32" data-testid="order-queue-loading">
+            <div
+              className="flex items-center justify-center h-32"
+              data-testid="order-queue-loading"
+            >
               <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
             </div>
           ) : filteredPickList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-500" data-testid="order-queue-empty">
+            <div
+              className="flex flex-col items-center justify-center h-32 text-gray-500"
+              data-testid="order-queue-empty"
+            >
               <Package className="w-8 h-8 mb-2" />
               <p>No orders to pick</p>
             </div>
@@ -876,7 +962,7 @@ export function PickPackWorkSurface() {
                 key={order.orderId}
                 order={order}
                 isSelected={selectedOrderId === order.orderId}
-                isFocused={focusZone === 'list' && focusedOrderIndex === index}
+                isFocused={focusZone === "list" && focusedOrderIndex === index}
                 onClick={() => handleSelectOrder(order.orderId)}
               />
             ))
@@ -889,8 +975,12 @@ export function PickPackWorkSurface() {
         {!selectedOrderId ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
             <Box className="w-16 h-16 mb-4 text-gray-300" />
-            <p className="text-lg font-medium">Select an order to start packing</p>
-            <p className="text-sm">Use arrow keys to navigate, Enter to select</p>
+            <p className="text-lg font-medium">
+              Select an order to start packing
+            </p>
+            <p className="text-sm">
+              Use arrow keys to navigate, Enter to select
+            </p>
           </div>
         ) : orderDetailsLoading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -906,18 +996,27 @@ export function PickPackWorkSurface() {
                     <h2 className="text-lg font-bold text-gray-900">
                       Order {orderDetails.order.orderNumber}
                     </h2>
-                    <p className="text-sm text-gray-600">{orderDetails.order.clientName}</p>
+                    <p className="text-sm text-gray-600">
+                      {orderDetails.order.clientName}
+                    </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={openOrderInspector}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openOrderInspector}
+                  >
                     View Details
                   </Button>
                 </div>
                 <StatusBadge status={orderDetails.order.pickPackStatus} />
               </div>
               <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span>Total: ${parseFloat(orderDetails.order.total).toFixed(2)}</span>
                 <span>
-                  {orderDetails.summary.packedItems}/{orderDetails.summary.totalItems} items packed
+                  Total: ${parseFloat(orderDetails.order.total).toFixed(2)}
+                </span>
+                <span>
+                  {orderDetails.summary.packedItems}/
+                  {orderDetails.summary.totalItems} items packed
                 </span>
                 <span>{orderDetails.summary.bagCount} bags</span>
               </div>
@@ -937,7 +1036,9 @@ export function PickPackWorkSurface() {
               <Button
                 size="sm"
                 onClick={handlePackSelected}
-                disabled={selectedItems.length === 0 || packItemsMutation.isPending}
+                disabled={
+                  selectedItems.length === 0 || packItemsMutation.isPending
+                }
               >
                 {packItemsMutation.isPending ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -950,7 +1051,9 @@ export function PickPackWorkSurface() {
                 variant="outline"
                 size="sm"
                 onClick={handleMarkAllPacked}
-                disabled={unpackedItems.length === 0 || markAllPackedMutation.isPending}
+                disabled={
+                  unpackedItems.length === 0 || markAllPackedMutation.isPending
+                }
               >
                 Pack All to One Bag
               </Button>
@@ -960,7 +1063,8 @@ export function PickPackWorkSurface() {
                 size="sm"
                 onClick={handleMarkReady}
                 disabled={
-                  orderDetails.summary.packedItems < orderDetails.summary.totalItems ||
+                  orderDetails.summary.packedItems <
+                    orderDetails.summary.totalItems ||
                   markReadyMutation.isPending
                 }
                 className="bg-green-600 hover:bg-green-700"
@@ -985,7 +1089,9 @@ export function PickPackWorkSurface() {
                     key={item.id}
                     item={item}
                     isSelected={selectedItems.includes(item.id)}
-                    isFocused={focusZone === 'items' && focusedItemIndex === index}
+                    isFocused={
+                      focusZone === "items" && focusedItemIndex === index
+                    }
                     onToggle={() => toggleItemSelection(item.id)}
                     onInspect={() => openItemInspector(item.id)}
                   />
@@ -999,12 +1105,14 @@ export function PickPackWorkSurface() {
                     Bags ({orderDetails.bags.length})
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
-                    {orderDetails.bags.map((bag) => (
+                    {orderDetails.bags.map(bag => (
                       <Card key={bag.id}>
                         <CardContent className="p-3">
                           <div className="flex items-center gap-2 mb-1">
                             <Box className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">{bag.identifier}</span>
+                            <span className="font-medium">
+                              {bag.identifier}
+                            </span>
                           </div>
                           <div className="text-sm text-gray-500">
                             {bag.itemCount} items
@@ -1019,7 +1127,7 @@ export function PickPackWorkSurface() {
 
             {/* Status Bar */}
             <WorkSurfaceStatusBar
-              left={`Zone: ${focusZone === 'list' ? 'Order List' : 'Items'}`}
+              left={`Zone: ${focusZone === "list" ? "Order List" : "Items"}`}
               center={`${selectedItems.length} items selected`}
               right="↑↓ Navigate • Space Select • P Pack • R Ready • I Inspect"
             />
@@ -1033,10 +1141,10 @@ export function PickPackWorkSurface() {
       </div>
 
       {/* Inspector Panel */}
-      {inspectorMode === 'item' && inspectedItem && (
+      {inspectorMode === "item" && inspectedItem && (
         <ItemInspector item={inspectedItem} onClose={closeInspector} />
       )}
-      {inspectorMode === 'order' && orderDetails && (
+      {inspectorMode === "order" && orderDetails && (
         <OrderInspector
           order={orderDetails.order}
           summary={orderDetails.summary}

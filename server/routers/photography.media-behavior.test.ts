@@ -13,31 +13,29 @@ import { db } from "../db";
 
 function mockSelectSequence(resultSets: unknown[][]): void {
   let i = 0;
-  vi.mocked(db.select).mockImplementation(
-    (() => {
-      const rows = resultSets[i++] ?? [];
-      const builder: {
-        from: ReturnType<typeof vi.fn>;
-        leftJoin: ReturnType<typeof vi.fn>;
-        where: ReturnType<typeof vi.fn>;
-        orderBy: ReturnType<typeof vi.fn>;
-        groupBy: ReturnType<typeof vi.fn>;
-        limit: ReturnType<typeof vi.fn>;
-        offset: ReturnType<typeof vi.fn>;
-        then: (resolve: (value: unknown[]) => unknown) => unknown;
-      } = {
-        from: vi.fn(() => builder),
-        leftJoin: vi.fn(() => builder),
-        where: vi.fn(() => builder),
-        orderBy: vi.fn(() => builder),
-        groupBy: vi.fn(() => builder),
-        limit: vi.fn(() => builder),
-        offset: vi.fn(() => builder),
-        then: resolve => resolve(rows),
-      };
-      return builder;
-    }) as never
-  );
+  vi.mocked(db.select).mockImplementation((() => {
+    const rows = resultSets[i++] ?? [];
+    const builder: {
+      from: ReturnType<typeof vi.fn>;
+      leftJoin: ReturnType<typeof vi.fn>;
+      where: ReturnType<typeof vi.fn>;
+      orderBy: ReturnType<typeof vi.fn>;
+      groupBy: ReturnType<typeof vi.fn>;
+      limit: ReturnType<typeof vi.fn>;
+      offset: ReturnType<typeof vi.fn>;
+      then: (resolve: (value: unknown[]) => unknown) => unknown;
+    } = {
+      from: vi.fn(() => builder),
+      leftJoin: vi.fn(() => builder),
+      where: vi.fn(() => builder),
+      orderBy: vi.fn(() => builder),
+      groupBy: vi.fn(() => builder),
+      limit: vi.fn(() => builder),
+      offset: vi.fn(() => builder),
+      then: resolve => resolve(rows),
+    };
+    return builder;
+  }) as never);
 }
 
 const now = new Date();
@@ -156,5 +154,34 @@ describe("photographyRouter media behavior", () => {
       code: "BAD_REQUEST",
       message: "At least one photo is required to complete photography",
     });
+  });
+
+  it("rejects deletePhoto when photo does not exist (TER-166)", async () => {
+    // Return empty result for photo lookup
+    mockSelectSequence([[]]);
+
+    await expect(
+      createUserCaller().deletePhoto({ photoId: 99999 })
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Photo not found",
+    });
+  });
+
+  it("handles deleting last photo in group without error (TER-166)", async () => {
+    // Photo exists but no remaining visible images after deletion
+    mockSelectSequence([
+      [{ id: 8000, batchId: 200, productId: null, isPrimary: true }],
+      [], // No remaining visible images after delete
+    ]);
+
+    const deleteWhere = vi.fn().mockResolvedValue({ changes: 1 });
+    vi.mocked(db.delete).mockReturnValue({ where: deleteWhere } as never);
+
+    // ensureExactlyOneVisiblePrimaryForGroup should return early (no images left)
+    // No update calls should be made for primary reassignment
+    await createUserCaller().deletePhoto({ photoId: 8000 });
+
+    expect(deleteWhere).toHaveBeenCalledTimes(1);
   });
 });

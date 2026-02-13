@@ -12,6 +12,9 @@ import * as productsDb from "../productsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { TRPCError } from "@trpc/server";
+import { getDb } from "../db";
+import { products, brands } from "../../drizzle/schema";
+import { eq, and, isNull, sql } from "drizzle-orm";
 
 // Input validation schemas
 const productSchema = z.object({
@@ -114,18 +117,6 @@ export const productCatalogueRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // TER-226: Check for duplicate product name within the same brand
-      const duplicate = await productsDb.findDuplicateProduct(
-        input.nameCanonical,
-        input.brandId
-      );
-      if (duplicate) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: `A product named "${input.nameCanonical}" already exists for this brand (ID: ${duplicate.id}). Use the existing product or choose a different name.`,
-        });
-      }
-
       // TER-227: Log when product is created outside intake context
       if (input.source !== "intake") {
         console.warn(
@@ -133,16 +124,53 @@ export const productCatalogueRouter = router({
         );
       }
 
-      const result = await productsDb.createProduct({
-        brandId: input.brandId,
-        strainId: input.strainId ?? null,
-        nameCanonical: input.nameCanonical,
-        category: input.category,
-        subcategory: input.subcategory ?? null,
-        uomSellable: input.uomSellable,
-        description: input.description ?? null,
+      // TER-236: Wrap duplicate check + insert in a transaction to prevent race conditions
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      return await db.transaction(async tx => {
+        // TER-226: Check for duplicate product name within the same brand (inside tx)
+        const searchName = input.nameCanonical.toLowerCase().trim();
+        const conditions = [
+          sql`LOWER(${products.nameCanonical}) = ${searchName}`,
+          isNull(products.deletedAt),
+        ];
+        if (input.brandId) {
+          conditions.push(eq(products.brandId, input.brandId));
+        }
+
+        const duplicates = await tx
+          .select({
+            id: products.id,
+            nameCanonical: products.nameCanonical,
+            brandId: products.brandId,
+            brandName: brands.name,
+          })
+          .from(products)
+          .leftJoin(brands, eq(products.brandId, brands.id))
+          .where(and(...conditions))
+          .limit(1);
+
+        const duplicate = duplicates[0];
+        if (duplicate) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `A product named "${input.nameCanonical}" already exists for this brand (ID: ${duplicate.id}). Use the existing product or choose a different name.`,
+          });
+        }
+
+        const result = await tx.insert(products).values({
+          brandId: input.brandId,
+          strainId: input.strainId ?? null,
+          nameCanonical: input.nameCanonical,
+          category: input.category,
+          subcategory: input.subcategory ?? null,
+          uomSellable: input.uomSellable ?? "EA",
+          description: input.description ?? null,
+        });
+
+        return { id: Number(result[0].insertId) };
       });
-      return result;
     }),
 
   // Update an existing product
