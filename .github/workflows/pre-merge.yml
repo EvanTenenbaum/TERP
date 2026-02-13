@@ -211,7 +211,7 @@ jobs:
 
   critical-interactions:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     services:
       mysql:
@@ -257,9 +257,6 @@ jobs:
             echo "$CHANGED" | xargs pnpm eslint --max-warnings=0 || true
           fi
 
-      - name: Unit tests
-        run: pnpm test --run
-
       - name: Wait for MySQL
         run: |
           MAX_ATTEMPTS=30
@@ -276,6 +273,9 @@ jobs:
       - name: Push schema and seed
         run: pnpm drizzle-kit push --force && pnpm seed:light
 
+      - name: Unit tests
+        run: pnpm test --run
+
       - name: Install Playwright
         run: pnpm exec playwright install --with-deps
 
@@ -283,6 +283,7 @@ jobs:
         run: pnpm exec playwright test tests-e2e/critical-paths/ --reporter=list
         env:
           CI: true
+          E2E_USE_LIVE_DB: '1'
 
       - name: Upload Playwright report on failure
         uses: actions/upload-artifact@v4
