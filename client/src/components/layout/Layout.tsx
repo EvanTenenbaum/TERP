@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileNav } from "./MobileNav";
+import { ModuleFlowIntro } from "./ModuleFlowIntro";
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -33,6 +34,7 @@ export const Layout = React.memo(function Layout({
           </>
         )}
         <main className={cn("flex-1 overflow-y-auto p-4 md:p-6")}>
+          <ModuleFlowIntro />
           {children}
         </main>
       </div>
