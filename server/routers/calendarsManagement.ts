@@ -774,7 +774,7 @@ export const calendarsManagementRouter = router({
         throw new Error("Access denied to this calendar");
       }
 
-      let conditions = [eq(calendarBlockedDates.calendarId, input.calendarId)];
+      const conditions = [eq(calendarBlockedDates.calendarId, input.calendarId)];
 
       if (input.startDate) {
         conditions.push(gte(calendarBlockedDates.date, new Date(input.startDate)));
@@ -1001,18 +1001,20 @@ export const calendarsManagementRouter = router({
         for (let d = new Date(toStartDate); d <= toEndDate; d.setDate(d.getDate() + 1)) {
           const dStr = d.toISOString().split("T")[0];
 
-          if (!timeOffByDate.has(dStr)) {
-            timeOffByDate.set(dStr, []);
+          let timeOffList = timeOffByDate.get(dStr);
+          if (!timeOffList) {
+            timeOffList = [];
+            timeOffByDate.set(dStr, timeOffList);
           }
 
           if (timeOff.isFullDay) {
             // Full day off - block entire day (0 to 1440 minutes)
-            timeOffByDate.get(dStr)!.push({ start: 0, end: 1440 });
+            timeOffList.push({ start: 0, end: 1440 });
           } else if (timeOff.startTime && timeOff.endTime) {
             // Partial day off
             const [startHr, startMn] = timeOff.startTime.split(":").map(Number);
             const [endHr, endMn] = timeOff.endTime.split(":").map(Number);
-            timeOffByDate.get(dStr)!.push({
+            timeOffList.push({
               start: startHr * 60 + startMn,
               end: endHr * 60 + endMn,
             });
@@ -1024,10 +1026,12 @@ export const calendarsManagementRouter = router({
       const availabilityByDay: Map<number, Array<{ start: string; end: string }>> = new Map();
       for (const rule of availabilityRules) {
         const day = rule.dayOfWeek;
-        if (!availabilityByDay.has(day)) {
-          availabilityByDay.set(day, []);
+        let dayRules = availabilityByDay.get(day);
+        if (!dayRules) {
+          dayRules = [];
+          availabilityByDay.set(day, dayRules);
         }
-        availabilityByDay.get(day)!.push({
+        dayRules.push({
           start: rule.startTime,
           end: rule.endTime,
         });

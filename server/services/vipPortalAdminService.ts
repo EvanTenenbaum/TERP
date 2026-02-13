@@ -28,6 +28,7 @@ import { eq, and, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { randomUUID } from "crypto";
+import { logger } from "../_core/logger";
 
 // ============================================================================
 // SECURITY: Pagination validation helper
@@ -268,7 +269,7 @@ export async function createImpersonationSession(clientId: number, adminUserId?:
   const sessionExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours for impersonation
 
   // Log the impersonation for audit purposes
-  console.log(`[VIP Portal] Admin ${adminUserId || 'unknown'} started impersonation session for client ${clientId} (${client.name})`);
+  logger.info(`[VIP Portal] Admin ${adminUserId || 'unknown'} started impersonation session for client ${clientId} (${client.name})`);
 
   return {
     sessionToken,
@@ -348,7 +349,7 @@ export async function applyConfigurationTemplate(clientId: number, template: Con
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
-  let templateConfig: any = {};
+  let templateConfig: Record<string, boolean> = {};
 
   switch (template) {
     case "FULL_ACCESS":
@@ -827,10 +828,12 @@ export async function getInterestListsByClient(options: GetInterestListsByClient
   // Build where clause
   let whereClause = eq(clientInterestLists.clientId, clientId);
   if (status) {
-    whereClause = and(
+    const statusClause = and(
       eq(clientInterestLists.clientId, clientId),
       eq(clientInterestLists.status, status)
-    )!;
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    whereClause = statusClause as any;
   }
   
   const lists = await db.query.clientInterestLists.findMany({
@@ -1198,7 +1201,7 @@ export async function createAuditedImpersonationSession(options: CreateImpersona
   const oneTimeToken = `imp_ot_${sessionGuid}_${Date.now()}`;
   const tokenExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  console.log(`[VIP Portal Audit] Admin ${adminUserId} started impersonation session ${sessionGuid} for client ${clientId} (${client.name})`);
+  logger.info(`[VIP Portal Audit] Admin ${adminUserId} started impersonation session ${sessionGuid} for client ${clientId} (${client.name})`);
 
   return {
     oneTimeToken,
@@ -1389,7 +1392,7 @@ export async function endImpersonationSession(options: EndImpersonationSessionOp
     actionDetails: { description: "Session ended by user" },
   });
 
-  console.log(`[VIP Portal Audit] Impersonation session ${sessionGuid} ended`);
+  logger.info(`[VIP Portal Audit] Impersonation session ${sessionGuid} ended`);
 
   return { success: true };
 }
@@ -1441,7 +1444,7 @@ export async function revokeImpersonationSession(options: RevokeImpersonationSes
     },
   });
 
-  console.log(`[VIP Portal Audit] Impersonation session ${sessionGuid} revoked by user ${revokedByUserId}`);
+  logger.info(`[VIP Portal Audit] Impersonation session ${sessionGuid} revoked by user ${revokedByUserId}`);
 
   return { success: true };
 }

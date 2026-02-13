@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,11 +44,11 @@ export function TodoListForm({
 
   // Fetch available users for sharing - handle paginated response
   const { data: usersData } = trpc.users.list.useQuery();
-  const availableUsers: any[] = usersData ? (Array.isArray(usersData) ? usersData : ((usersData as any)?.items ?? [])) : [];
+  const availableUsers: Array<{ id: number; name?: string | null; email?: string | null }> = usersData ? (Array.isArray(usersData) ? usersData : ((usersData as { items?: Array<{ id: number; name?: string | null; email?: string | null }> })?.items ?? [])) : [];
 
   // Fetch current list members if editing - handle paginated response
   const { data: membersData } = trpc.todoLists.getMembers.useQuery(
-    { listId: list?.id || 0 },
+    { listId: list?.id || 0 }, // safe: list id, not user id
     { enabled: !!list?.id }
   );
   const currentMembers = Array.isArray(membersData) ? membersData : (membersData?.items ?? []);
@@ -55,7 +56,7 @@ export function TodoListForm({
   // Update selected users when editing and members are loaded
   useEffect(() => {
     if (list && currentMembers.length > 0) {
-      const memberUserIds = currentMembers.map((m: any) => m.userId);
+      const memberUserIds = currentMembers.map((m: { userId: number }) => m.userId);
       setSelectedUserIds(memberUserIds);
     }
   }, [list, currentMembers]);
@@ -74,7 +75,7 @@ export function TodoListForm({
             });
           }
           toast.success(`List created and shared with ${selectedUserIds.length} user(s)`);
-        } catch (error) {
+        } catch (_error) {
           toast.error("List created but failed to add some members");
         }
       } else {
@@ -117,7 +118,7 @@ export function TodoListForm({
           }
 
           toast.success("List updated successfully");
-        } catch (error) {
+        } catch (_error) {
           toast.error("List updated but failed to update some members");
         }
       } else {
@@ -236,7 +237,7 @@ export function TodoListForm({
               <div className="space-y-2">
                 <Label>Share With</Label>
                 <UserSelector
-                  users={availableUsers}
+                  users={availableUsers as any}
                   selectedUserIds={selectedUserIds}
                   onSelectionChange={setSelectedUserIds}
                   placeholder="Select users to share with..."

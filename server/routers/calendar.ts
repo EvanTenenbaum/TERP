@@ -79,7 +79,7 @@ export const calendarRouter = router({
 
       try {
       // Build base query for calendar events
-      let eventConditions: any[] = [
+      const eventConditions: Array<ReturnType<typeof gte | typeof lte | typeof isNull | typeof inArray | typeof eq>> = [
         gte(calendarEvents.startDate, new Date(input.startDate)),
         lte(calendarEvents.endDate, new Date(input.endDate)),
         isNull(calendarEvents.deletedAt),
@@ -87,16 +87,20 @@ export const calendarRouter = router({
 
       // Apply filters
       if (input.modules && input.modules.length > 0) {
-        eventConditions.push(inArray(calendarEvents.module, input.modules as any));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        eventConditions.push(inArray(calendarEvents.module, input.modules as any[]));
       }
       if (input.eventTypes && input.eventTypes.length > 0) {
-        eventConditions.push(inArray(calendarEvents.eventType, input.eventTypes as any));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        eventConditions.push(inArray(calendarEvents.eventType, input.eventTypes as any[]));
       }
       if (input.statuses && input.statuses.length > 0) {
-        eventConditions.push(inArray(calendarEvents.status, input.statuses as any));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        eventConditions.push(inArray(calendarEvents.status, input.statuses as any[]));
       }
       if (input.priorities && input.priorities.length > 0) {
-        eventConditions.push(inArray(calendarEvents.priority, input.priorities as any));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        eventConditions.push(inArray(calendarEvents.priority, input.priorities as any[]));
       }
       if (input.assignedTo) {
         eventConditions.push(eq(calendarEvents.assignedTo, input.assignedTo));
@@ -139,7 +143,7 @@ export const calendarRouter = router({
       }
 
       // Query recurrence instances
-      const instanceConditions: any[] = [
+      const instanceConditions: Array<ReturnType<typeof gte | typeof lte>> = [
         gte(calendarRecurrenceInstances.instanceDate, new Date(input.startDate)),
         lte(calendarRecurrenceInstances.instanceDate, new Date(input.endDate)),
       ];
@@ -172,7 +176,7 @@ export const calendarRouter = router({
             dateStr,
             event.startTime,
             event.timezone,
-            input.timezone!
+            input.timezone || 'UTC'
           );
           return {
             ...event,
@@ -437,8 +441,8 @@ export const calendarRouter = router({
           if (!event.startTime || !event.endTime) return false;
 
           // Convert times to comparable format
-          const newStart = input.startTime!;
-          const newEnd = input.endTime!;
+          const newStart = input.startTime || '';
+          const newEnd = input.endTime || '';
           const existingStart = event.startTime;
           const existingEnd = event.endTime;
 
@@ -600,7 +604,8 @@ export const calendarRouter = router({
 
       // CHAOS-006: Optimistic locking - check version if provided
       if (input.version !== undefined) {
-        const currentVersion = (currentEvent as any).version ?? 1;
+        const currentEventRecord = currentEvent as { version?: number };
+        const currentVersion = currentEventRecord.version ?? 1;
         if (currentVersion !== input.version) {
           throw new TRPCError({
             code: "CONFLICT",
@@ -626,7 +631,7 @@ export const calendarRouter = router({
           .set({
             ...dbUpdates,
             version: sql`${calendarEvents.version} + 1`,
-          } as any)
+          } as Record<string, unknown>)
           .where(
             and(
               eq(calendarEvents.id, input.id),
@@ -634,7 +639,8 @@ export const calendarRouter = router({
             )
           );
 
-        const affectedRows = (result as any)[0]?.affectedRows ?? 0;
+        const resultArray = result as unknown as Array<{ affectedRows: number }>;
+        const affectedRows = resultArray[0]?.affectedRows ?? 0;
         if (affectedRows === 0) {
           // Version mismatch - another user updated the event
           throw new TRPCError({
@@ -672,7 +678,8 @@ export const calendarRouter = router({
       }
 
       // Return new version for client to update its state
-      const newVersion = input.version !== undefined ? input.version + 1 : ((currentEvent as any).version ?? 1);
+      const currentEventRecord = currentEvent as { version?: number };
+      const newVersion = input.version !== undefined ? input.version + 1 : (currentEventRecord.version ?? 1);
       return { success: true, version: newVersion };
     }),
 

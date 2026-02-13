@@ -258,7 +258,7 @@ export function ResponsiveTable<T extends Record<string, unknown>>({
 }
 
 /** Simple loading skeleton for the table */
-function TableLoadingSkeleton({ columns }: { columns: number }) {
+function TableLoadingSkeleton({ columns: _columns }: { columns: number }) {
   return (
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (

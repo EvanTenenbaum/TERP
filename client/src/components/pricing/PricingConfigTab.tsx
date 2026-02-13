@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tag, TrendingUp, TrendingDown, Plus, Trash, DollarSign } from "lucide-react";
+import { Tag, TrendingUp, TrendingDown, Plus, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 interface PricingConfigTabProps {
@@ -169,7 +169,7 @@ export function PricingConfigTab({ clientId }: PricingConfigTabProps) {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm text-muted-foreground">
-                            {Object.keys((rule.conditions as Record<string, any>) || {}).length} condition(s)
+                            {Object.keys((rule.conditions as Record<string, unknown>) || {}).length} condition(s)
                           </div>
                         </TableCell>
                         <TableCell>{rule.priority}</TableCell>

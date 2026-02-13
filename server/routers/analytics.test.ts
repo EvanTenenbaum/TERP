@@ -26,8 +26,8 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    req: { headers: {} } as any,
-    res: {} as any,
+    req: { headers: {} } as Record<string, unknown>,
+    res: {} as Record<string, unknown>,
   });
 
   return appRouter.createCaller({
@@ -47,7 +47,7 @@ describe("Analytics Router", () => {
     it("should retrieve summary analytics with real data", async () => {
       // Arrange - mock database responses
       // Note: orders and clients queries don't use .where(), inventory does
-      const mockDb = db as any;
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn>; };
 
       // For orders - .select().from() directly returns array
       mockDb.select = vi.fn()
@@ -81,7 +81,7 @@ describe("Analytics Router", () => {
 
     it("should handle empty database gracefully", async () => {
       // Arrange - mock empty database
-      const mockDb = db as any;
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn>; };
 
       // For orders
       mockDb.select = vi.fn()

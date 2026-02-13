@@ -24,14 +24,14 @@ export async function seedStrainsFromCSV() {
     return { success: false, message: "CSV file not found" };
   }
 
-  console.log("Reading strain CSV file...");
+  logger.info("Reading strain CSV file...");
   const csvContent = fs.readFileSync(csvPath, "utf-8");
   const lines = csvContent.split("\n");
   
   // Skip header
   const dataLines = lines.slice(1);
   
-  console.log(`Found ${dataLines.length} strains in CSV`);
+  logger.info(`Found ${dataLines.length} strains in CSV`);
   
   const strainsToInsert: Array<{
     name: string;
@@ -104,7 +104,7 @@ export async function seedStrainsFromCSV() {
       if (strainsToInsert.length >= 100) {
         const batchDb = await getDb();
         if (batchDb) await batchDb.insert(strains).values(strainsToInsert);
-        console.log(`Inserted ${processedCount} strains...`);
+        logger.info(`Inserted ${processedCount} strains...`);
         strainsToInsert.length = 0; // Clear array
       }
     } catch (error) {
@@ -119,9 +119,11 @@ export async function seedStrainsFromCSV() {
     if (finalDb) await finalDb.insert(strains).values(strainsToInsert);
   }
 
-  console.log(`✅ Strain seeding complete!`);
-  console.log(`   Processed: ${processedCount}`);
-  console.log(`   Skipped: ${skippedCount}`);
+  logger.info({
+    msg: "Strain seeding complete",
+    processed: processedCount,
+    skipped: skippedCount,
+  });
 
   return {
     success: true,

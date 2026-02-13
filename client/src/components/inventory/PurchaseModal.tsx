@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { INTAKE_DEFAULTS } from "@/lib/constants/intakeDefaults";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,11 @@ interface PurchaseModalProps {
   onSuccess?: () => void;
 }
 
-export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) {
+export function PurchaseModal({
+  open,
+  onClose,
+  onSuccess,
+}: PurchaseModalProps) {
   const [formData, setFormData] = useState({
     vendorName: "",
     brandName: "",
@@ -44,7 +49,14 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     unitCogs: "",
     unitCogsMin: "",
     unitCogsMax: "",
-    paymentTerms: "NET_30" as "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL",
+    // TER-228: Default from centralized intake defaults
+    paymentTerms: INTAKE_DEFAULTS.paymentTerms as
+      | "COD"
+      | "NET_7"
+      | "NET_15"
+      | "NET_30"
+      | "CONSIGNMENT"
+      | "PARTIAL",
     amountPaid: "", // For COD and PARTIAL payment
     locationSite: "",
   });
@@ -61,8 +73,8 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   // BUG-073 FIX: Track request IDs to prevent race conditions in debounced search
   const vendorRequestIdRef = React.useRef(0);
   const brandRequestIdRef = React.useRef(0);
-  const [vendorRequestId, setVendorRequestId] = useState(0);
-  const [brandRequestId, setBrandRequestId] = useState(0);
+  const [_vendorRequestId, setVendorRequestId] = useState(0);
+  const [_brandRequestId, setBrandRequestId] = useState(0);
 
   // BUG-073 FIX: Increment request ID when debounced search changes
   React.useEffect(() => {
@@ -91,17 +103,17 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     }
   );
 
-
-
   // Fetch settings data
   const { data: categories } = trpc.settings.categories.list.useQuery();
   const { data: grades } = trpc.settings.grades.list.useQuery();
   const { data: locations } = trpc.settings.locations.list.useQuery();
 
   // FEAT-012: Fetch display settings for grade field visibility
-  const { data: displaySettings } = trpc.organizationSettings.getDisplaySettings.useQuery();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const showGradeField = displaySettings?.display?.showGradeField ?? true;
-  const gradeFieldRequired = displaySettings?.display?.gradeFieldRequired ?? false;
+  const gradeFieldRequired =
+    displaySettings?.display?.gradeFieldRequired ?? false;
 
   const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
   const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
@@ -112,7 +124,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       onClose();
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to create intake: ${error.message}`);
     },
   });
@@ -132,7 +144,8 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       unitCogs: "",
       unitCogsMin: "",
       unitCogsMax: "",
-      paymentTerms: "NET_30",
+      // TER-228: Match initial state default from centralized constants
+      paymentTerms: INTAKE_DEFAULTS.paymentTerms,
       amountPaid: "",
       locationSite: "",
     });
@@ -146,18 +159,18 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
 
     // Validation
     const isFlowerCategory = formData.category?.toLowerCase() === "flower";
-    
+
     if (!formData.vendorName || !formData.brandName) {
       toast.error("Please fill in all required fields");
       return;
     }
-    
+
     // For flower, require strain name; for others, require product name
     if (isFlowerCategory && !formData.strainName) {
       toast.error("Please select a strain for flower products");
       return;
     }
-    
+
     if (!isFlowerCategory && !formData.productName) {
       toast.error("Please enter a product name");
       return;
@@ -174,7 +187,10 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       return;
     }
 
-    if (formData.cogsMode === "FIXED" && (!formData.unitCogs || parseFloat(formData.unitCogs) <= 0)) {
+    if (
+      formData.cogsMode === "FIXED" &&
+      (!formData.unitCogs || parseFloat(formData.unitCogs) <= 0)
+    ) {
       toast.error("Please enter a valid unit COGS");
       return;
     }
@@ -184,27 +200,43 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
         toast.error("Please enter both min and max COGS");
         return;
       }
-      if (parseFloat(formData.unitCogsMin) >= parseFloat(formData.unitCogsMax)) {
+      if (
+        parseFloat(formData.unitCogsMin) >= parseFloat(formData.unitCogsMax)
+      ) {
         toast.error("Min COGS must be less than max COGS");
         return;
       }
     }
 
-    if ((formData.paymentTerms === "COD" || formData.paymentTerms === "PARTIAL") && !formData.amountPaid) {
+    if (
+      (formData.paymentTerms === "COD" ||
+        formData.paymentTerms === "PARTIAL") &&
+      !formData.amountPaid
+    ) {
       toast.error("Please enter the amount paid");
       return;
     }
 
     // BUG-004: Upload media files first
     // BUG-071: Track uploaded media URLs for rollback on failure
-    let uploadedMediaUrls: Array<{ url: string; fileName: string; fileType: string; fileSize: number }> = [];
+    let uploadedMediaUrls: Array<{
+      url: string;
+      fileName: string;
+      fileType: string;
+      fileSize: number;
+    }> = [];
 
     try {
       // Step 1: Upload media files
       if (mediaFiles.length > 0) {
         toast.info("Uploading media files...");
-        const uploadPromises = mediaFiles.map(async (file) => {
-          return new Promise<{ url: string; fileName: string; fileType: string; fileSize: number }>((resolve, reject) => {
+        const uploadPromises = mediaFiles.map(async file => {
+          return new Promise<{
+            url: string;
+            fileName: string;
+            fileType: string;
+            fileSize: number;
+          }>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async () => {
               try {
@@ -245,8 +277,10 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
         quantity: parseFloat(formData.quantity),
         cogsMode: formData.cogsMode,
         unitCogs: formData.cogsMode === "FIXED" ? formData.unitCogs : undefined,
-        unitCogsMin: formData.cogsMode === "RANGE" ? formData.unitCogsMin : undefined,
-        unitCogsMax: formData.cogsMode === "RANGE" ? formData.unitCogsMax : undefined,
+        unitCogsMin:
+          formData.cogsMode === "RANGE" ? formData.unitCogsMin : undefined,
+        unitCogsMax:
+          formData.cogsMode === "RANGE" ? formData.unitCogsMax : undefined,
         paymentTerms: formData.paymentTerms,
         location: {
           site: formData.locationSite || "Default",
@@ -259,7 +293,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
         toast.info("Cleaning up uploaded files...");
         try {
           await Promise.all(
-            uploadedMediaUrls.map((media) =>
+            uploadedMediaUrls.map(media =>
               deleteMediaMutation.mutateAsync({ url: media.url })
             )
           );
@@ -271,7 +305,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       }
 
       // Re-throw the original error
-      toast.error(`Failed to create purchase: ${error instanceof Error ? error.message : "Unknown error"}`);
+      toast.error(
+        `Failed to create purchase: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
       return;
     }
   };
@@ -287,17 +323,19 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     setMediaFiles(mediaFiles.filter((_, i) => i !== index));
   };
 
-  const showAmountPaidField = formData.paymentTerms === "COD" || formData.paymentTerms === "PARTIAL";
+  const showAmountPaidField =
+    formData.paymentTerms === "COD" || formData.paymentTerms === "PARTIAL";
 
   return (
     // BUG-095 FIX: onOpenChange expects (isOpen: boolean) => void, but onClose is () => void
     // Wrap onClose to only trigger when dialog is closing (isOpen=false)
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
       <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Product Intake</DialogTitle>
           <DialogDescription>
-            Record a new product intake. You can add detailed location and other information after receiving.
+            Record a new product intake. You can add detailed location and other
+            information after receiving.
           </DialogDescription>
         </DialogHeader>
 
@@ -309,7 +347,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               <Input
                 id="vendor"
                 value={vendorSearch}
-                onChange={(e) => {
+                onChange={e => {
                   setVendorSearch(e.target.value);
                   setFormData({ ...formData, vendorName: e.target.value });
                   setShowVendorDropdown(true);
@@ -318,23 +356,25 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 placeholder="Start typing vendor name..."
                 required
               />
-              {showVendorDropdown && vendors?.items && vendors.items.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {vendors.items.map((vendor) => (
-                    <div
-                      key={vendor.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setVendorSearch(vendor.name);
-                        setFormData({ ...formData, vendorName: vendor.name });
-                        setShowVendorDropdown(false);
-                      }}
-                    >
-                      {vendor.name}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {showVendorDropdown &&
+                vendors?.items &&
+                vendors.items.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                    {vendors.items.map(vendor => (
+                      <div
+                        key={vendor.id}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          setVendorSearch(vendor.name);
+                          setFormData({ ...formData, vendorName: vendor.name });
+                          setShowVendorDropdown(false);
+                        }}
+                      >
+                        {vendor.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
 
@@ -345,7 +385,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               <Input
                 id="brand"
                 value={brandSearch}
-                onChange={(e) => {
+                onChange={e => {
                   setBrandSearch(e.target.value);
                   setFormData({ ...formData, brandName: e.target.value });
                   setShowBrandDropdown(true);
@@ -354,23 +394,25 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 placeholder="Start typing brand name..."
                 required
               />
-              {showBrandDropdown && brands?.items && brands.items.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {brands.items.map((brand) => (
-                    <div
-                      key={brand.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setBrandSearch(brand.name);
-                        setFormData({ ...formData, brandName: brand.name });
-                        setShowBrandDropdown(false);
-                      }}
-                    >
-                      {brand.name}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {showBrandDropdown &&
+                brands?.items &&
+                brands.items.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                    {brands.items.map(brand => (
+                      <div
+                        key={brand.id}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          setBrandSearch(brand.name);
+                          setFormData({ ...formData, brandName: brand.name });
+                          setShowBrandDropdown(false);
+                        }}
+                      >
+                        {brand.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
 
@@ -383,9 +425,16 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 value={formData.strainId}
                 onChange={(strainId, strainName) => {
                   // For flower, strain name IS the product name
-                  setFormData({ ...formData, strainId, strainName, productName: strainName });
+                  setFormData({
+                    ...formData,
+                    strainId,
+                    strainName,
+                    productName: strainName,
+                  });
                 }}
-                category={formData.category as "indica" | "sativa" | "hybrid" | null}
+                category={
+                  formData.category as "indica" | "sativa" | "hybrid" | null
+                }
                 placeholder="Enter strain name..."
                 required
               />
@@ -401,7 +450,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 <Input
                   id="productName"
                   value={formData.productName}
-                  onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, productName: e.target.value })
+                  }
                   placeholder="e.g., Gummy Bears, Vape Cartridge"
                   required
                 />
@@ -414,7 +465,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                   onChange={(strainId, strainName) => {
                     setFormData({ ...formData, strainId, strainName });
                   }}
-                  category={formData.category as "indica" | "sativa" | "hybrid" | null}
+                  category={
+                    formData.category as "indica" | "sativa" | "hybrid" | null
+                  }
                   placeholder="Search for a strain..."
                 />
               </div>
@@ -427,13 +480,15 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               <Label htmlFor="category">Category *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value, subcategory: "" })}
+                onValueChange={value =>
+                  setFormData({ ...formData, category: value, subcategory: "" })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories?.map((cat) => (
+                  {categories?.map(cat => (
                     <SelectItem key={cat.id} value={cat.name}>
                       {cat.name}
                     </SelectItem>
@@ -446,17 +501,22 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
             {showGradeField && (
               <div className="space-y-2">
                 <Label htmlFor="grade">
-                  Grade{gradeFieldRequired && <span className="text-destructive"> *</span>}
+                  Grade
+                  {gradeFieldRequired && (
+                    <span className="text-destructive"> *</span>
+                  )}
                 </Label>
                 <Select
                   value={formData.grade}
-                  onValueChange={(value) => setFormData({ ...formData, grade: value })}
+                  onValueChange={value =>
+                    setFormData({ ...formData, grade: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
                   <SelectContent>
-                    {grades?.map((grade) => (
+                    {grades?.map(grade => (
                       <SelectItem key={grade.id} value={grade.name}>
                         {grade.name}
                       </SelectItem>
@@ -476,10 +536,10 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               step="0.01"
               min="0.01"
               value={formData.quantity}
-              onChange={(e) => {
+              onChange={e => {
                 const value = e.target.value;
                 // Allow empty string for typing, or positive values only
-                if (value === '' || parseFloat(value) > 0) {
+                if (value === "" || parseFloat(value) > 0) {
                   setFormData({ ...formData, quantity: value });
                 }
               }}
@@ -487,7 +547,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               required
             />
             {formData.quantity && parseFloat(formData.quantity) <= 0 && (
-              <p className="text-sm text-red-500">Quantity must be greater than 0</p>
+              <p className="text-sm text-red-500">
+                Quantity must be greater than 0
+              </p>
             )}
           </div>
 
@@ -499,7 +561,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 <input
                   type="radio"
                   checked={formData.cogsMode === "FIXED"}
-                  onChange={() => setFormData({ ...formData, cogsMode: "FIXED" })}
+                  onChange={() =>
+                    setFormData({ ...formData, cogsMode: "FIXED" })
+                  }
                 />
                 <span>Fixed Price</span>
               </label>
@@ -507,7 +571,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 <input
                   type="radio"
                   checked={formData.cogsMode === "RANGE"}
-                  onChange={() => setFormData({ ...formData, cogsMode: "RANGE" })}
+                  onChange={() =>
+                    setFormData({ ...formData, cogsMode: "RANGE" })
+                  }
                 />
                 <span>Price Range</span>
               </label>
@@ -521,7 +587,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                   type="number"
                   step="0.01"
                   value={formData.unitCogs}
-                  onChange={(e) => setFormData({ ...formData, unitCogs: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, unitCogs: e.target.value })
+                  }
                   placeholder="Enter unit cost"
                   required
                 />
@@ -535,7 +603,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                     type="number"
                     step="0.01"
                     value={formData.unitCogsMin}
-                    onChange={(e) => setFormData({ ...formData, unitCogsMin: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, unitCogsMin: e.target.value })
+                    }
                     placeholder="Minimum cost"
                     required
                   />
@@ -547,7 +617,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                     type="number"
                     step="0.01"
                     value={formData.unitCogsMax}
-                    onChange={(e) => setFormData({ ...formData, unitCogsMax: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, unitCogsMax: e.target.value })
+                    }
                     placeholder="Maximum cost"
                     required
                   />
@@ -562,7 +634,12 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               <Label htmlFor="paymentTerms">Payment Terms *</Label>
               <Select
                 value={formData.paymentTerms}
-                onValueChange={(value: any) => setFormData({ ...formData, paymentTerms: value })}
+                onValueChange={(value: string) =>
+                  setFormData({
+                    ...formData,
+                    paymentTerms: value as typeof formData.paymentTerms,
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -586,7 +663,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                   type="number"
                   step="0.01"
                   value={formData.amountPaid}
-                  onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, amountPaid: e.target.value })
+                  }
                   placeholder="Enter amount paid"
                   required
                 />
@@ -599,13 +678,15 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
             <Label htmlFor="locationSite">Warehouse/Site</Label>
             <Select
               value={formData.locationSite}
-              onValueChange={(value) => setFormData({ ...formData, locationSite: value })}
+              onValueChange={value =>
+                setFormData({ ...formData, locationSite: value })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select warehouse" />
               </SelectTrigger>
               <SelectContent>
-                {locations?.map((loc) => (
+                {locations?.map(loc => (
                   <SelectItem key={loc.id} value={loc.site}>
                     {loc.site}
                   </SelectItem>
@@ -631,14 +712,21 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 className="flex flex-col items-center justify-center cursor-pointer"
               >
                 <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-600">Click to upload images or videos</span>
+                <span className="text-sm text-gray-600">
+                  Click to upload images or videos
+                </span>
               </label>
 
               {mediaFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {mediaFiles.map((file, index) => (
-                    <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm truncate flex-1">{file.name}</span>
+                    <div
+                      key={`purchase-media-${file.name}-${file.size}`}
+                      className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                    >
+                      <span className="text-sm truncate flex-1">
+                        {file.name}
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -659,7 +747,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               Cancel
             </Button>
             <Button type="submit" disabled={createPurchaseMutation.isPending}>
-              {createPurchaseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {createPurchaseMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Create Purchase
             </Button>
           </DialogFooter>
@@ -668,4 +758,3 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     </Dialog>
   );
 }
-

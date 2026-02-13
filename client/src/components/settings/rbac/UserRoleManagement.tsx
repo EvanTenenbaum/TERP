@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { UserPlus, Shield, X, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
@@ -67,7 +67,7 @@ export function UserRoleManagement() {
 
   // Fetch user details when viewing
   const { data: userDetails, isLoading: userDetailsLoading } = trpc.rbacUsers.getById.useQuery(
-    { userId: viewingUserId! },
+    { userId: viewingUserId || "" },
     { enabled: !!viewingUserId }
   );
 

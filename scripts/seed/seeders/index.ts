@@ -57,17 +57,18 @@ export type SeederFunction = (
  * BUG-084: pricing_defaults must be seeded early (before orders)
  */
 export const SEEDING_ORDER = [
-  "pricing_defaults",     // No dependencies - BUG-084: Required for order pricing
-  "vendors",              // No dependencies
-  "clients",              // No dependencies
-  "products",             // Depends on vendors (via brands)
-  "purchaseOrders",       // Depends on vendors, products (Requirements: 7.1)
-  "batches",              // Depends on products, vendors
-  "orders",               // Depends on clients, batches, pricing_defaults
-  "client_transactions",  // Depends on clients, orders (Requirements: 6.1, 9.1)
-  "invoices",             // Depends on clients, orders
-  "payments",             // Depends on invoices, clients
-  "bills",                // Depends on vendors, lots (Requirements: 6.1)
+  "pricing_defaults", // No dependencies - BUG-084: Required for order pricing
+  "vendors", // No dependencies
+  "clients", // No dependencies
+  "products", // Depends on vendors (via brands)
+  "purchaseOrders", // Depends on vendors, products (Requirements: 7.1)
+  "batches", // Depends on products, vendors
+  "product_images", // Depends on batches, products
+  "orders", // Depends on clients, batches, pricing_defaults
+  "client_transactions", // Depends on clients, orders (Requirements: 6.1, 9.1)
+  "invoices", // Depends on clients, orders
+  "payments", // Depends on invoices, clients
+  "bills", // Depends on vendors, lots (Requirements: 6.1)
 ] as const;
 
 export type SeedableTable = (typeof SEEDING_ORDER)[number];
@@ -124,3 +125,4 @@ export { seedInvoices } from "./seed-invoices";
 export { seedPayments } from "./seed-payments";
 export { seedVendorBills } from "./seed-vendor-bills";
 export { seedPurchaseOrders } from "./seed-purchase-orders";
+export { seedProductImages } from "./seed-product-images";

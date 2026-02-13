@@ -243,7 +243,8 @@ export const inventoryMovementsRouter = router({
       const timeGroups: Record<string, { count: number; inbound: number; outbound: number }> = {};
 
       for (const mov of movements) {
-        const date = new Date(mov.createdAt!);
+        if (!mov.createdAt) continue;
+        const date = new Date(mov.createdAt);
         let key: string;
 
         if (input.groupBy === "day") {
@@ -386,7 +387,7 @@ export const inventoryMovementsRouter = router({
             shrinkageQty: Math.abs(qtyChange),
             reason: adj.adjustmentReason || "Not specified",
             notes: adj.notes,
-            date: adj.createdAt!,
+            date: adj.createdAt || new Date(),
             performedBy: adj.performedByName,
             isSuspicious,
           });
@@ -461,7 +462,7 @@ export const inventoryMovementsRouter = router({
         conditions.push(eq(inventoryMovements.batchId, input.batchId));
       }
       if (input.movementType) {
-        conditions.push(eq(inventoryMovements.inventoryMovementType, input.movementType as any));
+        conditions.push(eq(inventoryMovements.inventoryMovementType, input.movementType as 'INTAKE' | 'SALE' | 'REFUND_RETURN' | 'ADJUSTMENT' | 'QUARANTINE' | 'RELEASE_FROM_QUARANTINE' | 'DISPOSAL' | 'TRANSFER' | 'SAMPLE'));
       }
 
       const offset = (input.page - 1) * input.pageSize;

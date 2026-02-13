@@ -216,17 +216,19 @@ async function loginWithCredentials(
   page: Page,
   email: string,
   password: string,
-  options: { allowAdminFallback?: boolean } = {}
+  options: { allowAdminFallback?: boolean; roleName?: string } = {}
 ): Promise<void> {
-  const { allowAdminFallback = false } = options;
+  const { allowAdminFallback = false, roleName } = options;
   const apiSuccess = await loginViaApi(page, email, password);
   if (apiSuccess) {
     await navigateToDashboard(page);
+    loggedInRole = roleName || email;
     return;
   }
 
   try {
     await loginViaForm(page, email, password);
+    loggedInRole = roleName || email;
     return;
   } catch (error) {
     if (!allowAdminFallback || email === TEST_USERS.admin.email) {
@@ -240,65 +242,114 @@ async function loginWithCredentials(
     );
     if (adminApiSuccess) {
       await navigateToDashboard(page);
+      loggedInRole = "Super Admin (fallback)";
       return;
     }
 
     await loginViaForm(page, TEST_USERS.admin.email, TEST_USERS.admin.password);
+    loggedInRole = "Super Admin (fallback)";
   }
 }
 
-const allowAdminRoleFallback = process.env.E2E_ALLOW_ADMIN_FALLBACK !== "false";
+/**
+ * Admin fallback control - now opt-in to prevent silent failures.
+ * Set E2E_ALLOW_ADMIN_FALLBACK=true to enable fallback for non-admin role tests.
+ */
+const allowAdminRoleFallback = process.env.E2E_ALLOW_ADMIN_FALLBACK === "true";
+
+/**
+ * Track which role was actually used for authentication.
+ * This allows test reports to show when fallback occurred.
+ */
+let loggedInRole: string | null = null;
 
 /**
  * Helper to login as admin (Super Admin role)
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.admin.email, TEST_USERS.admin.password);
+  await loginWithCredentials(
+    page,
+    TEST_USERS.admin.email,
+    TEST_USERS.admin.password,
+    {
+      roleName: "Super Admin",
+    }
+  );
 }
 
 /**
  * Helper to login as Sales Manager
  */
 export async function loginAsSalesManager(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.salesManager.email, TEST_USERS.salesManager.password, {
-    allowAdminFallback: allowAdminRoleFallback,
-  });
+  await loginWithCredentials(
+    page,
+    TEST_USERS.salesManager.email,
+    TEST_USERS.salesManager.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Sales Manager",
+    }
+  );
 }
 
 /**
  * Helper to login as Sales Rep (Customer Service)
  */
 export async function loginAsSalesRep(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.salesRep.email, TEST_USERS.salesRep.password, {
-    allowAdminFallback: allowAdminRoleFallback,
-  });
+  await loginWithCredentials(
+    page,
+    TEST_USERS.salesRep.email,
+    TEST_USERS.salesRep.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Customer Service",
+    }
+  );
 }
 
 /**
  * Helper to login as Inventory Manager
  */
 export async function loginAsInventoryManager(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.inventory.email, TEST_USERS.inventory.password, {
-    allowAdminFallback: allowAdminRoleFallback,
-  });
+  await loginWithCredentials(
+    page,
+    TEST_USERS.inventory.email,
+    TEST_USERS.inventory.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Inventory Manager",
+    }
+  );
 }
 
 /**
  * Helper to login as Accountant
  */
 export async function loginAsAccountant(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.accounting.email, TEST_USERS.accounting.password, {
-    allowAdminFallback: allowAdminRoleFallback,
-  });
+  await loginWithCredentials(
+    page,
+    TEST_USERS.accounting.email,
+    TEST_USERS.accounting.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Accountant",
+    }
+  );
 }
 
 /**
  * Helper to login as Warehouse Staff
  */
 export async function loginAsWarehouseStaff(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.fulfillment.email, TEST_USERS.fulfillment.password, {
-    allowAdminFallback: allowAdminRoleFallback,
-  });
+  await loginWithCredentials(
+    page,
+    TEST_USERS.fulfillment.email,
+    TEST_USERS.fulfillment.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Warehouse Staff",
+    }
+  );
 }
 
 /**
@@ -312,9 +363,15 @@ export async function loginAsFulfillment(page: Page): Promise<void> {
  * Helper to login as Auditor (read-only)
  */
 export async function loginAsAuditor(page: Page): Promise<void> {
-  await loginWithCredentials(page, TEST_USERS.auditor.email, TEST_USERS.auditor.password, {
-    allowAdminFallback: allowAdminRoleFallback,
-  });
+  await loginWithCredentials(
+    page,
+    TEST_USERS.auditor.email,
+    TEST_USERS.auditor.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Read-Only Auditor",
+    }
+  );
 }
 
 /**
@@ -332,6 +389,7 @@ export async function loginAsRole(
     role !== "admin" && role !== "vipClient" && allowAdminRoleFallback;
   await loginWithCredentials(page, user.email, user.password, {
     allowAdminFallback,
+    roleName: user.role,
   });
 }
 
@@ -391,6 +449,15 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get the role that was actually authenticated.
+ * Returns null if no authentication has occurred yet.
+ * If fallback occurred, the string will contain "(fallback)".
+ */
+export function getAuthenticatedRole(): string | null {
+  return loggedInRole;
 }
 
 /**

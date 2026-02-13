@@ -37,7 +37,7 @@
  * @see useOptimisticLocking.tsx - Reference pattern for component return
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { CheckCircle, Loader2, AlertCircle, CloudOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -176,7 +176,7 @@ export function useSaveState({
   const [isDirty, setIsDirty] = useState(false);
 
   // Timer ref for error auto-reset
-  const errorResetTimer = useRef<NodeJS.Timeout | null>(null);
+  const errorResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear timer on unmount
   useEffect(() => {

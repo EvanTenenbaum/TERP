@@ -77,7 +77,7 @@ export function ColorTagBadge({
 }: ColorTagBadgeProps) {
   const tagName = typeof tag === "string" ? tag : tag.name;
   const tagColor = getTagColor(tag);
-  const isDark = isColorDark(tagColor);
+  const _isDark = isColorDark(tagColor);
   const rgb = hexToRgb(tagColor);
 
   const sizeClasses = {

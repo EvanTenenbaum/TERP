@@ -26,10 +26,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Plus, Tag, Search, CheckCircle2, Filter } from "lucide-react";
+import { X, Plus, Tag, Search, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TagManagerProps {
@@ -116,19 +115,6 @@ export function TagManager({
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
-  };
-
-  // Bulk operations
-  const handleBulkAdd = () => {
-    const newTags = bulkSelection.filter((t) => !value.includes(t));
-    if (maxTags) {
-      const availableSlots = maxTags - value.length;
-      onChange([...value, ...newTags.slice(0, availableSlots)]);
-    } else {
-      onChange([...value, ...newTags]);
-    }
-    setBulkSelection([]);
-    setBulkMode(false);
   };
 
   const handleBulkRemove = () => {

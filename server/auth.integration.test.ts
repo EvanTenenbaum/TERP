@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { setupDbMock } from "./test-utils/testDb";
 import { setupPermissionMock } from "./test-utils/testPermissions";
 
@@ -20,8 +20,8 @@ describe("Authentication Integration Tests", () => {
       };
 
       const ctx = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       const contextWithUser = {
@@ -36,8 +36,8 @@ describe("Authentication Integration Tests", () => {
 
     it("should handle unauthenticated requests", async () => {
       const ctx = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       // Expect the demo user to be provisioned as a fallback
@@ -55,8 +55,8 @@ describe("Authentication Integration Tests", () => {
       };
 
       const ctx = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       const caller = appRouter.createCaller({
@@ -69,8 +69,8 @@ describe("Authentication Integration Tests", () => {
 
     it("should reject unauthenticated users from protected procedures", async () => {
       const ctx = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       const caller = appRouter.createCaller(ctx);
@@ -90,8 +90,8 @@ describe("Authentication Integration Tests", () => {
       };
 
       const ctx = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       const caller = appRouter.createCaller({
@@ -111,8 +111,8 @@ describe("Authentication Integration Tests", () => {
       };
 
       const ctx = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       const caller = appRouter.createCaller({
@@ -133,8 +133,8 @@ describe("Authentication Integration Tests", () => {
       };
 
       const ctx1 = await createContext({
-        req: { headers: {} } as any,
-        res: {} as any,
+        req: { headers: {} } as Record<string, unknown>,
+        res: {} as Record<string, unknown>,
       });
 
       const caller1 = appRouter.createCaller({
@@ -144,7 +144,7 @@ describe("Authentication Integration Tests", () => {
 
       const ctx2 = await createContext({
         req: { headers: {} } as any,
-        res: {} as any,
+        res: {} as Record<string, unknown>,
       });
 
       const caller2 = appRouter.createCaller({

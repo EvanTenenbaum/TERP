@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { intakeSessions, intakeSessionBatches, batches, clients, users } from "../drizzle/schema";
 import { logger } from "./_core/logger";
@@ -27,11 +27,12 @@ export async function createIntakeSession(data: {
       vendorId: data.vendorId,
       receiveDate: data.receiveDate,
       receivedBy: data.receivedBy,
-      paymentTerms: data.paymentTerms as any,
+      paymentTerms: data.paymentTerms as string | null,
       paymentDueDate: data.paymentDueDate,
       internalNotes: data.internalNotes,
       vendorNotes: data.vendorNotes,
       status: "IN_PROGRESS",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return { success: true, sessionId: session.insertId, sessionNumber };
@@ -343,7 +344,7 @@ export async function generateVendorReceipt(intakeSessionId: number) {
       .update(intakeSessions)
       .set({
         receiptGenerated: true,
-        receiptGeneratedAt: new Date() as any,
+        receiptGeneratedAt: new Date(),
       })
       .where(eq(intakeSessions.id, intakeSessionId));
 
@@ -404,7 +405,7 @@ export async function getIntakeSession(intakeSessionId: number) {
 /**
  * List intake sessions
  */
-export async function listIntakeSessions(filters?: {
+export async function listIntakeSessions(_filters?: {
   vendorId?: number;
   status?: string;
   startDate?: string;
@@ -414,7 +415,7 @@ export async function listIntakeSessions(filters?: {
   if (!db) throw new Error("Database not available");
 
   try {
-    let query = db
+    const query = db
       .select({
         session: intakeSessions,
         vendor: clients,

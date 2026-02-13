@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 /**
  * Environment Variable Validator
  *
@@ -193,5 +195,5 @@ export function validateEnvOrThrow(): void {
     );
   }
 
-  console.log("✅ Environment variables validated successfully");
+  logger.info("✅ Environment variables validated successfully");
 }

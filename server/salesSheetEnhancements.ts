@@ -48,9 +48,9 @@ export async function createSalesSheetVersion(
       versionNumber: newVersionNumber,
       name: template.name,
       description: template.description || "",
-      filters: template.filters as any,
-      selectedItems: template.selectedItems as any,
-      columnVisibility: template.columnVisibility as any,
+      filters: template.filters as Record<string, unknown>,
+      selectedItems: template.selectedItems as Record<string, unknown>[],
+      columnVisibility: template.columnVisibility as Record<string, boolean>,
       changes,
       createdBy: userId
     });
@@ -170,9 +170,9 @@ export async function cloneSalesSheetTemplate(
       name: newName,
       description: `Cloned from: ${original.name}`,
       clientId: clientId || original.clientId,
-      filters: original.filters as any,
-      selectedItems: original.selectedItems as any,
-      columnVisibility: original.columnVisibility as any,
+      filters: original.filters as Record<string, unknown>,
+      selectedItems: original.selectedItems as Record<string, unknown>[],
+      columnVisibility: original.columnVisibility as Record<string, boolean>,
       createdBy: userId,
       isActive: 1,
       currentVersion: 1
@@ -267,7 +267,7 @@ export async function createBulkOrdersFromSalesSheet(
         orderNumber,
         orderType: "QUOTE", // Start as quote
         clientId: clientOrder.clientId,
-        items: clientOrder.items as any,
+        items: clientOrder.items as Record<string, unknown>[],
         subtotal: subtotal.toString(),
         tax: "0",
         discount: "0",
@@ -317,7 +317,7 @@ export async function getClientSpecificPricing(
     // This would integrate with pricing rules if they existed
     // For now, return base pricing
     
-    const items = template.selectedItems as any;
+    const items = template.selectedItems as Array<Record<string, unknown>>
     
     return {
       templateId,
@@ -341,7 +341,7 @@ export async function getActiveSalesSheets(
   if (!db) throw new Error("Database not available");
 
   try {
-    let query = db.select()
+    const query = db.select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.isActive, 1));
 

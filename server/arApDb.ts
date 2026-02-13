@@ -59,14 +59,14 @@ export async function getInvoices(filters?: {
       or(
         like(invoices.invoiceNumber, `%${filters.searchTerm}%`),
         like(invoices.notes, `%${filters.searchTerm}%`)
-      )!
+      ) ?? undefined
     );
   }
 
   let query = db.select().from(invoices);
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   // Get total count
@@ -79,13 +79,13 @@ export async function getInvoices(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(invoices.invoiceDate), desc(invoices.id)) as any;
+  query = query.orderBy(desc(invoices.invoiceDate), desc(invoices.id)) as typeof query;
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as any;
+    query = query.limit(filters.limit) as typeof query;
   }
   if (filters?.offset) {
-    query = query.offset(filters.offset) as any;
+    query = query.offset(filters.offset) as typeof query;
   }
 
   const invoiceList = await query;
@@ -440,14 +440,14 @@ export async function getBills(filters?: {
       or(
         like(bills.billNumber, `%${filters.searchTerm}%`),
         like(bills.notes, `%${filters.searchTerm}%`)
-      )!
+      ) ?? undefined
     );
   }
 
   let query = db.select().from(bills);
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   // Get total count
@@ -460,13 +460,13 @@ export async function getBills(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(bills.billDate), desc(bills.id)) as any;
+  query = query.orderBy(desc(bills.billDate), desc(bills.id)) as typeof query;
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as any;
+    query = query.limit(filters.limit) as typeof query;
   }
   if (filters?.offset) {
-    query = query.offset(filters.offset) as any;
+    query = query.offset(filters.offset) as typeof query;
   }
 
   const billList = await query;
@@ -830,7 +830,7 @@ export async function getPayments(filters?: {
   let query = db.select().from(payments);
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions)) as typeof query;
   }
 
   // Get total count
@@ -843,13 +843,13 @@ export async function getPayments(filters?: {
   const total = Number(countResult[0]?.count || 0);
 
   // Apply pagination and sorting
-  query = query.orderBy(desc(payments.paymentDate), desc(payments.id)) as any;
+  query = query.orderBy(desc(payments.paymentDate), desc(payments.id)) as typeof query;
 
   if (filters?.limit) {
     query = query.limit(filters.limit) as any;
   }
   if (filters?.offset) {
-    query = query.offset(filters.offset) as any;
+    query = query.offset(filters.offset) as typeof query;
   }
 
   const paymentList = await query;

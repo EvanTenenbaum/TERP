@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   CreditCard,
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
   CheckCircle,
   Info,

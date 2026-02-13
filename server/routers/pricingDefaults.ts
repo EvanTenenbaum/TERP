@@ -6,8 +6,11 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
-import { pricingService } from "../services/pricingService";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { getDb } from "../db";
+import { products } from "../../drizzle/schema";
+import { pricingService } from "../services/pricingService";
+
 
 export const pricingDefaultsRouter = router({
   /**

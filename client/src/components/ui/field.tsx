@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
@@ -205,8 +205,8 @@ function FieldError({
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
         {errors.map(
-          (error, index) =>
-            error?.message && <li key={`item-${index}`}>{error.message}</li>
+          (error, _index) =>
+            error?.message && <li key={`error-item-${error.message.substring(0, 20)}`}>{error.message}</li>
         )}
       </ul>
     );

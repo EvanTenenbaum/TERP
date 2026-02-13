@@ -262,7 +262,7 @@ export function useExport<T extends Record<string, unknown>>(
       // Check limits
       const limitCheck = checkLimits(data.length);
       if (limitCheck.exceeds) {
-        toast.warning(limitCheck.message!);
+        toast.warning(limitCheck.message || '');
         data = data.slice(0, effectiveLimits.maxRows);
       }
 
@@ -371,7 +371,7 @@ export function useExport<T extends Record<string, unknown>>(
       // Check limits
       const limitCheck = checkLimits(data.length);
       if (limitCheck.exceeds) {
-        toast.warning(limitCheck.message!);
+        toast.warning(limitCheck.message || '');
         data = data.slice(0, effectiveLimits.maxRows);
       }
 

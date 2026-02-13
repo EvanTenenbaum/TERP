@@ -74,11 +74,11 @@ export async function importOpenTHCStrainsFromJSON() {
     return { success: false, message: "JSON file not found", imported: 0, skipped: 0 };
   }
 
-  console.log("Reading OpenTHC strains JSON file...");
+  logger.info("Reading OpenTHC strains JSON file...");
   const jsonContent = fs.readFileSync(jsonPath, "utf-8");
   const openthcStrains: OpenTHCStrain[] = JSON.parse(jsonContent);
   
-  console.log(`Found ${openthcStrains.length} strains in OpenTHC VDB`);
+  logger.info(`Found ${openthcStrains.length} strains in OpenTHC VDB`);
   
   const strainsToInsert: Array<{
     name: string;
@@ -130,7 +130,7 @@ export async function importOpenTHCStrainsFromJSON() {
       if (strainsToInsert.length >= 100) {
         const batchDb = await getDb();
         if (batchDb) await batchDb.insert(strains).values(strainsToInsert);
-        console.log(`Inserted ${processedCount} strains...`);
+        logger.info(`Inserted ${processedCount} strains...`);
         strainsToInsert.length = 0; // Clear array
       }
     } catch (error) {
@@ -146,11 +146,13 @@ export async function importOpenTHCStrainsFromJSON() {
     if (finalDb) await finalDb.insert(strains).values(strainsToInsert);
   }
 
-  console.log(`✅ OpenTHC strain import complete!`);
-  console.log(`   Processed: ${processedCount}`);
-  console.log(`   Skipped: ${skippedCount}`);
-  console.log(`   With type: ${withTypeCount} (${(withTypeCount / processedCount * 100).toFixed(1)}%)`);
-  console.log(`   Without type: ${withoutTypeCount} (${(withoutTypeCount / processedCount * 100).toFixed(1)}%)`);
+  logger.info({
+    msg: "OpenTHC strain import complete",
+    processed: processedCount,
+    skipped: skippedCount,
+    withType: withTypeCount,
+    withoutType: withoutTypeCount,
+  });
 
   return {
     success: true,

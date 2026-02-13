@@ -101,7 +101,7 @@ export function TaskForm({
       title,
       description: description || undefined,
       status,
-      priority: priority || (undefined as any),
+      priority: priority || undefined,
       dueDate: dueDate || undefined,
     };
 
@@ -166,7 +166,7 @@ export function TaskForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+                <Select value={status} onValueChange={(v: 'todo' | 'in_progress' | 'done') => setStatus(v)}>
                   <SelectTrigger id="status">
                     <SelectValue />
                   </SelectTrigger>
@@ -180,7 +180,7 @@ export function TaskForm({
 
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
-                <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
+                <Select value={priority} onValueChange={(v: 'low' | 'medium' | 'high' | 'urgent') => setPriority(v)}>
                   <SelectTrigger id="priority">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -213,7 +213,7 @@ export function TaskForm({
                   <Calendar
                     mode="single"
                     selected={dueDate}
-                    onSelect={setDueDate as any}
+                    onSelect={(date) => setDueDate(date)}
                     initialFocus
                   />
                 </PopoverContent>

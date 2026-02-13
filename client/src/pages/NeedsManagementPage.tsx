@@ -2,7 +2,13 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -13,7 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MatchBadge } from "@/components/needs/MatchBadge";
-import { Search, Filter, Plus, Loader2, Package, TrendingUp, Users } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Loader2,
+  Package,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 // UX-012: Import centralized date formatting utility
@@ -24,28 +37,91 @@ import { formatDate } from "@/lib/utils";
  * Central page for managing all client needs across the system
  */
 
-export default function NeedsManagementPage() {
+interface NeedsManagementPageProps {
+  embedded?: boolean;
+}
+
+type NeedStatus = "ACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED";
+type NeedPriority = "URGENT" | "HIGH" | "MEDIUM" | "LOW";
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+interface NeedItem {
+  id: number;
+  clientId: number;
+  clientName?: string;
+  status: NeedStatus;
+  priority: NeedPriority;
+  strain?: string;
+  category?: string;
+  subcategory?: string;
+  grade?: string;
+  quantityMin?: number | string | null;
+  quantityMax?: number | string | null;
+  priceMax?: number | string | null;
+  matchCount: number;
+  neededBy?: string | Date | null;
+  createdAt?: string | Date | null;
+}
+
+interface OpportunityItem {
+  id?: number;
+  clientId: number;
+  clientName?: string;
+  needDescription: string;
+  priority?: NeedPriority;
+  bestMatchType?: "EXACT" | "PARTIAL" | "ALTERNATIVE" | "CLOSE" | "HISTORICAL";
+  bestConfidence?: number;
+  matchCount: number;
+  potentialRevenue?: string | number;
+}
+
+const formatCurrencyValue = (value: string | number | undefined): string | null => {
+  if (value === undefined || value === null) return null;
+  const parsed =
+    typeof value === "number" ? value : Number.parseFloat(value);
+  if (Number.isNaN(parsed)) return null;
+  return parsed.toFixed(2);
+};
+
+const normalizeMatchType = (
+  value: OpportunityItem["bestMatchType"]
+): "EXACT" | "CLOSE" | "HISTORICAL" => {
+  if (value === "EXACT" || value === "CLOSE" || value === "HISTORICAL") {
+    return value;
+  }
+  if (value === "PARTIAL") return "CLOSE";
+  return "HISTORICAL";
+};
+
+export default function NeedsManagementPage({
+  embedded = false,
+}: NeedsManagementPageProps) {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
-  const [priorityFilter, setPriorityFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<NeedStatus>("ACTIVE");
+  const [priorityFilter, setPriorityFilter] = useState<
+    NeedPriority | undefined
+  >(undefined);
 
   // Fetch needs with matches
-  const { data: needsData, isLoading } = trpc.clientNeeds.getAllWithMatches.useQuery({
-    status: statusFilter as any,
-  });
+  const { data: needsData, isLoading } =
+    trpc.clientNeeds.getAllWithMatches.useQuery({
+      status: statusFilter,
+    });
 
   // Fetch smart opportunities
-  const { data: opportunitiesData } = trpc.clientNeeds.getSmartOpportunities.useQuery({
-    limit: 10,
-  });
+  const { data: opportunitiesData } =
+    trpc.clientNeeds.getSmartOpportunities.useQuery({
+      limit: 10,
+    });
 
-  const needs = needsData?.data || [];
-  const opportunities = opportunitiesData?.data || [];
+  const needs = ((needsData?.data ?? []) as unknown) as NeedItem[];
+  const opportunities =
+    ((opportunitiesData?.data ?? []) as unknown) as OpportunityItem[];
 
   // Filter needs based on search and priority
-  const filteredNeeds = needs.filter((need: any) => {
+  const filteredNeeds = needs.filter(need => {
     const matchesSearch =
       !searchQuery ||
       need.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,7 +134,7 @@ export default function NeedsManagementPage() {
   });
 
   const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, BadgeVariant> = {
       URGENT: "destructive",
       HIGH: "default",
       MEDIUM: "secondary",
@@ -68,7 +144,7 @@ export default function NeedsManagementPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, BadgeVariant> = {
       ACTIVE: "default",
       FULFILLED: "secondary",
       EXPIRED: "outline",
@@ -79,7 +155,9 @@ export default function NeedsManagementPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+      {!embedded && (
+        <BackButton label="Back to Dashboard" to="/" className="mb-4" />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -103,7 +181,7 @@ export default function NeedsManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {needs.filter((n: any) => n.status === "ACTIVE").length}
+              {needs.filter(n => n.status === "ACTIVE").length}
             </div>
           </CardContent>
         </Card>
@@ -115,7 +193,7 @@ export default function NeedsManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {needs.filter((n: any) => n.matchCount > 0).length}
+              {needs.filter(n => n.matchCount > 0).length}
             </div>
           </CardContent>
         </Card>
@@ -127,7 +205,7 @@ export default function NeedsManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {needs.filter((n: any) => n.priority === "URGENT").length}
+              {needs.filter(n => n.priority === "URGENT").length}
             </div>
           </CardContent>
         </Card>
@@ -152,11 +230,14 @@ export default function NeedsManagementPage() {
               <Input
                 placeholder="Search by strain, category, or client..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={value => setStatusFilter(value as NeedStatus)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -167,7 +248,14 @@ export default function NeedsManagementPage() {
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priorityFilter || "all"} onValueChange={(v) => setPriorityFilter(v === "all" ? undefined : v)}>
+            <Select
+              value={priorityFilter || "all"}
+              onValueChange={v =>
+                setPriorityFilter(
+                  v === "all" ? undefined : (v as NeedPriority)
+                )
+              }
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
@@ -186,7 +274,9 @@ export default function NeedsManagementPage() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="all">All Needs ({filteredNeeds.length})</TabsTrigger>
+          <TabsTrigger value="all">
+            All Needs ({filteredNeeds.length})
+          </TabsTrigger>
           <TabsTrigger value="opportunities">
             Smart Opportunities ({opportunities.length})
           </TabsTrigger>
@@ -212,11 +302,13 @@ export default function NeedsManagementPage() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {filteredNeeds.map((need: any) => (
+              {filteredNeeds.map(need => (
                 <Card
                   key={need.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => setLocation(`/clients/${need.clientId}?tab=needs`)}
+                  onClick={() =>
+                    setLocation(`/clients/${need.clientId}?tab=needs`)
+                  }
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -237,7 +329,8 @@ export default function NeedsManagementPage() {
                       </div>
                       {need.matchCount > 0 && (
                         <Badge variant="secondary">
-                          {need.matchCount} {need.matchCount === 1 ? "match" : "matches"}
+                          {need.matchCount}{" "}
+                          {need.matchCount === 1 ? "match" : "matches"}
                         </Badge>
                       )}
                     </div>
@@ -292,17 +385,20 @@ export default function NeedsManagementPage() {
                 <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">No opportunities found</p>
                 <p className="text-sm text-muted-foreground">
-                  Opportunities will appear when needs have high-confidence matches
+                  Opportunities will appear when needs have high-confidence
+                  matches
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {opportunities.map((opp: any, idx: number) => (
+              {opportunities.map(opp => (
                 <Card
-                  key={`page-item-${idx}`}
+                  key={`${opp.id ?? "opp"}-${opp.clientId}-${opp.needDescription}`}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => setLocation(`/clients/${opp.clientId}?tab=needs`)}
+                  onClick={() =>
+                    setLocation(`/clients/${opp.clientId}?tab=needs`)
+                  }
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -317,7 +413,7 @@ export default function NeedsManagementPage() {
                       </div>
                       {opp.bestMatchType && opp.bestConfidence && (
                         <MatchBadge
-                          matchType={opp.bestMatchType}
+                          matchType={normalizeMatchType(opp.bestMatchType)}
                           confidence={opp.bestConfidence}
                         />
                       )}
@@ -330,11 +426,13 @@ export default function NeedsManagementPage() {
                           <p className="text-muted-foreground">Matches</p>
                           <p className="font-medium">{opp.matchCount}</p>
                         </div>
-                        {opp.potentialRevenue && (
+                        {formatCurrencyValue(opp.potentialRevenue) && (
                           <div>
-                            <p className="text-muted-foreground">Potential Revenue</p>
+                            <p className="text-muted-foreground">
+                              Potential Revenue
+                            </p>
                             <p className="font-medium text-green-600">
-                              ${parseFloat(opp.potentialRevenue).toFixed(2)}
+                              ${formatCurrencyValue(opp.potentialRevenue)}
                             </p>
                           </div>
                         )}
@@ -351,4 +449,3 @@ export default function NeedsManagementPage() {
     </div>
   );
 }
-

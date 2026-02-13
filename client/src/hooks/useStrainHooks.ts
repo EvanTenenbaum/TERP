@@ -22,7 +22,7 @@ import { trpc } from "@/lib/trpc";
  */
 export function useStrainFamily(strainId: number | null | undefined) {
   return trpc.strains.getFamily.useQuery(
-    { strainId: strainId! },
+    { strainId: strainId ?? 0 },
     { 
       enabled: !!strainId,
       staleTime: 5 * 60 * 1000, // 5 minutes
@@ -39,7 +39,7 @@ export function useStrainFamily(strainId: number | null | undefined) {
  */
 export function useStrainFamilyVariants(strainId: number | null | undefined) {
   return trpc.strains.getFamily.useQuery(
-    { strainId: strainId! },
+    { strainId: strainId ?? 0 },
     { 
       enabled: !!strainId,
       select: (data) => ({
@@ -62,7 +62,7 @@ export function useStrainFamilyVariants(strainId: number | null | undefined) {
  */
 export function useStrainSuggestions(
   strainId: number | null | undefined,
-  excludeProductId?: number
+  _excludeProductId?: number
 ) {
   const family = useStrainFamily(strainId);
   
@@ -86,7 +86,7 @@ export function useStrainSuggestions(
  */
 export function useClientStrainPreferences(clientId: number | null | undefined) {
   return trpc.analytics.clientStrainPreferences.useQuery(
-    { clientId: clientId! },
+    { clientId: clientId ?? 0 },
     { 
       enabled: !!clientId,
       staleTime: 10 * 60 * 1000, // 10 minutes (changes slowly)
@@ -103,7 +103,7 @@ export function useClientStrainPreferences(clientId: number | null | undefined) 
  */
 export function useStrainFamilyStats(familyId: number | null | undefined) {
   return trpc.strains.getFamilyStats.useQuery(
-    { familyId: familyId! },
+    { familyId: familyId ?? 0 },
     { 
       enabled: !!familyId,
       staleTime: 5 * 60 * 1000,
@@ -123,7 +123,7 @@ export function useStrainFamilyProducts(
   includeOutOfStock = false
 ) {
   return trpc.strains.getProductsByFamily.useQuery(
-    { familyId: familyId!, includeOutOfStock },
+    { familyId: familyId ?? 0, includeOutOfStock },
     { 
       enabled: !!familyId,
       staleTime: 2 * 60 * 1000, // 2 minutes (inventory changes frequently)
@@ -141,7 +141,7 @@ export function useStrainFamilyProducts(
 export function useStrainSearch(
   query: string,
   category?: string,
-  threshold = 90
+  _threshold = 90
 ) {
   return trpc.strains.fuzzySearch.useQuery(
     { query }, // category and threshold not supported by API
@@ -184,7 +184,7 @@ export function useStrainFamilyTrends(
   months = 6
 ) {
   return trpc.analytics.strainFamilyTrends.useQuery(
-    { familyId: familyId!, months },
+    { familyId: familyId ?? 0, months },
     { 
       enabled: !!familyId,
       staleTime: 30 * 60 * 1000, // 30 minutes (historical data)

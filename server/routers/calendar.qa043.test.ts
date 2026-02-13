@@ -30,7 +30,7 @@ describe("QA-043: Event Attendees Functionality", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       await caller.createEvent({
         title: "Team Meeting",
@@ -68,7 +68,7 @@ describe("QA-043: Event Attendees Functionality", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       await caller.createEvent({
         title: "Solo Task",
@@ -97,7 +97,7 @@ describe("QA-043: Event Attendees Functionality", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       await caller.createEvent({
         title: "Important Meeting",
@@ -127,7 +127,7 @@ describe("QA-043: Event Attendees Functionality", () => {
       mockGetEventParticipants.mockResolvedValue([
         { id: 1, eventId: 1, userId: 2, role: "REQUIRED", responseStatus: "PENDING" },
         { id: 2, eventId: 1, userId: 3, role: "REQUIRED", responseStatus: "ACCEPTED" },
-      ] as any);
+      ] as unknown as Array<{ id: number; eventId: number; userId: number; role: string; responseStatus: string }>);
 
       const participants = await calendarDb.getEventParticipants(1);
 

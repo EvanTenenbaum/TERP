@@ -6,6 +6,7 @@ import { GripVertical, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { memo } from "react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface WorkflowBatchCardProps {
   batch: any;
   isDragging?: boolean;
@@ -20,7 +21,7 @@ export const WorkflowBatchCard = memo(function WorkflowBatchCard({ batch, isDrag
     transition,
     isDragging: isSortableDragging,
   } = useSortable({
-    id: batch.id,
+    id: batch.id as string,
   });
 
   const style = {

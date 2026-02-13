@@ -15,7 +15,9 @@ export const DashboardSkeleton = React.memo(function DashboardSkeleton({
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: cards }).map((_, index) => (
-          <CardSkeleton key={index} lines={2} />
+          <CardSkeleton
+            // eslint-disable-next-line react/no-array-index-key
+            key={`dash-card-${index}`} lines={2} />
         ))}
       </div>
 
@@ -37,7 +39,9 @@ export const DashboardSkeleton = React.memo(function DashboardSkeleton({
           <CardContent>
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="flex items-center gap-3">
+                <div
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={`dash-item-${index}`} className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-full" />
                   <Skeleton className="h-4 flex-1" />
                   <Skeleton className="h-3 w-16" />

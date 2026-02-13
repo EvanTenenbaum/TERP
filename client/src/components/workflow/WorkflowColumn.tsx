@@ -5,6 +5,7 @@
  * Acts as a drop zone for batch cards.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { WorkflowBatchCard } from "./WorkflowBatchCard";
@@ -19,7 +20,7 @@ interface WorkflowColumnProps {
     color: string;
     order: number;
   };
-  batches: Array<any>;
+  batches: Array<Record<string, unknown>>;
   batchIds: number[];
 }
 
@@ -66,7 +67,7 @@ export function WorkflowColumn({ status, batches, batchIds }: WorkflowColumnProp
                 No batches in this status
               </div>
             ) : (
-              batches.map((batch) => (
+              batches.map((batch: any) => (
                 <WorkflowBatchCard key={batch.id} batch={batch} />
               ))
             )}

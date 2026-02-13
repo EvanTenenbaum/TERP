@@ -17,12 +17,14 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+
 import { getDb } from "../db";
-import { products } from "../../drizzle/schema";
+
 import {
   productCategories,
   productCategoryAssignments,
 } from "../../drizzle/schema-sprint5-trackd";
+import { products } from "../../drizzle/schema";
 import { eq, and, sql, isNull, desc, asc, like } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { withTransaction } from "../dbTransaction";
@@ -136,7 +138,8 @@ export const productCategoriesExtendedRouter = router({
 
         // Second pass: build tree
         for (const cat of categories) {
-          const catWithChildren = categoryMap.get(cat.id)!;
+          const catWithChildren = categoryMap.get(cat.id);
+          if (!catWithChildren) continue;
           if (cat.parentId === null) {
             rootCategories.push(catWithChildren);
           } else {
@@ -320,7 +323,7 @@ export const productCategoriesExtendedRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
       }
 
-      const updateData: Record<string, unknown> = {};
+      const updateData: Record<string, any> = {};
 
       if (updates.name !== undefined) {
         updateData.name = updates.name;

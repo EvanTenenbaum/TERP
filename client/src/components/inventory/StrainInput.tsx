@@ -34,7 +34,7 @@ export function StrainInput({
   placeholder = "Select strain...",
   className,
   disabled = false,
-  required = false,
+  required: _required = false,
 }: StrainInputProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +57,7 @@ export function StrainInput({
 
   // Load selected strain if value changes
   const { data: strainData } = trpc.strains.getById.useQuery(
-    { id: value! },
+    { id: value ?? 0 },
     { enabled: !!value && !selectedStrain }
   );
 

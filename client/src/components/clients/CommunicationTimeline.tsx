@@ -24,7 +24,7 @@ export function CommunicationTimeline({
 }: CommunicationTimelineProps) {
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
-  const { data: communications, isLoading, refetch } = trpc.clients.communications.list.useQuery({
+  const { data: communications, isLoading } = trpc.clients.communications.list.useQuery({
     clientId,
     type: typeFilter === 'ALL' ? undefined : (typeFilter as any),
   });

@@ -32,10 +32,8 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: {} as any,
+    req: { headers: {} } as Record<string, unknown>,
+    res: {} as Record<string, unknown>,
   });
   return appRouter.createCaller({
     ...ctx,
@@ -67,7 +65,6 @@ describe("RBAC Permissions Router", () => {
       // Arrange
       const permissionId = 999;
 
-      const mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockReturnThis();
       const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn().mockResolvedValue([]);
@@ -76,7 +73,7 @@ describe("RBAC Permissions Router", () => {
         from: mockFrom,
         where: mockWhere,
         limit: mockLimit,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act & Assert
       await expect(
@@ -92,7 +89,6 @@ describe("RBAC Permissions Router", () => {
       const permissionDescription = "A custom permission";
       const permissionModule = "custom";
 
-      const mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockReturnThis();
       const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn().mockResolvedValue([]);
@@ -101,7 +97,7 @@ describe("RBAC Permissions Router", () => {
         from: mockFrom,
         where: mockWhere,
         limit: mockLimit,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       const mockInsert = vi.fn().mockReturnThis();
       // QA-TEST-001: Fix mock to return array format expected by router
@@ -109,7 +105,7 @@ describe("RBAC Permissions Router", () => {
 
       vi.mocked(db.insert).mockReturnValue({
         values: mockValues,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act
       const result = await caller.rbacPermissions.create({
@@ -129,7 +125,6 @@ describe("RBAC Permissions Router", () => {
       const permissionName = "orders:create";
       const mockExisting = [{ id: 1 }];
 
-      const mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockReturnThis();
       const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn().mockResolvedValue(mockExisting);
@@ -138,7 +133,7 @@ describe("RBAC Permissions Router", () => {
         from: mockFrom,
         where: mockWhere,
         limit: mockLimit,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act & Assert
       await expect(
@@ -157,7 +152,6 @@ describe("RBAC Permissions Router", () => {
       const newName = "custom:updated";
       const mockPermission = [{ id: 100, name: "custom:action" }];
 
-      const mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockReturnThis();
       const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn();
@@ -171,7 +165,7 @@ describe("RBAC Permissions Router", () => {
         from: mockFrom,
         where: mockWhere,
         limit: mockLimit,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       const mockUpdate = vi.fn().mockReturnThis();
       const mockSet = vi.fn().mockReturnThis();
@@ -180,7 +174,7 @@ describe("RBAC Permissions Router", () => {
       vi.mocked(db.update).mockReturnValue({
         set: mockSet,
         where: mockUpdateWhere,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act
       const result = await caller.rbacPermissions.update({
@@ -200,7 +194,6 @@ describe("RBAC Permissions Router", () => {
       const permissionId = 100;
       const mockPermission = [{ id: 100, name: "custom:action" }];
 
-      const mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockReturnThis();
       const mockWhere = vi.fn().mockReturnThis();
       const mockLimit = vi.fn().mockResolvedValue(mockPermission);
@@ -209,14 +202,14 @@ describe("RBAC Permissions Router", () => {
         from: mockFrom,
         where: mockWhere,
         limit: mockLimit,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       const mockDelete = vi.fn().mockReturnThis();
       const mockDeleteWhere = vi.fn().mockResolvedValue({});
 
       vi.mocked(db.delete).mockReturnValue({
         where: mockDeleteWhere,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act
       const result = await caller.rbacPermissions.delete({ permissionId });
@@ -254,14 +247,13 @@ describe("RBAC Permissions Router", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnThis();
       const mockFrom = vi.fn().mockReturnThis();
       const mockOrderBy = vi.fn().mockResolvedValue(mockPermissions);
 
       vi.mocked(db.select).mockReturnValue({
         from: mockFrom,
         orderBy: mockOrderBy,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act
       const result = await caller.rbacPermissions.getByModule();
@@ -309,7 +301,7 @@ describe("RBAC Permissions Router", () => {
 
       vi.mocked(db.select).mockReturnValue({
         from: mockFrom,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act
       const result = await caller.rbacPermissions.search({ query });
@@ -346,7 +338,7 @@ describe("RBAC Permissions Router", () => {
 
       vi.mocked(db.select).mockReturnValue({
         from: mockFrom,
-      } as any);
+      } as ReturnType<typeof vi.mocked>);
 
       // Act
       const result = await caller.rbacPermissions.search({ query, limit });

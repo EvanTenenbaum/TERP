@@ -37,15 +37,19 @@ const TableSkeleton = React.memo(function TableSkeleton({
       {showHeader && (
         <div className="flex gap-4 p-4 border-b bg-muted/30">
           {Array.from({ length: columns }).map((_, i) => (
-            <Skeleton key={`header-${i}`} className="h-4 flex-1" />
+            // eslint-disable-next-line react/no-array-index-key
+            <Skeleton key={`ske-header-${i}`} className="h-4 flex-1" />
           ))}
         </div>
       )}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={`row-${rowIndex}`} className="flex gap-4 p-4 border-b">
+        <div
+          // eslint-disable-next-line react/no-array-index-key
+          key={`ske-row-${rowIndex}`} className="flex gap-4 p-4 border-b">
           {Array.from({ length: columns }).map((_, colIndex) => (
             <Skeleton
-              key={`cell-${rowIndex}-${colIndex}`}
+              // eslint-disable-next-line react/no-array-index-key
+              key={`ske-cell-${rowIndex}-${colIndex}`}
               className={cn("h-4", colIndex === 0 ? "w-24" : "flex-1")}
             />
           ))}
@@ -114,7 +118,8 @@ const GridSkeleton = React.memo(function GridSkeleton({
       )}
     >
       {Array.from({ length: items }).map((_, i) => (
-        <CardSkeleton key={`skeleton-${i}`} showImage={showImage} />
+        // eslint-disable-next-line react/no-array-index-key
+        <CardSkeleton key={`ske-card-${i}`} showImage={showImage} />
       ))}
     </div>
   );
@@ -137,7 +142,8 @@ const FormSkeleton = React.memo(function FormSkeleton({
   return (
     <div className={cn("space-y-6", className)}>
       {Array.from({ length: fields }).map((_, i) => (
-        <div key={`skeleton-${i}`} className="space-y-2">
+        // eslint-disable-next-line react/no-array-index-key
+        <div key={`ske-card-${i}`} className="space-y-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-10 w-full" />
         </div>
@@ -167,7 +173,8 @@ const StatsSkeleton = React.memo(function StatsSkeleton({
   return (
     <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4", className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={`skeleton-${i}`} className="rounded-lg border bg-card p-4">
+        // eslint-disable-next-line react/no-array-index-key
+        <div key={`ske-card-${i}`} className="rounded-lg border bg-card p-4">
           <Skeleton className="h-4 w-20 mb-2" />
           <Skeleton className="h-8 w-24" />
         </div>
@@ -193,7 +200,8 @@ const ListSkeleton = React.memo(function ListSkeleton({
   return (
     <div className={cn("space-y-3", className)}>
       {Array.from({ length: items }).map((_, i) => (
-        <div key={`skeleton-${i}`} className="flex items-center gap-3 p-3 border rounded-lg">
+        // eslint-disable-next-line react/no-array-index-key
+        <div key={`ske-card-${i}`} className="flex items-center gap-3 p-3 border rounded-lg">
           {showAvatar && <Skeleton className="h-10 w-10 rounded-full" />}
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -292,7 +300,8 @@ const DrawerSkeleton = React.memo(function DrawerSkeleton({
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={`skeleton-${i}`} className="rounded-lg border bg-card p-4">
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={`ske-card-${i}`} className="rounded-lg border bg-card p-4">
             <Skeleton className="h-3 w-16 mb-2" />
             <Skeleton className="h-6 w-20" />
           </div>
@@ -301,7 +310,8 @@ const DrawerSkeleton = React.memo(function DrawerSkeleton({
 
       {/* Sections */}
       {Array.from({ length: sections }).map((_, i) => (
-        <div key={`skeleton-${i}`} className="space-y-3">
+        // eslint-disable-next-line react/no-array-index-key
+        <div key={`ske-card-${i}`} className="space-y-3">
           <Skeleton className="h-5 w-32" />
           <div className="space-y-2">
             <Skeleton className="h-4 w-full" />

@@ -25,16 +25,12 @@ import {
   Search,
   Box,
   AlertCircle,
-  X,
   ChevronRight,
   User,
-  Hash,
-  Calendar,
   DollarSign,
   MapPin,
   Loader2,
   CheckSquare,
-  Square,
   PackageCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useWorkSurfaceKeyboard } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
 import { useSaveState } from '@/hooks/work-surface/useSaveState';
 import { useConcurrentEditDetection } from '@/hooks/work-surface/useConcurrentEditDetection';
@@ -497,12 +493,12 @@ export function PickPackWorkSurface() {
     isLoading: orderDetailsLoading,
     refetch: refetchOrderDetails,
   } = trpc.pickPack.getOrderDetails.useQuery(
-    { orderId: selectedOrderId! },
+    { orderId: selectedOrderId ?? 0 },
     { enabled: !!selectedOrderId }
   );
 
   // Save state
-  const { saveState, setSaving, setSaved, setError, setQueued, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
   const {

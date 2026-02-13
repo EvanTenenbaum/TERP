@@ -22,7 +22,7 @@ import {
 /**
  * Options for useAppMutation
  */
-export interface UseAppMutationOptions<TData, TError, TVariables> {
+export interface UseAppMutationOptions<TData, _TError, TVariables> {
   /** Success callback */
   onSuccess?: (data: TData, variables: TVariables) => void;
   /** Error callback - called after toast is shown */

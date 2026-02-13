@@ -21,7 +21,6 @@ import {
   Check,
   X,
   Calculator,
-  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,7 +168,7 @@ export function InlinePriceEditor({
       await onAdjust(newPrice, reason.trim());
       setOpen(false);
       toast.success(`Price adjusted to ${formatCurrency(newPrice)}`);
-    } catch (error) {
+    } catch (_error) {
       // Error handling is done by parent
     }
   }, [newPrice, currentPrice, reason, onAdjust]);

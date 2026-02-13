@@ -344,7 +344,7 @@ export const salesSheetsRouter = router({
       return {
         id: sheet.id,
         clientName: sheet.clientName,
-        items: (sheet.items as any[]).map((item: any) => ({
+        items: (sheet.items as unknown as Array<{ id: number; name: string; category?: string; quantity: number; finalPrice?: number; retailPrice: number }>).map((item) => ({
           id: item.id,
           name: item.name,
           category: item.category,

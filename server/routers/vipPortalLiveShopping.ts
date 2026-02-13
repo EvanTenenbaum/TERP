@@ -11,6 +11,19 @@ import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
+
 export const vipPortalLiveShoppingRouter = router({
   // ============================================================================
   // SESSION DISCOVERY
@@ -236,10 +249,10 @@ export const vipPortalLiveShoppingRouter = router({
         // Notify via SSE (Handled inside service, but we ensure cart is returned)
         const updatedCart = await sessionCartService.getCart(input.sessionId);
         return updatedCart;
-      } catch (err: any) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err.message || "Failed to add item",
+          message: getErrorMessage(err, "Failed to add item"),
         });
       }
     }),
@@ -278,10 +291,10 @@ export const vipPortalLiveShoppingRouter = router({
           input.quantity
         );
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err.message || "Failed to update quantity",
+          message: getErrorMessage(err, "Failed to update quantity"),
         });
       }
     }),
@@ -444,10 +457,10 @@ export const vipPortalLiveShoppingRouter = router({
           itemStatus: input.status,
         });
         return { success: true, cartItemId };
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to add item",
+          message: getErrorMessage(e, "Failed to add item"),
         });
       }
     }),

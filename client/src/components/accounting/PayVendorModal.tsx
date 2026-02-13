@@ -38,7 +38,7 @@ import {
   Loader2,
   Send
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface PayVendorModalProps {
   open: boolean;
@@ -59,7 +59,7 @@ export function PayVendorModal({
   preselectedBillId,
   onSuccess,
 }: PayVendorModalProps) {
-  const { toast } = useToast();
+
   const utils = trpc.useUtils();
 
   // Form state
@@ -88,17 +88,14 @@ export function PayVendorModal({
 
   // Fetch outstanding bills for selected vendor
   const { data: vendorBills } = trpc.accounting.bills.list.useQuery(
-    { vendorId: vendorId!, status: "PENDING", limit: 10 },
+    { vendorId: vendorId ?? 0, status: "PENDING", limit: 10 },
     { enabled: !!vendorId }
   );
 
   // Submit mutation
   const payVendor = trpc.accounting.quickActions.payVendor.useMutation({
     onSuccess: (result) => {
-      toast({
-        title: "Payment Sent",
-        description: `${result.paymentNumber}: $${result.paymentAmount.toLocaleString()} paid to ${result.vendorName}`,
-      });
+      toast.success(`Payment Sent: ${result.paymentNumber}: $${result.paymentAmount.toLocaleString()} paid to ${result.vendorName}`);
       utils.accounting.payments.list.invalidate();
       utils.accounting.bills.list.invalidate();
       utils.accounting.quickActions.getRecentVendors.invalidate();
@@ -106,21 +103,13 @@ export function PayVendorModal({
       onOpenChange(false);
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`Error: ${error.message}`);
     },
   });
 
   const handleSubmit = () => {
     if (!vendorId || !amount || parseFloat(amount) <= 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a vendor and enter a valid amount",
-        variant: "destructive",
-      });
+      toast.error("Validation Error: Please select a vendor and enter a valid amount");
       return;
     }
 
@@ -205,7 +194,12 @@ export function PayVendorModal({
                   } else {
                     setBillId(parseInt(value));
                     // Auto-fill amount from bill
-                    const selectedBill = billsList.find((b: any) => b.id === parseInt(value));
+                    interface Bill {
+                      id: number;
+                      amountDue?: string;
+                      totalAmount: string;
+                    }
+                    const selectedBill = billsList.find((b: Bill) => b.id === parseInt(value));
                     if (selectedBill) {
                       setAmount(selectedBill.amountDue || selectedBill.totalAmount);
                     }
@@ -217,7 +211,7 @@ export function PayVendorModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No bill - standalone payment</SelectItem>
-                  {billsList.map((bill: any) => (
+                  {billsList.map((bill: { id: number; billNumber: string; amountDue?: string; totalAmount: string }) => (
                     <SelectItem key={bill.id} value={bill.id.toString()}>
                       <div className="flex items-center justify-between w-full">
                         <span>{bill.billNumber}</span>
@@ -316,7 +310,7 @@ export function PayVendorModal({
               {billId && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Applied to Bill:</span>
-                  <span>{billsList.find((b: any) => b.id === billId)?.billNumber}</span>
+                  <span>{billsList.find((b: { id: number; billNumber: string }) => b.id === billId)?.billNumber}</span>
                 </div>
               )}
             </div>

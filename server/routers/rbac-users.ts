@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { requirePermission, requireAnyPermission } from "../_core/permissionMiddleware";
-import { getCurrentUserId } from "../_core/authHelpers";
+
+
 import { getDb } from "../db";
 import { 
   userRoles, 
@@ -65,13 +66,15 @@ export const rbacUsersRouter = router({
         }>();
 
         for (const record of userRoleRecords) {
-          if (!userMap.has(record.userId)) {
-            userMap.set(record.userId, {
+          let userEntry = userMap.get(record.userId);
+          if (!userEntry) {
+            userEntry = {
               userId: record.userId,
               roles: [],
-            });
+            };
+            userMap.set(record.userId, userEntry);
           }
-          userMap.get(record.userId)!.roles.push({
+          userEntry.roles.push({
             roleId: record.roleId,
             roleName: record.roleName,
             roleDescription: record.roleDescription,
@@ -593,7 +596,7 @@ export const rbacUsersRouter = router({
         if (!db) throw new Error("Database not available");
         
         // Authentication is enforced by protectedProcedure
-        const userId = String(getCurrentUserId(ctx));
+        const userId = String(ctx.user.id);
 
         // Check if user is Super Admin (check by role name since isSuperAdmin column doesn't exist)
         const userRoleRecords = await db

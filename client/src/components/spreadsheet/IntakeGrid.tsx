@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { INTAKE_DEFAULTS } from "@/lib/constants/intakeDefaults";
 import type {
   CellValueChangedEvent,
   ColDef,
@@ -73,7 +74,8 @@ const createEmptyRow = (): IntakeGridRow => ({
   strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "NET_30",
+  // TER-228: Default from centralized intake defaults
+  paymentTerms: INTAKE_DEFAULTS.paymentTerms,
   locationId: null,
   locationName: "",
   site: "",

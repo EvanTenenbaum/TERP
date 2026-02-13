@@ -711,7 +711,10 @@ async function executeCommand(batch?: string, auto?: boolean, untilPhase?: strin
         
         const results = await Promise.allSettled(
           batchIds.map(taskId => {
-            const task = taskMap.get(taskId)!;
+            const task = taskMap.get(taskId);
+            if (!task) {
+              throw new Error(`Task ${taskId} not found in task map`);
+            }
             return executeAgent(taskId, task);
           })
         );
@@ -786,7 +789,10 @@ async function executeCommand(batch?: string, auto?: boolean, untilPhase?: strin
     
     const results = await Promise.allSettled(
       taskIds.map(taskId => {
-        const task = taskMap.get(taskId)!;
+        const task = taskMap.get(taskId);
+        if (!task) {
+          throw new Error(`Task ${taskId} not found in task map`);
+        }
         return executeAgent(taskId, task);
       })
     );

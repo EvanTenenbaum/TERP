@@ -31,7 +31,7 @@ describe("useRetryableQuery", () => {
 
   it("should wrap a query result with retry properties", () => {
     // Arrange
-    const mockQueryResult = {
+    const _mockQueryResult = {
       data: undefined,
       error: null,
       isError: false,
@@ -52,7 +52,7 @@ describe("useRetryableQuery", () => {
           queryKey: ["test"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any);
+        return useRetryableQuery(query);
       },
       { wrapper }
     );
@@ -74,7 +74,7 @@ describe("useRetryableQuery", () => {
           queryKey: ["test-max"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any, { maxRetries: 5 });
+        return useRetryableQuery(query, { maxRetries: 5 });
       },
       { wrapper }
     );
@@ -93,7 +93,7 @@ describe("useRetryableQuery", () => {
           queryKey: ["test-retry"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any, { maxRetries: 3, onRetry });
+        return useRetryableQuery(query, { maxRetries: 3, onRetry });
       },
       { wrapper }
     );
@@ -129,7 +129,7 @@ describe("useRetryableQuery", () => {
           },
           retry: false,
         });
-        return useRetryableQuery(query as any, {
+        return useRetryableQuery(query, {
           maxRetries: 3,
           onMaxRetriesReached,
         });
@@ -158,7 +158,7 @@ describe("useRetryableQuery", () => {
           queryKey: ["test-reset"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any, { maxRetries: 3 });
+        return useRetryableQuery(query, { maxRetries: 3 });
       },
       { wrapper }
     );
@@ -186,7 +186,7 @@ describe("useRetryableQuery", () => {
           queryKey: ["test-remaining"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any, { maxRetries: 5 });
+        return useRetryableQuery(query, { maxRetries: 5 });
       },
       { wrapper }
     );
@@ -206,7 +206,7 @@ describe("useRetryableQuery", () => {
           queryFn: () => Promise.reject(new Error("error")),
           retry: false,
         });
-        return useRetryableQuery(query as any, {
+        return useRetryableQuery(query, {
           maxRetries: 1,
           onRetry,
           onMaxRetriesReached,
@@ -244,7 +244,7 @@ describe("useRetryableQuery callbacks", () => {
           queryKey: ["test-callback"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any, { onRetry });
+        return useRetryableQuery(query, { onRetry });
       },
       { wrapper }
     );
@@ -268,7 +268,7 @@ describe("useRetryableQuery callbacks", () => {
           queryKey: ["test-success"],
           queryFn: () => Promise.resolve("data"),
         });
-        return useRetryableQuery(query as any, { onRetrySuccess });
+        return useRetryableQuery(query, { onRetrySuccess });
       },
       { wrapper }
     );

@@ -17,7 +17,17 @@ export async function setupVite(app: Express, server: Server) {
   // Dynamic imports - only loaded when this function is called (dev mode only)
   // This is critical for enabling --prod builds in production
   const { createServer: createViteServer } = await import("vite");
-  const viteConfigPath = path.resolve(__dirname, "../..", "vite.config.ts");
+
+  // Load Vite config from disk so async/function configs are resolved correctly.
+  // Spreading a function export silently drops settings (e.g. client root), which
+  // can leave the app stuck on the loading shell in dev/E2E.
+  const viteConfigCandidates = [
+    path.resolve(__dirname, "../..", "vite.config.ts"),
+    path.resolve(__dirname, "../..", "vite.config.js"),
+  ];
+  const viteConfigFile = viteConfigCandidates.find(candidate =>
+    fs.existsSync(candidate)
+  );
 
   const serverOptions = {
     middlewareMode: true,
@@ -26,9 +36,7 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    // Load the project's Vite config file directly. Spreading the imported
-    // config default is unsafe when config is a function (common in Vite).
-    configFile: viteConfigPath,
+    configFile: viteConfigFile,
     server: serverOptions,
     appType: "custom",
   });
@@ -75,7 +83,7 @@ export function serveStatic(app: Express) {
     logger.info({ distPath, cwd: process.cwd() }, "Resolving static file path");
   } catch {
     // Logger might not be initialized yet, use console as fallback
-    console.log(
+    console.info(
       `[serveStatic] Resolving static file path: ${distPath} (cwd: ${process.cwd()})`
     );
   }
@@ -109,7 +117,7 @@ export function serveStatic(app: Express) {
         "Serving static files from build directory"
       );
     } catch {
-      console.log(`[serveStatic] Serving static files from: ${distPath}`);
+      console.info(`[serveStatic] Serving static files from: ${distPath}`);
     }
   }
 

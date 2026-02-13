@@ -3,6 +3,7 @@
  * Sortable table header with visual indicators
  */
 
+import * as React from "react";
 import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import type { SortDirection, SortableColumn } from "@/hooks/useInventorySort";
 

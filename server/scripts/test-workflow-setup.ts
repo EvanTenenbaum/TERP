@@ -15,6 +15,7 @@
 
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 const colors = {
   reset: "\x1b[0m",
@@ -26,7 +27,7 @@ const colors = {
 };
 
 function log(message: string, color: keyof typeof colors = "reset") {
-  console.log(`${colors[color]}${message}${colors.reset}`);
+  logger.info(`${colors[color]}${message}${colors.reset}`);
 }
 
 interface TestResult {
@@ -54,17 +55,17 @@ async function runTest(name: string, testFn: () => Promise<void>): Promise<void>
   }
 }
 
-async function checkTableExists(db: any, tableName: string): Promise<boolean> {
+async function checkTableExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string): Promise<boolean> {
   const result = await db.execute(sql`
     SELECT COUNT(*) as count 
     FROM information_schema.tables 
     WHERE table_schema = DATABASE() 
     AND table_name = ${tableName}
   `);
-  return (result[0][0] as any).count > 0;
+  return (result[0][0] as { count: number }).count > 0;
 }
 
-async function checkColumnExists(db: any, tableName: string, columnName: string): Promise<boolean> {
+async function checkColumnExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string, columnName: string): Promise<boolean> {
   const result = await db.execute(sql`
     SELECT COUNT(*) as count 
     FROM information_schema.columns 
@@ -177,7 +178,7 @@ async function runTests() {
       AND column_name = 'statusId'
     `);
     
-    const info = columnInfo[0][0] as any;
+    const info = columnInfo[0][0] as { COLUMN_TYPE: string; IS_NULLABLE: string };
     if (!info.COLUMN_TYPE.includes("int")) {
       throw new Error(`statusId column should be INT, found ${info.COLUMN_TYPE}`);
     }
@@ -204,7 +205,7 @@ async function runTests() {
       "On Hold"
     ];
     
-    const actualStatuses = statuses[0].map((r: any) => r.name);
+    const actualStatuses = statuses[0].map((r: { name: string }) => r.name);
     
     for (const expected of expectedStatuses) {
       if (!actualStatuses.includes(expected)) {
@@ -224,7 +225,7 @@ async function runTests() {
     const totalBatches = await db.execute(sql`
       SELECT COUNT(*) as count FROM batches
     `);
-    const total = (totalBatches[0][0] as any).count;
+    const total = (totalBatches[0][0] as { count: number }).count;
     
     if (total === 0) {
       log("⚠️  No batches in database to test migration", "yellow");
@@ -234,7 +235,7 @@ async function runTests() {
     const migratedBatches = await db.execute(sql`
       SELECT COUNT(*) as count FROM batches WHERE statusId IS NOT NULL
     `);
-    const migrated = (migratedBatches[0][0] as any).count;
+    const migrated = (migratedBatches[0][0] as { count: number }).count;
     
     if (migrated === 0) {
       throw new Error("No batches have been migrated to workflow statuses");
@@ -317,7 +318,7 @@ async function runTests() {
       SELECT COUNT(*) as count FROM workflow_statuses WHERE name = 'Quality Check'
     `);
     
-    if ((count[0][0] as any).count !== 1) {
+    if ((count[0][0] as { count: number }).count !== 1) {
       throw new Error("Duplicate status was created instead of being updated");
     }
   });
@@ -407,6 +408,6 @@ runTests()
   })
   .catch((error) => {
     log("\n❌ Test suite crashed", "red");
-    console.error(error);
+    logger.error(error);
     process.exit(1);
   });

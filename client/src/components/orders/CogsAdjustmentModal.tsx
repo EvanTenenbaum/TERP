@@ -15,16 +15,33 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { TrendingUp, Lightbulb, DollarSign } from "lucide-react";
 
+interface CogsAdjustmentItem {
+  unitCogs?: number;
+  unitPrice: number;
+  quantity: number;
+  cogsMode?: string;
+  unitCogsMin?: string;
+  unitCogsMax?: string;
+}
+
 interface CogsAdjustmentModalProps {
-  item: any;
-  clientDetails?: any;
+  item: CogsAdjustmentItem;
+  clientDetails?: Record<string, unknown>;
   onClose: () => void;
-  onSave: (updates: any) => void;
+  onSave: (updates: {
+    unitCogs: number;
+    overrideCogs: number;
+    cogsSource: string;
+    unitMargin: number;
+    marginPercent: number;
+    lineCogs: number;
+    lineMargin: number;
+  }) => void;
 }
 
 export function CogsAdjustmentModal({
   item,
-  clientDetails,
+  clientDetails: _clientDetails,
   onClose,
   onSave,
 }: CogsAdjustmentModalProps) {

@@ -26,7 +26,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ColorTagBadge, type TagData, type TagCategory } from "./ColorTagBadge";
 

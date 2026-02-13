@@ -453,7 +453,8 @@ export async function getOrCreateStrain(
             baseStrainName: baseName,
             parentStrainId: null,
           });
-          parentStrainId = Number((parentResult as any).insertId || (parentResult as any)[0]?.insertId);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          parentStrainId = Number(((parentResult as any).insertId) || ((parentResult as any[])[0]?.insertId));
         }
       }
       
@@ -471,7 +472,8 @@ export async function getOrCreateStrain(
       });
       
       return {
-        strainId: Number((newStrain as any).insertId || (newStrain as any)[0]?.insertId),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        strainId: Number(((newStrain as any).insertId) || ((newStrain as any[])[0]?.insertId)),
         wasCreated: true,
       };
     });

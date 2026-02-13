@@ -6,7 +6,7 @@
 /**
  * Escape CSV field value
  */
-function escapeCSVField(value: any): string {
+function escapeCSVField(value: unknown): string {
   if (value === null || value === undefined) {
     return '';
   }
@@ -24,7 +24,7 @@ function escapeCSVField(value: any): string {
 /**
  * Convert array of objects to CSV string
  */
-function arrayToCSV(data: any[], headers: string[]): string {
+function arrayToCSV(data: Record<string, unknown>[], headers: string[]): string {
   // Create header row
   const headerRow = headers.map(escapeCSVField).join(',');
   
@@ -63,7 +63,7 @@ function downloadCSV(csvContent: string, filename: string) {
  * @param headers - Array of header names (keys from objects)
  * @param filename - Name of the file (without extension)
  */
-export function exportToCSV(data: any[], headers: string[], filename: string) {
+export function exportToCSV(data: Record<string, unknown>[], headers: string[], filename: string) {
   if (!data || data.length === 0) {
     throw new Error('No data to export');
   }
@@ -83,7 +83,7 @@ export function exportToCSV(data: any[], headers: string[], filename: string) {
  * @param filename - Name of the file (without extension)
  */
 export function exportToCSVWithLabels(
-  data: any[],
+  data: Record<string, unknown>[],
   columns: { key: string; label: string }[],
   filename: string
 ) {

@@ -11,6 +11,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -155,34 +156,16 @@ const formatDate = (dateString: string | null | undefined): string => {
 
 function ClientTypeBadges({ client }: { client: Client }) {
   const badges: { label: string; className: string }[] = [];
-  if (client.isBuyer)
-    badges.push({ label: "Buyer", className: "bg-blue-100 text-blue-800" });
-  if (client.isSeller)
-    badges.push({
-      label: "Supplier",
-      className: "bg-green-100 text-green-800",
-    });
-  if (client.isBrand)
-    badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
-  if (client.isReferee)
-    badges.push({
-      label: "Referee",
-      className: "bg-yellow-100 text-yellow-800",
-    });
-  if (client.isContractor)
-    badges.push({
-      label: "Contractor",
-      className: "bg-gray-100 text-gray-800",
-    });
+  if (client.isBuyer) badges.push({ label: "Buyer", className: "bg-blue-100 text-blue-800" });
+  if (client.isSeller) badges.push({ label: "Supplier", className: "bg-green-100 text-green-800" });
+  if (client.isBrand) badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
+  if (client.isReferee) badges.push({ label: "Referee", className: "bg-yellow-100 text-yellow-800" });
+  if (client.isContractor) badges.push({ label: "Contractor", className: "bg-gray-100 text-gray-800" });
 
   return (
     <div className="flex gap-1 flex-wrap">
-      {badges.map(badge => (
-        <Badge
-          key={badge.label}
-          variant="outline"
-          className={cn("text-xs", badge.className)}
-        >
+      {badges.map((badge) => (
+        <Badge key={badge.label} variant="outline" className={cn("text-xs", badge.className)}>
           {badge.label}
         </Badge>
       ))}
@@ -201,31 +184,14 @@ interface ClientInspectorProps {
   onArchive: (clientId: number) => void;
 }
 
-function ClientInspectorContent({
-  client,
-  onUpdate,
-  onNavigate,
-  onArchive,
-}: ClientInspectorProps) {
+function ClientInspectorContent({ client, onUpdate, onNavigate, onArchive }: ClientInspectorProps) {
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    notes: "",
-  });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", notes: "" });
 
   // Validation
   const validation = useValidationTiming({
     schema: clientSchema,
-    initialValues: client
-      ? {
-          name: client.name,
-          email: client.email ?? undefined,
-          phone: client.phone ?? undefined,
-          notes: client.notes ?? undefined,
-        }
-      : undefined,
+    initialValues: client ? { name: client.name, email: client.email ?? undefined, phone: client.phone ?? undefined, notes: client.notes ?? undefined } : undefined,
   });
 
   useEffect(() => {
@@ -253,6 +219,9 @@ function ClientInspectorContent({
     if (result.isValid) {
       onUpdate({ ...editForm, id: client.id, version: client.version });
       setEditMode(false);
+    } else {
+      // Surface validation feedback to the user
+      toast.error("Please fix validation errors before saving.");
     }
   };
 
@@ -264,19 +233,15 @@ function ClientInspectorContent({
             <InspectorField label="Name" required>
               <Input
                 value={editForm.name}
-                onChange={e => {
+                onChange={(e) => {
                   setEditForm({ ...editForm, name: e.target.value });
                   validation.handleChange("name", e.target.value);
                 }}
                 onBlur={() => validation.handleBlur("name")}
-                className={cn(
-                  validation.getFieldState("name").showError && "border-red-500"
-                )}
+                className={cn(validation.getFieldState("name").showError && "border-red-500")}
               />
               {validation.getFieldState("name").showError && (
-                <p className="text-xs text-red-500 mt-1">
-                  {validation.getFieldState("name").error}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{validation.getFieldState("name").error}</p>
               )}
             </InspectorField>
 
@@ -284,38 +249,29 @@ function ClientInspectorContent({
               <Input
                 type="email"
                 value={editForm.email}
-                onChange={e => {
+                onChange={(e) => {
                   setEditForm({ ...editForm, email: e.target.value });
                   validation.handleChange("email", e.target.value);
                 }}
                 onBlur={() => validation.handleBlur("email")}
-                className={cn(
-                  validation.getFieldState("email").showError &&
-                    "border-red-500"
-                )}
+                className={cn(validation.getFieldState("email").showError && "border-red-500")}
               />
               {validation.getFieldState("email").showError && (
-                <p className="text-xs text-red-500 mt-1">
-                  {validation.getFieldState("email").error}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{validation.getFieldState("email").error}</p>
               )}
             </InspectorField>
 
             <InspectorField label="Phone">
               <Input
                 value={editForm.phone}
-                onChange={e =>
-                  setEditForm({ ...editForm, phone: e.target.value })
-                }
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
               />
             </InspectorField>
 
             <InspectorField label="Notes">
               <Textarea
                 value={editForm.notes}
-                onChange={e =>
-                  setEditForm({ ...editForm, notes: e.target.value })
-                }
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                 rows={3}
               />
             </InspectorField>
@@ -324,11 +280,7 @@ function ClientInspectorContent({
               <Button size="sm" onClick={handleSave}>
                 Save Changes
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEditMode(false)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setEditMode(false)}>
                 Cancel
               </Button>
             </div>
@@ -341,10 +293,7 @@ function ClientInspectorContent({
 
             {client.email && (
               <InspectorField label="Email">
-                <a
-                  href={`mailto:${client.email}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
-                >
+                <a href={`mailto:${client.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
                   <Mail className="h-4 w-4" />
                   {client.email}
                 </a>
@@ -353,10 +302,7 @@ function ClientInspectorContent({
 
             {client.phone && (
               <InspectorField label="Phone">
-                <a
-                  href={`tel:${client.phone}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
-                >
+                <a href={`tel:${client.phone}`} className="flex items-center gap-2 text-blue-600 hover:underline">
                   <Phone className="h-4 w-4" />
                   {client.phone}
                 </a>
@@ -365,17 +311,11 @@ function ClientInspectorContent({
 
             {client.notes && (
               <InspectorField label="Notes">
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {client.notes}
-                </p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{client.notes}</p>
               </InspectorField>
             )}
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEditMode(true)}
-            >
+            <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit Details
             </Button>
@@ -391,27 +331,17 @@ function ClientInspectorContent({
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Credit Limit</p>
-            <p className="font-semibold">
-              {formatCurrency(client.creditLimit)}
-            </p>
+            <p className="font-semibold">{formatCurrency(client.creditLimit)}</p>
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Current Debt</p>
-            <p
-              className={cn(
-                "font-semibold",
-                parseFloat(String(client.currentDebt || 0)) > 0 &&
-                  "text-red-600"
-              )}
-            >
+            <p className={cn("font-semibold", parseFloat(String(client.currentDebt || 0)) > 0 && "text-red-600")}>
               {formatCurrency(client.currentDebt)}
             </p>
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Lifetime Value</p>
-            <p className="font-semibold text-green-600">
-              {formatCurrency(client.lifetimeValue)}
-            </p>
+            <p className="font-semibold text-green-600">{formatCurrency(client.lifetimeValue)}</p>
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Orders</p>
@@ -442,8 +372,7 @@ function ClientInspectorContent({
             type="button"
             variant="outline"
             className="w-full justify-start"
-            data-testid="view-full-profile-btn"
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               // QA-002 FIX: Added null check for client.id
@@ -459,8 +388,7 @@ function ClientInspectorContent({
             type="button"
             variant="outline"
             className="w-full justify-start text-red-600 hover:text-red-700"
-            data-testid="delete-client-btn"
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               // QA-002 FIX: Added null check for client.id
@@ -526,45 +454,21 @@ export function ClientsWorkSurface() {
     limit,
     offset: page * limit,
     search: search || undefined,
-    clientTypes:
-      typeFilter !== "all"
-        ? [
-            typeFilter as
-              | "buyer"
-              | "seller"
-              | "brand"
-              | "referee"
-              | "contractor",
-          ]
-        : undefined,
+    clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
   });
 
-  const clients = useMemo<Client[]>(() => {
-    if (Array.isArray(clientsData)) return clientsData as Client[];
-    const data = clientsData as unknown as { items?: unknown[] } | undefined;
-    return (Array.isArray(data?.items) ? data.items : []) as Client[];
-  }, [clientsData]);
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData as { items?: unknown[] })?.items ?? [];
 
   const { data: totalCount } = trpc.clients.count.useQuery({
     search: search || undefined,
-    clientTypes:
-      typeFilter !== "all"
-        ? [
-            typeFilter as
-              | "buyer"
-              | "seller"
-              | "brand"
-              | "referee"
-              | "contractor",
-          ]
-        : undefined,
+    clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
   });
 
   const totalPages = Math.ceil((totalCount || 0) / limit);
 
   // Selected client
   const selectedClient = useMemo(
-    () => (clients as Client[]).find(c => c.id === selectedClientId) || null,
+    () => (clients as Client[]).find((c) => c.id === selectedClientId) || null,
     [clients, selectedClientId]
   );
 
@@ -578,7 +482,7 @@ export function ClientsWorkSurface() {
       setSaved();
       utils.clients.list.invalidate();
     },
-    onError: err => {
+    onError: (err) => {
       // Check for concurrent edit conflict first (UXS-705)
       if (!handleConflictError(err)) {
         toast.error(err.message || "Failed to update client");
@@ -588,19 +492,62 @@ export function ClientsWorkSurface() {
   });
 
   const archiveClient = trpc.clients.archive.useMutation({
-    onMutate: () => setSaving("Archiving client..."),
+    // Optimistic removal of the client from the list
+    onMutate: async ({ clientId }) => {
+      setSaving("Archiving client...");
+      inspector.close();
+      setIsArchiveDialogOpen(false);
+      setSelectedClientId(null);
+
+      const queryInput = {
+        limit,
+        offset: page * limit,
+        search: search || undefined,
+        clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
+      };
+      await utils.clients.list.cancel();
+      const previousData = utils.clients.list.getData(queryInput);
+
+      utils.clients.list.setData(queryInput, (old: any) => {
+        if (!old) return old;
+
+        // Handle array vs. unified response object
+        if (Array.isArray(old)) {
+          return old.filter((c: any) => c.id !== clientId);
+        }
+        if ("items" in (old as any) && Array.isArray((old as any).items)) {
+          return {
+            ...(old as any),
+            items: (old as any).items.filter((c: any) => c.id !== clientId),
+          };
+        }
+        return old;
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       toast.success("Client archived successfully");
       setSaved();
-      setIsArchiveDialogOpen(false);
-      setSelectedClientId(null);
-      inspector.close();
-      utils.clients.list.invalidate();
-      utils.clients.count.invalidate();
     },
-    onError: err => {
+    onError: (err, _input, context) => {
       toast.error(err.message || "Failed to archive client");
       setError(err.message);
+
+      // Rollback optimistic update
+      if (context?.previousData) {
+        const rollbackInput = {
+          limit,
+          offset: page * limit,
+          search: search || undefined,
+          clientTypes: typeFilter !== "all" ? [typeFilter as any] : undefined,
+        };
+        utils.clients.list.setData(rollbackInput, context.previousData as any);
+      }
+    },
+    onSettled: () => {
+      utils.clients.list.invalidate();
+      utils.clients.count.invalidate();
     },
   });
 
@@ -609,19 +556,15 @@ export function ClientsWorkSurface() {
     if (!clients || clients.length === 0) return [];
     if (!sortColumn) return clients;
 
-    return [...clients].sort((a: Client, b: Client) => {
-      let aVal: string | number | boolean | null | undefined =
-        a[sortColumn as keyof Client];
-      let bVal: string | number | boolean | null | undefined =
-        b[sortColumn as keyof Client];
+    return [...clients].sort((a: any, b: any) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
 
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
 
-      if (typeof aVal === "string" && !isNaN(parseFloat(aVal)))
-        aVal = parseFloat(aVal);
-      if (typeof bVal === "string" && !isNaN(parseFloat(bVal)))
-        bVal = parseFloat(bVal);
+      if (typeof aVal === "string" && !isNaN(parseFloat(aVal))) aVal = parseFloat(aVal);
+      if (typeof bVal === "string" && !isNaN(parseFloat(bVal))) bVal = parseFloat(bVal);
 
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
@@ -635,38 +578,35 @@ export function ClientsWorkSurface() {
     isInspectorOpen: inspector.isOpen,
     onInspectorClose: inspector.close,
     customHandlers: {
-      "cmd+k": e => {
+      "cmd+k": (e) => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "ctrl+k": e => {
+      "ctrl+k": (e) => {
         e.preventDefault();
         searchInputRef.current?.focus();
       },
-      "cmd+n": e => {
+      "cmd+n": (e) => {
         e.preventDefault();
         setIsAddClientOpen(true);
       },
-      "ctrl+n": e => {
+      "ctrl+n": (e) => {
         e.preventDefault();
         setIsAddClientOpen(true);
       },
-      arrowdown: e => {
+      arrowdown: (e) => {
         e.preventDefault();
-        setSelectedIndex(prev => Math.min(displayClients.length - 1, prev + 1));
-        const client =
-          displayClients[
-            Math.min(displayClients.length - 1, selectedIndex + 1)
-          ];
+        setSelectedIndex((prev) => Math.min(displayClients.length - 1, prev + 1));
+        const client = displayClients[Math.min(displayClients.length - 1, selectedIndex + 1)];
         if (client) setSelectedClientId(client.id);
       },
-      arrowup: e => {
+      arrowup: (e) => {
         e.preventDefault();
-        setSelectedIndex(prev => Math.max(0, prev - 1));
+        setSelectedIndex((prev) => Math.max(0, prev - 1));
         const client = displayClients[Math.max(0, selectedIndex - 1)];
         if (client) setSelectedClientId(client.id);
       },
-      enter: e => {
+      enter: (e) => {
         if (selectedClient) {
           e.preventDefault();
           inspector.open();
@@ -689,16 +629,9 @@ export function ClientsWorkSurface() {
     const all = clients as Client[];
     return {
       total: totalCount || 0,
-      withDebt: all.filter(c => parseFloat(String(c.currentDebt || 0)) > 0)
-        .length,
-      totalDebt: all.reduce(
-        (sum, c) => sum + parseFloat(String(c.currentDebt || 0)),
-        0
-      ),
-      totalValue: all.reduce(
-        (sum, c) => sum + parseFloat(String(c.lifetimeValue || 0)),
-        0
-      ),
+      withDebt: all.filter((c) => parseFloat(String(c.currentDebt || 0)) > 0).length,
+      totalDebt: all.reduce((sum, c) => sum + parseFloat(String(c.currentDebt || 0)), 0),
+      totalValue: all.reduce((sum, c) => sum + parseFloat(String(c.lifetimeValue || 0)), 0),
     };
   }, [clients, totalCount]);
 
@@ -712,7 +645,7 @@ export function ClientsWorkSurface() {
   // Handlers
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortColumn(column);
       setSortDirection("desc");
@@ -742,8 +675,7 @@ export function ClientsWorkSurface() {
   };
 
   const SortIcon = ({ column }: { column: string }) => {
-    if (sortColumn !== column)
-      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    if (sortColumn !== column) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
     return sortDirection === "asc" ? (
       <ArrowUp className="h-3 w-3 ml-1" />
     ) : (
@@ -769,22 +701,13 @@ export function ClientsWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Total:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.total}
-              </span>
+              Total: <span className="font-semibold text-foreground">{stats.total}</span>
             </span>
             <span>
-              With Debt:{" "}
-              <span className="font-semibold text-foreground">
-                {stats.withDebt}
-              </span>
+              With Debt: <span className="font-semibold text-foreground">{stats.withDebt}</span>
             </span>
             <span>
-              LTV:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(stats.totalValue)}
-              </span>
+              LTV: <span className="font-semibold text-foreground">{formatCurrency(stats.totalValue)}</span>
             </span>
           </div>
         </div>
@@ -799,26 +722,19 @@ export function ClientsWorkSurface() {
               ref={searchInputRef}
               placeholder="Search clients... (Cmd+K)"
               value={search}
-              onChange={e => {
+              onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(0);
               }}
               className="pl-10"
-              data-testid="clients-search-input"
             />
           </div>
-          <Select
-            value={typeFilter}
-            onValueChange={v => {
-              setTypeFilter(v);
-              setPage(0);
-            }}
-          >
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(0); }}>
             <SelectTrigger className="w-36">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              {CLIENT_TYPE_FILTERS.map(filter => (
+              {CLIENT_TYPE_FILTERS.map((filter) => (
                 <SelectItem key={filter.value} value={filter.value}>
                   {filter.label}
                 </SelectItem>
@@ -826,10 +742,7 @@ export function ClientsWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={() => setIsAddClientOpen(true)}
-          data-testid="add-client-button"
-        >
+        <Button onClick={() => setIsAddClientOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Client
         </Button>
@@ -838,12 +751,7 @@ export function ClientsWorkSurface() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Table Area */}
-        <div
-          className={cn(
-            "flex-1 overflow-auto transition-all duration-200",
-            inspector.isOpen && "mr-96"
-          )}
-        >
+        <div className={cn("flex-1 overflow-auto transition-all duration-200", inspector.isOpen && "mr-96")}>
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -853,69 +761,40 @@ export function ClientsWorkSurface() {
               <div className="text-center">
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <p className="font-medium">Failed to load clients</p>
-                <Button
-                  variant="outline"
-                  onClick={() => refetch()}
-                  className="mt-4"
-                >
+                <Button variant="outline" onClick={() => refetch()} className="mt-4">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry
                 </Button>
               </div>
             </div>
           ) : displayClients.length === 0 ? (
-            <div
-              className="flex items-center justify-center h-64"
-              data-testid="clients-empty-state"
-            >
+            <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No clients found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search || typeFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Add your first client"}
+                  {search || typeFilter !== "all" ? "Try adjusting your filters" : "Add your first client"}
                 </p>
               </div>
             </div>
           ) : (
             <>
-              <Table data-testid="clients-table">
+              <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span className="flex items-center">
-                        Name <SortIcon column="name" />
-                      </span>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
+                      <span className="flex items-center">Name <SortIcon column="name" /></span>
                     </TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("lifetimeValue")}
-                    >
-                      <span className="flex items-center justify-end">
-                        LTV <SortIcon column="lifetimeValue" />
-                      </span>
+                    <TableHead className="cursor-pointer text-right" onClick={() => handleSort("lifetimeValue")}>
+                      <span className="flex items-center justify-end">LTV <SortIcon column="lifetimeValue" /></span>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("currentDebt")}
-                    >
-                      <span className="flex items-center justify-end">
-                        Debt <SortIcon column="currentDebt" />
-                      </span>
+                    <TableHead className="cursor-pointer text-right" onClick={() => handleSort("currentDebt")}>
+                      <span className="flex items-center justify-end">Debt <SortIcon column="currentDebt" /></span>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right"
-                      onClick={() => handleSort("orderCount")}
-                    >
-                      <span className="flex items-center justify-end">
-                        Orders <SortIcon column="orderCount" />
-                      </span>
+                    <TableHead className="cursor-pointer text-right" onClick={() => handleSort("orderCount")}>
+                      <span className="flex items-center justify-end">Orders <SortIcon column="orderCount" /></span>
                     </TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -924,46 +803,42 @@ export function ClientsWorkSurface() {
                   {displayClients.map((client: Client, index: number) => (
                     <TableRow
                       key={client.id}
-                      data-testid={`client-row-${client.id}`}
-                      data-clientid={client.id}
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",
                         selectedClientId === client.id && "bg-muted",
-                        selectedIndex === index &&
-                          "ring-1 ring-inset ring-primary"
+                        selectedIndex === index && "ring-1 ring-inset ring-primary"
                       )}
                       onClick={() => {
                         setSelectedClientId(client.id);
                         setSelectedIndex(index);
                         inspector.open();
                       }}
+                      onDoubleClick={() => setLocation(`/clients/${client.id}`)}
                     >
-                      <TableCell className="font-medium">
-                        {client.name}
-                      </TableCell>
-                      <TableCell>
-                        <ClientTypeBadges client={client} />
-                      </TableCell>
+                      <TableCell className="font-medium">{client.name}</TableCell>
+                      <TableCell><ClientTypeBadges client={client} /></TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {client.email || client.phone || "-"}
                       </TableCell>
                       <TableCell className="text-right font-medium text-green-600">
                         {formatCurrency(client.lifetimeValue)}
                       </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-medium",
-                          parseFloat(String(client.currentDebt || 0)) > 0 &&
-                            "text-red-600"
-                        )}
-                      >
+                      <TableCell className={cn("text-right font-medium", parseFloat(String(client.currentDebt || 0)) > 0 && "text-red-600")}>
                         {formatCurrency(client.currentDebt)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {client.orderCount || 0}
-                      </TableCell>
+                      <TableCell className="text-right">{client.orderCount || 0}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setLocation(`/clients/${client.id}`);
+                          }}
+                          aria-label={`Open ${client.name}`}
+                        >
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -982,7 +857,7 @@ export function ClientsWorkSurface() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage(p => Math.max(0, p - 1))}
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
                       disabled={page === 0}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -990,9 +865,7 @@ export function ClientsWorkSurface() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setPage(p => Math.min(totalPages - 1, p + 1))
-                      }
+                      onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                       disabled={page >= totalPages - 1}
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -1014,7 +887,7 @@ export function ClientsWorkSurface() {
           <ClientInspectorContent
             client={selectedClient}
             onUpdate={handleUpdateClient}
-            onNavigate={id => setLocation(`/clients/${id}`)}
+            onNavigate={(id) => setLocation(`/clients/${id}`)}
             onArchive={handleArchive}
           />
         </InspectorPanel>
@@ -1022,27 +895,19 @@ export function ClientsWorkSurface() {
 
       {/* Archive Confirmation Dialog */}
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
-        <DialogContent data-testid="confirm-delete-modal">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Archive Client</DialogTitle>
           </DialogHeader>
           <p>
-            Are you sure you want to archive {selectedClient?.name}? This will
-            hide the client from active lists but preserve all historical data.
+            Are you sure you want to archive {selectedClient?.name}? This will hide the client from
+            active lists but preserve all historical data.
           </p>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsArchiveDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsArchiveDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              data-testid="confirm-delete-btn"
-              onClick={confirmArchive}
-              disabled={archiveClient.isPending}
-            >
+            <Button variant="destructive" onClick={confirmArchive} disabled={archiveClient.isPending}>
               {archiveClient.isPending ? "Archiving..." : "Archive"}
             </Button>
           </DialogFooter>
@@ -1053,7 +918,7 @@ export function ClientsWorkSurface() {
       <AddClientWizard
         open={isAddClientOpen}
         onOpenChange={setIsAddClientOpen}
-        onSuccess={clientId => {
+        onSuccess={(clientId) => {
           refetch();
           toast.success("Client created successfully");
           setLocation(`/clients/${clientId}`);

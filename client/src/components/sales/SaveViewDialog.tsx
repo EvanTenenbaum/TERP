@@ -57,13 +57,13 @@ export function SaveViewDialog({
   const utils = trpc.useUtils();
 
   const saveViewMutation = trpc.salesSheets.saveView.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       utils.salesSheets.getViews.invalidate({ clientId });
       toast.success("View saved successfully");
       onSaved?.(data.viewId);
       handleClose();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to save view: " + error.message);
     },
   });
@@ -115,8 +115,10 @@ export function SaveViewDialog({
             Save View
           </DialogTitle>
           <DialogDescription>
-            Save your current filter and sort configuration for quick access
-            later.
+            {/* TER-214: Clarify views save filter profiles, not frozen item lists */}
+            Save your current filter and sort configuration as a reusable
+            profile. Views save your search criteria — not a fixed list of items
+            — so results stay up-to-date with inventory changes.
           </DialogDescription>
         </DialogHeader>
 
@@ -128,7 +130,7 @@ export function SaveViewDialog({
               id="view-name"
               placeholder="e.g., Premium Flower, Budget Options..."
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               maxLength={255}
             />
           </div>
@@ -143,7 +145,7 @@ export function SaveViewDialog({
               id="view-description"
               placeholder="What is this view for?"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               maxLength={500}
               rows={2}
             />
@@ -201,7 +203,8 @@ export function SaveViewDialog({
               )}
               {filters.grades.length > 0 && (
                 <Badge variant="secondary">
-                  {filters.grades.length} grade{filters.grades.length !== 1 ? "s" : ""}
+                  {filters.grades.length} grade
+                  {filters.grades.length !== 1 ? "s" : ""}
                 </Badge>
               )}
               {filters.inStockOnly && (

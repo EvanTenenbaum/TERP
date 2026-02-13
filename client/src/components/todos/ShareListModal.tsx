@@ -46,7 +46,7 @@ export function ShareListModal({
   const members = Array.isArray(membersData) ? membersData : (membersData?.items ?? []);
 
   // Fetch available users - using empty array for now since endpoint doesn't exist yet
-  const users: any[] = [];
+  const users: Array<{ id: number; name?: string | null; email?: string | null }> = [];
 
   // Add member mutation
   const addMember = trpc.todoLists.addMember.useMutation({
@@ -93,7 +93,7 @@ export function ShareListModal({
   };
 
   const availableUsers = users.filter(
-    (user: any) => !members.some((member) => member.userId === user.id)
+    (user) => !members.some((member) => member.userId === user.id)
   );
 
   return (
@@ -116,15 +116,15 @@ export function ShareListModal({
                   <SelectValue placeholder="Select a user" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableUsers.map((user: any) => (
+                  {availableUsers.map((user: { id: number; name?: string | null; email?: string | null }) => (
                     <SelectItem key={user.id} value={String(user.id)}>
-                      {user.username} ({user.email})
+                      {user.name} ({user.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={role} onValueChange={(v: any) => setRole(v)}>
+              <Select value={role} onValueChange={(v: 'viewer' | 'editor' | 'owner') => setRole(v)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -168,7 +168,7 @@ export function ShareListModal({
                     <div className="flex items-center gap-2">
                       <Select
                         value={member.role}
-                        onValueChange={(newRole: any) =>
+                        onValueChange={(newRole: 'viewer' | 'editor' | 'owner') =>
                           updateMemberRole.mutate({
                             listId,
                             userId: member.userId,

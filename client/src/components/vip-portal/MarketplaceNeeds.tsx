@@ -25,6 +25,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface MarketplaceNeedsProps {
   clientId: number;
   config: any;
@@ -33,7 +34,7 @@ interface MarketplaceNeedsProps {
 export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedNeed, setSelectedNeed] = useState<any>(null);
+  const [selectedNeed, setSelectedNeed] = useState<any | null>(null);
   const [cancelNeedId, setCancelNeedId] = useState<number | null>(null);
 
   const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery({
@@ -256,7 +257,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   );
 }
 
-function CreateNeedDialog({ open, onOpenChange, onSubmit, config }: any) {
+function CreateNeedDialog({ open, onOpenChange, onSubmit, config: _config }: any) {
   const [formData, setFormData] = useState({
     strain: "",
     productName: "",

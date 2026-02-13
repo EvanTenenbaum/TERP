@@ -1,13 +1,53 @@
 import { getDb } from "./db";
 import { 
   orders,
-  clients,
   batches,
   sales,
   clientTransactions,
-  inventoryAlerts
 } from "../drizzle/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
+
+/**
+ * Dashboard data types
+ */
+interface SalesPerformanceData {
+  totalRevenue: string;
+  totalCOGS: string;
+  totalMargin: string;
+  avgMarginPercent: string;
+  orderCount: number;
+  averageOrderValue: string;
+  revenueGrowth: string;
+  previousPeriodRevenue: string;
+}
+
+interface ARAgingData {
+  current: string;
+  days30: string;
+  days60: string;
+  days90: string;
+  total: string;
+  transactionCount: number;
+}
+
+interface InventoryValuationData {
+  totalValue: string;
+  totalUnits: string;
+  batchCount: number;
+  averageValuePerUnit: string;
+}
+
+type TopProductData = Record<string, string | number>;
+type TopClientData = Record<string, string | number>;
+
+interface DashboardData {
+  salesPerformance: SalesPerformanceData;
+  arAging: ARAgingData;
+  inventoryValuation: InventoryValuationData;
+  topProducts: TopProductData[];
+  topClients: TopClientData[];
+  generatedAt: string;
+}
 
 /**
  * Get sales performance metrics
@@ -15,7 +55,7 @@ import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 export async function getSalesPerformance(
   startDate: Date,
   endDate: Date
-): Promise<any> {
+): Promise<SalesPerformanceData> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -68,7 +108,7 @@ export async function getSalesPerformance(
 /**
  * Get AR aging report for dashboard widget
  */
-export async function getARAgingReport(): Promise<any> {
+export async function getARAgingReport(): Promise<ARAgingData> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -125,7 +165,7 @@ export async function getARAgingReport(): Promise<any> {
 /**
  * Get inventory valuation
  */
-export async function getInventoryValuation(): Promise<any> {
+export async function getInventoryValuation(): Promise<InventoryValuationData> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -165,7 +205,7 @@ export async function getTopPerformingProducts(
   startDate: Date,
   endDate: Date,
   limit: number = 10
-): Promise<any[]> {
+): Promise<Array<Record<string, string | number>>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -240,7 +280,7 @@ export async function getTopClients(
   startDate: Date,
   endDate: Date,
   limit: number = 10
-): Promise<any[]> {
+): Promise<Array<Record<string, string | number>>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -306,7 +346,7 @@ export async function getTopClients(
 export async function getProfitabilityMetrics(
   startDate: Date,
   endDate: Date
-): Promise<any> {
+): Promise<{ summary: SalesPerformanceData; topProducts: TopProductData[]; topClients: TopClientData[] }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -331,7 +371,7 @@ export async function getProfitabilityMetrics(
 export async function getDashboardData(
   startDate: Date,
   endDate: Date
-): Promise<any> {
+): Promise<DashboardData> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -388,33 +428,33 @@ export async function exportDashboardData(
 
     csv += "Sales Performance\n";
     csv += "Metric,Value\n";
-    csv += `Total Revenue,${data.salesPerformance.totalRevenue}\n`;
-    csv += `Total COGS,${data.salesPerformance.totalCOGS}\n`;
-    csv += `Total Margin,${data.salesPerformance.totalMargin}\n`;
-    csv += `Avg Margin %,${data.salesPerformance.avgMarginPercent}\n`;
-    csv += `Order Count,${data.salesPerformance.orderCount}\n`;
-    csv += `Avg Order Value,${data.salesPerformance.averageOrderValue}\n`;
-    csv += `Revenue Growth %,${data.salesPerformance.revenueGrowth}\n\n`;
+    csv += `Total Revenue,${String(data.salesPerformance.totalRevenue)}\n`;
+    csv += `Total COGS,${String(data.salesPerformance.totalCOGS)}\n`;
+    csv += `Total Margin,${String(data.salesPerformance.totalMargin)}\n`;
+    csv += `Avg Margin %,${String(data.salesPerformance.avgMarginPercent)}\n`;
+    csv += `Order Count,${String(data.salesPerformance.orderCount)}\n`;
+    csv += `Avg Order Value,${String(data.salesPerformance.averageOrderValue)}\n`;
+    csv += `Revenue Growth %,${String(data.salesPerformance.revenueGrowth)}\n\n`;
 
     csv += "AR Aging\n";
     csv += "Period,Amount\n";
-    csv += `Current (0-30 days),${data.arAging.current}\n`;
-    csv += `31-60 days,${data.arAging.days30}\n`;
-    csv += `61-90 days,${data.arAging.days60}\n`;
-    csv += `90+ days,${data.arAging.days90}\n`;
-    csv += `Total,${data.arAging.total}\n\n`;
+    csv += `Current (0-30 days),${String(data.arAging.current)}\n`;
+    csv += `31-60 days,${String(data.arAging.days30)}\n`;
+    csv += `61-90 days,${String(data.arAging.days60)}\n`;
+    csv += `90+ days,${String(data.arAging.days90)}\n`;
+    csv += `Total,${String(data.arAging.total)}\n\n`;
 
     csv += "Top Products\n";
     csv += "Product ID,Revenue,COGS,Margin,Margin %,Quantity,Sales Count\n";
     for (const product of data.topProducts) {
-      csv += `${product.productId},${product.revenue},${product.cogs},${product.margin},${product.marginPercent},${product.quantity},${product.salesCount}\n`;
+      csv += `${String(product.productId)},${String(product.revenue)},${String(product.cogs)},${String(product.margin)},${String(product.marginPercent)},${String(product.quantity)},${String(product.salesCount)}\n`;
     }
     csv += "\n";
 
     csv += "Top Clients\n";
     csv += "Client ID,Revenue,Order Count,Margin,Margin %,Avg Order Value\n";
     for (const client of data.topClients) {
-      csv += `${client.clientId},${client.revenue},${client.orderCount},${client.margin},${client.marginPercent},${client.averageOrderValue}\n`;
+      csv += `${String(client.clientId)},${String(client.revenue)},${String(client.orderCount)},${String(client.margin)},${String(client.marginPercent)},${String(client.averageOrderValue)}\n`;
     }
 
     return csv;

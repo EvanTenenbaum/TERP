@@ -20,6 +20,7 @@
 
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // Configuration
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -36,7 +37,7 @@ const colors = {
 };
 
 function log(message: string, color: keyof typeof colors = "reset") {
-  console.log(`${colors[color]}${message}${colors.reset}`);
+  logger.info(`${colors[color]}${message}${colors.reset}`);
 }
 
 function logStep(step: number, message: string) {
@@ -71,7 +72,7 @@ interface VerificationRow {
   avg_quantity: number;
 }
 
-async function checkTableExists(db: any, tableName: string): Promise<boolean> {
+async function checkTableExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string): Promise<boolean> {
   try {
     const result = await db.execute(sql`
       SELECT COUNT(*) as count 
@@ -79,13 +80,13 @@ async function checkTableExists(db: any, tableName: string): Promise<boolean> {
       WHERE table_schema = DATABASE() 
       AND table_name = ${tableName}
     `);
-    return (result[0][0] as any).count > 0;
+    return (result[0][0] as { count: number }).count > 0;
   } catch (error) {
     return false;
   }
 }
 
-async function checkColumnExists(db: any, tableName: string, columnName: string): Promise<boolean> {
+async function checkColumnExists(db: { execute: (sql: unknown) => Promise<unknown[]> }, tableName: string, columnName: string): Promise<boolean> {
   try {
     const result = await db.execute(sql`
       SELECT COUNT(*) as count 
@@ -94,7 +95,7 @@ async function checkColumnExists(db: any, tableName: string, columnName: string)
       AND table_name = ${tableName}
       AND column_name = ${columnName}
     `);
-    return (result[0][0] as any).count > 0;
+    return (result[0][0] as { count: number }).count > 0;
   } catch (error) {
     return false;
   }
@@ -166,7 +167,7 @@ async function setupWorkflowQueue() {
         AND column_name = 'statusId'
       `);
       
-      const columnType = (columnInfo[0][0] as any).COLUMN_TYPE;
+      const columnType = (columnInfo[0][0] as { COLUMN_TYPE: string }).COLUMN_TYPE;
       if (VERBOSE) {
         logInfo(`Current statusId column type: ${columnType}`);
       }
@@ -351,7 +352,7 @@ async function setupWorkflowQueue() {
       throw new Error("Failed to count batches needing migration");
     }
     
-    const batchesToMigrate = (countResult[0][0] as any).count;
+    const batchesToMigrate = (countResult[0][0] as { count: number }).count;
 
     if (batchesToMigrate === 0) {
       logInfo("All batches already have workflow statuses assigned");
@@ -376,7 +377,7 @@ async function setupWorkflowQueue() {
             SET statusId = ${readyForSaleId}
             WHERE statusId IS NULL AND onHandQty = 0
           `);
-          logInfo(`  ✓ Assigned ${(result1 as any).rowsAffected || 0} batches to Ready for Sale (sold out)`);
+          logInfo(`  ✓ Assigned ${(result1 as { rowsAffected?: number }).rowsAffected || 0} batches to Ready for Sale (sold out)`);
           
           // On Hold: Deterministic 10% (id % 10 = 0)
           const result2 = await db.execute(sql`
@@ -384,7 +385,7 @@ async function setupWorkflowQueue() {
             SET statusId = ${onHoldId}
             WHERE statusId IS NULL AND MOD(id, 10) = 0
           `);
-          logInfo(`  ✓ Assigned ${(result2 as any).rowsAffected || 0} batches to On Hold (deterministic)`);
+          logInfo(`  ✓ Assigned ${(result2 as { rowsAffected?: number }).rowsAffected || 0} batches to On Hold (deterministic)`);
           
           // Quality Check: High quantity (> 500)
           const result3 = await db.execute(sql`
@@ -392,7 +393,7 @@ async function setupWorkflowQueue() {
             SET statusId = ${qualityCheckId}
             WHERE statusId IS NULL AND onHandQty > 500
           `);
-          logInfo(`  ✓ Assigned ${(result3 as any).rowsAffected || 0} batches to Quality Check (high qty)`);
+          logInfo(`  ✓ Assigned ${(result3 as { rowsAffected?: number }).rowsAffected || 0} batches to Quality Check (high qty)`);
           
           // Packaging: Low to medium quantity (1-299)
           const result4 = await db.execute(sql`
@@ -400,7 +401,7 @@ async function setupWorkflowQueue() {
             SET statusId = ${packagingId}
             WHERE statusId IS NULL AND onHandQty > 0 AND onHandQty < 300
           `);
-          logInfo(`  ✓ Assigned ${(result4 as any).rowsAffected || 0} batches to Packaging (low-med qty)`);
+          logInfo(`  ✓ Assigned ${(result4 as { rowsAffected?: number }).rowsAffected || 0} batches to Packaging (low-med qty)`);
           
           // Lab Testing: Everything else (300-500 and any remaining)
           const result5 = await db.execute(sql`
@@ -408,7 +409,7 @@ async function setupWorkflowQueue() {
             SET statusId = ${labTestingId}
             WHERE statusId IS NULL
           `);
-          logInfo(`  ✓ Assigned ${(result5 as any).rowsAffected || 0} batches to Lab Testing (remaining)`);
+          logInfo(`  ✓ Assigned ${(result5 as { rowsAffected?: number }).rowsAffected || 0} batches to Lab Testing (remaining)`);
 
           // Commit transaction
           await db.execute(sql`COMMIT`);
@@ -467,7 +468,7 @@ async function setupWorkflowQueue() {
     const unmigrated = await db.execute(sql`
       SELECT COUNT(*) as count FROM batches WHERE statusId IS NULL
     `);
-    const unmigratedCount = (unmigrated[0][0] as any).count;
+    const unmigratedCount = (unmigrated[0][0] as { count: number }).count;
     
     if (unmigratedCount > 0) {
       logWarning(`Warning: ${unmigratedCount} batches still have NULL statusId`);
@@ -489,7 +490,7 @@ async function setupWorkflowQueue() {
 
   } catch (error) {
     logError("\nError during setup:");
-    console.error(error);
+    logger.error(error);
     
     if (!DRY_RUN) {
       logError("\n⚠️  Database may be in an inconsistent state");
@@ -510,6 +511,6 @@ setupWorkflowQueue()
   })
   .catch((error) => {
     logError("\n❌ Setup failed");
-    console.error(error);
+    logger.error(error);
     process.exit(1);
   });

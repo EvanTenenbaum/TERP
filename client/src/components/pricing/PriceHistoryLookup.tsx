@@ -24,10 +24,9 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   History,
-  TrendingUp,
   TrendingDown,
+  TrendingUp,
   Minus,
-  DollarSign,
   ShoppingCart,
   Truck,
   Info,
@@ -183,9 +182,9 @@ export function PriceHistoryLookup({
                       <p className="text-xs text-muted-foreground">
                         Recent sales to client
                       </p>
-                      {saleData.clientPriceHistory.slice(0, 3).map((h, i) => (
+                      {saleData.clientPriceHistory.slice(0, 3).map((h, _i) => (
                         <div
-                          key={`history-${h.date}-${h.price}-${i}`}
+                          key={`history-${h.date}-${h.price}`}
                           className="flex items-center justify-between text-xs"
                         >
                           <span>{formatDate(h.date)}</span>

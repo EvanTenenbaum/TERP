@@ -35,6 +35,7 @@ const customRouteNames: Record<string, string> = {
   dashboard: "Dashboard",
   rules: "Rules",
   profiles: "Profiles",
+  orders: "Sales", // TER-196: "Orders" → "Sales" terminology
 };
 
 /**

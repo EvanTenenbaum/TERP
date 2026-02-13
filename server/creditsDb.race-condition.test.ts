@@ -16,7 +16,7 @@ vi.mock("./db", () => ({
 
 // Mock the dbTransaction module
 vi.mock("./_core/dbTransaction", () => ({
-  withTransaction: vi.fn((callback: any) => callback({})),
+  withTransaction: vi.fn((callback: (db: unknown) => unknown) => callback({})),
 }));
 
 import { getDb } from "./db";
@@ -24,7 +24,7 @@ import { withTransaction } from "./_core/dbTransaction";
 import { applyCredit as _applyCredit, getCreditById as _getCreditById } from "./creditsDb";
 
 describe("Credit Application Race Condition Protection", () => {
-  let mockDb: any;
+  let mockDb: Record<string, unknown>;
   const testCreditId = 1;
   const testInvoiceId = 100;
   const testUserId = 10;
@@ -82,8 +82,8 @@ describe("Credit Application Race Condition Protection", () => {
       transaction: vi.fn((callback) => callback(mockDb)),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as any);
-    vi.mocked(withTransaction).mockImplementation((callback: any) => callback(mockDb));
+    vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
+    vi.mocked(withTransaction).mockImplementation((callback: (db: unknown) => unknown) => callback(mockDb));
   });
 
   it("should prevent double-application when concurrent requests use same idempotency key", async () => {

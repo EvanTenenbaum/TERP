@@ -351,7 +351,7 @@ export const sessionTimeoutService = {
 
     return sessions.map((s) => ({
       id: s.id,
-      expiresAt: s.expiresAt!,
+      expiresAt: s.expiresAt ?? new Date(),
       roomCode: s.roomCode,
     }));
   },

@@ -16,12 +16,15 @@ interface OrderTotalsPanelProps {
   totals: OrderTotals;
   warnings: string[];
   isValid: boolean;
+  /** TER-205: Hide COGS/margin in customer-facing contexts */
+  hideInternalMetrics?: boolean;
 }
 
 export function OrderTotalsPanel({
   totals,
   warnings,
   isValid,
+  hideInternalMetrics = false,
 }: OrderTotalsPanelProps) {
   const fmt = (value: number) => `$${value.toFixed(2)}`;
 
@@ -48,32 +51,37 @@ export function OrderTotalsPanel({
           <span className="font-medium">{fmt(totals.subtotal)}</span>
         </div>
 
-        {/* COGS */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground flex items-center gap-1">
-            <Package className="h-3 w-3" />
-            Total COGS
-          </span>
-          <span className="font-medium text-muted-foreground">
-            {fmt(totals.totalCogs)}
-          </span>
-        </div>
+        {/* COGS + Margin — hidden in customer-facing mode (TER-205) */}
+        {!hideInternalMetrics && (
+          <>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Package className="h-3 w-3" />
+                Total COGS
+              </span>
+              <span className="font-medium text-muted-foreground">
+                {fmt(totals.totalCogs)}
+              </span>
+            </div>
 
-        {/* Margin */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
-            Total Margin
-          </span>
-          <div className="flex items-center gap-2">
-            <span className={`font-semibold ${getMarginColor(totals.avgMarginPercent)}`}>
-              {fmt(totals.totalMargin)}
-            </span>
-            <Badge variant="secondary" className="text-xs">
-              {totals.avgMarginPercent.toFixed(1)}%
-            </Badge>
-          </div>
-        </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Total Margin
+              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-semibold ${getMarginColor(totals.avgMarginPercent)}`}
+                >
+                  {fmt(totals.totalMargin)}
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {totals.avgMarginPercent.toFixed(1)}%
+                </Badge>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Adjustment */}
         {totals.adjustmentAmount !== 0 && (
@@ -83,7 +91,9 @@ export function OrderTotalsPanel({
               <span className="text-sm text-muted-foreground">
                 {totals.adjustmentAmount < 0 ? "Discount" : "Markup"}
               </span>
-              <span className={`font-medium ${totals.adjustmentAmount < 0 ? "text-red-600" : "text-green-600"}`}>
+              <span
+                className={`font-medium ${totals.adjustmentAmount < 0 ? "text-red-600" : "text-green-600"}`}
+              >
                 {totals.adjustmentAmount < 0 ? "-" : "+"}
                 {fmt(Math.abs(totals.adjustmentAmount))}
               </span>
@@ -103,8 +113,12 @@ export function OrderTotalsPanel({
           <>
             <Separator />
             <div className="space-y-2">
-              {warnings.map((warning, index) => (
-                <Alert key={`warning-${index}-${warning.substring(0, 30)}`} variant="default" className="py-2">
+              {warnings.map((warning) => (
+                <Alert
+                  key={`warning-${warning.substring(0, 40)}`}
+                  variant="default"
+                  className="py-2"
+                >
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-xs">
                     {warning}
@@ -125,4 +139,3 @@ export function OrderTotalsPanel({
     </Card>
   );
 }
-

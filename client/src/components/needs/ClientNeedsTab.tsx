@@ -4,12 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NeedForm } from "./NeedForm";
 import { MatchCard } from "./MatchCard";
-import { MatchBadge } from "./MatchBadge";
-import { Plus, AlertCircle, Package, TrendingUp, Clock, Loader2 } from "lucide-react";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Plus, Package, TrendingUp, Loader2 } from "lucide-react";
 
 /**
  * Client Needs Tab
@@ -54,8 +55,8 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const [findingMatchesForNeed, setFindingMatchesForNeed] = useState<number | null>(null);
   
   // Find matches for existing need
-  const { data: matchesData, refetch: refetchMatches } = trpc.clientNeeds.findMatches.useQuery(
-    { needId: findingMatchesForNeed! },
+  const { refetch: refetchMatches } = trpc.clientNeeds.findMatches.useQuery(
+    { needId: findingMatchesForNeed ?? 0 },
     { enabled: findingMatchesForNeed !== null }
   );
 
@@ -98,7 +99,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const purchasePatterns = historyData?.data || [];
 
   const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
       URGENT: "destructive",
       HIGH: "default",
       MEDIUM: "secondary",
@@ -231,7 +232,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
                         <div className="grid gap-3">
                           {selectedNeed.matches.slice(0, 3).map((match: any, idx: number) => (
                             <MatchCard
-                              key={`match-${match.batchId || match.sku}-${idx}`}
+                              key={`match-${match.batchId || match.sku || idx}`}
                               match={match}
                               onCreateQuote={() => handleCreateQuote(need, [match])}
                             />
@@ -270,7 +271,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
           ) : (
             <div className="grid gap-4">
               {purchasePatterns.map((pattern: any, idx: number) => (
-                <Card key={`pattern-${pattern.strain || pattern.category}-${idx}`}>
+                <Card key={`history-pattern-${pattern.strain || pattern.category || idx}`}>
                   <CardHeader>
                     <CardTitle className="text-base">
                       {pattern.strain || pattern.category || "Unknown Product"}

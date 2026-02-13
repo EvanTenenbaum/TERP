@@ -67,7 +67,7 @@ export async function saveUserWidgetLayout(
     width: number;
     height: number;
     isVisible: boolean;
-    config?: any;
+    config?: Record<string, unknown>;
   }>
 ) {
   const db = await getDb();
@@ -147,7 +147,7 @@ export async function saveRoleDefaultLayout(
     width: number;
     height: number;
     isVisible: boolean;
-    config?: any;
+    config?: Record<string, unknown>;
   }>
 ) {
   const db = await getDb();

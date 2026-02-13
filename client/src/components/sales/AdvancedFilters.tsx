@@ -43,7 +43,6 @@ import type {
   PricedInventoryItem,
   InventoryFilters,
   InventorySortConfig,
-  DEFAULT_FILTERS,
 } from "./types";
 
 interface FilterOptions {

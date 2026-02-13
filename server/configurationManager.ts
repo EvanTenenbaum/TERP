@@ -1,7 +1,11 @@
+import { logger } from './_core/logger';
+
 /**
  * Configuration Management
+
+/**
  * Centralized system configuration with validation and history
- * 
+ *
  * Features:
  * - Type-safe configuration access
  * - Configuration validation
@@ -132,8 +136,8 @@ interface ConfigChange {
   timestamp: Date;
   userId: number;
   path: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   reason?: string;
 }
 
@@ -152,13 +156,15 @@ export function getConfiguration(): SystemConfiguration {
  * @param path Configuration path (e.g., "accounting.autoPostGLEntries")
  * @returns Configuration value
  */
-export function getConfigValue(path: string): any {
+export function getConfigValue(path: string): unknown {
   const parts = path.split(".");
-  let value: any = currentConfig;
+  let value: unknown = currentConfig;
   
   for (const part of parts) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (value && typeof value === "object" && part in value) {
-      value = value[part];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value = (value as Record<string, unknown>)[part];
     } else {
       return undefined;
     }
@@ -176,7 +182,7 @@ export function getConfigValue(path: string): any {
  */
 export function setConfigValue(
   path: string,
-  value: any,
+  value: unknown,
   userId: number,
   reason?: string
 ): void {
@@ -190,6 +196,7 @@ export function setConfigValue(
     throw new Error("Invalid configuration path");
   }
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let target: any = currentConfig;
   for (const part of parts) {
     if (!(part in target)) {
@@ -218,7 +225,7 @@ export function setConfigValue(
     reason
   });
   
-  console.log(`Configuration changed: ${path} = ${value} (by user ${userId})`);
+  logger.info(`Configuration changed: ${path} = ${value} (by user ${userId})`);
 }
 
 /**

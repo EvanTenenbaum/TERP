@@ -45,10 +45,12 @@ export class InventoryTracker {
       });
 
       // Index by product
-      if (!this.productBatches.has(batch.productId)) {
-        this.productBatches.set(batch.productId, []);
+      let productBatchList = this.productBatches.get(batch.productId);
+      if (!productBatchList) {
+        productBatchList = [];
+        this.productBatches.set(batch.productId, productBatchList);
       }
-      this.productBatches.get(batch.productId)!.push(batch.id);
+      productBatchList.push(batch.id);
     }
   }
 
@@ -77,8 +79,10 @@ export class InventoryTracker {
   getAvailableBatchesForProduct(productId: number): BatchInventory[] {
     const batchIds = this.productBatches.get(productId) || [];
     return batchIds
-      .map((id) => this.batches.get(id)!)
-      .filter((batch) => batch.availableQuantity > 0 && batch.status === "LIVE");
+      .map((id) => this.batches.get(id))
+      .filter((batch): batch is BatchInventory => 
+        batch !== undefined && batch.availableQuantity > 0 && batch.status === "LIVE"
+      );
   }
 
   /**
@@ -214,10 +218,12 @@ export class InventoryTracker {
       });
 
       // Index by product
-      if (!this.productBatches.has(productId)) {
-        this.productBatches.set(productId, []);
+      let productBatchList = this.productBatches.get(productId);
+      if (!productBatchList) {
+        productBatchList = [];
+        this.productBatches.set(productId, productBatchList);
       }
-      this.productBatches.get(productId)!.push(batchId);
+      productBatchList.push(batchId);
     }
   }
 

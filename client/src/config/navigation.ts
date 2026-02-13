@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   ShoppingCart,
   FileText,
-  Package,
   PackageCheck,
   Beaker,
   Truck,
@@ -18,17 +17,11 @@ import {
   Video,
   Flag,
   Layers,
-  Heart,
   PackageOpen,
   CheckSquare,
-  Building2,
   Camera,
   Trophy, // NAV-006: Leaderboard
-  Target, // NAV-007: Client Needs
-  GitMerge, // NAV-008: Matchmaking
-  ClipboardList, // NAV-009: Quotes
-  RotateCcw, // NAV-010: Returns
-  Store, // NAV-011: Vendor Supply
+  GitMerge, // Consolidated demand/supply workspace
   Tag, // NAV-012: Pricing Rules
   Workflow, // NAV-013: Workflow Queue
   Clock, // MEET-048: Time Clock
@@ -37,6 +30,13 @@ import {
   MapPin, // TERP-0005: Locations
   type LucideIcon,
 } from "lucide-react";
+import {
+  CREDITS_WORKSPACE,
+  DEMAND_SUPPLY_WORKSPACE,
+  INVENTORY_WORKSPACE,
+  RELATIONSHIPS_WORKSPACE,
+  SALES_WORKSPACE,
+} from "@/config/workspaces";
 
 export type NavigationGroupKey = "sales" | "inventory" | "finance" | "admin";
 
@@ -69,15 +69,27 @@ export const navigationItems: NavigationItem[] = [
     group: "sales",
     ariaLabel: "Notifications and messages inbox",
   },
-  { name: "Clients", path: "/clients", icon: Users, group: "sales" },
-  { name: "Orders", path: "/orders", icon: ShoppingCart, group: "sales" },
-  // NAV-001: Added Interest List for tracking client product interests
+
   {
-    name: "Interest List",
-    path: "/interest-list",
-    icon: Heart,
+    name: SALES_WORKSPACE.title,
+    path: "/sales",
+    icon: ShoppingCart,
     group: "sales",
-    ariaLabel: "Track client product interests and convert to orders",
+    ariaLabel: SALES_WORKSPACE.description,
+  },
+  {
+    name: DEMAND_SUPPLY_WORKSPACE.title,
+    path: "/demand-supply",
+    icon: GitMerge,
+    group: "sales",
+    ariaLabel: DEMAND_SUPPLY_WORKSPACE.description,
+  },
+  {
+    name: RELATIONSHIPS_WORKSPACE.title,
+    path: "/relationships",
+    icon: Users,
+    group: "sales",
+    ariaLabel: RELATIONSHIPS_WORKSPACE.description,
   },
   // NAV-002: Added Pick & Pack for order fulfillment workflow
   // TERP-0005: Moved from Sales to Inventory group
@@ -120,48 +132,13 @@ export const navigationItems: NavigationItem[] = [
     group: "sales",
     ariaLabel: "Sales performance leaderboard",
   },
-  // NAV-007: Client Needs for tracking customer requirements
-  // QA-002 FIX: Changed path from /client-needs to /needs to match App.tsx route
-  {
-    name: "Client Needs",
-    path: "/needs",
-    icon: Target,
-    group: "sales",
-    ariaLabel: "Track client product needs and requirements",
-  },
-  // NAV-008: Matchmaking for product-client matching
-  {
-    name: "Matchmaking",
-    path: "/matchmaking",
-    icon: GitMerge,
-    group: "sales",
-    ariaLabel: "Match products with client needs",
-  },
-  // NAV-009: Quotes for quote management
-  {
-    name: "Quotes",
-    path: "/quotes",
-    icon: ClipboardList,
-    group: "sales",
-    ariaLabel: "Manage sales quotes",
-  },
-  // NAV-010: Returns for order returns processing
-  {
-    name: "Returns",
-    path: "/returns",
-    icon: RotateCcw,
-    group: "sales",
-    ariaLabel: "Process order returns",
-  },
-
-  { name: "Products", path: "/products", icon: Package, group: "inventory" },
   {
     // MEET-053: User-friendly terminology - "Inventory" instead of "Batches"
-    name: "Inventory",
+    name: INVENTORY_WORKSPACE.title,
     path: "/inventory",
     icon: PackageCheck,
     group: "inventory",
-    ariaLabel: "View and manage inventory items",
+    ariaLabel: INVENTORY_WORKSPACE.description,
   },
   // NAV-003: Added Photography Queue for product photography workflow
   {
@@ -178,22 +155,6 @@ export const navigationItems: NavigationItem[] = [
     icon: Truck,
     ariaLabel: "Purchase order queue",
     group: "inventory",
-  },
-  // NAV-004: Added Vendors for vendor management and inventory visibility
-  {
-    name: "Vendors",
-    path: "/vendors",
-    icon: Building2,
-    group: "inventory",
-    ariaLabel: "Vendor management with products and inventory",
-  },
-  // NAV-011: Vendor Supply for tracking vendor inventory
-  {
-    name: "Vendor Supply",
-    path: "/vendor-supply",
-    icon: Store,
-    group: "inventory",
-    ariaLabel: "Track vendor supply and availability",
   },
   {
     name: "Spreadsheet View",
@@ -214,20 +175,11 @@ export const navigationItems: NavigationItem[] = [
 
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
   {
-    // QA-W2-008: Use Coins icon to avoid duplicate with AR/AP
-    // FEAT-016: Renamed from "Credits" to "Credit Settings" for clarity
-    name: "Credit Settings",
-    path: "/credit-settings",
+    name: CREDITS_WORKSPACE.title,
+    path: "/credits",
     icon: Coins,
     group: "finance",
-  },
-  // NAV-017: Credits management page - issue, apply, void credits
-  {
-    name: "Credits",
-    path: "/credits",
-    icon: CreditCard,
-    group: "finance",
-    ariaLabel: "Issue and manage customer credits",
+    ariaLabel: CREDITS_WORKSPACE.description,
   },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
   // NAV-012: Pricing Rules for managing pricing strategies

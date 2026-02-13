@@ -168,7 +168,9 @@ export function ScratchPad({ open, onOpenChange }: ScratchPadProps) {
               {isLoading ? (
                 // Loading skeletons
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`skeleton-${i}`} className="space-y-2 p-4 border rounded-lg">
+                  <div
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={`scratchpad-skeleton-${i}`} className="space-y-2 p-4 border rounded-lg">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-3 w-20" />
@@ -187,7 +189,7 @@ export function ScratchPad({ open, onOpenChange }: ScratchPadProps) {
                 </div>
               ) : (
                 // Notes list
-                notes.map((note: any) => (
+                notes.map((note: { id: number; content: string; isCompleted: boolean; createdAt: string | Date }) => (
                   <NoteCard
                     key={note.id}
                     noteId={note.id}

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import * as salesSheetEnhancements from "../salesSheetEnhancements";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 
 export const salesSheetEnhancementsRouter = router({
   // Version control

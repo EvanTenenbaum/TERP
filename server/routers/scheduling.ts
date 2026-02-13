@@ -1354,8 +1354,8 @@ export const schedulingRouter = router({
 
       // Get check-in status for each booking
       const eventIds = bookings
-        .filter((b) => b.calendarEvent?.id)
-        .map((b) => b.calendarEvent!.id);
+        .filter((b): b is typeof b & { calendarEvent: NonNullable<typeof b['calendarEvent']> } => !!b.calendarEvent?.id)
+        .map((b) => b.calendarEvent.id);
 
       let checkIns: Array<typeof appointmentCheckIns.$inferSelect> = [];
       if (eventIds.length > 0) {

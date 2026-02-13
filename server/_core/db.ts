@@ -14,11 +14,12 @@ export async function getDbInstance() {
 }
 
 // For query builder pattern used in VIP portal
+// Using unknown with type assertions where needed for Drizzle compatibility
 export const dbQueryBuilder = {
-  query: {} as any,
-  select: () => ({} as any),
-  insert: () => ({} as any),
-  update: () => ({} as any),
-  delete: () => ({} as any),
-  execute: () => ({} as any),
+  query: {} as unknown,
+  select: () => ({} as unknown),
+  insert: () => ({} as unknown),
+  update: () => ({} as unknown),
+  delete: () => ({} as unknown),
+  execute: () => ({} as unknown),
 };

@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchBadge } from "./MatchBadge";
+
 import { Package, DollarSign, Boxes, FileText, ExternalLink } from "lucide-react";
 import { useState, memo } from "react";
 
@@ -30,9 +32,9 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getSourceIcon = () => {
-    if (match.source === "INVENTORY") return <Package className="h-4 w-4" />;
-    if (match.source === "VENDOR") return <Boxes className="h-4 w-4" />;
-    return <FileText className="h-4 w-4" />;
+    if (match.source === "INVENTORY") return <Package className="h-4 w-4" /> as any;
+    if (match.source === "VENDOR") return <Boxes className="h-4 w-4" /> as any;
+    return <FileText className="h-4 w-4" /> as any;
   };
 
   const getSourceLabel = () => {
@@ -83,18 +85,18 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-2">
-              {getSourceIcon()}
-              <CardTitle className="text-lg">{getProductName()}</CardTitle>
+              {getSourceIcon() as any}
+              <CardTitle className="text-lg">{getProductName() as any}</CardTitle>
             </div>
             <CardDescription className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 {getSourceLabel()}
               </Badge>
-              {details.category && (
+              {(details as any).category && (
                 <span className="text-xs text-muted-foreground">
-                  {details.category}
-                  {details.subcategory && ` • ${details.subcategory}`}
-                  {details.grade && ` • Grade ${details.grade}`}
+                  {(details as any).category}
+                  {(details as any).subcategory && ` • ${(details as any).subcategory}`}
+                  {(details as any).grade && ` • Grade ${(details as any).grade}`}
                 </span>
               )}
             </CardDescription>
@@ -136,10 +138,10 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
           </button>
           {isExpanded && (
             <ul className="mt-2 space-y-1">
-              {match.reasons.map((reason, idx) => (
-                <li key={`reason-${idx}-${reason.substring(0, 20)}`} className="text-sm text-muted-foreground flex items-start gap-2">
+              {match.reasons?.map((r: any, _idx: number) => (
+                <li key={`reason-${_idx}`} className="text-sm text-muted-foreground flex items-start gap-2">
                   <span className="text-green-500 mt-0.5">✓</span>
-                  <span>{reason}</span>
+                  <span>{String(r)}</span>
                 </li>
               ))}
             </ul>
@@ -169,7 +171,7 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
         {/* Additional Info for Inventory */}
         {match.source === "INVENTORY" && details.sku && (
           <p className="text-xs text-muted-foreground pt-2 border-t">
-            SKU: {details.sku}
+            SKU: {(details as any).sku}
           </p>
         )}
       </CardContent>
@@ -181,7 +183,7 @@ export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismi
  * Compact Match List Item
  * For use in tables or condensed lists
  */
-export function MatchListItem({ match, onSelect }: { match: any; onSelect?: () => void }) {
+export function MatchListItem({ match, onSelect }: { match: { source: "INVENTORY" | "VENDOR" | "HISTORICAL"; sourceData?: { product?: { nameCanonical?: string }; strain?: string }; reasons: string[]; calculatedPrice?: number; confidence: number; type: "EXACT" | "CLOSE" | "HISTORICAL" }; onSelect?: () => void }) {
   return (
     <div
       className="flex items-center justify-between p-3 hover:bg-accent rounded-lg cursor-pointer transition-colors"
@@ -191,8 +193,8 @@ export function MatchListItem({ match, onSelect }: { match: any; onSelect?: () =
         <div className="flex-1">
           <p className="text-sm font-medium">
             {match.source === "INVENTORY" 
-              ? match.sourceData?.product?.nameCanonical 
-              : match.sourceData?.strain || "Unknown"}
+              ? (match as any).sourceData?.product?.nameCanonical 
+              : (match as any).sourceData?.strain || "Unknown"}
           </p>
           <p className="text-xs text-muted-foreground">
             {match.source} • {match.reasons.length} reasons

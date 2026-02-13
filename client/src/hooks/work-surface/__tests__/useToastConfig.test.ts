@@ -8,7 +8,7 @@
  * - Duration: Success 3s, Info 4s, Warning 5s, Error persist
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import {
   useToastConfig,
@@ -22,14 +22,14 @@ import {
 // Mock sonner toast
 vi.mock("sonner", () => ({
   toast: Object.assign(
-    vi.fn((message: string, options?: unknown) => `toast-${Date.now()}`),
+    vi.fn((_message: string, _options?: unknown) => `toast-${Date.now()}`),
     {
-      success: vi.fn((message: string, options?: unknown) => `success-${Date.now()}`),
-      error: vi.fn((message: string, options?: unknown) => `error-${Date.now()}`),
-      warning: vi.fn((message: string, options?: unknown) => `warning-${Date.now()}`),
-      info: vi.fn((message: string, options?: unknown) => `info-${Date.now()}`),
-      loading: vi.fn((message: string, options?: unknown) => `loading-${Date.now()}`),
-      promise: vi.fn(<T,>(promise: Promise<T>, options: unknown) => promise),
+      success: vi.fn((_message: string, _options?: unknown) => `success-${Date.now()}`),
+      error: vi.fn((_message: string, _options?: unknown) => `error-${Date.now()}`),
+      warning: vi.fn((_message: string, _options?: unknown) => `warning-${Date.now()}`),
+      info: vi.fn((_message: string, _options?: unknown) => `info-${Date.now()}`),
+      loading: vi.fn((_message: string, _options?: unknown) => `loading-${Date.now()}`),
+      promise: vi.fn(<T,>(promise: Promise<T>, _options: unknown) => promise),
       dismiss: vi.fn(),
     }
   ),

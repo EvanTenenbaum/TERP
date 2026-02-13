@@ -1,4 +1,11 @@
-import { lazy, Suspense, type FC } from "react";
+import {
+  lazy,
+  Suspense,
+  type FC,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -7,9 +14,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardHomePage from "./pages/DashboardHomePage";
-// Legacy Inventory page removed - now using InventoryWorkSurface directly
-import ProductsPage from "@/pages/ProductsPage";
-import VendorsPage from "@/pages/VendorsPage";
 import UsersPage from "@/pages/UsersPage";
 import { AppShell } from "./components/layout/AppShell";
 import Settings from "@/pages/Settings";
@@ -24,8 +28,11 @@ import BankTransactions from "@/pages/accounting/BankTransactions";
 import Expenses from "@/pages/accounting/Expenses";
 import CashLocations from "@/pages/CashLocations";
 import ClientProfilePage from "@/pages/ClientProfilePage";
-import CreditSettingsPage from "@/pages/CreditSettingsPage";
-import CreditsPage from "@/pages/CreditsPage"; // NAV-017: Credits management page
+import CreditsWorkspacePage from "@/pages/CreditsWorkspacePage";
+import DemandSupplyWorkspacePage from "@/pages/DemandSupplyWorkspacePage";
+import InventoryWorkspacePage from "@/pages/InventoryWorkspacePage";
+import RelationshipsWorkspacePage from "@/pages/RelationshipsWorkspacePage";
+import SalesWorkspacePage from "@/pages/SalesWorkspacePage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
@@ -33,29 +40,21 @@ import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 // Work Surface components - legacy pages removed, using WorkSurface directly
-import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import InvoicesWorkSurface from "@/components/work-surface/InvoicesWorkSurface";
 import InventoryWorkSurface from "@/components/work-surface/InventoryWorkSurface";
-import ClientsWorkSurface from "@/components/work-surface/ClientsWorkSurface";
 import PurchaseOrdersWorkSurface from "@/components/work-surface/PurchaseOrdersWorkSurface";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import ClientLedgerWorkSurface from "@/components/work-surface/ClientLedgerWorkSurface";
-import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 import AdminSetupPage from "@/pages/AdminSetupPage";
-import NeedsManagementPage from "@/pages/NeedsManagementPage";
-import InterestListPage from "@/pages/InterestListPage";
-import VendorSupplyPage from "@/pages/VendorSupplyPage";
 import VendorRedirect from "@/components/VendorRedirect";
-import ReturnsPage from "@/pages/ReturnsPage";
 import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
 import IntakeReceipts from "@/pages/IntakeReceipts"; // FEAT-008: Intake Verification System
 import FarmerVerification from "@/pages/FarmerVerification"; // FEAT-008: Public farmer verification
-import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
 import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
@@ -88,7 +87,8 @@ import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
-import { useState } from "react";
+import { resolveRelationshipsTab } from "@/lib/navigation/consolidation";
+import { trackLegacyRouteRedirect } from "@/lib/navigation/routeUsageTelemetry";
 import { useLocation, Redirect, useSearch } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
@@ -101,13 +101,85 @@ const withErrorBoundary = (Component: FC<any>) => () => (
   </PageErrorBoundary>
 );
 
+function useTrackLegacyRedirect(params: {
+  from: string;
+  to: string;
+  tab?: string;
+  search?: string;
+}) {
+  const { from, to, tab, search } = params;
+  const trackedDestinationsRef = useRef<Set<string>>(new Set());
+
+  useLayoutEffect(() => {
+    const destinationKey = `${from}|${to}`;
+    if (trackedDestinationsRef.current.has(destinationKey)) {
+      return;
+    }
+
+    trackLegacyRouteRedirect({ from, to, tab, search });
+    trackedDestinationsRef.current.add(destinationKey);
+  }, [from, to, tab, search]);
+}
+
 // QA-003 FIX: Helper component for legacy route redirects that preserves query params
-const RedirectWithSearch = (to: string) => {
+const RedirectWithSearch = (from: string, to: string) => {
   const RedirectComponent: FC = () => {
     const search = useSearch();
-    return <Redirect to={`${to}${search || ""}`} />;
+    const destination = `${to}${search || ""}`;
+
+    useTrackLegacyRedirect({
+      from,
+      to: destination,
+      search: search || undefined,
+    });
+
+    return <Redirect to={destination} />;
   };
   return RedirectComponent;
+};
+
+// Helper for legacy route consolidation that preserves existing query params
+const RedirectWithTab = (from: string, to: string, tab: string) => {
+  const RedirectComponent: FC = () => {
+    const search = useSearch();
+    const params = new URLSearchParams(search);
+
+    params.set("tab", tab);
+
+    const query = params.toString();
+    const destination = `${to}${query ? `?${query}` : ""}`;
+
+    useTrackLegacyRedirect({
+      from,
+      to: destination,
+      tab: params.get("tab") ?? undefined,
+      search: search || undefined,
+    });
+
+    return <Redirect to={destination} />;
+  };
+
+  return RedirectComponent;
+};
+
+// Legacy compatibility: route old client/vendor list entry points into consolidated Relationships workspace.
+const RedirectClientsToRelationships: FC = () => {
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const resolvedTab = resolveRelationshipsTab(search);
+  params.set("tab", resolvedTab);
+
+  const query = params.toString();
+  const destination = `/relationships${query ? `?${query}` : ""}`;
+
+  useTrackLegacyRedirect({
+    from: "/clients",
+    to: destination,
+    tab: resolvedTab,
+    search: search || undefined,
+  });
+
+  return <Redirect to={destination} />;
 };
 
 // MEET-049 FIX: Helper for lazy-loaded components (adds Suspense)
@@ -174,8 +246,20 @@ function Router() {
                   component={withErrorBoundary(DashboardHomePage)}
                 />
                 <Route
+                  path="/sales"
+                  component={withErrorBoundary(SalesWorkspacePage)}
+                />
+                <Route
+                  path="/relationships"
+                  component={withErrorBoundary(RelationshipsWorkspacePage)}
+                />
+                <Route
+                  path="/demand-supply"
+                  component={withErrorBoundary(DemandSupplyWorkspacePage)}
+                />
+                <Route
                   path="/inventory"
-                  component={withErrorBoundary(InventoryWorkSurface)}
+                  component={withErrorBoundary(InventoryWorkspacePage)}
                 />
                 <Route
                   path="/inventory/:id"
@@ -183,7 +267,11 @@ function Router() {
                 />
                 <Route
                   path="/products"
-                  component={withErrorBoundary(ProductsPage)}
+                  component={RedirectWithTab(
+                    "/products",
+                    "/inventory",
+                    "products"
+                  )}
                 />
                 {/* Accounting - redirect /accounting to /accounting/dashboard */}
                 <Route
@@ -237,7 +325,7 @@ function Router() {
                 />
                 <Route
                   path="/clients"
-                  component={withErrorBoundary(ClientsWorkSurface)}
+                  component={RedirectClientsToRelationships}
                 />
                 <Route
                   path="/clients/:id"
@@ -270,7 +358,7 @@ function Router() {
                 />
                 <Route
                   path="/orders"
-                  component={withErrorBoundary(OrdersWorkSurface)}
+                  component={RedirectWithTab("/orders", "/sales", "orders")}
                 />
                 <Route
                   path="/pick-pack"
@@ -290,7 +378,7 @@ function Router() {
                 />
                 <Route
                   path="/quotes"
-                  component={withErrorBoundary(QuotesWorkSurface)}
+                  component={RedirectWithTab("/quotes", "/sales", "quotes")}
                 />
                 <Route
                   path="/settings/cogs"
@@ -314,28 +402,56 @@ function Router() {
                 />
                 <Route
                   path="/credit-settings"
-                  component={withErrorBoundary(CreditSettingsPage)}
+                  component={RedirectWithTab(
+                    "/credit-settings",
+                    "/credits",
+                    "settings"
+                  )}
                 />
                 {/* NAV-017: Credits management page */}
                 <Route
+                  path="/credits/manage"
+                  component={RedirectWithTab(
+                    "/credits/manage",
+                    "/credits",
+                    "credits"
+                  )}
+                />
+                <Route
                   path="/credits"
-                  component={withErrorBoundary(CreditsPage)}
+                  component={withErrorBoundary(CreditsWorkspacePage)}
                 />
                 <Route
                   path="/needs"
-                  component={withErrorBoundary(NeedsManagementPage)}
+                  component={RedirectWithTab(
+                    "/needs",
+                    "/demand-supply",
+                    "needs"
+                  )}
                 />
                 <Route
                   path="/interest-list"
-                  component={withErrorBoundary(InterestListPage)}
+                  component={RedirectWithTab(
+                    "/interest-list",
+                    "/demand-supply",
+                    "interest-list"
+                  )}
                 />
                 <Route
                   path="/vendor-supply"
-                  component={withErrorBoundary(VendorSupplyPage)}
+                  component={RedirectWithTab(
+                    "/vendor-supply",
+                    "/demand-supply",
+                    "vendor-supply"
+                  )}
                 />
                 <Route
                   path="/vendors"
-                  component={withErrorBoundary(VendorsPage)}
+                  component={RedirectWithTab(
+                    "/vendors",
+                    "/relationships",
+                    "suppliers"
+                  )}
                 />
                 <Route
                   path="/vendors/:id"
@@ -347,7 +463,7 @@ function Router() {
                 />
                 <Route
                   path="/returns"
-                  component={withErrorBoundary(ReturnsPage)}
+                  component={RedirectWithTab("/returns", "/sales", "returns")}
                 />
                 <Route
                   path="/samples"
@@ -369,7 +485,11 @@ function Router() {
                 />
                 <Route
                   path="/matchmaking"
-                  component={withErrorBoundary(MatchmakingServicePage)}
+                  component={RedirectWithTab(
+                    "/matchmaking",
+                    "/demand-supply",
+                    "matchmaking"
+                  )}
                 />
                 <Route
                   path="/live-shopping"
@@ -455,35 +575,47 @@ function Router() {
                 {/* QA-003 FIX: Preserve query parameters during redirect */}
                 <Route
                   path="/invoices"
-                  component={RedirectWithSearch("/accounting/invoices")}
+                  component={RedirectWithSearch(
+                    "/invoices",
+                    "/accounting/invoices"
+                  )}
                 />
                 <Route
                   path="/client-needs"
-                  component={RedirectWithSearch("/needs")}
+                  component={RedirectWithSearch("/client-needs", "/needs")}
                 />
                 <Route
                   path="/ar-ap"
-                  component={RedirectWithSearch("/accounting")}
+                  component={RedirectWithSearch("/ar-ap", "/accounting")}
                 />
                 <Route
                   path="/reports"
-                  component={RedirectWithSearch("/analytics")}
+                  component={RedirectWithSearch("/reports", "/analytics")}
                 />
                 <Route
                   path="/pricing-rules"
-                  component={RedirectWithSearch("/pricing/rules")}
+                  component={RedirectWithSearch(
+                    "/pricing-rules",
+                    "/pricing/rules"
+                  )}
                 />
                 <Route
                   path="/system-settings"
-                  component={RedirectWithSearch("/settings")}
+                  component={RedirectWithSearch(
+                    "/system-settings",
+                    "/settings"
+                  )}
                 />
                 <Route
                   path="/feature-flags"
-                  component={RedirectWithSearch("/settings/feature-flags")}
+                  component={RedirectWithSearch(
+                    "/feature-flags",
+                    "/settings/feature-flags"
+                  )}
                 />
                 <Route
                   path="/todo-lists"
-                  component={RedirectWithSearch("/todos")}
+                  component={RedirectWithSearch("/todo-lists", "/todos")}
                 />
 
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
@@ -521,7 +653,7 @@ function App() {
       key: "n",
       ctrl: true,
       callback: () => setLocation("/orders/create"),
-      description: "Create new order",
+      description: "Create new sale",
     },
     {
       key: "t",

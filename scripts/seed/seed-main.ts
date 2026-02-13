@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+/* eslint-disable no-console */
 /**
  * TERP Seeding System - CLI Orchestrator
  *
@@ -23,6 +24,7 @@ import { SchemaValidator } from "./lib/validation";
 import { PIIMasker } from "./lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "./lib/logging";
 import * as readline from "readline";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 
 // Import seeders
 import {
@@ -39,6 +41,7 @@ import {
   seedPayments,
   seedVendorBills,
   seedPurchaseOrders,
+  seedProductImages,
 } from "./seeders";
 
 // ============================================================================
@@ -119,7 +122,9 @@ function parseArgs(): CLIFlags {
       if (env === "development" || env === "staging" || env === "production") {
         flags.env = env;
       } else {
-        console.error(`Invalid env: ${env}. Use development, staging, or production.`);
+        console.error(
+          `Invalid env: ${env}. Use development, staging, or production.`
+        );
         process.exit(1);
       }
     }
@@ -146,6 +151,17 @@ function validateArgs(flags: CLIFlags): boolean {
   }
 
   return true;
+}
+
+function resolveMaskingEnvironment(
+  env: CLIFlags["env"] | undefined,
+  nodeEnv: string | undefined
+): "production" | "staging" | "development" | "test" {
+  if (env) return env;
+  if (nodeEnv === "production" || nodeEnv === "staging" || nodeEnv === "test") {
+    return nodeEnv;
+  }
+  return "development";
 }
 
 // ============================================================================
@@ -205,10 +221,10 @@ async function promptConfirmation(message: string): Promise<boolean> {
     output: process.stdout,
   });
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     seedLogger.confirmationPrompt(message);
 
-    rl.question(message, (answer) => {
+    rl.question(message, answer => {
       rl.close();
       resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
     });
@@ -223,7 +239,10 @@ async function promptConfirmation(message: string): Promise<boolean> {
  * Get record counts based on size flag
  * Requirements: 10.1, 10.3
  */
-function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Record<string, number> {
+function getRecordCounts(
+  size: CLIFlags["size"],
+  complete: boolean = false
+): Record<string, number> {
   const baseCounts: Record<CLIFlags["size"], Record<string, number>> = {
     small: {
       pricing_defaults: 12, // BUG-084: Fixed config table (category margins)
@@ -231,6 +250,7 @@ function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Rec
       vendors: 5,
       products: 20,
       batches: 30,
+      product_images: 30,
       orders: 50,
       client_transactions: 0, // Auto-generated from orders
       invoices: 50,
@@ -242,6 +262,7 @@ function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Rec
       vendors: 15,
       products: 100,
       batches: 200,
+      product_images: 200,
       orders: 400,
       client_transactions: 0, // Auto-generated from orders
       invoices: 400,
@@ -253,6 +274,7 @@ function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Rec
       vendors: 50,
       products: 500,
       batches: 1000,
+      product_images: 1000,
       orders: 2000,
       client_transactions: 0, // Auto-generated from orders
       invoices: 2000,
@@ -299,13 +321,16 @@ const DELETION_ORDER = [...SEEDING_ORDER].reverse();
  */
 async function cleanTables(tables: string[], dryRun: boolean): Promise<void> {
   // Get tables in reverse FK order for safe deletion
-  const tablesToClean = DELETION_ORDER.filter((t) => tables.includes(t));
+  const tablesToClean = DELETION_ORDER.filter(t => tables.includes(t));
 
   seedLogger.operationStart("clean", { tables: tablesToClean, dryRun });
 
   for (const tableName of tablesToClean) {
     if (dryRun) {
-      seedLogger.dryRun({ table: tableName, action: "Would delete all records" });
+      seedLogger.dryRun({
+        table: tableName,
+        action: "Would delete all records",
+      });
       continue;
     }
 
@@ -314,7 +339,9 @@ async function cleanTables(tables: string[], dryRun: boolean): Promise<void> {
       await db.execute(`DELETE FROM \`${tableName}\``);
       console.log(`   ✓ Cleaned table: ${tableName}`);
     } catch (error) {
-      console.warn(`   ⚠ Failed to clean ${tableName}: ${error instanceof Error ? error.message : error}`);
+      console.warn(
+        `   ⚠ Failed to clean ${tableName}: ${error instanceof Error ? error.message : error}`
+      );
     }
   }
 
@@ -325,13 +352,21 @@ async function cleanTables(tables: string[], dryRun: boolean): Promise<void> {
  * Seeder function map
  * Requirements: 10.1
  */
-const SEEDERS: Record<string, (count: number, validator: SchemaValidator, masker: PIIMasker) => Promise<SeederResult>> = {
+const SEEDERS: Record<
+  string,
+  (
+    count: number,
+    validator: SchemaValidator,
+    masker: PIIMasker
+  ) => Promise<SeederResult>
+> = {
   pricing_defaults: seedPricingDefaults, // BUG-084: Critical for order pricing
   vendors: seedVendors,
   clients: seedClients,
   products: seedProducts,
   purchaseOrders: seedPurchaseOrders,
   batches: seedBatches,
+  product_images: seedProductImages,
   orders: seedOrders,
   client_transactions: seedClientTransactions,
   invoices: seedInvoices,
@@ -365,14 +400,16 @@ async function executeSeed(
     tables,
     size: flags.size,
     dryRun: flags.dryRun,
-    counts: tables.map((t) => ({ table: t, count: counts[t] || 0 })),
+    counts: tables.map(t => ({ table: t, count: counts[t] || 0 })),
   });
 
   for (let i = 0; i < tables.length; i++) {
     const tableName = tables[i];
     const recordCount = counts[tableName] || 0;
 
-    seedLogger.operationProgress("seed", i + 1, tables.length, { table: tableName });
+    seedLogger.operationProgress("seed", i + 1, tables.length, {
+      table: tableName,
+    });
 
     if (flags.dryRun) {
       seedLogger.tableSeeding(tableName, recordCount);
@@ -389,7 +426,10 @@ async function executeSeed(
       // Validate table exists
       const tableExists = await validator.validateTableExists(tableName);
       if (!tableExists) {
-        seedLogger.validationWarning(tableName, "Table does not exist in database");
+        seedLogger.validationWarning(
+          tableName,
+          "Table does not exist in database"
+        );
         stats.errors.push({
           table: tableName,
           error: "Table does not exist",
@@ -400,7 +440,10 @@ async function executeSeed(
       // Get the seeder function
       const seeder = SEEDERS[tableName];
       if (!seeder) {
-        seedLogger.validationWarning(tableName, "No seeder implemented for this table");
+        seedLogger.validationWarning(
+          tableName,
+          "No seeder implemented for this table"
+        );
         stats.errors.push({
           table: tableName,
           error: "No seeder implemented",
@@ -422,10 +465,14 @@ async function executeSeed(
       }
 
       if (result.skipped > 0) {
-        seedLogger.recordSkipped(tableName, `${result.skipped} records skipped due to validation errors`);
+        seedLogger.recordSkipped(
+          tableName,
+          `${result.skipped} records skipped due to validation errors`
+        );
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       stats.errors.push({ table: tableName, error: errorMessage });
       seedLogger.operationFailure(
         `seed:${tableName}`,
@@ -463,10 +510,11 @@ async function main(): Promise<void> {
   };
 
   // Initialize components
-  const lock = new SeedingLock(db as any);
-  const validator = new SchemaValidator(db as any);
+  const typedDb = db as unknown as MySql2Database<Record<string, never>>;
+  const lock = new SeedingLock(typedDb);
+  const validator = new SchemaValidator(typedDb);
   const masker = new PIIMasker({
-    environment: flags.env ?? (process.env.NODE_ENV as any) ?? "development",
+    environment: resolveMaskingEnvironment(flags.env, process.env.NODE_ENV),
   });
 
   try {
@@ -488,10 +536,7 @@ async function main(): Promise<void> {
     if (!flags.force && !flags.dryRun) {
       const counts = getRecordCounts(flags.size, flags.complete);
       const tables = flags.table ? [flags.table] : SEEDABLE_TABLES;
-      const totalRecords = tables.reduce(
-        (sum, t) => sum + (counts[t] || 0),
-        0
-      );
+      const totalRecords = tables.reduce((sum, t) => sum + (counts[t] || 0), 0);
 
       console.log("\n⚠️  This operation will seed the following tables:");
       for (const table of tables) {
@@ -587,7 +632,10 @@ async function main(): Promise<void> {
       {}
     );
 
-    console.error("\n❌ Seeding failed:", error instanceof Error ? error.message : error);
+    console.error(
+      "\n❌ Seeding failed:",
+      error instanceof Error ? error.message : error
+    );
     process.exit(1);
   } finally {
     // Always release locks
@@ -599,7 +647,7 @@ async function main(): Promise<void> {
 // Entry Point
 // ============================================================================
 
-main().catch((error) => {
+main().catch(error => {
   console.error("Fatal error:", error);
   process.exit(1);
 });

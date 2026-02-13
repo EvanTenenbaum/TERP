@@ -48,7 +48,7 @@ export function BatchSelectionDialog({
   productId,
   productName,
   quantityNeeded,
-  lineItemId,
+  lineItemId: _lineItemId,
   onSelect,
 }: BatchSelectionDialogProps) {
   const [selectedBatches, setSelectedBatches] = useState<Map<number, number>>(new Map());

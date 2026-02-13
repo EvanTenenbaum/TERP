@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+
 import { useLocation } from "wouter";
 
 export function useUrlState() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   
   // Parse URL search params
   const getSearchParams = () => {

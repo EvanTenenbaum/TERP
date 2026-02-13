@@ -122,7 +122,7 @@ export function FilterChips({ filters, onRemoveFilter, onClearAll }: FilterChips
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-sm font-medium text-muted-foreground">Active Filters:</span>
-      {chips.map((chip, index) => (
+      {chips.map((chip) => (
         <Badge
           key={`${chip.key}-${chip.value || 'no-value'}-${chip.label}`}
           variant="secondary"
