@@ -239,7 +239,7 @@ export const vipPortalLiveShoppingRouter = router({
       } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err instanceof Error ? err.message : "Failed to add item",
+          message: getErrorMessage(err, "Failed to add item"),
         });
       }
     }),
@@ -281,7 +281,7 @@ export const vipPortalLiveShoppingRouter = router({
       } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err instanceof Error ? err.message : "Failed to update quantity",
+          message: getErrorMessage(err, "Failed to update quantity"),
         });
       }
     }),
@@ -447,7 +447,7 @@ export const vipPortalLiveShoppingRouter = router({
       } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e instanceof Error ? e.message : "Failed to add item",
+          message: getErrorMessage(e, "Failed to add item"),
         });
       }
     }),
