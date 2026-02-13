@@ -257,9 +257,6 @@ jobs:
             echo "$CHANGED" | xargs pnpm eslint --max-warnings=0 || true
           fi
 
-      - name: Unit tests
-        run: pnpm test --run
-
       - name: Wait for MySQL
         run: |
           MAX_ATTEMPTS=30
@@ -275,6 +272,9 @@ jobs:
 
       - name: Push schema and seed
         run: pnpm drizzle-kit push --force && pnpm seed:light
+
+      - name: Unit tests
+        run: pnpm test --run
 
       - name: Install Playwright
         run: pnpm exec playwright install --with-deps
