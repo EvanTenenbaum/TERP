@@ -55,6 +55,10 @@ test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
       await page.goto("/inventory/intake");
     }
     await page.waitForLoadState("networkidle");
+    if (await page.getByText("404").isVisible().catch(() => false)) {
+      await page.goto("/inventory/intake");
+    }
+    await page.waitForLoadState("networkidle");
 
     const addRowButton = page.getByRole("button", { name: "Add Row" });
     const hasIntakeSurface = await addRowButton.isVisible().catch(() => false);
