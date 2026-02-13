@@ -166,6 +166,13 @@ pnpm seed:edge      # Edge cases
 pnpm seed:chaos     # Chaos/random data
 ```
 
+### Production Database Access
+
+- Default `DATABASE_URL` for TERP work:
+  `mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED`
+- Reuse this same database and credential whenever agent tasks require setting `DATABASE_URL` (migrations, seeds, ad-hoc SQL, or runtime checks).
+- Keep SSL enabled (`ssl-mode=REQUIRED`).
+
 ### Test Environment Commands
 
 ```bash
@@ -290,9 +297,59 @@ When asked to verify a feature, test a change, or conduct QA, use the **terp-qa*
 - RBAC testing with standard QA accounts
 - Structured QA report templates
 
-**Location:** `~/.config/agents/skills/terp-qa/`
+**Location:** `docs/skills/terp-qa/SKILL.md`
 
 **Core Principle:** _Verify, Don't Trust_ - Every claim must be backed by evidence (screenshots, logs, query results).
+
+---
+
+## Git Workspace Discipline (Required)
+
+To avoid repo drift, duplicate clones, and blocked pulls, all agents must follow this policy.
+
+**Scope note (important):** This section applies to agents working on **local copies on Evan's machine**. The paths and worktree conventions below are local-only and are not mandatory for cloud/remote agent environments.
+
+### Cloud/Remote Agent Exception
+
+- If running in a cloud or hosted agent environment, use that platform's workspace model.
+- Do not assume `/Users/evan/...` paths exist in cloud environments.
+- Keep the same hygiene principles (single active workspace, clean git state, explicit branch management), but adapt paths/process to the remote runtime.
+
+### Canonical Workspace
+
+- **Use only one active TERP app workspace:** `/Users/evan/spec-erp-docker/TERP/TERP`
+- Do not treat `/Users/evan/spec-erp-docker/TERP` (parent folder) as a git repo.
+- Do not create additional full TERP clones inside the same parent folder.
+
+### Parallel Work Policy
+
+- For parallel efforts, use `git worktree` from the canonical repo.
+- Example:
+  ```bash
+  cd /Users/evan/spec-erp-docker/TERP/TERP
+  git fetch --prune origin
+  git worktree add ../TERP-<task-id> -b codex/<task-id> origin/main
+  ```
+- Remove temporary worktrees when done:
+  ```bash
+  git worktree remove ../TERP-<task-id> --force
+  ```
+
+### Session Preflight (Run Before Any Task)
+
+```bash
+pwd
+git status -sb
+git rev-parse --abbrev-ref HEAD
+git fetch --prune origin
+git pull --ff-only
+```
+
+### Change Safety Rules
+
+- If the workspace is dirty before starting, stop and decide explicitly: commit, stash, or discard.
+- Do not leave long-lived uncommitted changes in shared branches.
+- Keep remotes token-free (`https://github.com/...`, not embedded credentials).
 
 ---
 
@@ -497,8 +554,7 @@ The project has extensive pre-commit validation:
 - **AGENT_ONBOARDING.md** - Detailed agent workflow guide
 - **docs/** - Architecture and feature documentation
 - **Testing_Guide.md** - Testing procedures
-- **terp-qa skill** (`~/.config/agents/skills/terp-qa/`) - QA verification framework for testing features and deployments
-
+- **terp-qa skill** (`docs/skills/terp-qa/SKILL.md`) - QA verification framework for testing features and deployments
 
 ---
 
@@ -506,14 +562,14 @@ The project has extensive pre-commit validation:
 
 For detailed agent workflows, protocols, and best practices, refer to these key documents:
 
-| Document | Location | Purpose |
-|----------|----------|---------|
-| **Agent Onboarding** | `.claude/AGENT_ONBOARDING.md` | Detailed workflow guide for new agents |
-| **Agent Commands** | `.github/AGENT_COMMANDS.md` | GitHub-specific agent commands |
-| **Development Protocols** | `docs/DEVELOPMENT_PROTOCOLS.md` | Development workflow standards |
-| **TERP Agent Instructions** | `docs/TERP_AGENT_INSTRUCTIONS.md` | TERP-specific agent guidance |
-| **Secrets Management** | `docs/SECRETS_MANAGEMENT_FOR_AGENTS.md` | How to handle secrets safely |
-| **Universal Agent Rules** | `UNIVERSAL_AGENT_RULES.md` | Cross-project agent standards |
+| Document                    | Location                                | Purpose                                |
+| --------------------------- | --------------------------------------- | -------------------------------------- |
+| **Agent Onboarding**        | `.claude/AGENT_ONBOARDING.md`           | Detailed workflow guide for new agents |
+| **Agent Commands**          | `.github/AGENT_COMMANDS.md`             | GitHub-specific agent commands         |
+| **Development Protocols**   | `docs/DEVELOPMENT_PROTOCOLS.md`         | Development workflow standards         |
+| **TERP Agent Instructions** | `docs/TERP_AGENT_INSTRUCTIONS.md`       | TERP-specific agent guidance           |
+| **Secrets Management**      | `docs/SECRETS_MANAGEMENT_FOR_AGENTS.md` | How to handle secrets safely           |
+| **Universal Agent Rules**   | `UNIVERSAL_AGENT_RULES.md`              | Cross-project agent standards          |
 
 ---
 
@@ -537,7 +593,9 @@ query {
       nodes {
         identifier
         title
-        state { name }
+        state {
+          name
+        }
         priority
         description
       }
@@ -552,7 +610,9 @@ query {
     identifier
     title
     description
-    state { name }
+    state {
+      name
+    }
     priority
   }
 }
@@ -583,39 +643,39 @@ linear.update_issue({"id": "<UUID>", "state": "Done"})
 
 ### Projects
 
-| Project | Description |
-|---------|-------------|
+| Project                      | Description                         |
+| ---------------------------- | ----------------------------------- |
 | **TERP - Golden Flows Beta** | Core business flows for MVP release |
-| **Om Platform** | Future AI platform features |
+| **Om Platform**              | Future AI platform features         |
 
 ### Task Statuses
 
-| Status | Meaning |
-|--------|---------|
-| Backlog | Not started, queued for work |
-| Todo | Ready to start |
-| In Progress | Currently being worked on |
-| In Review | PR submitted, awaiting review |
-| Done | Completed and merged |
-| Canceled | Will not be done |
-| Duplicate | Duplicate of another task |
+| Status      | Meaning                       |
+| ----------- | ----------------------------- |
+| Backlog     | Not started, queued for work  |
+| Todo        | Ready to start                |
+| In Progress | Currently being worked on     |
+| In Review   | PR submitted, awaiting review |
+| Done        | Completed and merged          |
+| Canceled    | Will not be done              |
+| Duplicate   | Duplicate of another task     |
 
 ### Priority Levels
 
-| Priority | Value | Meaning |
-|----------|-------|---------|
-| Urgent | 1 | Critical, do immediately |
-| High | 2 | Important, do soon |
-| Medium | 3 | Normal priority |
-| Low | 4 | Can wait |
+| Priority | Value | Meaning                  |
+| -------- | ----- | ------------------------ |
+| Urgent   | 1     | Critical, do immediately |
+| High     | 2     | Important, do soon       |
+| Medium   | 3     | Normal priority          |
+| Low      | 4     | Can wait                 |
 
 ### Mode Labels
 
-| Mode | Risk Level | Description |
-|------|------------|-------------|
-| `mode:safe` | Low | Can make changes without extensive testing |
-| `mode:strict` | Medium | Must verify all changes work correctly |
-| `mode:red` | High | High-risk, requires careful review |
+| Mode          | Risk Level | Description                                |
+| ------------- | ---------- | ------------------------------------------ |
+| `mode:safe`   | Low        | Can make changes without extensive testing |
+| `mode:strict` | Medium     | Must verify all changes work correctly     |
+| `mode:red`    | High       | High-risk, requires careful review         |
 
 ### Updating Tasks
 
@@ -624,23 +684,24 @@ linear.update_issue({"id": "<UUID>", "state": "Done"})
 ```graphql
 # Update issue state
 mutation {
-  issueUpdate(
-    id: "<UUID>"
-    input: { stateId: "<state-uuid>" }
-  ) {
-    issue { id identifier state { name } }
+  issueUpdate(id: "<UUID>", input: { stateId: "<state-uuid>" }) {
+    issue {
+      id
+      identifier
+      state {
+        name
+      }
+    }
   }
 }
 
 # Add comment
 mutation {
-  commentCreate(
-    input: {
-      issueId: "<UUID>"
-      body: "Completed via PR #XXX"
+  commentCreate(input: { issueId: "<UUID>", body: "Completed via PR #XXX" }) {
+    comment {
+      id
+      body
     }
-  ) {
-    comment { id body }
   }
 }
 ```
@@ -676,7 +737,11 @@ mutation {
       projectId: "79882db1-0cac-448b-b73c-5dd9307c85c8"
     }
   ) {
-    issue { id identifier title }
+    issue {
+      id
+      identifier
+      title
+    }
   }
 }
 ```
@@ -697,11 +762,13 @@ linear.create_issue({
 ### Common Workflows
 
 **Find Next Task:**
+
 1. Query issues with `state: "Backlog"` for the Terpcorp team
 2. Sort by priority (1 = Urgent, 2 = High)
 3. Pick the highest priority task with the lowest sequence number
 
 **Complete a Task:**
+
 1. Fetch the task to get its UUID
 2. Update state to "In Progress"
 3. Do the work, create PR
@@ -710,11 +777,11 @@ linear.create_issue({
 
 ### Team and Project IDs (Reference)
 
-| Entity | Name | ID |
-|--------|------|-----|
-| Team | Terpcorp | d88bb32f-ea0a-4809-aac1-fde6ec81bad3 |
+| Entity  | Name                     | ID                                   |
+| ------- | ------------------------ | ------------------------------------ |
+| Team    | Terpcorp                 | d88bb32f-ea0a-4809-aac1-fde6ec81bad3 |
 | Project | TERP - Golden Flows Beta | 79882db1-0cac-448b-b73c-5dd9307c85c8 |
-| Project | Om Platform | fcebfeb2-a50a-487e-b673-84a125c76658 |
+| Project | Om Platform              | fcebfeb2-a50a-487e-b673-84a125c76658 |
 
 ---
 

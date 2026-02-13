@@ -5,14 +5,6 @@ import { AlertTriangle, Clock } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
 import { trpc } from "@/lib/trpc";
 
-interface ExpiringSample {
-  id: number;
-  products: Array<{ productId: number; quantity: string }> | null;
-  expirationDate: Date | string | null;
-  clientId: number;
-  sampleRequestStatus: string;
-}
-
 interface ExpiringSamplesWidgetProps {
   daysAhead?: number;
   limit?: number;

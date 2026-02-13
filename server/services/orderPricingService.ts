@@ -932,7 +932,7 @@ export async function getSuggestedPurchasePrice(params: {
     maxPrice: Math.round(maxPrice * 100) / 100,
     historyCount: history.length,
     priceHistory: history.map(h => ({
-      date: h.createdAt!,
+      date: h.createdAt || new Date(),
       price: parseFloat(h.unitPrice.toString()),
       quantity: parseFloat(h.quantity.toString()),
       supplierId: h.supplierId,
@@ -960,7 +960,7 @@ export async function getLastSalePrice(params: {
   let clientPriceHistory: Array<{ date: Date; price: number; quantity: number }> = [];
 
   if (params.clientId) {
-    const clientHistory = await db
+    const clientHistory = params.clientId ? await db
       .select()
       .from(priceHistory)
       .where(
@@ -971,12 +971,12 @@ export async function getLastSalePrice(params: {
         )
       )
       .orderBy(desc(priceHistory.createdAt))
-      .limit(10);
+      .limit(10) : [];
 
     if (clientHistory.length > 0) {
       lastPriceToClient = parseFloat(clientHistory[0].unitPrice.toString());
       clientPriceHistory = clientHistory.map(h => ({
-        date: h.createdAt!,
+        date: h.createdAt || new Date(),
         price: parseFloat(h.unitPrice.toString()),
         quantity: parseFloat(h.quantity.toString()),
       }));
@@ -1002,7 +1002,7 @@ export async function getLastSalePrice(params: {
   if (overallHistory.length > 0) {
     lastPriceOverall = parseFloat(overallHistory[0].unitPrice.toString());
     overallPriceHistoryResult = overallHistory.map(h => ({
-      date: h.createdAt!,
+      date: h.createdAt || new Date(),
       price: parseFloat(h.unitPrice.toString()),
       quantity: parseFloat(h.quantity.toString()),
     }));
@@ -1116,7 +1116,7 @@ export async function getSupplierReceiptHistory(params: {
     unitPrice: parseFloat(h.unitPrice.toString()),
     quantity: parseFloat(h.quantity.toString()),
     totalPrice: parseFloat(h.totalPrice.toString()),
-    date: h.createdAt!,
+    date: h.createdAt || new Date(),
   }));
 }
 
@@ -1319,6 +1319,6 @@ export async function getOrderAdjustments(orderId: number): Promise<Array<{
     reason: a.reason,
     notes: a.notes,
     adjustedByName: a.adjustedByName,
-    createdAt: a.createdAt!,
+    createdAt: a.createdAt || new Date(),
   }));
 }

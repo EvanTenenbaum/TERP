@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -280,6 +280,15 @@ export function SalesSheetPreview({
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [lastSavedSheetId, setLastSavedSheetId] = useState<number | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Track unsaved changes when items or price overrides change
+  const itemsFingerprint = items.map(i => i.id).join(",");
+  useEffect(() => {
+    if (lastSavedSheetId !== null) {
+      setHasUnsavedChanges(true);
+    }
+  }, [itemsFingerprint, priceOverrides, lastSavedSheetId]);
 
   // Save mutation
   const saveMutation = trpc.salesSheets.save.useMutation({
@@ -287,6 +296,7 @@ export function SalesSheetPreview({
       toast.success("Sales sheet saved successfully");
       utils.salesSheets.getHistory.invalidate();
       setLastSavedSheetId(data);
+      setHasUnsavedChanges(false);
     },
     onError: error => {
       toast.error("Failed to save sales sheet: " + error.message);
@@ -521,6 +531,11 @@ export function SalesSheetPreview({
                 <>
                   <Separator />
                   <div className="space-y-2">
+                    {hasUnsavedChanges && (
+                      <p className="text-xs text-amber-600 font-medium">
+                        Unsaved changes — save before sharing or converting
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground font-medium">
                       Share & Convert
                     </p>
@@ -542,7 +557,9 @@ export function SalesSheetPreview({
                               });
                             }
                           }}
-                          disabled={shareMutation.isPending}
+                          disabled={
+                            shareMutation.isPending || hasUnsavedChanges
+                          }
                         >
                           <Share2 className="mr-2 h-4 w-4" />
                           {shareMutation.isPending
@@ -597,7 +614,9 @@ export function SalesSheetPreview({
                             });
                           }
                         }}
-                        disabled={convertToOrderMutation.isPending}
+                        disabled={
+                          convertToOrderMutation.isPending || hasUnsavedChanges
+                        }
                       >
                         <ShoppingCart className="mr-1 h-4 w-4" />
                         To Order
@@ -612,7 +631,10 @@ export function SalesSheetPreview({
                             });
                           }
                         }}
-                        disabled={convertToSessionMutation.isPending}
+                        disabled={
+                          convertToSessionMutation.isPending ||
+                          hasUnsavedChanges
+                        }
                       >
                         <Video className="mr-1 h-4 w-4" />
                         Live Session

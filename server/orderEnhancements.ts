@@ -32,18 +32,18 @@ export async function reorderFromPrevious(data: {
     }
 
     // Parse items from JSON
-    const originalItems = originalOrder.items as any[];
+    const originalItems = originalOrder.items as Array<{ productId: number; quantity: string | number; price: string | number }>;
 
     if (!originalItems || originalItems.length === 0) {
       return { success: false, error: "Original order has no items" };
     }
 
     // Apply modifications if provided
-    let newItems = [...originalItems];
+    const newItems = [...originalItems];
 
     if (data.modifications) {
       for (const mod of data.modifications) {
-        const itemIndex = newItems.findIndex((i: any) => i.productId === mod.productId);
+        const itemIndex = newItems.findIndex((i: { productId: number }) => i.productId === mod.productId);
         if (itemIndex >= 0) {
           if (mod.remove) {
             newItems.splice(itemIndex, 1);
@@ -59,7 +59,7 @@ export async function reorderFromPrevious(data: {
     }
 
     // Calculate total
-    const subtotal = newItems.reduce((sum: number, item: any) => {
+    const subtotal = newItems.reduce((sum: number, item: { quantity: string | number; price: string | number }) => {
       const qty = typeof item.quantity === 'string' ? parseFloat(item.quantity) : item.quantity;
       const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
       return sum + (qty * price);
@@ -73,13 +73,14 @@ export async function reorderFromPrevious(data: {
       orderNumber,
       orderType: originalOrder.orderType,
       clientId: data.clientId,
-      items: newItems as any,
+      items: newItems as unknown,
       subtotal: subtotal.toString(),
       total: subtotal.toString(),
-      paymentTerms: originalOrder.paymentTerms,
+      paymentTerms: originalOrder.paymentTerms || "NET_30",
       saleStatus: "PENDING",
       notes: `Reordered from Order #${originalOrder.orderNumber}`,
       createdBy: data.createdBy,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return {
@@ -150,6 +151,7 @@ export async function updateClientPaymentTerms(
     await db
       .update(clients)
       .set({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tags: updatedTags as any,
       })
       .where(eq(clients.id, clientId));
@@ -218,8 +220,9 @@ export async function getClientPaymentTerms(clientId: number) {
     }
 
     const tags = client.tags || {};
-    const paymentTerms = (tags as any).paymentTerms || "NET_30";
-    const creditLimit = (tags as any).creditLimit || 0;
+    const tagsRecord = tags as Record<string, unknown>;
+    const paymentTerms = (tagsRecord.paymentTerms as string) || "NET_30";
+    const creditLimit = (tagsRecord.creditLimit as number) || 0;
 
     return {
       success: true,
@@ -231,4 +234,3 @@ export async function getClientPaymentTerms(clientId: number) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
-

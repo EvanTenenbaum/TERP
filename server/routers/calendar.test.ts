@@ -18,10 +18,10 @@ vi.mock("../_core/permissionService");
 vi.mock("../_core/timezoneService");
 
 import { calendarRouter } from "./calendar";
-import { db, getDb } from "../db";
-import * as calendarDb from "../calendarDb";
+import { getDb } from "../db";
+
 import PermissionService from "../_core/permissionService";
-import TimezoneService from "../_core/timezoneService";
+
 
 describe("Calendar Router - getEvents", () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       const mockEvents = [
         {
@@ -92,7 +92,7 @@ describe("Calendar Router - getEvents", () => {
       // Create a mock caller
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -115,7 +115,7 @@ describe("Calendar Router - getEvents", () => {
 
       // 3. Result should only include events with permission
       expect(result).toHaveLength(2);
-      expect(result.map((e: any) => e.id)).toEqual([1, 2]);
+      expect(result.map((e: { id: number }) => e.id)).toEqual([1, 2]);
     });
 
     it("should handle empty event list efficiently", async () => {
@@ -128,7 +128,7 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
       mockDb.where.mockReturnValueOnce(mockDb);
       mockDb.limit.mockReturnValueOnce(mockDb);
       mockDb.offset.mockResolvedValueOnce([]);
@@ -138,7 +138,7 @@ describe("Calendar Router - getEvents", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -161,7 +161,7 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       // Create 100 mock events
       const mockEvents = Array.from({ length: 100 }, (_, i) => ({
@@ -189,7 +189,7 @@ describe("Calendar Router - getEvents", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -218,7 +218,7 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       const mockEvents = [
         { id: 1, title: "Event 1", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
@@ -244,7 +244,7 @@ describe("Calendar Router - getEvents", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -254,8 +254,8 @@ describe("Calendar Router - getEvents", () => {
 
       // Assert
       expect(result).toHaveLength(3);
-      expect(result.map((e: any) => e.id)).toEqual([1, 3, 4]);
-      expect(result.map((e: any) => e.id)).not.toContain(2);
+      expect(result.map((e: { id: number }) => e.id)).toEqual([1, 3, 4]);
+      expect(result.map((e: { id: number }) => e.id)).not.toContain(2);
     });
   });
 
@@ -270,7 +270,7 @@ describe("Calendar Router - getEvents", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as ReturnType<typeof getDb>);
 
       const mockEvents = [
         { id: 1, title: "Event 1", module: "INVENTORY", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
@@ -288,7 +288,7 @@ describe("Calendar Router - getEvents", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({

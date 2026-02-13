@@ -46,10 +46,10 @@ import {
   MessageSquare,
   CreditCard,
   Package,
-  Calendar,
   Edit,
   UserPlus,
   Search,
+  Calendar,
 } from "lucide-react";
 
 interface Client360PodProps {
@@ -171,7 +171,7 @@ export const Client360Pod = React.memo(function Client360Pod({
   const {
     client,
     orderSummary,
-    transactionSummary: _transactionSummary,
+
     communicationsSummary,
     recentOrders,
     recentActivity,
@@ -189,8 +189,8 @@ export const Client360Pod = React.memo(function Client360Pod({
               <div className="flex items-center gap-3">
                 <CardTitle className="text-2xl">{client.teriCode}</CardTitle>
                 <div className="flex gap-2 flex-wrap">
-                  {getClientTypeBadges().map((badge, idx) => (
-                    <Badge key={`badge-${badge.label}-${idx}`} variant={badge.variant}>
+                  {getClientTypeBadges().map((badge, _idx) => (
+                    <Badge key={`badge-${badge.label}`} variant={badge.variant}>
                       {badge.label}
                     </Badge>
                   ))}
@@ -272,8 +272,8 @@ export const Client360Pod = React.memo(function Client360Pod({
                 {client.tags &&
                 Array.isArray(client.tags) &&
                 client.tags.length > 0 ? (
-                  (client.tags as string[]).slice(0, 5).map((tag, idx) => (
-                    <Badge key={`tag-${tag}-${idx}`} variant="outline" className="text-xs">
+                  (client.tags as string[]).slice(0, 5).map((tag, _idx) => (
+                    <Badge key={`tag-${tag}`} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))

@@ -4,7 +4,7 @@
 
 import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { InventoryWorkSurface } from "../InventoryWorkSurface";
 import { setupDbMock, setupPermissionMock } from "@/test-utils";
 
@@ -103,19 +103,9 @@ describe("InventoryWorkSurface", () => {
     setupPermissionMock();
   });
 
-  it("opens the purchase modal when Add Batch is clicked", async () => {
+  // TER-220: Button renamed from "Add Batch" to "Intake" and navigates to /direct-intake
+  it("renders the Intake button", async () => {
     render(<InventoryWorkSurface />);
-
-    expect(screen.getByTestId("purchase-modal")).toHaveAttribute(
-      "data-open",
-      "false"
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /add batch/i }));
-
-    expect(screen.getByTestId("purchase-modal")).toHaveAttribute(
-      "data-open",
-      "true"
-    );
+    expect(screen.getByRole("button", { name: /intake/i })).toBeInTheDocument();
   });
 });

@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
-import { calendarEvents, calendarEventParticipants, clientMeetingHistory } from "../../drizzle/schema";
+import { calendarEvents, clientMeetingHistory } from "../../drizzle/schema";
 import { and, eq, lt, isNull, inArray } from "drizzle-orm";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 
 /**
  * Calendar Meetings Router
@@ -20,7 +21,7 @@ type MeetingType = "sales" | "support" | "onboarding" | "review" | "collections"
  */
 function determineMeetingType(
   event: { title: string; description?: string | null; entityType?: string | null },
-  participants: Array<{ role?: string | null }>
+  _participants: Array<{ role?: string | null }>
 ): MeetingType {
   const text = `${event.title} ${event.description ?? ""}`.toLowerCase();
   
@@ -112,6 +113,7 @@ export const calendarMeetingsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
+
 
       // Get event
       const event = await calendarDb.getEventById(input.eventId);
@@ -215,7 +217,7 @@ export const calendarMeetingsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const now = new Date();
+
       const future = new Date();
       future.setDate(future.getDate() + input.daysAhead);
 
@@ -243,8 +245,8 @@ export const calendarMeetingsRouter = router({
         actionItemIndex: z.number(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      const userId = getAuthenticatedUserId(ctx);
+    .mutation(async ({ input }) => {
+
 
       // Get meeting history entry
       const db = await getDb();
@@ -262,7 +264,7 @@ export const calendarMeetingsRouter = router({
       }
 
       // Update action item
-      const actionItems = entry.actionItems as any[];
+      const actionItems = entry.actionItems as Array<{ text: string; completed: boolean; assignedTo?: number }> | null;
       if (actionItems && actionItems[input.actionItemIndex]) {
         actionItems[input.actionItemIndex].completed = true;
 

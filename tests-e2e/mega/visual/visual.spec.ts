@@ -26,7 +26,7 @@ const screenshotOptions = {
   ],
 };
 
-test.describe("Visual Regression - Core Pages", () => {
+test.describe("Visual Regression - Core Pages @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -108,7 +108,7 @@ test.describe("Visual Regression - Core Pages", () => {
   });
 });
 
-test.describe("Visual Regression - Theme Modes", () => {
+test.describe("Visual Regression - Theme Modes @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -162,7 +162,7 @@ test.describe("Visual Regression - Theme Modes", () => {
   });
 });
 
-test.describe("Visual Regression - Components", () => {
+test.describe("Visual Regression - Components @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -229,7 +229,7 @@ test.describe("Visual Regression - Components", () => {
   });
 });
 
-test.describe("Visual Regression - Responsive", () => {
+test.describe("Visual Regression - Responsive @dev-only", () => {
   test("Dashboard mobile viewport", async ({ page }) => {
     emitTag("visual-mobile");
 

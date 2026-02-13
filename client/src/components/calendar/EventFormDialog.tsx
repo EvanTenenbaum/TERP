@@ -75,7 +75,7 @@ export default function EventFormDialog({
 
   // Load event data if editing
   const { data: eventData } = trpc.calendar.getEventById.useQuery(
-    { id: eventId!, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    { id: eventId ?? 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
     { enabled: !!eventId }
   );
 
@@ -103,7 +103,7 @@ export default function EventFormDialog({
     setRecurrenceEndDate("");
     setClientId(initialClientId || null);
     // Set default calendar
-    const defaultCalendar = calendarsData?.find((c: any) => c.isDefault);
+    const defaultCalendar = calendarsData?.find((c: { id: number; isDefault: boolean }) => c.isDefault);
     setCalendarId(defaultCalendar?.id || calendarsData?.[0]?.id || null);
   }, [initialDate, initialClientId, calendarsData]);
 
@@ -134,14 +134,15 @@ export default function EventFormDialog({
 
       // Load participants
       if (eventData.participants && eventData.participants.length > 0) {
-        setAttendees(eventData.participants.map((p: any) => p.userId));
+        setAttendees(eventData.participants.map((p: { userId: number }) => p.userId));
       }
       if (eventData.clientId) {
         setClientId(eventData.clientId);
       }
       // Load calendarId from event data
-      if ((eventData as any).calendarId) {
-        setCalendarId((eventData as any).calendarId);
+      const calendarEventData = eventData as { calendarId?: number };
+      if (calendarEventData.calendarId) {
+        setCalendarId(calendarEventData.calendarId);
       }
     } else if (isOpen && !eventId) {
       // Reset form for new event when dialog opens
@@ -152,7 +153,7 @@ export default function EventFormDialog({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    const eventPayload: any = {
+    const eventPayload: Record<string, unknown> = {
       title,
       description,
       location,
@@ -188,7 +189,7 @@ export default function EventFormDialog({
           updates: eventPayload,
         });
       } else {
-        await createEvent.mutateAsync(eventPayload);
+        await createEvent.mutateAsync(eventPayload as any);
       }
       onSaved();
     } catch (error) {
@@ -332,7 +333,7 @@ export default function EventFormDialog({
                   <SelectValue placeholder="Select calendar" />
                 </SelectTrigger>
                 <SelectContent>
-                  {calendarsData?.map((calendar: any) => (
+                  {calendarsData?.map((calendar: { id: number; name: string }) => (
                     <SelectItem key={calendar.id} value={calendar.id.toString()}>
                       {calendar.name}
                     </SelectItem>
@@ -353,7 +354,7 @@ export default function EventFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {clients.map((client: any) => (
+                  {clients.map((client: { id: number; name?: string }) => (
                     <SelectItem key={client.id} value={client.id.toString()}>
                       {client.name || `Client #${client.id}`}
                     </SelectItem>

@@ -13,7 +13,7 @@ import {
   type PaymentMethod,
   type InsertPaymentMethod
 } from "../drizzle/schema";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 /**
  * Create a new payment method
@@ -102,8 +102,6 @@ export async function getAllPaymentMethods(activeOnly: boolean = false): Promise
   if (!db) throw new Error("Database not available");
   
   try {
-    let query = db.select().from(paymentMethods);
-    
     if (activeOnly) {
       const results = await db
         .select()
@@ -273,7 +271,7 @@ export async function seedDefaultPaymentMethods(): Promise<void> {
       }
     }
     
-    console.log("Default payment methods seeded successfully");
+    logger.info("Default payment methods seeded successfully");
   } catch (error) {
     logger.error({ error }, "Error seeding default payment methods");
     throw new Error(`Failed to seed default payment methods: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -15,7 +15,7 @@ export interface MetricConfig {
   category: 'financial' | 'operational' | 'analytical';
   destination: {
     path: string;
-    getParams?: (data?: any) => Record<string, string>;
+    getParams?: (data?: unknown) => Record<string, string>;
   };
 }
 

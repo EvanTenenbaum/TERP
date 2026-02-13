@@ -30,7 +30,7 @@ export async function processSaleInventory(
     }>;
   },
   userId: number
-): Promise<any[]> {
+): Promise<Array<Record<string, unknown>>> {
   const movements = [];
   
   for (const item of saleData.lineItems) {
@@ -128,7 +128,7 @@ export async function processRefundInventory(
     }>;
   },
   userId: number
-): Promise<any[]> {
+): Promise<Array<Record<string, unknown>>> {
   const movements = [];
   
   for (const item of refundData.lineItems) {
@@ -229,7 +229,7 @@ export async function validateTransactionInventory(
 export async function getTransactionInventoryImpact(
   transactionId: number
 ): Promise<{
-  movements: any[];
+  movements: Array<Record<string, unknown>>;
   totalItems: number;
   totalQuantity: number;
 }> {

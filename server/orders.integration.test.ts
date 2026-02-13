@@ -1,8 +1,8 @@
 /**
  * Order CRUD Integration Tests
- * 
+ *
  * Tests critical order creation, retrieval, update, and deletion flows.
- * 
+ *
  * Task: ST-010
  * Session: Session-20251114-testing-infra-687ceb
  */
@@ -26,7 +26,7 @@ describe("Order CRUD Integration Tests", () => {
     name: "Test User",
   };
 
-  let caller: ReturnType<typeof appRouter.createCaller>;
+  let _caller: ReturnType<typeof appRouter.createCaller>;
 
   beforeEach(async () => {
     const ctx = await createContext({
@@ -36,7 +36,7 @@ describe("Order CRUD Integration Tests", () => {
       res: {} as any,
     });
 
-    caller = appRouter.createCaller({
+    _caller = appRouter.createCaller({
       ...ctx,
       user: mockUser,
     });

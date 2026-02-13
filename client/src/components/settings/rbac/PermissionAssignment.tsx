@@ -31,6 +31,7 @@ import {
 import { Key, Shield, Plus, X, Eye, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
@@ -75,7 +76,7 @@ export function PermissionAssignment() {
   // Fetch permission details when viewing
   const { data: permissionDetails, isLoading: permissionDetailsLoading } =
     trpc.rbacPermissions.getById.useQuery(
-      { permissionId: viewingPermissionId! },
+      { permissionId: viewingPermissionId ?? 0 },
       { enabled: !!viewingPermissionId }
     );
 
@@ -169,7 +170,7 @@ export function PermissionAssignment() {
   const roles = rolesData?.roles || [];
 
   // Group permissions by module for display
-  const permissionsByModule = permissions.reduce((acc: any, permission: any) => {
+  const permissionsByModule = permissions.reduce((acc: Record<string, any[]>, permission: any) => {
     const module = permission.module || "other";
     if (!acc[module]) {
       acc[module] = [];
@@ -362,7 +363,7 @@ export function PermissionAssignment() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(permissionsByModule).map(([module, modulePermissions]: [string, any]) => (
+              {Object.entries(permissionsByModule).map(([module, modulePermissions]: [string, any[]]) => (
                 <div key={module}>
                   <h3 className="text-lg font-semibold mb-3 capitalize flex items-center gap-2">
                     {module}
@@ -400,8 +401,8 @@ export function PermissionAssignment() {
                             <TableCell className="text-center">
                               {permission.roleNames && permission.roleNames.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 justify-center">
-                                  {permission.roleNames.slice(0, 3).map((roleName: string, idx: number) => (
-                                    <Badge key={`role-${roleName}-${idx}`} variant="outline" className="text-xs">
+                                  {permission.roleNames.slice(0, 3).map((roleName: string) => (
+                                    <Badge key={`role-${roleName}`} variant="outline" className="text-xs">
                                       {roleName}
                                     </Badge>
                                   ))}

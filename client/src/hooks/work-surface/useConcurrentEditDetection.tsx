@@ -13,7 +13,7 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { TRPCClientError } from "@trpc/client";
 import { useWorkSurfaceFeatureFlags } from "./useWorkSurfaceFeatureFlags";
 
@@ -40,7 +40,7 @@ export type ConflictResolution = "refresh" | "force" | "cancel";
 /**
  * Options for the useConcurrentEditDetection hook
  */
-export interface UseConcurrentEditDetectionOptions<T extends VersionedEntity> {
+export interface UseConcurrentEditDetectionOptions<_T extends VersionedEntity> {
   /** Human-readable entity type name (e.g., "Order", "Invoice") */
   entityType: string;
 

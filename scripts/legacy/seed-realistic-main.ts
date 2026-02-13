@@ -14,7 +14,7 @@
  *   pnpm seed chaos              # Uses "chaos" scenario
  */
 
-import { db } from "./db-sync.js";
+import { db } from "../db-sync.js";
 import {
   clients,
   strains,
@@ -27,23 +27,23 @@ import {
   users,
   returns,
   vendors,
-} from "../drizzle/schema.js";
-import { CONFIG, applyScenario } from "./generators/config.js";
-import { getScenario } from "./generators/scenarios.js";
-import { generateAllClients } from "./generators/clients.js";
-import { generateStrains } from "./generators/strains.js";
-import { generateProducts } from "./generators/products.js";
-import { generateLots, generateBatches } from "./generators/inventory.js";
-import { generateOrders } from "./generators/orders.js";
+} from "../../drizzle/schema.js";
+import { CONFIG, applyScenario } from "../generators/config.js";
+import { getScenario } from "../generators/scenarios.js";
+import { generateAllClients } from "../generators/clients.js";
+import { generateStrains } from "../generators/strains.js";
+import { generateProducts } from "../generators/products.js";
+import { generateLots, generateBatches } from "../generators/inventory.js";
+import { generateOrders } from "../generators/orders.js";
 import {
   generateInvoices,
   calculateARAgingSummary,
-} from "./generators/invoices.js";
+} from "../generators/invoices.js";
 import {
   generateReturns,
   generateRefunds,
-} from "./generators/returns-refunds.js";
-import { formatCurrency } from "./generators/utils.js";
+} from "../generators/returns-refunds.js";
+import { formatCurrency } from "../generators/utils.js";
 import { faker } from "@faker-js/faker";
 import { sql } from "drizzle-orm";
 

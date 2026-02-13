@@ -140,11 +140,11 @@ export function TagManagementSettings() {
     });
   };
 
-  const handleEditClick = (tag: any) => {
+  const handleEditClick = (tag: { id: number; name: string; category?: string | null; color?: string | null; description?: string | null }) => {
     setEditingTagId(tag.id);
     setFormData({
       name: tag.name,
-      category: tag.category || "CUSTOM",
+      category: (tag.category || "CUSTOM") as TagCategory,
       color: tag.color || "#6B7280",
       description: tag.description || "",
     });

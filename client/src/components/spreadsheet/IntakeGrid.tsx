@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { INTAKE_DEFAULTS } from "@/lib/constants/intakeDefaults";
 import type {
   CellValueChangedEvent,
   ColDef,
@@ -19,10 +20,29 @@ import {
   CheckCircle2,
   Loader2,
   RefreshCw,
+  Upload,
+  X,
 } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+
+type UploadedMediaUrl = {
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
+class UploadMediaError extends Error {
+  uploaded: UploadedMediaUrl[];
+
+  constructor(uploaded: UploadedMediaUrl[]) {
+    super("Failed to upload one or more photos");
+    this.name = "UploadMediaError";
+    this.uploaded = uploaded;
+  }
+}
 
 // Payment terms must match server validation schema
 const paymentTermsOptions = [
@@ -54,7 +74,8 @@ const createEmptyRow = (): IntakeGridRow => ({
   strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "NET_30",
+  // TER-228: Default from centralized intake defaults
+  paymentTerms: INTAKE_DEFAULTS.paymentTerms,
   locationId: null,
   locationName: "",
   site: "",
@@ -115,6 +136,9 @@ interface StrainItem {
 
 export const IntakeGrid = React.memo(function IntakeGrid() {
   const [rows, setRows] = useState<IntakeGridRow[]>([createEmptyRow()]);
+  const [rowMediaFilesById, setRowMediaFilesById] = useState<
+    Record<string, File[]>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch vendors for autocomplete
@@ -161,6 +185,122 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   // Use inventory.intake mutation which calls inventoryIntakeService.processIntake
   // This creates new batches with proper validation and audit logging
   const intakeMutation = trpc.inventory.intake.useMutation();
+  const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
+  const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
+
+  const uploadMediaFiles = useCallback(
+    async (files: File[]) => {
+      const uploaded: UploadedMediaUrl[] = [];
+
+      for (const file of files) {
+        try {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result =
+                typeof reader.result === "string" ? reader.result : "";
+              const base64 = result.split(",")[1] || "";
+              resolve(base64);
+            };
+            reader.onerror = () =>
+              reject(reader.error ?? new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+          });
+
+          const result = await uploadMediaMutation.mutateAsync({
+            fileData: base64Data,
+            fileName: file.name,
+            fileType: file.type,
+          });
+
+          uploaded.push({
+            url: result.url,
+            fileName: result.fileName,
+            fileType: result.fileType,
+            fileSize: result.fileSize,
+          });
+        } catch {
+          // Return partial successes so caller can clean them up if intake fails.
+          throw new UploadMediaError(uploaded);
+        }
+      }
+
+      return uploaded;
+    },
+    [uploadMediaMutation]
+  );
+
+  const MediaCellRenderer = useCallback(
+    (params: ICellRendererParams<IntakeGridRow>) => {
+      const rowId = params.data?.id;
+      if (!rowId) return null;
+      const disabled = params.data?.status !== "pending";
+      const count = rowMediaFilesById[rowId]?.length ?? 0;
+
+      return (
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            disabled={disabled}
+            className="hidden"
+            id={`intake-grid-media-${rowId}`}
+            onChange={e => {
+              const files = e.target.files ? Array.from(e.target.files) : [];
+              if (files.length === 0) return;
+              e.target.value = "";
+
+              const accepted = files.filter(
+                f => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024
+              );
+
+              if (accepted.length !== files.length) {
+                toast.error("Only images under 10MB are allowed");
+              }
+
+              setRowMediaFilesById(prev => ({
+                ...prev,
+                [rowId]: [...(prev[rowId] ?? []), ...accepted],
+              }));
+            }}
+          />
+
+          <label
+            htmlFor={`intake-grid-media-${rowId}`}
+            className={
+              disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            }
+            title={count > 0 ? `${count} photo(s) attached` : "Attach photos"}
+          >
+            <div className="inline-flex items-center gap-1 text-sm">
+              <Upload className="h-4 w-4" />
+              {count > 0 ? count : "Add"}
+            </div>
+          </label>
+
+          {count > 0 && !disabled && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setRowMediaFilesById(prev => {
+                  const next = { ...prev };
+                  delete next[rowId];
+                  return next;
+                })
+              }
+              title="Clear attached photos"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      );
+    },
+    [rowMediaFilesById]
+  );
 
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
@@ -247,6 +387,13 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         },
       },
       {
+        headerName: "Photos",
+        field: "id",
+        width: 110,
+        editable: false,
+        cellRenderer: MediaCellRenderer,
+      },
+      {
         headerName: "Notes",
         field: "notes",
         flex: 1,
@@ -261,7 +408,7 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         editable: false,
       },
     ],
-    [vendors, locations, strains]
+    [vendors, locations, strains, MediaCellRenderer]
   );
 
   const defaultColDef = useMemo<ColDef<IntakeGridRow>>(
@@ -324,20 +471,24 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   }, []);
 
   const handleRemoveSelectedRows = useCallback(() => {
-    setRows(prev => {
-      const pendingRows = prev.filter(r => r.status === "pending");
-      if (pendingRows.length <= 1) {
-        toast.error("Cannot remove all rows. Keep at least one row.");
-        return prev;
-      }
-      // For now, remove the last pending row
-      const lastPendingIdx = prev.findLastIndex(r => r.status === "pending");
-      if (lastPendingIdx >= 0) {
-        return prev.filter((_, idx) => idx !== lastPendingIdx);
-      }
-      return prev;
+    const pendingRows = rows.filter(r => r.status === "pending");
+    if (pendingRows.length <= 1) {
+      toast.error("Cannot remove all rows. Keep at least one row.");
+      return;
+    }
+
+    // For now, remove the last pending row
+    const lastPendingIdx = rows.findLastIndex(r => r.status === "pending");
+    const rowId = lastPendingIdx >= 0 ? rows[lastPendingIdx]?.id : undefined;
+    if (!rowId) return;
+
+    setRows(prev => prev.filter(r => r.id !== rowId));
+    setRowMediaFilesById(prev => {
+      const next = { ...prev };
+      delete next[rowId];
+      return next;
     });
-  }, []);
+  }, [rows]);
 
   const handleSubmitIntake = useCallback(async () => {
     // Validate rows: must have vendor, brand, item, qty > 0, cogs > 0, and location
@@ -367,7 +518,21 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
     // Process each row individually using inventory.intake mutation
     // This uses inventoryIntakeService.processIntake which creates new batches
     for (const row of pendingRows) {
+      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      let uploadedMediaUrls: UploadedMediaUrl[] = [];
+
       try {
+        if (mediaFiles.length > 0) {
+          try {
+            uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          } catch (err) {
+            if (err instanceof UploadMediaError) {
+              uploadedMediaUrls = err.uploaded;
+            }
+            throw err;
+          }
+        }
+
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -388,6 +553,8 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
             site: row.site,
           },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         // Mark row as submitted
@@ -396,8 +563,26 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFilesById(prev => {
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         successCount++;
       } catch (error) {
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch (cleanupError) {
+            console.error("Failed to cleanup media files:", cleanupError);
+            toast.warning("Some uploaded photos could not be cleaned up");
+          }
+        }
+
         // Mark row as error
         setRows(prev =>
           prev.map(r =>
@@ -427,7 +612,13 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
     }
 
     setIsSubmitting(false);
-  }, [rows, intakeMutation]);
+  }, [
+    rows,
+    intakeMutation,
+    rowMediaFilesById,
+    uploadMediaFiles,
+    deleteMediaMutation,
+  ]);
 
   // Calculate summary
   const summary = useMemo<IntakeGridSummary>(() => {

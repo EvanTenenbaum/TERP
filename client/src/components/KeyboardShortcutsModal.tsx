@@ -26,7 +26,7 @@ const shortcuts: KeyboardShortcut[] = [
   },
   {
     keys: ["Ctrl", "N"],
-    description: "Create new order",
+    description: "Create new sale",
     category: "Navigation",
   },
   {
@@ -49,12 +49,28 @@ const shortcuts: KeyboardShortcut[] = [
 
   // In Command Palette
   { keys: ["D"], description: "Go to Dashboard", category: "Command Palette" },
-  { keys: ["O"], description: "Go to Orders", category: "Command Palette" },
-  { keys: ["I"], description: "Go to Inventory", category: "Command Palette" },
-  { keys: ["C"], description: "Go to Clients", category: "Command Palette" },
+  {
+    keys: ["O"],
+    description: "Go to Sales workspace",
+    category: "Command Palette",
+  },
+  {
+    keys: ["I"],
+    description: "Go to Inventory workspace",
+    category: "Command Palette",
+  },
+  {
+    keys: ["C"],
+    description: "Go to Relationships workspace",
+    category: "Command Palette",
+  },
   { keys: ["L"], description: "Go to Calendar", category: "Command Palette" },
   { keys: ["T"], description: "Go to Todo Lists", category: "Command Palette" },
-  { keys: ["S"], description: "Go to Settings", category: "Command Palette" },
+  {
+    keys: ["S"],
+    description: "Go to System Settings",
+    category: "Command Palette",
+  },
 ];
 
 interface KeyboardShortcutsModalProps {
@@ -86,20 +102,20 @@ export function KeyboardShortcutsModal({
               <div className="space-y-2">
                 {shortcuts
                   .filter(s => s.category === category)
-                  .map((shortcut, idx) => (
+                  .map((shortcut) => (
                     <div
-                      key={`${category}-${shortcut.description}-${idx}`}
+                      key={`shortcut-${category}-${shortcut.description}-${shortcut.keys.join("+")}`}
                       className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50"
                     >
                       <span className="text-sm">{shortcut.description}</span>
                       <div className="flex items-center gap-1">
-                        {shortcut.keys.map((key, keyIdx) => (
+                        {shortcut.keys.map((k) => (
                           <span
-                            key={`${key}-${keyIdx}`}
+                            key={`${category}-${shortcut.description}-key-${k}`}
                             className="flex items-center gap-1"
                           >
-                            <Kbd>{key}</Kbd>
-                            {keyIdx < shortcut.keys.length - 1 && (
+                            <Kbd>{k}</Kbd>
+                            {shortcut.keys.indexOf(k) < shortcut.keys.length - 1 && (
                               <span className="text-muted-foreground text-xs">
                                 +
                               </span>

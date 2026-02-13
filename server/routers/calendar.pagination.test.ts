@@ -32,7 +32,7 @@ describe("Calendar Router - Pagination", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       // Create 50 mock events
       const mockEvents = Array.from({ length: 50 }, (_, i) => ({
@@ -60,7 +60,7 @@ describe("Calendar Router - Pagination", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -86,7 +86,7 @@ describe("Calendar Router - Pagination", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       // Create 50 mock events
       const mockEvents = Array.from({ length: 50 }, (_, i) => ({
@@ -114,7 +114,7 @@ describe("Calendar Router - Pagination", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -142,7 +142,7 @@ describe("Calendar Router - Pagination", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       const mockEvents = Array.from({ length: 10 }, (_, i) => ({
         id: i + 1,
@@ -171,7 +171,7 @@ describe("Calendar Router - Pagination", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
       const result = await caller.getEvents({
@@ -201,7 +201,7 @@ describe("Calendar Router - Pagination", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       const mockEvents = Array.from({ length: 100 }, (_, i) => ({
         id: i + 1,
@@ -227,10 +227,10 @@ describe("Calendar Router - Pagination", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
-      const result = await caller.getEvents({
+      await caller.getEvents({
         startDate: "2025-11-01",
         endDate: "2025-11-30",
       });
@@ -243,7 +243,7 @@ describe("Calendar Router - Pagination", () => {
       // Arrange
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act & Assert
       // Should throw validation error for limit > 500
@@ -266,7 +266,7 @@ describe("Calendar Router - Pagination", () => {
         offset: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+      vi.mocked(getDb).mockResolvedValue(mockDb as unknown as Awaited<ReturnType<typeof getDb>>);
 
       const mockEvents = [
         { id: 1, title: "Event 1", module: "INVENTORY", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
@@ -284,10 +284,10 @@ describe("Calendar Router - Pagination", () => {
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
-      } as any);
+      } as { user: { id: number } });
 
       // Act
-      const result = await caller.getEvents({
+      await caller.getEvents({
         startDate: "2025-11-01",
         endDate: "2025-11-30",
         modules: ["INVENTORY"],

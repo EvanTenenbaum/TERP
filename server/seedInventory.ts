@@ -1,7 +1,8 @@
 import * as inventoryDb from "./inventoryDb";
+import { logger } from "./_core/logger";
 
 export async function seedInventoryData() {
-  console.log("Seeding inventory data...");
+  logger.info("Seeding inventory data...");
 
   // Create vendors
   const vendors = [
@@ -14,7 +15,7 @@ export async function seedInventoryData() {
     await inventoryDb.createVendor(vendor);
   }
 
-  console.log("✓ Created vendors");
+  logger.info("✓ Created vendors");
 
   // Create brands
   const brands = [
@@ -28,7 +29,7 @@ export async function seedInventoryData() {
     await inventoryDb.createBrand(brand);
   }
 
-  console.log("✓ Created brands");
+  logger.info("✓ Created brands");
 
   // Create products
   const products = [
@@ -44,7 +45,7 @@ export async function seedInventoryData() {
     await inventoryDb.createProduct(product);
   }
 
-  console.log("✓ Created products");
+  logger.info("✓ Created products");
 
   // Create lots
   const today = new Date();
@@ -58,7 +59,7 @@ export async function seedInventoryData() {
     await inventoryDb.createLot(lot);
   }
 
-  console.log("✓ Created lots");
+  logger.info("✓ Created lots");
 
   // Create batches
   const batches = [
@@ -155,7 +156,7 @@ export async function seedInventoryData() {
     await inventoryDb.createBatch(batch);
   }
 
-  console.log("✓ Created batches");
+  logger.info("✓ Created batches");
 
   // Create batch locations
   const locations = [
@@ -169,7 +170,7 @@ export async function seedInventoryData() {
     await inventoryDb.createBatchLocation(location);
   }
 
-  console.log("✓ Created batch locations");
+  logger.info("✓ Created batch locations");
 
   // Create audit logs
   const auditLogs = [
@@ -203,6 +204,6 @@ export async function seedInventoryData() {
     await inventoryDb.createAuditLog(log);
   }
 
-  console.log("✓ Created audit logs");
-  console.log("✅ Inventory seed data complete!");
+  logger.info("✓ Created audit logs");
+  logger.info("✅ Inventory seed data complete!");
 }

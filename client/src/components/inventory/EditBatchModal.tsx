@@ -278,7 +278,7 @@ export function EditBatchModal({
                 <div className="mt-4 space-y-2">
                   {mediaFiles.map((file, index) => (
                     <div
-                      key={`${file.name}-${file.size}-${index}`}
+                      key={`media-${file.name}-${file.size}`}
                       className="flex items-center justify-between bg-gray-50 p-2 rounded"
                     >
                       <span className="text-sm truncate flex-1">

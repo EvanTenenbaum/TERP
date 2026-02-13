@@ -17,6 +17,7 @@
 import { getDb } from '../db';
 import { batches, workflowStatuses } from '../../drizzle/schema';
 import { eq, sql, isNull } from 'drizzle-orm';
+import { logger } from '../_core/logger';
 
 interface WorkflowStatus {
   id: number;
@@ -32,17 +33,17 @@ interface Batch {
 }
 
 async function migrateBatchesToWorkflow() {
-  console.log('🔄 Starting batch migration to workflow queue...\n');
+  logger.info('🔄 Starting batch migration to workflow queue...\n');
 
   const db = await getDb();
 
   try {
     // 1. Fetch all workflow statuses
-    console.log('📋 Fetching workflow statuses...');
+    logger.info('📋 Fetching workflow statuses...');
     const statuses = await db.select().from(workflowStatuses).where(eq(workflowStatuses.isActive, true));
     
     if (statuses.length === 0) {
-      console.error('❌ No workflow statuses found. Please run seed script first.');
+      logger.error('❌ No workflow statuses found. Please run seed script first.');
       process.exit(1);
     }
 
@@ -51,10 +52,10 @@ async function migrateBatchesToWorkflow() {
       statusMap[status.slug] = status;
     });
 
-    console.log(`✓ Found ${statuses.length} workflow statuses\n`);
+    logger.info(`✓ Found ${statuses.length} workflow statuses\n`);
 
     // 2. Fetch all batches that don't have a workflow status assigned
-    console.log('📦 Fetching batches without workflow status...');
+    logger.info('📦 Fetching batches without workflow status...');
     const batchesToMigrate = await db
       .select({
         id: batches.id,
@@ -65,15 +66,15 @@ async function migrateBatchesToWorkflow() {
       .from(batches)
       .where(isNull(batches.statusId));
 
-    console.log(`✓ Found ${batchesToMigrate.length} batches to migrate\n`);
+    logger.info(`✓ Found ${batchesToMigrate.length} batches to migrate\n`);
 
     if (batchesToMigrate.length === 0) {
-      console.log('✨ No batches need migration. All batches already have workflow statuses.');
+      logger.info('✨ No batches need migration. All batches already have workflow statuses.');
       process.exit(0);
     }
 
     // 3. Categorize and assign batches to workflow statuses
-    console.log('🎯 Assigning workflow statuses...\n');
+    logger.info('🎯 Assigning workflow statuses...\n');
 
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -139,11 +140,11 @@ async function migrateBatchesToWorkflow() {
 
       const status = statusMap[slug];
       if (!status) {
-        console.warn(`⚠️  Status "${slug}" not found, skipping ${batchIds.length} batches`);
+        logger.warn(`⚠️  Status "${slug}" not found, skipping ${batchIds.length} batches`);
         continue;
       }
 
-      console.log(`📝 Assigning ${batchIds.length} batches to "${status.name}"...`);
+      logger.info(`📝 Assigning ${batchIds.length} batches to "${status.name}"...`);
 
       // Update batches in chunks of 50
       const chunkSize = 50;
@@ -158,26 +159,26 @@ async function migrateBatchesToWorkflow() {
         totalUpdated += chunk.length;
       }
 
-      console.log(`   ✓ Assigned ${batchIds.length} batches to "${status.name}"`);
+      logger.info(`   ✓ Assigned ${batchIds.length} batches to "${status.name}"`);
     }
 
     // 5. Summary
-    console.log('\n📊 Migration Summary:');
-    console.log('─'.repeat(50));
+    logger.info('\n📊 Migration Summary:');
+    logger.info('─'.repeat(50));
     
     for (const [slug, batchIds] of Object.entries(assignments)) {
       const status = statusMap[slug];
       if (status && batchIds.length > 0) {
         const percentage = ((batchIds.length / batchesToMigrate.length) * 100).toFixed(1);
-        console.log(`   ${status.name.padEnd(20)} ${batchIds.length.toString().padStart(4)} batches (${percentage}%)`);
+        logger.info(`   ${status.name.padEnd(20)} ${batchIds.length.toString().padStart(4)} batches (${percentage}%)`);
       }
     }
     
-    console.log('─'.repeat(50));
-    console.log(`   ${'Total'.padEnd(20)} ${totalUpdated.toString().padStart(4)} batches\n`);
+    logger.info('─'.repeat(50));
+    logger.info(`   ${'Total'.padEnd(20)} ${totalUpdated.toString().padStart(4)} batches\n`);
 
     // 6. Verify
-    console.log('✅ Verifying migration...');
+    logger.info('✅ Verifying migration...');
     const verifyResult = await db
       .select({
         statusId: batches.statusId,
@@ -189,19 +190,19 @@ async function migrateBatchesToWorkflow() {
     const withStatus = verifyResult.find(r => r.statusId !== null);
     const withoutStatus = verifyResult.find(r => r.statusId === null);
 
-    console.log(`   ✓ Batches with workflow status: ${withStatus?.count || 0}`);
-    console.log(`   ✓ Batches without workflow status: ${withoutStatus?.count || 0}\n`);
+    logger.info(`   ✓ Batches with workflow status: ${withStatus?.count || 0}`);
+    logger.info(`   ✓ Batches without workflow status: ${withoutStatus?.count || 0}\n`);
 
-    console.log('✨ Migration complete!\n');
-    console.log('🎯 Next steps:');
-    console.log('   1. Navigate to /workflow-queue to see the workflow board');
-    console.log('   2. Drag and drop batches between statuses');
-    console.log('   3. View the dashboard widgets for an overview');
-    console.log('   4. Check the history tab to see status changes\n');
+    logger.info('✨ Migration complete!\n');
+    logger.info('🎯 Next steps:');
+    logger.info('   1. Navigate to /workflow-queue to see the workflow board');
+    logger.info('   2. Drag and drop batches between statuses');
+    logger.info('   3. View the dashboard widgets for an overview');
+    logger.info('   4. Check the history tab to see status changes\n');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    logger.error('❌ Migration failed:', error);
     process.exit(1);
   }
 }

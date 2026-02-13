@@ -5,9 +5,15 @@
  */
 
 import React, { useState } from "react";
-import { Percent, DollarSign, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  Percent,
+  DollarSign,
+  TrendingDown,
+  TrendingUp,
+  XCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -37,8 +43,13 @@ export function OrderAdjustmentPanel({
 }: OrderAdjustmentPanelProps) {
   const [isEnabled, setIsEnabled] = useState(!!value);
   const [amount, setAmount] = useState(value?.amount.toString() || "0");
-  const [type, setType] = useState<"PERCENT" | "DOLLAR">(value?.type || "PERCENT");
-  const [mode, setMode] = useState<"DISCOUNT" | "MARKUP">(value?.mode || "DISCOUNT");
+  // TER-207: Default to DOLLAR mode per user interview feedback
+  const [type, setType] = useState<"PERCENT" | "DOLLAR">(
+    value?.type || "DOLLAR"
+  );
+  const [mode, setMode] = useState<"DISCOUNT" | "MARKUP">(
+    value?.mode || "DISCOUNT"
+  );
 
   const handleToggle = (enabled: boolean) => {
     setIsEnabled(enabled);
@@ -50,10 +61,12 @@ export function OrderAdjustmentPanel({
     }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = (overrides?: Partial<OrderAdjustment>) => {
+    const currentMode = overrides?.mode ?? mode;
+    const currentType = overrides?.type ?? type;
     const amt = parseFloat(amount) || 0;
     if (amt > 0) {
-      onChange({ amount: amt, type, mode });
+      onChange({ amount: amt, type: currentType, mode: currentMode });
     } else {
       onChange(null);
       setIsEnabled(false);
@@ -76,10 +89,7 @@ export function OrderAdjustmentPanel({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Order-Level Adjustment</CardTitle>
-          <Switch
-            checked={isEnabled}
-            onCheckedChange={handleToggle}
-          />
+          <Switch checked={isEnabled} onCheckedChange={handleToggle} />
         </div>
       </CardHeader>
       {isEnabled && (
@@ -90,10 +100,11 @@ export function OrderAdjustmentPanel({
             <ToggleGroup
               type="single"
               value={mode}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 if (value) {
-                  setMode(value as "DISCOUNT" | "MARKUP");
-                  handleUpdate();
+                  const newMode = value as "DISCOUNT" | "MARKUP";
+                  setMode(newMode);
+                  handleUpdate({ mode: newMode });
                 }
               }}
               className="justify-start"
@@ -115,10 +126,11 @@ export function OrderAdjustmentPanel({
             <ToggleGroup
               type="single"
               value={type}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 if (value) {
-                  setType(value as "PERCENT" | "DOLLAR");
-                  handleUpdate();
+                  const newType = value as "PERCENT" | "DOLLAR";
+                  setType(newType);
+                  handleUpdate({ type: newType });
                 }
               }}
               className="justify-start"
@@ -134,20 +146,36 @@ export function OrderAdjustmentPanel({
             </ToggleGroup>
           </div>
 
-          {/* Amount Input */}
+          {/* Amount Input + TER-207: one-click clear */}
           <div className="space-y-2">
             <Label htmlFor="adjustment-amount">
               {mode === "DISCOUNT" ? "Discount" : "Markup"} Amount
             </Label>
-            <Input
-              id="adjustment-amount"
-              type="number"
-              step={type === "PERCENT" ? "0.1" : "0.01"}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onBlur={handleUpdate}
-              placeholder="0"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="adjustment-amount"
+                type="number"
+                step={type === "PERCENT" ? "0.1" : "0.01"}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                onBlur={() => handleUpdate()}
+                onFocus={e => e.target.select()}
+                placeholder="0"
+                className="flex-1"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setAmount("0");
+                  setIsEnabled(false);
+                  onChange(null);
+                }}
+                title="Clear adjustment"
+              >
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
           </div>
 
           {/* FEAT-004: Enhanced Calculated Amount with percentage equivalent */}
@@ -157,7 +185,9 @@ export function OrderAdjustmentPanel({
                 <span className="text-sm font-medium">
                   {isDiscount ? "Total Discount:" : "Total Markup:"}
                 </span>
-                <span className={`text-lg font-semibold ${isDiscount ? "text-red-600" : "text-green-600"}`}>
+                <span
+                  className={`text-lg font-semibold ${isDiscount ? "text-red-600" : "text-green-600"}`}
+                >
                   {isDiscount ? "-" : "+"}${adjustmentAmount.toFixed(2)}
                 </span>
               </div>
@@ -169,7 +199,9 @@ export function OrderAdjustmentPanel({
               {/* FEAT-004: Show percentage equivalent for dollar amounts */}
               {type === "DOLLAR" && subtotal > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Equivalent to {((parseFloat(amount) / subtotal) * 100).toFixed(2)}% of ${subtotal.toFixed(2)} subtotal
+                  Equivalent to{" "}
+                  {((parseFloat(amount) / subtotal) * 100).toFixed(2)}% of $
+                  {subtotal.toFixed(2)} subtotal
                 </p>
               )}
             </div>
@@ -196,4 +228,3 @@ export function OrderAdjustmentPanel({
     </Card>
   );
 }
-

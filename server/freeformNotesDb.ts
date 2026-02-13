@@ -3,7 +3,7 @@
  * Handles all database operations for advanced rich-text notes
  */
 
-import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { 
   freeformNotes, 
@@ -77,7 +77,7 @@ export async function getNoteById(noteId: number, userId: number) {
  */
 export async function createNote(userId: number, data: {
   title: string;
-  content?: any;
+  content?: string | Record<string, unknown> | unknown[];
   templateType?: string;
   tags?: string[];
 }) {
@@ -109,7 +109,7 @@ export async function updateNote(
   userId: number,
   data: {
     title?: string;
-    content?: any;
+    content?: string | Record<string, unknown> | unknown[];
     tags?: string[];
   }
 ) {
@@ -120,7 +120,7 @@ export async function updateNote(
   const note = await getNoteById(noteId, userId);
   if (!note) throw new Error("Note not found or access denied");
 
-  const updateData: any = {
+  const updateData: { updatedAt: Date; title?: string; content?: string | Record<string, unknown> | unknown[] | null; tags?: string[] | null } = {
     updatedAt: new Date(),
   };
 
@@ -244,7 +244,7 @@ export async function shareNote(
 /**
  * Update last viewed timestamp
  */
-export async function updateLastViewed(noteId: number, userId: number) {
+export async function updateLastViewed(noteId: number, _userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -326,7 +326,7 @@ export async function addComment(
 /**
  * Resolve a comment
  */
-export async function resolveComment(commentId: number, userId: number) {
+export async function resolveComment(commentId: number, _userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -349,7 +349,7 @@ export async function logActivity(
   noteId: number,
   userId: number,
   activityType: "CREATED" | "UPDATED" | "COMMENTED" | "SHARED" | "ARCHIVED" | "RESTORED" | "PINNED" | "UNPINNED" | "TEMPLATE_APPLIED",
-  metadata: any
+  metadata: Record<string, unknown> | null | undefined
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

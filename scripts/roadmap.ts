@@ -504,14 +504,15 @@ function buildConflictMap(tasks: Task[]): Map<string, Set<string>> {
   const map = new Map<string, Set<string>>();
 
   for (const task of tasks) {
-    map.set(task.id, new Set());
+    const conflicts = new Set<string>();
+    map.set(task.id, conflicts);
 
     for (const other of tasks) {
       if (task.id === other.id) continue;
 
       // FIX #7: Improved module conflict detection
       if (modulesConflict(task.module, other.module)) {
-        map.get(task.id)!.add(other.id);
+        conflicts.add(other.id);
       }
     }
   }

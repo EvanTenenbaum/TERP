@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-02-10T21:29:16.482Z",
+  "inputFile": "/private/tmp/terp-claude-agent-teams-v4qa/test-results.json",
+  "totalTests": 1771,
+  "totalPassed": 0,
+  "totalFailed": 0,
+  "totalSkipped": 1771,
+  "passRate": "0.0%",
+  "clusters": [],
+  "fileFailureCounts": {},
+  "recommendations": []
+}

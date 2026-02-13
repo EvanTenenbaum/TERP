@@ -262,7 +262,7 @@ export function UserPreferencesSettings() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Default</SelectItem>
-              {warehouses.map((warehouse) => (
+              {warehouses?.map((warehouse) => (
                 <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
                   {warehouse.site}
                   {warehouse.zone && ` - ${warehouse.zone}`}
@@ -489,7 +489,7 @@ export function UnitTypesManager() {
                 <div className="flex-1 grid grid-cols-3 gap-2 mr-4">
                   <Input
                     value={editData?.name || ""}
-                    onChange={(e) => setEditData({ ...editData!, name: e.target.value })}
+                    onChange={(e) => editData && setEditData({ ...editData, name: e.target.value })}
                     placeholder="Name"
                   />
                   <Select
@@ -508,7 +508,7 @@ export function UnitTypesManager() {
                   </Select>
                   <Input
                     value={editData?.description || ""}
-                    onChange={(e) => setEditData({ ...editData!, description: e.target.value })}
+                    onChange={(e) => editData && setEditData({ ...editData, description: e.target.value })}
                     placeholder="Description"
                   />
                 </div>
@@ -535,7 +535,7 @@ export function UnitTypesManager() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => updateMutation.mutate({ id: unit.id, ...editData! })}
+                      onClick={() => editData && updateMutation.mutate({ id: unit.id, ...editData })}
                       disabled={updateMutation.isPending}
                     >
                       <Save className="h-4 w-4" />
@@ -773,32 +773,32 @@ export function FinanceStatusManager() {
                 <div className="flex-1 grid grid-cols-4 gap-2 mr-4">
                   <Input
                     value={editData?.statusLabel || ""}
-                    onChange={(e) => setEditData({ ...editData!, statusLabel: e.target.value })}
+                    onChange={(e) => editData && setEditData({ ...editData, statusLabel: e.target.value })}
                     placeholder="Label"
                   />
                   <div className="flex gap-2">
                     <Input
                       type="color"
                       value={editData?.color || "#6B7280"}
-                      onChange={(e) => setEditData({ ...editData!, color: e.target.value })}
+                      onChange={(e) => editData && setEditData({ ...editData, color: e.target.value })}
                       className="w-12 h-10 p-1"
                     />
                     <Input
                       value={editData?.color || ""}
-                      onChange={(e) => setEditData({ ...editData!, color: e.target.value })}
+                      onChange={(e) => editData && setEditData({ ...editData, color: e.target.value })}
                       placeholder="Color"
                       className="flex-1"
                     />
                   </div>
                   <Input
                     value={editData?.description || ""}
-                    onChange={(e) => setEditData({ ...editData!, description: e.target.value })}
+                    onChange={(e) => editData && setEditData({ ...editData, description: e.target.value })}
                     placeholder="Description"
                   />
                   <div className="flex items-center">
                     <Switch
                       checked={editData?.isTerminal || false}
-                      onCheckedChange={(checked) => setEditData({ ...editData!, isTerminal: checked })}
+                      onCheckedChange={(checked) => editData && setEditData({ ...editData, isTerminal: checked })}
                     />
                     <span className="ml-2 text-sm">Terminal</span>
                   </div>
@@ -832,7 +832,7 @@ export function FinanceStatusManager() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => updateMutation.mutate({ id: status.id, ...editData! })}
+                      onClick={() => editData && updateMutation.mutate({ id: status.id, ...editData })}
                       disabled={updateMutation.isPending}
                     >
                       <Save className="h-4 w-4" />

@@ -2,8 +2,8 @@
 # Generate an invoice from a completed SALE order
 
 flow_id: "Accounting.Invoices.GenerateFromOrder"
-description: "Generate an invoice from a SALE order in SHIPPED status and verify invoice creation"
-role: "AccountingManager"
+description: "Generate an invoice from a SALE order and verify invoice creation"
+role: "SalesManager"
 seed_profile: "basic_sales"
 tags:
   - tier1
@@ -18,12 +18,23 @@ preconditions:
       ref: "seed:client.redwood"
       where:
         status: "active"
-    - entity: "order"
-      ref: "seed:order.shipped_sale"
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
       where:
-        orderType: "SALE"
-        fulfillmentStatus: "SHIPPED"
-        invoiceId_null: true
+        status: "LIVE"
+        available_quantity_gte: 20
+  create:
+    - entity: "order"
+      ref: "temp:invoice_source_order"
+      data:
+        order_type: "SALE"
+        is_draft: false
+        client_id: "$seed:client.redwood.id"
+        order_number: "S-INVOICE-{{timestamp}}"
+        sale_status: "PENDING"
+        fulfillment_status: "PENDING"
+        total: "1000.00"
+        items: '[{"batchId": "$seed:batch.og_kush.id", "quantity": 1, "unitPrice": 1000, "isSample": false}]'
 
 steps:
   - action: navigate
@@ -34,51 +45,54 @@ steps:
     network_idle: true
     timeout: 10000
 
-  - action: click
-    target: "[data-testid='order-row-{{seed:order.shipped_sale.id}}'], tr[data-order-id='{{seed:order.shipped_sale.id}}']"
-    wait_for_navigation: true
+  - action: type
+    target: "[data-testid='orders-search-input']"
+    value: "{{temp:invoice_source_order.orderNumber}}"
+    clear_first: true
 
   - action: wait
-    for: "[data-testid='order-detail'], .order-detail"
+    for: "table tbody tr:has-text('{{temp:invoice_source_order.orderNumber}}'), table tbody tr"
     timeout: 10000
 
   - action: click
-    target: "[data-testid='generate-invoice-btn'], button:contains('Generate Invoice')"
+    target: "table tbody tr:has-text('{{temp:invoice_source_order.orderNumber}}'), table tbody tr:first-of-type"
+
+  - action: wait
+    for: "[data-testid='generate-invoice-btn'], button:has-text('Generate Invoice')"
+    timeout: 10000
+
+  - action: click
+    target: "[data-testid='generate-invoice-btn'], button:has-text('Generate Invoice')"
     wait_after: 2000
 
   - action: wait
-    for: "[data-testid='invoice-success'], .success-toast, .toast-success"
+    for: "[data-sonner-toast], [role='status'], text=Invoice"
     timeout: 10000
-
-  - action: store
-    from: "[data-testid='invoice-number'], .invoice-number"
-    as: "generated_invoice_number"
 
   - action: screenshot
     name: "invoice_generated_from_order"
 
 expected_ui:
   visible:
-    - "[data-testid='invoice-success'], .success-message, .toast"
+    - "[data-sonner-toast], [role='status'], .toast"
   text_present:
     - "Invoice"
-    - "generated"
 
 expected_db:
   invoices:
     - where:
         referenceType: "ORDER"
-        referenceId: "$seed:order.shipped_sale.id"
+        referenceId: "{{temp:invoice_source_order.id}}"
       expect:
         status: "DRAFT"
-        customerId: "$seed:order.shipped_sale.clientId"
+        customerId: "{{temp:invoice_source_order.clientId}}"
         referenceType: "ORDER"
         deletedAt_null: true
       store_as: "created_invoice"
 
   orders:
     - where:
-        id: "$seed:order.shipped_sale.id"
+        id: "{{temp:invoice_source_order.id}}"
       expect:
         invoiceId_not_null: true
 

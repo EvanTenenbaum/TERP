@@ -1,10 +1,6 @@
 import { router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
-import { z } from "zod";
-import * as fs from "fs";
-import * as path from "path";
-import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Admin Migrations Router
@@ -329,7 +325,8 @@ export const adminMigrationsRouter = router({
         AND TABLE_NAME = 'userDashboardPreferences'
       `);
       
-      const hasDashboardPrefsTable = (dashboardPrefsTable as any[]).length > 0;
+      const resultArray = dashboardPrefsTable as unknown as Array<Record<string, unknown>>;
+      const hasDashboardPrefsTable = resultArray.length > 0;
 
       checks.push({
         check: "userDashboardPreferences_table",

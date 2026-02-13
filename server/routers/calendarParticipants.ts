@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 import { calendarLogger } from "../_core/logger";
 import { idSchema } from "../_core/validationSchemas";
 

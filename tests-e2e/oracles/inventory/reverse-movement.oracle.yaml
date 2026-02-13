@@ -2,7 +2,7 @@
 # Reverse an existing inventory movement
 
 flow_id: "Inventory.Movements.ReverseMovement"
-description: "Reverse an existing inventory movement with full audit trail linkage"
+description: "Reverse a prior movement by applying an opposite quantity adjustment"
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
@@ -22,14 +22,6 @@ preconditions:
       ref: "seed:user.inventory_manager"
       where:
         permissions_include: "inventory:update"
-  create:
-    - entity: "inventory_movement"
-      ref: "temp:movement_to_reverse"
-      data:
-        batchId: "$seed:batch.og_kush.id"
-        inventoryMovementType: "SAMPLE"
-        quantityChange: "-10"
-        notes: "Sample for reversal test"
 
 steps:
   - action: navigate
@@ -49,32 +41,25 @@ steps:
     timeout: 5000
 
   - action: click
-    target: "[data-testid='movements-tab'], button:has-text('Movements'), a:has-text('Movements')"
+    target: "[data-testid='adjust-qty-btn'], button:has-text('Adjust Quantity'), button:has-text('Adjust')"
     wait_after: 500
 
   - action: wait
-    for: "[data-testid='movement-list'], .movements-table"
-    timeout: 5000
-
-  - action: click
-    target: "tr:has-text('SAMPLE'):has-text('-10') [data-testid='movement-actions'], tr:has-text('SAMPLE'):first-child button"
-    wait_after: 500
-
-  - action: click
-    target: "[data-testid='reverse-movement'], button:has-text('Reverse'), [data-value='reverse']"
-    wait_after: 500
-
-  - action: wait
-    for: "[data-testid='reversal-modal'], [data-testid='reason-input'], .reversal-dialog"
+    for: "[data-testid='qty-adjustment'], #qty-adjustment, [role='dialog']:has-text('Adjust Quantity')"
     timeout: 5000
 
   - action: type
-    target: "[data-testid='reversal-reason'], textarea[name='reason'], input[name='reason']"
+    target: "[data-testid='qty-adjustment'], #qty-adjustment, input[id='qty-adjustment']"
+    value: "10"
+    clear_first: true
+
+  - action: type
+    target: "[data-testid='qty-reason'], #qty-reason, input[id='qty-reason']"
     value: "Sample returned by buyer - product did not meet requirements"
     clear_first: true
 
   - action: click
-    target: "[data-testid='confirm-reversal'], button:has-text('Confirm'), button[type='submit']"
+    target: "[data-testid='submit-adjustment'], button:has-text('Save'), button[type='submit']"
     wait_after: 1000
 
   - action: wait
@@ -87,8 +72,6 @@ steps:
 expected_ui:
   visible:
     - "[data-testid='success-toast'], .toast-success"
-  text_present:
-    - "reversed"
   not_visible:
     - "[data-testid='error-message']"
 

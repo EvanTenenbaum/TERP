@@ -38,6 +38,55 @@ When PM triggers QA, expect this context:
 
 ---
 
+## Database Access for `db_queries`
+
+When PM includes `db_queries`, use this connection string as the default `DATABASE_URL`:
+
+```bash
+export DATABASE_URL="mysql://doadmin:AVNS_Q_RGkS7-uB3Bk7xC2am@terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED"
+```
+
+Run verification SQL against this same database unless PM explicitly provides a different target.
+
+---
+
+## Step 0: Workspace Hygiene (Run First)
+
+Before any deployment or browser QA work, ensure you are operating in the canonical TERP workspace model.
+
+**Scope note:** This step is for agents working on **local copies on Evan's computer**. The filesystem paths below are local-machine specific.
+
+### Cloud/Remote Agent Exception
+
+- In cloud/remote agent environments, follow the host platform's workspace conventions.
+- Do not assume `/Users/evan/...` paths are available.
+- Preserve the same intent (single active workspace, clean git state, preflight checks), but use environment-appropriate paths.
+
+### Required Workspace Policy
+
+- Canonical repo: `/Users/evan/spec-erp-docker/TERP/TERP`
+- Use one primary clone only.
+- For parallel branches, use `git worktree` from canonical repo.
+- Do not create additional TERP full clones under `/Users/evan/spec-erp-docker/TERP`.
+
+### Required Preflight Commands
+
+```bash
+pwd
+git status -sb
+git rev-parse --abbrev-ref HEAD
+git fetch --prune origin
+git pull --ff-only
+```
+
+### If Preflight Fails
+
+- Dirty working tree: stop and resolve (commit, stash, or explicit discard) before QA execution.
+- Pull conflict or non-fast-forward: stop and fix branch state first.
+- Wrong directory/repo: switch to canonical repo or an approved worktree before proceeding.
+
+---
+
 ## Step 1: Wait for Correct Deployment
 
 **Critical:** You must verify the CORRECT commit is deployed, not just any deployment.

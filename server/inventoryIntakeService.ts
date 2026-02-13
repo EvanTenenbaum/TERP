@@ -17,6 +17,7 @@ import {
   lots,
   batches,
   batchLocations,
+  productImages,
   auditLogs,
   type Vendor,
   type Brand,
@@ -176,16 +177,44 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
         lot = newLot;
       }
 
-      // 5. Generate batch code and SKU
+      // 5. Generate batch code and a collision-safe SKU
       const batchCode = await inventoryUtils.generateBatchCode();
       const brandKey = inventoryUtils.normalizeToKey(brand.name);
       const productKey = inventoryUtils.normalizeToKey(product.nameCanonical);
-      const sku = inventoryUtils.generateSKU(
+      let skuSequence = 1;
+      let sku = inventoryUtils.generateSKU(
         brandKey,
         productKey,
         new Date(),
-        1
+        skuSequence
       );
+
+      // Prevent duplicate-SKU insert failures for repeated intake of the same
+      // brand/product/day combination by bumping sequence until available.
+      const maxSkuAttempts = 10_000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const [existingSku] = await tx
+          .select({ id: batches.id })
+          .from(batches)
+          .where(eq(batches.sku, sku))
+          .limit(1);
+
+        if (!existingSku) break;
+
+        skuSequence += 1;
+        if (skuSequence > maxSkuAttempts) {
+          throw new Error(
+            `Failed to generate unique SKU for ${brandKey}/${productKey} after ${maxSkuAttempts} attempts`
+          );
+        }
+        sku = inventoryUtils.generateSKU(
+          brandKey,
+          productKey,
+          new Date(),
+          skuSequence
+        );
+      }
 
       // 6. Create batch
       // MEET-006: Determine ownership type based on payment terms if not explicitly set
@@ -238,6 +267,23 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
       if (!batch) {
         throw new Error("Failed to create batch");
+      }
+
+      // Persist intake-uploaded media as batch images (Photography source of truth)
+      if (input.mediaUrls && input.mediaUrls.length > 0) {
+        await tx.insert(productImages).values(
+          input.mediaUrls.map((media, index) => ({
+            batchId: batch.id,
+            productId: product.id,
+            imageUrl: media.url,
+            caption: media.fileName ? media.fileName.slice(0, 255) : null,
+            isPrimary: index === 0,
+            sortOrder: index,
+            status: "APPROVED" as const,
+            uploadedBy: input.userId,
+            uploadedAt: new Date(),
+          }))
+        );
       }
 
       // 7. Create batch location

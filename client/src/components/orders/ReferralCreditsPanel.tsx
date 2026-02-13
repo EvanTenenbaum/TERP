@@ -92,7 +92,7 @@ export function ReferralCreditsPanel({
   };
 
   const availableCredits = creditsData.credits.filter((c) => c.status === "AVAILABLE");
-  const pendingCredits = creditsData.credits.filter((c) => c.status === "PENDING");
+  const _pendingCredits = creditsData.credits.filter((c) => c.status === "PENDING");
 
   // Preview mode (no orderId)
   const isPreviewMode = !orderId;

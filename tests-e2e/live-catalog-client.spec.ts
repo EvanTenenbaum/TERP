@@ -17,7 +17,7 @@ async function takeScreenshot(page: unknown, name: string): Promise<void> {
   }
 }
 
-test.describe("Live Catalog - Client Workflows", () => {
+test.describe("Live Catalog - Client Workflows @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsVipClient(page);
   });

@@ -5,11 +5,24 @@ import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
-import { batches, products, productMedia } from "../../drizzle/schema";
-import { eq, and, or, like, gt } from "drizzle-orm";
+import { batches, products, productImages, productMedia } from "../../drizzle/schema";
+import { eq, and, or, like, gt, isNull, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
 
 export const vipPortalLiveShoppingRouter = router({
   // ============================================================================
@@ -161,12 +174,33 @@ export const vipPortalLiveShoppingRouter = router({
           code: batches.code,
           productName: products.nameCanonical,
           description: products.description,
-          imageUrl: productMedia.url,
+          imageUrl: sql<string | null>`COALESCE(${productImages.imageUrl}, ${productMedia.url})`.as(
+            "imageUrl"
+          ),
           // Note: Price comes from pricing engine, not stored on products
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
-        .leftJoin(productMedia, eq(products.id, productMedia.productId))
+        .leftJoin(
+          productImages,
+          and(
+            eq(productImages.batchId, batches.id),
+            eq(productImages.isPrimary, true),
+            or(
+              isNull(productImages.status),
+              eq(productImages.status, "APPROVED"),
+              eq(productImages.status, "PENDING")
+            )
+          )
+        )
+        .leftJoin(
+          productMedia,
+          and(
+            eq(products.id, productMedia.productId),
+            eq(productMedia.type, "image"),
+            isNull(productMedia.deletedAt)
+          )
+        )
         .where(eq(batches.id, input.batchId))
         .limit(1);
 
@@ -215,10 +249,10 @@ export const vipPortalLiveShoppingRouter = router({
         // Notify via SSE (Handled inside service, but we ensure cart is returned)
         const updatedCart = await sessionCartService.getCart(input.sessionId);
         return updatedCart;
-      } catch (err: any) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err.message || "Failed to add item",
+          message: getErrorMessage(err, "Failed to add item"),
         });
       }
     }),
@@ -257,10 +291,10 @@ export const vipPortalLiveShoppingRouter = router({
           input.quantity
         );
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: err.message || "Failed to update quantity",
+          message: getErrorMessage(err, "Failed to update quantity"),
         });
       }
     }),
@@ -423,10 +457,10 @@ export const vipPortalLiveShoppingRouter = router({
           itemStatus: input.status,
         });
         return { success: true, cartItemId };
-      } catch (e: any) {
+      } catch (e: unknown) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to add item",
+          message: getErrorMessage(e, "Failed to add item"),
         });
       }
     }),

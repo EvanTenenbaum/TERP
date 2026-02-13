@@ -1,4 +1,5 @@
 import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +7,19 @@ import { Plus, Trash2, X, Clock, Calendar } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+interface AvailabilitySlot {
+  id: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+interface BlockedDate {
+  id: number;
+  date: string;
+  reason?: string;
+}
 
 /**
  * CalendarAvailabilitySettings Component
@@ -32,12 +46,12 @@ export function CalendarAvailabilitySettings() {
   const { data: calendars } = trpc.calendarsManagement.list.useQuery({});
   const { data: availability, refetch: refetchAvailability } =
     trpc.calendarsManagement.listAvailability.useQuery(
-      { calendarId: selectedCalendarId! },
+      { calendarId: selectedCalendarId ?? 0 },
       { enabled: !!selectedCalendarId }
     );
   const { data: blockedDates, refetch: refetchBlocked } =
     trpc.calendarsManagement.listBlockedDates.useQuery(
-      { calendarId: selectedCalendarId! },
+      { calendarId: selectedCalendarId ?? 0 },
       { enabled: !!selectedCalendarId }
     );
 
@@ -83,7 +97,7 @@ export function CalendarAvailabilitySettings() {
   for (let i = 0; i < 7; i++) {
     availabilityByDay[i] = [];
   }
-  availability?.forEach((slot: any) => {
+  availability?.forEach((slot: AvailabilitySlot) => {
     availabilityByDay[slot.dayOfWeek]?.push({
       id: slot.id,
       startTime: slot.startTime?.slice(0, 5) || "",
@@ -98,7 +112,7 @@ export function CalendarAvailabilitySettings() {
       { startTime: "09:00", endTime: "17:00" },
     ];
     setAvailabilityMutation.mutate({
-      calendarId: selectedCalendarId!,
+      calendarId: selectedCalendarId ?? 0,
       dayOfWeek,
       slots: newSlots,
     });
@@ -110,7 +124,7 @@ export function CalendarAvailabilitySettings() {
       .filter((_, i) => i !== index)
       .map((s) => ({ startTime: s.startTime, endTime: s.endTime }));
     setAvailabilityMutation.mutate({
-      calendarId: selectedCalendarId!,
+      calendarId: selectedCalendarId ?? 0,
       dayOfWeek,
       slots: newSlots,
     });
@@ -130,7 +144,7 @@ export function CalendarAvailabilitySettings() {
       return { startTime: s.startTime, endTime: s.endTime };
     });
     setAvailabilityMutation.mutate({
-      calendarId: selectedCalendarId!,
+      calendarId: selectedCalendarId ?? 0,
       dayOfWeek,
       slots: newSlots,
     });
@@ -147,7 +161,7 @@ export function CalendarAvailabilitySettings() {
             value={selectedCalendarId || ""}
             onChange={(e) => setSelectedCalendarId(Number(e.target.value))}
           >
-            {calendars?.map((cal: any) => (
+            {calendars?.map((cal: { id: number; name: string }) => (
               <option key={cal.id} value={cal.id}>
                 {cal.name}
               </option>
@@ -239,7 +253,7 @@ export function CalendarAvailabilitySettings() {
           <Button
             onClick={() =>
               addBlockedMutation.mutate({
-                calendarId: selectedCalendarId!,
+                calendarId: selectedCalendarId ?? 0,
                 date: blockedDateInput,
                 reason: blockedReasonInput || undefined,
               })

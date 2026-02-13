@@ -3,10 +3,10 @@ import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trp
 import { getDb } from "../db";
 import {
   timeOffRequests,
-  calendarEvents,
   users,
+  calendarEvents,
 } from "../../drizzle/schema";
-import { and, eq, gte, lte, desc, sql, or, isNull } from "drizzle-orm";
+import { and, eq, gte, lte, desc, sql, or } from "drizzle-orm";
 import { sendNotification } from "../services/notificationService";
 
 /**

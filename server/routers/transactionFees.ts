@@ -18,6 +18,8 @@ import {
 } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
+
+
 import { clients, orders } from "../../drizzle/schema";
 import {
   clientTransactionFees,
@@ -443,7 +445,7 @@ export const transactionFeesRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
-      let query = sql`
+      const query = sql`
         SELECT
           COUNT(*) as total_orders,
           SUM(fee_amount) as total_fees,

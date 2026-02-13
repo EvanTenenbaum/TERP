@@ -44,12 +44,6 @@ interface ReceivableFeatures {
   highlightOverdue?: boolean;
 }
 
-interface AccountsReceivableConfig {
-  featuresConfig?: {
-    ar?: ReceivableFeatures;
-  };
-}
-
 interface ReceivableSummary {
   totalOutstanding?: number;
   overdueAmount?: number;
@@ -136,7 +130,9 @@ export function AccountsReceivable({
         <Skeleton className="h-6 w-40" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           {Array.from({ length: 3 }).map((_, index) => (
-            <Card key={`skeleton-card-${index}`} className="p-4">
+            <Card
+              // eslint-disable-next-line react/no-array-index-key
+              key={`ar-skeleton-card-${index}`} className="p-4">
               <Skeleton className="h-4 w-24 mb-3" />
               <Skeleton className="h-6 w-28" />
             </Card>
@@ -145,7 +141,9 @@ export function AccountsReceivable({
         <Card>
           <CardContent className="space-y-3 pt-6">
             {Array.from({ length: 2 }).map((_, index) => (
-              <div key={`skeleton-content-${index}`} className="space-y-2">
+              <div
+                // eslint-disable-next-line react/no-array-index-key
+                key={`ar-skeleton-content-${index}`} className="space-y-2">
                 <Skeleton className="h-5 w-1/3" />
                 <Skeleton className="h-4 w-2/3" />
               </div>

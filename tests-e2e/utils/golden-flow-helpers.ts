@@ -30,6 +30,7 @@ interface InventoryListResponse {
 interface BatchCleanupResult {
   batchIds: number[];
   updatedCount: number;
+  skipped?: boolean;
 }
 
 const DEFAULT_BASE_URL = "http://localhost:5173";
@@ -199,17 +200,28 @@ export const cleanupBatchesByBrandName = async (
     list = await fetchInventoryByQuery(page, brandName);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    // Some test roles cannot query inventory list directly in production environments.
-    if (message.includes("status 403")) {
-      return { batchIds: [], updatedCount: 0 };
+    if (message.includes("status 401") || message.includes("status 403")) {
+      return {
+        batchIds: [],
+        updatedCount: 0,
+        skipped: true,
+      };
     }
     throw error;
   }
+
   const batchIds = list.items
     .filter(item => item.brand?.name === brandName)
     .map(item => item.batch.id);
 
-  await closeInventoryBatches(page, batchIds);
+  try {
+    await closeInventoryBatches(page, batchIds);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!(message.includes("status 401") || message.includes("status 403"))) {
+      throw error;
+    }
+  }
 
   return {
     batchIds,

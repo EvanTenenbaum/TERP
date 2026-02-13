@@ -171,10 +171,12 @@ export function generateProcureToPayCascade(
   // Group lots by vendor and date
   const lotsByVendor = new Map<number, typeof lots>();
   for (const lot of lots) {
-    if (!lotsByVendor.has(lot.vendorId)) {
-      lotsByVendor.set(lot.vendorId, []);
+    let vendorLots = lotsByVendor.get(lot.vendorId);
+    if (!vendorLots) {
+      vendorLots = [];
+      lotsByVendor.set(lot.vendorId, vendorLots);
     }
-    lotsByVendor.get(lot.vendorId)!.push(lot);
+    vendorLots.push(lot);
   }
 
   let poCounter = 1;

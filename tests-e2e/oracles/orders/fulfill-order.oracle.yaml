@@ -3,7 +3,7 @@
 
 flow_id: "Orders.Fulfillment.FulfillOrder"
 description: "Fulfill an order by recording picked quantities for all items"
-role: "Fulfillment"
+role: "SuperAdmin"
 seed_profile: "basic_sales"
 tags:
   - tier1
@@ -41,38 +41,33 @@ preconditions:
 steps:
   - action: navigate
     path: "/pick-pack"
-    wait_for: "[data-testid='pick-pack-list'], table"
+    wait_for: "[data-testid='order-queue'], [data-testid='order-queue-row']"
 
   - action: wait
     network_idle: true
+    timeout: 10000
+
+  - action: type
+    target: "[data-testid='pick-pack-search-input']"
+    value: "{{temp:order_to_fulfill.orderNumber}}"
+    clear_first: true
+
+  - action: wait
+    for: "[data-testid='order-queue-row']"
     timeout: 10000
 
   # Find the order in pick/pack queue
   - action: click
-    target: "tr:has-text('S-FULFILL'), [data-testid='order-row']:has-text('FULFILL'):first-of-type"
-    wait_for_navigation: true
+    target: "[data-testid='order-queue-row']:first-of-type"
+    wait_after: 500
 
   - action: wait
-    network_idle: true
+    for: "button:has-text('Pack All to One Bag')"
     timeout: 10000
 
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "fulfilling_order_number"
-
-  # Enter picked quantities
-  - action: type
-    target: "[data-testid='picked-qty-0'], input[name='pickedQuantity']:first-of-type"
-    value: "5"
-    clear_first: true
-
-  - action: type
-    target: "[data-testid='pick-notes-0'], input[name='pickNotes']:first-of-type"
-    value: "All items picked from location A1"
-
-  # Click fulfill/pack button
+  # Pack all items
   - action: click
-    target: "[data-testid='fulfill-btn'], [data-testid='pack-btn'], button:has-text('Pack Items'), button:has-text('Fulfill')"
+    target: "button:has-text('Pack All to One Bag'), button:has-text('Pack Selected')"
     wait_after: 2000
 
   - action: wait
@@ -84,14 +79,14 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='order-detail'], .order-detail, [data-testid='pick-pack-detail']"
+    - "[data-testid='order-queue'], [data-testid='order-queue-row']"
   text_present:
-    - "PACKED"
+    - "Packed"
 
 expected_db:
   orders:
     - where:
-        order_number: "$stored.fulfilling_order_number"
+        order_number: "{{temp:order_to_fulfill.orderNumber}}"
       expect:
         fulfillment_status: "PACKED"
         packed_at_not_null: true

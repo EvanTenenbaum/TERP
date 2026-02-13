@@ -19,7 +19,6 @@ export function DataCardSection({
   className,
   showConfigButton = true,
 }: DataCardSectionProps) {
-  const [configOpen, setConfigOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   
   const handleSave = () => {

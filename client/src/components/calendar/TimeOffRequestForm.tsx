@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { X, Calendar, Clock, FileText } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import { toast } from "sonner";
@@ -107,7 +107,7 @@ export default function TimeOffRequestForm({
                   <button
                     key={type.value}
                     type="button"
-                    onClick={() => setTimeOffType(type.value as any)}
+                    onClick={() => setTimeOffType(type.value as "vacation" | "sick" | "personal")}
                     className={`flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
                       timeOffType === type.value
                         ? "border-blue-500 bg-blue-50 text-blue-700"

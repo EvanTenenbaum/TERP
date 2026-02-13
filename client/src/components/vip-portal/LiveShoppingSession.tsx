@@ -70,7 +70,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   // SSE connection state
   const [sseConnected, setSseConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track price changes for visual feedback
   const [priceAnimations, setPriceAnimations] = useState<Record<number, "up" | "down">>({});
@@ -93,7 +93,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
 
       evtSource.onopen = () => {
         setSseConnected(true);
-        console.log("[Customer SSE] Connected");
+        console.info("[Customer SSE] Connected");
       };
 
       // Handle cart updates from staff
@@ -118,9 +118,8 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       });
 
       // Handle highlighted products
-      evtSource.addEventListener("HIGHLIGHTED", (event) => {
+      evtSource.addEventListener("HIGHLIGHTED", () => {
         try {
-          const data = JSON.parse(event.data);
           toast.info(`Staff is highlighting a product!`, {
             duration: 3000,
           });

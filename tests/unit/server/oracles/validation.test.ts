@@ -18,7 +18,7 @@ describe("validation signals", () => {
 
   it("detects error/loading states", () => {
     expect(detectErrorState("Something went wrong").passed).toBe(false);
-    expect(detectLoadingState("Loading... please wait").passed).toBe(false);
+    expect(detectLoadingState("Loading... please wait", "").passed).toBe(false);
   });
 
   it("enforces content length threshold", () => {

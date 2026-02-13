@@ -1,0 +1,111 @@
+name: terp
+region: nyc
+
+databases:
+  - name: terp-mysql-db
+    engine: MYSQL
+    production: true
+    cluster_name: terp-mysql-db
+
+services:
+  - name: web
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+
+    # Match production sizing to keep preview behavior representative.
+    instance_size_slug: apps-d-1vcpu-2gb
+
+    autoscaling:
+      min_instance_count: 2
+      max_instance_count: 4
+      metrics:
+        cpu:
+          percent: 70
+
+    # Preview deployments can start slower when the shared DB is transiently slow.
+    # Give startup probes more room while keeping the same endpoint contract.
+    health_check:
+      http_path: /health/live
+      initial_delay_seconds: 300
+      period_seconds: 15
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 12
+
+    http_port: 3000
+
+    routes:
+      - path: /
+
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: RATE_LIMIT_GET
+        value: "1000"
+      - key: ENABLE_RBAC
+        value: "true"
+      - key: ENABLE_QA_CRONS
+        value: "true"
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      - key: NODE_MEMORY_LIMIT
+        value: "1536000000"
+
+      # Preview-specific startup controls to avoid long blocking init paths.
+      - key: AUTO_MIGRATE_MODE
+        value: off
+      - key: SKIP_SEEDING
+        value: "true"
+      - key: RBAC_AUTO_SEED
+        value: "false"
+
+      - key: VITE_APP_TITLE
+        value: TERP
+        scope: RUN_AND_BUILD_TIME
+
+      - key: VITE_APP_LOGO
+        value: /logo.png
+        scope: RUN_AND_BUILD_TIME
+
+      - key: VITE_APP_ID
+        value: terp-app
+        scope: RUN_AND_BUILD_TIME
+
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
+        scope: RUN_AND_BUILD_TIME
+
+      - key: CLERK_SECRET_KEY
+        value: sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD
+        scope: RUN_TIME
+
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${terp-mysql-db.DATABASE_URL}
+
+      - key: JWT_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+
+      - key: NEXTAUTH_SECRET
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: NEXTAUTH_URL
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: SENTRY_DSN
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: CRON_SECRET
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: PAPERTRAIL_ENDPOINT
+        scope: RUN_TIME
+        type: SECRET

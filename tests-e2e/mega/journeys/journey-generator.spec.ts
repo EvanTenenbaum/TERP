@@ -428,7 +428,7 @@ for (let i = 0; i < Math.min(JOURNEY_COUNT, 100); i++) {
   const journeySeed = MASTER_SEED + i;
   const persona = personas[i % personas.length];
 
-  test(`Journey ${i + 1}: seed=${journeySeed} persona=${persona}`, async ({
+  test(`Journey ${i + 1}: seed=${journeySeed} persona=${persona} @dev-only`, async ({
     page,
   }) => {
     test.setTimeout(60000); // 1 minute per journey

@@ -24,6 +24,7 @@ import {
 import { batches, products } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 async function seedTestData() {
   const db = await getDb();
@@ -32,14 +33,14 @@ async function seedTestData() {
     process.exit(1);
   }
 
-  console.log("🌱 Starting Live Catalog test data seeding...\n");
+  logger.info("🌱 Starting Live Catalog test data seeding...\n");
 
   try {
     // ============================================================================
     // 1. CREATE TEST CLIENTS
     // ============================================================================
     
-    console.log("📋 Creating test clients...");
+    logger.info("📋 Creating test clients...");
     
     // Client 1: Full catalog access
     const client1 = await db.insert(clients).values({
@@ -68,13 +69,13 @@ async function seedTestData() {
     });
     const client3Id = Number(client3.insertId);
     
-    console.log(`✅ Created 3 test clients (IDs: ${client1Id}, ${client2Id}, ${client3Id})\n`);
+    logger.info(`✅ Created 3 test clients (IDs: ${client1Id}, ${client2Id}, ${client3Id})\n`);
 
     // ============================================================================
     // 2. CREATE VIP PORTAL AUTH
     // ============================================================================
     
-    console.log("🔐 Creating VIP portal authentication...");
+    logger.info("🔐 Creating VIP portal authentication...");
     
     const passwordHash = await bcrypt.hash("TestPassword123!", 10);
     
@@ -96,13 +97,13 @@ async function seedTestData() {
       },
     ]);
     
-    console.log("✅ Created VIP portal auth for all test clients\n");
+    logger.info("✅ Created VIP portal auth for all test clients\n");
 
     // ============================================================================
     // 3. CREATE VIP PORTAL CONFIGURATIONS
     // ============================================================================
     
-    console.log("⚙️  Creating VIP portal configurations...");
+    logger.info("⚙️  Creating VIP portal configurations...");
     
     // Client 1: Full catalog, all attributes visible
     await db.insert(vipPortalConfigurations).values({
@@ -167,13 +168,13 @@ async function seedTestData() {
       },
     });
     
-    console.log("✅ Created VIP portal configurations\n");
+    logger.info("✅ Created VIP portal configurations\n");
 
     // ============================================================================
     // 4. CREATE SAMPLE INVENTORY (if not exists)
     // ============================================================================
     
-    console.log("📦 Creating sample inventory...");
+    logger.info("📦 Creating sample inventory...");
     
     // Note: This assumes inventory batches table exists and has the necessary structure
     // In a real scenario, you would check if inventory already exists
@@ -206,22 +207,22 @@ async function seedTestData() {
     // For testing purposes, we'll just note the batch IDs that should exist.
     // You may need to manually create test inventory or use existing batches.
     
-    console.log("⚠️  Note: This script assumes inventory batches already exist.");
-    console.log("   Please ensure you have test inventory in the system.");
-    console.log("   For now, we'll use placeholder batch IDs 1-11.\n");
+    logger.warn("⚠️  Note: This script assumes inventory batches already exist.");
+    logger.warn("   Please ensure you have test inventory in the system.");
+    logger.warn("   For now, we'll use placeholder batch IDs 1-11.\n");
     
     // Use existing batch IDs (assuming they exist from other seeding)
     for (let i = 1; i <= sampleInventory.length; i++) {
       batchIds.push(i);
     }
     
-    console.log(`✅ Created ${sampleInventory.length} inventory items\n`);
+    logger.info(`✅ Created ${sampleInventory.length} inventory items\n`);
 
     // ============================================================================
     // 5. CREATE DRAFT INTERESTS
     // ============================================================================
     
-    console.log("📝 Creating draft interest lists...");
+    logger.info("📝 Creating draft interest lists...");
     
     // Client 1: 5 items in draft
     await db.insert(clientDraftInterests).values([
@@ -239,13 +240,13 @@ async function seedTestData() {
       { clientId: client2Id, batchId: batchIds[7] }, // THC Brownies
     ]);
     
-    console.log("✅ Created draft interest lists\n");
+    logger.info("✅ Created draft interest lists\n");
 
     // ============================================================================
     // 6. CREATE SUBMITTED INTEREST LISTS
     // ============================================================================
     
-    console.log("📤 Creating submitted interest lists...");
+    logger.info("📤 Creating submitted interest lists...");
     
     // Client 1: Submitted list (NEW status)
     const list1 = await db.insert(clientInterestLists).values({
@@ -317,13 +318,13 @@ async function seedTestData() {
       },
     ]);
     
-    console.log("✅ Created submitted interest lists\n");
+    logger.info("✅ Created submitted interest lists\n");
 
     // ============================================================================
     // 7. CREATE SAVED VIEWS
     // ============================================================================
     
-    console.log("👁️  Creating saved catalog views...");
+    logger.info("👁️  Creating saved catalog views...");
     
     await db.insert(clientCatalogViews).values([
       {
@@ -351,24 +352,24 @@ async function seedTestData() {
       },
     ]);
     
-    console.log("✅ Created saved catalog views\n");
+    logger.info("✅ Created saved catalog views\n");
 
     // ============================================================================
     // SUMMARY
     // ============================================================================
     
-    console.log("=" .repeat(60));
-    console.log("🎉 Live Catalog test data seeding complete!\n");
-    console.log("Test Clients Created:");
-    console.log(`  1. ${client1Id} - Full Catalog (fullcatalog@test.com)`);
-    console.log(`  2. ${client2Id} - Limited Catalog (limitedcatalog@test.com)`);
-    console.log(`  3. ${client3Id} - Custom Pricing (custompricing@test.com)`);
-    console.log(`\nPassword for all: TestPassword123!\n`);
-    console.log("Inventory Items: " + sampleInventory.length);
-    console.log("Draft Interests: 8 items across 2 clients");
-    console.log("Submitted Lists: 2 lists");
-    console.log("Saved Views: 3 views");
-    console.log("=" .repeat(60));
+    logger.info("=" .repeat(60));
+    logger.info("🎉 Live Catalog test data seeding complete!\n");
+    logger.info("Test Clients Created:");
+    logger.info(`  1. ${client1Id} - Full Catalog (fullcatalog@test.com)`);
+    logger.info(`  2. ${client2Id} - Limited Catalog (limitedcatalog@test.com)`);
+    logger.info(`  3. ${client3Id} - Custom Pricing (custompricing@test.com)`);
+    logger.info(`\nPassword for all: TestPassword123!\n`);
+    logger.info("Inventory Items: " + sampleInventory.length);
+    logger.info("Draft Interests: 8 items across 2 clients");
+    logger.info("Submitted Lists: 2 lists");
+    logger.info("Saved Views: 3 views");
+    logger.info("=" .repeat(60));
 
   } catch (error) {
     console.error("❌ Error seeding test data:", error);
@@ -379,7 +380,7 @@ async function seedTestData() {
 // Run the seeding script
 seedTestData()
   .then(() => {
-    console.log("\n✅ Seeding script completed successfully");
+    logger.info("\n✅ Seeding script completed successfully");
     process.exit(0);
   })
   .catch((error) => {

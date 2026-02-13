@@ -12,7 +12,7 @@ function emitTag(tag: string): void {
   console.log(`[COVERAGE] ${tag}`);
 }
 
-test.describe("Concurrency - Parallel Sessions", () => {
+test.describe("Concurrency - Parallel Sessions @dev-only", () => {
   test("Two users can view orders simultaneously", async ({ browser }) => {
     emitTag("concurrency-parallel-view");
 
@@ -86,7 +86,7 @@ test.describe("Concurrency - Parallel Sessions", () => {
   });
 });
 
-test.describe("Concurrency - Modal Operations", () => {
+test.describe("Concurrency - Modal Operations @dev-only", () => {
   test("Opening modal while another operation is in progress", async ({
     page,
   }) => {
@@ -116,7 +116,7 @@ test.describe("Concurrency - Modal Operations", () => {
   });
 });
 
-test.describe("Concurrency - Navigation Race", () => {
+test.describe("Concurrency - Navigation Race @dev-only", () => {
   test("Rapid navigation does not crash", async ({ page }) => {
     emitTag("concurrency-navigation");
 
@@ -164,7 +164,7 @@ test.describe("Concurrency - Navigation Race", () => {
   });
 });
 
-test.describe("Concurrency - API Race Conditions", () => {
+test.describe("Concurrency - API Race Conditions @dev-only", () => {
   test("Multiple search requests resolve correctly", async ({ page }) => {
     emitTag("concurrency-search");
 

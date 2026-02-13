@@ -14,13 +14,23 @@ const isDevelopment = process.env.NODE_ENV === "development";
  * @param context - Context for logging (if not provided, parsing is silent)
  */
 export function safeJsonParse<T>(
-  input: string | null | undefined,
+  input: unknown,
   fallback: T,
   context?: { operation: string; identifier?: string | number }
 ): T {
   if (input === null || input === undefined || input === "") {
     return fallback;
   }
+
+  // Many MySQL JSON columns are already hydrated into objects/arrays by mysql2.
+  // Treat those as already-parsed payloads instead of trying JSON.parse().
+  if (typeof input !== "string") {
+    if (typeof input === "object") {
+      return input as T;
+    }
+    return fallback;
+  }
+
   try {
     return JSON.parse(input) as T;
   } catch (err) {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+
 import { getDb } from "../db";
 import {
   liveShoppingSessions,
@@ -14,7 +15,7 @@ import { sessionPricingService } from "../services/live-shopping/sessionPricingS
 import { sessionOrderService } from "../services/live-shopping/sessionOrderService";
 import { sessionCreditService } from "../services/live-shopping/sessionCreditService";
 import { sessionTimeoutService } from "../services/live-shopping/sessionTimeoutService";
-import { sessionPickListService, warehouseEventManager } from "../services/live-shopping/sessionPickListService";
+import { sessionPickListService } from "../services/live-shopping/sessionPickListService";
 // ordersDb available for future direct order operations
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 import { randomUUID } from "crypto";
@@ -158,7 +159,7 @@ export const liveShoppingRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
 
-      const updates: any = { status: input.status };
+      const updates: Record<string, unknown> = { status: input.status };
       
       // Set timestamps based on status transition
       if (input.status === "ACTIVE") {
@@ -205,10 +206,11 @@ export const liveShoppingRouter = router({
           addedByRole: "HOST",
         });
         return { success: true };
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e));
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to add item to cart",
+          message: error.message || "Failed to add item to cart",
         });
       }
     }),
@@ -249,10 +251,11 @@ export const liveShoppingRouter = router({
           input.quantity
         );
         return { success: true };
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e));
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to update quantity",
+          message: error.message || "Failed to update quantity",
         });
       }
     }),
@@ -446,10 +449,11 @@ export const liveShoppingRouter = router({
           userId
         );
         return { success: true, salesSheetId: sheetId };
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e));
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to generate sales sheet",
+          message: error.message || "Failed to generate sales sheet",
         });
       }
     }),
@@ -500,10 +504,11 @@ export const liveShoppingRouter = router({
         });
 
         return result;
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e));
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to convert session to order",
+          message: error.message || "Failed to convert session to order",
         });
       }
     }),
@@ -579,10 +584,11 @@ export const liveShoppingRouter = router({
           itemStatus: input.status,
         });
         return { success: true, cartItemId };
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e : new Error(String(e));
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: e.message || "Failed to add item to cart",
+          message: error.message || "Failed to add item to cart",
         });
       }
     }),

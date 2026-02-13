@@ -33,11 +33,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash, Search, Settings } from "lucide-react";
+import { Plus, Edit, Trash, Search } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errorHandling";
-import type { PricingProfile, PricingRule } from "../../../drizzle/schema";
+import type { PricingProfile } from "../../../drizzle/schema";
 
 interface ProfileFormData {
   name: string;
@@ -186,7 +186,7 @@ export default function PricingProfilesPage() {
   };
 
   // Get rule name by ID
-  const getRuleName = (ruleId: number) => {
+  const _getRuleName = (ruleId: number) => {
     const rule = rules?.find((r) => r.id === ruleId);
     return rule?.name || `Rule #${ruleId}`;
   };

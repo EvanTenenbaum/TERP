@@ -167,7 +167,9 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
           {isLoading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={`skeleton-${i}`} className="h-48" />
+                <Skeleton
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={`reward-skeleton-${i}`} className="h-48" />
               ))}
             </div>
           )}

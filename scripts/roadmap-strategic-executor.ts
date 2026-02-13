@@ -246,10 +246,12 @@ function analyzeExecutionStrategy(tasks: Task[]): ExecutionPlan {
   const byPhase = new Map<string, Task[]>();
   for (const task of tasks) {
     const phase = task.phase || 'Unknown';
-    if (!byPhase.has(phase)) {
-      byPhase.set(phase, []);
+    let phaseTasks = byPhase.get(phase);
+    if (!phaseTasks) {
+      phaseTasks = [];
+      byPhase.set(phase, phaseTasks);
     }
-    byPhase.get(phase)!.push(task);
+    phaseTasks.push(task);
   }
   
   const phases = Array.from(byPhase.keys());

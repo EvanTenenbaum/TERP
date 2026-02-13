@@ -148,9 +148,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                     Top Matches
                   </h4>
                   <div className="space-y-2">
-                    {topMatches.map((match, idx) => (
+                    {topMatches.map(match => (
                       <div
-                        key={`item-${idx}`}
+                        key={`${match.clientId}-${match.type}-${match.confidence}-${match.strain || "any"}`}
                         className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${match.clientId}?tab=needs`)
@@ -194,9 +194,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                     Overdue Reorders
                   </h4>
                   <div className="space-y-2">
-                    {overdueReorders.map((prediction, idx) => (
+                    {overdueReorders.map(prediction => (
                       <div
-                        key={`item-${idx}`}
+                        key={`${prediction.clientId}-${prediction.strain || prediction.category || "regular"}-${prediction.daysUntilPredictedOrder}`}
                         className="border border-destructive/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${prediction.clientId}`)
@@ -235,9 +235,9 @@ export const MatchmakingOpportunitiesWidget = memo(
                     Urgent Needs - No Good Matches
                   </h4>
                   <div className="space-y-2">
-                    {urgentNeeds.map((need, idx) => (
+                    {urgentNeeds.map(need => (
                       <div
-                        key={`item-${idx}`}
+                        key={`${need.clientId}-${need.strain || "any"}-${need.priority || "none"}-${need.confidence}`}
                         className="border border-orange-300/30 rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                         onClick={() =>
                           setLocation(`/clients/${need.clientId}?tab=needs`)

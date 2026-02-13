@@ -3,7 +3,7 @@
  * Provides reusable database queries for inventory operations
  */
 
-import { eq, and, or, like, desc, sql, isNull } from "drizzle-orm";
+import { eq, and, or, like, desc, asc, sql, isNull } from "drizzle-orm";
 import { safeInArray } from "./lib/sqlSafety";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
@@ -139,7 +139,6 @@ import {
   type Client,
   type SupplierProfile,
 } from "../drizzle/schema";
-import { asc } from "drizzle-orm";
 
 /**
  * Supplier with profile - the canonical type for supplier data
@@ -815,6 +814,13 @@ export async function updateBatchFields(
     .where(eq(batches.id, id));
 }
 
+/**
+ * TER-225: Default lot allocation policy is FIFO (First In, First Out).
+ * Allocation-context queries (getAvailableForProduct, etc.) use ASC ordering.
+ * Listing/browse queries use DESC for newest-first display.
+ */
+export const LOT_ALLOCATION_POLICY = "FIFO" as const;
+
 export async function getAllBatches(limit: number = 100) {
   const db = await getDb();
   if (!db) return [];
@@ -823,6 +829,23 @@ export async function getAllBatches(limit: number = 100) {
     .select()
     .from(batches)
     .orderBy(desc(batches.createdAt))
+    .limit(limit);
+}
+
+/**
+ * TER-225: Get batches in FIFO order (oldest first) for lot allocation.
+ * Use this when selecting batches for orders, fulfillment, or COGS calculations.
+ * Only returns LIVE, non-deleted batches suitable for allocation.
+ */
+export async function getBatchesFIFO(limit: number = 100) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(batches)
+    .where(and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt)))
+    .orderBy(asc(batches.createdAt))
     .limit(limit);
 }
 

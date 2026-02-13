@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -92,7 +93,7 @@ export default function VIPDashboard() {
     logout,
     isImpersonation,
     sessionGuid,
-    sessionToken,
+    sessionToken: _sessionToken,
     isInitialized,
   } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -516,7 +517,7 @@ export default function VIPDashboard() {
           {/* Leaderboard Tab */}
           {activeTab === "leaderboard" &&
             config.featuresConfig?.leaderboard?.enabled && (
-              <Leaderboard clientId={clientId} config={config} />
+              <Leaderboard clientId={clientId} config={config as any} />
             )}
         </div>
       </div>

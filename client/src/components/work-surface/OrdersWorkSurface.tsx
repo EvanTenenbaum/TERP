@@ -101,6 +101,7 @@ interface Order {
   orderType?: string;
   fulfillmentStatus?: string;
   saleStatus?: string;
+  invoiceId?: number | null;
   total: string;
   createdAt?: string;
   confirmedAt?: string;
@@ -228,8 +229,11 @@ interface OrderInspectorProps {
   cogsLineItems: OrderCOGSLineItem[];
   onEdit: (orderId: number) => void;
   onConfirm: (orderId: number) => void;
+  onConfirmFulfillment?: (orderId: number) => void;
   onDelete: (orderId: number) => void;
   onShip: (orderId: number) => void;
+  onGenerateInvoice?: (orderId: number) => void;
+  generatingInvoice?: boolean;
   onMarkReturned?: (orderId: number) => void;
   onProcessRestock?: (orderId: number) => void;
   onReturnToVendor?: (orderId: number) => void;
@@ -241,8 +245,11 @@ function OrderInspectorContent({
   cogsLineItems,
   onEdit,
   onConfirm,
+  onConfirmFulfillment,
   onDelete,
   onShip,
+  onGenerateInvoice,
+  generatingInvoice = false,
   onMarkReturned,
   onProcessRestock,
   onReturnToVendor,
@@ -343,6 +350,7 @@ function OrderInspectorContent({
           showTitle={false}
           compact
           maxEntries={20}
+          hidePermissionErrors
         />
       </InspectorSection>
 
@@ -353,6 +361,7 @@ function OrderInspectorContent({
               <Button
                 variant="outline"
                 className="w-full justify-start"
+                data-testid="edit-draft-btn"
                 onClick={() => onEdit(order.id)}
               >
                 <Edit className="h-4 w-4 mr-2" />
@@ -361,6 +370,7 @@ function OrderInspectorContent({
               <Button
                 variant="default"
                 className="w-full justify-start"
+                data-testid="confirm-order-btn"
                 onClick={() => onConfirm(order.id)}
               >
                 <Send className="h-4 w-4 mr-2" />
@@ -369,6 +379,7 @@ function OrderInspectorContent({
               <Button
                 variant="outline"
                 className="w-full justify-start text-red-600 hover:text-red-700"
+                data-testid="delete-draft-btn"
                 onClick={() => onDelete(order.id)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -378,16 +389,49 @@ function OrderInspectorContent({
           ) : (
             <>
               {/* WSQA-003: Status-based actions */}
-              {order.fulfillmentStatus === "PENDING" && (
+              {order.fulfillmentStatus === "PENDING" &&
+                onConfirmFulfillment &&
+                !order.confirmedAt && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    data-testid="confirm-fulfillment-btn"
+                    onClick={() => onConfirmFulfillment(order.id)}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Confirm for Fulfillment
+                  </Button>
+                )}
+              {(order.fulfillmentStatus === "PENDING" ||
+                order.fulfillmentStatus === "PACKED") && (
                 <Button
                   variant="default"
                   className="w-full justify-start"
+                  data-testid="ship-order-btn"
                   onClick={() => onShip(order.id)}
                 >
                   <Truck className="h-4 w-4 mr-2" />
                   Ship Order
                 </Button>
               )}
+              {order.orderType === "SALE" &&
+                !order.invoiceId &&
+                order.fulfillmentStatus &&
+                ["PENDING", "PACKED", "SHIPPED"].includes(
+                  order.fulfillmentStatus
+                ) &&
+                onGenerateInvoice && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="generate-invoice-btn"
+                    onClick={() => onGenerateInvoice(order.id)}
+                    disabled={generatingInvoice}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {generatingInvoice ? "Generating..." : "Generate Invoice"}
+                  </Button>
+                )}
               {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
               {(order.fulfillmentStatus === "SHIPPED" ||
                 order.fulfillmentStatus === "DELIVERED") &&
@@ -456,6 +500,13 @@ export function OrdersWorkSurface() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showConfirmFulfillmentDialog, setShowConfirmFulfillmentDialog] =
+    useState(false);
+  const [confirmFulfillmentNotes, setConfirmFulfillmentNotes] = useState("");
+  const [showShipDialog, setShowShipDialog] = useState(false);
+  const [shipTrackingNumber, setShipTrackingNumber] = useState("");
+  const [shipCarrier, setShipCarrier] = useState("");
+  const [shipNotes, setShipNotes] = useState("");
   // WSQA-003: Return processing dialogs
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [showRestockDialog, setShowRestockDialog] = useState(false);
@@ -633,6 +684,44 @@ export function OrdersWorkSurface() {
     },
   });
 
+  const confirmFulfillmentMutation = trpc.orders.confirmOrder.useMutation({
+    onMutate: () => setSaving("Confirming for fulfillment..."),
+    onSuccess: () => {
+      toast.success("Order confirmed for fulfillment");
+      setSaved();
+      refetchConfirmed();
+      setShowConfirmFulfillmentDialog(false);
+      setConfirmFulfillmentNotes("");
+      inspector.close();
+    },
+    onError: err => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to confirm order");
+        setError(err.message);
+      }
+    },
+  });
+
+  const shipOrderMutation = trpc.orders.shipOrder.useMutation({
+    onMutate: () => setSaving("Shipping order..."),
+    onSuccess: () => {
+      toast.success("Order shipped");
+      setSaved();
+      refetchConfirmed();
+      setShowShipDialog(false);
+      setShipTrackingNumber("");
+      setShipCarrier("");
+      setShipNotes("");
+      inspector.close();
+    },
+    onError: err => {
+      if (!handleConflictError(err)) {
+        toast.error(err.message || "Failed to ship order");
+        setError(err.message);
+      }
+    },
+  });
+
   // WSQA-003: Return processing mutations
   const markAsReturnedMutation = trpc.orders.markAsReturned.useMutation({
     onMutate: () => setSaving("Marking as returned..."),
@@ -685,6 +774,24 @@ export function OrdersWorkSurface() {
         }
       },
     });
+
+  const generateInvoiceMutation = trpc.invoices.generateFromOrder.useMutation({
+    onMutate: () => setSaving("Generating invoice..."),
+    onSuccess: invoice => {
+      toast.success(
+        invoice?.invoiceNumber
+          ? `Invoice ${invoice.invoiceNumber} generated`
+          : "Invoice generated"
+      );
+      setSaved();
+      refetchDrafts();
+      refetchConfirmed();
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to generate invoice");
+      setError(err.message);
+    },
+  });
 
   // Track version for optimistic locking when order is selected (UXS-705)
   useEffect(() => {
@@ -739,6 +846,9 @@ export function OrdersWorkSurface() {
     onCancel: () => {
       if (showConfirmDialog) setShowConfirmDialog(false);
       else if (showDeleteDialog) setShowDeleteDialog(false);
+      else if (showConfirmFulfillmentDialog)
+        setShowConfirmFulfillmentDialog(false);
+      else if (showShipDialog) setShowShipDialog(false);
       else if (showReturnDialog) {
         setShowReturnDialog(false);
         setReturnReason("");
@@ -761,8 +871,17 @@ export function OrdersWorkSurface() {
     setSelectedOrderId(orderId);
     setShowDeleteDialog(true);
   };
-  const handleShip = (orderId: number) =>
-    toast.info(`Ship order ${orderId} - modal to be implemented`);
+  const handleConfirmFulfillment = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowConfirmFulfillmentDialog(true);
+  };
+  const handleShip = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setShowShipDialog(true);
+  };
+  const handleGenerateInvoice = (orderId: number) => {
+    generateInvoiceMutation.mutate({ orderId });
+  };
   // WSQA-003: Return processing handlers
   const handleMarkReturned = (orderId: number) => {
     setSelectedOrderId(orderId);
@@ -786,10 +905,10 @@ export function OrdersWorkSurface() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <ShoppingCart className="h-6 w-6" />
-            Orders
+            Sales
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage sales orders and drafts
+            Manage sales and drafts
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -837,6 +956,7 @@ export function OrdersWorkSurface() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   ref={searchInputRef}
+                  data-testid="orders-search-input"
                   placeholder="Search orders... (Cmd+K)"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -857,9 +977,12 @@ export function OrdersWorkSurface() {
                   </SelectContent>
                 </Select>
               )}
-              <Button onClick={() => setLocation("/orders/create")}>
+              <Button
+                onClick={() => setLocation("/orders/create")}
+                data-testid="new-order-button"
+              >
                 <Plus className="h-4 w-4 mr-2" />
-                New Order
+                New Sale
               </Button>
             </div>
           </div>
@@ -879,19 +1002,27 @@ export function OrdersWorkSurface() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : displayOrders.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
+            <div
+              className="flex items-center justify-center h-64"
+              data-testid="orders-empty-state"
+            >
               <div className="text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                {/* TER-229: Improved empty state with diagnostic context */}
                 <p className="font-medium">No orders found</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {search
                     ? "Try adjusting your search"
-                    : "Create your first order"}
+                    : statusFilter !== "ALL"
+                      ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
+                      : activeTab === "draft"
+                        ? "No draft orders. Create a new order to get started."
+                        : "No confirmed orders yet. Confirm a draft order to see it here."}
                 </p>
               </div>
             </div>
           ) : (
-            <Table>
+            <Table data-testid="orders-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Order #</TableHead>
@@ -906,6 +1037,8 @@ export function OrdersWorkSurface() {
                 {displayOrders.map((order: Order, index: number) => (
                   <TableRow
                     key={order.id}
+                    data-testid={`order-row-${order.id}`}
+                    data-orderid={order.id}
                     className={cn(
                       "cursor-pointer hover:bg-muted/50",
                       selectedOrderId === order.id && "bg-muted",
@@ -961,8 +1094,11 @@ export function OrdersWorkSurface() {
             cogsLineItems={cogsLineItems}
             onEdit={handleEdit}
             onConfirm={handleConfirm}
+            onConfirmFulfillment={handleConfirmFulfillment}
             onDelete={handleDelete}
             onShip={handleShip}
+            onGenerateInvoice={handleGenerateInvoice}
+            generatingInvoice={generateInvoiceMutation.isPending}
             onMarkReturned={handleMarkReturned}
             onProcessRestock={handleProcessRestock}
             onReturnToVendor={handleReturnToVendor}
@@ -1031,6 +1167,102 @@ export function OrdersWorkSurface() {
               disabled={deleteOrderMutation.isPending}
             >
               {deleteOrderMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Fulfillment Dialog */}
+      <Dialog
+        open={showConfirmFulfillmentDialog}
+        onOpenChange={setShowConfirmFulfillmentDialog}
+      >
+        <DialogContent data-testid="confirm-modal">
+          <DialogHeader>
+            <DialogTitle>Confirm for Fulfillment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Confirm this order for fulfillment and reserve inventory.</p>
+            <Input
+              data-testid="confirm-notes"
+              placeholder="Notes (optional)..."
+              value={confirmFulfillmentNotes}
+              onChange={e => setConfirmFulfillmentNotes(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmFulfillmentDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              data-testid="submit-confirm"
+              onClick={() =>
+                selectedOrderId &&
+                confirmFulfillmentMutation.mutate({
+                  id: selectedOrderId,
+                  notes: confirmFulfillmentNotes || undefined,
+                })
+              }
+              disabled={confirmFulfillmentMutation.isPending}
+            >
+              {confirmFulfillmentMutation.isPending
+                ? "Confirming..."
+                : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ship Dialog */}
+      <Dialog open={showShipDialog} onOpenChange={setShowShipDialog}>
+        <DialogContent data-testid="ship-modal">
+          <DialogHeader>
+            <DialogTitle>Ship Order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              data-testid="tracking-number"
+              name="trackingNumber"
+              placeholder="Tracking number"
+              value={shipTrackingNumber}
+              onChange={e => setShipTrackingNumber(e.target.value)}
+            />
+            <Input
+              data-testid="carrier-input"
+              name="carrier"
+              placeholder="Carrier"
+              value={shipCarrier}
+              onChange={e => setShipCarrier(e.target.value)}
+            />
+            <Input
+              data-testid="ship-notes"
+              name="notes"
+              placeholder="Shipping notes"
+              value={shipNotes}
+              onChange={e => setShipNotes(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShipDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              data-testid="confirm-ship"
+              onClick={() =>
+                selectedOrderId &&
+                shipOrderMutation.mutate({
+                  id: selectedOrderId,
+                  trackingNumber: shipTrackingNumber || undefined,
+                  carrier: shipCarrier || undefined,
+                  notes: shipNotes || undefined,
+                })
+              }
+              disabled={shipOrderMutation.isPending}
+            >
+              {shipOrderMutation.isPending ? "Shipping..." : "Ship"}
             </Button>
           </DialogFooter>
         </DialogContent>

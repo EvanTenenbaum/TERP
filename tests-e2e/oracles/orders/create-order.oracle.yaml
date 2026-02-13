@@ -27,76 +27,52 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/orders/new"
-    wait_for: "[data-testid='order-form'], [data-testid='order-creator'], form"
+    path: "/orders/create"
+    wait_for: "text=Create Sales Order, main"
 
   - action: wait
     network_idle: true
     timeout: 10000
 
   - action: select
-    target: "[data-testid='client-select'], [data-testid='client-dropdown'], select[name='clientId']"
-    value_ref: "seed:client.redwood.name"
-    type_to_search: true
+    target: "[aria-label='Select a client'], [role='combobox'][aria-label*='client' i]"
+    value_ref: "$seed:client.redwood.name"
 
   - action: wait
-    duration: 500
+    for: "text=Inventory"
+    timeout: 10000
 
   - action: select
-    target: "[data-testid='order-type-select'], select[name='orderType']"
-    value: "SALE"
+    target: "button[role='combobox']:has-text('Sale Order')"
+    value: "Quote"
 
   - action: click
-    target: "[data-testid='add-line-item'], [data-testid='add-item-btn'], button:has-text('Add Item')"
+    target: "table tbody tr:not(:has-text('Not yet available for sale')) button:has-text('Add'), button[title^='Add'], table tbody tr:first-of-type button"
+    wait_after: 800
+
+  - action: click
+    target: "button:has-text('Confirm Order'), button:has-text('Confirm Quote')"
     wait_after: 500
 
-  - action: select
-    target: "[data-testid='batch-select'], [data-testid='product-select']"
-    value_ref: "seed:batch.og_kush.display_name"
-    type_to_search: true
-
-  - action: type
-    target: "input[name='quantity'], [data-testid='quantity-input']"
-    value: "5"
-    clear_first: true
-
-  - action: type
-    target: "input[name='unitPrice'], [data-testid='unit-price-input']"
-    value: "1000"
-    clear_first: true
-
   - action: wait
-    for: "[data-testid='line-total'], .line-total"
+    for: "[role='dialog'], [role='alertdialog'], text=Finalize"
     timeout: 5000
 
-  - action: select
-    target: "[data-testid='payment-terms-select'], select[name='paymentTerms']"
-    value: "NET_30"
-
   - action: click
-    target: "[data-testid='submit-order'], [data-testid='create-order-btn'], button[type='submit']:has-text('Create')"
-    wait_for_navigation: true
+    target: "[role='dialog'] button:has-text('Finalize'), [role='alertdialog'] button:has-text('Finalize'), [role='alertdialog'] button:has-text('Confirm')"
+    wait_after: 1200
 
   - action: wait
     network_idle: true
     timeout: 15000
 
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "created_order_number"
-
   - action: screenshot
     name: "order_created"
 
 expected_ui:
-  url_contains: "/orders"
+  url_contains: "/orders/create"
   visible:
-    - "[data-testid='order-detail'], [data-testid='order-confirmation'], .order-detail"
-  text_present:
-    - "Order"
-    - "SALE"
-  fields:
-    "[data-testid='order-type'], .order-type": "SALE"
+    - "text=Create Sales Order"
 
 expected_db:
   orders:

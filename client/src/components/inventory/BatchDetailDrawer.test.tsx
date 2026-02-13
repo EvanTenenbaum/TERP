@@ -9,11 +9,11 @@ const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 // Mock trpc with various states
 const createMockQuery = (options: {
-  data?: any;
+  data?: unknown;
   isLoading?: boolean;
-  error?: any;
+  error?: Error | null;
 }) => ({
-  data: options.data ?? undefined,
+  data: options.data,
   isLoading: options.isLoading ?? false,
   error: options.error ?? null,
   refetch: vi.fn(),

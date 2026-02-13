@@ -102,9 +102,9 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
 
       {/* Calendar Grid */}
       <div className="grid grid-cols-7">
-        {calendarDays.map((day, index) => (
+        {calendarDays.map((day, _dayIdx) => (
           <div
-            key={`week-${index}`}
+            key={`calendar-day-${day.date.toISOString()}`}
             onClick={() => onDateClick?.(day.date)}
             className={`min-h-[120px] border-b border-r border-gray-200 p-2 last:border-r-0 cursor-pointer hover:bg-gray-100 ${
               !day.isCurrentMonth ? "bg-gray-50" : ""

@@ -29,9 +29,14 @@ import * as schema from "../drizzle/schema";
 import dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 // Load environment variables
 dotenv.config();
+
+// ESM-safe __dirname replacement
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Registry of all seeded QA data IDs

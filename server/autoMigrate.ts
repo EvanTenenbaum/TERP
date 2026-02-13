@@ -11,6 +11,188 @@ let db: Awaited<ReturnType<typeof getDb>>;
 
 let migrationRun = false;
 
+export interface SchemaFingerprintCheckResult {
+  complete: boolean;
+  count: number;
+  attempts: number;
+  checks: { key: string; passed: boolean }[];
+  missingChecks: string[];
+  lastError?: string;
+}
+
+const FINGERPRINT_CANARIES = [
+  {
+    key: "cron_leader_lock.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
+    )`,
+  },
+  {
+    key: "client_needs.strain_type.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'client_needs'
+        AND COLUMN_NAME = 'strain_type'
+    )`,
+  },
+  {
+    key: "products.nameCanonical.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'products'
+        AND COLUMN_NAME = 'nameCanonical'
+    )`,
+  },
+  {
+    key: "admin_impersonation_sessions.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
+    )`,
+  },
+  {
+    key: "feature_flags.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
+    )`,
+  },
+  {
+    key: "time_entries.table",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
+    )`,
+  },
+  {
+    key: "lots.supplier_client_id.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'lots'
+        AND COLUMN_NAME = 'supplier_client_id'
+    )`,
+  },
+] as const;
+
+const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
+
+async function runSchemaFingerprintCheck(
+  dbConn: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  options: {
+    retries?: number;
+    startTime?: number;
+  } = {}
+): Promise<SchemaFingerprintCheckResult> {
+  const retries = Math.max(1, options.retries ?? 3);
+  let lastError: string | undefined;
+
+  for (let fpAttempt = 1; fpAttempt <= retries; fpAttempt++) {
+    try {
+      // Warm up the DB connection with a simple query first.
+      // Keep parity with existing behavior: warmup only on first attempt.
+      if (fpAttempt === 1) {
+        await dbConn.execute(sql`SELECT 1`);
+      }
+
+      const checks = await Promise.all(
+        FINGERPRINT_CANARIES.map(async canary => {
+          const [result] = await dbConn.execute(
+            sql`SELECT ${canary.condition} AS passed`
+          );
+          const row = Array.isArray(result) ? result[0] : result;
+          return {
+            key: canary.key,
+            passed: Number(row?.passed ?? 0) === 1,
+          };
+        })
+      );
+
+      const count = checks.filter(check => check.passed).length;
+      const missingChecks = checks
+        .filter(check => !check.passed)
+        .map(check => check.key);
+
+      if (count === FINGERPRINT_CANARY_COUNT) {
+        if (typeof options.startTime === "number") {
+          const fpDuration = Date.now() - options.startTime;
+          console.info(
+            `✅ Schema fingerprint OK (${FINGERPRINT_CANARY_COUNT}/${FINGERPRINT_CANARY_COUNT} canary checks passed) - skipping migrations (${fpDuration}ms)`
+          );
+        }
+        return {
+          complete: true,
+          count,
+          attempts: fpAttempt,
+          checks,
+          missingChecks: [],
+        };
+      }
+
+      console.info(
+        `  ℹ️  Schema fingerprint: ${count}/${FINGERPRINT_CANARY_COUNT} canary checks passed; missing: ${missingChecks.join(
+          ", "
+        )}`
+      );
+      return {
+        complete: false,
+        count,
+        attempts: fpAttempt,
+        checks,
+        missingChecks,
+      };
+    } catch (fpError) {
+      lastError = fpError instanceof Error ? fpError.message : String(fpError);
+      if (fpAttempt < retries) {
+        const delay = fpAttempt * 3000; // 3s, 6s backoff
+        console.info(
+          `  ℹ️  Schema fingerprint attempt ${fpAttempt}/${retries} failed (${lastError}) - retrying in ${delay / 1000}s`
+        );
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        console.info(
+          `  ℹ️  Schema fingerprint check failed after ${retries} attempts - running full migrations: ${lastError}`
+        );
+      }
+    }
+  }
+
+  return {
+    complete: false,
+    count: 0,
+    attempts: retries,
+    checks: [],
+    missingChecks: [],
+    lastError,
+  };
+}
+
+/**
+ * Read-only schema drift signal using canary checks.
+ * Returns whether the schema appears aligned without applying DDL.
+ */
+export async function checkSchemaFingerprint(
+  options: { retries?: number } = {}
+): Promise<SchemaFingerprintCheckResult> {
+  const dbConn = await getDb();
+  if (!dbConn) {
+    logger.error("Database connection failed during schema fingerprint check");
+    return {
+      complete: false,
+      count: 0,
+      attempts: 1,
+      checks: [],
+      missingChecks: [],
+      lastError: "Database not available",
+    };
+  }
+
+  return runSchemaFingerprintCheck(dbConn, { retries: options.retries ?? 3 });
+}
+
 export async function runAutoMigrations() {
   // Only run once per app lifecycle
   if (migrationRun) {
@@ -27,63 +209,17 @@ export async function runAutoMigrations() {
     logger.error("Database connection failed during auto-migration");
     return;
   }
-
-
-    // === FAST PATH: Schema fingerprint check with DB warmup ===
-    // Check 7 canary tables/columns representing latest schema state.
-    // If all present, skip all 80 sequential migration operations.
-    // Retries up to 3 times with backoff to handle cold DB connections.
-    for (let fpAttempt = 1; fpAttempt <= 3; fpAttempt++) {
-      try {
-        // Warm up the DB connection with a simple query first
-        if (fpAttempt === 1) {
-          await db.execute(sql`SELECT 1`);
-        }
-        const [fpResult] = await db.execute(sql`
-          SELECT COUNT(*) as cnt FROM (
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cron_leader_lock'
-            UNION ALL
-            SELECT 1 FROM information_schema.COLUMNS
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_needs' AND COLUMN_NAME = 'strain_type'
-            UNION ALL
-            SELECT 1 FROM information_schema.COLUMNS
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'product_name'
-            UNION ALL
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admin_impersonation_sessions'
-            UNION ALL
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'feature_flags'
-            UNION ALL
-            SELECT 1 FROM information_schema.TABLES
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'time_entries'
-            UNION ALL
-            SELECT 1 FROM information_schema.COLUMNS
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lots' AND COLUMN_NAME = 'supplier_client_id'
-          ) AS checks
-        `);
-        const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
-        const count = Number(row?.cnt ?? 0);
-        if (count === 7) {
-          const fpDuration = Date.now() - startTime;
-          console.info(`✅ Schema fingerprint OK (7/7 canary checks passed) - skipping migrations (${fpDuration}ms)`);
-          migrationRun = true;
-          return;
-        }
-        console.info(`  ℹ️  Schema fingerprint: ${count}/7 canary checks passed - running full migrations`);
-        break; // Query succeeded but schema incomplete - run full migrations
-      } catch (fpError) {
-        const fpMsg = fpError instanceof Error ? fpError.message : String(fpError);
-        if (fpAttempt < 3) {
-          const delay = fpAttempt * 3000; // 3s, 6s backoff
-          console.info(`  ℹ️  Schema fingerprint attempt ${fpAttempt}/3 failed (${fpMsg}) - retrying in ${delay/1000}s`);
-          await new Promise(r => setTimeout(r, delay));
-        } else {
-          console.info(`  ℹ️  Schema fingerprint check failed after 3 attempts - running full migrations: ${fpMsg}`);
-        }
-      }
-    }
+  // === FAST PATH: Schema fingerprint check with DB warmup ===
+  // Check canary tables/columns representing latest schema state.
+  // If all present, skip all sequential migration operations.
+  const fingerprint = await runSchemaFingerprintCheck(db, {
+    retries: 3,
+    startTime,
+  });
+  if (fingerprint.complete) {
+    migrationRun = true;
+    return;
+  }
 
   try {
     // Create matching/needs tables if they don't exist
@@ -1570,6 +1706,37 @@ export async function runAutoMigrations() {
         console.info("  ℹ️  product_images table already exists");
       } else {
         console.warn("  ⚠️  product_images table:", errMsg);
+      }
+    }
+
+    // ========================================================================
+    // DEMO MEDIA BLOBS TABLE (TER-118)
+    // ========================================================================
+    // Demo-mode fallback storage for image uploads when external storage is unset
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS demo_media_blobs (
+          id VARCHAR(64) PRIMARY KEY,
+          file_name VARCHAR(255) NOT NULL,
+          content_type VARCHAR(128) NOT NULL,
+          bytes_base64 LONGTEXT NOT NULL,
+          file_size INT NOT NULL,
+          uploaded_by INT NULL,
+          batch_id INT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          deleted_at TIMESTAMP NULL,
+          INDEX idx_demo_media_blobs_batch (batch_id),
+          INDEX idx_demo_media_blobs_created_at (created_at),
+          INDEX idx_demo_media_blobs_deleted_at (deleted_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.info("  ✅ Created demo_media_blobs table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info("  ℹ️  demo_media_blobs table already exists");
+      } else {
+        console.warn("  ⚠️  demo_media_blobs table:", errMsg);
       }
     }
 

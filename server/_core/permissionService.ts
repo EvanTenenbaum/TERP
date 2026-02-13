@@ -8,7 +8,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   calendarEvents,
@@ -373,8 +373,8 @@ export class PermissionService {
    * This is a simplified check - in production, you'd check against user roles
    */
   static async canCreateEvent(
-    userId: number,
-    module: string
+    _userId: number,
+    _module: string
   ): Promise<boolean> {
     // For now, all authenticated users can create events
     // In production, implement role-based checks

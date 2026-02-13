@@ -14,7 +14,7 @@ import {
   users,
   strains,
 } from "../../drizzle/schema";
-import { eq, and, desc, sql, isNull, or } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, or, ne } from "drizzle-orm";
 import { storagePut, isStorageConfigured } from "../storage";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
@@ -34,29 +34,44 @@ function isSchemaError(error: unknown): boolean {
   if (error instanceof Error) {
     msg = error.message;
     // Check if Error has additional properties (MySQL2 format)
-    if ('code' in error) errorCode = (error as any).code;
-    if ('errno' in error) errno = (error as any).errno;
+    if ("code" in error) {
+      const code = (error as unknown as { code?: unknown }).code;
+      if (typeof code === "string" || typeof code === "number") {
+        errorCode = code;
+      }
+    }
+    if ("errno" in error) {
+      const errNo = (error as unknown as { errno?: unknown }).errno;
+      if (typeof errNo === "number") {
+        errno = errNo;
+      }
+    }
     // Check for nested cause
-    if ('cause' in error && error.cause) {
+    if ("cause" in error && error.cause) {
       return isSchemaError(error.cause);
     }
   }
   // Case 2: Plain object with message property
   else if (error && typeof error === "object") {
-    if ("message" in error && typeof (error as any).message === "string") {
-      msg = (error as any).message;
+    const errObj = error as Record<string, unknown>;
+    if (typeof errObj.message === "string") {
+      msg = errObj.message;
     }
-    if ("sqlMessage" in error && typeof (error as any).sqlMessage === "string") {
-      msg = (error as any).sqlMessage;
+    if (typeof errObj.sqlMessage === "string") {
+      msg = errObj.sqlMessage;
     }
-    if ("code" in error) errorCode = (error as any).code;
-    if ("errno" in error) errno = (error as any).errno;
+    if (typeof errObj.code === "string" || typeof errObj.code === "number") {
+      errorCode = errObj.code;
+    }
+    if (typeof errObj.errno === "number") {
+      errno = errObj.errno;
+    }
     // Check for nested cause or originalError
-    if ("cause" in error && (error as any).cause) {
-      return isSchemaError((error as any).cause);
+    if (errObj.cause) {
+      return isSchemaError(errObj.cause);
     }
-    if ("originalError" in error && (error as any).originalError) {
-      return isSchemaError((error as any).originalError);
+    if (errObj.originalError) {
+      return isSchemaError(errObj.originalError);
     }
   }
   // Case 3: String error
@@ -92,8 +107,8 @@ function isSchemaError(error: unknown): boolean {
     msgLower.includes("no such column") ||
     msgLower.includes("er_bad_field_error") ||
     msgLower.includes("er_no_such_table") ||
-    msgLower.includes("table") && msgLower.includes("doesn't exist") ||
-    msgLower.includes("table") && msgLower.includes("does not exist") ||
+    (msgLower.includes("table") && msgLower.includes("doesn't exist")) ||
+    (msgLower.includes("table") && msgLower.includes("does not exist")) ||
     (msgLower.includes("column") && msgLower.includes("does not exist")) ||
     (msgLower.includes("column") && msgLower.includes("on clause"))
   );
@@ -101,6 +116,72 @@ function isSchemaError(error: unknown): boolean {
 
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
+const visibleImageStatusWhere = or(
+  isNull(productImages.status),
+  eq(productImages.status, "APPROVED"),
+  eq(productImages.status, "PENDING")
+);
+
+export function isVisibleImageStatus(
+  status: string | null | undefined
+): boolean {
+  return (
+    status === null ||
+    status === undefined ||
+    status === "APPROVED" ||
+    status === "PENDING"
+  );
+}
+
+async function ensureExactlyOneVisiblePrimaryForGroup(
+  group: {
+    batchId?: number | null;
+    productId?: number | null;
+  },
+  database = db
+): Promise<void> {
+  const groupWhere = group.batchId
+    ? eq(productImages.batchId, group.batchId)
+    : group.productId
+      ? eq(productImages.productId, group.productId)
+      : null;
+
+  if (!groupWhere) return;
+
+  const visibleImages = await database
+    .select({
+      id: productImages.id,
+      isPrimary: productImages.isPrimary,
+      sortOrder: productImages.sortOrder,
+    })
+    .from(productImages)
+    .where(and(groupWhere, visibleImageStatusWhere))
+    .orderBy(
+      desc(productImages.isPrimary),
+      productImages.sortOrder,
+      productImages.id
+    );
+
+  if (visibleImages.length === 0) return;
+
+  const visiblePrimaryIds = visibleImages
+    .filter(img => Boolean(img.isPrimary))
+    .map(img => img.id);
+
+  const desiredPrimaryId =
+    visiblePrimaryIds.length === 1 ? visiblePrimaryIds[0] : visibleImages[0].id;
+
+  // Make sure the desired primary is the only primary for this group, including hidden images.
+  await database
+    .update(productImages)
+    .set({ isPrimary: false })
+    .where(and(groupWhere, ne(productImages.id, desiredPrimaryId)));
+
+  await database
+    .update(productImages)
+    .set({ isPrimary: true })
+    .where(eq(productImages.id, desiredPrimaryId));
+}
 
 export const photographyRouter = router({
   /**
@@ -115,7 +196,7 @@ export const photographyRouter = router({
         thumbnailUrl: z.string().url().optional(),
         caption: z.string().optional(),
         isPrimary: z.boolean().default(false),
-        sortOrder: z.number().default(0),
+        sortOrder: z.number().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -124,19 +205,48 @@ export const photographyRouter = router({
         throw new Error("Either batchId or productId is required");
       }
 
-      // If setting as primary, unset other primary images
-      if (input.isPrimary) {
-        if (input.batchId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.batchId, input.batchId));
-        } else if (input.productId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.productId, input.productId));
-        }
+      const groupWhere = input.batchId
+        ? eq(productImages.batchId, input.batchId)
+        : (() => {
+            // We already validated that one of batchId/productId exists, but we avoid
+            // non-null assertions to satisfy lint rules.
+            const productId = input.productId;
+            if (!productId) {
+              throw new Error("Either batchId or productId is required");
+            }
+            return eq(productImages.productId, productId);
+          })();
+
+      const [{ maxSortOrder }] = await db
+        .select({
+          maxSortOrder:
+            sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
+              "maxSortOrder"
+            ),
+        })
+        .from(productImages)
+        .where(groupWhere);
+
+      const nextSortOrder =
+        typeof input.sortOrder === "number"
+          ? input.sortOrder
+          : (maxSortOrder ?? -1) + 1;
+
+      // If there are no visible images yet, make this image primary even if caller didn't request it.
+      const existingVisibleImages = await db
+        .select({ id: productImages.id })
+        .from(productImages)
+        .where(and(groupWhere, visibleImageStatusWhere))
+        .limit(1);
+
+      const shouldBePrimary =
+        input.isPrimary || existingVisibleImages.length === 0;
+
+      if (shouldBePrimary) {
+        await db
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(groupWhere);
       }
 
       const [image] = await db.insert(productImages).values({
@@ -145,11 +255,16 @@ export const photographyRouter = router({
         imageUrl: input.imageUrl,
         thumbnailUrl: input.thumbnailUrl,
         caption: input.caption,
-        isPrimary: input.isPrimary,
-        sortOrder: input.sortOrder,
+        isPrimary: shouldBePrimary,
+        sortOrder: nextSortOrder,
         status: "APPROVED", // Auto-approve for now
         uploadedBy: ctx.user.id,
         uploadedAt: new Date(),
+      });
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: input.batchId,
+        productId: input.productId,
       });
 
       return {
@@ -264,17 +379,37 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        const errObj =
+          queryError && typeof queryError === "object"
+            ? (queryError as Record<string, unknown>)
+            : null;
+        const errorCode =
+          errObj &&
+          (typeof errObj.code === "string" || typeof errObj.code === "number")
+            ? errObj.code
+            : undefined;
+        const errorErrno =
+          errObj && typeof errObj.errno === "number" ? errObj.errno : undefined;
+        const errorSqlMessage =
+          errObj && typeof errObj.sqlMessage === "string"
+            ? errObj.sqlMessage
+            : undefined;
+
         // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
         logger.error(
           {
             error: queryError,
             errorType: typeof queryError,
             errorConstructor: queryError?.constructor?.name,
-            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
-            errorMessage: queryError instanceof Error ? queryError.message : undefined,
-            errorCode: (queryError as any)?.code,
-            errorErrno: (queryError as any)?.errno,
-            errorSqlMessage: (queryError as any)?.sqlMessage,
+            errorKeys:
+              queryError && typeof queryError === "object"
+                ? Object.keys(queryError)
+                : [],
+            errorMessage:
+              queryError instanceof Error ? queryError.message : undefined,
+            errorCode,
+            errorErrno,
+            errorSqlMessage,
           },
           "getBatchesNeedingPhotos: Query with strains join failed - analyzing error format"
         );
@@ -310,10 +445,7 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .where(
-            and(
-              eq(batches.batchStatus, "LIVE"),
-              isNull(batches.deletedAt)
-            )
+            and(eq(batches.batchStatus, "LIVE"), isNull(batches.deletedAt))
           )
           .groupBy(batches.id)
           .orderBy(desc(batches.createdAt))
@@ -352,33 +484,92 @@ export const photographyRouter = router({
     .mutation(async ({ input }) => {
       const { imageId, ...updates } = input;
 
-      // If setting as primary, need to unset others
-      if (updates.isPrimary) {
-        const [image] = await db
+      const [existingImage] = await db
+        .select({
+          id: productImages.id,
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+          status: productImages.status,
+          isPrimary: productImages.isPrimary,
+        })
+        .from(productImages)
+        .where(eq(productImages.id, imageId));
+
+      if (!existingImage) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+      }
+
+      const groupWhere = existingImage.batchId
+        ? eq(productImages.batchId, existingImage.batchId)
+        : existingImage.productId
+          ? eq(productImages.productId, existingImage.productId)
+          : null;
+
+      if (!groupWhere) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Image is not associated with a batch or product",
+        });
+      }
+
+      const nextStatus = updates.status ?? existingImage.status;
+      const nextIsPrimary = updates.isPrimary ?? existingImage.isPrimary;
+
+      // Hidden images cannot be primary. If caller explicitly asks for this, reject.
+      if (
+        (nextStatus === "ARCHIVED" || nextStatus === "REJECTED") &&
+        nextIsPrimary === true
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Hidden images cannot be set as primary",
+        });
+      }
+
+      // If hiding, force primary to false (avoid invalid state when hiding the current primary).
+      if (nextStatus === "ARCHIVED" || nextStatus === "REJECTED") {
+        updates.isPrimary = false;
+      }
+
+      // If un-hiding and no explicit sortOrder was provided, put the image at the end of the visible list.
+      const isBecomingVisible =
+        (existingImage.status === "ARCHIVED" ||
+          existingImage.status === "REJECTED") &&
+        (nextStatus === null ||
+          nextStatus === "APPROVED" ||
+          nextStatus === "PENDING");
+
+      if (isBecomingVisible && typeof updates.sortOrder !== "number") {
+        const [{ maxSortOrder }] = await db
           .select({
-            batchId: productImages.batchId,
-            productId: productImages.productId,
+            maxSortOrder:
+              sql<number>`COALESCE(MAX(${productImages.sortOrder}), -1)`.as(
+                "maxSortOrder"
+              ),
           })
           .from(productImages)
-          .where(eq(productImages.id, imageId));
+          .where(and(groupWhere, visibleImageStatusWhere));
 
-        if (image?.batchId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.batchId, image.batchId));
-        } else if (image?.productId) {
-          await db
-            .update(productImages)
-            .set({ isPrimary: false })
-            .where(eq(productImages.productId, image.productId));
-        }
+        updates.sortOrder = (maxSortOrder ?? -1) + 1;
+      }
+
+      // If setting as primary, unset others first.
+      if (updates.isPrimary) {
+        await db
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(groupWhere);
       }
 
       await db
         .update(productImages)
         .set(updates)
         .where(eq(productImages.id, imageId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: existingImage.batchId,
+        productId: existingImage.productId,
+      });
 
       return { success: true };
     }),
@@ -393,7 +584,24 @@ export const photographyRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const [existingImage] = await db
+        .select({
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+        })
+        .from(productImages)
+        .where(eq(productImages.id, input.imageId));
+
+      if (!existingImage) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+      }
+
       await db.delete(productImages).where(eq(productImages.id, input.imageId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: existingImage.batchId,
+        productId: existingImage.productId,
+      });
 
       return { success: true };
     }),
@@ -408,13 +616,62 @@ export const photographyRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // Update sort order for each image
-      for (let i = 0; i < input.imageIds.length; i++) {
-        await db
-          .update(productImages)
-          .set({ sortOrder: i })
-          .where(eq(productImages.id, input.imageIds[i]));
+      const uniqueIds = new Set(input.imageIds);
+      if (uniqueIds.size !== input.imageIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Duplicate image IDs are not allowed",
+        });
       }
+
+      if (input.imageIds.length === 0) {
+        return { success: true };
+      }
+
+      const rows = await db
+        .select({
+          id: productImages.id,
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+        })
+        .from(productImages)
+        .where(
+          sql`${productImages.id} IN (${sql.join(
+            input.imageIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        );
+
+      if (rows.length !== input.imageIds.length) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more images were not found",
+        });
+      }
+
+      const first = rows[0];
+      const allSameBatch =
+        first.batchId !== null && rows.every(r => r.batchId === first.batchId);
+      const allSameProduct =
+        first.productId !== null &&
+        rows.every(r => r.productId === first.productId);
+
+      if (!allSameBatch && !allSameProduct) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Images must all belong to the same batch or the same product",
+        });
+      }
+
+      await db.transaction(async tx => {
+        for (let i = 0; i < input.imageIds.length; i++) {
+          await tx
+            .update(productImages)
+            .set({ sortOrder: i })
+            .where(eq(productImages.id, input.imageIds[i]));
+        }
+      });
 
       return { success: true };
     }),
@@ -432,7 +689,10 @@ export const photographyRouter = router({
     const batchesWithoutPhotos = await db
       .select({ count: sql<number>`COUNT(DISTINCT ${batches.id})` })
       .from(batches)
-      .leftJoin(productImages, eq(batches.id, productImages.batchId))
+      .leftJoin(
+        productImages,
+        and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+      )
       .where(and(eq(batches.batchStatus, "LIVE"), isNull(productImages.id)));
 
     // Count total live batches
@@ -505,7 +765,10 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .leftJoin(
+            productImages,
+            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+          )
           .where(and(...conditions))
           .groupBy(
             batches.id,
@@ -518,17 +781,37 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(100);
       } catch (queryError) {
+        const errObj =
+          queryError && typeof queryError === "object"
+            ? (queryError as Record<string, unknown>)
+            : null;
+        const errorCode =
+          errObj &&
+          (typeof errObj.code === "string" || typeof errObj.code === "number")
+            ? errObj.code
+            : undefined;
+        const errorErrno =
+          errObj && typeof errObj.errno === "number" ? errObj.errno : undefined;
+        const errorSqlMessage =
+          errObj && typeof errObj.sqlMessage === "string"
+            ? errObj.sqlMessage
+            : undefined;
+
         // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
         logger.error(
           {
             error: queryError,
             errorType: typeof queryError,
             errorConstructor: queryError?.constructor?.name,
-            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
-            errorMessage: queryError instanceof Error ? queryError.message : undefined,
-            errorCode: (queryError as any)?.code,
-            errorErrno: (queryError as any)?.errno,
-            errorSqlMessage: (queryError as any)?.sqlMessage,
+            errorKeys:
+              queryError && typeof queryError === "object"
+                ? Object.keys(queryError)
+                : [],
+            errorMessage:
+              queryError instanceof Error ? queryError.message : undefined,
+            errorCode,
+            errorErrno,
+            errorSqlMessage,
           },
           "Photography queue query with strains failed - analyzing error format"
         );
@@ -595,7 +878,10 @@ export const photographyRouter = router({
           hasImages: sql<number>`COUNT(${productImages.id})`.as("hasImages"),
         })
         .from(batches)
-        .leftJoin(productImages, eq(batches.id, productImages.batchId))
+        .leftJoin(
+          productImages,
+          and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+        )
         .where(
           and(
             isNull(batches.deletedAt),
@@ -666,19 +952,121 @@ export const photographyRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // If imageUrls are provided, add them first
+      const [batch] = await db
+        .select({ id: batches.id, productId: batches.productId })
+        .from(batches)
+        .where(eq(batches.id, input.batchId))
+        .limit(1);
+
+      if (!batch) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      }
+
+      // If imageUrls are provided, add them first.
+      // Safety rules:
+      // - If the batch already has at least one visible image, do NOT create a new primary.
+      // - Append new images to the end of the visible list using sortOrder.
+      const existingBefore = await db
+        .select({
+          id: productImages.id,
+          isPrimary: productImages.isPrimary,
+          status: productImages.status,
+          sortOrder: productImages.sortOrder,
+        })
+        .from(productImages)
+        .where(eq(productImages.batchId, input.batchId));
+
+      const visibleBefore = existingBefore.filter(img =>
+        isVisibleImageStatus(img.status)
+      );
+
+      const maxSortOrderBefore = visibleBefore.reduce((max, img) => {
+        const order = typeof img.sortOrder === "number" ? img.sortOrder : -1;
+        return Math.max(max, order);
+      }, -1);
+
+      const shouldPrimaryFirstInserted = visibleBefore.length === 0;
+
       if (input.imageUrls && input.imageUrls.length > 0) {
         for (let i = 0; i < input.imageUrls.length; i++) {
           await db.insert(productImages).values({
             batchId: input.batchId,
+            productId: batch.productId,
             imageUrl: input.imageUrls[i],
-            isPrimary: i === 0,
-            sortOrder: i,
+            isPrimary: shouldPrimaryFirstInserted && i === 0,
+            sortOrder: maxSortOrderBefore + 1 + i,
             status: "APPROVED",
             uploadedBy: ctx.user.id,
             uploadedAt: new Date(),
           });
         }
+      }
+
+      // Guard: do not allow completion without at least one visible image.
+      // "Visible" includes only null/APPROVED/PENDING (see isVisibleImageStatus).
+      const existingImages = await db
+        .select({
+          id: productImages.id,
+          isPrimary: productImages.isPrimary,
+          status: productImages.status,
+          sortOrder: productImages.sortOrder,
+        })
+        .from(productImages)
+        .where(eq(productImages.batchId, input.batchId));
+
+      const visibleImages = existingImages.filter(img =>
+        isVisibleImageStatus(img.status)
+      );
+
+      if (visibleImages.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "At least one photo is required to complete photography",
+        });
+      }
+
+      // Repair state: ensure exactly one primary overall for this batch.
+      // This handles:
+      // - zero visible primaries
+      // - multiple primaries (visible and/or hidden)
+      const visiblePrimaryIds = visibleImages
+        .filter(img => Boolean(img.isPrimary))
+        .map(img => img.id);
+
+      const desiredPrimaryId =
+        visiblePrimaryIds.length === 1
+          ? visiblePrimaryIds[0]
+          : [...visibleImages].sort((a, b) => {
+              const aOrder =
+                typeof a.sortOrder === "number"
+                  ? a.sortOrder
+                  : Number.MAX_SAFE_INTEGER;
+              const bOrder =
+                typeof b.sortOrder === "number"
+                  ? b.sortOrder
+                  : Number.MAX_SAFE_INTEGER;
+              if (aOrder !== bOrder) return aOrder - bOrder;
+              return a.id - b.id;
+            })[0].id;
+
+      const existingPrimaryIds = existingImages
+        .filter(img => Boolean(img.isPrimary))
+        .map(img => img.id);
+
+      const alreadyClean =
+        existingPrimaryIds.length === 1 &&
+        existingPrimaryIds[0] === desiredPrimaryId;
+
+      if (!alreadyClean) {
+        await db
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(eq(productImages.batchId, input.batchId));
+
+        await db
+          .update(productImages)
+          .set({ isPrimary: true })
+          .where(eq(productImages.id, desiredPrimaryId));
       }
 
       // Update batch status to PHOTOGRAPHY_COMPLETE
@@ -863,21 +1251,35 @@ export const photographyRouter = router({
         .from(productImages)
         .where(eq(productImages.batchId, input.batchId));
 
-      // Require at least one primary photo
-      const hasPrimary = photos.some(p => p.isPrimary);
-      if (!hasPrimary) {
+      const visiblePhotos = photos.filter(p => isVisibleImageStatus(p.status));
+
+      if (visiblePhotos.length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            "At least one primary photo is required to complete photography",
+          message: "At least one photo is required to complete photography",
         });
+      }
+
+      // Require at least one primary photo (among visible photos)
+      const hasVisiblePrimary = visiblePhotos.some(p => Boolean(p.isPrimary));
+      if (!hasVisiblePrimary) {
+        // Repair state rather than blocking the workflow.
+        await database
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(eq(productImages.batchId, input.batchId));
+
+        await database
+          .update(productImages)
+          .set({ isPrimary: true })
+          .where(eq(productImages.id, visiblePhotos[0].id));
       }
 
       // Update batch metadata
       const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
       metadata.photographyCompletedAt = new Date().toISOString();
       metadata.photographyCompletedBy = ctx.user?.id;
-      metadata.photoCount = photos.length;
+      metadata.photoCount = visiblePhotos.length;
 
       // Update batch status to PHOTOGRAPHY_COMPLETE (sub-status of LIVE)
       await database
@@ -890,14 +1292,14 @@ export const photographyRouter = router({
         .where(eq(batches.id, input.batchId));
 
       logger.info(
-        { batchId: input.batchId, photoCount: photos.length },
+        { batchId: input.batchId, photoCount: visiblePhotos.length },
         "[Photography] Session completed"
       );
 
       return {
         success: true,
         batchId: input.batchId,
-        photoCount: photos.length,
+        photoCount: visiblePhotos.length,
       };
     }),
 
@@ -923,6 +1325,14 @@ export const photographyRouter = router({
       await database
         .delete(productImages)
         .where(eq(productImages.id, input.photoId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup(
+        {
+          batchId: photo.batchId,
+          productId: photo.productId,
+        },
+        database
+      );
 
       logger.info(
         { photoId: input.photoId, batchId: photo.batchId },
@@ -965,7 +1375,10 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .leftJoin(
+            productImages,
+            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+          )
           .where(
             and(
               or(
@@ -980,17 +1393,37 @@ export const photographyRouter = router({
           .orderBy(desc(batches.createdAt))
           .limit(input.limit);
       } catch (queryError) {
+        const errObj =
+          queryError && typeof queryError === "object"
+            ? (queryError as Record<string, unknown>)
+            : null;
+        const errorCode =
+          errObj &&
+          (typeof errObj.code === "string" || typeof errObj.code === "number")
+            ? errObj.code
+            : undefined;
+        const errorErrno =
+          errObj && typeof errObj.errno === "number" ? errObj.errno : undefined;
+        const errorSqlMessage =
+          errObj && typeof errObj.sqlMessage === "string"
+            ? errObj.sqlMessage
+            : undefined;
+
         // ENHANCED LOGGING (BUG-112): Capture actual error format for debugging
         logger.error(
           {
             error: queryError,
             errorType: typeof queryError,
             errorConstructor: queryError?.constructor?.name,
-            errorKeys: queryError && typeof queryError === "object" ? Object.keys(queryError) : [],
-            errorMessage: queryError instanceof Error ? queryError.message : undefined,
-            errorCode: (queryError as any)?.code,
-            errorErrno: (queryError as any)?.errno,
-            errorSqlMessage: (queryError as any)?.sqlMessage,
+            errorKeys:
+              queryError && typeof queryError === "object"
+                ? Object.keys(queryError)
+                : [],
+            errorMessage:
+              queryError instanceof Error ? queryError.message : undefined,
+            errorCode,
+            errorErrno,
+            errorSqlMessage,
           },
           "getAwaitingPhotography: Query with strains join failed - analyzing error format"
         );

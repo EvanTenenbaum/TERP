@@ -8,7 +8,8 @@
  * Route: /verify/:token
  */
 
-import { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from 'react';
 import { useParams } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -198,7 +199,7 @@ export default function FarmerVerification() {
 
   // Calculate totals
   const totalExpectedQty = (receipt.items || []).reduce(
-    (sum: number, item: any) => sum + (parseFloat(item.expectedQuantity) || 0),
+    (sum: number, item: Record<string, unknown>) => sum + (parseFloat(item.expectedQuantity as string) || 0),
     0
   );
 
@@ -264,11 +265,11 @@ export default function FarmerVerification() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {receipt.items?.map((item: any, index: number) => (
-                    <TableRow key={`page-item-${index}`}>
-                      <TableCell className="font-medium">{item.productName}</TableCell>
+                  {receipt.items?.map((item: any) => (
+                    <TableRow key={`item-${item.productName}`}>
+                      <TableCell className="font-medium">{item.productName as any}</TableCell>
                       <TableCell className="text-right">
-                        {item.expectedQuantity} {item.unit}
+                        {item.expectedQuantity as any} {item.unit as any}
                       </TableCell>
                       <TableCell className="text-right">
                         {item.expectedPrice ? `$${parseFloat(item.expectedPrice).toFixed(2)}` : '-'}

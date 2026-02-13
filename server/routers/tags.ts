@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { tags, productTags, clientTags, type Tag } from "../../drizzle/schema";
+import { tags, productTags, clientTags } from "../../drizzle/schema";
 import { eq, like, or, and, isNull, desc } from "drizzle-orm";
 
 const tagCategoryEnum = z.enum(["STATUS", "PRIORITY", "TYPE", "CUSTOM", "STRAIN", "FLAVOR", "EFFECT"]);

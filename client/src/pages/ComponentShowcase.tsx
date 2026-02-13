@@ -9,6 +9,7 @@
  * @see client/src/App.tsx for the conditional route configuration
  */
 
+import * as React from "react";
 import {
   Accordion,
   AccordionContent,
@@ -187,7 +188,7 @@ export default function ComponentsShowcase() {
   const { theme, toggleTheme } = useTheme();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [datePickerDate, setDatePickerDate] = useState<Date>();
-  const [selectedFruits, setSelectedFruits] = useState<string[]>([]);
+  const [_selectedFruits, _setSelectedFruits] = useState<string[]>([]);
   const [progress, setProgress] = useState(33);
   const [currentPage, setCurrentPage] = useState(2);
   const [openCombobox, setOpenCombobox] = useState(false);
@@ -199,7 +200,7 @@ export default function ComponentsShowcase() {
 
   const handleDialogSubmit = () => {
     if (import.meta.env.DEV) {
-      console.log("Dialog submitted with value:", dialogInput);
+      console.info("Dialog submitted with value:", dialogInput);
     }
     sonnerToast.success("Submitted successfully", {
       description: `Input: ${dialogInput}`,
@@ -562,7 +563,7 @@ export default function ComponentsShowcase() {
                               { value: "remix", label: "Remix" },
                             ].map(framework => (
                               <CommandItem
-                                key={framework.value}
+                                key={`framework-${framework.value}`}
                                 value={framework.value}
                                 onSelect={currentValue => {
                                   setSelectedFramework(
@@ -622,7 +623,7 @@ export default function ComponentsShowcase() {
                           {Array.from({ length: 12 }, (_, i) => i + 1).map(
                             month => (
                               <SelectItem
-                                key={month}
+                                key={`month-${month}`}
                                 value={month.toString().padStart(2, "0")}
                               >
                                 {month.toString().padStart(2, "0")}
@@ -648,7 +649,7 @@ export default function ComponentsShowcase() {
                             { length: 10 },
                             (_, i) => new Date().getFullYear() - 5 + i
                           ).map(year => (
-                            <SelectItem key={year} value={year.toString()}>
+                            <SelectItem key={`year-${year}`} value={year.toString()}>
                               {year}
                             </SelectItem>
                           ))}
@@ -736,7 +737,7 @@ export default function ComponentsShowcase() {
                         />
                       </PaginationItem>
                       {[1, 2, 3, 4, 5].map(page => (
-                        <PaginationItem key={page}>
+                        <PaginationItem key={`page-${page}`}>
                           <PaginationLink
                             href="#"
                             isActive={currentPage === page}
@@ -1181,7 +1182,9 @@ export default function ComponentsShowcase() {
                 <Carousel className="w-full max-w-xs mx-auto">
                   <CarouselContent>
                     {Array.from({ length: 5 }).map((_, index) => (
-                      <CarouselItem key={`page-item-${index}`}>
+                      <CarouselItem
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={`carousel-${index}`}>
                         <div className="p-1">
                           <Card>
                             <CardContent className="flex aspect-square items-center justify-center p-6">
@@ -1262,7 +1265,9 @@ export default function ComponentsShowcase() {
                     <div className="p-4">
                       <div className="space-y-4">
                         {Array.from({ length: 20 }).map((_, i) => (
-                          <div key={`page-item-${i}`} className="text-sm">
+                          <div
+                            // eslint-disable-next-line react/no-array-index-key
+                            key={`scroll-item-${i}`} className="text-sm">
                             Item {i + 1}: This is a scrollable content area
                           </div>
                         ))}

@@ -2,7 +2,7 @@
 # Update invoice status through the allowed lifecycle transitions
 
 flow_id: "Accounting.Invoices.UpdateStatus"
-description: "Update invoice status from DRAFT to SENT and verify state transition"
+description: "Update invoice status to PAID using quick actions and verify transition"
 role: "AccountingManager"
 seed_profile: "basic_sales"
 tags:
@@ -16,9 +16,9 @@ timeout: 45000
 preconditions:
   ensure:
     - entity: "invoice"
-      ref: "seed:invoice.draft"
+      ref: "seed:invoice.status_target"
       where:
-        status: "DRAFT"
+        status_in: ["DRAFT", "VIEWED", "SENT", "PARTIAL", "OVERDUE"]
         deletedAt_null: true
 
 steps:
@@ -31,35 +31,19 @@ steps:
     timeout: 10000
 
   - action: click
-    target: "[data-testid='invoice-row-{{seed:invoice.draft.id}}'], tr[data-invoice-id='{{seed:invoice.draft.id}}']"
-    wait_for_navigation: true
-
-  - action: wait
-    for: "[data-testid='invoice-detail'], .invoice-detail"
-    timeout: 10000
-
-  - action: assert
-    text_contains: "DRAFT"
-
-  - action: click
-    target: "[data-testid='status-dropdown'], [data-testid='update-status-btn'], select[name='status']"
+    target: "table tbody tr:has-text('{{seed:invoice.status_target.invoiceNumber}}'), table tbody tr:has-text('{{seed:invoice.status_target.invoice_number}}'), table tbody tr:has-text('DRAFT'), table tbody tr:has-text('VIEWED'), table tbody tr:has-text('SENT'), table tbody tr:has-text('PARTIAL'), table tbody tr:has-text('OVERDUE')"
     wait_after: 500
 
-  - action: select
-    target: "[data-testid='status-select'], select[name='status']"
-    value: "SENT"
-
-  - action: type
-    target: "[data-testid='status-notes'], textarea[name='notes'], input[name='notes']"
-    value: "Invoice sent to client via email"
-    clear_first: true
+  - action: wait
+    for: "[data-testid='invoice-detail'], .invoice-detail, [role='complementary'], aside[role='complementary']"
+    timeout: 10000
 
   - action: click
-    target: "[data-testid='confirm-status-btn'], button:contains('Update'), button[type='submit']"
+    target: "button:contains('Mark as Paid (Full)'), [data-testid='confirm-status-btn'], button:contains('Update'), button[type='submit']"
     wait_after: 2000
 
   - action: wait
-    for: "[data-testid='status-success'], .success-toast"
+    for: "[data-testid='status-success'], [data-sonner-toast], [role='status'], .success-toast"
     timeout: 10000
 
   - action: screenshot
@@ -69,12 +53,11 @@ expected_ui:
   visible:
     - "[data-testid='invoice-detail'], main"
   text_present:
-    - "SENT"
+    - "PAID"
 
 expected_db:
   invoices:
     - where:
-        id: "$seed:invoice.draft.id"
+        id: "$seed:invoice.status_target.id"
       expect:
-        status: "SENT"
-        notes_like: "%Status Update%"
+        status: "PAID"

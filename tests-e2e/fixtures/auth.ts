@@ -99,8 +99,6 @@ export const AUTH_ROUTES = {
   apiMe: "/api/auth/me",
 } as const;
 
-const DASHBOARD_URL_PATTERN = /\/($|dashboard)(\?.*)?/;
-
 /**
  * Fill the first visible input matching any of the given selectors
  */
@@ -119,27 +117,6 @@ async function fillFirstVisible(
   throw new Error(
     `No visible input found for selectors: ${selectors.join(", ")}`
   );
-}
-
-/**
- * Navigate to a post-auth landing page with retry logic.
- * Remote/staging environments can intermittently time out on full page load.
- */
-async function navigateToAuthenticatedHome(page: Page): Promise<void> {
-  const candidates = ["/dashboard", "/"];
-  let lastError: unknown = null;
-
-  for (const target of candidates) {
-    try {
-      await page.goto(target, { waitUntil: "domcontentloaded", timeout: 30000 });
-      await page.waitForURL(DASHBOARD_URL_PATTERN, { timeout: 10000 });
-      return;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError ?? new Error("Unable to navigate to authenticated landing page");
 }
 
 /**
@@ -224,110 +201,155 @@ export async function loginViaForm(
 }
 
 /**
+ * Navigate to dashboard and verify authentication landed on app shell.
+ */
+async function navigateToDashboard(page: Page): Promise<void> {
+  await page.goto("/dashboard");
+  await page.waitForURL(/\/($|dashboard)(\?.*)?/, { timeout: 10000 });
+}
+
+/**
+ * Login with credentials.
+ * Non-admin roles may optionally fall back to admin when test-role fixtures are unavailable.
+ */
+async function loginWithCredentials(
+  page: Page,
+  email: string,
+  password: string,
+  options: { allowAdminFallback?: boolean; roleName?: string } = {}
+): Promise<void> {
+  const { allowAdminFallback = false, roleName } = options;
+  const apiSuccess = await loginViaApi(page, email, password);
+  if (apiSuccess) {
+    await navigateToDashboard(page);
+    loggedInRole = roleName || email;
+    return;
+  }
+
+  try {
+    await loginViaForm(page, email, password);
+    loggedInRole = roleName || email;
+    return;
+  } catch (error) {
+    if (!allowAdminFallback || email === TEST_USERS.admin.email) {
+      throw error;
+    }
+
+    const adminApiSuccess = await loginViaApi(
+      page,
+      TEST_USERS.admin.email,
+      TEST_USERS.admin.password
+    );
+    if (adminApiSuccess) {
+      await navigateToDashboard(page);
+      loggedInRole = "Super Admin (fallback)";
+      return;
+    }
+
+    await loginViaForm(page, TEST_USERS.admin.email, TEST_USERS.admin.password);
+    loggedInRole = "Super Admin (fallback)";
+  }
+}
+
+/**
+ * Admin fallback control - now opt-in to prevent silent failures.
+ * Set E2E_ALLOW_ADMIN_FALLBACK=true to enable fallback for non-admin role tests.
+ */
+const allowAdminRoleFallback = process.env.E2E_ALLOW_ADMIN_FALLBACK === "true";
+
+/**
+ * Track which role was actually used for authentication.
+ * This allows test reports to show when fallback occurred.
+ */
+let loggedInRole: string | null = null;
+
+/**
  * Helper to login as admin (Super Admin role)
- * Uses API login for speed, falls back to form login if needed
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.admin;
-
-  // Try API login first (faster and more reliable)
-  const apiSuccess = await loginViaApi(page, email, password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    // Fall back to form login
-    await loginViaForm(page, email, password);
-  }
+  await loginWithCredentials(
+    page,
+    TEST_USERS.admin.email,
+    TEST_USERS.admin.password,
+    {
+      roleName: "Super Admin",
+    }
+  );
 }
 
 /**
  * Helper to login as Sales Manager
  */
 export async function loginAsSalesManager(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.salesManager;
-  const apiSuccess = await loginViaApi(page, email, password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    try {
-      await loginViaForm(page, email, password);
-    } catch {
-      // Production QA environments may not always include all role-specific accounts.
-      await loginAsAdmin(page);
+  await loginWithCredentials(
+    page,
+    TEST_USERS.salesManager.email,
+    TEST_USERS.salesManager.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Sales Manager",
     }
-  }
+  );
 }
 
 /**
  * Helper to login as Sales Rep (Customer Service)
  */
 export async function loginAsSalesRep(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.salesRep;
-  const apiSuccess = await loginViaApi(page, email, password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    await loginViaForm(page, email, password);
-  }
+  await loginWithCredentials(
+    page,
+    TEST_USERS.salesRep.email,
+    TEST_USERS.salesRep.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Customer Service",
+    }
+  );
 }
 
 /**
  * Helper to login as Inventory Manager
  */
 export async function loginAsInventoryManager(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.inventory;
-  try {
-    const apiSuccess = await loginViaApi(page, email, password);
-
-    if (apiSuccess) {
-      await navigateToAuthenticatedHome(page);
-    } else {
-      await loginViaForm(page, email, password);
+  await loginWithCredentials(
+    page,
+    TEST_USERS.inventory.email,
+    TEST_USERS.inventory.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Inventory Manager",
     }
-  } catch {
-    await loginAsAdmin(page);
-  }
+  );
 }
 
 /**
  * Helper to login as Accountant
  */
 export async function loginAsAccountant(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.accounting;
-  const apiSuccess = await loginViaApi(page, email, password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    try {
-      await loginViaForm(page, email, password);
-    } catch {
-      // Production QA environments may not always include all role-specific accounts.
-      await loginAsAdmin(page);
+  await loginWithCredentials(
+    page,
+    TEST_USERS.accounting.email,
+    TEST_USERS.accounting.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Accountant",
     }
-  }
+  );
 }
 
 /**
  * Helper to login as Warehouse Staff
  */
 export async function loginAsWarehouseStaff(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.fulfillment;
-  const apiSuccess = await loginViaApi(page, email, password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    try {
-      await loginViaForm(page, email, password);
-    } catch {
-      // Production QA environments may not always include all role-specific accounts.
-      await loginAsAdmin(page);
+  await loginWithCredentials(
+    page,
+    TEST_USERS.fulfillment.email,
+    TEST_USERS.fulfillment.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Warehouse Staff",
     }
-  }
+  );
 }
 
 /**
@@ -341,14 +363,15 @@ export async function loginAsFulfillment(page: Page): Promise<void> {
  * Helper to login as Auditor (read-only)
  */
 export async function loginAsAuditor(page: Page): Promise<void> {
-  const { email, password } = TEST_USERS.auditor;
-  const apiSuccess = await loginViaApi(page, email, password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    await loginViaForm(page, email, password);
-  }
+  await loginWithCredentials(
+    page,
+    TEST_USERS.auditor.email,
+    TEST_USERS.auditor.password,
+    {
+      allowAdminFallback: allowAdminRoleFallback,
+      roleName: "Read-Only Auditor",
+    }
+  );
 }
 
 /**
@@ -362,14 +385,12 @@ export async function loginAsRole(
   if (!user) {
     throw new Error(`Unknown role: ${role}`);
   }
-
-  const apiSuccess = await loginViaApi(page, user.email, user.password);
-
-  if (apiSuccess) {
-    await navigateToAuthenticatedHome(page);
-  } else {
-    await loginViaForm(page, user.email, user.password);
-  }
+  const allowAdminFallback =
+    role !== "admin" && role !== "vipClient" && allowAdminRoleFallback;
+  await loginWithCredentials(page, user.email, user.password, {
+    allowAdminFallback,
+    roleName: user.role,
+  });
 }
 
 /**
@@ -428,6 +449,15 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get the role that was actually authenticated.
+ * Returns null if no authentication has occurred yet.
+ * If fallback occurred, the string will contain "(fallback)".
+ */
+export function getAuthenticatedRole(): string | null {
+  return loggedInRole;
 }
 
 /**

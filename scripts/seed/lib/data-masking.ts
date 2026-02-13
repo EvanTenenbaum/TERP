@@ -428,10 +428,12 @@ export class PIIMasker {
         seedLogger.piiMasked(tableName, fieldName);
 
         // Track for audit
-        if (!this.maskedFieldsAudit.has(tableName)) {
-          this.maskedFieldsAudit.set(tableName, new Set());
+        let auditSet = this.maskedFieldsAudit.get(tableName);
+        if (!auditSet) {
+          auditSet = new Set();
+          this.maskedFieldsAudit.set(tableName, auditSet);
         }
-        this.maskedFieldsAudit.get(tableName)!.add(fieldName);
+        auditSet.add(fieldName);
       }
     }
 

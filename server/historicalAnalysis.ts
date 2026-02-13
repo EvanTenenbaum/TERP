@@ -321,8 +321,7 @@ export async function getProactiveOpportunities(
     clientName: string;
     daysSinceLastPurchase: number;
     pattern: PurchasePattern;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    availableInventory: any[];
+    availableInventory: Array<{ batchId: number; productName: string; quantity: number; unitCost: number }>;
   }>
 > {
   const db = await getDb();

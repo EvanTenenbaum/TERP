@@ -4,12 +4,26 @@ function isTruthy(value: string | undefined): boolean {
   return value === "1" || value === "true" || value === "yes";
 }
 
+function isRemoteUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return !url.includes("localhost") && !url.includes("127.0.0.1");
+}
+
 async function globalSetup() {
   console.info("\nSetting up E2E test environment...");
 
   // Skip all setup when running AI agent tests against external URLs
   if (isTruthy(process.env.SKIP_E2E_SETUP)) {
     console.info("✅ Skipping E2E setup (SKIP_E2E_SETUP=1).\n");
+    return;
+  }
+
+  const targetBaseUrl =
+    process.env.PLAYWRIGHT_BASE_URL || process.env.MEGA_QA_BASE_URL;
+  if (isRemoteUrl(targetBaseUrl)) {
+    console.info(
+      `✅ Skipping local DB setup for remote target (${targetBaseUrl}).\n`
+    );
     return;
   }
 

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { getDb } from "../db";
-import { users, vipPortalAuth } from "../../drizzle/schema";
+import { logger } from "../_core/logger";
+import { vipPortalAuth } from "../../drizzle/schema";
 import { liveShoppingSessions } from "../../drizzle/schema-live-shopping";
 import { eq, and, gt } from "drizzle-orm";
 import * as jwt from "jsonwebtoken";
@@ -97,7 +98,7 @@ export async function sseAuthMiddleware(
           clientId: vipAuth.clientId,
           sessionId: parsedSessionId
         };
-        console.log(`SSE Auth Success: VIP clientId=${vipAuth.clientId} sessionId=${sessionId}`);
+        logger.info(`SSE Auth Success: VIP clientId=${vipAuth.clientId} sessionId=${sessionId}`);
         return next();
       } else {
         console.warn(`SSE Auth Failed: Invalid VIP token or wrong session sessionId=${sessionId}`);
@@ -119,7 +120,7 @@ export async function sseAuthMiddleware(
           userId: req.user.id,
           sessionId: parsedSessionId
         };
-        console.log(`SSE Auth Success: Staff userId=${req.user.id} sessionId=${sessionId}`);
+        logger.info(`SSE Auth Success: Staff userId=${req.user.id} sessionId=${sessionId}`);
         return next();
       } else {
         console.warn(`SSE Auth Failed: User ${req.user.id} is not host of session ${sessionId}`);
@@ -154,7 +155,7 @@ export async function sseAuthMiddleware(
             userId: decoded.userId,
             sessionId: parsedSessionId
           };
-          console.log(`SSE Auth Success: Staff (JWT) userId=${decoded.userId} sessionId=${sessionId}`);
+          logger.info(`SSE Auth Success: Staff (JWT) userId=${decoded.userId} sessionId=${sessionId}`);
           return next();
         } else {
           console.warn(`SSE Auth Failed: JWT user ${decoded.userId} is not host of session ${sessionId}`);

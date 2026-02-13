@@ -16,9 +16,8 @@ import {
   type WorkflowStatus,
   type InsertWorkflowStatus,
   type BatchStatusHistory,
-  type InsertBatchStatusHistory,
 } from "../../../drizzle/schema";
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { eq, desc, asc, sql } from "drizzle-orm";
 
 // ============================================================================
 // WORKFLOW STATUS QUERIES

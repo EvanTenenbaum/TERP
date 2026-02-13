@@ -59,9 +59,9 @@ export function ConfirmDraftModal({
       
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to confirm order', {
-        description: error.message || 'Please try again',
+        description: error instanceof Error ? error.message : 'Please try again',
       });
     } finally {
       setIsSubmitting(false);
@@ -104,7 +104,7 @@ export function ConfirmDraftModal({
           {/* Payment Terms */}
           <div className="space-y-2">
             <Label htmlFor="payment-terms">Payment Terms *</Label>
-            <Select value={paymentTerms} onValueChange={(value: any) => setPaymentTerms(value)}>
+            <Select value={paymentTerms} onValueChange={(value: 'CASH' | 'NET_30' | 'NET_60' | 'PARTIAL') => setPaymentTerms(value)}>
               <SelectTrigger id="payment-terms">
                 <SelectValue />
               </SelectTrigger>

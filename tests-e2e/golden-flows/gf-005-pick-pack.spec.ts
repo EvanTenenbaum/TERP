@@ -7,7 +7,7 @@
 import { expect, test } from "@playwright/test";
 import { loginAsFulfillment } from "../fixtures/auth";
 
-test.describe("Golden Flow: GF-005 Pick & Pack", (): void => {
+test.describe("Golden Flow: GF-005 Pick & Pack @dev-only @golden-flow", (): void => {
   test.beforeEach(async ({ page }): Promise<void> => {
     await loginAsFulfillment(page);
   });
@@ -33,7 +33,7 @@ test.describe("Golden Flow: GF-005 Pick & Pack", (): void => {
     await page.goto("/pick-pack");
     await page.waitForLoadState("networkidle");
 
-    const orderRow = page.locator('[role="row"], tr').first();
+    const orderRow = page.locator('[data-testid="order-queue-row"]').first();
     if (await orderRow.isVisible().catch(() => false)) {
       await orderRow.click();
 

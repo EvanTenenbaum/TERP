@@ -18,11 +18,13 @@ import {
   cashLocationTransactions,
   shiftAudits,
   bills,
+  bankAccounts,
   users,
 } from "../../drizzle/schema";
 import { eq, and, sql, inArray, desc, gte, lte } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { isMissingTableError } from "../_core/dbErrors";
 
 // ============================================================================
 // MEET-001: Dashboard Available Money API
@@ -41,32 +43,92 @@ export const cashAuditRouter = router({
 
       logger.info({ msg: "[CashAudit] Getting cash dashboard summary" });
 
-      // Get total cash on hand from all active cash locations
-      const cashOnHandResult = await db
-        .select({
-          total: sql<string>`COALESCE(SUM(CAST(${cashLocations.currentBalance} AS DECIMAL(15,2))), 0)`,
-        })
-        .from(cashLocations)
-        .where(eq(cashLocations.isActive, true));
+      let totalCashOnHand = 0;
 
-      const totalCashOnHand = Number(cashOnHandResult[0]?.total || 0);
+      try {
+        // Primary path: FEAT-007 cash locations table.
+        const cashOnHandResult = await db
+          .select({
+            total: sql<string>`COALESCE(SUM(CAST(${cashLocations.currentBalance} AS DECIMAL(15,2))), 0)`,
+          })
+          .from(cashLocations)
+          .where(eq(cashLocations.isActive, true));
 
-      // Get scheduled payables (upcoming bills that are pending/partial)
-      const todayStr = new Date().toISOString().split("T")[0];
-      const scheduledPayablesResult = await db
-        .select({
-          total: sql<string>`COALESCE(SUM(CAST(${bills.amountDue} AS DECIMAL(15,2))), 0)`,
-        })
-        .from(bills)
-        .where(
-          and(
-            inArray(bills.status, ["PENDING", "PARTIAL", "APPROVED"]),
-            sql`${bills.deletedAt} IS NULL`,
-            sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`
-          )
+        totalCashOnHand = Number(cashOnHandResult[0]?.total || 0);
+      } catch (error) {
+        if (!isMissingTableError(error, ["cash_locations"])) {
+          throw error;
+        }
+
+        logger.warn(
+          {
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "[CashAudit] cash_locations missing, falling back to bankAccounts"
         );
 
-      const scheduledPayables = Number(scheduledPayablesResult[0]?.total || 0);
+        try {
+          const fallbackResult = await db
+            .select({
+              total: sql<string>`COALESCE(SUM(CAST(${bankAccounts.currentBalance} AS DECIMAL(15,2))), 0)`,
+            })
+            .from(bankAccounts)
+            .where(
+              and(
+                eq(bankAccounts.isActive, true),
+                sql`${bankAccounts.deletedAt} IS NULL`
+              )
+            );
+
+          totalCashOnHand = Number(fallbackResult[0]?.total || 0);
+        } catch (fallbackError) {
+          if (
+            !isMissingTableError(fallbackError, [
+              "bankaccounts",
+              "bank_accounts",
+            ])
+          ) {
+            throw fallbackError;
+          }
+
+          logger.warn(
+            {
+              error:
+                fallbackError instanceof Error
+                  ? fallbackError.message
+                  : String(fallbackError),
+            },
+            "[CashAudit] bank accounts fallback table unavailable, using zero cash on hand"
+          );
+        }
+      }
+
+      let scheduledPayables = 0;
+      try {
+        const scheduledPayablesResult = await db
+          .select({
+            total: sql<string>`COALESCE(SUM(CAST(${bills.amountDue} AS DECIMAL(15,2))), 0)`,
+          })
+          .from(bills)
+          .where(
+            and(
+              inArray(bills.status, ["PENDING", "PARTIAL", "APPROVED"]),
+              sql`${bills.deletedAt} IS NULL`,
+              sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`
+            )
+          );
+
+        scheduledPayables = Number(scheduledPayablesResult[0]?.total || 0);
+      } catch (error) {
+        if (!isMissingTableError(error, ["bills"])) {
+          throw error;
+        }
+
+        logger.warn(
+          { error: error instanceof Error ? error.message : String(error) },
+          "[CashAudit] bills table unavailable, scheduled payables defaulting to zero"
+        );
+      }
 
       // Calculate available cash
       const availableCash = totalCashOnHand - scheduledPayables;
@@ -132,7 +194,7 @@ export const cashAuditRouter = router({
         .where(conditions.length > 0 ? and(...conditions) : undefined);
 
       return createSafeUnifiedResponse(
-        result.map((loc) => ({
+        result.map(loc => ({
           ...loc,
           currentBalance: Number(loc.currentBalance || 0),
         })),
@@ -250,7 +312,10 @@ export const cashAuditRouter = router({
         .from(cashLocations)
         .where(eq(cashLocations.id, input.locationId));
 
-      logger.info({ msg: "[CashAudit] Cash location updated", locationId: input.locationId });
+      logger.info({
+        msg: "[CashAudit] Cash location updated",
+        locationId: input.locationId,
+      });
 
       return {
         ...updated,
@@ -268,7 +333,10 @@ export const cashAuditRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      logger.info({ msg: "[CashAudit] Getting location balance", locationId: input.locationId });
+      logger.info({
+        msg: "[CashAudit] Getting location balance",
+        locationId: input.locationId,
+      });
 
       const [location] = await db
         .select({
@@ -480,16 +548,22 @@ export const cashAuditRouter = router({
       }
 
       // Build conditions
-      const conditions = [eq(cashLocationTransactions.locationId, input.locationId)];
+      const conditions = [
+        eq(cashLocationTransactions.locationId, input.locationId),
+      ];
 
       if (input.startDate) {
-        conditions.push(gte(cashLocationTransactions.createdAt, input.startDate));
+        conditions.push(
+          gte(cashLocationTransactions.createdAt, input.startDate)
+        );
       }
       if (input.endDate) {
         conditions.push(lte(cashLocationTransactions.createdAt, input.endDate));
       }
       if (input.transactionType) {
-        conditions.push(eq(cashLocationTransactions.transactionType, input.transactionType));
+        conditions.push(
+          eq(cashLocationTransactions.transactionType, input.transactionType)
+        );
       }
 
       // Get transactions with user info
@@ -503,7 +577,8 @@ export const cashAuditRouter = router({
           referenceType: cashLocationTransactions.referenceType,
           referenceId: cashLocationTransactions.referenceId,
           transferToLocationId: cashLocationTransactions.transferToLocationId,
-          transferFromLocationId: cashLocationTransactions.transferFromLocationId,
+          transferFromLocationId:
+            cashLocationTransactions.transferFromLocationId,
           createdBy: cashLocationTransactions.createdBy,
           createdByName: users.name,
           createdAt: cashLocationTransactions.createdAt,
@@ -541,7 +616,7 @@ export const cashAuditRouter = router({
           name: location.name,
         },
         transactions: createSafeUnifiedResponse(
-          transactions.map((tx) => ({
+          transactions.map(tx => ({
             ...tx,
             amount: Number(tx.amount || 0),
           })),
@@ -594,7 +669,10 @@ export const cashAuditRouter = router({
         .select()
         .from(cashLocations)
         .where(
-          and(eq(cashLocations.id, input.locationId), eq(cashLocations.isActive, true))
+          and(
+            eq(cashLocations.id, input.locationId),
+            eq(cashLocations.isActive, true)
+          )
         );
 
       if (!location) {
@@ -698,16 +776,22 @@ export const cashAuditRouter = router({
       }
 
       // Build conditions
-      const conditions = [eq(cashLocationTransactions.locationId, input.locationId)];
+      const conditions = [
+        eq(cashLocationTransactions.locationId, input.locationId),
+      ];
 
       if (input.startDate) {
-        conditions.push(gte(cashLocationTransactions.createdAt, input.startDate));
+        conditions.push(
+          gte(cashLocationTransactions.createdAt, input.startDate)
+        );
       }
       if (input.endDate) {
         conditions.push(lte(cashLocationTransactions.createdAt, input.endDate));
       }
       if (input.transactionType) {
-        conditions.push(eq(cashLocationTransactions.transactionType, input.transactionType));
+        conditions.push(
+          eq(cashLocationTransactions.transactionType, input.transactionType)
+        );
       }
 
       // Get all transactions for export (no pagination limit for export)
@@ -720,7 +804,8 @@ export const cashAuditRouter = router({
           referenceType: cashLocationTransactions.referenceType,
           referenceId: cashLocationTransactions.referenceId,
           transferToLocationId: cashLocationTransactions.transferToLocationId,
-          transferFromLocationId: cashLocationTransactions.transferFromLocationId,
+          transferFromLocationId:
+            cashLocationTransactions.transferFromLocationId,
           createdByName: users.name,
           createdAt: cashLocationTransactions.createdAt,
         })
@@ -742,7 +827,7 @@ export const cashAuditRouter = router({
         "Created By",
       ];
 
-      const csvRows = transactions.map((tx) => {
+      const csvRows = transactions.map(tx => {
         const amount = Number(tx.amount || 0);
 
         // Determine IN or OUT column based on transaction type
@@ -780,13 +865,13 @@ export const cashAuditRouter = router({
       // Generate CSV string
       const csvContent = [
         csvHeaders.join(","),
-        ...csvRows.map((row) => row.join(",")),
+        ...csvRows.map(row => row.join(",")),
       ].join("\n");
 
       // Calculate summary
       let totalIn = 0;
       let totalOut = 0;
-      transactions.forEach((tx) => {
+      transactions.forEach(tx => {
         const amount = Number(tx.amount || 0);
         if (tx.transactionType === "IN") {
           totalIn += amount;
@@ -900,7 +985,7 @@ export const cashAuditRouter = router({
       // Calculate shift totals
       let totalIn = 0;
       let totalOut = 0;
-      transactions.forEach((tx) => {
+      transactions.forEach(tx => {
         const amount = Number(tx.amount || 0);
         if (tx.transactionType === "IN") {
           totalIn += amount;
@@ -928,7 +1013,7 @@ export const cashAuditRouter = router({
         totalPaidOut: totalOut,
         expectedBalance,
         transactionCount: transactions.length,
-        transactions: transactions.map((tx) => ({
+        transactions: transactions.map(tx => ({
           ...tx,
           amount: Number(tx.amount || 0),
         })),
@@ -1002,7 +1087,7 @@ export const cashAuditRouter = router({
 
       let totalIn = 0;
       let totalOut = 0;
-      transactions.forEach((tx) => {
+      transactions.forEach(tx => {
         const amount = Number(tx.amount || 0);
         if (tx.transactionType === "IN") {
           totalIn += amount;
@@ -1154,7 +1239,7 @@ export const cashAuditRouter = router({
         .where(and(...conditions));
 
       // Calculate variance statistics
-      const closedShifts = shifts.filter((s) => s.status === "CLOSED");
+      const closedShifts = shifts.filter(s => s.status === "CLOSED");
       const varianceStats = closedShifts.reduce(
         (acc, shift) => {
           const variance = Number(shift.variance || 0);
@@ -1169,7 +1254,7 @@ export const cashAuditRouter = router({
 
       return {
         shifts: createSafeUnifiedResponse(
-          shifts.map((s) => ({
+          shifts.map(s => ({
             ...s,
             startingBalance: Number(s.startingBalance || 0),
             expectedBalance: Number(s.expectedBalance || 0),

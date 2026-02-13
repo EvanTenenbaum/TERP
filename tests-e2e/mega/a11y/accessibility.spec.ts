@@ -24,7 +24,7 @@ const PAGES_TO_SCAN = [
   { path: "/settings", name: "Settings" },
 ];
 
-test.describe("Accessibility - Axe Scans", () => {
+test.describe("Accessibility - Axe Scans @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -62,7 +62,7 @@ test.describe("Accessibility - Axe Scans", () => {
   }
 });
 
-test.describe("Accessibility - Keyboard Navigation", () => {
+test.describe("Accessibility - Keyboard Navigation @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -162,7 +162,7 @@ test.describe("Accessibility - Keyboard Navigation", () => {
   });
 });
 
-test.describe("Accessibility - Color Contrast", () => {
+test.describe("Accessibility - Color Contrast @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });

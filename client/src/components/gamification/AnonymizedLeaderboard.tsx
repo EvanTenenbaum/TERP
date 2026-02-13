@@ -313,7 +313,9 @@ export const AnonymizedLeaderboard = React.memo(function AnonymizedLeaderboard({
         {isLoading && (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={`skeleton-${i}`} className="h-14 w-full" />
+              <Skeleton
+                // eslint-disable-next-line react/no-array-index-key
+                key={`anon-leaderboard-skeleton-${i}`} className="h-14 w-full" />
             ))}
           </div>
         )}
@@ -359,9 +361,9 @@ export const AnonymizedLeaderboard = React.memo(function AnonymizedLeaderboard({
                     },
                     index: number
                   ) => {
-                    const absoluteRank = page * PAGE_SIZE + index + 1;
+                    const _absoluteRank = page * PAGE_SIZE + index + 1;
                     return (
-                      <TableRow key={absoluteRank}>
+                      <TableRow key={`entry-${entry.rank}-${entry.anonymizedName}`}>
                         <TableCell>
                           <RankBadge rank={entry.rank} />
                         </TableCell>

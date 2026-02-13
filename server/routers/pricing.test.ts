@@ -36,10 +36,8 @@ const mockUser = {
 // Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: {} as any,
+    req: { headers: {} } as Record<string, unknown>,
+    res: {} as Record<string, unknown>,
   });
 
   return appRouter.createCaller({

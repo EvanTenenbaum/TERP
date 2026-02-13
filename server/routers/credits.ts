@@ -9,11 +9,12 @@
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import * as creditsDb from "../creditsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import * as creditsDb from "../creditsDb";
+
 import { getDb } from "../db";
-import { credits, creditApplications, clients, invoices } from "../../drizzle/schema";
-import { eq, and, desc, sql, or, inArray, like, gte, lte } from "drizzle-orm";
+import { credits, clients } from "../../drizzle/schema";
+import { eq, and, desc, sql, or, like } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 
@@ -64,7 +65,7 @@ export const creditsRouter = router({
           or(
             like(credits.creditNumber, `%${escapedTerm}%`),
             like(credits.notes, `%${escapedTerm}%`)
-          )!
+          ) ?? undefined
         );
       }
 

@@ -9,6 +9,7 @@ import {
   boolean,
   json,
   date,
+  longtext,
   index,
   unique,
   uniqueIndex,
@@ -6752,7 +6753,9 @@ export type InsertReceipt = typeof receipts.$inferInsert;
  * Image Status Enum
  * Tracks the approval status of product images
  */
-export const imageStatusEnum = mysqlEnum("image_status", [
+// NOTE: Production column name is `status` (not `image_status`). If this drifts,
+// inserts/queries against `product_images` will fail at runtime.
+export const imageStatusEnum = mysqlEnum("status", [
   "PENDING",
   "APPROVED",
   "REJECTED",
@@ -6804,6 +6807,49 @@ export const productImagesRelations = relations(productImages, ({ one }) => ({
   }),
   uploader: one(users, {
     fields: [productImages.uploadedBy],
+    references: [users.id],
+  }),
+}));
+
+/**
+ * Demo Media Blobs Table
+ * Stores uploaded image bytes directly in DB when external storage is unavailable.
+ * This fallback is intended for DEMO_MODE deployments.
+ */
+export const demoMediaBlobs = mysqlTable(
+  "demo_media_blobs",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    contentType: varchar("content_type", { length: 128 }).notNull(),
+    bytesBase64: longtext("bytes_base64").notNull(),
+    fileSize: int("file_size").notNull(),
+    uploadedBy: int("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    batchId: int("batch_id").references(() => batches.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
+  },
+  table => ({
+    batchIdx: index("idx_demo_media_blobs_batch").on(table.batchId),
+    createdAtIdx: index("idx_demo_media_blobs_created_at").on(table.createdAt),
+    deletedAtIdx: index("idx_demo_media_blobs_deleted_at").on(table.deletedAt),
+  })
+);
+
+export type DemoMediaBlob = typeof demoMediaBlobs.$inferSelect;
+export type InsertDemoMediaBlob = typeof demoMediaBlobs.$inferInsert;
+
+export const demoMediaBlobsRelations = relations(demoMediaBlobs, ({ one }) => ({
+  batch: one(batches, {
+    fields: [demoMediaBlobs.batchId],
+    references: [batches.id],
+  }),
+  uploader: one(users, {
+    fields: [demoMediaBlobs.uploadedBy],
     references: [users.id],
   }),
 }));

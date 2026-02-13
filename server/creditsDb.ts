@@ -16,7 +16,6 @@ import {
   type Credit,
   type InsertCredit,
   type CreditApplication,
-  type InsertCreditApplication
 } from "../drizzle/schema";
 import { eq, and, desc, sql, or, lt, inArray } from "drizzle-orm";
 import { logger } from "./_core/logger";
@@ -552,7 +551,8 @@ export async function markExpiredCredits(): Promise<number> {
         )
       );
     
-    return (result as any).rowsAffected || 0;
+    const resultArray = result as unknown as Array<{ rowsAffected: number }>;
+    return resultArray[0]?.rowsAffected || 0;
   } catch (error) {
     logger.error({
       msg: "Error marking expired credits",

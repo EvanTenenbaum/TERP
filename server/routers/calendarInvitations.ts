@@ -14,12 +14,9 @@ import {
   calendarInvitationHistory,
   calendarEventParticipants,
   calendarEvents,
-  type InsertCalendarEventInvitation,
-  type InsertCalendarInvitationSettings,
-  type InsertCalendarInvitationHistory,
-  type InsertCalendarEventParticipant,
+
 } from "../../drizzle/schema";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import PermissionService from "../_core/permissionService";
 
 /**
@@ -345,9 +342,8 @@ export const calendarInvitationsRouter = router({
         .where(eq(calendarEventInvitations.id, input.invitationId));
 
       // If auto-accepted, create participant
-      let participantId: number | null = null;
       if (invitation.autoAccept && invitation.userId) {
-        participantId = await createParticipantFromInvitation(
+        await createParticipantFromInvitation(
           invitation.id,
           invitation.eventId,
           invitation.userId,
@@ -424,9 +420,8 @@ export const calendarInvitationsRouter = router({
         .where(eq(calendarEventInvitations.id, input.invitationId));
 
       // If accepted, create participant
-      let participantId: number | null = null;
       if (input.response === "ACCEPTED") {
-        participantId = await createParticipantFromInvitation(
+        await createParticipantFromInvitation(
           invitation.id,
           invitation.eventId,
           userId,
@@ -632,9 +627,8 @@ export const calendarInvitationsRouter = router({
         .where(eq(calendarEventInvitations.id, input.invitationId));
 
       // If accepted, create participant
-      let participantId: number | null = null;
       if (newStatus === "ACCEPTED" && invitation.userId) {
-        participantId = await createParticipantFromInvitation(
+        await createParticipantFromInvitation(
           invitation.id,
           invitation.eventId,
           invitation.userId,
@@ -762,7 +756,7 @@ export const calendarInvitationsRouter = router({
       const results: {
         sent: number;
         failed: number;
-        invitations: any[];
+        invitations: Array<Record<string, unknown>>;
       } = {
         sent: 0,
         failed: 0,

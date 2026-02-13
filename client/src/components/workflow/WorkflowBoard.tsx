@@ -30,11 +30,11 @@ interface WorkflowBoardProps {
     color: string;
     order: number;
   }>;
-  queues: Record<number, Array<any>>;
+  queues: Record<number, Array<Record<string, unknown>>>;
 }
 
 export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
-  const [activeBatch, setActiveBatch] = useState<any | null>(null);
+  const [activeBatch, setActiveBatch] = useState<Record<string, unknown> | null>(null);
   const utils = trpc.useUtils();
 
   // Mutation for updating batch status
@@ -64,7 +64,7 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
 
     // Find the batch being dragged
     for (const statusId in queues) {
-      const batch = queues[statusId].find((b: any) => b.id === batchId);
+      const batch = queues[statusId].find((b: Record<string, unknown>) => b.id === batchId);
       if (batch) {
         setActiveBatch(batch);
         break;
@@ -85,7 +85,7 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
     let targetStatusId = newStatusId;
     if (!statuses.some(s => s.id === targetStatusId)) {
       for (const statusId in queues) {
-        if (queues[statusId].some((b: any) => b.id === targetStatusId)) {
+        if (queues[statusId].some((b: Record<string, unknown>) => b.id === targetStatusId)) {
           targetStatusId = parseInt(statusId);
           break;
         }
@@ -95,7 +95,7 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
     // Find current status
     let currentStatusId: number | null = null;
     for (const statusId in queues) {
-      if (queues[statusId].some((b: any) => b.id === batchId)) {
+      if (queues[statusId].some((b: Record<string, unknown>) => b.id === batchId)) {
         currentStatusId = parseInt(statusId);
         break;
       }
@@ -131,7 +131,7 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
         <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 h-full md:min-w-max">
           {sortedStatuses.map((status) => {
             const batches = queues[status.id] || [];
-            const batchIds = batches.map((b: any) => b.id);
+            const batchIds = batches.map((b: any) => b.id) as number[];
 
             return (
               <WorkflowColumn

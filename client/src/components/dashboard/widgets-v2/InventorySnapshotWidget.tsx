@@ -24,10 +24,10 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
-  const { data, isLoading, error } = trpc.dashboard.getInventorySnapshot.useQuery(
-    undefined,
-    { refetchInterval: 60000 }
-  );
+  const { data, isLoading, error } =
+    trpc.dashboard.getInventorySnapshot.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
 
   const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -56,7 +56,10 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
             variant="generic"
             size="sm"
             title="Failed to load inventory data"
-            description={error.message || "An error occurred while fetching inventory snapshot"}
+            description={
+              error.message ||
+              "An error occurred while fetching inventory snapshot"
+            }
           />
         ) : isLoading ? (
           <div className="space-y-2">

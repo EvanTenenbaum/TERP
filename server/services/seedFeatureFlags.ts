@@ -166,6 +166,15 @@ const DEFAULT_FLAGS = [
     defaultEnabled: true,
   },
   {
+    key: "owner-command-center-dashboard",
+    name: "Owner Command Center Dashboard",
+    description:
+      "Replace the standard dashboard with the owner command center card layout",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: false,
+  },
+  {
     key: "spreadsheet-view",
     name: "Spreadsheet View",
     description:
@@ -273,7 +282,8 @@ const DEFAULT_FLAGS = [
   {
     key: "work-surface-keyboard-contract",
     name: "Work Surface: Keyboard Navigation",
-    description: "Enable keyboard navigation contract for Work Surface components",
+    description:
+      "Enable keyboard navigation contract for Work Surface components",
     module: null,
     systemEnabled: true,
     defaultEnabled: true,

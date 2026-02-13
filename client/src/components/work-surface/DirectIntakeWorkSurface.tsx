@@ -12,7 +12,14 @@
  * @see ATOMIC_UX_STRATEGY.md for the complete Work Surface specification
  */
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+} from "react";
 import type {
   ColDef,
   CellValueChangedEvent,
@@ -26,6 +33,7 @@ import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { INTAKE_DEFAULTS } from "@/lib/constants/intakeDefaults";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -62,7 +70,9 @@ import {
   Loader2,
   RefreshCw,
   Package,
+  Upload,
   ChevronRight,
+  X,
 } from "lucide-react";
 
 import { themeAlpine } from "ag-grid-community";
@@ -84,6 +94,8 @@ const intakeRowSchema = z.object({
     "Other",
   ]),
   item: z.string().min(1, "Product is required"),
+  // TER-223: Subcategory is first-class, category defaults to Flower
+  subcategory: z.string().optional(),
   qty: z.number().min(0.01, "Quantity must be greater than 0"),
   cogs: z.number().min(0.01, "COGS must be greater than 0"),
   paymentTerms: z.enum([
@@ -107,6 +119,8 @@ interface IntakeGridRow extends IntakeRowData {
   strainId: number | null;
   locationId: number | null;
   locationName: string;
+  // TER-222: Matched strain name for validation assistant
+  matchedStrainName?: string;
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
 }
@@ -115,6 +129,23 @@ interface IntakeSummary {
   totalItems: number;
   totalQty: number;
   totalValue: number;
+}
+
+type UploadedMediaUrl = {
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+};
+
+class UploadMediaError extends Error {
+  uploaded: UploadedMediaUrl[];
+
+  constructor(uploaded: UploadedMediaUrl[]) {
+    super("Failed to upload one or more photos");
+    this.name = "UploadMediaError";
+    this.uploaded = uploaded;
+  }
 }
 
 // ============================================================================
@@ -144,21 +175,27 @@ const CATEGORY_OPTIONS = [
 // HELPER FUNCTIONS
 // ============================================================================
 
-const createEmptyRow = (): IntakeGridRow => ({
+const createEmptyRow = (defaults?: {
+  locationId?: number | null;
+  locationName?: string;
+  site?: string;
+}): IntakeGridRow => ({
   id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
   vendorId: null,
   vendorName: "",
   brandName: "",
-  category: "Flower",
+  // TER-223/TER-228: Default category from centralized intake defaults
+  category: INTAKE_DEFAULTS.category,
+  subcategory: "",
   item: "",
   productId: null,
   strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "NET_30",
-  locationId: null,
-  locationName: "",
-  site: "",
+  paymentTerms: INTAKE_DEFAULTS.paymentTerms,
+  locationId: defaults?.locationId ?? null,
+  locationName: defaults?.locationName ?? "",
+  site: defaults?.site ?? "",
   notes: "",
   status: "pending",
 });
@@ -206,6 +243,8 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
 interface RowInspectorProps {
   row: IntakeGridRow | null;
   onUpdate: (updates: Partial<IntakeGridRow>) => void;
+  mediaFiles: File[];
+  onMediaFilesChange: (files: File[]) => void;
   vendors: { id: number; name: string }[];
   locations: { id: number; site: string }[];
   products: {
@@ -220,6 +259,8 @@ interface RowInspectorProps {
 function RowInspectorContent({
   row,
   onUpdate,
+  mediaFiles,
+  onMediaFilesChange,
   vendors,
   locations,
   products,
@@ -239,6 +280,30 @@ function RowInspectorContent({
     );
   }
 
+  const handleMediaUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    // Reset input so selecting the same file twice still triggers onChange.
+    e.target.value = "";
+
+    const accepted = files.filter(
+      f => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024
+    );
+
+    if (accepted.length !== files.length) {
+      toast.error("Only images under 10MB are allowed");
+    }
+
+    onMediaFilesChange([...mediaFiles, ...accepted]);
+  };
+
+  const removeMedia = (index: number) => {
+    onMediaFilesChange(mediaFiles.filter((_, i) => i !== index));
+  };
+
+  const clearMedia = () => onMediaFilesChange([]);
+
   return (
     <div className="space-y-6">
       <InspectorSection title="Supplier Information" defaultOpen>
@@ -246,6 +311,21 @@ function RowInspectorContent({
           <Select
             value={row.vendorName}
             onValueChange={value => {
+              // TER-219: Intercept create-new option
+              if (value === "__CREATE_NEW__") {
+                // Navigate to client creation with seller flag
+                // For now, prompt for quick name entry
+                const name = window.prompt("Enter new vendor name:");
+                if (name && name.trim()) {
+                  onUpdate({
+                    vendorName: name.trim(),
+                    vendorId: null,
+                    brandName: row.brandName || name.trim(),
+                  });
+                  validation.handleChange("vendorName", name.trim());
+                }
+                return;
+              }
               const vendor = vendors.find(v => v.name === value);
               onUpdate({
                 vendorName: value,
@@ -269,12 +349,21 @@ function RowInspectorContent({
                   No vendors available
                 </SelectItem>
               ) : (
-                vendors.map(v => (
-                  <SelectItem key={v.id} value={v.name}>
-                    {v.name}
-                  </SelectItem>
-                ))
+                <>
+                  {vendors.map(v => (
+                    <SelectItem key={v.id} value={v.name}>
+                      {v.name}
+                    </SelectItem>
+                  ))}
+                </>
               )}
+              {/* TER-219: Inline create option for new vendor */}
+              <SelectItem
+                value="__CREATE_NEW__"
+                className="text-primary font-medium"
+              >
+                + Create New Vendor
+              </SelectItem>
             </SelectContent>
           </Select>
           {validation.getFieldState("vendorName").showError && (
@@ -328,7 +417,8 @@ function RowInspectorContent({
           </Select>
         </InspectorField>
 
-        <InspectorField label="Product" required>
+        {/* TER-221 + TER-222: Combined product/strain field with match suggestions */}
+        <InspectorField label="Product / Strain" required>
           <Select
             value={row.item}
             onValueChange={value => {
@@ -371,6 +461,30 @@ function RowInspectorContent({
               {validation.getFieldState("item").error}
             </p>
           )}
+          {/* TER-222: Strain validation assistant — show matched strain info */}
+          {row.strainId && row.productId && (
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-green-50 rounded text-xs text-green-700">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>Matched to existing product (strain #{row.strainId})</span>
+            </div>
+          )}
+          {row.item && !row.productId && (
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-yellow-50 rounded text-xs text-yellow-700">
+              <AlertCircle className="h-3 w-3" />
+              <span>New product — will be created on submit</span>
+            </div>
+          )}
+        </InspectorField>
+
+        {/* TER-223: Subcategory field — prioritized per user feedback */}
+        <InspectorField label="Subcategory">
+          <Input
+            value={row.subcategory || ""}
+            onChange={e => {
+              onUpdate({ subcategory: e.target.value });
+            }}
+            placeholder="e.g., Indoor, Outdoor, Greenhouse..."
+          />
         </InspectorField>
 
         <div className="grid grid-cols-2 gap-4">
@@ -492,6 +606,71 @@ function RowInspectorContent({
             placeholder="Add any notes about this intake..."
             rows={3}
           />
+          {/* TER-224: Notes traceability — show where notes are stored */}
+          <p className="text-xs text-muted-foreground mt-1">
+            Notes are saved with the batch record and visible in Inventory
+            details.
+          </p>
+        </InspectorField>
+      </InspectorSection>
+
+      <InspectorSection title="Photos" defaultOpen>
+        <InspectorField label={`Attached (${mediaFiles.length})`}>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleMediaUpload}
+                className="hidden"
+                id={`direct-intake-media-${row.id}`}
+              />
+              <label
+                htmlFor={`direct-intake-media-${row.id}`}
+                className="inline-flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer text-sm"
+              >
+                <Upload className="h-4 w-4" />
+                Add photos
+              </label>
+
+              {mediaFiles.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={clearMedia}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {mediaFiles.length > 0 && (
+              <div className="space-y-2">
+                {mediaFiles.map((file, index) => (
+                  <div
+                    key={`intake-media-${file.name}-${file.size}`}
+                    className="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-md"
+                  >
+                    <span className="text-sm truncate">{file.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeMedia(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Photos upload when you submit this row.
+            </p>
+          </div>
         </InspectorField>
       </InspectorSection>
 
@@ -513,9 +692,15 @@ function RowInspectorContent({
 // ============================================================================
 
 export function DirectIntakeWorkSurface() {
-  // State
-  const [rows, setRows] = useState<IntakeGridRow[]>([createEmptyRow()]);
+  // TER-218: Start with multiple rows for faster multi-item intake
+  const INITIAL_ROW_COUNT = 5;
+  const [rows, setRows] = useState<IntakeGridRow[]>(() =>
+    Array.from({ length: INITIAL_ROW_COUNT }, () => createEmptyRow())
+  );
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [rowMediaFilesById, setRowMediaFilesById] = useState<
+    Record<string, File[]>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const gridApiRef = useRef<GridApi | null>(null);
 
@@ -571,15 +756,21 @@ export function DirectIntakeWorkSurface() {
     isLoading: vendorsLoading,
     error: vendorsError,
     refetch: refetchVendors,
-  } = trpc.clients.list.useQuery({
-    clientTypes: ["seller"],
-    limit: 500,
-  });
+  } = trpc.vendors.getAll.useQuery();
 
-  const vendors = useMemo(() => {
-    const items = Array.isArray(vendorsData)
-      ? vendorsData
-      : (vendorsData?.items ?? []);
+  const vendors = useMemo<Array<{ id: number; name: string }>>(() => {
+    const items =
+      vendorsData &&
+      typeof vendorsData === "object" &&
+      "data" in vendorsData &&
+      Array.isArray(vendorsData.data)
+        ? (vendorsData.data as Array<{ id?: unknown; name?: unknown }>)
+        : vendorsData &&
+            typeof vendorsData === "object" &&
+            "items" in vendorsData &&
+            Array.isArray(vendorsData.items)
+          ? (vendorsData.items as Array<{ id?: unknown; name?: unknown }>)
+          : [];
     return items
       .filter(
         (item): item is { id: number; name: string } =>
@@ -598,6 +789,36 @@ export function DirectIntakeWorkSurface() {
     () => (Array.isArray(locationsData) ? locationsData : []),
     [locationsData]
   );
+  const mainWarehouse = useMemo(
+    () =>
+      locations.find(l =>
+        l.site?.toLowerCase().includes(INTAKE_DEFAULTS.defaultWarehouseMatch)
+      ) ?? locations[0],
+    [locations]
+  );
+  const defaultLocationOverrides = useMemo(
+    () =>
+      mainWarehouse
+        ? {
+            locationId: mainWarehouse.id,
+            locationName: mainWarehouse.site ?? "",
+            site: mainWarehouse.site ?? "",
+          }
+        : undefined,
+    [mainWarehouse]
+  );
+
+  // Apply main warehouse default to initial rows when locations data loads
+  useEffect(() => {
+    if (!defaultLocationOverrides) return;
+    setRows(prev =>
+      prev.map(row =>
+        row.locationId === null && row.status === "pending"
+          ? { ...row, ...defaultLocationOverrides }
+          : row
+      )
+    );
+  }, [defaultLocationOverrides]);
 
   const {
     data: productsData,
@@ -626,6 +847,8 @@ export function DirectIntakeWorkSurface() {
 
   // Mutation
   const intakeMutation = trpc.inventory.intake.useMutation();
+  const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
+  const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
 
   // Loading state
   const isLoadingData = vendorsLoading || locationsLoading || productsLoading;
@@ -635,12 +858,20 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
+        // TER-217: Free-text + dropdown for rapid vendor entry
         headerName: "Vendor",
         field: "vendorName",
         width: 160,
         editable: params => params.data?.status === "pending",
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: vendors.map(v => v.name) },
+        cellEditor: "agTextCellEditor",
+        cellEditorParams: {
+          useFormatter: false,
+        },
+        // Provide autocomplete suggestions via value setter
+        tooltipValueGetter: () =>
+          vendors.length > 0
+            ? `Type to search ${vendors.length} vendors or enter new`
+            : "Type vendor name",
       },
       {
         headerName: "Brand/Farmer",
@@ -649,21 +880,37 @@ export function DirectIntakeWorkSurface() {
         editable: params => params.data?.status === "pending",
       },
       {
+        // TER-223: Category defaults to Flower, subcategory is first-class
         headerName: "Category",
         field: "category",
-        width: 120,
+        width: 110,
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: CATEGORY_OPTIONS.map(c => c.value) },
       },
       {
-        headerName: "Product",
+        // TER-223: Subcategory prioritized per user feedback
+        headerName: "Subcategory",
+        field: "subcategory",
+        width: 120,
+        editable: params => params.data?.status === "pending",
+        cellEditor: "agTextCellEditor",
+      },
+      {
+        // TER-217 + TER-221: Combined product/strain field with free-text
+        headerName: "Product / Strain",
         field: "item",
         flex: 1,
         minWidth: 180,
         editable: params => params.data?.status === "pending",
-        cellEditor: "agSelectCellEditor",
-        cellEditorParams: { values: products.map(product => product.name) },
+        cellEditor: "agTextCellEditor",
+        cellEditorParams: {
+          useFormatter: false,
+        },
+        tooltipValueGetter: () =>
+          products.length > 0
+            ? `Type to search ${products.length} products or enter new`
+            : "Type product/strain name",
       },
       {
         headerName: "Qty",
@@ -701,6 +948,27 @@ export function DirectIntakeWorkSurface() {
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: locations.map(l => l.site) },
+      },
+      {
+        // TER-224: Notes indicator for traceability
+        headerName: "Notes",
+        field: "notes",
+        width: 60,
+        editable: false,
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: ICellRendererParams<IntakeGridRow>) => {
+          const hasNotes =
+            params.data?.notes && params.data.notes.trim().length > 0;
+          return hasNotes ? (
+            <span
+              title={`Notes: ${params.data?.notes}`}
+              className="text-blue-600 cursor-help"
+            >
+              📝
+            </span>
+          ) : null;
+        },
       },
       {
         headerName: "Status",
@@ -765,6 +1033,9 @@ export function DirectIntakeWorkSurface() {
           if (!event.data.brandName) {
             event.node.setDataValue("brandName", vendor.name);
           }
+        } else {
+          // Clear stale vendorId when text no longer matches an existing vendor
+          event.node.setDataValue("vendorId", null);
         }
       }
 
@@ -783,6 +1054,10 @@ export function DirectIntakeWorkSurface() {
           event.node.setDataValue("productId", product.id);
           event.node.setDataValue("strainId", product.strainId ?? null);
           event.node.setDataValue("category", product.category);
+        } else {
+          // Clear stale IDs when product text no longer matches an existing product
+          event.node.setDataValue("productId", null);
+          event.node.setDataValue("strainId", null);
         }
       }
 
@@ -826,7 +1101,7 @@ export function DirectIntakeWorkSurface() {
   );
 
   const handleAddRow = useCallback(() => {
-    const newRow = createEmptyRow();
+    const newRow = createEmptyRow(defaultLocationOverrides);
     setRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
 
@@ -838,7 +1113,7 @@ export function DirectIntakeWorkSurface() {
         gridApiRef.current.setFocusedCell(rowIndex, "vendorName");
       }
     }, 50);
-  }, [rows.length]);
+  }, [rows.length, defaultLocationOverrides]);
 
   const handleRemoveRow = useCallback(
     (rowId: string) => {
@@ -853,11 +1128,57 @@ export function DirectIntakeWorkSurface() {
         }
         return prev.filter(r => r.id !== rowId);
       });
+      setRowMediaFilesById(prev => {
+        const next = { ...prev };
+        delete next[rowId];
+        return next;
+      });
       if (selectedRowId === rowId) {
         setSelectedRowId(null);
       }
     },
     [selectedRowId]
+  );
+
+  const uploadMediaFiles = useCallback(
+    async (files: File[]) => {
+      const uploaded: UploadedMediaUrl[] = [];
+
+      for (const file of files) {
+        try {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result =
+                typeof reader.result === "string" ? reader.result : "";
+              const base64 = result.split(",")[1] || "";
+              resolve(base64);
+            };
+            reader.onerror = () =>
+              reject(reader.error ?? new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+          });
+
+          const result = await uploadMediaMutation.mutateAsync({
+            fileData: base64Data,
+            fileName: file.name,
+            fileType: file.type,
+          });
+
+          uploaded.push({
+            url: result.url,
+            fileName: result.fileName,
+            fileType: result.fileType,
+            fileSize: result.fileSize,
+          });
+        } catch {
+          throw new UploadMediaError(uploaded);
+        }
+      }
+
+      return uploaded;
+    },
+    [uploadMediaMutation]
   );
 
   const handleSubmitRow = useCallback(
@@ -881,14 +1202,29 @@ export function DirectIntakeWorkSurface() {
         return;
       }
 
-      setSaving("Submitting intake...");
+      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      let uploadedMediaUrls: UploadedMediaUrl[] = [];
 
       try {
+        if (mediaFiles.length > 0) {
+          setSaving("Uploading photos...");
+          try {
+            uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          } catch (err) {
+            if (err instanceof UploadMediaError) {
+              uploadedMediaUrls = err.uploaded;
+            }
+            throw err;
+          }
+        }
+
+        setSaving("Submitting intake...");
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
           productName: row.item,
           category: row.category,
+          subcategory: row.subcategory || undefined,
           strainId: row.strainId,
           quantity: row.qty,
           cogsMode: "FIXED" as const,
@@ -896,6 +1232,8 @@ export function DirectIntakeWorkSurface() {
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         // Mark as submitted
@@ -904,9 +1242,29 @@ export function DirectIntakeWorkSurface() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFilesById(prev => {
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         setSaved();
         toast.success("Intake submitted successfully");
       } catch (error) {
+        // Rollback uploaded files if intake failed
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            setSaving("Cleaning up uploaded photos...");
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch (cleanupError) {
+            console.error("Failed to cleanup media files:", cleanupError);
+            toast.warning("Some uploaded photos could not be cleaned up");
+          }
+        }
+
         const message =
           error instanceof Error ? error.message : "Failed to submit intake";
         setRows(prev =>
@@ -919,7 +1277,15 @@ export function DirectIntakeWorkSurface() {
         setError(message);
       }
     },
-    [intakeMutation, setSaving, setSaved, setError]
+    [
+      deleteMediaMutation,
+      intakeMutation,
+      rowMediaFilesById,
+      setSaving,
+      setSaved,
+      setError,
+      uploadMediaFiles,
+    ]
   );
 
   const handleSubmitAll = useCallback(async () => {
@@ -965,12 +1331,29 @@ export function DirectIntakeWorkSurface() {
     let errorCount = 0;
 
     for (const row of pendingRows) {
+      const mediaFiles = rowMediaFilesById[row.id] ?? [];
+      let uploadedMediaUrls: UploadedMediaUrl[] = [];
+
       try {
+        if (mediaFiles.length > 0) {
+          setSaving(`Uploading photos for ${row.item || "row"}...`);
+          try {
+            uploadedMediaUrls = await uploadMediaFiles(mediaFiles);
+          } catch (err) {
+            if (err instanceof UploadMediaError) {
+              uploadedMediaUrls = err.uploaded;
+            }
+            throw err;
+          }
+        }
+
+        setSaving(`Submitting ${pendingRows.length} records...`);
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
           productName: row.item,
           category: row.category,
+          subcategory: row.subcategory || undefined,
           strainId: row.strainId,
           quantity: row.qty,
           cogsMode: "FIXED" as const,
@@ -978,6 +1361,8 @@ export function DirectIntakeWorkSurface() {
           paymentTerms: row.paymentTerms,
           location: { site: row.site },
           metadata: row.notes ? { notes: row.notes } : undefined,
+          mediaUrls:
+            uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
 
         setRows(prev =>
@@ -985,8 +1370,27 @@ export function DirectIntakeWorkSurface() {
             r.id === row.id ? { ...r, status: "submitted" as const } : r
           )
         );
+        setRowMediaFilesById(prev => {
+          const next = { ...prev };
+          delete next[row.id];
+          return next;
+        });
         successCount++;
       } catch (error) {
+        if (uploadedMediaUrls.length > 0) {
+          try {
+            setSaving("Cleaning up uploaded photos...");
+            await Promise.all(
+              uploadedMediaUrls.map(media =>
+                deleteMediaMutation.mutateAsync({ url: media.url })
+              )
+            );
+          } catch (cleanupError) {
+            console.error("Failed to cleanup media files:", cleanupError);
+            toast.warning("Some uploaded photos could not be cleaned up");
+          }
+        }
+
         setRows(prev =>
           prev.map(r =>
             r.id === row.id
@@ -1014,7 +1418,16 @@ export function DirectIntakeWorkSurface() {
     }
 
     setIsSubmitting(false);
-  }, [rows, intakeMutation, setSaving, setSaved, setError]);
+  }, [
+    deleteMediaMutation,
+    intakeMutation,
+    rowMediaFilesById,
+    rows,
+    setSaving,
+    setSaved,
+    setError,
+    uploadMediaFiles,
+  ]);
 
   const handleUpdateSelectedRow = useCallback(
     (updates: Partial<IntakeGridRow>) => {
@@ -1098,6 +1511,20 @@ export function DirectIntakeWorkSurface() {
           <Button variant="outline" size="sm" onClick={handleAddRow}>
             <Plus className="mr-1 h-4 w-4" />
             Add Row
+          </Button>
+          {/* TER-218: Quick add multiple rows */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newRows = Array.from({ length: 5 }, () =>
+                createEmptyRow(defaultLocationOverrides)
+              );
+              setRows(prev => [...prev, ...newRows]);
+            }}
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            +5 Rows
           </Button>
           {selectedRowId && selectedRow?.status === "pending" && (
             <Button
@@ -1206,6 +1633,16 @@ export function DirectIntakeWorkSurface() {
           <RowInspectorContent
             row={selectedRow}
             onUpdate={handleUpdateSelectedRow}
+            mediaFiles={
+              selectedRow ? (rowMediaFilesById[selectedRow.id] ?? []) : []
+            }
+            onMediaFilesChange={files => {
+              if (!selectedRow) return;
+              setRowMediaFilesById(prev => ({
+                ...prev,
+                [selectedRow.id]: files,
+              }));
+            }}
             vendors={vendors}
             locations={locations}
             products={products}

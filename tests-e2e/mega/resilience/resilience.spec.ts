@@ -15,7 +15,7 @@ function emitTag(tag: string): void {
   console.log(`[COVERAGE] ${tag}`);
 }
 
-test.describe("Resilience - Offline Handling", () => {
+test.describe("Resilience - Offline Handling @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -118,7 +118,7 @@ test.describe("Resilience - Offline Handling", () => {
   });
 });
 
-test.describe("Resilience - Slow Network", () => {
+test.describe("Resilience - Slow Network @dev-only", () => {
   test("Page loads gracefully on slow network", async ({ page }) => {
     emitTag("resilience-slow-network");
 
@@ -152,7 +152,7 @@ test.describe("Resilience - Slow Network", () => {
   });
 });
 
-test.describe("Resilience - Server Errors", () => {
+test.describe("Resilience - Server Errors @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -204,7 +204,7 @@ test.describe("Resilience - Server Errors", () => {
   });
 });
 
-test.describe("Resilience - Data Persistence", () => {
+test.describe("Resilience - Data Persistence @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });

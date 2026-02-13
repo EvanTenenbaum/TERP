@@ -4,7 +4,7 @@ import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarViews } from "../../drizzle/schema";
 import { and, eq } from "drizzle-orm";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 
 /**
  * Calendar Views Router

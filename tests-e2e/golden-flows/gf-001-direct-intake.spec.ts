@@ -1,10 +1,10 @@
 /**
  * Golden Flow Test: GF-001 Direct Intake
  *
- * Flow: /intake → add row → submit → verify batch created → cleanup
+ * Flow: /direct-intake → add row → submit → verify batch created → cleanup
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { loginAsInventoryManager } from "../fixtures/auth";
 import {
   cleanupBatchesByBrandName,
@@ -18,6 +18,21 @@ const createBrandName = (): string => `E2E Brand ${new Date().toISOString()}`;
 
 test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
   let brandName: string | null = null;
+
+  const gotoDirectIntake = async (page: Page): Promise<void> => {
+    await page.goto("/intake");
+    await page.waitForLoadState("networkidle");
+
+    const addRowOnCanonicalRoute = await page
+      .getByRole("button", { name: "Add Row" })
+      .isVisible()
+      .catch(() => false);
+
+    if (addRowOnCanonicalRoute) return;
+
+    await page.goto("/direct-intake");
+    await page.waitForLoadState("networkidle");
+  };
 
   test.beforeEach(async ({ page }): Promise<void> => {
     await loginAsInventoryManager(page);
@@ -34,7 +49,11 @@ test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
   }): Promise<void> => {
     brandName = createBrandName();
 
-    await page.goto("/intake");
+    await page.goto("/direct-intake");
+    await page.waitForLoadState("networkidle");
+    if (await page.getByText("404").isVisible().catch(() => false)) {
+      await page.goto("/inventory/intake");
+    }
     await page.waitForLoadState("networkidle");
     if (await page.getByText("404").isVisible().catch(() => false)) {
       await page.goto("/inventory/intake");

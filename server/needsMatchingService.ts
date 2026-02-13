@@ -128,6 +128,7 @@ export async function createQuoteFromMatch(matchData: {
       total: subtotal.toString(),
       quoteStatus: "DRAFT",
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      paymentTerms: "NET_30",
       clientNeedId: matchData.clientNeedId, // Link to client need if exists
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);

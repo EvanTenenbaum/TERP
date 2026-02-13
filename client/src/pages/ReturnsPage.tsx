@@ -80,7 +80,11 @@ function deriveGLStatus(
   return "PENDING";
 }
 
-export default function ReturnsPage() {
+interface ReturnsPageProps {
+  embedded?: boolean;
+}
+
+export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -209,7 +213,9 @@ export default function ReturnsPage() {
 
   return (
     <div className="p-8">
-      <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+      {!embedded && (
+        <BackButton label="Back to Orders" to="/orders" className="mb-4" />
+      )}
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Returns Management</h1>
         <p className="text-muted-foreground">Process and track order returns</p>

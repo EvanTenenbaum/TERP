@@ -44,6 +44,7 @@ export interface ClickAction extends BaseAction {
   target?: string;
   target_text?: string;
   target_label?: string;
+  wait_for?: string;
   wait_after?: number;
   wait_for_navigation?: boolean;
 }

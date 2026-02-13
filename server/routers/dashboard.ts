@@ -4,6 +4,8 @@ import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
 import * as ordersDb from "../ordersDb";
+import * as payablesService from "../services/payablesService";
+import { getDb } from "../db";
 import { requirePermission } from "../_core/permissionMiddleware";
 import {
   fetchClientNamesMap,
@@ -11,8 +13,18 @@ import {
   calculateSalesComparison,
 } from "../dashboardHelpers";
 import { logger } from "../_core/logger";
-import type { Invoice, Payment } from "../../drizzle/schema";
+import { isMissingTableError } from "../_core/dbErrors";
+import {
+  batches,
+  clients,
+  lots,
+  paymentHistory,
+  sales as salesTable,
+  type Invoice,
+  type Payment,
+} from "../../drizzle/schema";
 import { subDays, differenceInDays } from "date-fns";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 // ============================================================================
 // Input Schema Constants
@@ -120,6 +132,15 @@ interface ClientDebt {
   oldestDebt: number;
 }
 
+/** Vendor payment risk data */
+interface VendorNeedingPayment {
+  vendorClientId: number;
+  vendorName: string;
+  amountDue: number;
+  soldOutBatches: number;
+  oldestDueDays: number;
+}
+
 /** Client margin data */
 interface ClientMargin {
   customerId: number;
@@ -161,6 +182,168 @@ interface TotalDebtResponse {
   totalDebtOwedToMe: number;
   totalDebtIOwedToVendors: number;
   netPosition: number;
+}
+
+/**
+ * Legacy fallback for environments where vendor_payables is not yet present.
+ * Uses existing sold-out consignment batches + sales + paymentHistory to infer
+ * vendors still owed money.
+ */
+async function getLegacyVendorsNeedingPayment(): Promise<
+  VendorNeedingPayment[]
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+
+  const soldOutRows = await db
+    .select({
+      batchId: batches.id,
+      vendorClientId: lots.supplierClientId,
+      vendorName: clients.name,
+      unitCogs: batches.unitCogs,
+      batchAmountPaid: batches.amountPaid,
+      batchUpdatedAt: batches.updatedAt,
+      batchCreatedAt: batches.createdAt,
+    })
+    .from(batches)
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .leftJoin(clients, eq(lots.supplierClientId, clients.id))
+    .where(
+      and(
+        sql`${batches.deletedAt} IS NULL`,
+        eq(batches.ownershipType, "CONSIGNED"),
+        sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) <= 0`,
+        sql`${lots.supplierClientId} IS NOT NULL`
+      )
+    );
+
+  if (!soldOutRows.length) {
+    return [];
+  }
+
+  const batchIds = soldOutRows.map(row => row.batchId);
+
+  const salesByBatch = new Map<
+    number,
+    { soldQty: number; lastSaleDate: Date | null }
+  >();
+  try {
+    const salesRows = await db
+      .select({
+        batchId: salesTable.batchId,
+        soldQty: sql<string>`COALESCE(SUM(CAST(${salesTable.quantity} AS DECIMAL(15,4))), 0)`,
+        lastSaleDate: sql<Date | null>`MAX(${salesTable.saleDate})`,
+      })
+      .from(salesTable)
+      .where(
+        and(
+          inArray(salesTable.batchId, batchIds),
+          sql`${salesTable.deletedAt} IS NULL`
+        )
+      )
+      .groupBy(salesTable.batchId);
+
+    salesRows.forEach(row => {
+      salesByBatch.set(Number(row.batchId), {
+        soldQty: Number(row.soldQty || 0),
+        lastSaleDate: row.lastSaleDate ? new Date(row.lastSaleDate) : null,
+      });
+    });
+  } catch (error) {
+    if (!isMissingTableError(error, ["sales"])) {
+      throw error;
+    }
+
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[Dashboard] sales table missing while computing legacy vendors needing payment"
+    );
+  }
+
+  const paymentsByBatchVendor = new Map<string, number>();
+  try {
+    const paymentRows = await db
+      .select({
+        batchId: paymentHistory.batchId,
+        vendorClientId: paymentHistory.vendorId,
+        amountPaid: sql<string>`COALESCE(SUM(CAST(${paymentHistory.amount} AS DECIMAL(15,2))), 0)`,
+      })
+      .from(paymentHistory)
+      .where(
+        and(
+          inArray(paymentHistory.batchId, batchIds),
+          sql`${paymentHistory.deletedAt} IS NULL`
+        )
+      )
+      .groupBy(paymentHistory.batchId, paymentHistory.vendorId);
+
+    paymentRows.forEach(row => {
+      const key = `${Number(row.batchId)}:${Number(row.vendorClientId)}`;
+      paymentsByBatchVendor.set(key, Number(row.amountPaid || 0));
+    });
+  } catch (error) {
+    if (!isMissingTableError(error, ["paymenthistory", "payment_history"])) {
+      throw error;
+    }
+
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      "[Dashboard] payment history table missing while computing legacy vendors needing payment"
+    );
+  }
+
+  const byVendor = soldOutRows.reduce(
+    (acc: Record<number, VendorNeedingPayment>, row) => {
+      const vendorClientId = Number(row.vendorClientId);
+      if (!vendorClientId) return acc;
+
+      const soldQty = salesByBatch.get(row.batchId)?.soldQty || 0;
+      if (soldQty <= 0) return acc;
+
+      const estimatedTotal = soldQty * Number(row.unitCogs || 0);
+      const paidKey = `${row.batchId}:${vendorClientId}`;
+      const historicalPaid =
+        paymentsByBatchVendor.get(paidKey) ?? Number(row.batchAmountPaid || 0);
+      const amountDue = Math.max(0, estimatedTotal - historicalPaid);
+      if (amountDue <= 0) return acc;
+
+      const referenceDate =
+        salesByBatch.get(row.batchId)?.lastSaleDate ||
+        (row.batchUpdatedAt ? new Date(row.batchUpdatedAt) : null) ||
+        (row.batchCreatedAt ? new Date(row.batchCreatedAt) : null) ||
+        now;
+      const dueDays = Math.max(0, differenceInDays(now, referenceDate));
+
+      if (!acc[vendorClientId]) {
+        acc[vendorClientId] = {
+          vendorClientId,
+          vendorName: row.vendorName || `Vendor ${vendorClientId}`,
+          amountDue: 0,
+          soldOutBatches: 0,
+          oldestDueDays: 0,
+        };
+      }
+
+      acc[vendorClientId].amountDue += amountDue;
+      acc[vendorClientId].soldOutBatches += 1;
+      acc[vendorClientId].oldestDueDays = Math.max(
+        acc[vendorClientId].oldestDueDays,
+        dueDays
+      );
+
+      return acc;
+    },
+    {}
+  );
+
+  return Object.values(byVendor).sort((a, b) => {
+    if (b.amountDue !== a.amountDue) {
+      return b.amountDue - a.amountDue;
+    }
+    return b.oldestDueDays - a.oldestDueDays;
+  });
 }
 
 export const dashboardRouter = router({
@@ -512,29 +695,62 @@ export const dashboardRouter = router({
       // Aging data fetched for potential future use in debt analysis
       await arApDb.calculateARAging();
 
-      // Combine debt and aging data
-      const allData: ClientDebt[] = await Promise.all(
-        receivables.map(
-          async (r: {
+      // Aggregate receivables by customer so each client appears once.
+      const debtByClient = receivables.reduce(
+        (
+          acc: Record<
+            number,
+            { currentDebt: number; oldestDebt: number; customerId: number }
+          >,
+          r: {
             customerId: number;
             amountDue: string | number;
             invoiceDate?: Date;
-          }) => {
-            // Calculate oldest debt days from invoice date
-            const invoiceDate = r.invoiceDate
-              ? new Date(r.invoiceDate)
-              : new Date();
-            const oldestDebtDays = differenceInDays(new Date(), invoiceDate);
+          }
+        ) => {
+          const customerId = Number(r.customerId);
+          if (!customerId) return acc;
 
-            return {
-              customerId: r.customerId,
-              customerName: `Customer ${r.customerId}`, // Will be updated with actual name below
-              currentDebt: Number(r.amountDue || 0),
-              oldestDebt: Math.max(0, oldestDebtDays),
+          const amountDue = Number(r.amountDue || 0);
+          const invoiceDate = r.invoiceDate
+            ? new Date(r.invoiceDate)
+            : new Date();
+          const debtAgeDays = Math.max(
+            0,
+            differenceInDays(new Date(), invoiceDate)
+          );
+
+          if (!acc[customerId]) {
+            acc[customerId] = {
+              customerId,
+              currentDebt: 0,
+              oldestDebt: 0,
             };
           }
-        )
+
+          acc[customerId].currentDebt += amountDue;
+          acc[customerId].oldestDebt = Math.max(
+            acc[customerId].oldestDebt,
+            debtAgeDays
+          );
+          return acc;
+        },
+        {}
       );
+
+      const allData: ClientDebt[] = Object.values(debtByClient)
+        .map(clientDebt => ({
+          customerId: clientDebt.customerId,
+          customerName: `Customer ${clientDebt.customerId}`, // Updated below
+          currentDebt: clientDebt.currentDebt,
+          oldestDebt: clientDebt.oldestDebt,
+        }))
+        .sort((a, b) => {
+          if (b.currentDebt !== a.currentDebt) {
+            return b.currentDebt - a.currentDebt;
+          }
+          return b.oldestDebt - a.oldestDebt;
+        });
 
       // Fetch actual client names for all customer IDs
       const customerIds = allData.map(d => d.customerId);
@@ -562,6 +778,149 @@ export const dashboardRouter = router({
         hasMore: input.offset + input.limit < total,
       };
     }),
+
+  // Vendors who need to get paid (sold-out consigned batches, still unpaid)
+  getVendorsNeedingPayment: protectedProcedure
+    .use(requirePermission("dashboard:read"))
+    .input(paginationInputSchema)
+    .query(
+      async ({ input }): Promise<PaginatedResponse<VendorNeedingPayment>> => {
+        let allData: VendorNeedingPayment[];
+
+        try {
+          const pageSize = 500;
+          const payableItems: Array<{
+            vendorClientId: number;
+            vendorName?: string | null;
+            amountDue?: string | number | null;
+            inventoryZeroAt?: string | Date | null;
+            dueDate?: string | Date | null;
+            createdAt?: string | Date | null;
+          }> = [];
+          let totalPayables = 0;
+          let offset = 0;
+
+          // Pull all payables pages so large datasets do not hide vendors.
+          do {
+            const page = await payablesService.listPayables({
+              status: ["DUE", "PARTIAL"],
+              limit: pageSize,
+              offset,
+            });
+
+            if (offset === 0) {
+              totalPayables = page.total || 0;
+            }
+
+            if (!page.items.length) {
+              break;
+            }
+
+            payableItems.push(...page.items);
+            offset += page.items.length;
+          } while (offset < totalPayables);
+
+          const now = new Date();
+
+          // Reduce payable rows to vendor-level risk rows.
+          const byVendor = payableItems
+            // Only keep unpaid payables tied to batches that actually hit zero.
+            .filter(item => Number(item.amountDue || 0) > 0)
+            .filter(item => Boolean(item.inventoryZeroAt))
+            .reduce(
+              (
+                acc: Record<number, VendorNeedingPayment>,
+                item: {
+                  vendorClientId: number;
+                  vendorName?: string | null;
+                  amountDue?: string | number | null;
+                  inventoryZeroAt?: string | Date | null;
+                  dueDate?: string | Date | null;
+                  createdAt?: string | Date | null;
+                }
+              ) => {
+                const vendorClientId = Number(item.vendorClientId);
+                if (!vendorClientId) return acc;
+
+                const rowAmountDue = Number(item.amountDue || 0);
+                const dueReferenceDate = item.dueDate
+                  ? new Date(item.dueDate)
+                  : item.inventoryZeroAt
+                    ? new Date(item.inventoryZeroAt)
+                    : item.createdAt
+                      ? new Date(item.createdAt)
+                      : now;
+                const daysDue = Math.max(
+                  0,
+                  differenceInDays(now, dueReferenceDate)
+                );
+
+                if (!acc[vendorClientId]) {
+                  acc[vendorClientId] = {
+                    vendorClientId,
+                    vendorName: item.vendorName || `Vendor ${vendorClientId}`,
+                    amountDue: 0,
+                    soldOutBatches: 0,
+                    oldestDueDays: 0,
+                  };
+                }
+
+                acc[vendorClientId].amountDue += rowAmountDue;
+                acc[vendorClientId].soldOutBatches += 1;
+                acc[vendorClientId].oldestDueDays = Math.max(
+                  acc[vendorClientId].oldestDueDays,
+                  daysDue
+                );
+
+                return acc;
+              },
+              {}
+            );
+
+          allData = Object.values(byVendor).sort((a, b) => {
+            if (b.amountDue !== a.amountDue) {
+              return b.amountDue - a.amountDue;
+            }
+            return b.oldestDueDays - a.oldestDueDays;
+          });
+        } catch (error) {
+          if (!isMissingTableError(error, ["vendor_payables"])) {
+            throw error;
+          }
+
+          logger.warn(
+            { error: error instanceof Error ? error.message : String(error) },
+            "[Dashboard] vendor_payables missing, using legacy vendors-needing-payment fallback"
+          );
+
+          allData = await getLegacyVendorsNeedingPayment();
+        }
+
+        // Overwrite fallback names with canonical names where available.
+        const vendorIds = allData.map(v => v.vendorClientId);
+        const vendorNameMap = await fetchClientNamesMap(vendorIds);
+        allData.forEach(vendor => {
+          const canonicalName = vendorNameMap.get(vendor.vendorClientId);
+          if (canonicalName) {
+            vendor.vendorName = canonicalName;
+          }
+        });
+
+        const total = allData.length;
+        const paginatedData = allData.slice(
+          input.offset,
+          input.offset + input.limit
+        );
+
+        return {
+          data: paginatedData,
+          total,
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: input.offset + input.limit < total,
+        };
+      }
+    ),
 
   // Client Profit Margin
   getClientProfitMargin: protectedProcedure
@@ -625,7 +984,8 @@ export const dashboardRouter = router({
       for (const clientId of Object.keys(marginByClient)) {
         const data = marginByClient[Number(clientId)];
         const profit = data.revenue - data.cost;
-        data.profitMargin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
+        data.profitMargin =
+          data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
       }
 
       // Fetch actual client names for all customer IDs
@@ -797,14 +1157,14 @@ export const dashboardRouter = router({
       const receivables = receivablesResult.invoices || [];
       const payables = payablesResult.bills || [];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalAR = receivables.reduce(
-        (sum: number, r: any) => sum + Number(r.amountDue || 0),
+        (sum: number, r: { amountDue?: string | number | null }) =>
+          sum + Number(r.amountDue || 0),
         0
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const totalAP = payables.reduce(
-        (sum: number, p: any) => sum + Number(p.amountDue || 0),
+        (sum: number, p: { amountDue?: string | number | null }) =>
+          sum + Number(p.amountDue || 0),
         0
       );
 

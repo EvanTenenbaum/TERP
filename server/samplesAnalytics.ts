@@ -36,7 +36,7 @@ export async function getSampleDistributionReport(
     
     let totalSamplesDistributed = 0;
     let totalCost = 0;
-    let totalRequests = requests.length;
+    const totalRequests = requests.length;
 
     for (const request of requests) {
       const products = JSON.parse(request.products as any) as Array<{productId: number, quantity: string}>;

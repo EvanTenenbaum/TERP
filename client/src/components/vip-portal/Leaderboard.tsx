@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +10,10 @@ import { trpc } from "@/lib/trpc";
 
 interface LeaderboardProps {
   clientId: number;
-  config: any;
+  config: Record<string, unknown>;
 }
 
-export function Leaderboard({ clientId, config }: LeaderboardProps) {
+export function Leaderboard({ clientId, config: _config }: LeaderboardProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch leaderboard data
@@ -179,7 +180,7 @@ export function Leaderboard({ clientId, config }: LeaderboardProps) {
           <div className="space-y-2">
             {entries.map((entry: any) => (
               <div
-                key={entry.rank}
+                key={entry.rank as number}
                 className={`
                   flex items-center justify-between p-3 rounded-lg border
                   ${entry.isCurrentClient 
@@ -190,11 +191,11 @@ export function Leaderboard({ clientId, config }: LeaderboardProps) {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl w-8 text-center">
-                    {getMedal(entry.rank)}
+                    {getMedal(entry.rank as number)}
                   </span>
                   <div>
                     <div className="text-sm md:text-base">
-                      {entry.rank}{getRankSuffix(entry.rank)} Place
+                      {entry.rank as number}{getRankSuffix(entry.rank as number)} Place
                       {entry.isCurrentClient && (
                         <span className="ml-2 text-primary">(You)</span>
                       )}
@@ -203,7 +204,7 @@ export function Leaderboard({ clientId, config }: LeaderboardProps) {
                 </div>
                 {displayMode === 'transparent' && (
                   <div className="text-sm md:text-base font-mono">
-                    {formatValue(entry.metricValue)}
+                    {formatValue(entry.metricValue as number)}
                   </div>
                 )}
               </div>
@@ -235,7 +236,7 @@ export function Leaderboard({ clientId, config }: LeaderboardProps) {
             <div className="space-y-3">
               {suggestions.map((suggestion, index) => (
                 <div
-                  key={`suggestion-${index}-${suggestion.substring(0, 20)}`}
+                  key={`suggestion-${suggestion.substring(0, 30)}`}
                   className="flex gap-3 p-3 bg-muted/50 rounded-lg border"
                 >
                   <div className="shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">

@@ -66,9 +66,9 @@ import {
   Check,
   X,
   Clock,
-  AlertCircle,
   Loader2,
   Plus,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -550,7 +550,7 @@ export function OfficeSupplyManager() {
                           <div className="space-y-2">
                             {summaryData.topReordered
                               .slice(0, 3)
-                              .map((item, idx) => (
+                              .map((item, _idx) => (
                                 <div key={item.product_name} className="flex justify-between">
                                   <span className="text-muted-foreground truncate">
                                     {item.product_name}

@@ -35,6 +35,7 @@ export default function CalendarFilters({
   );
 
   // Initialize with all calendars selected
+  // LINT-001: All dependencies included for exhaustive-deps compliance
   useEffect(() => {
     if (calendarsData && selectedCalendars.length === 0) {
       const allCalendarIds = calendarsData.map((c: CalendarEntry) => c.id);

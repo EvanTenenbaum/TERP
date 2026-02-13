@@ -33,7 +33,7 @@ function emitTag(tag: string): void {
   console.log(`[COVERAGE] ${tag}`);
 }
 
-test.describe("Performance - Page Load Budgets", () => {
+test.describe("Performance - Page Load Budgets @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -109,7 +109,7 @@ test.describe("Performance - Page Load Budgets", () => {
   });
 });
 
-test.describe("Performance - Interaction Budgets", () => {
+test.describe("Performance - Interaction Budgets @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });
@@ -185,7 +185,7 @@ test.describe("Performance - Interaction Budgets", () => {
   });
 });
 
-test.describe("Performance - Core Web Vitals", () => {
+test.describe("Performance - Core Web Vitals @dev-only", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsStandardUser(page);
   });

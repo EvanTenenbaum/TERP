@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+
 import {
   ArrowDown,
   ArrowUp,
@@ -75,7 +75,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
   variant = "full",
   maxHeight = "500px",
 }: MovementHistoryPanelProps) {
-  const [, setLocation] = useLocation();
+
   const [page, setPage] = useState(1);
   const [movementType, setMovementType] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
@@ -148,7 +148,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                         {formatQty(mov.quantityChange)}
                       </p>
                       <p className="text-xs opacity-70">
-                        {format(new Date(mov.createdAt!), "MMM d")}
+                        {format(new Date(mov.createdAt ?? Date.now()), "MMM d")}
                       </p>
                     </div>
                   </div>
@@ -245,7 +245,9 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={`skeleton-row-${i}`}>
+                  <TableRow
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={`movement-skeleton-${i}`}>
                     <TableCell colSpan={7}><Skeleton className="h-8" /></TableCell>
                   </TableRow>
                 ))
@@ -295,7 +297,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                         {mov.performedByName || "System"}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {format(new Date(mov.createdAt!), "MMM d, yyyy h:mm a")}
+                        {format(new Date(mov.createdAt ?? Date.now()), "MMM d, yyyy h:mm a")}
                       </TableCell>
                     </TableRow>
                   );

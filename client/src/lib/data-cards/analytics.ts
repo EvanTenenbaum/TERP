@@ -9,7 +9,7 @@
 
 export interface DataCardEvent {
   event: string;
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -18,7 +18,7 @@ export interface DataCardEvent {
  * This is a lightweight wrapper that can be integrated with any analytics provider
  * (Google Analytics, Mixpanel, Segment, etc.)
  */
-function trackEvent(eventName: string, properties: Record<string, any> = {}) {
+function trackEvent(eventName: string, properties: Record<string, unknown> = {}) {
   const event: DataCardEvent = {
     event: eventName,
     properties: {
@@ -31,7 +31,7 @@ function trackEvent(eventName: string, properties: Record<string, any> = {}) {
 
   // Log to console in development
   if (import.meta.env.DEV) {
-    console.log('[Analytics]', event);
+    console.info('[Analytics]', event);
   }
 
   // Send to analytics provider (placeholder for future integration)
@@ -50,9 +50,8 @@ function trackEvent(eventName: string, properties: Record<string, any> = {}) {
       events.shift();
     }
     sessionStorage.setItem('dataCardEvents', JSON.stringify(events));
-  } catch (error) {
+  } catch {
     // Silently fail if sessionStorage is not available
-    console.warn('Failed to store analytics event:', error);
   }
 }
 

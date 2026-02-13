@@ -39,8 +39,6 @@ jobs:
       
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.4.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -74,8 +72,7 @@ jobs:
             exit 1
           }
           echo "status=passed" >> $GITHUB_OUTPUT
-        continue-on-error: true
-      
+
       - name: Seed test database
         id: seed
         run: |
@@ -85,10 +82,10 @@ jobs:
             exit 1
           }
           echo "status=passed" >> $GITHUB_OUTPUT
-        continue-on-error: true
       
       - name: Run integration tests
         id: integration
+        if: steps.schema.outputs.status == 'passed' && steps.seed.outputs.status == 'passed'
         run: |
           echo "Running integration tests..."
           pnpm test -- --config vitest.config.integration.ts --run --coverage --reporter=verbose 2>&1 | tee integration-output.txt || {
@@ -97,12 +94,14 @@ jobs:
           }
           echo "status=passed" >> $GITHUB_OUTPUT
         continue-on-error: true
-      
+
       - name: Install Playwright browsers
+        if: steps.schema.outputs.status == 'passed' && steps.seed.outputs.status == 'passed'
         run: pnpm exec playwright install --with-deps
-      
+
       - name: Run E2E tests with Argos
         id: e2e
+        if: steps.schema.outputs.status == 'passed' && steps.seed.outputs.status == 'passed'
         run: |
           echo "Running E2E tests..."
           CI=true pnpm playwright test 2>&1 | tee e2e-output.txt || {

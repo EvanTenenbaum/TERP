@@ -8,6 +8,7 @@
 import { getDb } from "../db";
 import { calendarEvents, calendarRecurrenceRules, calendarRecurrenceInstances } from "../../drizzle/schema";
 import { DateTime } from "luxon";
+import { logger } from "../_core/logger";
 
 const TIMEZONE = "America/New_York";
 
@@ -121,17 +122,17 @@ const eventTemplates = [
 ];
 
 async function seedCalendarData() {
-  console.log("🌱 Starting calendar test data seeding...");
+  logger.info("🌱 Starting calendar test data seeding...");
 
   const db = await getDb();
   if (!db) {
-    console.error("❌ Database not available");
+    logger.error("❌ Database not available");
     process.exit(1);
   }
 
   try {
     // Clear existing calendar data
-    console.log("🗑️  Clearing existing calendar data...");
+    logger.info("🗑️  Clearing existing calendar data...");
     await db.delete(calendarRecurrenceInstances);
     await db.delete(calendarRecurrenceRules);
     await db.delete(calendarEvents);
@@ -141,7 +142,7 @@ async function seedCalendarData() {
     const startDate = now.startOf("month");
     const endDate = now.plus({ months: 3 }).endOf("month");
 
-    console.log(`📅 Creating events from ${startDate.toISODate()} to ${endDate.toISODate()}...`);
+    logger.info(`📅 Creating events from ${startDate.toISODate()} to ${endDate.toISODate()}...`);
 
     let eventCount = 0;
     let currentDate = startDate;
@@ -173,9 +174,9 @@ async function seedCalendarData() {
         await db.insert(calendarEvents).values({
           title: template.title,
           description: template.description,
-          startDate: eventStart.toISO()!,
+          startDate: eventStart.toISO() || new Date().toISOString(),
           startTime: isAllDay ? null : eventStart.toFormat("HH:mm:ss"),
-          endDate: eventEnd.toISO()!,
+          endDate: eventEnd.toISO() || new Date().toISOString(),
           endTime: isAllDay ? null : eventEnd.toFormat("HH:mm:ss"),
           timezone: TIMEZONE,
           isFloatingTime: false,
@@ -196,12 +197,12 @@ async function seedCalendarData() {
       currentDate = currentDate.plus({ days: 1 });
     }
 
-    console.log(`✅ Created ${eventCount} calendar events`);
+    logger.info(`✅ Created ${eventCount} calendar events`);
 
     // TODO: Create recurring events (requires schema migration)
     // The calendar_recurrence_rules table schema in production doesn't match the code schema
     // Skipping for now to focus on one-time events
-    console.log("⏭️  Skipping recurring events (schema mismatch)");
+    logger.info("⏭️  Skipping recurring events (schema mismatch)");
 
     /* // Daily standup (weekdays only)
     const standupStart = now.set({ hour: 9, minute: 0, second: 0 });
@@ -272,14 +273,14 @@ async function seedCalendarData() {
 
     console.log("✅ Created 2 recurring event rules"); */
 
-    console.log("\n🎉 Calendar test data seeding complete!");
-    console.log(`📊 Summary:`);
-    console.log(`   - ${eventCount} one-time events`);
-    console.log(`   - 0 recurring events (skipped due to schema mismatch)`);
-    console.log(`   - Date range: ${startDate.toISODate()} to ${endDate.toISODate()}`);
+    logger.info("\n🎉 Calendar test data seeding complete!");
+    logger.info(`📊 Summary:`);
+    logger.info(`   - ${eventCount} one-time events`);
+    logger.info(`   - 0 recurring events (skipped due to schema mismatch)`);
+    logger.info(`   - Date range: ${startDate.toISODate()} to ${endDate.toISODate()}`);
 
   } catch (error) {
-    console.error("❌ Error seeding calendar data:", error);
+    logger.error("❌ Error seeding calendar data:", error);
     throw error;
   }
 }
@@ -287,10 +288,10 @@ async function seedCalendarData() {
 // Run the seed function
 seedCalendarData()
   .then(() => {
-    console.log("\n✅ Seeding completed successfully");
+    logger.info("\n✅ Seeding completed successfully");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("\n❌ Seeding failed:", error);
+    logger.error("\n❌ Seeding failed:", error);
     process.exit(1);
   });

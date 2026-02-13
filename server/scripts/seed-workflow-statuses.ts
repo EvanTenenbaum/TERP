@@ -10,6 +10,7 @@
 import { getDb } from "../db";
 import { workflowStatuses } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 const DEFAULT_STATUSES = [
   {
@@ -57,11 +58,11 @@ const DEFAULT_STATUSES = [
 ];
 
 async function seedWorkflowStatuses() {
-  console.log("🌱 Seeding default workflow statuses...");
+  logger.info("🌱 Seeding default workflow statuses...");
 
   const db = await getDb();
   if (!db) {
-    console.error("❌ Database not available");
+    logger.error("❌ Database not available");
     process.exit(1);
   }
 
@@ -78,7 +79,7 @@ async function seedWorkflowStatuses() {
         .limit(1);
 
       if (existing.length > 0) {
-        console.log(`⏭️  Skipping "${status.name}" (already exists)`);
+        logger.info(`⏭️  Skipping "${status.name}" (already exists)`);
         skipped++;
         continue;
       }
@@ -92,19 +93,19 @@ async function seedWorkflowStatuses() {
         isActive: 1,
       });
 
-      console.log(`✅ Created "${status.name}"`);
+      logger.info(`✅ Created "${status.name}"`);
       created++;
     }
 
-    console.log("\n📊 Summary:");
-    console.log(`   Created: ${created}`);
-    console.log(`   Skipped: ${skipped}`);
-    console.log(`   Total:   ${DEFAULT_STATUSES.length}`);
-    console.log("\n✨ Seeding complete!");
+    logger.info("\n📊 Summary:");
+    logger.info(`   Created: ${created}`);
+    logger.info(`   Skipped: ${skipped}`);
+    logger.info(`   Total:   ${DEFAULT_STATUSES.length}`);
+    logger.info("\n✨ Seeding complete!");
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error seeding workflow statuses:", error);
+    logger.error("❌ Error seeding workflow statuses:", error);
     process.exit(1);
   }
 }

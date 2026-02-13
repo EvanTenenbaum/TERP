@@ -39,8 +39,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.4.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -61,7 +59,7 @@ jobs:
           set -e
 
           # Count errors
-          ERROR_COUNT=$(echo "$TSC_OUTPUT" | grep -c "error TS" || echo "0")
+          ERROR_COUNT=$(printf '%s\n' "$TSC_OUTPUT" | grep -c "error TS" || true)
           echo "error_count=$ERROR_COUNT" >> $GITHUB_OUTPUT
 
           # Save output for later

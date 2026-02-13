@@ -18,7 +18,7 @@ import { loginAsAdmin, loginAsWarehouseStaff } from "../fixtures/auth";
  * Helper to check if the pick-pack page has orders
  */
 async function hasOrdersInQueue(page: Page): Promise<boolean> {
-  const rows = page.locator('[role="listbox"] [role="row"]');
+  const rows = page.locator('[data-testid="order-queue-row"]');
   const count = await rows.count();
   return count > 0;
 }
@@ -27,7 +27,7 @@ async function hasOrdersInQueue(page: Page): Promise<boolean> {
  * Helper to select first order in the queue
  */
 async function selectFirstOrder(page: Page): Promise<boolean> {
-  const firstRow = page.locator('[role="listbox"] [role="row"]').first();
+  const firstRow = page.locator('[data-testid="order-queue-row"]').first();
   if (await firstRow.isVisible()) {
     await firstRow.click();
     await page.waitForTimeout(500);
@@ -51,14 +51,12 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await expect(header).toBeVisible({ timeout: 10000 });
     });
 
-    test("should display order queue surface", async ({ page }) => {
+    test("should display order queue table", async ({ page }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // Must see the queue panel/listbox or empty-state message
-      const orderList = page.locator(
-        '[role="listbox"], [data-testid="order-queue"], :text("No orders to pick")'
-      );
+      // STRICT: Must see order queue structure
+      const orderList = page.locator('[data-testid="order-queue"]');
       await expect(orderList).toBeVisible({ timeout: 15000 });
     });
 
@@ -69,13 +67,8 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      const ignorableErrors = [/due to access control checks/i];
-      const actionableErrors = errors.filter(
-        message => !ignorableErrors.some(pattern => pattern.test(message))
-      );
-
-      // STRICT: No actionable JS errors allowed
-      expect(actionableErrors).toHaveLength(0);
+      // STRICT: No JS errors allowed
+      expect(errors).toHaveLength(0);
     });
 
     test("should have search input available", async ({ page }) => {
@@ -83,14 +76,14 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // STRICT: Search should exist (may be hidden behind a button)
-      const searchInput = page.locator('input[placeholder*="Search orders"]');
+      const searchInput = page.locator('[data-testid="pick-pack-search-input"]');
       const searchButton = page.locator(
         'button[aria-label*="search" i], button:has-text("Search")'
       );
 
       const hasSearch =
-        (await searchInput.first().isVisible().catch(() => false)) ||
-        (await searchButton.first().isVisible().catch(() => false));
+        (await searchInput.isVisible().catch(() => false)) ||
+        (await searchButton.isVisible().catch(() => false));
       expect(hasSearch).toBe(true);
     });
   });
@@ -103,10 +96,8 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
     });
 
     test("should display order rows when orders exist", async ({ page }) => {
-      const queueSurface = page.locator(
-        '[role="listbox"], :text("No orders to pick")'
-      );
-      await expect(queueSurface.first()).toBeVisible({ timeout: 10000 });
+      const queue = page.locator('[data-testid="order-queue"]');
+      await expect(queue).toBeVisible({ timeout: 10000 });
 
       // Check if we have orders - if not, skip remaining assertions
       const hasOrders = await hasOrdersInQueue(page);
@@ -116,7 +107,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       }
 
       // STRICT: If orders exist, first row must be visible
-      const firstRow = page.locator('[role="listbox"] [role="row"]').first();
+      const firstRow = page.locator('[data-testid="order-queue-row"]').first();
       await expect(firstRow).toBeVisible();
     });
 
@@ -133,7 +124,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
       // Details panel or drawer should appear
       const detailsPanel = page.locator(
-        '[data-testid="order-details"], .order-details, [role="dialog"], .drawer, h2:has-text("Order")'
+        '[data-testid="order-details"], .order-details, [role="dialog"], .drawer'
       );
       await expect(detailsPanel).toBeVisible({ timeout: 5000 });
     });
@@ -150,15 +141,15 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
       // STRICT: Selected order must show items
       const itemsContainer = page.locator(
-        '[data-testid="items-list"], .items-list, .line-items, [role="row"], :text("items packed")'
+        '[data-testid="items-list"], .items-list, .line-items, table'
       );
       // At minimum, should see some content in the details area
       const detailsContent = page.locator(
-        '[data-testid="order-details"], .order-details, h2:has-text("Order")'
+        '[data-testid="order-details"], .order-details'
       );
       const hasItems =
-        (await itemsContainer.first().isVisible().catch(() => false)) ||
-        (await detailsContent.first().isVisible().catch(() => false));
+        (await itemsContainer.isVisible()) ||
+        (await detailsContent.isVisible());
       expect(hasItems).toBe(true);
     });
   });
@@ -208,8 +199,8 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
     test("should filter results when searching", async ({ page }) => {
       const searchInput = page.locator(
-        'input[placeholder*="Search orders"]'
-      ).first();
+        '[data-testid="pick-pack-search-input"]'
+      );
 
       if (!(await searchInput.isVisible().catch(() => false))) {
         test.skip(true, "Search input not visible on this page");
@@ -233,8 +224,8 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       page,
     }) => {
       const searchInput = page.locator(
-        'input[placeholder*="Search orders"]'
-      ).first();
+        '[data-testid="pick-pack-search-input"]'
+      );
 
       if (!(await searchInput.isVisible().catch(() => false))) {
         test.skip(true, "Search input not visible on this page");
@@ -246,13 +237,13 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // STRICT: Should either show empty state or no rows
-      const rows = page.locator('[role="listbox"] [role="row"]');
+      const rows = page.locator('[data-testid="order-queue-row"]');
       const emptyMessage = page.locator(
-        ':text("No orders to pick"), :text("No orders found"), [data-testid="empty-state"]'
+        '[data-testid="order-queue-empty"], text=/no.*found/i, text=/no orders/i'
       );
 
       const rowCount = await rows.count();
-      const hasEmptyMessage = await emptyMessage.first().isVisible().catch(() => false);
+      const hasEmptyMessage = await emptyMessage.isVisible();
 
       // Either no rows or empty message shown
       expect(rowCount === 0 || hasEmptyMessage).toBe(true);
@@ -341,9 +332,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
         await expect(header).toBeVisible({ timeout: 10000 });
 
         // STRICT: Order list must be visible
-        const orderList = page.locator(
-          '[role="listbox"], [data-testid="order-queue"], :text("No orders to pick")'
-        );
+        const orderList = page.locator('[data-testid="order-queue"]');
         await expect(orderList).toBeVisible();
       });
     });
@@ -357,9 +346,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
         await page.waitForLoadState("networkidle");
 
         // STRICT: Core content must be visible
-        const content = page.locator(
-          '[role="listbox"], [data-testid="order-queue"], [data-testid="pick-list"], :text("No orders to pick")'
-        );
+        const content = page.locator('[data-testid="order-queue"]');
         await expect(content).toBeVisible({ timeout: 10000 });
       });
 
@@ -399,9 +386,12 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
       // STRICT: Should not show uncaught error
       const uncaughtError = page.locator(
-        '[data-testid="error-boundary"], :text("Internal Server Error"), :text("Something went wrong")'
+        '[data-testid="error-boundary"]'
       );
       await expect(uncaughtError).not.toBeVisible();
+      await expect(
+        page.getByText(/uncaught|unhandled|crash/i).first()
+      ).not.toBeVisible();
     });
 
     test("should show appropriate message for empty queue", async ({
@@ -480,9 +470,9 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
       // STRICT: Order details should have some content
       const detailsPanel = page.locator(
-        '[data-testid="order-details"], .order-details, [role="dialog"], h2:has-text("Order")'
+        '[data-testid="order-details"], .order-details, [role="dialog"]'
       );
-      if (await detailsPanel.first().isVisible().catch(() => false)) {
+      if (await detailsPanel.isVisible()) {
         const hasContent = await detailsPanel.evaluate(
           el => el.textContent?.length ?? 0
         );
@@ -505,13 +495,9 @@ test.describe("TER-40: Pick & Pack with Warehouse Staff Role", () => {
 
     // STRICT: Should either see content OR access denied (not a crash)
     const hasContent =
-      (await page
-        .locator('[role="listbox"], [data-testid="order-queue"], :text("No orders to pick")')
-        .first()
-        .isVisible()
-        .catch(() => false)) ||
-      (await page.locator(':text("access"), :text("denied"), :text("permission")').first().isVisible().catch(() => false)) ||
-      (await page.locator("h1").first().isVisible().catch(() => false));
+      (await page.locator('[data-testid="order-queue"]').isVisible()) ||
+      (await page.locator("text=/access|denied|permission/i").isVisible()) ||
+      (await page.locator("h1").isVisible());
 
     expect(hasContent).toBe(true);
 

@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import * as calendarDb from "../calendarDb";
 import InstanceGenerationService from "../_core/instanceGenerationService";
 import PermissionService from "../_core/permissionService";
-import { requirePermission } from "../_core/permissionMiddleware";
+
 import { idSchema, dateStringSchema, nameSchema, descriptionSchema } from "../_core/validationSchemas";
 
 /**

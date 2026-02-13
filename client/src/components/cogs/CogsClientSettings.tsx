@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Edit, Trash2, Plus } from "lucide-react";
+import { Search, Edit, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export function CogsClientSettings() {
@@ -30,7 +30,7 @@ export function CogsClientSettings() {
   const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
 
   // Filter clients by search
-  const filteredClients = clients.filter((client: any) =>
+  const filteredClients = clients.filter((client: { id: number; name: string; teriCode: string; cogsAdjustmentType?: string | null; cogsAdjustmentValue?: string | null }) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.teriCode.toLowerCase().includes(searchQuery.toLowerCase())
   );

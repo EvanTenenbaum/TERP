@@ -133,7 +133,7 @@ export function ClientCombobox({
 }: ClientComboboxProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   // BUG-073 FIX: Track request ID from debounced search (prevents race conditions)
-  const [inputValue, debouncedSearch, setInputValue, searchRequestId] = useDebouncedSearch(debounceMs);
+  const [inputValue, debouncedSearch, setInputValue, _searchRequestId] = useDebouncedSearch(debounceMs);
 
   // Find the selected client for display
   const selectedClient = useMemo(() => {

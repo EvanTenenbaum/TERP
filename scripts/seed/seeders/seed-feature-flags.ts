@@ -258,6 +258,21 @@ const COMMUNICATION_FLAGS: FeatureFlagDefinition[] = [
 ];
 
 /**
+ * Dashboard rollout flags
+ */
+const DASHBOARD_FLAGS: FeatureFlagDefinition[] = [
+  {
+    key: "owner-command-center-dashboard",
+    name: "Owner Command Center Dashboard",
+    description:
+      "Replace the standard dashboard with the owner command center card layout",
+    module: "dashboard",
+    systemEnabled: true,
+    defaultEnabled: false,
+  },
+];
+
+/**
  * Beta Feature Flags
  */
 const BETA_FLAGS: FeatureFlagDefinition[] = [
@@ -292,6 +307,7 @@ const ALL_FLAGS: FeatureFlagDefinition[] = [
   ...WORK_SURFACE_FLAGS,
   ...MODULE_FLAGS,
   ...COMMUNICATION_FLAGS,
+  ...DASHBOARD_FLAGS,
   ...BETA_FLAGS,
 ];
 

@@ -102,17 +102,17 @@ describe('formatValue', () => {
 
   describe('edge cases', () => {
     it('should handle undefined values', () => {
-      expect(formatValue(undefined as any, 'currency')).toBe('$0.00');
-      expect(formatValue(undefined as any, 'number')).toBe('0');
-      expect(formatValue(undefined as any, 'percentage')).toBe('0.00%');
-      expect(formatValue(undefined as any, 'count')).toBe('0');
+      expect(formatValue(undefined as unknown as number, 'currency')).toBe('$0.00');
+      expect(formatValue(undefined as unknown as number, 'number')).toBe('0');
+      expect(formatValue(undefined as unknown as number, 'percentage')).toBe('0.00%');
+      expect(formatValue(undefined as unknown as number, 'count')).toBe('0');
     });
 
     it('should handle null values', () => {
-      expect(formatValue(null as any, 'currency')).toBe('$0.00');
-      expect(formatValue(null as any, 'number')).toBe('0');
-      expect(formatValue(null as any, 'percentage')).toBe('0.00%');
-      expect(formatValue(null as any, 'count')).toBe('0');
+      expect(formatValue(null as unknown as number, 'currency')).toBe('$0.00');
+      expect(formatValue(null as unknown as number, 'number')).toBe('0');
+      expect(formatValue(null as unknown as number, 'percentage')).toBe('0.00%');
+      expect(formatValue(null as unknown as number, 'count')).toBe('0');
     });
 
     it('should handle NaN', () => {
@@ -128,13 +128,13 @@ describe('formatValue', () => {
     });
 
     it('should handle string numbers', () => {
-      expect(formatValue('1234' as any, 'currency')).toBe('$1,234.00');
-      expect(formatValue('1234.56' as any, 'number')).toBe('1,234.56');
+      expect(formatValue('1234' as unknown as number, 'currency')).toBe('$1,234.00');
+      expect(formatValue('1234.56' as unknown as number, 'number')).toBe('1,234.56');
     });
 
     it('should handle invalid strings', () => {
-      expect(formatValue('abc' as any, 'currency')).toBe('$0.00');
-      expect(formatValue('abc' as any, 'number')).toBe('0');
+      expect(formatValue('abc' as unknown as number, 'currency')).toBe('$0.00');
+      expect(formatValue('abc' as unknown as number, 'number')).toBe('0');
     });
   });
 

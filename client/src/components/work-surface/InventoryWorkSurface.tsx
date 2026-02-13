@@ -49,9 +49,6 @@ import {
   useInspectorPanel,
 } from "./InspectorPanel";
 
-// Inventory Components
-import { PurchaseModal } from "@/components/inventory/PurchaseModal";
-
 // Icons
 import {
   Search,
@@ -349,7 +346,6 @@ export function InventoryWorkSurface() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const pageSize = 50;
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   // Work Surface hooks
   const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
@@ -566,19 +562,6 @@ export function InventoryWorkSurface() {
     [updateStatusMutation]
   );
 
-  const handleOpenPurchaseModal = useCallback((): void => {
-    setShowPurchaseModal(true);
-  }, []);
-
-  const handleClosePurchaseModal = useCallback((): void => {
-    setShowPurchaseModal(false);
-  }, []);
-
-  const handlePurchaseSuccess = useCallback((): void => {
-    handleClosePurchaseModal();
-    refetch();
-  }, [handleClosePurchaseModal, refetch]);
-
   const SortIcon = ({ column }: { column: string }) => {
     if (sortColumn !== column)
       return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
@@ -680,9 +663,10 @@ export function InventoryWorkSurface() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleOpenPurchaseModal}>
+        {/* TER-220: Unified intake entry point — navigate to Direct Intake */}
+        <Button onClick={() => setLocation("/direct-intake")}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Batch
+          Intake
         </Button>
       </div>
 
@@ -835,13 +819,6 @@ export function InventoryWorkSurface() {
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
-
-      {/* Purchase/Intake Modal */}
-      <PurchaseModal
-        open={showPurchaseModal}
-        onClose={handleClosePurchaseModal}
-        onSuccess={handlePurchaseSuccess}
-      />
     </div>
   );
 }

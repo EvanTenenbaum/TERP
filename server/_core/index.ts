@@ -39,7 +39,10 @@ import {
   readinessCheck,
   getHealthMetrics,
 } from "./healthCheck";
-import { setupGracefulShutdown, registerShutdownHandler } from "./gracefulShutdown";
+import {
+  setupGracefulShutdown,
+  registerShutdownHandler,
+} from "./gracefulShutdown";
 import { seedAllDefaults } from "../services/seedDefaults";
 import { assignRoleToUser } from "../services/seedRBAC";
 import { performRBACStartupCheck } from "../services/rbacValidation";
@@ -47,10 +50,13 @@ import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { startSessionTimeoutCron } from "../cron/sessionTimeoutCron.js";
 import { startNotificationQueueCron } from "../cron/notificationQueueCron.js";
 import { startDebtAgingCron } from "../cron/debtAgingCron.js";
-import { startLeaderElection, stopLeaderElection } from "../utils/cronLeaderElection";
+import {
+  startLeaderElection,
+  stopLeaderElection,
+} from "../utils/cronLeaderElection";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
-import { runAutoMigrations } from "../autoMigrate";
+import { checkSchemaFingerprint, runAutoMigrations } from "../autoMigrate";
 import { setupMemoryManagement } from "../utils/memoryOptimizer";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -102,6 +108,7 @@ async function startServer() {
   // Load environment variables and log DATABASE_URL for debugging
   const { env } = await import("./env");
   logger.info(`🔗 DATABASE_URL configured: ${env.databaseUrl ? "YES" : "NO"}`);
+  logger.info(`🧭 AUTO_MIGRATE_MODE: ${env.autoMigrateMode}`);
   if (env.databaseUrl) {
     // Log sanitized version (hide password)
     const sanitized = env.databaseUrl.replace(
@@ -111,10 +118,10 @@ async function startServer() {
     logger.info(`📊 Database connection: ${sanitized}`);
   }
 
-  // This ensures the database schema matches what the code expects
-  // Add retry mechanism for auto-migrations (reduced delays for faster deployment)
+  // This ensures the database schema matches what the code expects.
+  // Add retry mechanism for auto-migrations (reduced delays for faster deployment).
   logStartupPhase("Beginning migrations");
-    const runMigrationsWithRetry = async (maxRetries = 2) => {
+  const runMigrationsWithRetry = async (maxRetries = 2) => {
     for (let i = 0; i < maxRetries; i++) {
       try {
         logger.info(
@@ -141,19 +148,53 @@ async function startServer() {
     }
   };
 
-  try {
-    await runMigrationsWithRetry();
-    logStartupPhase("Migrations complete");
-  } catch (error) {
-    logger.warn({
-      msg: "Auto-migration failed after all retries (non-fatal) - app may still work",
-      error,
-    });
-    logger.warn(
-      "Some features may not work correctly if schema is out of sync"
+  if (env.autoMigrateMode === "off") {
+    logger.warn("⏭️ AUTO_MIGRATE_MODE=off - skipping auto-migrations");
+    logStartupPhase("Migrations skipped (off)");
+  } else if (env.autoMigrateMode === "detect-only") {
+    logger.info(
+      "🔎 AUTO_MIGRATE_MODE=detect-only - running schema fingerprint check without applying migrations"
     );
-    // Continue - app may still work depending on what failed
-    // The server will start in degraded mode and can be fixed later
+    try {
+      const fingerprint = await checkSchemaFingerprint({ retries: 2 });
+      if (fingerprint.complete) {
+        logger.info(
+          `✅ Schema fingerprint matched (${fingerprint.count}/7) - no migration changes needed`
+        );
+      } else {
+        const missingChecksSummary =
+          fingerprint.missingChecks.length > 0
+            ? ` Missing checks: ${fingerprint.missingChecks.join(", ")}`
+            : "";
+        logger.warn(
+          `⚠️ Schema fingerprint mismatch (${fingerprint.count}/7). Drift detected; migrations were NOT applied in detect-only mode.${missingChecksSummary}`
+        );
+        if (fingerprint.lastError) {
+          logger.warn(`Fingerprint check warning: ${fingerprint.lastError}`);
+        }
+      }
+    } catch (error) {
+      logger.warn({
+        msg: "Schema fingerprint check failed in detect-only mode (non-fatal)",
+        error,
+      });
+    }
+    logStartupPhase("Migration check complete (detect-only)");
+  } else {
+    try {
+      await runMigrationsWithRetry();
+      logStartupPhase("Migrations complete");
+    } catch (error) {
+      logger.warn({
+        msg: "Auto-migration failed after all retries (non-fatal) - app may still work",
+        error,
+      });
+      logger.warn(
+        "Some features may not work correctly if schema is out of sync"
+      );
+      // Continue - app may still work depending on what failed
+      // The server will start in degraded mode and can be fixed later
+    }
   }
 
   // ARCH-003: Perform RBAC startup validation
@@ -285,7 +326,6 @@ async function startServer() {
 
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
-
 
     // GitHub webhook endpoint (must be before JSON body parser middleware)
     // We need raw body for signature verification
@@ -424,6 +464,43 @@ async function startServer() {
           success: false,
           error: error instanceof Error ? error.message : String(error),
         });
+      }
+    });
+
+    // Demo media fallback endpoint.
+    // Serves image bytes from DB when external storage is unavailable in DEMO_MODE.
+    app.get("/api/media/:id", async (req, res) => {
+      try {
+        if (process.env.DEMO_MODE !== "true") {
+          res.status(404).json({ error: "Not found" });
+          return;
+        }
+
+        const mediaId = req.params.id;
+        if (!mediaId || !/^[a-zA-Z0-9_-]{8,64}$/.test(mediaId)) {
+          res.status(400).json({ error: "Invalid media ID" });
+          return;
+        }
+
+        const { getDemoMediaBlobById } = await import("../demoMediaStorage");
+        const media = await getDemoMediaBlobById(mediaId);
+
+        if (!media) {
+          res.status(404).json({ error: "Media not found" });
+          return;
+        }
+
+        res.setHeader("Content-Type", media.contentType);
+        res.setHeader("Content-Length", String(media.fileSize));
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        res.send(media.bytes);
+      } catch (error) {
+        logger.error({
+          msg: "Failed to serve demo media",
+          error: error instanceof Error ? error.message : String(error),
+          mediaId: req.params.id,
+        });
+        res.status(500).json({ error: "Failed to load media" });
       }
     });
 

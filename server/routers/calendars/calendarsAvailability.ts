@@ -21,7 +21,7 @@ export const calendarsAvailabilityRouter = router({
   listAvailability: protectedProcedure
     .input(z.object({ calendarId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const userId = getAuthenticatedUserId(ctx);
+
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -32,7 +32,7 @@ export const calendarsAvailabilityRouter = router({
         .where(
           and(
             eq(calendarUserAccess.calendarId, input.calendarId),
-            eq(calendarUserAccess.userId, userId)
+            eq(calendarUserAccess.userId, getAuthenticatedUserId(ctx))
           )
         )
         .limit(1);
@@ -347,16 +347,18 @@ export const calendarsAvailabilityRouter = router({
         for (let d = new Date(toStartDate); d <= toEndDate; d.setDate(d.getDate() + 1)) {
           const dStr = d.toISOString().split("T")[0];
 
-          if (!timeOffByDate.has(dStr)) {
+          const timeOffList = timeOffByDate.get(dStr);
+          if (!timeOffList) {
             timeOffByDate.set(dStr, []);
           }
 
+          const list = timeOffByDate.get(dStr) as Array<{ start: number; end: number }>;
           if (timeOff.isFullDay) {
-            timeOffByDate.get(dStr)!.push({ start: 0, end: 1440 });
+            list.push({ start: 0, end: 1440 });
           } else if (timeOff.startTime && timeOff.endTime) {
             const [startHr, startMn] = timeOff.startTime.split(":").map(Number);
             const [endHr, endMn] = timeOff.endTime.split(":").map(Number);
-            timeOffByDate.get(dStr)!.push({
+            list.push({
               start: startHr * 60 + startMn,
               end: endHr * 60 + endMn,
             });
@@ -368,10 +370,12 @@ export const calendarsAvailabilityRouter = router({
       const availabilityByDay: Map<number, Array<{ start: string; end: string }>> = new Map();
       for (const rule of availabilityRules) {
         const day = rule.dayOfWeek;
-        if (!availabilityByDay.has(day)) {
-          availabilityByDay.set(day, []);
+        let dayRules = availabilityByDay.get(day);
+        if (!dayRules) {
+          dayRules = [];
+          availabilityByDay.set(day, dayRules);
         }
-        availabilityByDay.get(day)!.push({
+        dayRules.push({
           start: rule.startTime,
           end: rule.endTime,
         });

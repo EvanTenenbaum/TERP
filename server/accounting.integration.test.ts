@@ -17,7 +17,6 @@ vi.mock("./services/permissionService", () => setupPermissionMock());
 
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
-import { db } from "./db";
 
 describe("Accounting Integration Tests", () => {
   const mockUser = {
@@ -26,7 +25,7 @@ describe("Accounting Integration Tests", () => {
     name: "Test User",
   };
 
-  let caller: ReturnType<typeof appRouter.createCaller>;
+  let _caller: ReturnType<typeof appRouter.createCaller>;
 
   beforeEach(async () => {
     const ctx = await createContext({
@@ -36,7 +35,7 @@ describe("Accounting Integration Tests", () => {
       res: {} as any,
     });
 
-    caller = appRouter.createCaller({
+    _caller = appRouter.createCaller({
       ...ctx,
       user: mockUser,
     });

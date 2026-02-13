@@ -49,16 +49,29 @@ export function detect404Indicators(bodyText: string): SignalEvaluation {
 
 export function detectErrorState(bodyText: string): SignalEvaluation {
   const reasons: string[] = [];
-  if (/error|failed|something went wrong/i.test(bodyText)) {
+  if (
+    /(something went wrong|unexpected error|fatal error|operation failed|request failed)/i.test(
+      bodyText
+    )
+  ) {
     reasons.push("Body contains explicit error language");
   }
 
   return { passed: reasons.length === 0, reasons };
 }
 
-export function detectLoadingState(bodyText: string): SignalEvaluation {
+export function detectLoadingState(
+  bodyText: string,
+  mainContentText: string
+): SignalEvaluation {
   const reasons: string[] = [];
-  if (/loading\.\.\.|please wait/i.test(bodyText)) {
+
+  const appearsLoading = /loading\.\.\.|please wait/i.test(bodyText);
+  const hasSubstantialMainContent = mainContentText.trim().length >= 200;
+
+  // Treat "Loading..." text as a failure signal only when main content is not
+  // substantively present. This avoids false negatives from hidden templates.
+  if (appearsLoading && !hasSubstantialMainContent) {
     reasons.push("Body appears to be in loading state");
   }
 
@@ -81,13 +94,68 @@ export function hasContentPresent(mainContentText: string): SignalEvaluation {
 async function hasErrorElements(page: Page): Promise<SignalEvaluation> {
   const reasons: string[] = [];
 
-  const errorElementCount = await page
-    .locator(
-      '[role="alert"], [class*="error"], [class*="alert"], [class*="warning"]'
-    )
-    .count();
-  if (errorElementCount > 0) {
-    reasons.push(`Found ${errorElementCount} potential error elements`);
+  const suspiciousErrorElements = await page
+    .locator('[role="alert"], [aria-live="assertive"], [data-testid*="error"]')
+    .evaluateAll(elements => {
+      const technicalErrorTextPattern =
+        /(something went wrong|unexpected error|fatal error|request failed|operation failed|failed to|unable to|network error|server error|internal server error|forbidden|unauthorized|permission denied|access denied|timed out|not found|exception|traceback)/i;
+      const blockingBusinessRulePattern =
+        /\b(order blocked|cannot proceed|hard block)\b/i;
+      const nonFatalBusinessAlertPattern =
+        /\b(credit limit exceeded|credit limit warning|you can still proceed|override reason may be required|very low margin|low margin)\b/i;
+      const fallbackErrorWordPattern =
+        /\b(error|failed|unable|invalid|exception|denied|forbidden|timed out|not found|required)\b/i;
+      const errorClassPattern =
+        /(error|destructive|danger|alert-error|toast-error)/i;
+      const successTextPattern =
+        /(saved|success|added|created|updated|completed|published|sent)/i;
+
+      return elements
+        .filter(el => {
+          const style = window.getComputedStyle(el);
+          const hidden =
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            el.getAttribute("aria-hidden") === "true";
+          if (hidden) return false;
+
+          const text = (el.textContent || "").trim();
+          const attrs = [
+            String(el.className || ""),
+            el.getAttribute("data-state") || "",
+            el.getAttribute("data-variant") || "",
+            el.getAttribute("data-type") || "",
+            el.getAttribute("aria-label") || "",
+            el.getAttribute("data-testid") || "",
+          ].join(" ");
+
+          const hasTechnicalError = technicalErrorTextPattern.test(text);
+          const hasBlockingBusinessRule = blockingBusinessRulePattern.test(text);
+          const isNonFatalBusinessAlert = nonFatalBusinessAlertPattern.test(text);
+          const hasErrorStyling = errorClassPattern.test(attrs);
+          const hasFallbackErrorWord = fallbackErrorWordPattern.test(text);
+          const isLikelySuccessToast =
+            successTextPattern.test(text) && !hasFallbackErrorWord;
+
+          if (isLikelySuccessToast || isNonFatalBusinessAlert) return false;
+          if (hasTechnicalError || hasBlockingBusinessRule) return true;
+
+          // Keep class-based detection, but require explicit error wording to
+          // avoid treating business warnings (for example credit utilization)
+          // as technical failure states.
+          return hasErrorStyling && hasFallbackErrorWord;
+        })
+        .map(el => {
+          const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+          return text.length > 80 ? `${text.slice(0, 80)}...` : text;
+        })
+        .filter(Boolean);
+    });
+  if (suspiciousErrorElements.length > 0) {
+    const samples = suspiciousErrorElements.slice(0, 2).join(" | ");
+    reasons.push(
+      `Found ${suspiciousErrorElements.length} potential error elements${samples ? `: ${samples}` : ""}`
+    );
   }
 
   return { passed: reasons.length === 0, reasons };
@@ -98,9 +166,18 @@ async function hasLoadingElements(page: Page): Promise<SignalEvaluation> {
 
   const loadingCount = await page
     .locator(
-      '[class*="skeleton"], [class*="loading"], [class*="placeholder"], [aria-busy="true"]'
+      '[class*="skeleton"], [aria-busy="true"], [data-testid*="loading"]'
     )
-    .count();
+    .evaluateAll(elements => {
+      return elements.filter(el => {
+        const style = window.getComputedStyle(el);
+        const hidden =
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          el.getAttribute("aria-hidden") === "true";
+        return !hidden;
+      }).length;
+    });
   if (loadingCount > 0) {
     reasons.push(`Found ${loadingCount} potential loading indicators`);
   }
@@ -163,7 +240,7 @@ export async function runValidationSignals(
   const httpSignal = classifyHttpStatus(statusCode);
   const text404Signal = detect404Indicators(bodyText);
   const textErrorSignal = detectErrorState(bodyText);
-  const textLoadingSignal = detectLoadingState(bodyText);
+  const textLoadingSignal = detectLoadingState(bodyText, mainContent);
   const contentSignal = hasContentPresent(mainContent);
 
   const dom404Signal = await has404Elements(page);

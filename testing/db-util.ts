@@ -30,6 +30,10 @@ function getTestDatabaseUrl(): string {
   return process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || '';
 }
 
+function getLocalTestDatabaseUrl(): string {
+  return `mysql://${TEST_DB_CONFIG.user}:${TEST_DB_CONFIG.password}@${TEST_DB_CONFIG.host}:${TEST_DB_CONFIG.port}/${TEST_DB_CONFIG.database}`;
+}
+
 function isRemoteDatabaseUrl(databaseUrl: string): boolean {
   if (!databaseUrl) return false;
   try {
@@ -41,12 +45,34 @@ function isRemoteDatabaseUrl(databaseUrl: string): boolean {
   }
 }
 
+function getDockerBinary(): string {
+  const candidates = [
+    'docker',
+    '/Applications/Docker.app/Contents/Resources/bin/docker',
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      execSync(`${candidate} --version`, { stdio: 'ignore' });
+      return candidate;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  throw new Error(
+    'Docker CLI not found. Install Docker Desktop or add docker to PATH.'
+  );
+}
+
 function getComposeCommand(): string {
-  // Prefer Docker Compose v2 if available; fallback to docker-compose (v1)
+  // Prefer Docker Compose v2 if available; fallback to docker-compose (v1).
+  const dockerBinary = getDockerBinary();
   try {
-    execSync('docker compose version', { stdio: 'ignore' });
-    return 'docker compose';
+    execSync(`${dockerBinary} compose version`, { stdio: 'ignore' });
+    return `${dockerBinary} compose`;
   } catch {
+    execSync('docker-compose version', { stdio: 'ignore' });
     return 'docker-compose';
   }
 }
@@ -118,7 +144,18 @@ export function stopTestDatabase() {
 export function runMigrations() {
   console.log('📦 Running database migrations...');
   try {
-    execSync('pnpm drizzle-kit push:mysql', { stdio: 'inherit' });
+    const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
+
+    // Use test-schema push to keep test DB aligned with current code schema.
+    // `push:mysql` is deprecated and can no-op in current drizzle-kit versions,
+    // while migrate-only can lag behind newer schema columns expected by seeds.
+    execSync('pnpm drizzle-kit push --config drizzle.config.test.ts', {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+      },
+    });
     console.log('✅ Migrations completed successfully');
   } catch (error) {
     console.error('❌ Failed to run migrations:', error);
@@ -132,10 +169,49 @@ export function runMigrations() {
 export function seedDatabase(scenario: string = 'light') {
   console.log(`🌱 Seeding database with scenario: ${scenario}...`);
   try {
-    execSync(`pnpm seed:${scenario}`, { stdio: 'inherit' });
+    const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
+
+    execSync(`pnpm seed:${scenario}`, {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+      },
+    });
     console.log('✅ Database seeded successfully');
   } catch (error) {
     console.error('❌ Failed to seed database:', error);
+    throw error;
+  }
+}
+
+/**
+ * Ensure RBAC + QA role accounts exist for deterministic E2E/oracle auth.
+ */
+export function seedQaAuthAccounts() {
+  console.log('🔐 Ensuring RBAC + QA auth accounts...');
+  try {
+    const databaseUrl = getTestDatabaseUrl() || getLocalTestDatabaseUrl();
+    const seededEnv = {
+      ...process.env,
+      DATABASE_URL: databaseUrl,
+    };
+
+    // Idempotent RBAC reconcile (safe to run on every reset).
+    execSync('pnpm seed:rbac:reconcile', {
+      stdio: 'inherit',
+      env: seededEnv,
+    });
+
+    // QA role accounts expected by tests-e2e/fixtures/auth.ts and oracle role fixtures.
+    execSync('pnpm seed:qa-accounts', {
+      stdio: 'inherit',
+      env: seededEnv,
+    });
+
+    console.log('✅ QA auth accounts ready');
+  } catch (error) {
+    console.error('❌ Failed to seed QA auth accounts:', error);
     throw error;
   }
 }
@@ -180,6 +256,11 @@ export async function resetTestDatabase(scenario: string = 'light') {
     // 3. Seed data
     console.log(`\n🌱 Step 3: Seeding data with scenario: ${scenario}...`);
     seedDatabase(scenario);
+
+    // 4. Ensure deterministic QA credentials and RBAC role mappings
+    // used by v4 oracle and E2E fixtures.
+    console.log('\n🔐 Step 4: Seeding QA auth accounts...');
+    seedQaAuthAccounts();
 
     console.log('\n' + '='.repeat(50));
     console.log('✅ Test database reset complete!');
@@ -323,4 +404,3 @@ export async function preflightTestDatabase(): Promise<void> {
     await conn.end();
   }
 }
-

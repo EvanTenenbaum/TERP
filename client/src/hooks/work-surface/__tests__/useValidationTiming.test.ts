@@ -220,8 +220,8 @@ describe("useValidationTiming", () => {
         validationResult = result.current.validateAll();
       });
 
-      expect(validationResult!.isValid).toBe(true);
-      expect(validationResult!.errors).toEqual({});
+      expect(validationResult?.isValid).toBe(true);
+      expect(validationResult?.errors).toEqual({});
     });
 
     it("should return all errors for invalid form", () => {
@@ -238,9 +238,9 @@ describe("useValidationTiming", () => {
         validationResult = result.current.validateAll();
       });
 
-      expect(validationResult!.isValid).toBe(false);
-      expect(validationResult!.errors).toHaveProperty("name");
-      expect(validationResult!.errors).toHaveProperty("email");
+      expect(validationResult?.isValid).toBe(false);
+      expect(validationResult?.errors).toHaveProperty("name");
+      expect(validationResult?.errors).toHaveProperty("email");
     });
 
     it("should update all field states to show errors", () => {
@@ -515,7 +515,7 @@ describe("complex validation scenarios", () => {
       validationResult = result.current.validateAll();
     });
 
-    expect(validationResult!.isValid).toBe(true);
+    expect(validationResult?.isValid).toBe(true);
   });
 
   it("should handle optional fields correctly", () => {
@@ -537,7 +537,7 @@ describe("complex validation scenarios", () => {
       validationResult = result.current.validateAll();
     });
 
-    expect(validationResult!.isValid).toBe(true);
+    expect(validationResult?.isValid).toBe(true);
   });
 
   it("should validate optional field when provided", () => {
@@ -559,8 +559,8 @@ describe("complex validation scenarios", () => {
       validationResult = result.current.validateAll();
     });
 
-    expect(validationResult!.isValid).toBe(false);
-    expect(validationResult!.errors.website).toBe("Invalid URL");
+    expect(validationResult?.isValid).toBe(false);
+    expect(validationResult?.errors.website).toBe("Invalid URL");
   });
 });
 

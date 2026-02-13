@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Staff Session Console - Live Shopping
  * 
@@ -590,7 +591,7 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
   onRemove,
 }) => {
   const [isEditingPrice, setIsEditingPrice] = useState(false);
-  const [priceInput, setPriceInput] = useState(item.unitPrice);
+  const [priceInput, setPriceInput] = useState<string>(String(item.unitPrice));
 
   const handlePriceSubmit = () => {
     const newPrice = parseFloat(priceInput);

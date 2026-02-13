@@ -7,6 +7,7 @@
  */
 
 import { eq, and, isNull, lt, inArray, sql, not } from "drizzle-orm";
+import { logger } from "./logger";
 import { getDb } from "./db";
 import {
   calendarEvents,
@@ -17,7 +18,6 @@ import {
   calendarEventHistory,
   calendarEventAttachments,
   calendarEventPermissions,
-  clientMeetingHistory,
 } from "../../drizzle/schema";
 
 /** Helper to get db with null check */
@@ -388,7 +388,7 @@ export class DataIntegrityService {
       oldHistoryDeleted: await this.cleanupOldHistory(),
     };
 
-    console.log("Data integrity cleanup completed:", results);
+    logger.info("Data integrity cleanup completed", results as any);
 
     return results;
   }
