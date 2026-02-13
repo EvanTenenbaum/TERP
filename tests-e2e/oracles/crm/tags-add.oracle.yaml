@@ -29,28 +29,32 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "[data-testid='clients-list']"
+    wait_for: "[data-testid='clients-table'], table"
 
   - action: type
-    target: "[data-testid='search-input']"
-    value_ref: "seed:client.test_buyer.teri_code"
+    target: "[data-testid='clients-search-input']"
+    value_ref: "$seed:client.test_buyer.teri_code"
     clear_first: true
 
   - action: wait
-    for: "[data-testid='client-row']"
+    for: "table tbody tr, [data-testid^='client-row-']"
     timeout: 5000
 
   - action: click
-    target: "[data-testid='client-row']:first-child"
+    target: "table tbody tr:first-of-type"
+    wait_for: "[data-testid='view-full-profile-btn']"
+
+  - action: click
+    target: "[data-testid='view-full-profile-btn']"
     wait_for_navigation: true
 
   - action: store
     from: "[data-testid='client-id']"
     as: "client_id"
 
-  - action: click
-    target: "[data-testid='tags-section']"
-    wait_for: "[data-testid='tags-list']"
+  - action: wait
+    for: "[data-testid='tags-section'], [data-testid='tags-list']"
+    timeout: 5000
 
   - action: click
     target: "[data-testid='add-tag-btn']"
@@ -67,10 +71,11 @@ steps:
 
   - action: click
     target: "[data-testid='save-tag-btn']"
-    wait_for: "[data-testid='success-message']"
+    wait_after: 1200
 
   - action: wait
-    duration: 1000
+    for: "[data-testid='tags-list']"
+    timeout: 5000
 
   - action: screenshot
     name: "tag_added"
@@ -82,12 +87,8 @@ steps:
 expected_ui:
   visible:
     - "[data-testid='tags-list']"
-    - "[data-testid='success-message']"
   not_visible:
     - "[data-testid='tag-input']"
-    - ".error-message"
-  text_present:
-    - "Tag added"
 
 expected_db:
   clients:

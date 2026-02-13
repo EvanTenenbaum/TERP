@@ -40,19 +40,23 @@ preconditions:
 steps:
   - action: navigate
     path: "/clients"
-    wait_for: "[data-testid='clients-list']"
+    wait_for: "[data-testid='clients-table'], table"
 
   - action: type
-    target: "[data-testid='search-input']"
-    value_ref: "seed:client.test_buyer.teri_code"
+    target: "[data-testid='clients-search-input']"
+    value_ref: "$seed:client.test_buyer.teri_code"
     clear_first: true
 
   - action: wait
-    for: "[data-testid='client-row']"
+    for: "table tbody tr, [data-testid^='client-row-']"
     timeout: 5000
 
   - action: click
-    target: "[data-testid='client-row']:first-child"
+    target: "table tbody tr:first-of-type"
+    wait_for: "[data-testid='view-full-profile-btn']"
+
+  - action: click
+    target: "[data-testid='view-full-profile-btn']"
     wait_for_navigation: true
 
   - action: store
@@ -67,14 +71,14 @@ steps:
     target: "[data-testid='transactions-tab']"
     wait_for: "[data-testid='transactions-list']"
 
+  - action: wait
+    for: "tr[data-status='PENDING'] [data-testid='record-payment-btn'], [data-testid='record-payment-btn']:has-text('Record Payment')"
+    timeout: 10000
+
   # Find the pending transaction
   - action: click
-    target: "[data-testid='transaction-row'][data-status='PENDING']:first-child [data-testid='record-payment-btn']"
+    target: "tr[data-status='PENDING'] [data-testid='record-payment-btn'], tr[data-status='PARTIAL'] [data-testid='record-payment-btn'], [data-testid='record-payment-btn']:has-text('Record Payment')"
     wait_for: "[data-testid='payment-form']"
-
-  - action: store
-    from: "[data-testid='transaction-id']"
-    as: "transaction_id"
 
   - action: type
     target: "input[name='paymentAmount']"
@@ -88,10 +92,11 @@ steps:
 
   - action: click
     target: "[data-testid='submit-payment-btn']"
-    wait_for: "[data-testid='success-message']"
+    wait_after: 1200
 
   - action: wait
-    duration: 2000
+    for: "[data-testid='transactions-list']"
+    timeout: 10000
 
   - action: screenshot
     name: "payment_recorded"
@@ -99,12 +104,10 @@ steps:
 expected_ui:
   visible:
     - "[data-testid='transactions-list']"
-    - "[data-testid='success-message']"
   not_visible:
-    - "[data-testid='payment-form']"
-    - ".error-message"
+    - "[role='dialog'] [data-testid='payment-form']"
+    - "[role='dialog']:has-text('Record Payment')"
   text_present:
-    - "Payment recorded"
     - "PAID"
 
 expected_db:

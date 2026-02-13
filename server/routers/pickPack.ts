@@ -15,6 +15,42 @@ import { TRPCError } from "@trpc/server";
 // Pick & Pack status enum for validation
 const pickPackStatusSchema = z.enum(["PENDING", "PICKING", "PACKED", "READY"]);
 
+type PickPackOrderItem = {
+  id?: number;
+  productId?: number;
+  productName?: string;
+  strainName?: string;
+  quantity?: number;
+  unitPrice?: number;
+  location?: string;
+};
+
+function normalizeOrderItems(rawItems: unknown): PickPackOrderItem[] {
+  if (Array.isArray(rawItems)) {
+    return rawItems as PickPackOrderItem[];
+  }
+
+  if (typeof rawItems === "string" && rawItems.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(rawItems);
+      if (Array.isArray(parsed)) {
+        return parsed as PickPackOrderItem[];
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  if (rawItems && typeof rawItems === "object") {
+    const candidate = (rawItems as Record<string, unknown>).items;
+    if (Array.isArray(candidate)) {
+      return candidate as PickPackOrderItem[];
+    }
+  }
+
+  return [];
+}
+
 export const pickPackRouter = router({
   /**
    * Get the real-time pick list (orders ready for picking)
@@ -153,8 +189,7 @@ export const pickPackRouter = router({
 
       // Format response
       return pickListOrders.map(order => {
-        const items =
-          (order.items as Array<{ id?: number; quantity?: number }>) || [];
+        const items = normalizeOrderItems(order.items);
         const itemCount = items.reduce(
           (sum, item) => sum + (item.quantity || 1),
           0
@@ -263,16 +298,7 @@ export const pickPackRouter = router({
       }
 
       // Format items with pack status
-      const items =
-        (order.items as Array<{
-          id?: number;
-          productId?: number;
-          productName?: string;
-          strainName?: string;
-          quantity?: number;
-          unitPrice?: number;
-          location?: string;
-        }>) || [];
+      const items = normalizeOrderItems(order.items);
 
       const formattedItems = items.map((item, index) => {
         const itemId = item.id || index;

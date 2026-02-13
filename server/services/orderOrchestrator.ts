@@ -377,6 +377,7 @@ export class OrderOrchestrator {
         avgMarginPercent: avgMarginPercent.toString(),
         validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
         quoteStatus: input.orderType === "QUOTE" ? "DRAFT" : undefined,
+        paymentTerms: "NET_30",
         notes: input.notes,
         createdBy: actorId,
       });

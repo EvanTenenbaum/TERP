@@ -13,6 +13,7 @@ import {
   calculateSalesComparison,
 } from "../dashboardHelpers";
 import { logger } from "../_core/logger";
+import { isMissingTableError } from "../_core/dbErrors";
 import {
   batches,
   clients,
@@ -181,28 +182,6 @@ interface TotalDebtResponse {
   totalDebtOwedToMe: number;
   totalDebtIOwedToVendors: number;
   netPosition: number;
-}
-
-function isMissingTableError(
-  error: unknown,
-  tableHints: string[] = []
-): boolean {
-  const errorObj = error as Record<string, unknown> | null;
-  const code = String(errorObj?.code ?? errorObj?.errno ?? "");
-  const message = String(errorObj?.message ?? "").toLowerCase();
-
-  const missingTableSignal =
-    code === "1146" ||
-    code === "ER_NO_SUCH_TABLE" ||
-    message.includes("er_no_such_table") ||
-    (message.includes("table") &&
-      (message.includes("doesn't exist") ||
-        message.includes("does not exist")));
-
-  if (!missingTableSignal) return false;
-  if (tableHints.length === 0) return true;
-
-  return tableHints.some(hint => message.includes(hint.toLowerCase()));
 }
 
 /**

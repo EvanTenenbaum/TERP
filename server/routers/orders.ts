@@ -811,6 +811,8 @@ export const ordersRouter = router({
 
       // Generate order number
       const orderNumber = await ordersDb.generateOrderNumber(input.orderType);
+      // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
+      const resolvedPaymentTerms = input.paymentTerms || "NET_30";
 
       // Create order
       const [orderResult] = await db.insert(orders).values({
@@ -831,7 +833,7 @@ export const ordersRouter = router({
         avgMarginPercent: totals.avgMarginPercent.toString(),
         notes: input.notes || null,
         validUntil: input.validUntil ? new Date(input.validUntil) : null,
-        paymentTerms: input.paymentTerms || null,
+        paymentTerms: resolvedPaymentTerms,
         cashPayment: input.cashPayment?.toString() || null,
         createdBy: userId,
       });

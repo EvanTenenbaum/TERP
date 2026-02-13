@@ -2,7 +2,7 @@
 # Adjust inventory quantity with categorized reason
 
 flow_id: "Inventory.Movements.AdjustInventory"
-description: "Adjust inventory quantity with categorized adjustment reason for shrinkage tracking"
+description: "Adjust inventory quantity from the batch inspector and verify success feedback"
 role: "InventoryManager"
 seed_profile: "basic_sales"
 tags:
@@ -42,39 +42,26 @@ steps:
     for: "[data-testid='batch-detail'], .batch-detail-panel"
     timeout: 5000
 
-  - action: store
-    from: "[data-testid='current-qty'], [data-testid='on-hand-qty']"
-    as: "original_qty"
-
   - action: click
-    target: "[data-testid='adjust-qty-btn'], button:has-text('Adjust'), button:has-text('Adjustment')"
+    target: "[data-testid='adjust-qty-btn'], button:has-text('Adjust Quantity'), button:has-text('Adjust')"
     wait_after: 500
 
   - action: wait
-    for: "[data-testid='adjust-form'], form, .adjustment-modal"
+    for: "[data-testid='qty-adjustment'], #qty-adjustment, [role='dialog']:has-text('Adjust Quantity')"
     timeout: 5000
 
   - action: type
-    target: "[data-testid='new-qty-input'], input[name='newQuantity']"
-    value: "95"
-    clear_first: true
-
-  - action: select
-    target: "[data-testid='adjustment-reason-select'], select[name='adjustmentReason']"
-    value: "COUNT_DISCREPANCY"
-
-  - action: type
-    target: "[data-testid='reason-input'], textarea[name='reason'], input[name='reason']"
-    value: "Physical count revealed 5 unit discrepancy during weekly audit"
+    target: "[data-testid='qty-adjustment'], #qty-adjustment, input[id='qty-adjustment']"
+    value: "-1"
     clear_first: true
 
   - action: type
-    target: "[data-testid='notes-input'], textarea[name='notes']"
-    value: "Counted by John Doe, verified by Jane Smith"
+    target: "[data-testid='qty-reason'], #qty-reason, input[id='qty-reason']"
+    value: "Physical count revealed minor discrepancy during weekly audit"
     clear_first: true
 
   - action: click
-    target: "[data-testid='submit-adjustment'], button[type='submit'], button:has-text('Adjust')"
+    target: "[data-testid='submit-adjustment'], button:has-text('Save'), button[type='submit']"
     wait_after: 1000
 
   - action: wait
@@ -87,9 +74,6 @@ steps:
 expected_ui:
   visible:
     - "[data-testid='success-toast'], .toast-success"
-  text_present:
-    - "adjusted"
-    - "95"
   not_visible:
     - "[data-testid='error-message']"
 

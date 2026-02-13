@@ -19,7 +19,9 @@ const isCloud =
   process.env.SKIP_E2E_SETUP === "1" ||
   process.env.SKIP_E2E_SETUP === "true";
 const isRemoteExecution = isRemoteBaseURL || isCloud;
+const isOracleRun = Boolean(process.env.ORACLE_RUN_MODE);
 const envTaggedPattern = /@prod-smoke|@prod-regression|@dev-only/;
+const shouldUploadToArgos = Boolean(process.env.CI && process.env.ARGOS_TOKEN);
 
 export default defineConfig({
   testDir: ".",
@@ -28,11 +30,13 @@ export default defineConfig({
     "tests/e2e/**/*.spec.ts",
     "tests/smoke/**/*.spec.ts",
   ],
-  fullyParallel: true,
+  // Oracle flow execution is intentionally serialized for determinism.
+  fullyParallel: !isOracleRun,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // CI/remote runs should avoid high parallelism against shared environments.
-  workers: process.env.CI || isRemoteExecution ? 1 : undefined,
+  // CI/remote/oracle runs should avoid high parallelism against shared environments.
+  workers:
+    process.env.CI || isRemoteExecution || isOracleRun ? 1 : undefined,
   reporter: [
     process.env.CI ? ["dot"] : ["list"],
     ["html"],
@@ -40,7 +44,7 @@ export default defineConfig({
     [
       "@argos-ci/playwright/reporter",
       {
-        uploadToArgos: !!process.env.CI,
+        uploadToArgos: shouldUploadToArgos,
         token: process.env.ARGOS_TOKEN,
       },
     ],
@@ -66,16 +70,12 @@ export default defineConfig({
       testDir: "./tests/smoke",
       use: { ...devices["Desktop Chrome"] },
     },
-    // Runtime regression checks that are safe to execute against live targets.
-    ...(isRemoteExecution
-      ? [
-          {
-            name: "runtime-oracle",
-            testMatch: /tests-e2e\/oracles\/oracle-runner\.spec\.ts/,
-            use: { ...devices["Desktop Chrome"] },
-          },
-        ]
-      : []),
+    // Dedicated oracle runtime project for deterministic flow execution.
+    {
+      name: "runtime-oracle",
+      testMatch: /tests-e2e\/oracles\/oracle-runner\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
     // Local-only projects: broad compatibility, dev flows, and viewport matrix.
     ...(isRemoteExecution
       ? []
@@ -120,7 +120,8 @@ export default defineConfig({
     process.env.CI || isRemoteExecution
       ? undefined
       : {
-          command: "pnpm dev",
+          command:
+            "pnpm test:env:up && JWT_SECRET=\"${JWT_SECRET:-terp-local-e2e-jwt-secret-2026-000000000000}\" DATABASE_URL=\"${DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}\" TEST_DATABASE_URL=\"${TEST_DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}\" PORT=5173 pnpm dev",
           url: "http://localhost:5173",
           reuseExistingServer: true,
         },

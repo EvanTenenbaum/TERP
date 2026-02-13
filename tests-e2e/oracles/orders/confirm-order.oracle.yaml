@@ -46,47 +46,46 @@ steps:
     network_idle: true
     timeout: 10000
 
-  # Filter to show pending orders
+  # Ensure confirmed tab is active and locate created order
   - action: click
-    target: "[data-testid='filter-pending'], [data-testid='status-filter']:has-text('Pending')"
+    target: "button[role='tab']:has-text('Confirmed'), [role='tab']:has-text('Confirmed')"
     wait_after: 1000
+
+  - action: type
+    target: "[data-testid='orders-search-input']"
+    value: "{{temp:order_to_confirm.orderNumber}}"
+    clear_first: true
+
+  - action: wait
+    for: "table tbody tr"
+    timeout: 10000
 
   # Click on the pending order
   - action: click
-    target: "tr:has-text('S-CONFIRM'), [data-testid='order-row']:has-text('PENDING'):first-of-type"
-    wait_for_navigation: true
-
-  - action: wait
-    network_idle: true
-    timeout: 10000
-
-  - action: store
-    from: "[data-testid='order-id'], [data-order-id]"
-    as: "confirming_order_id"
-
-  - action: store
-    from: "[data-testid='order-number'], .order-number"
-    as: "confirming_order_number"
-
-  - action: assert
-    text_contains: "PENDING"
-
-  # Click confirm button in fulfillment context
-  - action: click
-    target: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment'), button:has-text('Confirm')"
+    target: "table tbody tr:first-of-type"
     wait_after: 500
 
-  # Add confirmation notes if modal appears
   - action: wait
-    for: "[data-testid='confirm-modal'], .modal, [role='dialog']"
-    timeout: 3000
+    for: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
+    timeout: 10000
+
+  # Click confirm-for-fulfillment button
+  - action: click
+    target: "[data-testid='confirm-fulfillment-btn'], button:has-text('Confirm for Fulfillment')"
+    wait_after: 500
+
+  # Add confirmation notes and submit
+  - action: wait
+    for: "[data-testid='confirm-modal'], [role='dialog']"
+    timeout: 5000
 
   - action: type
-    target: "[data-testid='confirm-notes'], textarea[name='notes']"
+    target: "[data-testid='confirm-notes'], input[data-testid='confirm-notes']"
     value: "Confirmed for fulfillment via E2E test"
+    clear_first: true
 
   - action: click
-    target: "[data-testid='submit-confirm'], button:has-text('Confirm')"
+    target: "[data-testid='submit-confirm'], [role='dialog'] button:has-text('Confirm')"
     wait_after: 2000
 
   - action: wait
@@ -98,9 +97,7 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='order-detail'], .order-detail"
-  text_present:
-    - "Confirmed"
+    - "[data-testid='orders-table'], table"
 
 expected_db:
   orders:

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -93,6 +94,7 @@ export default function AccountingDashboard() {
   // WS-001 & WS-002: Quick Action Modal State
   const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
   const [payVendorOpen, setPayVendorOpen] = useState(false);
+  const utils = trpc.useUtils();
 
   // Fetch dashboard data
   // BUG-092 fix: Add error handling to prevent widgets stuck on "Loading..."
@@ -135,6 +137,23 @@ export default function AccountingDashboard() {
   const { data: overdueBills } =
     trpc.accounting.arApDashboard.getOverdueBills.useQuery({ limit: 5 });
 
+  const checkOverdueMutation = trpc.invoices.checkOverdue.useMutation({
+    onSuccess: async result => {
+      await Promise.all([
+        utils.accounting.arApDashboard.getOverdueInvoices.invalidate(),
+        utils.accounting.arApDashboard.getOverdueBills.invalidate(),
+        utils.accounting.invoices.getARAging.invalidate(),
+        utils.accounting.invoices.list.invalidate(),
+      ]);
+      toast.success(
+        `Overdue check complete. Updated ${result.overdueCount} invoice(s).`
+      );
+    },
+    onError: err => {
+      toast.error(err.message || "Failed to check overdue invoices");
+    },
+  });
+
   const formatCurrency = (amount: string | number | undefined) => {
     if (amount === undefined) return "$0.00";
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -153,7 +172,7 @@ export default function AccountingDashboard() {
   const recentPaymentsList = (recentPayments?.items ?? []).slice(0, 5);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6" data-testid="accounting-dashboard">
       <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
       <div>
@@ -320,22 +339,33 @@ export default function AccountingDashboard() {
 
       {/* Overdue Items */}
       <Tabs defaultValue="overdue-invoices" className="w-full">
-        <TabsList>
-          <TabsTrigger
-            value="overdue-invoices"
-            className="flex items-center gap-2"
+        <div className="flex items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger
+              value="overdue-invoices"
+              className="flex items-center gap-2"
+            >
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              Overdue Invoices ({overdueInvoices?.pagination?.total || 0})
+            </TabsTrigger>
+            <TabsTrigger
+              value="overdue-bills"
+              className="flex items-center gap-2"
+            >
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              Overdue Bills ({overdueBills?.pagination?.total || 0})
+            </TabsTrigger>
+          </TabsList>
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="check-overdue-btn"
+            onClick={() => checkOverdueMutation.mutate()}
+            disabled={checkOverdueMutation.isPending}
           >
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            Overdue Invoices ({overdueInvoices?.pagination?.total || 0})
-          </TabsTrigger>
-          <TabsTrigger
-            value="overdue-bills"
-            className="flex items-center gap-2"
-          >
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-            Overdue Bills ({overdueBills?.pagination?.total || 0})
-          </TabsTrigger>
-        </TabsList>
+            {checkOverdueMutation.isPending ? "Checking..." : "Check Overdue"}
+          </Button>
+        </div>
         <TabsContent value="overdue-invoices">
           <Card>
             <CardContent className="pt-6">

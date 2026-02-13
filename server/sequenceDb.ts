@@ -14,6 +14,25 @@ import { sequences, type Sequence } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "./_core/logger";
 
+type SequenceDefaults = {
+  prefix: string;
+  initialValue: number;
+};
+
+const DEFAULT_SEQUENCE_DEFINITIONS: Record<string, SequenceDefaults> = {
+  lot_code: { prefix: "LOT-", initialValue: 1000 },
+  batch_code: { prefix: "BATCH-", initialValue: 1000 },
+};
+
+function getDefaultSequenceConfig(sequenceName: string): SequenceDefaults {
+  const configured = DEFAULT_SEQUENCE_DEFINITIONS[sequenceName];
+  if (configured) return configured;
+  return {
+    prefix: `${sequenceName.toUpperCase()}-`,
+    initialValue: 0,
+  };
+}
+
 /**
  * Get the next sequence value atomically
  * Uses SELECT ... FOR UPDATE to ensure thread-safety
@@ -33,14 +52,52 @@ export async function getNextSequence(
     // Use transaction with row-level locking
     const result = await db.transaction(async tx => {
       // Lock the sequence row for update
-      const [sequence] = await tx
+      let [sequence] = await tx
         .select()
         .from(sequences)
         .where(eq(sequences.name, sequenceName))
         .for("update"); // Row-level lock
 
       if (!sequence) {
-        throw new Error(`Sequence '${sequenceName}' not found`);
+        // Self-heal missing sequence rows so environments bootstrapped via schema
+        // push (without SQL seed inserts) still support intake flows.
+        const defaults = getDefaultSequenceConfig(sequenceName);
+        try {
+          const [created] = await tx
+            .insert(sequences)
+            .values({
+              name: sequenceName,
+              prefix: defaults.prefix,
+              currentValue: defaults.initialValue,
+            })
+            .$returningId();
+
+          const [createdSequence] = await tx
+            .select()
+            .from(sequences)
+            .where(eq(sequences.id, created.id))
+            .for("update");
+
+          if (!createdSequence) {
+            throw new Error(`Sequence '${sequenceName}' could not be created`);
+          }
+          sequence = createdSequence;
+          logger.warn(
+            { sequenceName, prefix: defaults.prefix, initialValue: defaults.initialValue },
+            "Sequence row missing; created default sequence definition"
+          );
+        } catch (insertError) {
+          // Another transaction may have created it concurrently; retry lock/select.
+          const [existingSequence] = await tx
+            .select()
+            .from(sequences)
+            .where(eq(sequences.name, sequenceName))
+            .for("update");
+          if (!existingSequence) {
+            throw insertError;
+          }
+          sequence = existingSequence;
+        }
       }
 
       // Increment the sequence

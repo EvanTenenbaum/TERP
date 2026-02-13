@@ -4,12 +4,58 @@ import { setupDbMock } from "../test-utils/testDb";
 // Mock database (MUST be before other imports)
 vi.mock("../db", () => setupDbMock());
 
+const pricingEngineMocks = vi.hoisted(() => ({
+  getClientPricingRules: vi.fn(),
+  calculateRetailPrices: vi.fn(),
+}));
+
+vi.mock("../pricingEngine", () => pricingEngineMocks);
+
 import { db } from "../db";
 import * as liveCatalogService from "./liveCatalogService";
+
+function mockSelectSequence(resultSets: unknown[][]): void {
+  let i = 0;
+  vi.mocked(db.select).mockImplementation(
+    (() => {
+      const rows = resultSets[i++] ?? [];
+      const builder: {
+        from: ReturnType<typeof vi.fn>;
+        leftJoin: ReturnType<typeof vi.fn>;
+        where: ReturnType<typeof vi.fn>;
+        orderBy: ReturnType<typeof vi.fn>;
+        limit: ReturnType<typeof vi.fn>;
+        offset: ReturnType<typeof vi.fn>;
+        groupBy: ReturnType<typeof vi.fn>;
+        then: (resolve: (value: unknown[]) => unknown) => unknown;
+      } = {
+        from: vi.fn(() => builder),
+        leftJoin: vi.fn(() => builder),
+        where: vi.fn(() => builder),
+        orderBy: vi.fn(() => builder),
+        limit: vi.fn(() => builder),
+        offset: vi.fn(() => builder),
+        groupBy: vi.fn(() => builder),
+        then: resolve => resolve(rows),
+      };
+      return builder;
+    }) as never
+  );
+}
 
 describe("liveCatalogService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pricingEngineMocks.getClientPricingRules.mockResolvedValue([]);
+    pricingEngineMocks.calculateRetailPrices.mockImplementation(
+      async (items: Array<Record<string, unknown>>) =>
+        items.map(item => ({
+          ...item,
+          retailPrice: Number(item.basePrice || 0),
+          priceMarkup: 0,
+          appliedRules: [],
+        }))
+    );
   });
 
   describe("getCatalog", () => {
@@ -85,6 +131,61 @@ describe("liveCatalogService", () => {
 
       expect(result).toBeDefined();
       expect(result.items).toBeDefined();
+    });
+
+    it("prefers visible batch media over product-level fallback media", async () => {
+      const originalQuery = (db as unknown as { query: unknown }).query;
+      (db as unknown as { query: Record<string, unknown> }).query = {
+        vipPortalConfigurations: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 1,
+            clientId: 1,
+            moduleLiveCatalogEnabled: true,
+            featuresConfig: {
+              liveCatalog: {
+                showBasePrice: false,
+                showMarkup: false,
+                showQuantity: true,
+              },
+            },
+          }),
+        },
+        clientDraftInterests: {
+          findMany: vi.fn().mockResolvedValue([]),
+        },
+      };
+
+      mockSelectSequence([
+        [
+          {
+            batch: {
+              id: 42,
+              sku: "BATCH-42",
+              productId: 7,
+              grade: "A",
+              onHandQty: "10",
+              unitCogs: "125",
+            },
+            product: {
+              id: 7,
+              category: "Flower",
+              subcategory: "Indoor",
+            },
+          },
+        ],
+        [{ batchId: 42, url: "https://images.example.com/batch-visible.jpg" }],
+      ]);
+
+      try {
+        const result = await liveCatalogService.getCatalog(1, {});
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0].imageUrl).toBe(
+          "https://images.example.com/batch-visible.jpg"
+        );
+      } finally {
+        (db as unknown as { query: unknown }).query = originalQuery;
+      }
     });
   });
 

@@ -122,10 +122,24 @@ const visibleImageStatusWhere = or(
   eq(productImages.status, "PENDING")
 );
 
-async function ensureExactlyOneVisiblePrimaryForGroup(group: {
-  batchId?: number | null;
-  productId?: number | null;
-}): Promise<void> {
+export function isVisibleImageStatus(
+  status: string | null | undefined
+): boolean {
+  return (
+    status === null ||
+    status === undefined ||
+    status === "APPROVED" ||
+    status === "PENDING"
+  );
+}
+
+async function ensureExactlyOneVisiblePrimaryForGroup(
+  group: {
+    batchId?: number | null;
+    productId?: number | null;
+  },
+  database = db
+): Promise<void> {
   const groupWhere = group.batchId
     ? eq(productImages.batchId, group.batchId)
     : group.productId
@@ -134,7 +148,7 @@ async function ensureExactlyOneVisiblePrimaryForGroup(group: {
 
   if (!groupWhere) return;
 
-  const visibleImages = await db
+  const visibleImages = await database
     .select({
       id: productImages.id,
       isPrimary: productImages.isPrimary,
@@ -158,12 +172,12 @@ async function ensureExactlyOneVisiblePrimaryForGroup(group: {
     visiblePrimaryIds.length === 1 ? visiblePrimaryIds[0] : visibleImages[0].id;
 
   // Make sure the desired primary is the only primary for this group, including hidden images.
-  await db
+  await database
     .update(productImages)
     .set({ isPrimary: false })
     .where(and(groupWhere, ne(productImages.id, desiredPrimaryId)));
 
-  await db
+  await database
     .update(productImages)
     .set({ isPrimary: true })
     .where(eq(productImages.id, desiredPrimaryId));
@@ -570,7 +584,24 @@ export const photographyRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const [existingImage] = await db
+        .select({
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+        })
+        .from(productImages)
+        .where(eq(productImages.id, input.imageId));
+
+      if (!existingImage) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+      }
+
       await db.delete(productImages).where(eq(productImages.id, input.imageId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: existingImage.batchId,
+        productId: existingImage.productId,
+      });
 
       return { success: true };
     }),
@@ -658,7 +689,10 @@ export const photographyRouter = router({
     const batchesWithoutPhotos = await db
       .select({ count: sql<number>`COUNT(DISTINCT ${batches.id})` })
       .from(batches)
-      .leftJoin(productImages, eq(batches.id, productImages.batchId))
+      .leftJoin(
+        productImages,
+        and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+      )
       .where(and(eq(batches.batchStatus, "LIVE"), isNull(productImages.id)));
 
     // Count total live batches
@@ -731,7 +765,10 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .leftJoin(
+            productImages,
+            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+          )
           .where(and(...conditions))
           .groupBy(
             batches.id,
@@ -841,7 +878,10 @@ export const photographyRouter = router({
           hasImages: sql<number>`COUNT(${productImages.id})`.as("hasImages"),
         })
         .from(batches)
-        .leftJoin(productImages, eq(batches.id, productImages.batchId))
+        .leftJoin(
+          productImages,
+          and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+        )
         .where(
           and(
             isNull(batches.deletedAt),
@@ -936,8 +976,8 @@ export const photographyRouter = router({
         .from(productImages)
         .where(eq(productImages.batchId, input.batchId));
 
-      const visibleBefore = existingBefore.filter(
-        img => img.status !== "ARCHIVED" && img.status !== "REJECTED"
+      const visibleBefore = existingBefore.filter(img =>
+        isVisibleImageStatus(img.status)
       );
 
       const maxSortOrderBefore = visibleBefore.reduce((max, img) => {
@@ -963,7 +1003,7 @@ export const photographyRouter = router({
       }
 
       // Guard: do not allow completion without at least one visible image.
-      // "Visible" excludes ARCHIVED/REJECTED to align with batch surfacing.
+      // "Visible" includes only null/APPROVED/PENDING (see isVisibleImageStatus).
       const existingImages = await db
         .select({
           id: productImages.id,
@@ -974,8 +1014,8 @@ export const photographyRouter = router({
         .from(productImages)
         .where(eq(productImages.batchId, input.batchId));
 
-      const visibleImages = existingImages.filter(
-        img => img.status !== "ARCHIVED" && img.status !== "REJECTED"
+      const visibleImages = existingImages.filter(img =>
+        isVisibleImageStatus(img.status)
       );
 
       if (visibleImages.length === 0) {
@@ -1211,9 +1251,7 @@ export const photographyRouter = router({
         .from(productImages)
         .where(eq(productImages.batchId, input.batchId));
 
-      const visiblePhotos = photos.filter(
-        p => p.status !== "ARCHIVED" && p.status !== "REJECTED"
-      );
+      const visiblePhotos = photos.filter(p => isVisibleImageStatus(p.status));
 
       if (visiblePhotos.length === 0) {
         throw new TRPCError({
@@ -1241,7 +1279,7 @@ export const photographyRouter = router({
       const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
       metadata.photographyCompletedAt = new Date().toISOString();
       metadata.photographyCompletedBy = ctx.user?.id;
-      metadata.photoCount = photos.length;
+      metadata.photoCount = visiblePhotos.length;
 
       // Update batch status to PHOTOGRAPHY_COMPLETE (sub-status of LIVE)
       await database
@@ -1254,14 +1292,14 @@ export const photographyRouter = router({
         .where(eq(batches.id, input.batchId));
 
       logger.info(
-        { batchId: input.batchId, photoCount: photos.length },
+        { batchId: input.batchId, photoCount: visiblePhotos.length },
         "[Photography] Session completed"
       );
 
       return {
         success: true,
         batchId: input.batchId,
-        photoCount: photos.length,
+        photoCount: visiblePhotos.length,
       };
     }),
 
@@ -1287,6 +1325,14 @@ export const photographyRouter = router({
       await database
         .delete(productImages)
         .where(eq(productImages.id, input.photoId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup(
+        {
+          batchId: photo.batchId,
+          productId: photo.productId,
+        },
+        database
+      );
 
       logger.info(
         { photoId: input.photoId, batchId: photo.batchId },
@@ -1329,7 +1375,10 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .leftJoin(
+            productImages,
+            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+          )
           .where(
             and(
               or(
