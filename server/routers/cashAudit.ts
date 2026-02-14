@@ -56,7 +56,13 @@ export const cashAuditRouter = router({
 
         totalCashOnHand = Number(cashOnHandResult[0]?.total || 0);
       } catch (error) {
-        if (!isSchemaDriftError(error, ["cash_locations"])) {
+        if (
+          !isSchemaDriftError(error, [
+            "cash_locations",
+            "current_balance",
+            "is_active",
+          ])
+        ) {
           throw error;
         }
 
@@ -86,6 +92,8 @@ export const cashAuditRouter = router({
             !isSchemaDriftError(fallbackError, [
               "bankaccounts",
               "bank_accounts",
+              "currentbalance",
+              "isactive",
             ])
           ) {
             throw fallbackError;

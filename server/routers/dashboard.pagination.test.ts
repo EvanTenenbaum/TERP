@@ -520,6 +520,26 @@ describe("Dashboard Pagination (RF-002)", () => {
       expect(result.hasMore).toBe(false);
       expect(payablesService.listPayables).toHaveBeenCalledTimes(1);
     });
+
+    it("should gracefully fallback when drift is wrapped as a failed query", async () => {
+      // Arrange
+      vi.mocked(payablesService.listPayables).mockRejectedValue({
+        message:
+          "Failed query: select `vendor_payables`.`vendor_payable_status` from `vendor_payables`",
+      });
+
+      // Act
+      const result = await caller.dashboard.getVendorsNeedingPayment({
+        limit: 10,
+        offset: 0,
+      });
+
+      // Assert
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.hasMore).toBe(false);
+      expect(payablesService.listPayables).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("pagination edge cases", () => {
