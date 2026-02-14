@@ -13,7 +13,7 @@ import {
   calculateSalesComparison,
 } from "../dashboardHelpers";
 import { logger } from "../_core/logger";
-import { isMissingTableError } from "../_core/dbErrors";
+import { isMissingTableError, isSchemaDriftError } from "../_core/dbErrors";
 import {
   batches,
   clients,
@@ -884,7 +884,12 @@ export const dashboardRouter = router({
             return b.oldestDueDays - a.oldestDueDays;
           });
         } catch (error) {
-          if (!isMissingTableError(error, ["vendor_payables"])) {
+          if (
+            !isSchemaDriftError(error, [
+              "vendor_payables",
+              "vendor_payable_status",
+            ])
+          ) {
             throw error;
           }
 
