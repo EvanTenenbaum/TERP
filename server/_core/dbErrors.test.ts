@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isMissingTableError } from "./dbErrors";
+import { isMissingTableError, isSchemaDriftError } from "./dbErrors";
 
 describe("isMissingTableError", () => {
   it("detects MySQL error code 1146", () => {
@@ -79,5 +79,44 @@ describe("isMissingTableError", () => {
   it("uses errno as fallback when code is missing", () => {
     const error = { errno: 1146, message: "Table doesn't exist" };
     expect(isMissingTableError(error)).toBe(true);
+  });
+
+  it("detects missing table from wrapped cause errors", () => {
+    const wrappedError = {
+      message: "Failed query: select * from `cash_locations`",
+      cause: {
+        code: "ER_NO_SUCH_TABLE",
+        message: "Table 'terp.cash_locations' doesn't exist",
+      },
+    };
+
+    expect(isMissingTableError(wrappedError, ["cash_locations"])).toBe(true);
+  });
+});
+
+describe("isSchemaDriftError", () => {
+  it("detects unknown column errors by code", () => {
+    const error = {
+      code: "ER_BAD_FIELD_ERROR",
+      message: "Unknown column 'vendor_payable_status' in 'field list'",
+    };
+    expect(isSchemaDriftError(error, ["vendor_payable_status"])).toBe(true);
+  });
+
+  it("detects unknown column from wrapped driver errors", () => {
+    const error = {
+      message: "Failed query: select `vendor_payables`.`vendor_payable_status`",
+      cause: {
+        errno: 1054,
+        sqlMessage:
+          "Unknown column 'vendor_payables.vendor_payable_status' in 'field list'",
+      },
+    };
+    expect(isSchemaDriftError(error, ["vendor_payables"])).toBe(true);
+  });
+
+  it("returns false for non-schema errors", () => {
+    const error = { code: "1045", message: "Access denied for user" };
+    expect(isSchemaDriftError(error)).toBe(false);
   });
 });

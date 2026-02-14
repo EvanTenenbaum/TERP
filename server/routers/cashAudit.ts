@@ -24,7 +24,7 @@ import {
 import { eq, and, sql, inArray, desc, gte, lte } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
-import { isMissingTableError } from "../_core/dbErrors";
+import { isSchemaDriftError } from "../_core/dbErrors";
 
 // ============================================================================
 // MEET-001: Dashboard Available Money API
@@ -56,7 +56,7 @@ export const cashAuditRouter = router({
 
         totalCashOnHand = Number(cashOnHandResult[0]?.total || 0);
       } catch (error) {
-        if (!isMissingTableError(error, ["cash_locations"])) {
+        if (!isSchemaDriftError(error, ["cash_locations"])) {
           throw error;
         }
 
@@ -83,7 +83,7 @@ export const cashAuditRouter = router({
           totalCashOnHand = Number(fallbackResult[0]?.total || 0);
         } catch (fallbackError) {
           if (
-            !isMissingTableError(fallbackError, [
+            !isSchemaDriftError(fallbackError, [
               "bankaccounts",
               "bank_accounts",
             ])
@@ -120,7 +120,7 @@ export const cashAuditRouter = router({
 
         scheduledPayables = Number(scheduledPayablesResult[0]?.total || 0);
       } catch (error) {
-        if (!isMissingTableError(error, ["bills"])) {
+        if (!isSchemaDriftError(error, ["bills"])) {
           throw error;
         }
 
