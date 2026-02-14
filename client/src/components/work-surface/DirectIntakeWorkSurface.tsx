@@ -82,7 +82,7 @@ import { themeAlpine } from "ag-grid-community";
 // ============================================================================
 
 const intakeRowSchema = z.object({
-  vendorName: z.string().min(1, "Vendor is required"),
+  vendorName: z.string().min(1, "Supplier is required"),
   brandName: z.string().min(1, "Brand/Farmer is required"),
   category: z.enum([
     "Flower",
@@ -112,6 +112,9 @@ const intakeRowSchema = z.object({
 
 type IntakeRowData = z.infer<typeof intakeRowSchema>;
 
+// Fields vendorName/vendorId retained for server intake API compatibility
+// (server/_core/validation.ts intakeSchema + server/routers/inventory.ts intake mutation).
+// UI labels display "Supplier" — see column defs and inspector.
 interface IntakeGridRow extends IntakeRowData {
   id: string;
   vendorId: number | null;
@@ -245,7 +248,7 @@ interface RowInspectorProps {
   onUpdate: (updates: Partial<IntakeGridRow>) => void;
   mediaFiles: File[];
   onMediaFilesChange: (files: File[]) => void;
-  vendors: { id: number; name: string }[];
+  suppliers: { id: number; name: string }[];
   locations: { id: number; site: string }[];
   products: {
     id: number;
@@ -261,7 +264,7 @@ function RowInspectorContent({
   onUpdate,
   mediaFiles,
   onMediaFilesChange,
-  vendors,
+  suppliers,
   locations,
   products,
 }: RowInspectorProps) {
@@ -307,7 +310,7 @@ function RowInspectorContent({
   return (
     <div className="space-y-6">
       <InspectorSection title="Supplier Information" defaultOpen>
-        <InspectorField label="Vendor" required>
+        <InspectorField label="Supplier" required>
           <Select
             value={row.vendorName}
             onValueChange={value => {
@@ -326,7 +329,7 @@ function RowInspectorContent({
                 }
                 return;
               }
-              const vendor = vendors.find(v => v.name === value);
+              const vendor = suppliers.find(v => v.name === value);
               onUpdate({
                 vendorName: value,
                 vendorId: vendor?.id || null,
@@ -344,13 +347,13 @@ function RowInspectorContent({
               <SelectValue placeholder="Select vendor" />
             </SelectTrigger>
             <SelectContent>
-              {vendors.length === 0 ? (
-                <SelectItem value="no-vendors" disabled>
-                  No vendors available
+              {suppliers.length === 0 ? (
+                <SelectItem value="no-suppliers" disabled>
+                  No suppliers available
                 </SelectItem>
               ) : (
                 <>
-                  {vendors.map(v => (
+                  {suppliers.map(v => (
                     <SelectItem key={v.id} value={v.name}>
                       {v.name}
                     </SelectItem>
@@ -752,24 +755,24 @@ export function DirectIntakeWorkSurface() {
 
   // Data queries
   const {
-    data: vendorsData,
-    isLoading: vendorsLoading,
-    error: vendorsError,
-    refetch: refetchVendors,
-  } = trpc.vendors.getAll.useQuery();
+    data: suppliersData,
+    isLoading: suppliersLoading,
+    error: suppliersError,
+    refetch: refetchSuppliers,
+  } = trpc.clients.list.useQuery({ clientTypes: ["seller"], limit: 1000 });
 
-  const vendors = useMemo<Array<{ id: number; name: string }>>(() => {
+  const suppliers = useMemo<Array<{ id: number; name: string }>>(() => {
     const items =
-      vendorsData &&
-      typeof vendorsData === "object" &&
-      "data" in vendorsData &&
-      Array.isArray(vendorsData.data)
-        ? (vendorsData.data as Array<{ id?: unknown; name?: unknown }>)
-        : vendorsData &&
-            typeof vendorsData === "object" &&
-            "items" in vendorsData &&
-            Array.isArray(vendorsData.items)
-          ? (vendorsData.items as Array<{ id?: unknown; name?: unknown }>)
+      suppliersData &&
+      typeof suppliersData === "object" &&
+      "data" in suppliersData &&
+      Array.isArray(suppliersData.data)
+        ? (suppliersData.data as Array<{ id?: unknown; name?: unknown }>)
+        : suppliersData &&
+            typeof suppliersData === "object" &&
+            "items" in suppliersData &&
+            Array.isArray(suppliersData.items)
+          ? (suppliersData.items as Array<{ id?: unknown; name?: unknown }>)
           : [];
     return items
       .filter(
@@ -777,7 +780,7 @@ export function DirectIntakeWorkSurface() {
           typeof item?.id === "number" && typeof item?.name === "string"
       )
       .map(item => ({ id: item.id, name: item.name }));
-  }, [vendorsData]);
+  }, [suppliersData]);
 
   const {
     data: locationsData,
@@ -851,15 +854,16 @@ export function DirectIntakeWorkSurface() {
   const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
 
   // Loading state
-  const isLoadingData = vendorsLoading || locationsLoading || productsLoading;
-  const dataError = vendorsError || locationsError || productsError;
+  const isLoadingData = suppliersLoading || locationsLoading || productsLoading;
+  const dataError = suppliersError || locationsError || productsError;
 
   // Column definitions
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
-        // TER-217: Free-text + dropdown for rapid vendor entry
-        headerName: "Vendor",
+        // TER-217: Free-text + dropdown for rapid supplier entry
+        // Field "vendorName" retained for server intake API compatibility (intakeSchema)
+        headerName: "Supplier",
         field: "vendorName",
         width: 160,
         editable: params => params.data?.status === "pending",
@@ -869,9 +873,9 @@ export function DirectIntakeWorkSurface() {
         },
         // Provide autocomplete suggestions via value setter
         tooltipValueGetter: () =>
-          vendors.length > 0
-            ? `Type to search ${vendors.length} vendors or enter new`
-            : "Type vendor name",
+          suppliers.length > 0
+            ? `Type to search ${suppliers.length} suppliers or enter new`
+            : "Type supplier name",
       },
       {
         headerName: "Brand/Farmer",
@@ -1002,7 +1006,7 @@ export function DirectIntakeWorkSurface() {
         filter: false,
       },
     ],
-    [vendors, locations, products, inspector]
+    [suppliers, locations, products, inspector]
   );
 
   const defaultColDef = useMemo<ColDef<IntakeGridRow>>(
@@ -1027,7 +1031,7 @@ export function DirectIntakeWorkSurface() {
 
       // Update vendor ID when vendor name changes
       if (event.colDef.field === "vendorName") {
-        const vendor = vendors.find(v => v.name === event.newValue);
+        const vendor = suppliers.find(v => v.name === event.newValue);
         if (vendor) {
           event.node.setDataValue("vendorId", vendor.id);
           if (!event.data.brandName) {
@@ -1088,7 +1092,7 @@ export function DirectIntakeWorkSurface() {
       // Mark as saved after a short debounce (simulating auto-save)
       setTimeout(() => setSaved(), 500);
     },
-    [vendors, locations, products, setSaving, setSaved]
+    [suppliers, locations, products, setSaving, setSaved]
   );
 
   const handleRowSelected = useCallback(
@@ -1590,7 +1594,7 @@ export function DirectIntakeWorkSurface() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    refetchVendors();
+                    refetchSuppliers();
                     refetchLocations();
                     refetchProducts();
                   }}
@@ -1643,7 +1647,7 @@ export function DirectIntakeWorkSurface() {
                 [selectedRow.id]: files,
               }));
             }}
-            vendors={vendors}
+            suppliers={suppliers}
             locations={locations}
             products={products}
           />

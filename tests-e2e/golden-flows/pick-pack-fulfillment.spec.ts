@@ -16,7 +16,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
   });
 
   test.describe("Pick List Navigation", () => {
-    test("should display pick list with Work Surface pattern", async ({ page }) => {
+    test("should display pick list with Work Surface pattern", async ({
+      page,
+    }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
@@ -25,7 +27,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await expect(header).toBeVisible({ timeout: 5000 });
 
       // Stats should be visible
-      const stats = page.locator(':text("Pending"), :text("Picking"), :text("Packed")');
+      const stats = page.locator(
+        ':text("Pending"), :text("Picking"), :text("Packed")'
+      );
       await expect(stats.first()).toBeVisible({ timeout: 5000 });
     });
 
@@ -51,22 +55,25 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      const statusFilter = page.locator('select, [data-testid="status-filter"]');
-      if (await statusFilter.first().isVisible().catch(() => false)) {
-        await expect(statusFilter.first()).toBeVisible();
-      }
+      // Status filter MUST be present on the pick-pack surface
+      const statusFilter = page.locator(
+        'select, [data-testid="status-filter"]'
+      );
+      await expect(statusFilter.first()).toBeVisible({ timeout: 5000 });
     });
 
     test("should search orders", async ({ page }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // Cmd+K should focus search
+      // Cmd+K should focus search (component handles both cmd+k and ctrl+k)
       const isMac = process.platform === "darwin";
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
 
-      const searchInput = page.locator('input[placeholder*="Search"], input[type="search"]');
-      await expect(searchInput.first()).toBeFocused({ timeout: 3000 });
+      const searchInput = page.locator(
+        '[data-testid="pick-pack-search-input"], input[placeholder*="Search"], input[type="search"]'
+      );
+      await expect(searchInput.first()).toBeFocused({ timeout: 5000 });
     });
   });
 
@@ -75,35 +82,40 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // Select an order first
+      // Precondition: at least one order row must exist
       const orderRow = page.locator('[role="row"], tr').first();
-      if (await orderRow.isVisible().catch(() => false)) {
-        await orderRow.click();
-        await page.waitForTimeout(500);
-
-        // Items should be visible
-        const items = page.locator('[role="checkbox"], input[type="checkbox"]');
-        if (await items.first().isVisible().catch(() => false)) {
-          await expect(items.first()).toBeVisible();
-        }
+      if (!(await orderRow.isVisible().catch(() => false))) {
+        test.skip(true, "No order rows visible — cannot test item selection");
+        return;
       }
+
+      await orderRow.click();
+      await page.waitForTimeout(500);
+
+      // After selecting an order, checkboxes for items MUST be present
+      const items = page.locator('[role="checkbox"], input[type="checkbox"]');
+      await expect(items.first()).toBeVisible({ timeout: 5000 });
     });
 
     test("should select all unpacked with shortcut", async ({ page }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
+      // Precondition: at least one order row must exist
       const orderRow = page.locator('[role="row"], tr').first();
-      if (await orderRow.isVisible().catch(() => false)) {
-        await orderRow.click();
-        await page.waitForTimeout(500);
-
-        // Select All button
-        const selectAll = page.locator('button:has-text("Select All"), button:has-text("All")');
-        if (await selectAll.first().isVisible().catch(() => false)) {
-          await expect(selectAll.first()).toBeVisible();
-        }
+      if (!(await orderRow.isVisible().catch(() => false))) {
+        test.skip(true, "No order rows visible — cannot test select-all");
+        return;
       }
+
+      await orderRow.click();
+      await page.waitForTimeout(500);
+
+      // After selecting an order, a "Select All" button MUST be present
+      const selectAll = page.locator(
+        'button:has-text("Select All"), button:has-text("All")'
+      );
+      await expect(selectAll.first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -112,25 +124,20 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // Pack button should be visible when items selected
+      // Pack button MUST be present on the pick-pack surface (may be disabled until items selected)
       const packButton = page.locator('button:has-text("Pack")');
-      if (await packButton.first().isVisible().catch(() => false)) {
-        await expect(packButton.first()).toBeVisible();
-      }
+      await expect(packButton.first()).toBeVisible({ timeout: 5000 });
     });
 
     test("should mark order ready when fully packed", async ({ page }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // Mark Ready button
-      const readyButton = page.locator('button:has-text("Ready"), button:has-text("Mark Ready")');
-      if (await readyButton.first().isVisible().catch(() => false)) {
-        // Should be disabled until all items packed
-        const isDisabled = await readyButton.first().isDisabled().catch(() => true);
-        // Just verify button exists
-        await expect(readyButton.first()).toBeVisible();
-      }
+      // "Mark Ready" button MUST be present (may be disabled until all items packed)
+      const readyButton = page.locator(
+        'button:has-text("Ready"), button:has-text("Mark Ready")'
+      );
+      await expect(readyButton.first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -139,27 +146,36 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
+      // Precondition: at least one order row must exist
       const orderRow = page.locator('[role="row"], tr').first();
-      if (await orderRow.isVisible().catch(() => false)) {
-        await orderRow.click();
-        await page.waitForTimeout(300);
-
-        // View Details should open inspector
-        const viewDetails = page.locator('button:has-text("View Details"), button:has-text("Details")');
-        if (await viewDetails.isVisible().catch(() => false)) {
-          await viewDetails.click();
-
-          const inspector = page.locator('[data-testid="inspector-panel"], [role="complementary"]');
-          await expect(inspector).toBeVisible({ timeout: 5000 }).catch(() => true);
-        }
+      if (!(await orderRow.isVisible().catch(() => false))) {
+        test.skip(true, "No order rows visible — cannot test inspector");
+        return;
       }
+
+      await orderRow.click();
+      await page.waitForTimeout(300);
+
+      // "View Details" button MUST be present after selecting an order
+      const viewDetails = page.locator(
+        'button:has-text("View Details"), button:has-text("Details")'
+      );
+      await expect(viewDetails.first()).toBeVisible({ timeout: 5000 });
+
+      await viewDetails.first().click();
+
+      // Inspector panel MUST open after clicking View Details
+      const inspector = page.locator(
+        '[data-testid="inspector-panel"], [role="complementary"]'
+      );
+      await expect(inspector).toBeVisible({ timeout: 5000 });
     });
 
     test("should show item details when inspecting", async ({ page }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      // Use keyboard to inspect
+      // Use keyboard to navigate and select
       await page.keyboard.press("Tab");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
@@ -169,9 +185,11 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.keyboard.press("i");
       await page.waitForTimeout(300);
 
-      // Some detail view should appear
-      const details = page.locator(':text("Details"), :text("Location"), :text("Quantity")');
-      expect(await details.count()).toBeGreaterThanOrEqual(0);
+      // After keyboard inspect, detail content MUST appear
+      const details = page.locator(
+        ':text("Details"), :text("Location"), :text("Quantity")'
+      );
+      await expect(details.first()).toBeVisible({ timeout: 5000 });
     });
   });
 });

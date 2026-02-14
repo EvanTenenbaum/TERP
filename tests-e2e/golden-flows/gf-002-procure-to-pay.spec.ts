@@ -1,7 +1,7 @@
 /**
  * Golden Flow Test: GF-002 Procure-to-Pay
  *
- * Flow: /purchase-orders → create PO → submit → receive goods
+ * Flow: /purchase-orders → open create dialog → verify form fields → receive goods
  */
 
 import { expect, test, type Page } from "@playwright/test";
@@ -22,26 +22,53 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
   }): Promise<void> => {
     await openPurchaseOrders(page);
 
+    // PO creation uses a dialog, not a separate page route
     const createButton = page.locator(
       'button:has-text("New Purchase Order"), button:has-text("Create PO"), button:has-text("New PO")'
     );
 
-    if (
-      await createButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await createButton.first().click();
-      await expect(page).toHaveURL(/purchase-orders\/(new|create)/, {
-        timeout: 5000,
-      });
+    const hasCreateButton = await createButton
+      .first()
+      .isVisible()
+      .catch(() => false);
 
-      const productSelector = page.locator(
-        '[data-testid="po-product-select"], select[name*="product"], input[placeholder*="Product"], input[aria-label*="Product"]'
+    if (!hasCreateButton) {
+      test.skip(
+        true,
+        "Create PO button not visible — PO creation may not be available"
       );
-      await expect(productSelector.first()).toBeVisible({ timeout: 5000 });
+      return;
     }
+
+    await createButton.first().click();
+
+    // Dialog should open with "Create Purchase Order" title
+    const dialogTitle = page.locator(
+      'h2:has-text("Create Purchase Order"), [role="dialog"] h2'
+    );
+    await expect(dialogTitle.first()).toBeVisible({ timeout: 5000 });
+
+    // Verify supplier selector exists
+    const supplierSelect = page.locator(
+      'button:has-text("Select supplier"), [role="dialog"] button[role="combobox"]'
+    );
+    await expect(supplierSelect.first()).toBeVisible({ timeout: 5000 });
+
+    // Verify order date input exists
+    const orderDateInput = page.locator('#orderDate, input[type="date"]');
+    await expect(orderDateInput.first()).toBeVisible({ timeout: 3000 });
+
+    // Verify line items section with "Add Item" button exists
+    const addItemButton = page.locator(
+      '[role="dialog"] button:has-text("Add Item")'
+    );
+    await expect(addItemButton.first()).toBeVisible({ timeout: 3000 });
+
+    // Verify product selector in line items
+    const productSelect = page.locator(
+      '[role="dialog"] button:has-text("Select product"), [role="dialog"] [role="combobox"]'
+    );
+    await expect(productSelect.first()).toBeVisible({ timeout: 3000 });
   });
 
   test("should show receiving action for purchase orders", async ({
@@ -49,21 +76,19 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
   }): Promise<void> => {
     await openPurchaseOrders(page);
 
+    // Precondition: at least one PO row must exist
     const poRow = page.locator('[role="row"], tr').first();
-    if (await poRow.isVisible().catch(() => false)) {
-      await poRow.click();
-
-      const receiveButton = page.locator(
-        'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
-      );
-      if (
-        await receiveButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(receiveButton.first()).toBeVisible();
-      }
+    if (!(await poRow.isVisible().catch(() => false))) {
+      test.skip(true, "No purchase order rows visible — cannot test receiving");
+      return;
     }
+
+    await poRow.click();
+
+    // After clicking a PO row, a receive action MUST be available
+    const receiveButton = page.locator(
+      'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
+    );
+    await expect(receiveButton.first()).toBeVisible({ timeout: 5000 });
   });
 });
