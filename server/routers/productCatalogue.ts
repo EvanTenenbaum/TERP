@@ -124,7 +124,9 @@ export const productCatalogueRouter = router({
         );
       }
 
-      // TER-236: Wrap duplicate check + insert in a transaction to prevent race conditions
+      // TER-236: Transaction + FOR UPDATE prevents TOCTOU race on duplicate check.
+      // FOR UPDATE acquires a gap lock in InnoDB REPEATABLE READ, blocking concurrent
+      // inserts that match the same name/brand until this transaction commits.
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -139,6 +141,7 @@ export const productCatalogueRouter = router({
           conditions.push(eq(products.brandId, input.brandId));
         }
 
+        // FOR UPDATE: acquire exclusive lock on matching rows to prevent TOCTOU race
         const duplicates = await tx
           .select({
             id: products.id,
@@ -149,7 +152,8 @@ export const productCatalogueRouter = router({
           .from(products)
           .leftJoin(brands, eq(products.brandId, brands.id))
           .where(and(...conditions))
-          .limit(1);
+          .limit(1)
+          .for("update");
 
         const duplicate = duplicates[0];
         if (duplicate) {

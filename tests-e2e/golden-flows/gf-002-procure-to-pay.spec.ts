@@ -76,21 +76,19 @@ test.describe("Golden Flow: GF-002 Procure-to-Pay", (): void => {
   }): Promise<void> => {
     await openPurchaseOrders(page);
 
+    // Precondition: at least one PO row must exist
     const poRow = page.locator('[role="row"], tr').first();
-    if (await poRow.isVisible().catch(() => false)) {
-      await poRow.click();
-
-      const receiveButton = page.locator(
-        'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
-      );
-      if (
-        await receiveButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(receiveButton.first()).toBeVisible();
-      }
+    if (!(await poRow.isVisible().catch(() => false))) {
+      test.skip(true, "No purchase order rows visible — cannot test receiving");
+      return;
     }
+
+    await poRow.click();
+
+    // After clicking a PO row, a receive action MUST be available
+    const receiveButton = page.locator(
+      'button:has-text("Receive"), button:has-text("Mark Received"), button:has-text("Receive Items")'
+    );
+    await expect(receiveButton.first()).toBeVisible({ timeout: 5000 });
   });
 });

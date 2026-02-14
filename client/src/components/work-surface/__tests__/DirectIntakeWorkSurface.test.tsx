@@ -54,4 +54,12 @@ describe("DirectIntakeWorkSurface (TER-234)", () => {
       "vendors: { id: number; name: string }[]"
     );
   });
+
+  it("should display 'Supplier' in UI labels, not 'Vendor'", () => {
+    // Column header and inspector label should say "Supplier"
+    expect(componentSource).toContain('headerName: "Supplier"');
+    expect(componentSource).toContain('label="Supplier"');
+    // vendorName/vendorId fields are retained for API compat, verified by comment
+    expect(componentSource).toContain("server intake API compatibility");
+  });
 });

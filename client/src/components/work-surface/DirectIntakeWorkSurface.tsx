@@ -82,7 +82,7 @@ import { themeAlpine } from "ag-grid-community";
 // ============================================================================
 
 const intakeRowSchema = z.object({
-  vendorName: z.string().min(1, "Vendor is required"),
+  vendorName: z.string().min(1, "Supplier is required"),
   brandName: z.string().min(1, "Brand/Farmer is required"),
   category: z.enum([
     "Flower",
@@ -112,6 +112,9 @@ const intakeRowSchema = z.object({
 
 type IntakeRowData = z.infer<typeof intakeRowSchema>;
 
+// Fields vendorName/vendorId retained for server intake API compatibility
+// (server/_core/validation.ts intakeSchema + server/routers/inventory.ts intake mutation).
+// UI labels display "Supplier" — see column defs and inspector.
 interface IntakeGridRow extends IntakeRowData {
   id: string;
   vendorId: number | null;
@@ -307,7 +310,7 @@ function RowInspectorContent({
   return (
     <div className="space-y-6">
       <InspectorSection title="Supplier Information" defaultOpen>
-        <InspectorField label="Vendor" required>
+        <InspectorField label="Supplier" required>
           <Select
             value={row.vendorName}
             onValueChange={value => {
@@ -858,8 +861,9 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
-        // TER-217: Free-text + dropdown for rapid vendor entry
-        headerName: "Vendor",
+        // TER-217: Free-text + dropdown for rapid supplier entry
+        // Field "vendorName" retained for server intake API compatibility (intakeSchema)
+        headerName: "Supplier",
         field: "vendorName",
         width: 160,
         editable: params => params.data?.status === "pending",

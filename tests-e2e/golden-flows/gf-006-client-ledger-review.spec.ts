@@ -88,30 +88,15 @@ test.describe("Golden Flow: GF-006 Client Ledger Review", (): void => {
       return;
     }
 
-    // Verify filter controls exist
+    // Once on the ledger surface, filter controls and export MUST exist
     const filterControl = page.locator(
       'select, button:has-text("Filter"), [data-testid="ledger-filter"]'
     );
-    if (
-      await filterControl
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await expect(filterControl.first()).toBeVisible();
-    }
+    await expect(filterControl.first()).toBeVisible({ timeout: 5000 });
 
-    // Verify export button exists
     const exportButton = page.locator(
       'button:has-text("Export"), button:has-text("Download"), [data-testid="ledger-export"]'
     );
-    if (
-      await exportButton
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await expect(exportButton.first()).toBeVisible();
-    }
+    await expect(exportButton.first()).toBeVisible({ timeout: 5000 });
   });
 });
