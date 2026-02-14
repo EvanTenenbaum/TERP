@@ -119,4 +119,12 @@ describe("isSchemaDriftError", () => {
     const error = { code: "1045", message: "Access denied for user" };
     expect(isSchemaDriftError(error)).toBe(false);
   });
+
+  it("detects drift from drizzle failed-query wrapper when hint matches", () => {
+    const error = {
+      message:
+        "Failed query: select `vendor_payables`.`vendor_payable_status` from `vendor_payables` where `vendor_payables`.`deleted_at` is null",
+    };
+    expect(isSchemaDriftError(error, ["vendor_payable_status"])).toBe(true);
+  });
 });

@@ -134,6 +134,17 @@ export function isSchemaDriftError(
     );
   });
 
-  if (!schemaDriftSignal) return false;
+  if (!schemaDriftSignal) {
+    // Drizzle can surface only "Failed query: ..." without nested mysql errno/code.
+    // When explicit hints are provided and the failed SQL mentions them, treat as drift.
+    if (
+      hints.length > 0 &&
+      signals.some(({ message }) => message.includes("failed query:")) &&
+      hintsMatch(signals, hints)
+    ) {
+      return true;
+    }
+    return false;
+  }
   return hintsMatch(signals, hints);
 }
