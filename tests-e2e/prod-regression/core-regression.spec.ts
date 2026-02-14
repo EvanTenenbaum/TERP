@@ -14,10 +14,10 @@ test.describe("Production Core Regression @prod-regression", () => {
 
     await page.goto("/orders", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: /orders/i }).first()
+      page.getByRole("heading", { name: /sales/i }).first()
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /new order/i }).first()
+      page.getByRole("button", { name: /new sale/i }).first()
     ).toBeVisible();
 
     await page.goto("/clients", { waitUntil: "domcontentloaded" });
