@@ -125,8 +125,10 @@ export const productCatalogueRouter = router({
       }
 
       // TER-236: Transaction + FOR UPDATE prevents TOCTOU race on duplicate check.
-      // FOR UPDATE acquires a gap lock in InnoDB REPEATABLE READ, blocking concurrent
-      // inserts that match the same name/brand until this transaction commits.
+      // Note: LOWER() prevents B-tree index usage, so FOR UPDATE acquires a broad
+      // scan lock (effectively serializing concurrent creates). This is correct but
+      // not optimal — a composite unique index on (nameCanonical, brandId) would
+      // enable targeted gap locks and provide a DB-level uniqueness constraint.
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
