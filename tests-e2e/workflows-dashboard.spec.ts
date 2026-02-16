@@ -104,7 +104,8 @@ test.describe("Workflows and Dashboard", () => {
       .locator('a[href="/orders"], nav a:has-text("Orders")')
       .first();
     await ordersLink.click();
-    await expect(page).toHaveURL("/orders");
+    // /orders redirects to /sales?tab=orders
+    await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
   });
 
   test("should display recent activity", async ({ page }) => {
