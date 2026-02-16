@@ -249,7 +249,7 @@ jobs:
             try {
               const comment = await github.rest.repos.createCommitComment({
                 owner: context.repo.owner,
-                repo: context.repo.name,
+                repo: context.repo.repo,
                 commit_sha: context.sha,
                 body: body
               });
@@ -264,31 +264,41 @@ jobs:
         run: |
           # Push build status to a separate branch to avoid triggering DigitalOcean deployments
           # DigitalOcean only monitors 'main' branch, so this won't trigger deployments
+
+          # Save the freshly generated BUILD_STATUS.md BEFORE switching branches.
+          # The prior step wrote it to the working directory but didn't commit it,
+          # so `git checkout main -- ...` would grab the stale committed version.
+          if [ ! -f .github/BUILD_STATUS.md ]; then
+            echo "No BUILD_STATUS.md found — skipping update."
+            exit 0
+          fi
+          cp .github/BUILD_STATUS.md /tmp/BUILD_STATUS.md
+
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          
+
           # Fetch to ensure we have remote branches
           git fetch origin build-status:build-status 2>/dev/null || true
-          
+
           # Checkout build-status branch (create if it doesn't exist)
           if git show-ref --verify --quiet refs/heads/build-status; then
             git checkout build-status
-            git merge main --no-edit -m "Merge main into build-status" || true
           else
             git checkout -b build-status
           fi
-          
-          # Copy the updated BUILD_STATUS.md from main
-          git checkout main -- .github/BUILD_STATUS.md 2>/dev/null || true
+
+          # Restore the FRESH file (not from main's committed history)
+          mkdir -p .github
+          cp /tmp/BUILD_STATUS.md .github/BUILD_STATUS.md
           git add .github/BUILD_STATUS.md || true
-          
+
           if ! git diff --staged --quiet; then
             git commit -m "Update build status [skip ci]" || true
             git push origin build-status || echo "Failed to push build status branch"
           else
             echo "No changes to BUILD_STATUS.md"
           fi
-          
+
           # Return to main branch for any subsequent steps
           git checkout main
       
@@ -328,7 +338,7 @@ jobs:
             try {
               await github.rest.issues.create({
                 owner: context.repo.owner,
-                repo: context.repo.name,
+                repo: context.repo.repo,
                 title: title,
                 body: body,
                 labels: ['ci/cd', 'automated']
@@ -344,7 +354,32 @@ jobs:
           echo "❌ One or more tests failed. See the commit comment for details."
           exit 1
       
-      - name: Deploy to staging (placeholder)
+      - name: Verify DigitalOcean deployment
+        id: deploy
         if: success()
-        run: echo "Deployment step would go here"
-        # Add your deployment logic here (e.g., Railway, DigitalOcean, etc.)
+        run: |
+          # DigitalOcean auto-deploys on push to main (configured in .do/app.yaml).
+          # This step waits for the deployment to become healthy rather than
+          # duplicating the deploy trigger.
+
+          APP_URL="https://terp-app-b9s35.ondigitalocean.app"
+          HEALTH_PATH="/health/live"
+
+          echo "Waiting for DigitalOcean auto-deploy to pick up commit..."
+          sleep 30  # Give DO time to start the deploy
+
+          MAX_ATTEMPTS=20
+          ATTEMPTS=0
+          until curl -sf "${APP_URL}${HEALTH_PATH}" > /dev/null 2>&1; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "⚠️ Health check failed after $MAX_ATTEMPTS attempts (~10 min)"
+              echo "The app may still be deploying (initial_delay_seconds=120)."
+              echo "deployment_status=unhealthy" >> $GITHUB_OUTPUT
+              exit 0  # Don't fail the build — DO might still be deploying
+            fi
+            echo "Waiting for app to be healthy... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+            sleep 30
+          done
+          echo "✅ App is healthy at ${APP_URL}${HEALTH_PATH}"
+          echo "deployment_status=healthy" >> $GITHUB_OUTPUT

@@ -8,8 +8,9 @@ jobs:
   cleanup:
     name: Delete Preview App
     runs-on: ubuntu-latest
-    # Skip cleanup for dependabot PRs (they don't have previews)
-    if: github.actor != 'dependabot[bot]'
+    # Guard: only run on pull_request closed events (prevents ghost runs on push)
+    # Also skip cleanup for dependabot PRs (they don't have previews)
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     
     steps:
       - name: Delete preview app

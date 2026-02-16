@@ -18,6 +18,8 @@ permissions:
 jobs:
   nightly-schema-check:
     runs-on: ubuntu-latest
+    # Guard: only run on schedule or manual dispatch (prevents ghost runs on push)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
     services:
       mysql:
