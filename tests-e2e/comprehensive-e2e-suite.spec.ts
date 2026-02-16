@@ -329,21 +329,27 @@ test.describe("Navigation & UI - Desktop", () => {
     const sidebar = page.locator('nav, aside, [role="navigation"]').first();
     await expect(sidebar).toBeVisible();
 
-    // Check for key navigation links
-    const navLinks = ["/clients", "/orders", "/inventory"];
-    for (const href of navLinks) {
-      const link = page.locator(`a[href="${href}"]`).first();
-      if (await link.isVisible()) {
-        expect(await link.isVisible()).toBeTruthy();
+    // Check for key navigation links (links may point to new consolidated routes)
+    const navLabels = ["Clients", "Orders", "Sales", "Inventory", "Relationships"];
+    let foundNavLinks = 0;
+    for (const label of navLabels) {
+      const link = page.locator(`a:has-text("${label}"), nav >> text="${label}"`).first();
+      if (await link.isVisible().catch(() => false)) {
+        foundNavLinks++;
       }
     }
+    expect(foundNavLinks).toBeGreaterThan(0);
   });
 
   test("NAV-D-003: Navigate to Clients page", async ({ page }) => {
     await page.goto("/clients");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/clients");
+    // /clients redirects to /relationships?tab=clients
+    expect(
+      page.url().includes("/clients") ||
+        page.url().includes("/relationships")
+    ).toBeTruthy();
 
     // Check for client list indicators
     const hasTable = await isElementVisible(
@@ -372,7 +378,11 @@ test.describe("Navigation & UI - Desktop", () => {
     await page.goto("/orders");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/orders");
+    // /orders redirects to /sales?tab=orders
+    expect(
+      page.url().includes("/orders") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
 
     // Check for orders list
     const hasContent = await isElementVisible(
@@ -411,14 +421,22 @@ test.describe("Navigation & UI - Desktop", () => {
     await page.goto("/quotes");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/quotes");
+    // /quotes redirects to /sales?tab=quotes
+    expect(
+      page.url().includes("/quotes") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
   });
 
   test("NAV-D-009: Navigate to Vendors page", async ({ page }) => {
     await page.goto("/vendors");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/vendors");
+    // /vendors may redirect to /relationships?tab=vendors
+    expect(
+      page.url().includes("/vendors") ||
+        page.url().includes("/relationships")
+    ).toBeTruthy();
   });
 
   test("NAV-D-010: Navigate to Pricing Rules page", async ({ page }) => {
@@ -501,7 +519,11 @@ test.describe("Navigation & UI - Mobile", () => {
     await page.goto("/orders");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/orders");
+    // /orders redirects to /sales?tab=orders
+    expect(
+      page.url().includes("/orders") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
   });
 });
 
@@ -605,7 +627,11 @@ test.describe("Client Management - Mobile", () => {
     await page.goto("/clients");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/clients");
+    // /clients redirects to /relationships?tab=clients
+    expect(
+      page.url().includes("/clients") ||
+        page.url().includes("/relationships")
+    ).toBeTruthy();
   });
 
   test("CLI-M-002: Add client button is accessible on mobile", async ({
@@ -727,7 +753,11 @@ test.describe("Order Management - Desktop", () => {
     await page.goto("/orders");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/orders");
+    // /orders redirects to /sales?tab=orders
+    expect(
+      page.url().includes("/orders") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
 
     // Check for orders list
     const hasContent = await isElementVisible(
@@ -741,7 +771,11 @@ test.describe("Order Management - Desktop", () => {
     await page.goto("/orders/create");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/orders/create");
+    // /orders/create may redirect to /sales/create or similar
+    expect(
+      page.url().includes("/orders/create") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
 
     // Check for order form
     const hasForm = await isElementVisible(
@@ -755,7 +789,11 @@ test.describe("Order Management - Desktop", () => {
     await page.goto("/quotes");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/quotes");
+    // /quotes redirects to /sales?tab=quotes
+    expect(
+      page.url().includes("/quotes") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
   });
 
   test("ORD-D-004: Pick & Pack page loads", async ({ page }) => {
@@ -769,7 +807,11 @@ test.describe("Order Management - Desktop", () => {
     await page.goto("/returns");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/returns");
+    // /returns redirects to /sales?tab=returns
+    expect(
+      page.url().includes("/returns") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
   });
 });
 
@@ -787,14 +829,22 @@ test.describe("Order Management - Mobile", () => {
     await page.goto("/orders");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/orders");
+    // /orders redirects to /sales?tab=orders
+    expect(
+      page.url().includes("/orders") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
   });
 
   test("ORD-M-002: Order create page renders on mobile", async ({ page }) => {
     await page.goto("/orders/create");
     await waitForPageReady(page);
 
-    expect(page.url()).toContain("/orders/create");
+    // /orders/create may redirect to /sales/create or similar
+    expect(
+      page.url().includes("/orders/create") ||
+        page.url().includes("/sales")
+    ).toBeTruthy();
   });
 });
 

@@ -75,12 +75,12 @@ test.describe("TER-45: Sales Rep - Client Management", () => {
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
 
-    // Verify clients page loaded
-    await expect(page).toHaveURL(/\/clients/);
+    // Verify clients page loaded (/clients redirects to /relationships?tab=clients)
+    await expect(page).toHaveURL(/\/relationships\?tab=clients|\/clients/);
     await expect(
       page
         .locator("h1, h2")
-        .filter({ hasText: /client/i })
+        .filter({ hasText: /client|relationship/i })
         .first()
     ).toBeVisible({ timeout: 10000 });
   });
@@ -271,12 +271,12 @@ test.describe("TER-45: Sales Rep - Order Management", () => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
 
-    // Verify orders page loaded
-    await expect(page).toHaveURL(/\/orders/);
+    // Verify orders page loaded (/orders redirects to /sales?tab=orders)
+    await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
     await expect(
       page
         .locator("h1")
-        .filter({ hasText: /orders/i })
+        .filter({ hasText: /orders|sales/i })
         .first()
     ).toBeVisible({ timeout: 10000 });
   });

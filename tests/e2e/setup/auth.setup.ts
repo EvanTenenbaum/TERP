@@ -1,6 +1,12 @@
 import { request } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// ESM-safe __dirname replacement (package.json has "type": "module")
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export interface AuthStateResult {
   storageStatePath: string;
@@ -17,7 +23,9 @@ function ensureDirectoryExists(filePath: string): void {
 export async function prepareAuthState(
   baseURL: string
 ): Promise<AuthStateResult> {
-  const storageStatePath = path.join(__dirname, "../artifacts/auth-state.json");
+  // Use process.cwd() fallback for environments where import.meta.url transforms fail
+  const resolvedDir = __dirname || path.join(process.cwd(), "tests", "e2e", "setup");
+  const storageStatePath = path.join(resolvedDir, "../artifacts/auth-state.json");
   ensureDirectoryExists(storageStatePath);
 
   const username = process.env.E2E_USERNAME;

@@ -17,17 +17,18 @@ test.describe("Navigation and UI Interactions", () => {
     await page.goto("/dashboard");
 
     // Test multiple navigation links
+    // Test multiple navigation links (routes may redirect to consolidated workspaces)
     const links = [
-      { selector: 'a[href="/clients"]', url: "/clients" },
-      { selector: 'a[href="/orders"]', url: "/orders" },
-      { selector: 'a[href="/inventory"]', url: "/inventory" },
+      { selector: 'a[href="/clients"], a[href="/relationships"], nav a:has-text("Clients")', urlPattern: /\/relationships|\/clients/ },
+      { selector: 'a[href="/orders"], a[href="/sales"], nav a:has-text("Orders"), nav a:has-text("Sales")', urlPattern: /\/sales|\/orders/ },
+      { selector: 'a[href="/inventory"], nav a:has-text("Inventory")', urlPattern: /\/inventory/ },
     ];
 
     for (const link of links) {
       const navLink = page.locator(link.selector).first();
       if (await navLink.isVisible()) {
         await navLink.click();
-        await expect(page).toHaveURL(link.url);
+        await expect(page).toHaveURL(link.urlPattern);
       }
     }
   });

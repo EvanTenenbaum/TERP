@@ -31,12 +31,12 @@ test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
       await page.goto("/orders");
       await page.waitForLoadState("networkidle");
 
-      // STRICT: Page must load with orders header
-      const header = page.locator("h1").filter({ hasText: /order/i });
+      // STRICT: Page must load with orders/sales header
+      const header = page.locator("h1").filter({ hasText: /order|sales/i });
       await expect(header).toBeVisible({ timeout: 10000 });
 
-      // STRICT: Must be on orders page
-      await expect(page).toHaveURL(/\/orders/);
+      // STRICT: Must be on orders page (/orders redirects to /sales?tab=orders)
+      await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
     });
 
     test("should display orders table", async ({ page }) => {
@@ -272,10 +272,10 @@ test.describe("TER-48: Warehouse Staff Role - Fulfillment Flows", () => {
 
       if (await ordersLink.first().isVisible()) {
         await ordersLink.first().click();
-        await page.waitForURL(/\/orders/);
+        await page.waitForURL(/\/sales|\/orders/);
 
-        // STRICT: Navigation must work
-        await expect(page).toHaveURL(/\/orders/);
+        // STRICT: Navigation must work (/orders redirects to /sales?tab=orders)
+        await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
       }
     });
 

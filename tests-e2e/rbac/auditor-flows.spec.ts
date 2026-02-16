@@ -11,10 +11,10 @@ test.describe("Auditor Role RBAC Verification", () => {
     await expect(page).toHaveURL(/dashboard|\/$/);
 
     await page.goto("/clients");
-    await expect(page).toHaveURL(/clients/);
+    await expect(page).toHaveURL(/relationships|clients/);
 
     await page.goto("/orders");
-    await expect(page).toHaveURL(/orders/);
+    await expect(page).toHaveURL(/sales|orders/);
 
     await page.goto("/accounting/invoices");
     await expect(page).toHaveURL(/accounting\/invoices/);

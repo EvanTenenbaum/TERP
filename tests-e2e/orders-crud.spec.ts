@@ -21,7 +21,7 @@ test.describe("Orders CRUD Operations", () => {
   test("should navigate to orders page", async ({ page }) => {
     await page.goto("/orders");
     await page.waitForLoadState("networkidle");
-    await expect(page).toHaveURL(/\/orders/);
+    await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
 
     // Orders surface was renamed to "Sales" in current UI, keep backward-compatible assertion.
     await expect(
@@ -79,7 +79,7 @@ test.describe("Orders CRUD Operations", () => {
     await page.waitForTimeout(500);
 
     // Verify we're still on the orders page after tab switching
-    await expect(page).toHaveURL(/\/orders/);
+    await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
     await expect(draftTab).toBeVisible();
   });
 
@@ -291,7 +291,7 @@ test.describe("Orders - Role-Based Access", () => {
     await page.waitForLoadState("networkidle");
 
     // Should be able to access orders page
-    await expect(page).toHaveURL(/\/orders/);
+    await expect(page).toHaveURL(/\/sales\?tab=orders|\/orders/);
     await expect(
       page.locator("h1").filter({ hasText: /orders|sales/i })
     ).toBeVisible();

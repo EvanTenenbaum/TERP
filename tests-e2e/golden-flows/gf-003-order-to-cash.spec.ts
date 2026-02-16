@@ -7,7 +7,8 @@ test.describe("GF-003: Order-to-Cash Flow", () => {
 
     // Step 1: Create order
     await page.goto("/orders");
-    await expect(page).toHaveURL(/orders/);
+    // /orders redirects to /sales?tab=orders
+    await expect(page).toHaveURL(/sales|orders/);
 
     // Step 2: Navigate to invoices
     await page.goto("/accounting/invoices");

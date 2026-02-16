@@ -27,20 +27,20 @@ test.describe("Order Creation Flow", () => {
     await page.goto("/orders/new");
     await checkAccessibility(page);
 
-    // Select client
-    await page.getByLabel("Client").click();
-    await page.getByRole("option", { name: /Green Valley Dispensary/ }).click();
+    // Select client (use .first() to avoid strict mode violation on multiple Client labels)
+    await page.getByLabel("Client").first().click();
+    await page.getByRole("option", { name: /Green Valley Dispensary/ }).first().click();
 
     // Add first item
-    await page.getByRole("button", { name: "Add Item" }).click();
+    await page.getByRole("button", { name: "Add Item" }).first().click();
     await page.getByLabel("Product").first().click();
-    await page.getByRole("option", { name: /Blue Dream/ }).click();
+    await page.getByRole("option", { name: /Blue Dream/ }).first().click();
     await page.getByLabel("Quantity").first().fill("10");
 
     // Add second item
-    await page.getByRole("button", { name: "Add Item" }).click();
+    await page.getByRole("button", { name: "Add Item" }).first().click();
     await page.getByLabel("Product").nth(1).click();
-    await page.getByRole("option", { name: /OG Kush/ }).click();
+    await page.getByRole("option", { name: /OG Kush/ }).first().click();
     await page.getByLabel("Quantity").nth(1).fill("5");
 
     // Verify total calculation
@@ -51,7 +51,7 @@ test.describe("Order Creation Flow", () => {
     await takeScreenshot(page, "order-form-filled");
 
     // Submit order
-    await page.getByRole("button", { name: "Create Order" }).click();
+    await page.getByRole("button", { name: "Create Order" }).first().click();
 
     // Assert: Redirected to order detail page
     await expect(page).toHaveURL(/\/orders\/\d+/);
@@ -76,17 +76,17 @@ test.describe("Order Creation Flow", () => {
     await page.goto("/orders/new");
 
     // Select client
-    await page.getByLabel("Client").click();
+    await page.getByLabel("Client").first().click();
     await page.getByRole("option").first().click();
 
     // Add item with quantity exceeding available stock
-    await page.getByRole("button", { name: "Add Item" }).click();
-    await page.getByLabel("Product").click();
+    await page.getByRole("button", { name: "Add Item" }).first().click();
+    await page.getByLabel("Product").first().click();
     await page.getByRole("option").first().click();
-    await page.getByLabel("Quantity").fill("999999"); // Unrealistic quantity
+    await page.getByLabel("Quantity").first().fill("999999"); // Unrealistic quantity
 
     // Attempt to submit
-    await page.getByRole("button", { name: "Create Order" }).click();
+    await page.getByRole("button", { name: "Create Order" }).first().click();
 
     // Assert: Error message displayed
     await expect(page.getByText(/insufficient inventory/i)).toBeVisible();
@@ -99,15 +99,15 @@ test.describe("Order Creation Flow", () => {
     await page.goto("/orders/new");
 
     // Select client
-    await page.getByLabel("Client").click();
+    await page.getByLabel("Client").first().click();
     await page.getByRole("option").first().click();
 
     // Add item
-    await page.getByRole("button", { name: "Add Item" }).click();
-    await page.getByLabel("Product").click();
+    await page.getByRole("button", { name: "Add Item" }).first().click();
+    await page.getByLabel("Product").first().click();
 
     // Select a product with known price (e.g., $150/unit)
-    await page.getByRole("option", { name: /Blue Dream.*\$150/ }).click();
+    await page.getByRole("option", { name: /Blue Dream.*\$150/ }).first().click();
     await page.getByLabel("Quantity").fill("10");
 
     // Wait for total to update
@@ -139,7 +139,7 @@ test.describe("Order Creation Flow", () => {
     await page.keyboard.type("5"); // Enter quantity
 
     // Verify form is filled via keyboard only
-    const quantity = await page.getByLabel("Quantity").inputValue();
+    const quantity = await page.getByLabel("Quantity").first().inputValue();
     expect(quantity).toBe("5");
   });
 });

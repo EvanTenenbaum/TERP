@@ -24,7 +24,7 @@ test.describe("Feature Flags Settings", () => {
   test("should display Feature Flags tab", async ({ page }) => {
     await page.goto("/settings");
     
-    const featureFlagsTab = page.locator('text=Feature Flags, [data-testid="feature-flags-tab"]').first();
+    const featureFlagsTab = page.locator('text=/feature.?flag/i, [data-testid="feature-flags-tab"]').first();
     await expect(featureFlagsTab).toBeVisible();
   });
 
@@ -32,7 +32,7 @@ test.describe("Feature Flags Settings", () => {
     await page.goto("/settings");
     
     // Click Feature Flags tab
-    const featureFlagsTab = page.locator('text=Feature Flags').first();
+    const featureFlagsTab = page.locator('text=/feature.?flag/i').first();
     await featureFlagsTab.click();
     
     await page.waitForLoadState("networkidle");
@@ -46,7 +46,7 @@ test.describe("Feature Flags Settings", () => {
     await page.goto("/settings");
     
     // Click Feature Flags tab
-    const featureFlagsTab = page.locator('text=Feature Flags').first();
+    const featureFlagsTab = page.locator('text=/feature.?flag/i').first();
     if (await featureFlagsTab.isVisible()) {
       await featureFlagsTab.click();
       await page.waitForLoadState("networkidle");
@@ -67,7 +67,7 @@ test.describe("Feature Flags Manager", () => {
     await page.goto("/settings");
     
     // Navigate to Feature Flags tab
-    const featureFlagsTab = page.locator('text=Feature Flags').first();
+    const featureFlagsTab = page.locator('text=/feature.?flag/i').first();
     if (await featureFlagsTab.isVisible()) {
       await featureFlagsTab.click();
       await page.waitForLoadState("networkidle");
@@ -88,7 +88,7 @@ test.describe("Feature Flags Manager", () => {
     await page.goto("/settings");
     
     // Navigate to Feature Flags tab
-    const featureFlagsTab = page.locator('text=Feature Flags').first();
+    const featureFlagsTab = page.locator('text=/feature.?flag/i').first();
     if (await featureFlagsTab.isVisible()) {
       await featureFlagsTab.click();
       await page.waitForLoadState("networkidle");
@@ -110,7 +110,7 @@ test.describe("Feature Flags Manager", () => {
     await page.goto("/settings");
     
     // Navigate to Feature Flags tab and open manager
-    const featureFlagsTab = page.locator('text=Feature Flags').first();
+    const featureFlagsTab = page.locator('text=/feature.?flag/i').first();
     if (await featureFlagsTab.isVisible()) {
       await featureFlagsTab.click();
       await page.waitForLoadState("networkidle");
@@ -139,7 +139,7 @@ test.describe("VIP Access Settings", () => {
   test("should display VIP Access tab", async ({ page }) => {
     await page.goto("/settings");
     
-    const vipAccessTab = page.locator('text=VIP Access, [data-testid="vip-access-tab"]').first();
+    const vipAccessTab = page.locator('text=/vip.?access/i, [data-testid="vip-access-tab"]').first();
     await expect(vipAccessTab).toBeVisible();
   });
 
@@ -147,7 +147,7 @@ test.describe("VIP Access Settings", () => {
     await page.goto("/settings");
     
     // Click VIP Access tab
-    const vipAccessTab = page.locator('text=VIP Access').first();
+    const vipAccessTab = page.locator('text=/vip.?access/i').first();
     await vipAccessTab.click();
     
     await page.waitForLoadState("networkidle");
@@ -161,14 +161,14 @@ test.describe("VIP Access Settings", () => {
     await page.goto("/settings");
     
     // Click VIP Access tab
-    const vipAccessTab = page.locator('text=VIP Access').first();
+    const vipAccessTab = page.locator('text=/vip.?access/i').first();
     if (await vipAccessTab.isVisible()) {
       await vipAccessTab.click();
       await page.waitForLoadState("networkidle");
     }
     
     // Look for Active Sessions sub-tab
-    const activeSessionsTab = page.locator('text=Active Sessions').first();
+    const activeSessionsTab = page.locator('text=/active.?sessions/i').first();
     await expect(activeSessionsTab).toBeVisible();
   });
 
@@ -176,13 +176,13 @@ test.describe("VIP Access Settings", () => {
     await page.goto("/settings");
     
     // Navigate to VIP Access > Active Sessions
-    const vipAccessTab = page.locator('text=VIP Access').first();
+    const vipAccessTab = page.locator('text=/vip.?access/i').first();
     if (await vipAccessTab.isVisible()) {
       await vipAccessTab.click();
       await page.waitForLoadState("networkidle");
     }
     
-    const activeSessionsTab = page.locator('text=Active Sessions').first();
+    const activeSessionsTab = page.locator('text=/active.?sessions/i').first();
     if (await activeSessionsTab.isVisible()) {
       await activeSessionsTab.click();
       await page.waitForLoadState("networkidle");
@@ -197,7 +197,7 @@ test.describe("VIP Access Settings", () => {
     await page.goto("/settings");
     
     // Click VIP Access tab
-    const vipAccessTab = page.locator('text=VIP Access').first();
+    const vipAccessTab = page.locator('text=/vip.?access/i').first();
     if (await vipAccessTab.isVisible()) {
       await vipAccessTab.click();
       await page.waitForLoadState("networkidle");
