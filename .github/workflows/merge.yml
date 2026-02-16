@@ -249,7 +249,7 @@ jobs:
             try {
               const comment = await github.rest.repos.createCommitComment({
                 owner: context.repo.owner,
-                repo: context.repo.name,
+                repo: context.repo.repo,
                 commit_sha: context.sha,
                 body: body
               });
@@ -264,31 +264,44 @@ jobs:
         run: |
           # Push build status to a separate branch to avoid triggering DigitalOcean deployments
           # DigitalOcean only monitors 'main' branch, so this won't trigger deployments
+
+          # Save the freshly generated BUILD_STATUS.md BEFORE switching branches.
+          # The prior step wrote it to the working directory but didn't commit it,
+          # so `git checkout main -- ...` would grab the stale committed version.
+          if [ ! -f .github/BUILD_STATUS.md ]; then
+            echo "No BUILD_STATUS.md found — skipping update."
+            exit 0
+          fi
+          cp .github/BUILD_STATUS.md /tmp/BUILD_STATUS.md
+
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          
+
           # Fetch to ensure we have remote branches
           git fetch origin build-status:build-status 2>/dev/null || true
-          
-          # Checkout build-status branch (create if it doesn't exist)
+
+          # Checkout build-status branch (create if it doesn't exist).
+          # Use -f because the working tree has the uncommitted BUILD_STATUS.md
+          # written by "Post Results Comment" — without -f, git refuses to switch
+          # when the tracked file differs between branches.
           if git show-ref --verify --quiet refs/heads/build-status; then
-            git checkout build-status
-            git merge main --no-edit -m "Merge main into build-status" || true
+            git checkout -f build-status
           else
             git checkout -b build-status
           fi
-          
-          # Copy the updated BUILD_STATUS.md from main
-          git checkout main -- .github/BUILD_STATUS.md 2>/dev/null || true
+
+          # Restore the FRESH file (not from main's committed history)
+          mkdir -p .github
+          cp /tmp/BUILD_STATUS.md .github/BUILD_STATUS.md
           git add .github/BUILD_STATUS.md || true
-          
+
           if ! git diff --staged --quiet; then
             git commit -m "Update build status [skip ci]" || true
             git push origin build-status || echo "Failed to push build status branch"
           else
             echo "No changes to BUILD_STATUS.md"
           fi
-          
+
           # Return to main branch for any subsequent steps
           git checkout main
       
@@ -328,7 +341,7 @@ jobs:
             try {
               await github.rest.issues.create({
                 owner: context.repo.owner,
-                repo: context.repo.name,
+                repo: context.repo.repo,
                 title: title,
                 body: body,
                 labels: ['ci/cd', 'automated']
@@ -344,7 +357,58 @@ jobs:
           echo "❌ One or more tests failed. See the commit comment for details."
           exit 1
       
-      - name: Deploy to staging (placeholder)
+      - name: Verify DigitalOcean deployment
+        id: deploy
         if: success()
-        run: echo "Deployment step would go here"
-        # Add your deployment logic here (e.g., Railway, DigitalOcean, etc.)
+        run: |
+          # DigitalOcean auto-deploys on push to main (configured in .do/app.yaml).
+          # This step verifies a FRESH deployment is live by checking the /health
+          # endpoint's "uptime" field — a low uptime (< 300s) means the server
+          # recently restarted, i.e. a new deployment replaced the old one.
+          #
+          # Why not just curl /health/live?  That endpoint returns 200 as long as
+          # any instance is running — including the OLD deployment before DO swaps
+          # it out.  Checking uptime avoids that false-positive.
+
+          APP_URL="https://terp-app-b9s35.ondigitalocean.app"
+
+          echo "Waiting for DigitalOcean auto-deploy to start..."
+          # DO needs time to detect the push and begin the build.
+          # initial_delay_seconds=120 in .do/app.yaml, plus build time.
+          sleep 60
+
+          MAX_ATTEMPTS=20
+          ATTEMPTS=0
+          while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+
+            # /health returns { status, uptime, ... } and always 200 (see server/_core/index.ts)
+            RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null) || {
+              echo "App unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
+              sleep 30
+              continue
+            }
+
+            UPTIME=$(echo "$RESPONSE" | jq -r '.uptime // empty' 2>/dev/null)
+            STATUS=$(echo "$RESPONSE" | jq -r '.status // empty' 2>/dev/null)
+
+            if [ -n "$UPTIME" ]; then
+              UPTIME_INT=${UPTIME%.*}  # truncate decimals
+              if [ "$UPTIME_INT" -lt 300 ] 2>/dev/null; then
+                echo "✅ Fresh deployment verified (uptime: ${UPTIME_INT}s, status: ${STATUS})"
+                echo "deployment_status=verified" >> $GITHUB_OUTPUT
+                exit 0
+              else
+                echo "Uptime ${UPTIME_INT}s — old deployment still serving (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+              fi
+            else
+              echo "Could not parse uptime from /health (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+            fi
+
+            sleep 30
+          done
+
+          echo "⚠️ Could not confirm fresh deployment after $MAX_ATTEMPTS attempts (~10 min)"
+          echo "The deploy may still be in progress. Check DigitalOcean dashboard."
+          echo "deployment_status=unverified" >> $GITHUB_OUTPUT
+          exit 0  # Don't fail the build
