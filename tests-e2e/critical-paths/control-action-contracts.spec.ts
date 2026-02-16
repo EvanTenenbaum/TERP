@@ -153,16 +153,16 @@ test.describe("Control-Action Contracts: Navigation", () => {
     // Test key navigation links
     const navTargets = [
       {
-        selector: 'a[href="/orders"], nav a:has-text("Orders")',
-        url: /\/orders/,
+        selector: 'a[href="/orders"], a[href="/sales"], nav a:has-text("Orders"), nav a:has-text("Sales")',
+        url: /\/sales|\/orders/,
       },
       {
         selector: 'a[href="/inventory"], nav a:has-text("Inventory")',
         url: /\/inventory/,
       },
       {
-        selector: 'a[href="/clients"], nav a:has-text("Clients")',
-        url: /\/clients/,
+        selector: 'a[href="/clients"], a[href="/relationships"], nav a:has-text("Clients"), nav a:has-text("Relationships")',
+        url: /\/relationships|\/clients/,
       },
     ];
 
