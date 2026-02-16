@@ -280,9 +280,12 @@ jobs:
           # Fetch to ensure we have remote branches
           git fetch origin build-status:build-status 2>/dev/null || true
 
-          # Checkout build-status branch (create if it doesn't exist)
+          # Checkout build-status branch (create if it doesn't exist).
+          # Use -f because the working tree has the uncommitted BUILD_STATUS.md
+          # written by "Post Results Comment" — without -f, git refuses to switch
+          # when the tracked file differs between branches.
           if git show-ref --verify --quiet refs/heads/build-status; then
-            git checkout build-status
+            git checkout -f build-status
           else
             git checkout -b build-status
           fi
@@ -359,27 +362,53 @@ jobs:
         if: success()
         run: |
           # DigitalOcean auto-deploys on push to main (configured in .do/app.yaml).
-          # This step waits for the deployment to become healthy rather than
-          # duplicating the deploy trigger.
+          # This step verifies a FRESH deployment is live by checking the /health
+          # endpoint's "uptime" field — a low uptime (< 300s) means the server
+          # recently restarted, i.e. a new deployment replaced the old one.
+          #
+          # Why not just curl /health/live?  That endpoint returns 200 as long as
+          # any instance is running — including the OLD deployment before DO swaps
+          # it out.  Checking uptime avoids that false-positive.
 
           APP_URL="https://terp-app-b9s35.ondigitalocean.app"
-          HEALTH_PATH="/health/live"
 
-          echo "Waiting for DigitalOcean auto-deploy to pick up commit..."
-          sleep 30  # Give DO time to start the deploy
+          echo "Waiting for DigitalOcean auto-deploy to start..."
+          # DO needs time to detect the push and begin the build.
+          # initial_delay_seconds=120 in .do/app.yaml, plus build time.
+          sleep 60
 
           MAX_ATTEMPTS=20
           ATTEMPTS=0
-          until curl -sf "${APP_URL}${HEALTH_PATH}" > /dev/null 2>&1; do
+          while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
-            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
-              echo "⚠️ Health check failed after $MAX_ATTEMPTS attempts (~10 min)"
-              echo "The app may still be deploying (initial_delay_seconds=120)."
-              echo "deployment_status=unhealthy" >> $GITHUB_OUTPUT
-              exit 0  # Don't fail the build — DO might still be deploying
+
+            # /health returns { status, uptime, ... } and always 200 (see server/_core/index.ts)
+            RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null) || {
+              echo "App unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
+              sleep 30
+              continue
+            }
+
+            UPTIME=$(echo "$RESPONSE" | jq -r '.uptime // empty' 2>/dev/null)
+            STATUS=$(echo "$RESPONSE" | jq -r '.status // empty' 2>/dev/null)
+
+            if [ -n "$UPTIME" ]; then
+              UPTIME_INT=${UPTIME%.*}  # truncate decimals
+              if [ "$UPTIME_INT" -lt 300 ] 2>/dev/null; then
+                echo "✅ Fresh deployment verified (uptime: ${UPTIME_INT}s, status: ${STATUS})"
+                echo "deployment_status=verified" >> $GITHUB_OUTPUT
+                exit 0
+              else
+                echo "Uptime ${UPTIME_INT}s — old deployment still serving (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+              fi
+            else
+              echo "Could not parse uptime from /health (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
             fi
-            echo "Waiting for app to be healthy... (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+
             sleep 30
           done
-          echo "✅ App is healthy at ${APP_URL}${HEALTH_PATH}"
-          echo "deployment_status=healthy" >> $GITHUB_OUTPUT
+
+          echo "⚠️ Could not confirm fresh deployment after $MAX_ATTEMPTS attempts (~10 min)"
+          echo "The deploy may still be in progress. Check DigitalOcean dashboard."
+          echo "deployment_status=unverified" >> $GITHUB_OUTPUT
+          exit 0  # Don't fail the build
