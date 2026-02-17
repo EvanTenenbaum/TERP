@@ -246,7 +246,8 @@ export const purchaseOrders = mysqlTable(
       onDelete: "restrict",
     }),
 
-    // Vendor relationship (DEPRECATED - use supplierClientId instead)
+    // DEPRECATED (TER-235): Use supplierClientId instead.
+    // This column will be dropped in Phase 3 (after TER-248 completes).
     // Kept for backward compatibility during migration
     vendorId: int("vendorId")
       .notNull()
@@ -596,7 +597,8 @@ export const lots = mysqlTable(
       onDelete: "restrict",
     }),
 
-    // Vendor reference (DEPRECATED - use supplierClientId instead)
+    // DEPRECATED (TER-235): Use supplierClientId instead.
+    // This column will be dropped in Phase 3 (after TER-248 completes).
     vendorId: int("vendorId").notNull(),
 
     date: timestamp("date").notNull(),
@@ -733,6 +735,8 @@ export type InsertBatch = typeof batches.$inferInsert;
 export const paymentHistory = mysqlTable("paymentHistory", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
+  // DEPRECATED (TER-235): Use supplierClientId instead (when added to this table in Phase 3).
+  // This column will be addressed in the accounting-scope migration (TER-248).
   vendorId: int("vendorId").notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
@@ -1242,6 +1246,8 @@ export const bills = mysqlTable("bills", {
   id: int("id").autoincrement().primaryKey(),
   billNumber: varchar("billNumber", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+  // DEPRECATED (TER-235): Use vendorClientId instead (accounting scope, TER-248).
+  // This column will be dropped in Phase 3 after TER-248 completes.
   vendorId: int("vendorId").notNull(),
   billDate: date("billDate").notNull(),
   dueDate: date("dueDate").notNull(),
