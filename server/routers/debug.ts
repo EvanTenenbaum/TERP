@@ -3,16 +3,25 @@
  * SEC-028: Protected with admin authentication, disabled in production by default
  */
 
-import { sql, isNull, eq } from 'drizzle-orm';
-import { adminProcedure, router } from '../_core/trpc.js';
-import { getDb } from '../db.js';
-import { getConnectionPool } from '../_core/connectionPool.js';
-import { vendors, clients, products, batches, orders, invoices, payments, sampleRequests } from '../../drizzle/schema.js';
-import { TRPCError } from '@trpc/server';
-import { env } from '../_core/env.js';
+import { sql, isNull, eq } from "drizzle-orm";
+import { adminProcedure, router } from "../_core/trpc.js";
+import { getDb } from "../db.js";
+import { getConnectionPool } from "../_core/connectionPool.js";
+import {
+  clients,
+  products,
+  batches,
+  orders,
+  invoices,
+  payments,
+  sampleRequests,
+} from "../../drizzle/schema.js";
+import { TRPCError } from "@trpc/server";
+import { env } from "../_core/env.js";
 
 // SEC-028: Debug endpoints are disabled in production unless explicitly enabled
-const isDebugEnabled = !env.isProduction || process.env.ENABLE_DEBUG_ENDPOINTS === 'true';
+const isDebugEnabled =
+  !env.isProduction || process.env.ENABLE_DEBUG_ENDPOINTS === "true";
 
 /**
  * SEC-028: Check if debug operations are allowed
@@ -21,8 +30,9 @@ const isDebugEnabled = !env.isProduction || process.env.ENABLE_DEBUG_ENDPOINTS =
 function assertDebugAllowed(): void {
   if (!isDebugEnabled) {
     throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Debug endpoints are disabled in production. Set ENABLE_DEBUG_ENDPOINTS=true to enable (not recommended).',
+      code: "FORBIDDEN",
+      message:
+        "Debug endpoints are disabled in production. Set ENABLE_DEBUG_ENDPOINTS=true to enable (not recommended).",
     });
   }
 }
@@ -75,11 +85,13 @@ export const debugRouter = router({
 
       try {
         // Test 1: Simple COUNT query (should work)
-        const [countRows] = await connection.query('SELECT COUNT(*) as total FROM clients');
+        const [countRows] = await connection.query(
+          "SELECT COUNT(*) as total FROM clients"
+        );
         results.tests.countQuery = {
           success: true,
           data: countRows,
-          method: 'query (text protocol)',
+          method: "query (text protocol)",
         };
       } catch (err: unknown) {
         const error = err as { message: string; code?: string; errno?: number };
@@ -93,11 +105,13 @@ export const debugRouter = router({
 
       try {
         // Test 2: SELECT with minimal columns (no ENUMs)
-        const [minimalRows] = await connection.query('SELECT id, name FROM clients LIMIT 1');
+        const [minimalRows] = await connection.query(
+          "SELECT id, name FROM clients LIMIT 1"
+        );
         results.tests.minimalSelect = {
           success: true,
           data: minimalRows,
-          method: 'query (text protocol)',
+          method: "query (text protocol)",
         };
       } catch (err: unknown) {
         const error = err as { message: string; code?: string; errno?: number };
@@ -112,12 +126,12 @@ export const debugRouter = router({
       try {
         // Test 3: SELECT with ENUM columns
         const [enumRows] = await connection.query(
-          'SELECT id, name, cogsAdjustmentType, creditLimitSource FROM clients LIMIT 1'
+          "SELECT id, name, cogsAdjustmentType, creditLimitSource FROM clients LIMIT 1"
         );
         results.tests.enumSelect = {
           success: true,
           data: enumRows,
-          method: 'query (text protocol)',
+          method: "query (text protocol)",
         };
       } catch (err: unknown) {
         const error = err as { message: string; code?: string; errno?: number };
@@ -131,12 +145,16 @@ export const debugRouter = router({
 
       try {
         // Test 4: SELECT * (full row)
-        const [fullRows] = await connection.query('SELECT * FROM clients LIMIT 1');
+        const [fullRows] = await connection.query(
+          "SELECT * FROM clients LIMIT 1"
+        );
         results.tests.fullSelect = {
           success: true,
           rowCount: (fullRows as Array<Record<string, unknown>>).length,
-          sampleKeys: (fullRows as Array<Record<string, unknown>>)[0] ? Object.keys((fullRows as Array<Record<string, unknown>>)[0]) : [],
-          method: 'query (text protocol)',
+          sampleKeys: (fullRows as Array<Record<string, unknown>>)[0]
+            ? Object.keys((fullRows as Array<Record<string, unknown>>)[0])
+            : [],
+          method: "query (text protocol)",
         };
       } catch (err: unknown) {
         const error = err as { message: string; code?: string; errno?: number };
@@ -150,12 +168,16 @@ export const debugRouter = router({
 
       try {
         // Test 5: Same query but with execute() (prepared statement / binary protocol)
-        const [execRows] = await connection.execute('SELECT * FROM clients LIMIT 1');
+        const [execRows] = await connection.execute(
+          "SELECT * FROM clients LIMIT 1"
+        );
         results.tests.fullSelectPrepared = {
           success: true,
           rowCount: (execRows as Array<Record<string, unknown>>).length,
-          sampleKeys: (execRows as Array<Record<string, unknown>>)[0] ? Object.keys((execRows as Array<Record<string, unknown>>)[0]) : [],
-          method: 'execute (binary protocol)',
+          sampleKeys: (execRows as Array<Record<string, unknown>>)[0]
+            ? Object.keys((execRows as Array<Record<string, unknown>>)[0])
+            : [],
+          method: "execute (binary protocol)",
         };
       } catch (err: unknown) {
         const error = err as { message: string; code?: string; errno?: number };
@@ -172,12 +194,12 @@ export const debugRouter = router({
       results.success = true;
     } catch (poolErr: unknown) {
       results.success = false;
-      results.poolError = poolErr instanceof Error ? poolErr.message : String(poolErr);
+      results.poolError =
+        poolErr instanceof Error ? poolErr.message : String(poolErr);
     }
 
     return results;
   }),
-
 
   /**
    * DIAG-003: Test Drizzle ORM queries specifically
@@ -188,7 +210,7 @@ export const debugRouter = router({
     assertDebugAllowed();
     const db = await getDb();
     if (!db) {
-      return { success: false, error: 'Database not available' };
+      return { success: false, error: "Database not available" };
     }
 
     const results: DebugResults = {
@@ -198,57 +220,83 @@ export const debugRouter = router({
 
     // Test 1: COUNT via Drizzle
     try {
-      const count = await db.select({ count: sql<number>`count(*)` }).from(clients);
+      const count = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(clients);
       results.tests.drizzleCount = {
         success: true,
         data: count,
       };
     } catch (err: unknown) {
-      const error = err as { message: string; cause?: { message?: string } | string };
+      const error = err as {
+        message: string;
+        cause?: { message?: string } | string;
+      };
       results.tests.drizzleCount = {
         success: false,
         error: error.message,
-        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
+        cause:
+          typeof error.cause === "object" && error.cause
+            ? error.cause.message || error.cause
+            : error.cause,
       };
     }
 
     // Test 2: Minimal columns (no ENUMs) via Drizzle
     try {
-      const minimal = await db.select({
-        id: clients.id,
-        name: clients.name,
-      }).from(clients).limit(1);
+      const minimal = await db
+        .select({
+          id: clients.id,
+          name: clients.name,
+        })
+        .from(clients)
+        .limit(1);
       results.tests.drizzleMinimal = {
         success: true,
         data: minimal,
       };
     } catch (err: unknown) {
-      const error = err as { message: string; cause?: { message?: string } | string };
+      const error = err as {
+        message: string;
+        cause?: { message?: string } | string;
+      };
       results.tests.drizzleMinimal = {
         success: false,
         error: error.message,
-        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
+        cause:
+          typeof error.cause === "object" && error.cause
+            ? error.cause.message || error.cause
+            : error.cause,
       };
     }
 
     // Test 3: With ENUM columns via Drizzle
     try {
-      const withEnums = await db.select({
-        id: clients.id,
-        name: clients.name,
-        cogsAdjustmentType: clients.cogsAdjustmentType,
-        creditLimitSource: clients.creditLimitSource,
-      }).from(clients).limit(1);
+      const withEnums = await db
+        .select({
+          id: clients.id,
+          name: clients.name,
+          cogsAdjustmentType: clients.cogsAdjustmentType,
+          creditLimitSource: clients.creditLimitSource,
+        })
+        .from(clients)
+        .limit(1);
       results.tests.drizzleWithEnums = {
         success: true,
         data: withEnums,
       };
     } catch (err: unknown) {
-      const error = err as { message: string; cause?: { message?: string } | string };
+      const error = err as {
+        message: string;
+        cause?: { message?: string } | string;
+      };
       results.tests.drizzleWithEnums = {
         success: false,
         error: error.message,
-        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
+        cause:
+          typeof error.cause === "object" && error.cause
+            ? error.cause.message || error.cause
+            : error.cause,
       };
     }
 
@@ -261,11 +309,17 @@ export const debugRouter = router({
         sampleKeys: full[0] ? Object.keys(full[0]) : [],
       };
     } catch (err: unknown) {
-      const error = err as { message: string; cause?: { message?: string } | string };
+      const error = err as {
+        message: string;
+        cause?: { message?: string } | string;
+      };
       results.tests.drizzleFull = {
         success: false,
         error: error.message,
-        cause: typeof error.cause === 'object' && error.cause ? error.cause.message || error.cause : error.cause,
+        cause:
+          typeof error.cause === "object" && error.cause
+            ? error.cause.message || error.cause
+            : error.cause,
       };
     }
 
@@ -290,7 +344,9 @@ export const debugRouter = router({
 
       try {
         // Test 1: DESCRIBE the table to see column names
-        const [describeRows] = await connection.query('DESCRIBE leaderboard_weight_configs');
+        const [describeRows] = await connection.query(
+          "DESCRIBE leaderboard_weight_configs"
+        );
         results.tests.tableStructure = {
           success: true,
           columns: describeRows as unknown[],
@@ -305,7 +361,9 @@ export const debugRouter = router({
 
       try {
         // Test 2: Raw SELECT with client_type column
-        const [selectRows] = await connection.query('SELECT id, user_id, client_type FROM leaderboard_weight_configs LIMIT 1');
+        const [selectRows] = await connection.query(
+          "SELECT id, user_id, client_type FROM leaderboard_weight_configs LIMIT 1"
+        );
         results.tests.selectClientType = {
           success: true,
           data: selectRows,
@@ -320,7 +378,9 @@ export const debugRouter = router({
 
       try {
         // Test 3: Raw SELECT with leaderboard_client_type column (should fail if column doesn't exist)
-        const [selectRows] = await connection.query('SELECT id, user_id, leaderboard_client_type FROM leaderboard_weight_configs LIMIT 1');
+        const [selectRows] = await connection.query(
+          "SELECT id, user_id, leaderboard_client_type FROM leaderboard_weight_configs LIMIT 1"
+        );
         results.tests.selectLeaderboardClientType = {
           success: true,
           data: selectRows,
@@ -338,7 +398,8 @@ export const debugRouter = router({
       results.success = true;
     } catch (poolErr: unknown) {
       results.success = false;
-      results.poolError = poolErr instanceof Error ? poolErr.message : String(poolErr);
+      results.poolError =
+        poolErr instanceof Error ? poolErr.message : String(poolErr);
     }
 
     return results;
@@ -361,26 +422,43 @@ export const debugRouter = router({
       const connection = await pool.getConnection();
 
       // Get all tables in the database
-      const [allTablesRows] = await connection.query('SHOW TABLES');
-      const tableNames = (allTablesRows as Array<Record<string, unknown>>).map((row) => String(Object.values(row)[0]));
+      const [allTablesRows] = await connection.query("SHOW TABLES");
+      const tableNames = (allTablesRows as Array<Record<string, unknown>>).map(
+        row => String(Object.values(row)[0])
+      );
       results.allTables = tableNames;
       results.tableCount = tableNames.length;
 
       // Check for drizzle migrations table
-      const [migrationsTable] = await connection.query("SHOW TABLES LIKE '__drizzle_migrations'");
+      const [migrationsTable] = await connection.query(
+        "SHOW TABLES LIKE '__drizzle_migrations'"
+      );
       results.hasMigrationsTable = (migrationsTable as unknown[]).length > 0;
 
       if (results.hasMigrationsTable) {
-        const [migrations] = await connection.query('SELECT * FROM __drizzle_migrations ORDER BY id');
+        const [migrations] = await connection.query(
+          "SELECT * FROM __drizzle_migrations ORDER BY id"
+        );
         results.appliedMigrations = migrations;
       }
 
       // Check for key tables that should exist
       const keyTables = [
-        'clients', 'vendors', 'products', 'batches', 'orders', 'invoices', 'payments',
-        'users', 'strains', 'purchaseOrders', 'purchase_order_line_items',
-        'leaderboard_weight_configs', 'leaderboard_default_weights',
-        'leaderboard_metric_cache', 'leaderboard_rank_history'
+        "clients",
+        "vendors",
+        "products",
+        "batches",
+        "orders",
+        "invoices",
+        "payments",
+        "users",
+        "strains",
+        "purchaseOrders",
+        "purchase_order_line_items",
+        "leaderboard_weight_configs",
+        "leaderboard_default_weights",
+        "leaderboard_metric_cache",
+        "leaderboard_rank_history",
       ];
 
       results.keyTableStatus = {};
@@ -415,11 +493,11 @@ export const debugRouter = router({
 
       // Check if tables exist
       const tables = [
-        'leaderboard_weight_configs',
-        'leaderboard_default_weights', 
-        'leaderboard_metric_cache',
-        'leaderboard_rank_history',
-        'dashboard_widget_configs'
+        "leaderboard_weight_configs",
+        "leaderboard_default_weights",
+        "leaderboard_metric_cache",
+        "leaderboard_rank_history",
+        "dashboard_widget_configs",
       ];
 
       for (const table of tables) {
@@ -432,7 +510,9 @@ export const debugRouter = router({
           if ((rows as Array<Record<string, unknown>>).length > 0) {
             // Get column info
             const [cols] = await connection.query(`DESCRIBE ${table}`);
-            results.tests[table].columns = (cols as Array<{ Field: string }>).map((c) => c.Field);
+            results.tests[table].columns = (
+              cols as Array<{ Field: string }>
+            ).map(c => c.Field);
           }
         } catch (err: unknown) {
           results.tests[table] = {
@@ -446,7 +526,8 @@ export const debugRouter = router({
       results.success = true;
     } catch (poolErr: unknown) {
       results.success = false;
-      results.poolError = poolErr instanceof Error ? poolErr.message : String(poolErr);
+      results.poolError =
+        poolErr instanceof Error ? poolErr.message : String(poolErr);
     }
 
     return results;
@@ -461,20 +542,23 @@ export const debugRouter = router({
     assertDebugAllowed();
     try {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) throw new Error("Database not available");
 
       const timestamp = new Date().toISOString();
 
       // Products breakdown
-      const [
-        productsTotal,
-        productsActive,
-        productsDeleted,
-      ] = await Promise.all([
-        db.select({ count: sql<number>`count(*)` }).from(products),
-        db.select({ count: sql<number>`count(*)` }).from(products).where(isNull(products.deletedAt)),
-        db.select({ count: sql<number>`count(*)` }).from(products).where(sql`${products.deletedAt} IS NOT NULL`),
-      ]);
+      const [productsTotal, productsActive, productsDeleted] =
+        await Promise.all([
+          db.select({ count: sql<number>`count(*)` }).from(products),
+          db
+            .select({ count: sql<number>`count(*)` })
+            .from(products)
+            .where(isNull(products.deletedAt)),
+          db
+            .select({ count: sql<number>`count(*)` })
+            .from(products)
+            .where(sql`${products.deletedAt} IS NOT NULL`),
+        ]);
 
       // Samples breakdown by status
       const [
@@ -485,19 +569,34 @@ export const debugRouter = router({
         samplesCancelled,
       ] = await Promise.all([
         db.select({ count: sql<number>`count(*)` }).from(sampleRequests),
-        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'PENDING')),
-        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'FULFILLED')),
-        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'RETURNED')),
-        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'CANCELLED')),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(sampleRequests)
+          .where(eq(sampleRequests.sampleRequestStatus, "PENDING")),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(sampleRequests)
+          .where(eq(sampleRequests.sampleRequestStatus, "FULFILLED")),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(sampleRequests)
+          .where(eq(sampleRequests.sampleRequestStatus, "RETURNED")),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(sampleRequests)
+          .where(eq(sampleRequests.sampleRequestStatus, "CANCELLED")),
       ]);
 
       // Brands and Strains for product creation
-      const [
-        brandsCount,
-        strainsCount,
-      ] = await Promise.all([
-        db.select({ count: sql<number>`count(*)` }).from(vendors).where(isNull(vendors.deletedAt)),
-        db.select({ count: sql<number>`count(*)` }).from(sql`strains`).where(sql`deleted_at IS NULL`),
+      const [brandsCount, strainsCount] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(clients)
+          .where(eq(clients.isSeller, true)),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(sql`strains`)
+          .where(sql`deleted_at IS NULL`),
       ]);
 
       return {
@@ -508,7 +607,10 @@ export const debugRouter = router({
             total: Number(productsTotal[0]?.count || 0),
             active: Number(productsActive[0]?.count || 0),
             deleted: Number(productsDeleted[0]?.count || 0),
-            issue: Number(productsActive[0]?.count || 0) === 0 ? 'POSSIBLE_ISSUE: No active products found' : null,
+            issue:
+              Number(productsActive[0]?.count || 0) === 0
+                ? "POSSIBLE_ISSUE: No active products found"
+                : null,
           },
           samples: {
             total: Number(samplesTotal[0]?.count || 0),
@@ -516,7 +618,10 @@ export const debugRouter = router({
             fulfilled: Number(samplesFulfilled[0]?.count || 0),
             returned: Number(samplesReturned[0]?.count || 0),
             cancelled: Number(samplesCancelled[0]?.count || 0),
-            issue: Number(samplesTotal[0]?.count || 0) === 0 ? 'POSSIBLE_ISSUE: No samples found' : null,
+            issue:
+              Number(samplesTotal[0]?.count || 0) === 0
+                ? "POSSIBLE_ISSUE: No samples found"
+                : null,
           },
           related: {
             brands: Number(brandsCount[0]?.count || 0),
@@ -524,11 +629,12 @@ export const debugRouter = router({
           },
         },
         recommendations: [
-          Number(productsActive[0]?.count || 0) === 0 && Number(productsDeleted[0]?.count || 0) > 0
+          Number(productsActive[0]?.count || 0) === 0 &&
+          Number(productsDeleted[0]?.count || 0) > 0
             ? 'All products are archived. Toggle "Show Archived" to view them.'
             : null,
           Number(samplesTotal[0]?.count || 0) === 0
-            ? 'No sample requests exist. Create a new sample request to test.'
+            ? "No sample requests exist. Create a new sample request to test."
             : null,
         ].filter(Boolean),
       };
@@ -549,7 +655,7 @@ export const debugRouter = router({
     assertDebugAllowed();
     try {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) throw new Error("Database not available");
 
       // DIAG-004: Use COUNT queries instead of SELECT * to avoid ENUM issues
       const [
@@ -561,7 +667,10 @@ export const debugRouter = router({
         invoicesCount,
         paymentsCount,
       ] = await Promise.all([
-        db.select({ count: sql<number>`count(*)` }).from(vendors),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(clients)
+          .where(eq(clients.isSeller, true)),
         db.select({ count: sql<number>`count(*)` }).from(clients),
         db.select({ count: sql<number>`count(*)` }).from(products),
         db.select({ count: sql<number>`count(*)` }).from(batches),
@@ -584,7 +693,11 @@ export const debugRouter = router({
       };
     } catch (error: unknown) {
       // FIX-009: Extract cause from DrizzleQueryError
-      const err = error as { message: string; code?: string; cause?: { sqlMessage?: string; message?: string; code?: string } };
+      const err = error as {
+        message: string;
+        code?: string;
+        cause?: { sqlMessage?: string; message?: string; code?: string };
+      };
       const cause = err.cause || {};
       return {
         success: false,

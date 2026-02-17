@@ -756,7 +756,7 @@ export function DirectIntakeWorkSurface() {
     isLoading: vendorsLoading,
     error: vendorsError,
     refetch: refetchVendors,
-  } = trpc.vendors.getAll.useQuery();
+  } = trpc.clients.list.useQuery({ clientTypes: ["seller"] });
 
   const vendors = useMemo<Array<{ id: number; name: string }>>(() => {
     const items =
