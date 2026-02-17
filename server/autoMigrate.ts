@@ -266,17 +266,11 @@ export async function runAutoMigrations() {
         `);
         console.info("  ✅ Created client_needs table");
       } catch (error) {
-        if (
-          error instanceof Error
-            ? error.message
-            : String(error).includes("already exists")
-        ) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
           console.info("  ℹ️  client_needs table already exists");
         } else {
-          console.info(
-            "  ⚠️  client_needs table:",
-            error instanceof Error ? error.message : String(error)
-          );
+          console.info("  ⚠️  client_needs table:", errMsg);
         }
       }
 
@@ -303,9 +297,9 @@ export async function runAutoMigrations() {
         console.info("  ✅ Created vendor_supply table");
       } catch (error) {
         if (
-          error instanceof Error
-            ? error.message
-            : String(error).includes("already exists")
+          (error instanceof Error ? error.message : String(error)).includes(
+            "already exists"
+          )
         ) {
           console.info("  ℹ️  vendor_supply table already exists");
         } else {
@@ -340,7 +334,7 @@ export async function runAutoMigrations() {
       } catch (error) {
         if (
           error instanceof Error
-            ? error.message
+            ? error.message.includes("already exists")
             : String(error).includes("already exists")
         ) {
           console.info("  ℹ️  match_records table already exists");
@@ -1727,6 +1721,19 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add index on product_images.deleted_at for soft-delete query performance
+    try {
+      await db.execute(
+        sql`CREATE INDEX idx_product_images_deleted_at ON product_images(deleted_at)`
+      );
+      console.info("  ✅ Added idx_product_images_deleted_at index");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate")) {
+        console.info("  ℹ️  idx_product_images_deleted_at already exists");
+      }
+    }
+
     // ========================================================================
     // DEMO MEDIA BLOBS TABLE (TER-118)
     // ========================================================================
@@ -1929,7 +1936,9 @@ export async function runAutoMigrations() {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.info("  ℹ️  referral_settings.credit_percentage already exists");
+        console.info(
+          "  ℹ️  referral_settings.credit_percentage already exists"
+        );
       } else {
         logger.error(
           { error: errMsg, fullError: error },
@@ -1965,7 +1974,9 @@ export async function runAutoMigrations() {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.info("  ℹ️  referral_settings.max_credit_amount already exists");
+        console.info(
+          "  ℹ️  referral_settings.max_credit_amount already exists"
+        );
       } else {
         logger.error(
           { error: errMsg, fullError: error },
@@ -1983,7 +1994,9 @@ export async function runAutoMigrations() {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
-        console.info("  ℹ️  referral_settings.credit_expiry_days already exists");
+        console.info(
+          "  ℹ️  referral_settings.credit_expiry_days already exists"
+        );
       } else {
         logger.error(
           { error: errMsg, fullError: error },
@@ -1997,7 +2010,9 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`CREATE UNIQUE INDEX unique_tier ON referral_settings(client_tier)`
       );
-      console.info("  ✅ Added unique_tier index on referral_settings.client_tier");
+      console.info(
+        "  ✅ Added unique_tier index on referral_settings.client_tier"
+      );
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {

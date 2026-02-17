@@ -5,7 +5,12 @@ import {
   liveShoppingSessions,
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
-import { batches, products, productImages, productMedia } from "../../drizzle/schema";
+import {
+  batches,
+  products,
+  productImages,
+  productMedia,
+} from "../../drizzle/schema";
 import { eq, and, or, like, gt, isNull, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
@@ -148,13 +153,19 @@ export const vipPortalLiveShoppingRouter = router({
    * Requires sessionId to verify the client has access to this session
    */
   getBatchDetails: vipPortalProcedure
-    .input(z.object({ 
-      batchId: z.number(),
-      sessionId: z.number() // Required to verify session ownership
-    }))
+    .input(
+      z.object({
+        batchId: z.number(),
+        sessionId: z.number(), // Required to verify session ownership
+      })
+    )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
 
       // Verify session ownership first
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -174,7 +185,9 @@ export const vipPortalLiveShoppingRouter = router({
           code: batches.code,
           productName: products.nameCanonical,
           description: products.description,
-          imageUrl: sql<string | null>`COALESCE(${productImages.imageUrl}, ${productMedia.url})`.as(
+          imageUrl: sql<
+            string | null
+          >`COALESCE(${productImages.imageUrl}, ${productMedia.url})`.as(
             "imageUrl"
           ),
           // Note: Price comes from pricing engine, not stored on products
@@ -190,7 +203,8 @@ export const vipPortalLiveShoppingRouter = router({
               isNull(productImages.status),
               eq(productImages.status, "APPROVED"),
               eq(productImages.status, "PENDING")
-            )
+            ),
+            isNull(productImages.deletedAt)
           )
         )
         .leftJoin(
@@ -224,7 +238,11 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -270,7 +288,11 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -311,7 +333,11 @@ export const vipPortalLiveShoppingRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
 
       // Verify Session Ownership
       const session = await db.query.liveShoppingSessions.findFirst({
@@ -337,7 +363,11 @@ export const vipPortalLiveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
 
       const session = await db.query.liveShoppingSessions.findFirst({
         where: eq(liveShoppingSessions.id, input.sessionId),
@@ -399,11 +429,18 @@ export const vipPortalLiveShoppingRouter = router({
       }
 
       if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Session is not active",
+        });
       }
 
       // Update item status
-      await sessionCartService.updateItemStatus(input.sessionId, input.cartItemId, input.status);
+      await sessionCartService.updateItemStatus(
+        input.sessionId,
+        input.cartItemId,
+        input.status
+      );
 
       // Emit event for real-time updates to staff
       sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
@@ -445,7 +482,10 @@ export const vipPortalLiveShoppingRouter = router({
       }
 
       if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Session is not active",
+        });
       }
 
       try {
@@ -490,7 +530,10 @@ export const vipPortalLiveShoppingRouter = router({
       }
 
       if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Session is not active",
+        });
       }
 
       const trimmedQuery = input.query.trim();
@@ -544,9 +587,11 @@ export const vipPortalLiveShoppingRouter = router({
 
       const cart = await sessionCartService.getCart(input.sessionId);
 
-      const sampleRequests = cart.items.filter((i) => i.itemStatus === "SAMPLE_REQUEST");
-      const interested = cart.items.filter((i) => i.itemStatus === "INTERESTED");
-      const toPurchase = cart.items.filter((i) => i.itemStatus === "TO_PURCHASE");
+      const sampleRequests = cart.items.filter(
+        i => i.itemStatus === "SAMPLE_REQUEST"
+      );
+      const interested = cart.items.filter(i => i.itemStatus === "INTERESTED");
+      const toPurchase = cart.items.filter(i => i.itemStatus === "TO_PURCHASE");
 
       return {
         sampleRequests,
@@ -558,7 +603,9 @@ export const vipPortalLiveShoppingRouter = router({
           toPurchaseCount: toPurchase.length,
           toPurchaseValue: toPurchase.reduce(
             (sum, i) =>
-              sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+              sum +
+              parseFloat(i.quantity.toString()) *
+                parseFloat(i.unitPrice.toString()),
             0
           ),
         },
@@ -597,7 +644,10 @@ export const vipPortalLiveShoppingRouter = router({
       }
 
       if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Session is not active",
+        });
       }
 
       // Get current cart item
@@ -609,7 +659,10 @@ export const vipPortalLiveShoppingRouter = router({
       });
 
       if (!cartItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cart item not found",
+        });
       }
 
       const currentPrice = parseFloat(cartItem.unitPrice?.toString() || "0");
@@ -691,16 +744,23 @@ export const vipPortalLiveShoppingRouter = router({
       });
 
       if (!cartItem || !cartItem.negotiationData) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Negotiation not found",
+        });
       }
 
       // Drizzle returns JSON as parsed object, but handle string case for safety
-      const negotiationData = typeof cartItem.negotiationData === "string"
-        ? JSON.parse(cartItem.negotiationData)
-        : cartItem.negotiationData;
+      const negotiationData =
+        typeof cartItem.negotiationData === "string"
+          ? JSON.parse(cartItem.negotiationData)
+          : cartItem.negotiationData;
 
       if (!negotiationData || negotiationData.status !== "COUNTER_OFFERED") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No counter-offer to accept" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No counter-offer to accept",
+        });
       }
 
       // Add acceptance to history
@@ -720,7 +780,8 @@ export const vipPortalLiveShoppingRouter = router({
         .update(sessionCartItems)
         .set({
           unitPrice: negotiationData.counterPrice.toString(),
-          quantity: negotiationData.counterQuantity?.toString() || cartItem.quantity,
+          quantity:
+            negotiationData.counterQuantity?.toString() || cartItem.quantity,
           negotiationStatus: "ACCEPTED",
           negotiationData: negotiationData,
         })
@@ -774,7 +835,10 @@ export const vipPortalLiveShoppingRouter = router({
       });
 
       if (!cartItem) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cart item not found",
+        });
       }
 
       if (!cartItem.negotiationData) {
@@ -782,9 +846,10 @@ export const vipPortalLiveShoppingRouter = router({
       }
 
       // Drizzle returns JSON as parsed object, but handle string case for safety
-      const negotiationData = typeof cartItem.negotiationData === "string"
-        ? JSON.parse(cartItem.negotiationData)
-        : cartItem.negotiationData;
+      const negotiationData =
+        typeof cartItem.negotiationData === "string"
+          ? JSON.parse(cartItem.negotiationData)
+          : cartItem.negotiationData;
 
       if (!negotiationData) {
         return { hasNegotiation: false, history: [] };
