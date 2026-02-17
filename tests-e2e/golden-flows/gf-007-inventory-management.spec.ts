@@ -18,16 +18,20 @@ test.describe("Golden Flow: GF-007 Inventory Management", (): void => {
     await page.goto("/inventory");
     await page.waitForLoadState("networkidle");
 
-    const header = page.locator('h1:has-text("Inventory")');
+    const header = page
+      .locator('[data-testid="inventory-header"]')
+      .or(page.locator('main h1:has-text("Inventory")'))
+      .or(page.locator('h1:has-text("Inventory")'));
     await expect(header).toBeVisible({ timeout: 5000 });
 
-    const batchRow = page.locator('[role="row"], tr').first();
+    const batchRow = page.locator('[role="row"]').or(page.locator("tr")).first();
     if (await batchRow.isVisible().catch(() => false)) {
       await batchRow.click();
 
-      const adjustButton = page.locator(
-        'button:has-text("Adjust"), button:has-text("Edit"), button:has-text("Update Qty")'
-      );
+      const adjustButton = page
+        .locator('button:has-text("Adjust")')
+        .or(page.locator('button:has-text("Edit")'))
+        .or(page.locator('button:has-text("Update Qty")'));
       if (
         await adjustButton
           .first()
