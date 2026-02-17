@@ -18,56 +18,18 @@ import {
 // Type Definitions (matching the seeder types)
 // ============================================================================
 
-type InvoiceStatus = "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
-
-interface Invoice {
-  id: number;
-  invoiceNumber: string;
-  customerId: number;
-  totalAmount: string;
-  amountPaid: string;
-  amountDue: string;
-  status: InvoiceStatus;
-}
-
-interface Payment {
-  id: number;
-  paymentNumber: string;
-  invoiceId: number | null;
-  amount: string;
-  customerId: number | null;
-}
-
-interface InvoiceUpdate {
-  invoiceId: number;
-  newAmountPaid: string;
-  newAmountDue: string;
-  newStatus: InvoiceStatus;
-}
+type InvoiceStatus =
+  | "DRAFT"
+  | "SENT"
+  | "VIEWED"
+  | "PARTIAL"
+  | "PAID"
+  | "OVERDUE"
+  | "VOID";
 
 // ============================================================================
 // Arbitraries (Generators)
 // ============================================================================
-
-const invoiceStatusArb = fc.constantFrom<InvoiceStatus>(
-  "DRAFT",
-  "SENT",
-  "VIEWED",
-  "PARTIAL",
-  "PAID",
-  "OVERDUE",
-  "VOID"
-);
-
-const invoiceArb = fc.record({
-  id: fc.integer({ min: 1, max: 10000 }),
-  invoiceNumber: fc.stringMatching(/^INV-[0-9]{6}$/),
-  customerId: fc.integer({ min: 1, max: 1000 }),
-  totalAmount: fc.float({ min: Math.fround(100), max: Math.fround(100000), noNaN: true }).map((n) => n.toFixed(2)),
-  amountPaid: fc.float({ min: Math.fround(0), max: Math.fround(50000), noNaN: true }).map((n) => n.toFixed(2)),
-  amountDue: fc.float({ min: Math.fround(0), max: Math.fround(100000), noNaN: true }).map((n) => n.toFixed(2)),
-  status: invoiceStatusArb,
-});
 
 // Generate invoice with consistent amounts (amountPaid + amountDue = totalAmount)
 const consistentInvoiceArb = fc
@@ -75,8 +37,16 @@ const consistentInvoiceArb = fc
     id: fc.integer({ min: 1, max: 10000 }),
     invoiceNumber: fc.stringMatching(/^INV-[0-9]{6}$/),
     customerId: fc.integer({ min: 1, max: 1000 }),
-    totalAmount: fc.float({ min: Math.fround(100), max: Math.fround(100000), noNaN: true }),
-    paidRatio: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+    totalAmount: fc.float({
+      min: Math.fround(100),
+      max: Math.fround(100000),
+      noNaN: true,
+    }),
+    paidRatio: fc.float({
+      min: Math.fround(0),
+      max: Math.fround(1),
+      noNaN: true,
+    }),
   })
   .map(({ id, invoiceNumber, customerId, totalAmount, paidRatio }) => {
     const amountPaid = totalAmount * paidRatio;
@@ -100,7 +70,11 @@ const consistentInvoiceArb = fc
     };
   });
 
-const paymentAmountArb = fc.float({ min: Math.fround(0.01), max: Math.fround(50000), noNaN: true });
+const paymentAmountArb = fc.float({
+  min: Math.fround(0.01),
+  max: Math.fround(50000),
+  noNaN: true,
+});
 
 // ============================================================================
 // Property Tests
@@ -132,9 +106,11 @@ describe("Invoice-Payment Linkage", () => {
               paymentAmount
             );
 
-            // Property: newAmountPaid should equal currentAmountPaid + paymentAmount
-            const expectedAmountPaid = currentAmountPaid + paymentAmount;
-            expect(parseFloat(update.newAmountPaid)).toBeCloseTo(expectedAmountPaid, 2);
+            // Property: newAmountPaid should equal currentAmountPaid + paymentAmount (rounded to 2dp)
+            const expectedAmountPaid = (
+              currentAmountPaid + paymentAmount
+            ).toFixed(2);
+            expect(update.newAmountPaid).toBe(expectedAmountPaid);
           }
         ),
         { numRuns: 100 }
@@ -158,8 +134,14 @@ describe("Invoice-Payment Linkage", () => {
             );
 
             // Property: newAmountDue should equal max(0, totalAmount - newAmountPaid)
-            const expectedAmountDue = Math.max(0, totalAmount - (currentAmountPaid + paymentAmount));
-            expect(parseFloat(update.newAmountDue)).toBeCloseTo(expectedAmountDue, 2);
+            const expectedAmountDue = Math.max(
+              0,
+              totalAmount - (currentAmountPaid + paymentAmount)
+            );
+            expect(parseFloat(update.newAmountDue)).toBeCloseTo(
+              expectedAmountDue,
+              2
+            );
           }
         ),
         { numRuns: 100 }
@@ -168,26 +150,23 @@ describe("Invoice-Payment Linkage", () => {
 
     it("should set status to PAID when fully paid", () => {
       fc.assert(
-        fc.property(
-          consistentInvoiceArb,
-          (invoice) => {
-            const currentAmountPaid = parseFloat(invoice.amountPaid);
-            const totalAmount = parseFloat(invoice.totalAmount);
-            // Payment that fully pays the invoice
-            const remainingDue = totalAmount - currentAmountPaid;
-            const paymentAmount = remainingDue + 10; // Overpay slightly
+        fc.property(consistentInvoiceArb, invoice => {
+          const currentAmountPaid = parseFloat(invoice.amountPaid);
+          const totalAmount = parseFloat(invoice.totalAmount);
+          // Payment that fully pays the invoice
+          const remainingDue = totalAmount - currentAmountPaid;
+          const paymentAmount = remainingDue + 10; // Overpay slightly
 
-            const update = calculateInvoiceUpdate(
-              invoice.id,
-              currentAmountPaid,
-              totalAmount,
-              paymentAmount
-            );
+          const update = calculateInvoiceUpdate(
+            invoice.id,
+            currentAmountPaid,
+            totalAmount,
+            paymentAmount
+          );
 
-            // Property: status should be PAID when amountPaid >= totalAmount
-            expect(update.newStatus).toBe("PAID");
-          }
-        ),
+          // Property: status should be PAID when amountPaid >= totalAmount
+          expect(update.newStatus).toBe("PAID");
+        }),
         { numRuns: 100 }
       );
     });
@@ -199,7 +178,11 @@ describe("Invoice-Payment Linkage", () => {
           id: fc.integer({ min: 1, max: 10000 }),
           invoiceNumber: fc.stringMatching(/^INV-[0-9]{6}$/),
           customerId: fc.integer({ min: 1, max: 1000 }),
-          totalAmount: fc.float({ min: Math.fround(1000), max: Math.fround(100000), noNaN: true }),
+          totalAmount: fc.float({
+            min: Math.fround(1000),
+            max: Math.fround(100000),
+            noNaN: true,
+          }),
         })
         .map(({ id, invoiceNumber, customerId, totalAmount }) => ({
           id,
@@ -214,7 +197,11 @@ describe("Invoice-Payment Linkage", () => {
       fc.assert(
         fc.property(
           unpaidInvoiceArb,
-          fc.float({ min: Math.fround(0.1), max: Math.fround(0.9), noNaN: true }),
+          fc.float({
+            min: Math.fround(0.1),
+            max: Math.fround(0.9),
+            noNaN: true,
+          }),
           (invoice, paymentRatio) => {
             const totalAmount = parseFloat(invoice.totalAmount);
             // Partial payment (between 10% and 90% of total)
@@ -264,7 +251,11 @@ describe("Invoice-Payment Linkage", () => {
         fc.property(
           consistentInvoiceArb,
           // Large payment that could exceed total
-          fc.float({ min: Math.fround(1), max: Math.fround(200000), noNaN: true }),
+          fc.float({
+            min: Math.fround(1),
+            max: Math.fround(200000),
+            noNaN: true,
+          }),
           (invoice, paymentAmount) => {
             const currentAmountPaid = parseFloat(invoice.amountPaid);
             const totalAmount = parseFloat(invoice.totalAmount);
@@ -289,8 +280,12 @@ describe("Invoice-Payment Linkage", () => {
     it("should return PAID when amountPaid equals totalAmount", () => {
       fc.assert(
         fc.property(
-          fc.float({ min: Math.fround(100), max: Math.fround(100000), noNaN: true }),
-          (amount) => {
+          fc.float({
+            min: Math.fround(100),
+            max: Math.fround(100000),
+            noNaN: true,
+          }),
+          amount => {
             const status = calculateInvoiceStatus(amount, amount);
             expect(status).toBe("PAID");
           }
@@ -302,10 +297,21 @@ describe("Invoice-Payment Linkage", () => {
     it("should return PAID when amountPaid exceeds totalAmount", () => {
       fc.assert(
         fc.property(
-          fc.float({ min: Math.fround(100), max: Math.fround(100000), noNaN: true }),
-          fc.float({ min: Math.fround(1), max: Math.fround(1000), noNaN: true }),
+          fc.float({
+            min: Math.fround(100),
+            max: Math.fround(100000),
+            noNaN: true,
+          }),
+          fc.float({
+            min: Math.fround(1),
+            max: Math.fround(1000),
+            noNaN: true,
+          }),
           (totalAmount, overpayment) => {
-            const status = calculateInvoiceStatus(totalAmount, totalAmount + overpayment);
+            const status = calculateInvoiceStatus(
+              totalAmount,
+              totalAmount + overpayment
+            );
             expect(status).toBe("PAID");
           }
         ),
@@ -316,8 +322,16 @@ describe("Invoice-Payment Linkage", () => {
     it("should return PARTIAL when amountPaid is between 0 and totalAmount", () => {
       fc.assert(
         fc.property(
-          fc.float({ min: Math.fround(100), max: Math.fround(100000), noNaN: true }),
-          fc.float({ min: Math.fround(0.01), max: Math.fround(0.99), noNaN: true }),
+          fc.float({
+            min: Math.fround(100),
+            max: Math.fround(100000),
+            noNaN: true,
+          }),
+          fc.float({
+            min: Math.fround(0.01),
+            max: Math.fround(0.99),
+            noNaN: true,
+          }),
           (totalAmount, ratio) => {
             const amountPaid = totalAmount * ratio;
             const status = calculateInvoiceStatus(totalAmount, amountPaid);
@@ -331,8 +345,12 @@ describe("Invoice-Payment Linkage", () => {
     it("should return SENT when amountPaid is 0", () => {
       fc.assert(
         fc.property(
-          fc.float({ min: Math.fround(100), max: Math.fround(100000), noNaN: true }),
-          (totalAmount) => {
+          fc.float({
+            min: Math.fround(100),
+            max: Math.fround(100000),
+            noNaN: true,
+          }),
+          totalAmount => {
             const status = calculateInvoiceStatus(totalAmount, 0);
             expect(status).toBe("SENT");
           }
