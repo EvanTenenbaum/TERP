@@ -108,25 +108,17 @@ expected_db:
         performedBy_not_null: true
       count_gte: 1
 
-  # 6. Bill created and linked to PO
-  bills:
-    - where:
-        referenceType: "PURCHASE_ORDER"
-        deletedAt_null: true
-      expect:
-        billNumber_not_null: true
-        vendorId_not_null: true
-        totalAmount_gt: 0
-        createdBy_not_null: true
-      count_gte: 1
-
-  # 7. Bill is fully paid
+  # 6. Bill created, linked to PO, and fully paid
   bills:
     - where:
         referenceType: "PURCHASE_ORDER"
         status: "PAID"
         deletedAt_null: true
       expect:
+        billNumber_not_null: true
+        vendorId_not_null: true
+        totalAmount_gt: 0
+        createdBy_not_null: true
         amountPaid_gt: 0
         amountDue_lte: 0
       count_gte: 1
