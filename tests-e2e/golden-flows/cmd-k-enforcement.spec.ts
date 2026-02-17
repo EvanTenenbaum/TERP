@@ -32,9 +32,9 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await page.waitForTimeout(200);
 
       const pageSearchInput = page.getByTestId("orders-search-input");
-      const paletteInput = page.locator(
-        '[cmdk-input], input[placeholder*="command or search" i]'
-      );
+      const paletteInput = page
+        .locator("[cmdk-input]")
+        .or(page.locator('input[placeholder*="command or search" i]'));
 
       const pageSearchVisible = await pageSearchInput
         .isVisible()
@@ -55,9 +55,9 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await page.waitForLoadState("networkidle");
 
       const formField = page
-        .locator(
-          'input[placeholder*="customer" i], textarea[placeholder*="note" i], textarea'
-        )
+        .locator('input[placeholder*="customer" i]')
+        .or(page.locator('textarea[placeholder*="note" i]'))
+        .or(page.locator("textarea"))
         .first();
       const initialValue = (await formField.isVisible().catch(() => false))
         ? await formField.inputValue().catch(() => "")
@@ -81,9 +81,11 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
       await page.waitForTimeout(300);
 
-      const commandPalette = page.locator(
-        '[data-testid="command-palette"], [cmdk-root], [cmdk-input], input[placeholder*="command or search" i]'
-      );
+      const commandPalette = page
+        .locator('[data-testid="command-palette"]')
+        .or(page.locator("[cmdk-root]"))
+        .or(page.locator("[cmdk-input]"))
+        .or(page.locator('input[placeholder*="command or search" i]'));
       const searchInput = page.getByTestId("orders-search-input");
 
       const paletteVisible = await commandPalette
@@ -99,10 +101,44 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
 
       expect(paletteVisible || searchFocused).toBeTruthy();
     });
+
+    test("Cmd+K should focus search input on pick-pack page", async ({
+      page,
+    }) => {
+      await page.goto("/pick-pack");
+      await page.waitForLoadState("networkidle");
+
+      const isMac = process.platform === "darwin";
+      await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
+      await page.waitForTimeout(200);
+
+      const pickPackSearch = page.getByTestId("pick-pack-search-input");
+      const hasPickPackSearch = await pickPackSearch
+        .isVisible()
+        .catch(() => false);
+
+      if (hasPickPackSearch) {
+        const isFocused = await pickPackSearch.evaluate(
+          el => document.activeElement === el
+        );
+        expect(isFocused).toBe(true);
+      } else {
+        const paletteInput = page
+          .locator("[cmdk-input]")
+          .or(page.locator('input[placeholder*="command or search" i]'));
+        const paletteVisible = await paletteInput
+          .first()
+          .isVisible()
+          .catch(() => false);
+        expect(paletteVisible).toBeTruthy();
+      }
+    });
   });
 
   test.describe("Command Palette Actions", () => {
-    test("command palette should offer navigation commands", async ({ page }) => {
+    test("command palette should offer navigation commands", async ({
+      page,
+    }) => {
       await page.goto("/");
       await page.waitForLoadState("networkidle");
 
@@ -110,17 +146,29 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
       await page.waitForTimeout(300);
 
-      const commandPalette = page.locator('[data-testid="command-palette"], [cmdk-root], [role="combobox"]');
-      if (await commandPalette.isVisible().catch(() => false)) {
-        // Type a navigation target
-        await page.keyboard.type("order");
-        await page.waitForTimeout(200);
-
-        // Should show navigation options
-        const options = page.locator('[cmdk-item], [role="option"], [data-testid="command-item"]');
-        const optionCount = await options.count();
-        expect(optionCount).toBeGreaterThanOrEqual(0);
+      const commandPalette = page
+        .locator('[data-testid="command-palette"]')
+        .or(page.locator("[cmdk-root]"))
+        .or(page.locator('[role="combobox"]'));
+      if (!(await commandPalette.isVisible().catch(() => false))) {
+        test.skip(
+          true,
+          "Command palette did not open — cannot test navigation commands"
+        );
+        return;
       }
+
+      // Type a navigation target
+      await page.keyboard.type("order");
+      await page.waitForTimeout(200);
+
+      // Should show navigation options
+      const options = page
+        .locator("[cmdk-item]")
+        .or(page.locator('[role="option"]'))
+        .or(page.locator('[data-testid="command-item"]'));
+      const optionCount = await options.count();
+      expect(optionCount).toBeGreaterThanOrEqual(1);
     });
 
     test("command palette should NOT offer data entry", async ({ page }) => {
@@ -131,18 +179,28 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
       await page.waitForTimeout(300);
 
-      const commandPalette = page.locator('[data-testid="command-palette"], [cmdk-root]');
-      if (await commandPalette.isVisible().catch(() => false)) {
-        // Commands should be actions/navigation, not data entry
-        const options = page.locator('[cmdk-item], [role="option"]');
-        const optionTexts = await options.allTextContents();
+      const commandPalette = page
+        .locator('[data-testid="command-palette"]')
+        .or(page.locator("[cmdk-root]"));
+      if (!(await commandPalette.isVisible().catch(() => false))) {
+        test.skip(
+          true,
+          "Command palette did not open — cannot test data entry absence"
+        );
+        return;
+      }
 
-        // Should NOT have data entry phrases
-        for (const text of optionTexts) {
-          expect(text.toLowerCase()).not.toContain("enter amount");
-          expect(text.toLowerCase()).not.toContain("fill form");
-          expect(text.toLowerCase()).not.toContain("type here");
-        }
+      // Commands should be actions/navigation, not data entry
+      const options = page
+        .locator("[cmdk-item]")
+        .or(page.locator('[role="option"]'));
+      const optionTexts = await options.allTextContents();
+
+      // Should NOT have data entry phrases
+      for (const text of optionTexts) {
+        expect(text.toLowerCase()).not.toContain("enter amount");
+        expect(text.toLowerCase()).not.toContain("fill form");
+        expect(text.toLowerCase()).not.toContain("type here");
       }
     });
 
@@ -152,18 +210,40 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
 
       const isMac = process.platform === "darwin";
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(300);
+
+      // Verify Cmd+K actually opened something (palette or search focus)
+      const commandPalette = page
+        .locator('[data-testid="command-palette"]')
+        .or(page.locator("[cmdk-root]"))
+        .or(page.locator("[cmdk-input]"));
+      const searchInput = page.getByTestId("orders-search-input");
+
+      const paletteOpened = await commandPalette
+        .first()
+        .isVisible()
+        .catch(() => false);
+      const searchFocused =
+        (await searchInput.count()) > 0
+          ? await searchInput
+              .evaluate(el => document.activeElement === el)
+              .catch(() => false)
+          : false;
+
+      if (!paletteOpened && !searchFocused) {
+        test.skip(
+          true,
+          "Cmd+K did not open palette or focus search — skip escape test"
+        );
+        return;
+      }
 
       // Escape should close
       await page.keyboard.press("Escape");
       await page.waitForTimeout(200);
 
-      const commandPalette = page.locator(
-        '[data-testid="command-palette"], [cmdk-root], [cmdk-input]'
-      );
-      const isVisible = await commandPalette.first().isVisible().catch(() => false);
-      if (isVisible) {
-        await expect(commandPalette.first()).not.toBeVisible();
+      if (paletteOpened) {
+        await expect(commandPalette.first()).not.toBeVisible({ timeout: 3000 });
       }
     });
   });
@@ -174,9 +254,8 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await page.waitForLoadState("networkidle");
 
       const searchInput = page
-        .locator(
-          'input[placeholder*="Search inventory" i], [data-testid="inventory-search-input"]'
-        )
+        .locator('input[placeholder*="Search inventory" i]')
+        .or(page.locator('[data-testid="inventory-search-input"]'))
         .first();
 
       if (!(await searchInput.isVisible().catch(() => false))) {
@@ -189,14 +268,16 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
       await expect(page).toHaveURL(/\/inventory/);
     });
 
-    test("Cmd+K on form pages should NOT auto-fill fields", async ({ page }) => {
+    test("Cmd+K on form pages should NOT auto-fill fields", async ({
+      page,
+    }) => {
       await page.goto("/orders/create");
       await page.waitForLoadState("networkidle");
 
       const formField = page
-        .locator(
-          'input[placeholder*="customer" i], textarea[placeholder*="note" i], textarea'
-        )
+        .locator('input[placeholder*="customer" i]')
+        .or(page.locator('textarea[placeholder*="note" i]'))
+        .or(page.locator("textarea"))
         .first();
       if (!(await formField.isVisible().catch(() => false))) {
         test.skip(true, "Order create form field not visible");
@@ -217,8 +298,16 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
   });
 
   test.describe("Context-Aware Behavior", () => {
-    test("Cmd+K behavior should be consistent across pages", async ({ page }) => {
-      const pages = ["/orders", "/inventory", "/clients", "/accounting/invoices"];
+    test("Cmd+K behavior should be consistent across pages", async ({
+      page,
+    }) => {
+      const pages = [
+        "/orders",
+        "/inventory",
+        "/clients",
+        "/accounting/invoices",
+        "/pick-pack",
+      ];
 
       for (const pagePath of pages) {
         await page.goto(pagePath);
@@ -229,13 +318,21 @@ test.describe("UXS-603: Command Palette Scope Enforcement", () => {
         await page.waitForTimeout(200);
 
         // Should open search or command palette (not random behavior)
-        const palette = page.locator('[data-testid="command-palette"], [cmdk-root], [cmdk-input]');
-        const paletteVisible = await palette.first().isVisible().catch(() => false);
+        const palette = page
+          .locator('[data-testid="command-palette"]')
+          .or(page.locator("[cmdk-root]"))
+          .or(page.locator("[cmdk-input]"));
+        const paletteVisible = await palette
+          .first()
+          .isVisible()
+          .catch(() => false);
         const activeTag = await page
           .evaluate(() => document.activeElement?.tagName?.toLowerCase() ?? "")
           .catch(() => "");
 
-        expect(paletteVisible || activeTag === "input" || activeTag === "textarea").toBeTruthy();
+        expect(
+          paletteVisible || activeTag === "input" || activeTag === "textarea"
+        ).toBeTruthy();
 
         // Close before next iteration
         await page.keyboard.press("Escape");

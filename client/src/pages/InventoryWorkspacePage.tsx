@@ -20,7 +20,10 @@ export default function InventoryWorkspacePage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1
+          className="text-2xl font-bold tracking-tight"
+          data-testid="inventory-header"
+        >
           {INVENTORY_WORKSPACE.title}
         </h1>
         <p className="text-muted-foreground">
