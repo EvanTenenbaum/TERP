@@ -2,8 +2,8 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import * as clientNeedsDb from "../clientNeedsDbEnhanced";
 import * as matchingEngine from "../matchingEngineEnhanced";
+import type { Match } from "../matchingEngineEnhanced";
 import * as needsMatchingService from "../needsMatchingService";
-
 
 /**
  * Client Needs Router (Enhanced Version)
@@ -31,7 +31,6 @@ export const clientNeedsEnhancedRouter = router({
         expiresAt: z.string().optional(), // ISO date string
         notes: z.string().optional(),
         internalNotes: z.string().optional(),
-        createdBy: z.number(),
       })
     )
     .mutation(async ({ input }) => {
@@ -40,8 +39,7 @@ export const clientNeedsEnhancedRouter = router({
           ...input,
           neededBy: input.neededBy ? new Date(input.neededBy) : undefined,
           expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+        });
 
         return {
           success: true,
@@ -53,7 +51,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error creating client need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to create client need",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to create client need",
         };
       }
     }),
@@ -79,7 +80,6 @@ export const clientNeedsEnhancedRouter = router({
         expiresAt: z.string().optional(),
         notes: z.string().optional(),
         internalNotes: z.string().optional(),
-        createdBy: z.number(),
       })
     )
     .mutation(async ({ input }) => {
@@ -95,7 +95,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error creating need and finding matches:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to create need and find matches",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to create need and find matches",
         };
       }
     }),
@@ -108,7 +111,7 @@ export const clientNeedsEnhancedRouter = router({
     .query(async ({ input }) => {
       try {
         const need = await clientNeedsDb.getClientNeedById(input.id);
-        
+
         if (!need) {
           return {
             success: false,
@@ -124,7 +127,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error fetching client need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch client need",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch client need",
         };
       }
     }),
@@ -135,7 +141,9 @@ export const clientNeedsEnhancedRouter = router({
   getAll: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).optional(),
+        status: z
+          .enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"])
+          .optional(),
         clientId: z.number().optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
         strain: z.string().optional(),
@@ -154,7 +162,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error fetching client needs:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch client needs",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch client needs",
         };
       }
     }),
@@ -176,7 +187,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error fetching active client needs:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch active client needs",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch active client needs",
         };
       }
     }),
@@ -197,7 +211,9 @@ export const clientNeedsEnhancedRouter = router({
         quantityMax: z.string().optional(),
         priceMax: z.string().optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
-        status: z.enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).optional(),
+        status: z
+          .enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"])
+          .optional(),
         neededBy: z.string().optional(),
         expiresAt: z.string().optional(),
         notes: z.string().optional(),
@@ -207,7 +223,7 @@ export const clientNeedsEnhancedRouter = router({
     .mutation(async ({ input }) => {
       try {
         const { id, ...updates } = input;
-        
+
         const processedUpdates: Record<string, unknown> = { ...updates };
         if (updates.neededBy) {
           processedUpdates.neededBy = new Date(updates.neededBy);
@@ -226,7 +242,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error updating client need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to update client need",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to update client need",
         };
       }
     }),
@@ -248,7 +267,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error fulfilling client need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fulfill client need",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fulfill client need",
         };
       }
     }),
@@ -270,7 +292,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error cancelling client need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to cancel client need",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to cancel client need",
         };
       }
     }),
@@ -291,7 +316,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error deleting client need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to delete client need",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete client need",
         };
       }
     }),
@@ -302,7 +330,9 @@ export const clientNeedsEnhancedRouter = router({
   getAllWithMatches: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).optional(),
+        status: z
+          .enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"])
+          .optional(),
         clientId: z.number().optional(),
       })
     )
@@ -318,7 +348,10 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error fetching client needs with matches:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to fetch client needs with matches",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch client needs with matches",
         };
       }
     }),
@@ -340,7 +373,8 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error finding matches:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to find matches",
+          error:
+            error instanceof Error ? error.message : "Failed to find matches",
         };
       }
     }),
@@ -353,22 +387,27 @@ export const clientNeedsEnhancedRouter = router({
       z.object({
         clientId: z.number(),
         clientNeedId: z.number().optional(),
-        matches: z.array(z.unknown()),
+        matches: z.array(z.record(z.string(), z.unknown())),
         userId: z.number(),
         matchRecordId: z.number().optional(),
       })
     )
     .mutation(async ({ input }) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await needsMatchingService.createQuoteFromMatch(input as any);
+        const result = await needsMatchingService.createQuoteFromMatch({
+          ...input,
+          matches: input.matches as unknown as Match[],
+        });
 
         return result;
       } catch (error) {
         console.error("Error creating quote from match:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to create quote from match",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to create quote from match",
         };
       }
     }),
@@ -376,23 +415,25 @@ export const clientNeedsEnhancedRouter = router({
   /**
    * Expire old client needs
    */
-  expireOld: protectedProcedure
-    .mutation(async () => {
-      try {
-        const count = await clientNeedsDb.expireOldClientNeeds();
+  expireOld: protectedProcedure.mutation(async () => {
+    try {
+      const count = await clientNeedsDb.expireOldClientNeeds();
 
-        return {
-          success: true,
-          data: { expiredCount: count },
-        };
-      } catch (error) {
-        console.error("Error expiring old client needs:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to expire old client needs",
-        };
-      }
-    }),
+      return {
+        success: true,
+        data: { expiredCount: count },
+      };
+    } catch (error) {
+      console.error("Error expiring old client needs:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to expire old client needs",
+      };
+    }
+  }),
 
   /**
    * Get smart opportunities (top matches)
@@ -401,7 +442,9 @@ export const clientNeedsEnhancedRouter = router({
     .input(z.object({ limit: z.number().default(5) }))
     .query(async ({ input }) => {
       try {
-        const opportunities = await needsMatchingService.getSmartOpportunities(input.limit);
+        const opportunities = await needsMatchingService.getSmartOpportunities(
+          input.limit
+        );
 
         return {
           success: true,
@@ -411,9 +454,11 @@ export const clientNeedsEnhancedRouter = router({
         console.error("Error getting smart opportunities:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to get smart opportunities",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to get smart opportunities",
         };
       }
     }),
 });
-

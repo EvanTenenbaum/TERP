@@ -18,7 +18,7 @@ vi.mock("../db", () => setupDbMock());
 vi.mock("../services/permissionService", () => setupPermissionMock());
 
 import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
+import { createMockContext } from "../../tests/unit/mocks/db.mock";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -28,25 +28,16 @@ const mockUser = {
 };
 
 // Create a test caller with mock context
-const createCaller = async (authenticated = true) => {
-  const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: {} as any,
-  });
-
-  return appRouter.createCaller({
-    ...ctx,
-    user: authenticated ? mockUser : null,
-  });
+const createCaller = (authenticated = true) => {
+  const ctx = createMockContext({ user: authenticated ? mockUser : null });
+  return appRouter.createCaller(ctx);
 };
 
 describe("Auth Router", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(() => {
@@ -66,7 +57,7 @@ describe("Auth Router", () => {
 
     it("should return null when not authenticated", async () => {
       // Arrange
-      const unauthenticatedCaller = await createCaller(false);
+      const unauthenticatedCaller = createCaller(false);
 
       // Act
       const result = await unauthenticatedCaller.auth.me();
@@ -81,10 +72,10 @@ describe("Auth Router", () => {
 });
 
 describe("Auth Security", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(() => {

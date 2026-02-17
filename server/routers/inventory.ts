@@ -654,7 +654,11 @@ export const inventoryRouter = router({
           // Generate storage key
           const timestamp = Date.now();
           const storageKey = `batch-media/${input.batchId || "temp"}/${timestamp}-${sanitizedFileName}`;
-          const uploaded = await storagePut(storageKey, fileBuffer, input.fileType);
+          const uploaded = await storagePut(
+            storageKey,
+            fileBuffer,
+            input.fileType
+          );
           url = uploaded.url;
         }
 
@@ -1400,7 +1404,7 @@ export const inventoryRouter = router({
       .input(
         z.object({
           name: z.string().min(1).max(100),
-          filters: z.any(), // JSON object
+          filters: z.record(z.string(), z.unknown()),
           isShared: z.boolean().optional().default(false),
         })
       )

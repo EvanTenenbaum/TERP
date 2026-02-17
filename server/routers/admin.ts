@@ -235,14 +235,13 @@ export const adminRouter = router({
       try {
         // Check 1: Schema columns
         try {
-          const result = await db.execute(sql`
-            SELECT COUNT(*) as count 
-            FROM information_schema.columns 
-            WHERE table_name = 'strains' 
-            AND column_name IN ('openthcId', 'openthcStub')
-          `);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MySQL raw query result lacks type info
-          const count = (result as any)[0]?.count || 0;
+          const result = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(sql`information_schema.columns`)
+            .where(
+              sql`table_name = 'strains' AND column_name IN ('openthcId', 'openthcStub')`
+            );
+          const count = result[0]?.count ?? 0;
           checks.schemaColumns.passed = count === 2;
           checks.schemaColumns.message =
             count === 2
@@ -254,14 +253,13 @@ export const adminRouter = router({
 
         // Check 2: Indexes
         try {
-          const result = await db.execute(sql`
-            SELECT COUNT(*) as count 
-            FROM information_schema.statistics 
-            WHERE table_name = 'strains' 
-            AND index_name LIKE 'idx_strains_%'
-          `);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MySQL raw query result lacks type info
-          const count = (result as any)[0]?.count || 0;
+          const result = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(sql`information_schema.statistics`)
+            .where(
+              sql`table_name = 'strains' AND index_name LIKE 'idx_strains_%'`
+            );
+          const count = result[0]?.count ?? 0;
           checks.indexes.passed = count >= 5;
           checks.indexes.message = `${count} indexes found`;
         } catch (error) {
@@ -283,13 +281,11 @@ export const adminRouter = router({
 
         // Check 4: OpenTHC strain count
         try {
-          const result = await db.execute(sql`
-            SELECT COUNT(*) as count 
-            FROM strains 
-            WHERE openthcId IS NOT NULL
-          `);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MySQL raw query result lacks type info
-          const count = (result as any)[0]?.count || 0;
+          const result = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(strains)
+            .where(sql`openthcId IS NOT NULL`);
+          const count = result[0]?.count ?? 0;
           checks.openthcCount.count = count;
           checks.openthcCount.passed = count > 10000;
           checks.openthcCount.message = `${count} OpenTHC strains`;
@@ -355,11 +351,11 @@ export const adminRouter = router({
         let openthcCount = 0;
         let columnsExist = false;
         try {
-          const openthcStrains = await db.execute(sql`
-            SELECT COUNT(*) as count FROM strains WHERE openthcId IS NOT NULL
-          `);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MySQL raw query result lacks type info
-          openthcCount = (openthcStrains as any)[0]?.count || 0;
+          const openthcStrains = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(strains)
+            .where(sql`openthcId IS NOT NULL`);
+          openthcCount = openthcStrains[0]?.count ?? 0;
           columnsExist = true;
         } catch (_error) {
           // Column doesn't exist yet - this is fine, system not set up

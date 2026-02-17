@@ -43,7 +43,7 @@ const mockProducts = [
   },
 ];
 
-const mockClients = [
+const _mockClients = [
   {
     id: 1,
     name: "Test Client",
@@ -64,7 +64,7 @@ const mockClients = [
   },
 ];
 
-const mockQuotes = [
+const _mockQuotes = [
   {
     id: 1,
     orderNumber: "Q-001",
@@ -112,7 +112,7 @@ vi.mock("../_core/logger", () => ({
 }));
 
 import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
+import { createMockContext } from "../../tests/unit/mocks/db.mock";
 import { getDb } from "../db";
 
 // Mock user for authenticated requests
@@ -125,23 +125,16 @@ const mockUser = {
 };
 
 // Create a test caller with mock context
-const createCaller = async () => {
-  const ctx = await createContext({
-    req: { headers: {} } as any,
-    res: {} as any,
-  });
-
-  return appRouter.createCaller({
-    ...ctx,
-    user: mockUser,
-  });
+const createCaller = () => {
+  const ctx = createMockContext({ user: mockUser });
+  return appRouter.createCaller(ctx);
 };
 
 describe("Search Router", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(() => {
@@ -290,10 +283,10 @@ describe("Search Router", () => {
 });
 
 describe("Search Input Validation", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(() => {
@@ -354,10 +347,10 @@ describe("Search Input Validation", () => {
 });
 
 describe("Search Relevance Scoring", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(async () => {
@@ -372,7 +365,9 @@ describe("Search Relevance Scoring", () => {
       where: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue(mockProducts),
     };
-    ((db as typeof mockDb).select as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
+    ((db as typeof mockDb).select as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockChain
+    );
   });
 
   it("should return results sorted by relevance", async () => {
@@ -389,10 +384,10 @@ describe("Search Relevance Scoring", () => {
 });
 
 describe("Search Error Handling", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(() => {
@@ -409,7 +404,9 @@ describe("Search Error Handling", () => {
       where: vi.fn().mockReturnThis(),
       limit: vi.fn().mockRejectedValue(new Error("Database error")),
     };
-    ((db as typeof mockDb).select as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
+    ((db as typeof mockDb).select as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockChain
+    );
 
     // Act
     const result = await caller.search.global({
@@ -425,10 +422,10 @@ describe("Search Error Handling", () => {
 });
 
 describe("Search Type Filtering", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   beforeEach(() => {

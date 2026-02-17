@@ -54,7 +54,7 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
       await createQuoteMutation.mutateAsync({
         clientId: match.clientId,
         clientNeedId: match.clientNeedId,
-        matches: [match],
+        matches: [match] as unknown as Record<string, unknown>[],
         userId: user?.id ?? 0,
       });
     } catch (error) {

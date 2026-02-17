@@ -24,7 +24,7 @@ vi.mock("../inventoryDb");
 vi.mock("../services/payablesService");
 
 import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
+import { createMockContext } from "../../tests/unit/mocks/db.mock";
 import * as arApDb from "../arApDb";
 import * as payablesService from "../services/payablesService";
 
@@ -37,25 +37,16 @@ const mockUser = {
 };
 
 // Create a test caller with mock context
-const createCaller = async () => {
-  const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: {} as any,
-  });
-
-  return appRouter.createCaller({
-    ...ctx,
-    user: mockUser,
-  });
+const createCaller = () => {
+  const ctx = createMockContext({ user: mockUser });
+  return appRouter.createCaller(ctx);
 };
 
 describe("Dashboard Pagination (RF-002)", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   afterEach(() => {
