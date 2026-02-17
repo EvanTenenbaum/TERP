@@ -1,6 +1,6 @@
 # TERP Golden Flows Beta - Roadmap
 
-**Last Updated:** 2026-02-08  
+**Last Updated:** 2026-02-17
 **Source of Truth:** [Linear Project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)  
 **Status:** This file is a backup. Linear is the primary source of truth for roadmap tasks.
 
@@ -8,35 +8,41 @@
 
 ## Current State Summary
 
-| Phase                                   | Status         | Progress |
-| --------------------------------------- | -------------- | -------- |
-| Phase 0.A: Golden Flow Specification    | ✅ COMPLETE    | 8/8      |
-| Phase 0: Critical Blockers              | ✅ COMPLETE    | 19/19    |
-| Phase 1: Core Flow Restoration          | ✅ COMPLETE    | 27/27    |
-| QA & Testing Infrastructure             | ✅ COMPLETE    | 5/5      |
-| Post-QA Bug Fixes                       | ✅ COMPLETE    | 3/3      |
-| Golden Flow Regression Remediation      | 🔄 IN REVIEW   | 8/8 (PR open) |
-| DevOps & Infrastructure                 | 🟡 TODO        | 0/1      |
+| Phase                                 | Status         | Progress      |
+| ------------------------------------- | -------------- | ------------- |
+| Phase 0.A: Golden Flow Specification  | ✅ COMPLETE    | 8/8           |
+| Phase 0: Critical Blockers            | ✅ COMPLETE    | 19/19         |
+| Phase 1: Core Flow Restoration        | ✅ COMPLETE    | 27/27         |
+| QA & Testing Infrastructure           | ✅ COMPLETE    | 5/5           |
+| Post-QA Bug Fixes                     | ✅ COMPLETE    | 3/3           |
+| Golden Flow Regression Remediation    | 🔄 IN REVIEW   | 8/8 (PR open) |
+| Schema Hardening & Vendor Deprecation | 🟡 IN PROGRESS | 2/7           |
+| DevOps & Infrastructure               | 🟡 TODO        | 0/1           |
 
-**Overall:** 62/71 TERP tasks complete. 8 in review (PR #404). 1 todo.
+**Overall:** 64/78 TERP tasks complete. 8 in review (PR #404). 6 todo/in-progress.
 
-**Beta Assessment:** CONDITIONAL GO — PR #404 contains final regression fixes. Once merged, all golden flows are remediated.
+**Beta Assessment:** CONDITIONAL GO — PR #404 contains final regression fixes. Once merged, all golden flows are remediated. Schema hardening (Waves 2-5) underway to complete vendor deprecation and type cleanup.
 
 ---
 
-## Open Items (9 tickets)
+## Open Items (14 tickets)
 
-| Ticket | Priority | Title | Status | PR | Blocker? |
-| ------ | -------- | ----- | ------ | -- | -------- |
-| [TER-96](https://linear.app/terpcorp/issue/TER-96) | P1 Urgent | GF-001: Fix intake location site schema mismatch | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes |
-| [TER-97](https://linear.app/terpcorp/issue/TER-97) | P1 Urgent | GF-002: Fix purchaseOrders.create 500 vendor mapping | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes |
-| [TER-98](https://linear.app/terpcorp/issue/TER-98) | P1 Urgent | GF-008: Fix samples.createRequest 500 on insert | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes |
-| [TER-99](https://linear.app/terpcorp/issue/TER-99) | P2 High | GF-006: Restore Clients list navigation affordances | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
-| [TER-100](https://linear.app/terpcorp/issue/TER-100) | P2 High | Orders routing: add /orders/new redirect | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
-| [TER-101](https://linear.app/terpcorp/issue/TER-101) | P2 High | Command palette contract: align Cmd+K behavior | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
-| [TER-102](https://linear.app/terpcorp/issue/TER-102) | P2 High | GF-005 test stabilization: pick-pack selectors | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
-| [TER-103](https://linear.app/terpcorp/issue/TER-103) | P2 High | Order creation e2e alignment | In Review | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No |
-| [TER-93](https://linear.app/terpcorp/issue/TER-93) | P2 High | Fix Deployment Health Check Failure - Staging Stale | Todo | — | No |
+| Ticket                                               | Priority  | Title                                                | Status        | PR                                                     | Blocker?           |
+| ---------------------------------------------------- | --------- | ---------------------------------------------------- | ------------- | ------------------------------------------------------ | ------------------ |
+| [TER-96](https://linear.app/terpcorp/issue/TER-96)   | P1 Urgent | GF-001: Fix intake location site schema mismatch     | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes                |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | P1 Urgent | GF-002: Fix purchaseOrders.create 500 vendor mapping | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes                |
+| [TER-98](https://linear.app/terpcorp/issue/TER-98)   | P1 Urgent | GF-008: Fix samples.createRequest 500 on insert      | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes                |
+| [TER-99](https://linear.app/terpcorp/issue/TER-99)   | P2 High   | GF-006: Restore Clients list navigation affordances  | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
+| [TER-100](https://linear.app/terpcorp/issue/TER-100) | P2 High   | Orders routing: add /orders/new redirect             | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
+| [TER-101](https://linear.app/terpcorp/issue/TER-101) | P2 High   | Command palette contract: align Cmd+K behavior       | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
+| [TER-102](https://linear.app/terpcorp/issue/TER-102) | P2 High   | GF-005 test stabilization: pick-pack selectors       | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
+| [TER-103](https://linear.app/terpcorp/issue/TER-103) | P2 High   | Order creation e2e alignment                         | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
+| [TER-93](https://linear.app/terpcorp/issue/TER-93)   | P2 High   | Fix Deployment Health Check Failure - Staging Stale  | Todo          | —                                                      | No                 |
+| [TER-247](https://linear.app/terpcorp/issue/TER-247) | P2 High   | Rewrite vendor queries to use clients                | Todo (Wave 3) | —                                                      | No                 |
+| [TER-235](https://linear.app/terpcorp/issue/TER-235) | P2 High   | Deprecate vendor table                               | Todo (Wave 3) | —                                                      | Depends on TER-247 |
+| [TER-249](https://linear.app/terpcorp/issue/TER-249) | P2 High   | Oracle DB assertions                                 | Todo (Wave 4) | —                                                      | No                 |
+| [TER-239](https://linear.app/terpcorp/issue/TER-239) | P2 High   | GF-002 procure-to-pay E2E flow                       | Todo (Wave 4) | —                                                      | No                 |
+| [TER-250](https://linear.app/terpcorp/issue/TER-250) | P3 Medium | Type cleanup z.any()/as any                          | Todo (Wave 5) | —                                                      | No                 |
 
 ---
 
@@ -175,9 +181,50 @@ These tasks address regressions discovered during live e2e testing after the ini
 
 ---
 
+## Schema Hardening & Vendor Deprecation (Waves 2-5)
+
+**Status:** 🟡 IN PROGRESS
+**Progress:** 2/7 tasks complete
+**Branch:** `claude/plan-improvements-linear-5Tw9C`
+
+This workstream hardens the database schema and completes the vendor-to-clients migration. Tasks are organized into implementation waves.
+
+### Wave 2 — Schema Columns (Done)
+
+Completed 2026-02-17. Code merged to branch, PR pending.
+
+- **[TER-245](https://linear.app/terpcorp/issue/TER-245):** Add product_images soft delete column — Done (schema + autoMigrate + photography router hardening)
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `b517d86`, `1871130`
+- **[TER-248](https://linear.app/terpcorp/issue/TER-248):** Add strain/referral columns on products table — Done (schema + autoMigrate)
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `b517d86`
+
+### Wave 3 — Vendor Deprecation (Backlog, prompts ready)
+
+- **[TER-247](https://linear.app/terpcorp/issue/TER-247):** Rewrite vendor queries to use clients
+  - Prompt: `docs/prompts/WAVE3-TER-247-rewrite-vendor-queries.md`
+- **[TER-235](https://linear.app/terpcorp/issue/TER-235):** Deprecate vendor table
+  - Prompt: `docs/prompts/WAVE3-TER-235-deprecate-vendor-table.md`
+  - Depends on TER-247
+
+### Wave 4 — DB Assertions & E2E (Backlog, prompts ready)
+
+- **[TER-249](https://linear.app/terpcorp/issue/TER-249):** Oracle DB assertions
+  - Prompt: `docs/prompts/WAVE4-TER-249-oracle-db-assertions.md`
+- **[TER-239](https://linear.app/terpcorp/issue/TER-239):** GF-002 procure-to-pay E2E flow
+  - Prompt: `docs/prompts/WAVE4-TER-239-gf002-procure-to-pay.md`
+
+### Wave 5 — Type Cleanup (Backlog, prompt ready)
+
+- **[TER-250](https://linear.app/terpcorp/issue/TER-250):** Type cleanup z.any()/as any
+  - Prompt: `docs/prompts/WAVE5-TER-250-type-cleanup.md`
+
+---
+
 ## DevOps & Infrastructure
 
-**Status:** 🟡 TODO  
+**Status:** 🟡 TODO
 **Progress:** 0/1
 
 - **[TER-93](https://linear.app/terpcorp/issue/TER-93):** [P2 High] Fix Deployment Health Check Failure - Staging Stale — Likely fixed by CI merge (`60d808e9`), needs redeploy to confirm
@@ -204,14 +251,14 @@ Additional CI fixes merged 2026-02-08 (commit `9d823285`):
 
 ## Recent Merges (2026-02-05 through 2026-02-08)
 
-| PR | Date | Description |
-| -- | ---- | ----------- |
-| [#398](https://github.com/EvanTenenbaum/TERP/pull/398) | 2026-02-05 | Golden flows type-safety, tRPC queries, test updates |
+| PR                                                     | Date       | Description                                                               |
+| ------------------------------------------------------ | ---------- | ------------------------------------------------------------------------- |
+| [#398](https://github.com/EvanTenenbaum/TERP/pull/398) | 2026-02-05 | Golden flows type-safety, tRPC queries, test updates                      |
 | [#399](https://github.com/EvanTenenbaum/TERP/pull/399) | 2026-02-06 | Oracle QA infrastructure: entity resolver, validation, failure classifier |
-| [#400](https://github.com/EvanTenenbaum/TERP/pull/400) | 2026-02-06 | QA follow-up: fix hardcoded vendor return ID |
-| [#401](https://github.com/EvanTenenbaum/TERP/pull/401) | 2026-02-06 | Golden Flow batch fixes (TER-33 through TER-57) |
-| [#402](https://github.com/EvanTenenbaum/TERP/pull/402) | 2026-02-07 | CI standardization: Node 22, pnpm 10.4.1, test fixes |
-| [#403](https://github.com/EvanTenenbaum/TERP/pull/403) | 2026-02-08 | QA user seeder, direct intake route, client error handling |
+| [#400](https://github.com/EvanTenenbaum/TERP/pull/400) | 2026-02-06 | QA follow-up: fix hardcoded vendor return ID                              |
+| [#401](https://github.com/EvanTenenbaum/TERP/pull/401) | 2026-02-06 | Golden Flow batch fixes (TER-33 through TER-57)                           |
+| [#402](https://github.com/EvanTenenbaum/TERP/pull/402) | 2026-02-07 | CI standardization: Node 22, pnpm 10.4.1, test fixes                      |
+| [#403](https://github.com/EvanTenenbaum/TERP/pull/403) | 2026-02-08 | QA user seeder, direct intake route, client error handling                |
 
 ---
 
@@ -229,4 +276,4 @@ Additional CI fixes merged 2026-02-08 (commit `9d823285`):
 - **Linear is the primary source of truth** for all roadmap tasks
 - This GitHub roadmap is a backup and may not be as up-to-date as Linear
 - For the most current information, always refer to the [Linear project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
-- Last synced: 2026-02-08 16:30:00
+- Last synced: 2026-02-17 (manual update — no Linear API access)
