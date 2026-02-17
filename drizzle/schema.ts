@@ -6785,6 +6785,7 @@ export const productImages = mysqlTable(
     status: imageStatusEnum.default("APPROVED"),
     uploadedBy: int("uploaded_by").references(() => users.id),
     uploadedAt: timestamp("uploaded_at").defaultNow(),
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     batchIdx: index("idx_batch_images").on(table.batchId),

@@ -38,7 +38,7 @@ import { isValidStatusTransition, type BatchStatus } from "./inventoryUtils";
 const safeProductSelect = {
   id: products.id,
   brandId: products.brandId,
-  strainId: sql<number | null>`NULL`,
+  strainId: products.strainId,
   nameCanonical: products.nameCanonical,
   deletedAt: products.deletedAt,
   category: products.category,

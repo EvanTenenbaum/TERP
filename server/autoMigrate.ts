@@ -1709,6 +1709,24 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add deleted_at column to product_images table (TER-245 soft delete)
+    try {
+      await db.execute(
+        sql`ALTER TABLE product_images ADD COLUMN deleted_at TIMESTAMP NULL`
+      );
+      console.info("  ✅ Added deleted_at column to product_images");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  product_images.deleted_at already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "product_images.deleted_at migration failed"
+        );
+      }
+    }
+
     // ========================================================================
     // DEMO MEDIA BLOBS TABLE (TER-118)
     // ========================================================================
@@ -1875,6 +1893,119 @@ export async function runAutoMigrations() {
         logger.error(
           { error: errMsg, fullError: error },
           "client_needs.strain_type migration failed"
+        );
+      }
+    }
+
+    // ========================================================================
+    // REFERRAL_SETTINGS TABLE — Add pending columns (TER-248)
+    // Columns defined in drizzle/schema.ts but not yet in production DB.
+    // ========================================================================
+
+    // Add referral_settings.client_tier column
+    try {
+      await db.execute(
+        sql`ALTER TABLE referral_settings ADD COLUMN client_tier VARCHAR(50) NULL`
+      );
+      console.info("  ✅ Added client_tier column to referral_settings");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  referral_settings.client_tier already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "referral_settings.client_tier migration failed"
+        );
+      }
+    }
+
+    // Add referral_settings.credit_percentage column
+    try {
+      await db.execute(
+        sql`ALTER TABLE referral_settings ADD COLUMN credit_percentage DECIMAL(5,2) NOT NULL DEFAULT 10.00`
+      );
+      console.info("  ✅ Added credit_percentage column to referral_settings");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  referral_settings.credit_percentage already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "referral_settings.credit_percentage migration failed"
+        );
+      }
+    }
+
+    // Add referral_settings.min_order_amount column
+    try {
+      await db.execute(
+        sql`ALTER TABLE referral_settings ADD COLUMN min_order_amount DECIMAL(12,2) NULL DEFAULT 0`
+      );
+      console.info("  ✅ Added min_order_amount column to referral_settings");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  referral_settings.min_order_amount already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "referral_settings.min_order_amount migration failed"
+        );
+      }
+    }
+
+    // Add referral_settings.max_credit_amount column
+    try {
+      await db.execute(
+        sql`ALTER TABLE referral_settings ADD COLUMN max_credit_amount DECIMAL(12,2) NULL`
+      );
+      console.info("  ✅ Added max_credit_amount column to referral_settings");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  referral_settings.max_credit_amount already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "referral_settings.max_credit_amount migration failed"
+        );
+      }
+    }
+
+    // Add referral_settings.credit_expiry_days column
+    try {
+      await db.execute(
+        sql`ALTER TABLE referral_settings ADD COLUMN credit_expiry_days INT NULL`
+      );
+      console.info("  ✅ Added credit_expiry_days column to referral_settings");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  referral_settings.credit_expiry_days already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "referral_settings.credit_expiry_days migration failed"
+        );
+      }
+    }
+
+    // Add unique index on referral_settings.client_tier (matches Drizzle schema tierIdx)
+    try {
+      await db.execute(
+        sql`CREATE UNIQUE INDEX unique_tier ON referral_settings(client_tier)`
+      );
+      console.info("  ✅ Added unique_tier index on referral_settings.client_tier");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info("  ℹ️  unique_tier index already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "referral_settings unique_tier index migration failed"
         );
       }
     }

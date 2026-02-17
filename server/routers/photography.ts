@@ -155,7 +155,7 @@ async function ensureExactlyOneVisiblePrimaryForGroup(
       sortOrder: productImages.sortOrder,
     })
     .from(productImages)
-    .where(and(groupWhere, visibleImageStatusWhere))
+    .where(and(groupWhere, visibleImageStatusWhere, isNull(productImages.deletedAt)))
     .orderBy(
       desc(productImages.isPrimary),
       productImages.sortOrder,
@@ -225,7 +225,7 @@ export const photographyRouter = router({
             ),
         })
         .from(productImages)
-        .where(groupWhere);
+        .where(and(groupWhere, isNull(productImages.deletedAt)));
 
       const nextSortOrder =
         typeof input.sortOrder === "number"
@@ -236,7 +236,7 @@ export const photographyRouter = router({
       const existingVisibleImages = await db
         .select({ id: productImages.id })
         .from(productImages)
-        .where(and(groupWhere, visibleImageStatusWhere))
+        .where(and(groupWhere, visibleImageStatusWhere, isNull(productImages.deletedAt)))
         .limit(1);
 
       const shouldBePrimary =
@@ -297,7 +297,7 @@ export const photographyRouter = router({
         })
         .from(productImages)
         .leftJoin(users, eq(productImages.uploadedBy, users.id))
-        .where(eq(productImages.batchId, input.batchId))
+        .where(and(eq(productImages.batchId, input.batchId), isNull(productImages.deletedAt)))
         .orderBy(desc(productImages.isPrimary), productImages.sortOrder);
 
       return images;
@@ -325,7 +325,7 @@ export const photographyRouter = router({
           uploadedAt: productImages.uploadedAt,
         })
         .from(productImages)
-        .where(eq(productImages.productId, input.productId))
+        .where(and(eq(productImages.productId, input.productId), isNull(productImages.deletedAt)))
         .orderBy(desc(productImages.isPrimary), productImages.sortOrder);
 
       return images;
@@ -367,7 +367,10 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .leftJoin(
+            productImages,
+            and(eq(batches.id, productImages.batchId), isNull(productImages.deletedAt))
+          )
           .where(
             and(
               eq(batches.batchStatus, "LIVE"),
@@ -493,7 +496,7 @@ export const photographyRouter = router({
           isPrimary: productImages.isPrimary,
         })
         .from(productImages)
-        .where(eq(productImages.id, imageId));
+        .where(and(eq(productImages.id, imageId), isNull(productImages.deletedAt)));
 
       if (!existingImage) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
@@ -548,7 +551,7 @@ export const photographyRouter = router({
               ),
           })
           .from(productImages)
-          .where(and(groupWhere, visibleImageStatusWhere));
+          .where(and(groupWhere, visibleImageStatusWhere, isNull(productImages.deletedAt)));
 
         updates.sortOrder = (maxSortOrder ?? -1) + 1;
       }
@@ -590,13 +593,16 @@ export const photographyRouter = router({
           productId: productImages.productId,
         })
         .from(productImages)
-        .where(eq(productImages.id, input.imageId));
+        .where(and(eq(productImages.id, input.imageId), isNull(productImages.deletedAt)));
 
       if (!existingImage) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
       }
 
-      await db.delete(productImages).where(eq(productImages.id, input.imageId));
+      await db
+        .update(productImages)
+        .set({ deletedAt: new Date() })
+        .where(eq(productImages.id, input.imageId));
 
       await ensureExactlyOneVisiblePrimaryForGroup({
         batchId: existingImage.batchId,
@@ -636,10 +642,13 @@ export const photographyRouter = router({
         })
         .from(productImages)
         .where(
-          sql`${productImages.id} IN (${sql.join(
-            input.imageIds.map(id => sql`${id}`),
-            sql`, `
-          )})`
+          and(
+            sql`${productImages.id} IN (${sql.join(
+              input.imageIds.map(id => sql`${id}`),
+              sql`, `
+            )})`,
+            isNull(productImages.deletedAt)
+          )
         );
 
       if (rows.length !== input.imageIds.length) {
@@ -680,10 +689,11 @@ export const photographyRouter = router({
    * Get photography stats
    */
   getStats: adminProcedure.query(async () => {
-    // Count total images
+    // Count total images (excluding soft-deleted)
     const totalImages = await db
       .select({ count: sql<number>`COUNT(*)` })
-      .from(productImages);
+      .from(productImages)
+      .where(isNull(productImages.deletedAt));
 
     // Count batches without photos
     const batchesWithoutPhotos = await db
@@ -691,7 +701,7 @@ export const photographyRouter = router({
       .from(batches)
       .leftJoin(
         productImages,
-        and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+        and(eq(batches.id, productImages.batchId), visibleImageStatusWhere, isNull(productImages.deletedAt))
       )
       .where(and(eq(batches.batchStatus, "LIVE"), isNull(productImages.id)));
 
@@ -767,7 +777,7 @@ export const photographyRouter = router({
           .leftJoin(strains, eq(products.strainId, strains.id))
           .leftJoin(
             productImages,
-            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere, isNull(productImages.deletedAt))
           )
           .where(and(...conditions))
           .groupBy(
@@ -880,7 +890,7 @@ export const photographyRouter = router({
         .from(batches)
         .leftJoin(
           productImages,
-          and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+          and(eq(batches.id, productImages.batchId), visibleImageStatusWhere, isNull(productImages.deletedAt))
         )
         .where(
           and(
@@ -974,7 +984,7 @@ export const photographyRouter = router({
           sortOrder: productImages.sortOrder,
         })
         .from(productImages)
-        .where(eq(productImages.batchId, input.batchId));
+        .where(and(eq(productImages.batchId, input.batchId), isNull(productImages.deletedAt)));
 
       const visibleBefore = existingBefore.filter(img =>
         isVisibleImageStatus(img.status)
@@ -1012,7 +1022,7 @@ export const photographyRouter = router({
           sortOrder: productImages.sortOrder,
         })
         .from(productImages)
-        .where(eq(productImages.batchId, input.batchId));
+        .where(and(eq(productImages.batchId, input.batchId), isNull(productImages.deletedAt)));
 
       const visibleImages = existingImages.filter(img =>
         isVisibleImageStatus(img.status)
@@ -1189,7 +1199,7 @@ export const photographyRouter = router({
         const existingPhotos = await database
           .select({ sortOrder: productImages.sortOrder })
           .from(productImages)
-          .where(eq(productImages.batchId, input.batchId))
+          .where(and(eq(productImages.batchId, input.batchId), isNull(productImages.deletedAt)))
           .orderBy(desc(productImages.sortOrder))
           .limit(1);
         sortOrder = (existingPhotos[0]?.sortOrder || 0) + 1;
@@ -1249,7 +1259,7 @@ export const photographyRouter = router({
       const photos = await database
         .select()
         .from(productImages)
-        .where(eq(productImages.batchId, input.batchId));
+        .where(and(eq(productImages.batchId, input.batchId), isNull(productImages.deletedAt)));
 
       const visiblePhotos = photos.filter(p => isVisibleImageStatus(p.status));
 
@@ -1315,15 +1325,16 @@ export const photographyRouter = router({
       const [photo] = await database
         .select()
         .from(productImages)
-        .where(eq(productImages.id, input.photoId));
+        .where(and(eq(productImages.id, input.photoId), isNull(productImages.deletedAt)));
 
       if (!photo) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Photo not found" });
       }
 
-      // Delete the record (storage cleanup can be done in background/cron)
+      // Soft delete the record (storage cleanup can be done in background/cron)
       await database
-        .delete(productImages)
+        .update(productImages)
+        .set({ deletedAt: new Date() })
         .where(eq(productImages.id, input.photoId));
 
       await ensureExactlyOneVisiblePrimaryForGroup(
@@ -1377,7 +1388,7 @@ export const photographyRouter = router({
           .leftJoin(strains, eq(products.strainId, strains.id))
           .leftJoin(
             productImages,
-            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere, isNull(productImages.deletedAt))
           )
           .where(
             and(

@@ -236,7 +236,7 @@ describe("getBatchesWithDetails", () => {
     vi.clearAllMocks();
   });
 
-  it("should select product fields without strainId column", async () => {
+  it("should select product fields with real strainId column", async () => {
     const mockResult = [
       {
         batch: { id: 1 },
@@ -267,7 +267,7 @@ describe("getBatchesWithDetails", () => {
 
     const selectArgs = mockDb.select.mock.calls[0][0];
     expect(selectArgs.product.strainId).toBeDefined();
-    expect(selectArgs.product.strainId).not.toEqual(products.strainId);
+    expect(selectArgs.product.strainId).toEqual(products.strainId);
   });
 });
 
@@ -276,7 +276,7 @@ describe("searchBatches", () => {
     vi.clearAllMocks();
   });
 
-  it("should select product fields without strainId column", async () => {
+  it("should select product fields with real strainId column", async () => {
     const mockResult = [
       {
         batch: { id: 1 },
@@ -307,7 +307,7 @@ describe("searchBatches", () => {
 
     const selectArgs = mockDb.select.mock.calls[0][0];
     expect(selectArgs.product.strainId).toBeDefined();
-    expect(selectArgs.product.strainId).not.toEqual(products.strainId);
+    expect(selectArgs.product.strainId).toEqual(products.strainId);
   });
 });
 

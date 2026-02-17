@@ -8,7 +8,6 @@ import { eq, and, desc, like, or, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { getDb } from "./db";
 import { products, brands, strains } from "../drizzle/schema";
-import { logger } from "./_core/logger";
 
 // ============================================================================
 // PRODUCTS CRUD
@@ -22,22 +21,6 @@ export interface ProductFilters {
   brandId?: number;
   strainId?: number;
   includeDeleted?: boolean;
-}
-
-/**
- * Helper to check if an error is a schema-related error (e.g., missing column)
- * QA-003: Only fallback for schema errors, re-throw others
- */
-function isSchemaError(error: unknown): boolean {
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("unknown column") ||
-      msg.includes("no such column") ||
-      (msg.includes("column") && msg.includes("does not exist"))
-    );
-  }
-  return false;
 }
 
 /**
@@ -100,76 +83,33 @@ export async function getProducts(options: ProductFilters = {}): Promise<
     baseConditions.push(eq(products.brandId, brandId));
   }
 
-  // SCHEMA-015: strainId column doesn't exist in production, so we cannot filter by it
-  // If strainId filter was requested, log and continue without applying strainId
   if (strainId) {
-    logger.warn(
-      { strainId },
-      "getProducts: strainId filter requested but column doesn't exist, ignoring strainId"
-    );
+    baseConditions.push(eq(products.strainId, strainId));
   }
 
-  // Still have try-catch for other potential schema issues
-  let result;
-  try {
-    result = await db
-      .select({
-        id: products.id,
-        brandId: products.brandId,
-        strainId: sql<number | null>`NULL`.as("strainId"),
-        nameCanonical: products.nameCanonical,
-        category: products.category,
-        subcategory: products.subcategory,
-        uomSellable: products.uomSellable,
-        description: products.description,
-        createdAt: products.createdAt,
-        updatedAt: products.updatedAt,
-        deletedAt: products.deletedAt,
-        // Join brand name
-        brandName: brands.name,
-        // No strain name - strainId column doesn't exist in production
-        strainName: sql<string | null>`NULL`.as("strainName"),
-      })
-      .from(products)
-      .leftJoin(brands, eq(products.brandId, brands.id))
-      .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
-      .orderBy(desc(products.updatedAt))
-      .limit(limit)
-      .offset(offset);
-  } catch (queryError) {
-    // QA-003: Only fallback for schema-related errors
-    if (!isSchemaError(queryError)) {
-      throw queryError;
-    }
-
-    // Fallback: Query without brand join in case of other schema issues
-    logger.warn(
-      { error: queryError },
-      "getProducts: Query failed, falling back to simpler query without joins"
-    );
-
-    result = await db
-      .select({
-        id: products.id,
-        brandId: products.brandId,
-        strainId: sql<number | null>`NULL`.as("strainId"),
-        nameCanonical: products.nameCanonical,
-        category: products.category,
-        subcategory: products.subcategory,
-        uomSellable: products.uomSellable,
-        description: products.description,
-        createdAt: products.createdAt,
-        updatedAt: products.updatedAt,
-        deletedAt: products.deletedAt,
-        brandName: sql<string | null>`NULL`.as("brandName"),
-        strainName: sql<string | null>`NULL`.as("strainName"),
-      })
-      .from(products)
-      .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
-      .orderBy(desc(products.updatedAt))
-      .limit(limit)
-      .offset(offset);
-  }
+  const result = await db
+    .select({
+      id: products.id,
+      brandId: products.brandId,
+      strainId: products.strainId,
+      nameCanonical: products.nameCanonical,
+      category: products.category,
+      subcategory: products.subcategory,
+      uomSellable: products.uomSellable,
+      description: products.description,
+      createdAt: products.createdAt,
+      updatedAt: products.updatedAt,
+      deletedAt: products.deletedAt,
+      brandName: brands.name,
+      strainName: strains.name,
+    })
+    .from(products)
+    .leftJoin(brands, eq(products.brandId, brands.id))
+    .leftJoin(strains, eq(products.strainId, strains.id))
+    .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
+    .orderBy(desc(products.updatedAt))
+    .limit(limit)
+    .offset(offset);
 
   return result;
 }
@@ -217,13 +157,8 @@ export async function getProductCount(
     baseConditions.push(eq(products.brandId, brandId));
   }
 
-  // SCHEMA-015: strainId column doesn't exist in production, so only use baseConditions
-  // If strainId filter was requested, log and continue without applying strainId
   if (strainId) {
-    logger.warn(
-      { strainId },
-      "getProductCount: strainId filter requested but column doesn't exist, ignoring strainId"
-    );
+    baseConditions.push(eq(products.strainId, strainId));
   }
 
   const result = await db
@@ -241,12 +176,11 @@ export async function getProductById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // SCHEMA-015: Removed strains join - strainId column doesn't exist in production
   const result = await db
     .select({
       id: products.id,
       brandId: products.brandId,
-      strainId: sql<number | null>`NULL`.as("strainId"),
+      strainId: products.strainId,
       nameCanonical: products.nameCanonical,
       category: products.category,
       subcategory: products.subcategory,
@@ -256,10 +190,11 @@ export async function getProductById(id: number) {
       updatedAt: products.updatedAt,
       deletedAt: products.deletedAt,
       brandName: brands.name,
-      strainName: sql<string | null>`NULL`.as("strainName"),
+      strainName: strains.name,
     })
     .from(products)
     .leftJoin(brands, eq(products.brandId, brands.id))
+    .leftJoin(strains, eq(products.strainId, strains.id))
     .where(eq(products.id, id))
     .limit(1);
 
