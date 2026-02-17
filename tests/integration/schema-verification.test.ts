@@ -43,18 +43,7 @@ const TABLES_PENDING_MIGRATION: string[] = [
  * See: docs/audits/PR-351-QA-REVIEW.md for alignment details
  */
 const COLUMNS_PENDING_MIGRATION: string[] = [
-  // strainId columns - pending migration (PR #351 workaround)
-  "products.strainId",
-  "client_needs.strainId",
-  "strains.parentStrainId",
-  "strains.baseStrainName",
-  // referral_settings columns - defined in Drizzle schema but drizzle-kit push
-  // may not create them in CI test DB. Pending production migration.
-  "referral_settings.client_tier",
-  "referral_settings.credit_percentage",
-  "referral_settings.min_order_amount",
-  "referral_settings.max_credit_amount",
-  "referral_settings.credit_expiry_days",
+  // All previously-pending columns have been migrated (TER-248)
 ];
 
 // ============================================================================

@@ -107,18 +107,17 @@ describe("photographyRouter media behavior", () => {
       [{ id: 5001, isPrimary: false, sortOrder: 1 }],
     ]);
 
-    const deleteWhere = vi.fn().mockResolvedValue({ changes: 1 });
-    vi.mocked(db.delete).mockReturnValue({ where: deleteWhere } as never);
-
     const updateWhere = vi.fn().mockResolvedValue({ changes: 1 });
     const updateSet = vi.fn(() => ({ where: updateWhere }));
     vi.mocked(db.update).mockReturnValue({ set: updateSet } as never);
 
     await createAdminCaller().delete({ imageId: 5000 });
 
-    expect(deleteWhere).toHaveBeenCalledTimes(1);
-    expect(updateSet).toHaveBeenNthCalledWith(1, { isPrimary: false });
-    expect(updateSet).toHaveBeenNthCalledWith(2, { isPrimary: true });
+    // Soft delete: first update sets deletedAt, then primary reassignment
+    expect(updateSet).toHaveBeenCalledTimes(3);
+    expect(updateSet.mock.calls[0][0]).toMatchObject({ deletedAt: expect.any(Date) });
+    expect(updateSet).toHaveBeenNthCalledWith(2, { isPrimary: false });
+    expect(updateSet).toHaveBeenNthCalledWith(3, { isPrimary: true });
   });
 
   it("reassigns visible primary after protected deletePhoto", async () => {
@@ -127,18 +126,17 @@ describe("photographyRouter media behavior", () => {
       [{ id: 7001, isPrimary: false, sortOrder: 0 }],
     ]);
 
-    const deleteWhere = vi.fn().mockResolvedValue({ changes: 1 });
-    vi.mocked(db.delete).mockReturnValue({ where: deleteWhere } as never);
-
     const updateWhere = vi.fn().mockResolvedValue({ changes: 1 });
     const updateSet = vi.fn(() => ({ where: updateWhere }));
     vi.mocked(db.update).mockReturnValue({ set: updateSet } as never);
 
     await createUserCaller().deletePhoto({ photoId: 7000 });
 
-    expect(deleteWhere).toHaveBeenCalledTimes(1);
-    expect(updateSet).toHaveBeenNthCalledWith(1, { isPrimary: false });
-    expect(updateSet).toHaveBeenNthCalledWith(2, { isPrimary: true });
+    // Soft delete: first update sets deletedAt, then primary reassignment
+    expect(updateSet).toHaveBeenCalledTimes(3);
+    expect(updateSet.mock.calls[0][0]).toMatchObject({ deletedAt: expect.any(Date) });
+    expect(updateSet).toHaveBeenNthCalledWith(2, { isPrimary: false });
+    expect(updateSet).toHaveBeenNthCalledWith(3, { isPrimary: true });
   });
 
   it("rejects completeSession when batch has only hidden photos", async () => {

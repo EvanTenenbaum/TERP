@@ -19,7 +19,16 @@ import {
   vipPortalConfigurations,
   clientDraftInterests,
 } from "../../drizzle/schema-vip-portal";
-import { eq, and, inArray, notInArray, sql, isNull, or, desc } from "drizzle-orm";
+import {
+  eq,
+  and,
+  inArray,
+  notInArray,
+  sql,
+  isNull,
+  or,
+  desc,
+} from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
 import { vipPortalLogger, logger } from "../_core/logger";
 
@@ -381,10 +390,15 @@ async function getCatalogInternal(
             isNull(productImages.status),
             eq(productImages.status, "APPROVED"),
             eq(productImages.status, "PENDING")
-          )
+          ),
+          isNull(productImages.deletedAt)
         )
       )
-      .orderBy(desc(productImages.isPrimary), productImages.sortOrder, productImages.id);
+      .orderBy(
+        desc(productImages.isPrimary),
+        productImages.sortOrder,
+        productImages.id
+      );
 
     for (const img of batchImages) {
       if (img.batchId && !batchPrimaryImagesMap.has(img.batchId)) {
@@ -395,7 +409,10 @@ async function getCatalogInternal(
 
   // Fallback: legacy product-level images for any batches that do not have batch images yet.
   const fallbackProductIds = filteredBatches
-    .filter(({ batch, product }) => Boolean(product?.id) && !batchPrimaryImagesMap.has(batch.id))
+    .filter(
+      ({ batch, product }) =>
+        Boolean(product?.id) && !batchPrimaryImagesMap.has(batch.id)
+    )
     .map(({ product }) => product?.id)
     .filter((id): id is number => id !== undefined && id !== null);
 
@@ -505,7 +522,9 @@ async function getCatalogInternal(
 
     const imageUrl =
       batchPrimaryImagesMap.get(item.id) ??
-      (item.productId ? productFallbackImagesMap.get(item.productId) : undefined);
+      (item.productId
+        ? productFallbackImagesMap.get(item.productId)
+        : undefined);
 
     return {
       batchId: item.id,

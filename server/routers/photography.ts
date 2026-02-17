@@ -18,101 +18,7 @@ import { eq, and, desc, sql, isNull, or, ne } from "drizzle-orm";
 import { storagePut, isStorageConfigured } from "../storage";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
-
-/**
- * Helper to check if an error is a schema-related error (e.g., missing column)
- * QA-003: Only fallback for schema errors, re-throw others
- * BUG-112: Enhanced to handle MySQL2 driver errors that may not be Error instances
- */
-function isSchemaError(error: unknown): boolean {
-  // Extract error message and code from various error formats
-  let msg = "";
-  let errorCode: string | number | undefined;
-  let errno: number | undefined;
-
-  // Case 1: Error instance
-  if (error instanceof Error) {
-    msg = error.message;
-    // Check if Error has additional properties (MySQL2 format)
-    if ("code" in error) {
-      const code = (error as unknown as { code?: unknown }).code;
-      if (typeof code === "string" || typeof code === "number") {
-        errorCode = code;
-      }
-    }
-    if ("errno" in error) {
-      const errNo = (error as unknown as { errno?: unknown }).errno;
-      if (typeof errNo === "number") {
-        errno = errNo;
-      }
-    }
-    // Check for nested cause
-    if ("cause" in error && error.cause) {
-      return isSchemaError(error.cause);
-    }
-  }
-  // Case 2: Plain object with message property
-  else if (error && typeof error === "object") {
-    const errObj = error as Record<string, unknown>;
-    if (typeof errObj.message === "string") {
-      msg = errObj.message;
-    }
-    if (typeof errObj.sqlMessage === "string") {
-      msg = errObj.sqlMessage;
-    }
-    if (typeof errObj.code === "string" || typeof errObj.code === "number") {
-      errorCode = errObj.code;
-    }
-    if (typeof errObj.errno === "number") {
-      errno = errObj.errno;
-    }
-    // Check for nested cause or originalError
-    if (errObj.cause) {
-      return isSchemaError(errObj.cause);
-    }
-    if (errObj.originalError) {
-      return isSchemaError(errObj.originalError);
-    }
-  }
-  // Case 3: String error
-  else if (typeof error === "string") {
-    msg = error;
-  }
-
-  // If no message extracted, log and return false
-  if (!msg && !errorCode && !errno) {
-    logger.warn(
-      {
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        errorKeys: error && typeof error === "object" ? Object.keys(error) : [],
-      },
-      "isSchemaError: Could not extract error information"
-    );
-    return false;
-  }
-
-  // Check MySQL error codes (most reliable)
-  if (errno === 1054) return true; // ER_BAD_FIELD_ERROR
-  if (errno === 1146) return true; // ER_NO_SUCH_TABLE
-  if (errorCode === "ER_BAD_FIELD_ERROR") return true;
-  if (errorCode === "ER_NO_SUCH_TABLE") return true;
-  if (errorCode === 1054) return true;
-  if (errorCode === 1146) return true;
-
-  // Check error message patterns
-  const msgLower = msg.toLowerCase();
-  return (
-    msgLower.includes("unknown column") ||
-    msgLower.includes("no such column") ||
-    msgLower.includes("er_bad_field_error") ||
-    msgLower.includes("er_no_such_table") ||
-    (msgLower.includes("table") && msgLower.includes("doesn't exist")) ||
-    (msgLower.includes("table") && msgLower.includes("does not exist")) ||
-    (msgLower.includes("column") && msgLower.includes("does not exist")) ||
-    (msgLower.includes("column") && msgLower.includes("on clause"))
-  );
-}
+import { isSchemaDriftError } from "../_core/dbErrors";
 
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
@@ -155,7 +61,9 @@ async function ensureExactlyOneVisiblePrimaryForGroup(
       sortOrder: productImages.sortOrder,
     })
     .from(productImages)
-    .where(and(groupWhere, visibleImageStatusWhere))
+    .where(
+      and(groupWhere, visibleImageStatusWhere, isNull(productImages.deletedAt))
+    )
     .orderBy(
       desc(productImages.isPrimary),
       productImages.sortOrder,
@@ -225,7 +133,7 @@ export const photographyRouter = router({
             ),
         })
         .from(productImages)
-        .where(groupWhere);
+        .where(and(groupWhere, isNull(productImages.deletedAt)));
 
       const nextSortOrder =
         typeof input.sortOrder === "number"
@@ -236,7 +144,13 @@ export const photographyRouter = router({
       const existingVisibleImages = await db
         .select({ id: productImages.id })
         .from(productImages)
-        .where(and(groupWhere, visibleImageStatusWhere))
+        .where(
+          and(
+            groupWhere,
+            visibleImageStatusWhere,
+            isNull(productImages.deletedAt)
+          )
+        )
         .limit(1);
 
       const shouldBePrimary =
@@ -297,7 +211,12 @@ export const photographyRouter = router({
         })
         .from(productImages)
         .leftJoin(users, eq(productImages.uploadedBy, users.id))
-        .where(eq(productImages.batchId, input.batchId))
+        .where(
+          and(
+            eq(productImages.batchId, input.batchId),
+            isNull(productImages.deletedAt)
+          )
+        )
         .orderBy(desc(productImages.isPrimary), productImages.sortOrder);
 
       return images;
@@ -325,7 +244,12 @@ export const photographyRouter = router({
           uploadedAt: productImages.uploadedAt,
         })
         .from(productImages)
-        .where(eq(productImages.productId, input.productId))
+        .where(
+          and(
+            eq(productImages.productId, input.productId),
+            isNull(productImages.deletedAt)
+          )
+        )
         .orderBy(desc(productImages.isPrimary), productImages.sortOrder);
 
       return images;
@@ -367,7 +291,13 @@ export const photographyRouter = router({
           .from(batches)
           .leftJoin(products, eq(batches.productId, products.id))
           .leftJoin(strains, eq(products.strainId, strains.id))
-          .leftJoin(productImages, eq(batches.id, productImages.batchId))
+          .leftJoin(
+            productImages,
+            and(
+              eq(batches.id, productImages.batchId),
+              isNull(productImages.deletedAt)
+            )
+          )
           .where(
             and(
               eq(batches.batchStatus, "LIVE"),
@@ -415,7 +345,7 @@ export const photographyRouter = router({
         );
 
         // QA-003: Only fallback for schema-related errors
-        if (!isSchemaError(queryError)) {
+        if (!isSchemaDriftError(queryError)) {
           logger.error(
             { error: queryError },
             "Not a schema error, re-throwing to caller"
@@ -493,7 +423,9 @@ export const photographyRouter = router({
           isPrimary: productImages.isPrimary,
         })
         .from(productImages)
-        .where(eq(productImages.id, imageId));
+        .where(
+          and(eq(productImages.id, imageId), isNull(productImages.deletedAt))
+        );
 
       if (!existingImage) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
@@ -548,7 +480,13 @@ export const photographyRouter = router({
               ),
           })
           .from(productImages)
-          .where(and(groupWhere, visibleImageStatusWhere));
+          .where(
+            and(
+              groupWhere,
+              visibleImageStatusWhere,
+              isNull(productImages.deletedAt)
+            )
+          );
 
         updates.sortOrder = (maxSortOrder ?? -1) + 1;
       }
@@ -590,13 +528,65 @@ export const photographyRouter = router({
           productId: productImages.productId,
         })
         .from(productImages)
+        .where(
+          and(
+            eq(productImages.id, input.imageId),
+            isNull(productImages.deletedAt)
+          )
+        );
+
+      if (!existingImage) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+      }
+
+      await db
+        .update(productImages)
+        .set({ deletedAt: new Date() })
+        .where(eq(productImages.id, input.imageId));
+
+      await ensureExactlyOneVisiblePrimaryForGroup({
+        batchId: existingImage.batchId,
+        productId: existingImage.productId,
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Restore a soft-deleted image
+   */
+  restore: adminProcedure
+    .input(
+      z.object({
+        imageId: z.number(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const [existingImage] = await db
+        .select({
+          id: productImages.id,
+          batchId: productImages.batchId,
+          productId: productImages.productId,
+          deletedAt: productImages.deletedAt,
+        })
+        .from(productImages)
         .where(eq(productImages.id, input.imageId));
 
       if (!existingImage) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
       }
 
-      await db.delete(productImages).where(eq(productImages.id, input.imageId));
+      if (!existingImage.deletedAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Image is not deleted",
+        });
+      }
+
+      await db
+        .update(productImages)
+        .set({ deletedAt: null })
+        .where(eq(productImages.id, input.imageId));
 
       await ensureExactlyOneVisiblePrimaryForGroup({
         batchId: existingImage.batchId,
@@ -636,10 +626,13 @@ export const photographyRouter = router({
         })
         .from(productImages)
         .where(
-          sql`${productImages.id} IN (${sql.join(
-            input.imageIds.map(id => sql`${id}`),
-            sql`, `
-          )})`
+          and(
+            sql`${productImages.id} IN (${sql.join(
+              input.imageIds.map(id => sql`${id}`),
+              sql`, `
+            )})`,
+            isNull(productImages.deletedAt)
+          )
         );
 
       if (rows.length !== input.imageIds.length) {
@@ -680,10 +673,11 @@ export const photographyRouter = router({
    * Get photography stats
    */
   getStats: adminProcedure.query(async () => {
-    // Count total images
+    // Count total images (excluding soft-deleted)
     const totalImages = await db
       .select({ count: sql<number>`COUNT(*)` })
-      .from(productImages);
+      .from(productImages)
+      .where(isNull(productImages.deletedAt));
 
     // Count batches without photos
     const batchesWithoutPhotos = await db
@@ -691,7 +685,11 @@ export const photographyRouter = router({
       .from(batches)
       .leftJoin(
         productImages,
-        and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+        and(
+          eq(batches.id, productImages.batchId),
+          visibleImageStatusWhere,
+          isNull(productImages.deletedAt)
+        )
       )
       .where(and(eq(batches.batchStatus, "LIVE"), isNull(productImages.id)));
 
@@ -767,7 +765,11 @@ export const photographyRouter = router({
           .leftJoin(strains, eq(products.strainId, strains.id))
           .leftJoin(
             productImages,
-            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+            and(
+              eq(batches.id, productImages.batchId),
+              visibleImageStatusWhere,
+              isNull(productImages.deletedAt)
+            )
           )
           .where(and(...conditions))
           .groupBy(
@@ -817,7 +819,7 @@ export const photographyRouter = router({
         );
 
         // QA-003: Only fallback for schema-related errors
-        if (!isSchemaError(queryError)) {
+        if (!isSchemaDriftError(queryError)) {
           logger.error(
             { error: queryError },
             "Not a schema error, re-throwing to caller"
@@ -880,7 +882,11 @@ export const photographyRouter = router({
         .from(batches)
         .leftJoin(
           productImages,
-          and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+          and(
+            eq(batches.id, productImages.batchId),
+            visibleImageStatusWhere,
+            isNull(productImages.deletedAt)
+          )
         )
         .where(
           and(
@@ -974,7 +980,12 @@ export const photographyRouter = router({
           sortOrder: productImages.sortOrder,
         })
         .from(productImages)
-        .where(eq(productImages.batchId, input.batchId));
+        .where(
+          and(
+            eq(productImages.batchId, input.batchId),
+            isNull(productImages.deletedAt)
+          )
+        );
 
       const visibleBefore = existingBefore.filter(img =>
         isVisibleImageStatus(img.status)
@@ -1012,7 +1023,12 @@ export const photographyRouter = router({
           sortOrder: productImages.sortOrder,
         })
         .from(productImages)
-        .where(eq(productImages.batchId, input.batchId));
+        .where(
+          and(
+            eq(productImages.batchId, input.batchId),
+            isNull(productImages.deletedAt)
+          )
+        );
 
       const visibleImages = existingImages.filter(img =>
         isVisibleImageStatus(img.status)
@@ -1061,7 +1077,12 @@ export const photographyRouter = router({
         await db
           .update(productImages)
           .set({ isPrimary: false })
-          .where(eq(productImages.batchId, input.batchId));
+          .where(
+            and(
+              eq(productImages.batchId, input.batchId),
+              isNull(productImages.deletedAt)
+            )
+          );
 
         await db
           .update(productImages)
@@ -1175,12 +1196,17 @@ export const photographyRouter = router({
       // Determine if this should be primary
       const isPrimary = input.photoType === "primary";
 
-      // If setting as primary, unset other primary images for this batch
+      // If setting as primary, unset other primary images for this batch (exclude soft-deleted)
       if (isPrimary) {
         await database
           .update(productImages)
           .set({ isPrimary: false })
-          .where(eq(productImages.batchId, input.batchId));
+          .where(
+            and(
+              eq(productImages.batchId, input.batchId),
+              isNull(productImages.deletedAt)
+            )
+          );
       }
 
       // Get next sort order if not provided
@@ -1189,7 +1215,12 @@ export const photographyRouter = router({
         const existingPhotos = await database
           .select({ sortOrder: productImages.sortOrder })
           .from(productImages)
-          .where(eq(productImages.batchId, input.batchId))
+          .where(
+            and(
+              eq(productImages.batchId, input.batchId),
+              isNull(productImages.deletedAt)
+            )
+          )
           .orderBy(desc(productImages.sortOrder))
           .limit(1);
         sortOrder = (existingPhotos[0]?.sortOrder || 0) + 1;
@@ -1249,7 +1280,12 @@ export const photographyRouter = router({
       const photos = await database
         .select()
         .from(productImages)
-        .where(eq(productImages.batchId, input.batchId));
+        .where(
+          and(
+            eq(productImages.batchId, input.batchId),
+            isNull(productImages.deletedAt)
+          )
+        );
 
       const visiblePhotos = photos.filter(p => isVisibleImageStatus(p.status));
 
@@ -1267,7 +1303,12 @@ export const photographyRouter = router({
         await database
           .update(productImages)
           .set({ isPrimary: false })
-          .where(eq(productImages.batchId, input.batchId));
+          .where(
+            and(
+              eq(productImages.batchId, input.batchId),
+              isNull(productImages.deletedAt)
+            )
+          );
 
         await database
           .update(productImages)
@@ -1315,15 +1356,21 @@ export const photographyRouter = router({
       const [photo] = await database
         .select()
         .from(productImages)
-        .where(eq(productImages.id, input.photoId));
+        .where(
+          and(
+            eq(productImages.id, input.photoId),
+            isNull(productImages.deletedAt)
+          )
+        );
 
       if (!photo) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Photo not found" });
       }
 
-      // Delete the record (storage cleanup can be done in background/cron)
+      // Soft delete the record (storage cleanup can be done in background/cron)
       await database
-        .delete(productImages)
+        .update(productImages)
+        .set({ deletedAt: new Date() })
         .where(eq(productImages.id, input.photoId));
 
       await ensureExactlyOneVisiblePrimaryForGroup(
@@ -1377,7 +1424,11 @@ export const photographyRouter = router({
           .leftJoin(strains, eq(products.strainId, strains.id))
           .leftJoin(
             productImages,
-            and(eq(batches.id, productImages.batchId), visibleImageStatusWhere)
+            and(
+              eq(batches.id, productImages.batchId),
+              visibleImageStatusWhere,
+              isNull(productImages.deletedAt)
+            )
           )
           .where(
             and(
@@ -1429,7 +1480,7 @@ export const photographyRouter = router({
         );
 
         // QA-003: Only fallback for schema-related errors
-        if (!isSchemaError(queryError)) {
+        if (!isSchemaDriftError(queryError)) {
           logger.error(
             { error: queryError },
             "Not a schema error, re-throwing to caller"

@@ -113,7 +113,8 @@ export async function publishBatchToCatalog(
           isNull(productImages.status),
           eq(productImages.status, "APPROVED"),
           eq(productImages.status, "PENDING")
-        )
+        ),
+        isNull(productImages.deletedAt)
       )
     );
 
@@ -270,7 +271,8 @@ export async function getBatchesReadyForPublishing(limit: number = 50): Promise<
             isNull(productImages.status),
             eq(productImages.status, "APPROVED"),
             eq(productImages.status, "PENDING")
-          )
+          ),
+          isNull(productImages.deletedAt)
         )
       );
 
@@ -389,7 +391,8 @@ export async function getPublishedCatalog(options: {
             isNull(productImages.status),
             eq(productImages.status, "APPROVED"),
             eq(productImages.status, "PENDING")
-          )
+          ),
+          isNull(productImages.deletedAt)
         )
       )
       .orderBy(desc(productImages.isPrimary), productImages.sortOrder);
