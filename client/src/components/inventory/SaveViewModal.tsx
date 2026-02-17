@@ -43,7 +43,7 @@ export function SaveViewModal({
     try {
       await saveView.mutateAsync({
         name: name.trim(),
-        filters,
+        filters: filters as unknown as Record<string, unknown>,
         isShared,
       });
 

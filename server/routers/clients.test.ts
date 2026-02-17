@@ -21,7 +21,7 @@ vi.mock("../services/permissionService", () => setupPermissionMock());
 vi.mock("../clientsDb");
 
 import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
+import { createMockContext } from "../../tests/unit/mocks/db.mock";
 import { db as _db } from "../db";
 import * as clientsDb from "../clientsDb";
 
@@ -33,25 +33,16 @@ const mockUser = {
 };
 
 // Create a test caller with mock context
-const createCaller = async () => {
-  const ctx = await createContext({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    req: { headers: {} } as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res: {} as any,
-  });
-
-  return appRouter.createCaller({
-    ...ctx,
-    user: mockUser,
-  });
+const createCaller = () => {
+  const ctx = createMockContext({ user: mockUser });
+  return appRouter.createCaller(ctx);
 };
 
 describe("Clients Router", () => {
-  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let caller: ReturnType<typeof createCaller>;
 
-  beforeAll(async () => {
-    caller = await createCaller();
+  beforeAll(() => {
+    caller = createCaller();
   });
 
   describe("list", () => {

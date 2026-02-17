@@ -1,48 +1,131 @@
 # TERP Golden Flows Beta - Roadmap
 
 **Last Updated:** 2026-02-17
-**Source of Truth:** [Linear Project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)  
+**Source of Truth:** [Linear Project](https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d)
 **Status:** This file is a backup. Linear is the primary source of truth for roadmap tasks.
 
 ---
 
 ## Current State Summary
 
-| Phase                                 | Status         | Progress      |
-| ------------------------------------- | -------------- | ------------- |
-| Phase 0.A: Golden Flow Specification  | ✅ COMPLETE    | 8/8           |
-| Phase 0: Critical Blockers            | ✅ COMPLETE    | 19/19         |
-| Phase 1: Core Flow Restoration        | ✅ COMPLETE    | 27/27         |
-| QA & Testing Infrastructure           | ✅ COMPLETE    | 5/5           |
-| Post-QA Bug Fixes                     | ✅ COMPLETE    | 3/3           |
-| Golden Flow Regression Remediation    | 🔄 IN REVIEW   | 8/8 (PR open) |
-| Schema Hardening & Vendor Deprecation | 🟡 IN PROGRESS | 2/7           |
-| DevOps & Infrastructure               | 🟡 TODO        | 0/1           |
+| Phase                                 | Status      | Progress                             |
+| ------------------------------------- | ----------- | ------------------------------------ |
+| Phase 0.A: Golden Flow Specification  | ✅ COMPLETE | 8/8                                  |
+| Phase 0: Critical Blockers            | ✅ COMPLETE | 19/19                                |
+| Phase 1: Core Flow Restoration        | ✅ COMPLETE | 27/27                                |
+| QA & Testing Infrastructure           | ✅ COMPLETE | 5/5                                  |
+| Post-QA Bug Fixes                     | ✅ COMPLETE | 3/3                                  |
+| Golden Flow Regression Remediation    | 🔴 STALE    | PR #404 never merged, branch deleted |
+| Schema Hardening & Vendor Deprecation | ✅ COMPLETE | 7/7                                  |
+| Wave 6: Server 500s & Tx Fixes        | 🟡 PLANNED  | 0/5                                  |
+| Wave 7: PR #404 Regression Redo       | 🟡 PLANNED  | 0/4                                  |
+| Wave 8: Validation & Guard Rails      | 📋 BACKLOG  | 0/5                                  |
+| Wave 9: E2E Test Stabilization        | 📋 BACKLOG  | 0/5                                  |
+| Wave 10: Infrastructure & Edge Cases  | 📋 BACKLOG  | 0/5                                  |
+| DevOps & Infrastructure               | 🟡 TODO     | 0/1                                  |
 
-**Overall:** 64/78 TERP tasks complete. 8 in review (PR #404). 6 todo/in-progress.
+**Overall:** 72/78 earlier tasks complete. 5 Linear-updated to Done (TER-245/248/247/235/246). PR #404 (8 regression fixes) was never merged — branch deleted. 14 new QA bugs discovered. 7/8 golden flows have server-side failures.
 
-**Beta Assessment:** CONDITIONAL GO — PR #404 contains final regression fixes. Once merged, all golden flows are remediated. Schema hardening (Waves 2-5) underway to complete vendor deprecation and type cleanup.
+**MVP Assessment:** NOT READY — 7 of 8 golden flows have blocking server 500s or transaction errors. See `docs/roadmaps/WAVE_PLAN_MVP_BLOCKERS.md` for full analysis and wave plan.
 
 ---
 
-## Open Items (14 tickets)
+## Golden Flow Blocker Matrix
 
-| Ticket                                               | Priority  | Title                                                | Status        | PR                                                     | Blocker?           |
-| ---------------------------------------------------- | --------- | ---------------------------------------------------- | ------------- | ------------------------------------------------------ | ------------------ |
-| [TER-96](https://linear.app/terpcorp/issue/TER-96)   | P1 Urgent | GF-001: Fix intake location site schema mismatch     | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes                |
-| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | P1 Urgent | GF-002: Fix purchaseOrders.create 500 vendor mapping | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes                |
-| [TER-98](https://linear.app/terpcorp/issue/TER-98)   | P1 Urgent | GF-008: Fix samples.createRequest 500 on insert      | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | Yes                |
-| [TER-99](https://linear.app/terpcorp/issue/TER-99)   | P2 High   | GF-006: Restore Clients list navigation affordances  | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
-| [TER-100](https://linear.app/terpcorp/issue/TER-100) | P2 High   | Orders routing: add /orders/new redirect             | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
-| [TER-101](https://linear.app/terpcorp/issue/TER-101) | P2 High   | Command palette contract: align Cmd+K behavior       | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
-| [TER-102](https://linear.app/terpcorp/issue/TER-102) | P2 High   | GF-005 test stabilization: pick-pack selectors       | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
-| [TER-103](https://linear.app/terpcorp/issue/TER-103) | P2 High   | Order creation e2e alignment                         | In Review     | [#404](https://github.com/EvanTenenbaum/TERP/pull/404) | No                 |
-| [TER-93](https://linear.app/terpcorp/issue/TER-93)   | P2 High   | Fix Deployment Health Check Failure - Staging Stale  | Todo          | —                                                      | No                 |
-| [TER-247](https://linear.app/terpcorp/issue/TER-247) | P2 High   | Rewrite vendor queries to use clients                | Todo (Wave 3) | —                                                      | No                 |
-| [TER-235](https://linear.app/terpcorp/issue/TER-235) | P2 High   | Deprecate vendor table                               | Todo (Wave 3) | —                                                      | Depends on TER-247 |
-| [TER-249](https://linear.app/terpcorp/issue/TER-249) | P2 High   | Oracle DB assertions                                 | Todo (Wave 4) | —                                                      | No                 |
-| [TER-239](https://linear.app/terpcorp/issue/TER-239) | P2 High   | GF-002 procure-to-pay E2E flow                       | Todo (Wave 4) | —                                                      | No                 |
-| [TER-250](https://linear.app/terpcorp/issue/TER-250) | P3 Medium | Type cleanup z.any()/as any                          | Todo (Wave 5) | —                                                      | No                 |
+| Flow   | Name              | Status                          | Blocking Tickets          |
+| ------ | ----------------- | ------------------------------- | ------------------------- |
+| GF-001 | Direct Intake     | **500 on submit**               | TER-96                    |
+| GF-002 | Procure-to-Pay    | **500 on PO create**            | TER-97                    |
+| GF-003 | Order-to-Cash     | **Ship/Cancel broken**          | TER-257, TER-258, TER-259 |
+| GF-004 | Invoice & Payment | **Payment recording fails**     | TER-256                   |
+| GF-005 | Pick & Pack       | **Cannot complete fulfillment** | TER-257                   |
+| GF-006 | Client Ledger     | Functional (nav gap)            | TER-99                    |
+| GF-007 | Inventory Mgmt    | **Adjustments unreliable**      | TER-254, TER-260          |
+| GF-008 | Sample Request    | **500 on create**               | TER-98                    |
+
+---
+
+## Wave 6: Critical Server 500s & Transaction Fixes (PLANNED)
+
+**Priority:** P0 — URGENT | **Mode:** RED | **Estimate:** 16h
+**Unblocks:** GF-003, GF-004, GF-005, GF-007 (4 flows)
+**Prompts:** `docs/prompts/WAVE6-TER-*.md`
+
+| Ticket                                               | Priority | Title                                                              | Status |
+| ---------------------------------------------------- | -------- | ------------------------------------------------------------------ | ------ |
+| [TER-256](https://linear.app/terpcorp/issue/TER-256) | Urgent   | payments.recordPayment transaction rollback on valid SENT invoices | Todo   |
+| [TER-257](https://linear.app/terpcorp/issue/TER-257) | High     | orders.updateOrderStatus SHIPPED — "Batch undefined not found"     | Todo   |
+| [TER-258](https://linear.app/terpcorp/issue/TER-258) | High     | orders.updateOrderStatus CANCELLED — raw SQL UPDATE error          | Todo   |
+| [TER-259](https://linear.app/terpcorp/issue/TER-259) | High     | Inventory deduction not triggered on order create                  | Todo   |
+| [TER-260](https://linear.app/terpcorp/issue/TER-260) | High     | inventory.adjustQty does not update totalQty                       | Todo   |
+
+---
+
+## Wave 7: PR #404 Regression Fixes — Re-implement (PLANNED)
+
+**Priority:** P0 — URGENT | **Mode:** STRICT | **Estimate:** 8h
+**Unblocks:** GF-001, GF-002, GF-006, GF-008 (4 flows)
+
+| Ticket                                             | Priority | Title                                                | Status                    |
+| -------------------------------------------------- | -------- | ---------------------------------------------------- | ------------------------- |
+| [TER-96](https://linear.app/terpcorp/issue/TER-96) | Urgent   | GF-001: Fix intake location site schema mismatch     | In Review (PR #404 stale) |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97) | Urgent   | GF-002: Fix purchaseOrders.create vendor mapping 500 | In Review (PR #404 stale) |
+| [TER-98](https://linear.app/terpcorp/issue/TER-98) | Urgent   | GF-008: Fix samples.createRequest 500 on insert      | In Review (PR #404 stale) |
+| [TER-99](https://linear.app/terpcorp/issue/TER-99) | High     | GF-006: Restore Client Ledger navigation             | In Review (PR #404 stale) |
+
+---
+
+## Wave 8: Input Validation & Guard Rails (BACKLOG)
+
+**Priority:** P1 — HIGH | **Estimate:** 8h
+
+| Ticket                                               | Priority | Title                                                 | Status  |
+| ---------------------------------------------------- | -------- | ----------------------------------------------------- | ------- |
+| [TER-251](https://linear.app/terpcorp/issue/TER-251) | Urgent   | orders.create rejects empty items array               | Backlog |
+| [TER-252](https://linear.app/terpcorp/issue/TER-252) | Urgent   | orders.delete returns NOT_FOUND for non-existent IDs  | Backlog |
+| [TER-253](https://linear.app/terpcorp/issue/TER-253) | Urgent   | orders.create rejects archived clients                | Backlog |
+| [TER-254](https://linear.app/terpcorp/issue/TER-254) | Urgent   | inventory.adjustQty uses row-level locking            | Backlog |
+| [TER-255](https://linear.app/terpcorp/issue/TER-255) | Urgent   | clients.delete NOT_FOUND for already-deleted entities | Backlog |
+
+---
+
+## Wave 9: E2E Test Stabilization (BACKLOG)
+
+**Priority:** P2 — HIGH | **Estimate:** 8h
+
+| Ticket                                               | Priority | Title                                                | Status  |
+| ---------------------------------------------------- | -------- | ---------------------------------------------------- | ------- |
+| [TER-238](https://linear.app/terpcorp/issue/TER-238) | High     | GF-001 Direct Intake e2e brittle row-count assertion | Backlog |
+| [TER-240](https://linear.app/terpcorp/issue/TER-240) | High     | GF-005 Pick & Pack e2e invalid locator syntax        | Backlog |
+| [TER-241](https://linear.app/terpcorp/issue/TER-241) | High     | GF-006 Client Ledger e2e header not found            | Backlog |
+| [TER-242](https://linear.app/terpcorp/issue/TER-242) | High     | GF-007 Inventory e2e duplicate h1 strict mode        | Backlog |
+| [TER-243](https://linear.app/terpcorp/issue/TER-243) | High     | Pick & Pack Cmd+K does not focus search input        | Backlog |
+
+---
+
+## Wave 10: Infrastructure & Edge Cases (BACKLOG)
+
+**Priority:** P3 — MEDIUM | **Estimate:** 8h
+
+| Ticket                                               | Priority | Title                                      | Status      |
+| ---------------------------------------------------- | -------- | ------------------------------------------ | ----------- |
+| [TER-93](https://linear.app/terpcorp/issue/TER-93)   | High     | Production migration drift / deploy parity | In Progress |
+| [TER-262](https://linear.app/terpcorp/issue/TER-262) | Medium   | vendorPayables.create SELECT query error   | Backlog     |
+| [TER-263](https://linear.app/terpcorp/issue/TER-263) | Medium   | storage.createZone INSERT failure          | Backlog     |
+| [TER-264](https://linear.app/terpcorp/issue/TER-264) | Medium   | tags.create duplicate-check SELECT error   | Backlog     |
+| [TER-261](https://linear.app/terpcorp/issue/TER-261) | Medium   | Data cleanup: 5 LIVE batches with bad qty  | Backlog     |
+
+---
+
+## Open Items — Previous Phases
+
+| Ticket                                               | Priority | Title                                       | Status    | Notes                                                     |
+| ---------------------------------------------------- | -------- | ------------------------------------------- | --------- | --------------------------------------------------------- |
+| [TER-96](https://linear.app/terpcorp/issue/TER-96)   | Urgent   | GF-001: Fix intake location schema mismatch | In Review | PR #404 branch deleted — needs re-implementation (Wave 7) |
+| [TER-97](https://linear.app/terpcorp/issue/TER-97)   | Urgent   | GF-002: Fix PO create vendor mapping 500    | In Review | PR #404 branch deleted — needs re-implementation (Wave 7) |
+| [TER-98](https://linear.app/terpcorp/issue/TER-98)   | Urgent   | GF-008: Fix samples.createRequest 500       | In Review | PR #404 branch deleted — needs re-implementation (Wave 7) |
+| [TER-99](https://linear.app/terpcorp/issue/TER-99)   | High     | GF-006: Restore Client Ledger navigation    | In Review | PR #404 branch deleted — needs re-implementation (Wave 7) |
+| [TER-166](https://linear.app/terpcorp/issue/TER-166) | High     | Media follow-up: edge-case gaps             | In Review | Deferred — not MVP-blocking                               |
 
 ---
 
@@ -183,42 +266,52 @@ These tasks address regressions discovered during live e2e testing after the ini
 
 ## Schema Hardening & Vendor Deprecation (Waves 2-5)
 
-**Status:** 🟡 IN PROGRESS
-**Progress:** 2/7 tasks complete
+**Status:** ✅ COMPLETE
+**Progress:** 7/7 tasks complete
 **Branch:** `claude/plan-improvements-linear-5Tw9C`
 
-This workstream hardens the database schema and completes the vendor-to-clients migration. Tasks are organized into implementation waves.
+This workstream hardens the database schema and completes the vendor-to-clients migration. All waves completed 2026-02-17.
 
 ### Wave 2 — Schema Columns (Done)
 
-Completed 2026-02-17. Code merged to branch, PR pending.
+Completed 2026-02-17.
 
-- **[TER-245](https://linear.app/terpcorp/issue/TER-245):** Add product_images soft delete column — Done (schema + autoMigrate + photography router hardening)
+- **[TER-245](https://linear.app/terpcorp/issue/TER-245):** Add product_images soft delete column — Done
   - **Completed:** 2026-02-17
   - **Key Commits:** `b517d86`, `1871130`
-- **[TER-248](https://linear.app/terpcorp/issue/TER-248):** Add strain/referral columns on products table — Done (schema + autoMigrate)
+- **[TER-248](https://linear.app/terpcorp/issue/TER-248):** Add strain/referral columns on products table — Done
   - **Completed:** 2026-02-17
   - **Key Commits:** `b517d86`
 
-### Wave 3 — Vendor Deprecation (Backlog, prompts ready)
+### Wave 3 — Vendor Deprecation (Done)
 
-- **[TER-247](https://linear.app/terpcorp/issue/TER-247):** Rewrite vendor queries to use clients
-  - Prompt: `docs/prompts/WAVE3-TER-247-rewrite-vendor-queries.md`
-- **[TER-235](https://linear.app/terpcorp/issue/TER-235):** Deprecate vendor table
-  - Prompt: `docs/prompts/WAVE3-TER-235-deprecate-vendor-table.md`
-  - Depends on TER-247
+Completed 2026-02-17.
 
-### Wave 4 — DB Assertions & E2E (Backlog, prompts ready)
+- **[TER-247](https://linear.app/terpcorp/issue/TER-247):** Rewrite vendor queries to use clients — Done
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `9d22afe`
+- **[TER-235](https://linear.app/terpcorp/issue/TER-235):** Deprecate vendor table — Done (3 phases: schema columns + backfill script, code update + deprecation, phantom column removal + FK constraints)
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `56b5cf1`, `e582903`, `70683d4`
 
-- **[TER-249](https://linear.app/terpcorp/issue/TER-249):** Oracle DB assertions
-  - Prompt: `docs/prompts/WAVE4-TER-249-oracle-db-assertions.md`
-- **[TER-239](https://linear.app/terpcorp/issue/TER-239):** GF-002 procure-to-pay E2E flow
-  - Prompt: `docs/prompts/WAVE4-TER-239-gf002-procure-to-pay.md`
+### Wave 4 — DB Assertions & E2E (Done)
 
-### Wave 5 — Type Cleanup (Backlog, prompt ready)
+Completed 2026-02-17.
 
-- **[TER-250](https://linear.app/terpcorp/issue/TER-250):** Type cleanup z.any()/as any
-  - Prompt: `docs/prompts/WAVE5-TER-250-type-cleanup.md`
+- **[TER-249](https://linear.app/terpcorp/issue/TER-249):** Oracle DB assertions — Done (strengthened assertions, fixed broken patterns)
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `bcc3f2c`
+- **[TER-239](https://linear.app/terpcorp/issue/TER-239):** GF-002 procure-to-pay E2E flow — Done (full lifecycle coverage rewrite)
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `6e3948d`
+
+### Wave 5 — Type Cleanup (Done)
+
+Completed 2026-02-17.
+
+- **[TER-250](https://linear.app/terpcorp/issue/TER-250):** Type cleanup z.any()/as any — Done (eliminated from router business logic)
+  - **Completed:** 2026-02-17
+  - **Key Commits:** `a4c4350`
 
 ---
 

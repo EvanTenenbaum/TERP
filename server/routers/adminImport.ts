@@ -204,12 +204,11 @@ export const adminImportRouter = router({
       const totalStrains = await db
         .select({ count: sql<number>`COUNT(*)` })
         .from(strains);
-      const openthcStrains = await db.execute(sql`
-        SELECT COUNT(*) as count FROM strains WHERE openthcId IS NOT NULL
-      `);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MySQL raw query result lacks type info
-      const openthcCount = (openthcStrains as any)[0]?.count || 0;
+      const openthcStrains = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(strains)
+        .where(sql`openthcId IS NOT NULL`);
+      const openthcCount = openthcStrains[0]?.count ?? 0;
       return {
         totalStrains: totalStrains[0]?.count || 0,
         openthcStrains: openthcCount,

@@ -63,7 +63,7 @@ const widgetSchema = z.object({
   width: z.number(),
   height: z.number(),
   isVisible: z.boolean(),
-  config: z.any().optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 const saveLayoutInputSchema = z.object({

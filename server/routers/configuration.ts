@@ -6,20 +6,24 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import * as configManager from "../configurationManager";
+import type { SystemConfiguration } from "../configurationManager";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const configurationRouter = router({
   /**
    * Get current configuration
    */
-  get: protectedProcedure.use(requirePermission("settings:manage")).query(() => {
-    return configManager.getConfiguration();
-  }),
+  get: protectedProcedure
+    .use(requirePermission("settings:manage"))
+    .query(() => {
+      return configManager.getConfiguration();
+    }),
 
   /**
    * Get a specific configuration value
    */
-  getValue: protectedProcedure.use(requirePermission("settings:manage"))
+  getValue: protectedProcedure
+    .use(requirePermission("settings:manage"))
     .input(z.object({ path: z.string() }))
     .query(({ input }) => {
       return configManager.getConfigValue(input.path);
@@ -28,12 +32,18 @@ export const configurationRouter = router({
   /**
    * Set a configuration value
    */
-  setValue: protectedProcedure.use(requirePermission("settings:manage"))
+  setValue: protectedProcedure
+    .use(requirePermission("settings:manage"))
     .input(
       z.object({
         path: z.string(),
-        value: z.any(),
-        reason: z.string().optional()
+        value: z.union([
+          z.string(),
+          z.number(),
+          z.boolean(),
+          z.record(z.string(), z.unknown()),
+        ]),
+        reason: z.string().optional(),
       })
     )
     .mutation(({ input, ctx }) => {
@@ -49,15 +59,18 @@ export const configurationRouter = router({
   /**
    * Reset configuration to defaults
    */
-  reset: protectedProcedure.use(requirePermission("settings:manage")).mutation(({ ctx }) => {
-    configManager.resetConfiguration(ctx.user.id);
-    return { success: true };
-  }),
+  reset: protectedProcedure
+    .use(requirePermission("settings:manage"))
+    .mutation(({ ctx }) => {
+      configManager.resetConfiguration(ctx.user.id);
+      return { success: true };
+    }),
 
   /**
    * Get configuration change history
    */
-  getHistory: protectedProcedure.use(requirePermission("settings:manage"))
+  getHistory: protectedProcedure
+    .use(requirePermission("settings:manage"))
     .input(z.object({ limit: z.number().optional() }))
     .query(({ input }) => {
       return configManager.getConfigHistory(input.limit);
@@ -66,20 +79,24 @@ export const configurationRouter = router({
   /**
    * Validate configuration
    */
-  validate: protectedProcedure.use(requirePermission("settings:manage"))
-    .input(z.any())
+  validate: protectedProcedure
+    .use(requirePermission("settings:manage"))
+    .input(z.record(z.string(), z.unknown()))
     .query(({ input }) => {
-      const errors = configManager.validateConfiguration(input);
+      const errors = configManager.validateConfiguration(
+        input as unknown as SystemConfiguration
+      );
       return { valid: errors.length === 0, errors };
     }),
 
   /**
    * Apply a configuration preset
    */
-  applyPreset: protectedProcedure.use(requirePermission("settings:manage"))
+  applyPreset: protectedProcedure
+    .use(requirePermission("settings:manage"))
     .input(
       z.object({
-        preset: z.enum(["retail", "wholesale", "manufacturing"])
+        preset: z.enum(["retail", "wholesale", "manufacturing"]),
       })
     )
     .mutation(({ input, ctx }) => {
@@ -90,14 +107,18 @@ export const configurationRouter = router({
   /**
    * Get feature flags
    */
-  getFeatureFlags: protectedProcedure.use(requirePermission("settings:manage")).query(() => {
-    return {
-      creditManagement: configManager.FeatureFlags.isCreditManagementEnabled(),
-      badDebtWriteOff: configManager.FeatureFlags.isBadDebtWriteOffEnabled(),
-      automaticGLPosting: configManager.FeatureFlags.isAutomaticGLPostingEnabled(),
-      cogsCalculation: configManager.FeatureFlags.isCOGSCalculationEnabled(),
-      inventoryTracking: configManager.FeatureFlags.isInventoryTrackingEnabled()
-    };
-  })
+  getFeatureFlags: protectedProcedure
+    .use(requirePermission("settings:manage"))
+    .query(() => {
+      return {
+        creditManagement:
+          configManager.FeatureFlags.isCreditManagementEnabled(),
+        badDebtWriteOff: configManager.FeatureFlags.isBadDebtWriteOffEnabled(),
+        automaticGLPosting:
+          configManager.FeatureFlags.isAutomaticGLPostingEnabled(),
+        cogsCalculation: configManager.FeatureFlags.isCOGSCalculationEnabled(),
+        inventoryTracking:
+          configManager.FeatureFlags.isInventoryTrackingEnabled(),
+      };
+    }),
 });
-

@@ -8,6 +8,7 @@ tags:
   - tier1
   - clients
   - crud
+  - mutation
 timeout: 45000
 
 preconditions:
@@ -75,3 +76,22 @@ expected_ui:
     - "button:has-text('Edit Client'), [role='tab']:has-text('Overview'), [role='main']"
   text_present:
     - "Client Information"
+
+expected_db:
+  clients:
+    - where:
+        is_buyer: true
+        deleted_at_null: true
+      expect:
+        deleted_at_null: true
+        is_buyer: true
+      store_as: "created_client"
+      count_gte: 1
+
+  invariants:
+    - name: "Created client has unique TERI code"
+      query: |
+        SELECT COUNT(*) as cnt FROM clients
+        WHERE teri_code = $created_client.teri_code
+          AND deleted_at IS NULL
+      assert: "cnt = 1"

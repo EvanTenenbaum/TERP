@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as recurringOrdersDb from "../recurringOrdersDb";
 import * as orderEnhancements from "../orderEnhancements";
 import * as productRecommendations from "../productRecommendations";
@@ -15,7 +19,13 @@ export const orderEnhancementsRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        frequency: z.enum(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY"]),
+        frequency: z.enum([
+          "DAILY",
+          "WEEKLY",
+          "BIWEEKLY",
+          "MONTHLY",
+          "QUARTERLY",
+        ]),
         dayOfWeek: z.number().min(0).max(6).optional(),
         dayOfMonth: z.number().min(1).max(31).optional(),
         orderTemplate: z.object({
@@ -48,10 +58,12 @@ export const orderEnhancementsRouter = router({
     .input(
       z.object({
         recurringOrderId: z.number(),
-        frequency: z.enum(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY"]).optional(),
+        frequency: z
+          .enum(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY"])
+          .optional(),
         dayOfWeek: z.number().min(0).max(6).optional(),
         dayOfMonth: z.number().min(1).max(31).optional(),
-        orderTemplate: z.any().optional(),
+        orderTemplate: z.record(z.string(), z.unknown()).optional(),
         endDate: z.string().optional(),
         notifyClient: z.boolean().optional(),
         notifyEmail: z.string().optional(),
@@ -60,35 +72,46 @@ export const orderEnhancementsRouter = router({
     )
     .mutation(async ({ input }) => {
       const { recurringOrderId, ...data } = input;
-      return await recurringOrdersDb.updateRecurringOrder(recurringOrderId, data);
+      return await recurringOrdersDb.updateRecurringOrder(
+        recurringOrderId,
+        data
+      );
     }),
 
   pauseRecurringOrder: protectedProcedure
     .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
-      return await recurringOrdersDb.pauseRecurringOrder(input.recurringOrderId);
+      return await recurringOrdersDb.pauseRecurringOrder(
+        input.recurringOrderId
+      );
     }),
 
   resumeRecurringOrder: protectedProcedure
     .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
-      return await recurringOrdersDb.resumeRecurringOrder(input.recurringOrderId);
+      return await recurringOrdersDb.resumeRecurringOrder(
+        input.recurringOrderId
+      );
     }),
 
   cancelRecurringOrder: protectedProcedure
     .use(requirePermission("orders:delete"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
-      return await recurringOrdersDb.cancelRecurringOrder(input.recurringOrderId);
+      return await recurringOrdersDb.cancelRecurringOrder(
+        input.recurringOrderId
+      );
     }),
 
   listRecurringOrdersForClient: protectedProcedure
     .use(requirePermission("orders:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
-      return await recurringOrdersDb.listRecurringOrdersForClient(input.clientId);
+      return await recurringOrdersDb.listRecurringOrdersForClient(
+        input.clientId
+      );
     }),
 
   listAllRecurringOrders: protectedProcedure
@@ -108,7 +131,9 @@ export const orderEnhancementsRouter = router({
     .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
-      return await recurringOrdersDb.markRecurringOrderGenerated(input.recurringOrderId);
+      return await recurringOrdersDb.markRecurringOrderGenerated(
+        input.recurringOrderId
+      );
     }),
 
   // ===== REORDER FUNCTIONALITY =====
@@ -243,7 +268,13 @@ export const orderEnhancementsRouter = router({
           "SAMPLE_CONVERSION",
           "CUSTOM",
         ]),
-        targetType: z.enum(["GLOBAL", "PRODUCT", "BATCH", "CLIENT", "CATEGORY"]),
+        targetType: z.enum([
+          "GLOBAL",
+          "PRODUCT",
+          "BATCH",
+          "CLIENT",
+          "CATEGORY",
+        ]),
         targetId: z.number().optional(),
         thresholdValue: z.number(),
         thresholdOperator: z.enum(["LESS_THAN", "GREATER_THAN", "EQUALS"]),
@@ -266,7 +297,9 @@ export const orderEnhancementsRouter = router({
       z.object({
         alertConfigId: z.number(),
         thresholdValue: z.number().optional(),
-        thresholdOperator: z.enum(["LESS_THAN", "GREATER_THAN", "EQUALS"]).optional(),
+        thresholdOperator: z
+          .enum(["LESS_THAN", "GREATER_THAN", "EQUALS"])
+          .optional(),
         deliveryMethod: z.enum(["DASHBOARD", "EMAIL", "BOTH"]).optional(),
         emailAddress: z.string().email().optional(),
         isActive: z.boolean().optional(),
@@ -277,7 +310,8 @@ export const orderEnhancementsRouter = router({
 
       // SECURITY FIX: Validate ownership before update
       const userId = getAuthenticatedUserId(ctx);
-      const existingConfig = await alertConfigurationDb.getAlertConfigurationById(alertConfigId);
+      const existingConfig =
+        await alertConfigurationDb.getAlertConfigurationById(alertConfigId);
 
       if (!existingConfig) {
         throw new TRPCError({
@@ -293,7 +327,10 @@ export const orderEnhancementsRouter = router({
         });
       }
 
-      return await alertConfigurationDb.updateAlertConfiguration(alertConfigId, data);
+      return await alertConfigurationDb.updateAlertConfiguration(
+        alertConfigId,
+        data
+      );
     }),
 
   deleteAlertConfiguration: protectedProcedure
@@ -302,7 +339,10 @@ export const orderEnhancementsRouter = router({
     .mutation(async ({ input, ctx }) => {
       // SECURITY FIX: Validate ownership before delete
       const userId = getAuthenticatedUserId(ctx);
-      const existingConfig = await alertConfigurationDb.getAlertConfigurationById(input.alertConfigId);
+      const existingConfig =
+        await alertConfigurationDb.getAlertConfigurationById(
+          input.alertConfigId
+        );
 
       if (!existingConfig) {
         throw new TRPCError({
@@ -318,7 +358,9 @@ export const orderEnhancementsRouter = router({
         });
       }
 
-      return await alertConfigurationDb.deleteAlertConfiguration(input.alertConfigId);
+      return await alertConfigurationDb.deleteAlertConfiguration(
+        input.alertConfigId
+      );
     }),
 
   getUserAlertConfigurations: protectedProcedure
@@ -341,7 +383,10 @@ export const orderEnhancementsRouter = router({
     .mutation(async ({ input, ctx }) => {
       // SECURITY FIX: Validate ownership before toggle
       const userId = getAuthenticatedUserId(ctx);
-      const existingConfig = await alertConfigurationDb.getAlertConfigurationById(input.alertConfigId);
+      const existingConfig =
+        await alertConfigurationDb.getAlertConfigurationById(
+          input.alertConfigId
+        );
 
       if (!existingConfig) {
         throw new TRPCError({
@@ -357,6 +402,8 @@ export const orderEnhancementsRouter = router({
         });
       }
 
-      return await alertConfigurationDb.toggleAlertConfiguration(input.alertConfigId);
+      return await alertConfigurationDb.toggleAlertConfiguration(
+        input.alertConfigId
+      );
     }),
 });

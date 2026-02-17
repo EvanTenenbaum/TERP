@@ -2,12 +2,13 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import * as vendorContextDb from "../vendorContextDb";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, isNull } from "drizzle-orm";
 import { getDb } from "../db";
 import { vendorNotes } from "../../drizzle/schema";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { TRPCError } from "@trpc/server";
+import { getClientIdForVendor } from "../services/vendorMappingService";
 
 /**
  * Vendors Router - FACADE over clients table
@@ -400,6 +401,9 @@ export const vendorsRouter = router({
 
         const { users } = await import("../../drizzle/schema");
 
+        // Resolve canonical clientId for this legacy vendorId (TER-235)
+        const resolvedClientId = await getClientIdForVendor(input.vendorId);
+
         const notes = await db
           .select({
             id: vendorNotes.id,
@@ -412,7 +416,18 @@ export const vendorsRouter = router({
           })
           .from(vendorNotes)
           .leftJoin(users, eq(vendorNotes.userId, users.id))
-          .where(eq(vendorNotes.vendorId, input.vendorId))
+          // Prefer clientId match; fall back to vendorId for un-backfilled rows (TER-235)
+          .where(
+            resolvedClientId !== null
+              ? or(
+                  eq(vendorNotes.clientId, resolvedClientId),
+                  and(
+                    isNull(vendorNotes.clientId),
+                    eq(vendorNotes.vendorId, input.vendorId)
+                  )
+                )
+              : eq(vendorNotes.vendorId, input.vendorId)
+          )
           .orderBy(desc(vendorNotes.createdAt));
 
         return {
@@ -448,7 +463,15 @@ export const vendorsRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        const result = await db.insert(vendorNotes).values(input);
+        // Resolve canonical clientId for backfill alongside legacy vendorId (TER-235)
+        const resolvedClientId = await getClientIdForVendor(input.vendorId);
+
+        const result = await db.insert(vendorNotes).values({
+          vendorId: input.vendorId,
+          clientId: resolvedClientId ?? null, // Write canonical ref alongside legacy (TER-235)
+          userId: input.userId,
+          note: input.note,
+        });
 
         // Fetch the created note with user info
         const { users } = await import("../../drizzle/schema");

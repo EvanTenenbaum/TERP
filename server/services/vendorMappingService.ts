@@ -10,8 +10,9 @@
  * **Validates: Requirements 7.1, 7.2, 8.2**
  */
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   clients,
   vendors,
@@ -35,7 +36,9 @@ export interface VendorMappingService {
    * Get supplier profile by legacy vendor ID
    * Returns null if vendor hasn't been migrated
    */
-  getSupplierByLegacyVendorId(vendorId: number): Promise<SupplierProfile | null>;
+  getSupplierByLegacyVendorId(
+    vendorId: number
+  ): Promise<SupplierProfile | null>;
 
   /**
    * Migrate a vendor to the clients table
@@ -147,15 +150,20 @@ export async function getUnmigratedVendors(): Promise<
     .where(sql`${supplierProfiles.legacyVendorId} IS NOT NULL`);
 
   const migratedIds = new Set(
-    migratedVendorIds.map((r: { legacyVendorId: number | null }) => r.legacyVendorId).filter((id): id is number => id !== null)
+    migratedVendorIds
+      .map((r: { legacyVendorId: number | null }) => r.legacyVendorId)
+      .filter((id): id is number => id !== null)
   );
 
-  // Get all vendors not in the migrated set
+  // Get all non-deleted vendors not in the migrated set
   const allVendors = await db
     .select({ id: vendors.id, name: vendors.name })
-    .from(vendors);
+    .from(vendors)
+    .where(isNull(vendors.deletedAt));
 
-  return allVendors.filter((v: { id: number; name: string }) => !migratedIds.has(v.id));
+  return allVendors.filter(
+    (v: { id: number; name: string }) => !migratedIds.has(v.id)
+  );
 }
 
 /**
@@ -177,9 +185,9 @@ export async function checkForCollisions(vendorId: number): Promise<{
     return { hasCollision: false };
   }
 
-  // Check for existing client with same name (case-insensitive)
+  // Check for existing non-deleted client with same name (case-insensitive)
   const existingClient = await db.query.clients.findFirst({
-    where: sql`LOWER(${clients.name}) = LOWER(${vendor.name})`,
+    where: sql`LOWER(${clients.name}) = LOWER(${vendor.name}) AND ${clients.deletedAt} IS NULL`,
   });
 
   return {
@@ -200,7 +208,11 @@ export async function migrateVendorToClient(
     return { success: false, error: "Database not available" };
   }
 
-  const { dryRun = false, collisionStrategy = "skip", renameSuffix = " (Vendor)" } = options;
+  const {
+    dryRun = false,
+    collisionStrategy = "skip",
+    renameSuffix = " (Vendor)",
+  } = options;
 
   // Check if already migrated
   if (await isVendorMigrated(vendorId)) {
@@ -212,15 +224,15 @@ export async function migrateVendorToClient(
     };
   }
 
-  // Get the vendor
+  // Get the vendor (exclude soft-deleted)
   const vendor = await db.query.vendors.findFirst({
-    where: eq(vendors.id, vendorId),
+    where: and(eq(vendors.id, vendorId), isNull(vendors.deletedAt)),
   });
 
   if (!vendor) {
     return {
       success: false,
-      error: `Vendor with ID ${vendorId} not found`,
+      error: `Vendor with ID ${vendorId} not found or is deleted`,
     };
   }
 
@@ -245,30 +257,35 @@ export async function migrateVendorToClient(
         };
       }
 
-      // Create supplier profile for existing client
-      const [supplierProfile] = await db
-        .insert(supplierProfiles)
-        .values({
-          clientId: collision.existingClient.id,
-          contactName: vendor.contactName,
-          contactEmail: vendor.contactEmail,
-          contactPhone: vendor.contactPhone,
-          paymentTerms: vendor.paymentTerms,
-          supplierNotes: vendor.notes,
-          legacyVendorId: vendor.id,
-        })
-        .$returningId();
+      const existingClientId = collision.existingClient.id;
 
-      // Update client to be a seller
-      await db
-        .update(clients)
-        .set({ isSeller: true })
-        .where(eq(clients.id, collision.existingClient.id));
+      // Atomic: create supplier profile + mark client as seller
+      const supplierProfileId = await db.transaction(async tx => {
+        const [supplierProfile] = await tx
+          .insert(supplierProfiles)
+          .values({
+            clientId: existingClientId,
+            contactName: vendor.contactName,
+            contactEmail: vendor.contactEmail,
+            contactPhone: vendor.contactPhone,
+            paymentTerms: vendor.paymentTerms,
+            supplierNotes: vendor.notes,
+            legacyVendorId: vendor.id,
+          })
+          .$returningId();
+
+        await tx
+          .update(clients)
+          .set({ isSeller: true })
+          .where(eq(clients.id, existingClientId));
+
+        return supplierProfile.id;
+      });
 
       return {
         success: true,
-        clientId: collision.existingClient.id,
-        supplierProfileId: supplierProfile.id,
+        clientId: existingClientId,
+        supplierProfileId,
       };
     }
 
@@ -289,40 +306,43 @@ export async function migrateVendorToClient(
     };
   }
 
-  // Create the client
-  const [newClient] = await db
-    .insert(clients)
-    .values({
-      teriCode: generateTeriCodeForVendor(vendorId),
-      name: clientName,
-      email: vendor.contactEmail,
-      phone: vendor.contactPhone,
-      isBuyer: false,
-      isSeller: true,
-      isBrand: false,
-      isReferee: false,
-      isContractor: false,
-    })
-    .$returningId();
+  // Atomic: create client + supplier profile together
+  const result = await db.transaction(async tx => {
+    const [newClient] = await tx
+      .insert(clients)
+      .values({
+        teriCode: generateTeriCodeForVendor(vendorId),
+        name: clientName,
+        email: vendor.contactEmail,
+        phone: vendor.contactPhone,
+        isBuyer: false,
+        isSeller: true,
+        isBrand: false,
+        isReferee: false,
+        isContractor: false,
+      })
+      .$returningId();
 
-  // Create the supplier profile
-  const [supplierProfile] = await db
-    .insert(supplierProfiles)
-    .values({
-      clientId: newClient.id,
-      contactName: vendor.contactName,
-      contactEmail: vendor.contactEmail,
-      contactPhone: vendor.contactPhone,
-      paymentTerms: vendor.paymentTerms,
-      supplierNotes: vendor.notes,
-      legacyVendorId: vendor.id,
-    })
-    .$returningId();
+    const [supplierProfile] = await tx
+      .insert(supplierProfiles)
+      .values({
+        clientId: newClient.id,
+        contactName: vendor.contactName,
+        contactEmail: vendor.contactEmail,
+        contactPhone: vendor.contactPhone,
+        paymentTerms: vendor.paymentTerms,
+        supplierNotes: vendor.notes,
+        legacyVendorId: vendor.id,
+      })
+      .$returningId();
+
+    return { clientId: newClient.id, supplierProfileId: supplierProfile.id };
+  });
 
   return {
     success: true,
-    clientId: newClient.id,
-    supplierProfileId: supplierProfile.id,
+    clientId: result.clientId,
+    supplierProfileId: result.supplierProfileId,
   };
 }
 
@@ -348,9 +368,14 @@ export async function migrateAllVendors(
   for (const vendor of unmigrated) {
     const result = await migrateVendorToClient(vendor.id, options);
 
-    if (result.success && !result.error?.includes("DRY RUN")) {
-      results.migrated++;
-    } else if (result.error?.includes("collision") || result.error?.includes("already migrated")) {
+    if (result.success) {
+      if (result.error?.includes("already migrated")) {
+        results.skipped++;
+      } else {
+        // Counts both real migrations and dry-run would-migrate
+        results.migrated++;
+      }
+    } else if (result.error?.includes("collision")) {
       results.skipped++;
     } else {
       results.errors.push({
@@ -361,6 +386,111 @@ export async function migrateAllVendors(
   }
 
   return results;
+}
+
+// ============================================================================
+// PO Legacy Bridge (TER-247: moved from purchaseOrders.ts)
+// ============================================================================
+
+/**
+ * Resolve or create a legacy vendor ID for a given supplierClientId.
+ *
+ * This bridge function maintains the legacy bills.vendorId FK during the
+ * transition period while the canonical model moves to supplierClientId.
+ * The vendors table is allowed in this service (per CLAUDE.md approved list).
+ *
+ * @param supplierClientId - The canonical client ID with isSeller=true
+ * @returns The legacy vendor ID
+ */
+export async function resolveOrCreateLegacyVendorId(
+  supplierClientId: number
+): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [supplierClient] = await db
+    .select({ id: clients.id, name: clients.name })
+    .from(clients)
+    .where(eq(clients.id, supplierClientId))
+    .limit(1);
+
+  if (!supplierClient) {
+    throw new Error(`Client with ID ${supplierClientId} not found`);
+  }
+
+  const [existingProfile] = await db
+    .select({
+      id: supplierProfiles.id,
+      legacyVendorId: supplierProfiles.legacyVendorId,
+    })
+    .from(supplierProfiles)
+    .where(eq(supplierProfiles.clientId, supplierClientId))
+    .limit(1);
+
+  if (existingProfile?.legacyVendorId) {
+    return existingProfile.legacyVendorId;
+  }
+
+  let resolvedVendorId: number | null = null;
+  const [existingVendor] = await db
+    .select({ id: vendors.id })
+    .from(vendors)
+    .where(eq(vendors.name, supplierClient.name))
+    .limit(1);
+
+  if (existingVendor) {
+    resolvedVendorId = existingVendor.id;
+  } else {
+    try {
+      const [createdVendor] = await db
+        .insert(vendors)
+        .values({ name: supplierClient.name })
+        .$returningId();
+      resolvedVendorId = createdVendor.id;
+
+      logger.warn(
+        {
+          supplierClientId,
+          vendorId: resolvedVendorId,
+          supplierName: supplierClient.name,
+        },
+        "[PO] Auto-provisioned legacy vendor mapping for supplier"
+      );
+    } catch (error) {
+      const [vendorAfterRace] = await db
+        .select({ id: vendors.id })
+        .from(vendors)
+        .where(eq(vendors.name, supplierClient.name))
+        .limit(1);
+      if (!vendorAfterRace) {
+        throw error;
+      }
+      resolvedVendorId = vendorAfterRace.id;
+    }
+  }
+
+  if (!resolvedVendorId) {
+    throw new Error("Unable to create or resolve legacy vendor mapping");
+  }
+
+  if (existingProfile) {
+    await db
+      .update(supplierProfiles)
+      .set({ legacyVendorId: resolvedVendorId })
+      .where(eq(supplierProfiles.id, existingProfile.id));
+  } else {
+    await db.insert(supplierProfiles).values({
+      clientId: supplierClientId,
+      legacyVendorId: resolvedVendorId,
+    });
+  }
+
+  logger.info(
+    { supplierClientId, vendorId: resolvedVendorId },
+    "[PO] Linked supplier profile to legacy vendor"
+  );
+
+  return resolvedVendorId;
 }
 
 // ============================================================================

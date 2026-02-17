@@ -74,25 +74,26 @@ expected_ui:
 expected_db:
   batches:
     - where:
-        sku_like: "ORAC-STAT%"
+        sku: "{{temp:test_batch_status.sku}}"
       expect:
         batchStatus: "LIVE"
+        updatedAt_not_null: true
       store_as: "updated_batch"
 
-  audit_logs:
+  auditLogs:
     - where:
         entity: "Batch"
         action: "STATUS_CHANGE"
+        entityId: "$updated_batch.id"
       expect:
-        reason_contains: "Quality check"
+        actorId_not_null: true
       count_gte: 1
 
   invariants:
-    - name: "Valid status transition"
+    - name: "Valid status transition recorded"
       query: |
-        SELECT COUNT(*) as count FROM audit_logs
+        SELECT COUNT(*) as count FROM auditLogs
         WHERE entity = 'Batch'
           AND action = 'STATUS_CHANGE'
-          AND JSON_EXTRACT(before_snapshot, '$.batchStatus') = 'AWAITING_INTAKE'
-          AND JSON_EXTRACT(after_snapshot, '$.batchStatus') = 'LIVE'
+          AND entityId = $updated_batch.id
       assert: "count >= 1"

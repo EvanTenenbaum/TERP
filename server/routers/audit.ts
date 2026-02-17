@@ -3,7 +3,7 @@
  * Provides "No Black Box" audit trail for all calculated fields
  */
 
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
 import {
@@ -15,7 +15,7 @@ import {
   batches,
   inventoryMovements,
   users,
-  vendors,
+  supplierProfiles,
 } from "../../drizzle/schema";
 import { adminProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -389,15 +389,24 @@ export const auditRouter = router({
       const { vendorId, dateFrom, dateTo, page, pageSize } = input;
       const offset = (page - 1) * pageSize;
 
-      // Get vendor info
-      const [vendor] = await db
+      // Get vendor info via canonical clients table (lookup by legacy vendorId)
+      const [vendorRecord] = await db
         .select({
-          id: vendors.id,
-          name: vendors.name,
+          id: supplierProfiles.legacyVendorId,
+          name: clients.name,
         })
-        .from(vendors)
-        .where(eq(vendors.id, vendorId))
+        .from(clients)
+        .innerJoin(supplierProfiles, eq(supplierProfiles.clientId, clients.id))
+        .where(
+          and(
+            eq(supplierProfiles.legacyVendorId, vendorId),
+            eq(clients.isSeller, true),
+            isNull(clients.deletedAt)
+          )
+        )
         .limit(1);
+
+      const vendor = vendorRecord ?? null;
 
       if (!vendor) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Vendor not found" });
@@ -590,20 +599,20 @@ export const auditRouter = router({
 
       // BUG-060: Added proper logging and error handling instead of silent return
       logger.info(
-        { operation: 'getEntityHistory', entityType, entityId, page, pageSize },
-        '[Audit] Fetching entity history'
+        { operation: "getEntityHistory", entityType, entityId, page, pageSize },
+        "[Audit] Fetching entity history"
       );
 
       try {
         const database = await db;
         if (!database) {
           logger.error(
-            { operation: 'getEntityHistory', entityType, entityId },
-            '[Audit] Database not available'
+            { operation: "getEntityHistory", entityType, entityId },
+            "[Audit] Database not available"
           );
           throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Database not available',
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
           });
         }
 
@@ -624,8 +633,13 @@ export const auditRouter = router({
             .offset(offset);
 
           logger.debug(
-            { operation: 'getEntityHistory', entityType, entityId, count: clientOrders.length },
-            '[Audit] Retrieved client order history'
+            {
+              operation: "getEntityHistory",
+              entityType,
+              entityId,
+              count: clientOrders.length,
+            },
+            "[Audit] Retrieved client order history"
           );
 
           return clientOrders.map(o => ({
@@ -641,8 +655,8 @@ export const auditRouter = router({
           // Note: Payments are linked via invoices, not directly to orders
           // Return empty array until invoice linking is implemented
           logger.debug(
-            { operation: 'getEntityHistory', entityType, entityId },
-            '[Audit] Transaction/order history not yet implemented'
+            { operation: "getEntityHistory", entityType, entityId },
+            "[Audit] Transaction/order history not yet implemented"
           );
           return [];
         }
@@ -664,8 +678,13 @@ export const auditRouter = router({
             .offset(offset);
 
           logger.debug(
-            { operation: 'getEntityHistory', entityType, entityId, count: movements.length },
-            '[Audit] Retrieved inventory movement history'
+            {
+              operation: "getEntityHistory",
+              entityType,
+              entityId,
+              count: movements.length,
+            },
+            "[Audit] Retrieved inventory movement history"
           );
 
           return movements.map(m => ({
@@ -679,16 +698,22 @@ export const auditRouter = router({
 
         // Default: return empty array for unsupported entity types
         logger.debug(
-          { operation: 'getEntityHistory', entityType, entityId },
-          '[Audit] Unsupported entity type - returning empty array'
+          { operation: "getEntityHistory", entityType, entityId },
+          "[Audit] Unsupported entity type - returning empty array"
         );
         return [];
       } catch (error) {
         // BUG-060: Changed from silent catch to proper error handling
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         logger.error(
-          { operation: 'getEntityHistory', entityType, entityId, error: errorMessage },
-          '[Audit] Error fetching entity history'
+          {
+            operation: "getEntityHistory",
+            entityType,
+            entityId,
+            error: errorMessage,
+          },
+          "[Audit] Error fetching entity history"
         );
 
         // Re-throw TRPCErrors as-is
@@ -698,8 +723,8 @@ export const auditRouter = router({
 
         // Wrap other errors in TRPCError
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch audit history',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch audit history",
           cause: error,
         });
       }

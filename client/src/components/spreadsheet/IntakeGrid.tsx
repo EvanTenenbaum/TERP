@@ -141,19 +141,23 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch vendors for autocomplete
+  // Fetch suppliers for autocomplete (canonical: clients with isSeller=true)
   // QA-FIX: Added isLoading and error states for proper state handling
   const {
     data: vendorsData,
     isLoading: vendorsLoading,
     error: vendorsError,
     refetch: refetchVendors,
-  } = trpc.vendors.getAll.useQuery();
+  } = trpc.clients.list.useQuery({ clientTypes: ["seller"] });
   const vendors: VendorItem[] = useMemo(() => {
-    if (!vendorsData || !vendorsData.success) return [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (vendorsData as any).data;
-    return Array.isArray(data) ? data : [];
+    if (!vendorsData) return [];
+    const items = vendorsData.items;
+    if (!Array.isArray(items)) return [];
+    return items
+      .filter(
+        item => typeof item?.id === "number" && typeof item?.name === "string"
+      )
+      .map(item => ({ id: item.id, name: item.name }));
   }, [vendorsData]);
 
   // Fetch locations for dropdown

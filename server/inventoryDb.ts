@@ -10,7 +10,6 @@ import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { safeJsonParse } from "./_core/logger";
 import { generateStrainULID } from "./ulid";
 import {
-  vendors,
   brands,
   products,
   productSynonyms,
@@ -62,10 +61,15 @@ export async function createVendor(vendor: InsertVendor) {
   console.warn(
     "[DEPRECATED] createVendor() - use createSupplier() instead. Vendors table is deprecated."
   );
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const result = await db.insert(vendors).values(vendor);
+  // Delegate to canonical supplier creation (clients with isSeller=true)
+  const result = await createSupplier({
+    name: vendor.name,
+    contactName: vendor.contactName ?? undefined,
+    contactEmail: vendor.contactEmail ?? undefined,
+    contactPhone: vendor.contactPhone ?? undefined,
+    paymentTerms: vendor.paymentTerms ?? undefined,
+    notes: vendor.notes ?? undefined,
+  });
 
   // Invalidate vendor cache
   cache.delete(CacheKeys.vendors());
@@ -75,20 +79,29 @@ export async function createVendor(vendor: InsertVendor) {
 
 /**
  * @deprecated Use getSupplierByClientId() or getSupplierByLegacyVendorId() instead
+ * Resolves via canonical clients table (isSeller=true) using legacyVendorId mapping.
  */
 export async function getVendorById(id: number) {
   console.warn(
     "[DEPRECATED] getVendorById() - use getSupplierByLegacyVendorId() instead. Vendors table is deprecated."
   );
-  const db = await getDb();
-  if (!db) return null;
+  // Resolve via supplierProfiles legacyVendorId → canonical clients table
+  const supplier = await getSupplierByLegacyVendorId(id);
+  if (!supplier) return null;
 
-  const result = await db
-    .select()
-    .from(vendors)
-    .where(eq(vendors.id, id))
-    .limit(1);
-  return result[0] || null;
+  // Return in vendor-compatible shape for backward compat
+  return {
+    id: supplier.supplierProfile?.legacyVendorId ?? supplier.id,
+    name: supplier.name,
+    contactName: supplier.supplierProfile?.contactName ?? null,
+    contactEmail: supplier.supplierProfile?.contactEmail ?? null,
+    contactPhone: supplier.supplierProfile?.contactPhone ?? null,
+    paymentTerms: supplier.supplierProfile?.paymentTerms ?? null,
+    notes: supplier.supplierProfile?.supplierNotes ?? null,
+    deletedAt: supplier.deletedAt,
+    createdAt: supplier.createdAt,
+    updatedAt: supplier.updatedAt,
+  };
 }
 
 /**
@@ -100,32 +113,20 @@ export async function getAllVendors() {
   console.warn(
     "[DEPRECATED] getAllVendors() - use getAllSuppliers() instead. Vendors table is deprecated."
   );
-  return await cache.getOrSet(
-    CacheKeys.vendors(),
-    async () => {
-      const db = await getDb();
-      if (!db) return [];
-      return await db.select().from(vendors).orderBy(vendors.name);
-    },
-    CacheTTL.LONG // 15 minutes
-  );
+  // Delegate to canonical supplier query (clients with isSeller=true)
+  return await getAllSuppliers();
 }
 
 /**
  * @deprecated Use searchSuppliers() instead - vendors table is deprecated
+ * Delegates to searchSuppliers() which uses canonical clients table.
  */
 export async function searchVendors(query: string) {
   console.warn(
     "[DEPRECATED] searchVendors() - use searchSuppliers() instead. Vendors table is deprecated."
   );
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select()
-    .from(vendors)
-    .where(like(vendors.name, `%${query}%`))
-    .limit(20);
+  // Delegate to canonical supplier search (clients with isSeller=true)
+  return await searchSuppliers(query);
 }
 
 // ============================================================================
@@ -1093,8 +1094,8 @@ export async function seedInventoryData() {
     return;
   }
 
-  // Create sample vendor
-  await db.insert(vendors).values({
+  // Create sample supplier via canonical clients table (isSeller=true)
+  const { clientId: supplierClientId } = await createSupplier({
     name: "Green Valley Farms",
     contactName: "John Smith",
     contactEmail: "john@greenvalley.com",
@@ -1102,8 +1103,8 @@ export async function seedInventoryData() {
     notes: "Primary cannabis supplier",
   });
 
-  const vendorResult = await db.select().from(vendors).limit(1);
-  const vendorId = vendorResult[0].id;
+  // brands.vendorId is a nullable legacy field; use clientId as the reference value
+  const vendorId = supplierClientId;
 
   // Create sample brand
   await db.insert(brands).values({

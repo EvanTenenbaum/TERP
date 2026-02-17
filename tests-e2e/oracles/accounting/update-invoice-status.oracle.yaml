@@ -61,3 +61,28 @@ expected_db:
         id: "$seed:invoice.status_target.id"
       expect:
         status: "PAID"
+        deleted_at_null: true
+        total_amount_not_null: true
+      store_as: "paid_invoice"
+
+  invoice_payments:
+    - where:
+        invoice_id: "$paid_invoice.id"
+      expect:
+        allocated_amount_not_null: true
+        allocated_by_not_null: true
+      count_gte: 1
+
+  invariants:
+    - name: "Invoice status is terminal PAID"
+      query: |
+        SELECT status FROM invoices
+        WHERE id = $paid_invoice.id
+      assert: "status = 'PAID'"
+
+    - name: "Invoice not deleted after payment"
+      query: |
+        SELECT COUNT(*) as count FROM invoices
+        WHERE id = $paid_invoice.id
+          AND deleted_at IS NULL
+      assert: "count = 1"

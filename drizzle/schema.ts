@@ -186,19 +186,32 @@ export type InsertVendor = typeof vendors.$inferInsert;
  * Timestamped notes for vendors with user attribution
  * Feature: MF-016 Vendor Notes & History
  */
-export const vendorNotes = mysqlTable("vendorNotes", {
-  id: int("id").autoincrement().primaryKey(),
-  vendorId: int("vendorId")
-    .notNull()
-    .references(() => vendors.id, { onDelete: "cascade" }),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013),
-  userId: int("userId")
-    .notNull()
-    .references(() => users.id),
-  note: text("note").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const vendorNotes = mysqlTable(
+  "vendorNotes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    // Canonical client reference (TER-235 - replaces vendorId)
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
+    // DEPRECATED (TER-235): Use clientId instead.
+    // This column will be dropped in Phase 3 (after TER-248 completes).
+    // points to vendors.id — use clientId instead
+    vendorId: int("vendorId")
+      .notNull()
+      .references(() => vendors.id, { onDelete: "cascade" }),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id),
+    note: text("note").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    clientIdIdx: index("idx_vendor_notes_client_id").on(table.clientId),
+  })
+);
 
 export type VendorNote = typeof vendorNotes.$inferSelect;
 export type InsertVendorNote = typeof vendorNotes.$inferInsert;
@@ -233,7 +246,8 @@ export const purchaseOrders = mysqlTable(
       onDelete: "restrict",
     }),
 
-    // Vendor relationship (DEPRECATED - use supplierClientId instead)
+    // DEPRECATED (TER-235): Use supplierClientId instead.
+    // This column will be dropped in Phase 3 (after TER-248 completes).
     // Kept for backward compatibility during migration
     vendorId: int("vendorId")
       .notNull()
@@ -338,6 +352,15 @@ export const purchaseOrderItems = mysqlTable(
     // Item-specific notes
     notes: text("notes"),
 
+    // Supplier reference (canonical - uses clients table)
+    // Denormalized from parent PO for direct querying (TER-235)
+    supplierClientId: int("supplier_client_id").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+
+    // NOTE: purchaseOrderItems never had a vendorId column in the database.
+    // Supplier is inherited from the parent PO or tracked via supplierClientId (TER-235).
+
     deletedAt: timestamp("deletedAt"), // Soft delete support (ST-059)
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -345,6 +368,9 @@ export const purchaseOrderItems = mysqlTable(
   table => ({
     poIdIdx: index("idx_poi_po_id").on(table.purchaseOrderId),
     productIdIdx: index("idx_poi_product_id").on(table.productId),
+    supplierClientIdIdx: index("idx_poi_supplier_client_id").on(
+      table.supplierClientId
+    ),
   })
 );
 
@@ -417,19 +443,37 @@ export type InsertStrain = typeof strains.$inferInsert;
  * Represents sellable product definitions
  * ADDED: strainId for linking to strain library
  */
-export const products = mysqlTable("products", {
-  id: int("id").autoincrement().primaryKey(),
-  brandId: int("brandId").notNull(),
-  strainId: int("strainId"), // Link to strain library
-  nameCanonical: varchar("nameCanonical", { length: 500 }).notNull(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  category: varchar("category", { length: 100 }).notNull(),
-  subcategory: varchar("subcategory", { length: 100 }),
-  uomSellable: varchar("uomSellable", { length: 20 }).notNull().default("EA"),
-  description: text("description"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const products = mysqlTable(
+  "products",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    brandId: int("brandId").notNull(),
+
+    // Supplier reference (canonical - uses clients table)
+    // Primary supplier for this product (TER-235)
+    supplierClientId: int("supplier_client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
+
+    // NOTE: products never had a vendorId column in the database.
+    // Supplier is tracked solely via supplierClientId (TER-235).
+
+    strainId: int("strainId"), // Link to strain library
+    nameCanonical: varchar("nameCanonical", { length: 500 }).notNull(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+    category: varchar("category", { length: 100 }).notNull(),
+    subcategory: varchar("subcategory", { length: 100 }),
+    uomSellable: varchar("uomSellable", { length: 20 }).notNull().default("EA"),
+    description: text("description"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    supplierClientIdIdx: index("idx_products_supplier_client_id").on(
+      table.supplierClientId
+    ),
+  })
+);
 
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
@@ -549,7 +593,8 @@ export const lots = mysqlTable(
       onDelete: "restrict",
     }),
 
-    // Vendor reference (DEPRECATED - use supplierClientId instead)
+    // DEPRECATED (TER-235): Use supplierClientId instead.
+    // This column will be dropped in Phase 3 (after TER-248 completes).
     vendorId: int("vendorId").notNull(),
 
     date: timestamp("date").notNull(),
@@ -686,6 +731,8 @@ export type InsertBatch = typeof batches.$inferInsert;
 export const paymentHistory = mysqlTable("paymentHistory", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
+  // DEPRECATED (TER-235): Use supplierClientId instead (when added to this table in Phase 3).
+  // This column will be addressed in the accounting-scope migration (TER-248).
   vendorId: int("vendorId").notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
@@ -1195,6 +1242,8 @@ export const bills = mysqlTable("bills", {
   id: int("id").autoincrement().primaryKey(),
   billNumber: varchar("billNumber", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+  // DEPRECATED (TER-235): Use vendorClientId instead (accounting scope, TER-248).
+  // This column will be dropped in Phase 3 after TER-248 completes.
   vendorId: int("vendorId").notNull(),
   billDate: date("billDate").notNull(),
   dueDate: date("dueDate").notNull(),
