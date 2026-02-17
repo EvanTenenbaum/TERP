@@ -51,10 +51,6 @@ Phase 2 (code changes) is pure TypeScript; it has no DB footprint beyond what wa
 If Phase 1 must be rolled back after migration ran:
 
 ```sql
--- batches table
-ALTER TABLE batches DROP COLUMN supplier_client_id;
-DROP INDEX IF EXISTS idx_batches_supplier_client_id ON batches;
-
 -- purchaseOrderItems table
 ALTER TABLE purchaseOrderItems DROP COLUMN supplier_client_id;
 DROP INDEX IF EXISTS idx_poi_supplier_client_id ON purchaseOrderItems;
@@ -123,7 +119,9 @@ grep -n "vendorId\|vendor_id" /home/user/TERP/drizzle/schema.ts | grep -v "//\|s
 GATE 0b: Before editing schema, document:
 
 - Which tables already have `supplierClientId` (expected: `purchaseOrders`, `lots`, `payments`)
-- Which tables need `supplierClientId` added (expected: `batches`, `purchaseOrderItems`, `products`, `vendorNotes`)
+- Which tables need `supplierClientId` added (expected: `purchaseOrderItems`, `products`)
+- Which tables need `clientId` added (expected: `vendorNotes`)
+- Confirm `batches` does NOT need a column (supplier accessed via lot relationship)
 - Exact line numbers for each target table definition in `drizzle/schema.ts`
 
 ### Step 0c: Read every target file before editing
@@ -223,7 +221,7 @@ grep -n "supplierClientId\|supplier_client_id\|vendorId" /home/user/TERP/drizzle
 
 **File**: `drizzle/schema.ts`
 
-The `products` table (around line 420) has a `vendorId` column (non-FK, no reference) but no `supplierClientId`. This records the primary supplier of the product.
+The `products` table (around line 420) currently has NO `vendorId` column and NO `supplierClientId` column. Add both columns to track the primary supplier for each product.
 
 Before editing, read the exact current `products` table definition:
 
@@ -231,7 +229,7 @@ Before editing, read the exact current `products` table definition:
 grep -n "export const products" /home/user/TERP/drizzle/schema.ts
 ```
 
-Read 20 lines from that point to confirm current columns.
+Read 20 lines from that point to confirm current columns (id, brandId, strainId, nameCanonical, deletedAt, category, subcategory, uomSellable, description, createdAt, updatedAt).
 
 **Add** after the `brandId` line:
 
@@ -241,13 +239,9 @@ Read 20 lines from that point to confirm current columns.
 supplierClientId: int("supplier_client_id").references(() => clients.id, {
   onDelete: "set null",
 }),
-```
 
-Also convert the existing `vendorId` column to an explicit deprecation comment:
-
-```typescript
 // Vendor reference (DEPRECATED - use supplierClientId instead)
-// Retained for backward compatibility during migration
+// Added alongside supplierClientId for backward compatibility during migration
 vendorId: int("vendorId"),
 ```
 
@@ -481,11 +475,11 @@ The script must support `--dry-run` mode and require `--confirm-production` for 
 
 **Tables to backfill and their join logic**:
 
-| Table                | Column to write      | Source column                     | Join path                                                                                             |
-| -------------------- | -------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `purchaseOrderItems` | `supplier_client_id` | `vendorId` (from parent PO)       | `JOIN purchaseOrders po ON poi.purchaseOrderId = po.id`, then use `sp.legacy_vendor_id = po.vendorId` |
-| `products`           | `supplier_client_id` | `vendorId` (existing on products) | Direct: `sp.legacy_vendor_id = products.vendorId`                                                     |
-| `vendorNotes`        | `client_id`          | `vendorId`                        | Direct: `sp.legacy_vendor_id = vendorNotes.vendorId`                                                  |
+| Table                | Column to write      | Source column                      | Join path                                                                                             |
+| -------------------- | -------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `purchaseOrderItems` | `supplier_client_id` | `vendorId` (from parent PO)        | `JOIN purchaseOrders po ON poi.purchaseOrderId = po.id`, then use `sp.legacy_vendor_id = po.vendorId` |
+| `products`           | `supplier_client_id` | `vendorId` (newly added in Task 3) | Direct: `sp.legacy_vendor_id = products.vendorId` (only rows with vendorId set by other processes)    |
+| `vendorNotes`        | `client_id`          | `vendorId`                         | Direct: `sp.legacy_vendor_id = vendorNotes.vendorId`                                                  |
 
 **Script structure** (use this as the template):
 
