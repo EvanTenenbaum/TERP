@@ -2057,6 +2057,24 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add purchaseOrderItems.supplier_client_id FK constraint (TER-235)
+    try {
+      await db.execute(sql`
+        ALTER TABLE purchaseOrderItems
+        ADD CONSTRAINT poi_supplier_client_id_clients_id_fk
+        FOREIGN KEY (supplier_client_id) REFERENCES clients(id)
+        ON DELETE RESTRICT
+      `);
+      console.info("  ✅ Added poi_supplier_client_id_clients_id_fk FK");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  FK poi_supplier_client_id_clients_id_fk already exists"
+        );
+      }
+    }
+
     // Add products.supplier_client_id column (TER-235 vendor deprecation)
     try {
       await db.execute(
@@ -2087,6 +2105,24 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add products.supplier_client_id FK constraint (TER-235)
+    try {
+      await db.execute(sql`
+        ALTER TABLE products
+        ADD CONSTRAINT products_supplier_client_id_clients_id_fk
+        FOREIGN KEY (supplier_client_id) REFERENCES clients(id)
+        ON DELETE SET NULL
+      `);
+      console.info("  ✅ Added products_supplier_client_id_clients_id_fk FK");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  FK products_supplier_client_id_clients_id_fk already exists"
+        );
+      }
+    }
+
     // Add vendorNotes.client_id column (TER-235 vendor deprecation)
     try {
       await db.execute(
@@ -2114,6 +2150,24 @@ export async function runAutoMigrations() {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.info("  ℹ️  idx_vendor_notes_client_id already exists");
+      }
+    }
+
+    // Add vendorNotes.client_id FK constraint (TER-235)
+    try {
+      await db.execute(sql`
+        ALTER TABLE vendorNotes
+        ADD CONSTRAINT vendor_notes_client_id_clients_id_fk
+        FOREIGN KEY (client_id) REFERENCES clients(id)
+        ON DELETE CASCADE
+      `);
+      console.info("  ✅ Added vendor_notes_client_id_clients_id_fk FK");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  FK vendor_notes_client_id_clients_id_fk already exists"
+        );
       }
     }
 

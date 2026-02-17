@@ -11,8 +11,10 @@
  *
  * Tables backfilled:
  *   - purchaseOrderItems.supplier_client_id (via parent PO's vendorId)
- *   - products.supplier_client_id (via products.vendorId)
  *   - vendorNotes.client_id (via vendorNotes.vendorId)
+ *
+ * NOTE: products table never had a vendorId column, so no backfill needed.
+ * Products get supplierClientId set at creation time going forward.
  */
 
 import mysql from "mysql2/promise";
@@ -79,54 +81,6 @@ async function backfillPurchaseOrderItems(
     } else {
       console.warn(
         `  ⚠️  No mapping for vendorId=${row.vendorId} (purchaseOrderItem id=${row.id})`
-      );
-      noMappingFound++;
-    }
-  }
-
-  console.log(
-    `  ${dryRun ? "[DRY RUN] Would update" : "Updated"}: ${updated} rows`
-  );
-  if (noMappingFound > 0) {
-    console.log(
-      `  ⚠️  ${noMappingFound} rows have unmapped vendorId (pre-existing data gap)`
-    );
-  }
-}
-
-async function backfillProducts(
-  connection: mysql.Connection,
-  mappingMap: Map<number, number>,
-  dryRun: boolean
-): Promise<void> {
-  console.log("\n--- products.supplier_client_id ---");
-
-  const [rows] = (await connection.query(`
-    SELECT id, vendorId
-    FROM products
-    WHERE supplier_client_id IS NULL
-      AND vendorId IS NOT NULL
-      AND deleted_at IS NULL
-  `)) as [RowWithId[], unknown];
-
-  console.log(`  Rows needing backfill: ${rows.length}`);
-
-  let updated = 0;
-  let noMappingFound = 0;
-
-  for (const row of rows) {
-    const clientId = mappingMap.get(row.vendorId);
-    if (clientId !== undefined) {
-      if (!dryRun) {
-        await connection.query(
-          "UPDATE products SET supplier_client_id = ? WHERE id = ?",
-          [clientId, row.id]
-        );
-      }
-      updated++;
-    } else {
-      console.warn(
-        `  ⚠️  No mapping for vendorId=${row.vendorId} (product id=${row.id})`
       );
       noMappingFound++;
     }
@@ -210,19 +164,6 @@ async function printVerificationReport(
     `purchaseOrderItems: total=${poi.total}, with_supplier_client_id=${poi.with_supplier_client_id}, still_missing=${poi.still_missing}`
   );
 
-  // products coverage
-  const [productRows] = (await connection.query(`
-    SELECT
-      COUNT(*) AS total,
-      SUM(CASE WHEN supplier_client_id IS NOT NULL THEN 1 ELSE 0 END) AS with_supplier_client_id,
-      SUM(CASE WHEN supplier_client_id IS NULL AND vendorId IS NOT NULL THEN 1 ELSE 0 END) AS still_missing
-    FROM products
-  `)) as [CoverageRow[], unknown];
-  const prod = productRows[0];
-  console.log(
-    `products: total=${prod.total}, with_supplier_client_id=${prod.with_supplier_client_id}, still_missing=${prod.still_missing}`
-  );
-
   // vendorNotes coverage
   const [notesRows] = (await connection.query(`
     SELECT
@@ -276,11 +217,10 @@ async function main(): Promise<void> {
     // Table 1: purchaseOrderItems
     await backfillPurchaseOrderItems(connection, mappingMap, dryRun);
 
-    // Table 2: products
-    await backfillProducts(connection, mappingMap, dryRun);
-
-    // Table 3: vendorNotes
+    // Table 2: vendorNotes
     await backfillVendorNotes(connection, mappingMap, dryRun);
+
+    // NOTE: products table has no vendorId column — no backfill needed
 
     // Verification report
     await printVerificationReport(connection);

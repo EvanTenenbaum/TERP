@@ -44,6 +44,7 @@ const CRITICAL_TIER1_FLOWS = new Set([
   "Orders.Orders.Create",
   "Orders.Orders.ListOrders",
   "Orders.Orders.NavigateCreateOrder",
+  "Procurement.ProcureToPay.FullLifecycle",
 ]);
 
 /**
@@ -51,16 +52,14 @@ const CRITICAL_TIER1_FLOWS = new Set([
  * critical flow coverage. If you legitimately need to reduce this number,
  * update the constant and document the reason.
  */
-const MIN_TIER1_COUNT = 34;
+const MIN_TIER1_COUNT = 35;
 
 /**
  * Minimum number of mutation flows with expected_db contracts.
  * Prevents silent removal of DB assertion requirements.
  * Last updated: 2026-02-17 (TER-249: strengthened oracle DB assertions,
  * added mutation tag to CRM.Clients.CreateClient, deepened assertions
- * across 11 existing oracles). Count reflects valid oracle files only
- * (procurement/gf-002-procure-to-pay.oracle.yaml excluded due to pre-existing
- * YAML parse error: duplicated mapping key "bills").
+ * across 11 existing oracles; TER-239: added Procurement.ProcureToPay.FullLifecycle).
  */
 const MIN_MUTATION_WITH_DB_COUNT = 30;
 

@@ -358,10 +358,8 @@ export const purchaseOrderItems = mysqlTable(
       onDelete: "restrict",
     }),
 
-    // DEPRECATED (TER-235): Use supplierClientId instead.
-    // This column will be dropped in Phase 3 (after TER-248 completes).
-    // Retained for backward compatibility during migration
-    vendorId: int("vendorId"),
+    // NOTE: purchaseOrderItems never had a vendorId column in the database.
+    // Supplier is inherited from the parent PO or tracked via supplierClientId (TER-235).
 
     deletedAt: timestamp("deletedAt"), // Soft delete support (ST-059)
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -457,10 +455,8 @@ export const products = mysqlTable(
       onDelete: "set null",
     }),
 
-    // DEPRECATED (TER-235): Use supplierClientId instead.
-    // This column will be dropped in Phase 3 (after TER-248 completes).
-    // Added alongside supplierClientId for backward compatibility during migration
-    vendorId: int("vendorId"),
+    // NOTE: products never had a vendorId column in the database.
+    // Supplier is tracked solely via supplierClientId (TER-235).
 
     strainId: int("strainId"), // Link to strain library
     nameCanonical: varchar("nameCanonical", { length: 500 }).notNull(),
