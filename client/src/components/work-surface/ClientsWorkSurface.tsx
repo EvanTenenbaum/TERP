@@ -116,14 +116,16 @@ interface Client {
   version?: number;
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
-  [key: string]: string | number | boolean | Date | null | undefined;
 }
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const CLIENT_TYPE_FILTERS = [
+const CLIENT_TYPE_FILTERS: {
+  value: ClientTypeFilter | "all";
+  label: string;
+}[] = [
   { value: "all", label: "All Types" },
   { value: "buyer", label: "Buyers" },
   { value: "seller", label: "Suppliers" },
@@ -592,6 +594,8 @@ export function ClientsWorkSurface() {
       await utils.clients.list.cancel();
       const previousData = utils.clients.list.getData(queryInput);
 
+      // tRPC types `old` as UnifiedPaginatedResponse<T> | undefined,
+      // so it always has `.items` — no raw-array branch needed.
       utils.clients.list.setData(queryInput, old => {
         if (!old) return old;
 
@@ -637,8 +641,9 @@ export function ClientsWorkSurface() {
     if (!sortColumn) return clients;
 
     return [...clients].sort((a: Client, b: Client) => {
-      const rawA = a[sortColumn];
-      const rawB = b[sortColumn];
+      const col = sortColumn as keyof Client;
+      const rawA = a[col];
+      const rawB = b[col];
       let aVal: string | number | boolean | null | undefined =
         rawA instanceof Date ? rawA.toISOString() : rawA;
       let bVal: string | number | boolean | null | undefined =

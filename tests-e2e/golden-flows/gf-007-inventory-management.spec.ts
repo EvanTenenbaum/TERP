@@ -24,22 +24,28 @@ test.describe("Golden Flow: GF-007 Inventory Management", (): void => {
       .or(page.locator('h1:has-text("Inventory")'));
     await expect(header).toBeVisible({ timeout: 5000 });
 
-    const batchRow = page.locator('[role="row"]').or(page.locator("tr")).first();
-    if (await batchRow.isVisible().catch(() => false)) {
-      await batchRow.click();
+    const batchRow = page
+      .locator('[role="row"]')
+      .or(page.locator("tr"))
+      .first();
+    if (!(await batchRow.isVisible().catch(() => false))) {
+      test.skip(true, "No inventory rows available — seed batch data first");
+      return;
+    }
 
-      const adjustButton = page
-        .locator('button:has-text("Adjust")')
-        .or(page.locator('button:has-text("Edit")'))
-        .or(page.locator('button:has-text("Update Qty")'));
-      if (
-        await adjustButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(adjustButton.first()).toBeVisible();
-      }
+    await batchRow.click();
+
+    const adjustButton = page
+      .locator('button:has-text("Adjust")')
+      .or(page.locator('button:has-text("Edit")'))
+      .or(page.locator('button:has-text("Update Qty")'));
+    if (
+      await adjustButton
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await expect(adjustButton.first()).toBeVisible();
     }
   });
 });
