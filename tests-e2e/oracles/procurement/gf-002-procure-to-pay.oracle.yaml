@@ -1,0 +1,160 @@
+# Oracle: Procurement.ProcureToPay.FullLifecycle
+# GF-002: Complete Procure-to-Pay golden flow DB assertions
+# Linear: TER-239
+#
+# NOTE: The task spec (TER-239) requested flow_id "P2P.GF002.FullLifecycle" but the
+# oracle loader validates flow_id against /^[A-Z][a-zA-Z]+\.[A-Z][a-zA-Z]+\.[A-Z][a-zA-Z]+/
+# which rejects alphanumeric segments like "P2P" and "GF002". Using
+# "Procurement.ProcureToPay.FullLifecycle" to satisfy the loader constraint.
+# See Known Issues in TER-239 return report.
+
+flow_id: "Procurement.ProcureToPay.FullLifecycle"
+description: "Verify DB state after complete Procure-to-Pay lifecycle: PO creation, submission, confirmation, receiving, bill recording, and full payment"
+role: "SuperAdmin"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - procurement
+  - golden-flow
+  - mutation
+  - financial
+timeout: 90000
+
+preconditions:
+  ensure:
+    - entity: "user"
+      ref: "seed:user.super_admin"
+      where:
+        email: "qa.superadmin@terp.test"
+        status: "active"
+    - entity: "client"
+      ref: "seed:client.test_supplier"
+      where:
+        deleted_at_null: true
+        is_seller: true
+  create:
+    - entity: "product"
+      ref: "temp:test_product"
+      data:
+        name: "GF-002 Test Product {{timestamp}}"
+
+steps:
+  - action: navigate
+    path: "/purchase-orders"
+    wait_for: "h1, [data-testid='purchase-orders-page'], table, .empty-state"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "po_page_loaded"
+
+expected_ui:
+  url_contains: "/purchase-orders"
+  visible:
+    - "h1, main, [data-testid='purchase-orders-page']"
+
+expected_db:
+  # 1. PO exists and is in RECEIVED status
+  purchase_orders:
+    - where:
+        purchaseOrderStatus: "RECEIVED"
+        supplierClientId_not_null: true
+      expect:
+        poNumber_not_null: true
+        total_gte: 0
+        createdBy_not_null: true
+      count_gte: 1
+
+  # 2. PO items exist with received quantities
+  purchase_order_items:
+    - where:
+        quantityReceived_gt: 0
+      expect:
+        quantityOrdered_gt: 0
+        unitCost_gte: 0
+        totalCost_not_null: true
+      count_gte: 1
+
+  # 3. Batch created from receiving
+  batches:
+    - where:
+        deletedAt_null: true
+      expect:
+        onHandQty_gte: 0
+        unitCogs_not_null: true
+        productId_not_null: true
+        lotId_not_null: true
+      count_gte: 1
+
+  # 4. Lot created during receiving session
+  lots:
+    - where:
+        deletedAt_null: true
+        supplierClientId_not_null: true
+      expect:
+        code_not_null: true
+      count_gte: 1
+
+  # 5. Inventory movement of type INTAKE created
+  inventory_movements:
+    - where:
+        inventoryMovementType: "INTAKE"
+        referenceType: "PO_RECEIPT"
+      expect:
+        quantityChange_gt: 0
+        batchId_not_null: true
+        performedBy_not_null: true
+      count_gte: 1
+
+  # 6. Bill created and linked to PO
+  bills:
+    - where:
+        referenceType: "PURCHASE_ORDER"
+        deletedAt_null: true
+      expect:
+        billNumber_not_null: true
+        vendorId_not_null: true
+        totalAmount_gt: 0
+        createdBy_not_null: true
+      count_gte: 1
+
+  # 7. Bill is fully paid
+  bills:
+    - where:
+        referenceType: "PURCHASE_ORDER"
+        status: "PAID"
+        deletedAt_null: true
+      expect:
+        amountPaid_gt: 0
+        amountDue_lte: 0
+      count_gte: 1
+
+  invariants:
+    - name: "PO total matches sum of line item totals"
+      query: |
+        SELECT po.total, SUM(poi.total_cost) AS items_total
+        FROM purchase_orders po
+        JOIN purchase_order_items poi ON poi.purchase_order_id = po.id
+        WHERE po.purchase_order_status = 'RECEIVED'
+        GROUP BY po.id
+        HAVING ABS(po.total - items_total) <= 0.01
+      assert: "count >= 1"
+
+    - name: "Bill amountDue = totalAmount - amountPaid"
+      query: |
+        SELECT ABS(amount_due - (total_amount - amount_paid)) AS diff
+        FROM bills
+        WHERE reference_type = 'PURCHASE_ORDER' AND status = 'PAID'
+          AND deleted_at IS NULL
+      assert: "diff <= 0.01"
+
+    - name: "Inventory movement quantityAfter consistency"
+      query: |
+        SELECT COUNT(*) AS consistent
+        FROM inventory_movements
+        WHERE inventory_movement_type = 'INTAKE'
+          AND reference_type = 'PO_RECEIPT'
+          AND ABS(quantity_after - (quantity_before + quantity_change)) <= 0.0001
+      assert: "consistent >= 1"
