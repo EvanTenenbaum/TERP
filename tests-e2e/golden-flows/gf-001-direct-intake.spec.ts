@@ -69,12 +69,14 @@ test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
       );
       return;
     }
+    const rows = page.locator(".ag-center-cols-container .ag-row");
+    const initialRowCount = await rows.count();
+
     await addRowButton.click();
 
-    const rows = page.locator(".ag-center-cols-container .ag-row");
-    await expect(rows).toHaveCount(2);
+    await expect(rows).toHaveCount(initialRowCount + 1);
 
-    const rowIndex = 1;
+    const rowIndex = initialRowCount; // index of the newly added row
 
     await selectAgGridFirstOption(page, rowIndex, "vendorName");
     await fillAgGridTextCell(page, rowIndex, "brandName", brandName);
