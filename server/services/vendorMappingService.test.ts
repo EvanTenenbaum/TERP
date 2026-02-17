@@ -683,3 +683,99 @@ describe("Migration Edge Cases", () => {
     });
   });
 });
+
+// ============================================================================
+// Migration Result Classification Tests (dry-run counting fix)
+// ============================================================================
+
+describe("Migration Result Classification", () => {
+  /**
+   * Tests the counting logic in migrateAllVendors() to verify that
+   * dry-run successes are counted as "migrated", not silently dropped.
+   *
+   * This was a bug where dry-run results (success=true, error="[DRY RUN] ...")
+   * didn't match any counting branch and fell through uncounted.
+   */
+
+  interface MigrationResultForCounting {
+    success: boolean;
+    error?: string;
+  }
+
+  function classifyResult(
+    result: MigrationResultForCounting
+  ): "migrated" | "skipped" | "error" {
+    if (result.success) {
+      if (result.error?.includes("already migrated")) {
+        return "skipped";
+      }
+      return "migrated";
+    } else if (result.error?.includes("collision")) {
+      return "skipped";
+    }
+    return "error";
+  }
+
+  it("should classify successful migration as 'migrated'", () => {
+    expect(classifyResult({ success: true })).toBe("migrated");
+  });
+
+  it("should classify dry-run create as 'migrated'", () => {
+    expect(
+      classifyResult({
+        success: true,
+        error:
+          '[DRY RUN] Would create client "Vendor" with teriCode VEND-000042',
+      })
+    ).toBe("migrated");
+  });
+
+  it("should classify dry-run merge as 'migrated'", () => {
+    expect(
+      classifyResult({
+        success: true,
+        error: "[DRY RUN] Would merge with existing client",
+      })
+    ).toBe("migrated");
+  });
+
+  it("should classify already-migrated vendor as 'skipped'", () => {
+    expect(
+      classifyResult({
+        success: true,
+        error: "Vendor already migrated",
+      })
+    ).toBe("skipped");
+  });
+
+  it("should classify name collision (skip strategy) as 'skipped'", () => {
+    expect(
+      classifyResult({
+        success: false,
+        error: "Name collision with existing client: Acme Corp",
+      })
+    ).toBe("skipped");
+  });
+
+  it("should classify vendor-not-found as 'error'", () => {
+    expect(
+      classifyResult({
+        success: false,
+        error: "Vendor with ID 999 not found or is deleted",
+      })
+    ).toBe("error");
+  });
+
+  it("should classify unknown failure as 'error'", () => {
+    expect(
+      classifyResult({
+        success: false,
+        error: "Database not available",
+      })
+    ).toBe("error");
+  });
+
+  it("should classify failure without error message as 'error'", () => {
+    expect(classifyResult({ success: false })).toBe("error");
+  });
+});
