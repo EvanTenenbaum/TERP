@@ -87,3 +87,22 @@ expected_db:
         id: "$seed:client.test_buyer.id"
       expect:
         phone: "555-000-1234"
+        deleted_at_null: true
+        updated_at_not_null: true
+      store_as: "updated_client"
+
+  client_activity:
+    - where:
+        client_id: "$updated_client.id"
+        activity_type: "UPDATED"
+      expect:
+        user_id_not_null: true
+      count_gte: 1
+
+  invariants:
+    - name: "Update did not delete client"
+      query: |
+        SELECT COUNT(*) as count FROM clients
+        WHERE id = $updated_client.id
+          AND deleted_at IS NULL
+      assert: "count = 1"

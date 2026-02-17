@@ -101,5 +101,21 @@ expected_db:
         client_id: "$seed:client.test_buyer.id"
         amount: "1500.00"
       expect:
-        id_not_null: true
+        transaction_type: "INVOICE"
+        payment_status: "PENDING"
+      store_as: "created_transaction"
       count_gte: 1
+
+  invariants:
+    - name: "Transaction amount matches input"
+      query: |
+        SELECT CAST(amount AS DECIMAL(10,2)) as amt
+        FROM client_transactions
+        WHERE id = $created_transaction.id
+      assert: "amt = 1500.00"
+
+    - name: "Transaction not hard deleted"
+      query: |
+        SELECT COUNT(*) as count FROM client_transactions
+        WHERE id = $created_transaction.id
+      assert: "count = 1"

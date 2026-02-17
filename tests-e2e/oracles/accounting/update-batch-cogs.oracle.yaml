@@ -45,3 +45,12 @@ expected_ui:
     - "[data-testid='batch-detail'], main"
   text_present:
     - "Cost"
+
+expected_db:
+  batches:
+    - where:
+        id: "$seed:batch.cost_visible.id"
+      expect:
+        deleted_at_null: true
+        unitCogs_not_null: true
+      store_as: "cost_batch"

@@ -102,3 +102,16 @@ expected_db:
       expect:
         actorId_not_null: true
       count_gte: 1
+
+  invariants:
+    - name: "Intake movement quantity matches batch on-hand"
+      query: |
+        SELECT
+          b.onHandQty,
+          (SELECT SUM(quantityChange) FROM inventoryMovements
+           WHERE batchId = b.id AND inventoryMovementType = 'INTAKE') as intake_sum
+        FROM batches b
+        WHERE b.batchStatus = 'AWAITING_INTAKE'
+        ORDER BY b.createdAt DESC
+        LIMIT 1
+      assert: "onHandQty = intake_sum OR intake_sum IS NULL"

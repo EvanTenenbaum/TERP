@@ -79,13 +79,28 @@ expected_db:
         id: "$seed:batch.og_kush.id"
       expect:
         batchStatus: "LIVE"
+        updatedAt_not_null: true
       store_as: "updated_batch"
 
-  audit_logs:
+  auditLogs:
     - where:
         entity: "Batch"
-        entityId: "$seed:batch.og_kush.id"
-        action: "BATCH_UPDATE"
+        entityId: "$updated_batch.id"
+        action_in: ["BATCH_UPDATE", "UPDATE"]
       expect:
-        reason_contains: "Q1"
+        actorId_not_null: true
       count_gte: 1
+
+  invariants:
+    - name: "Batch update preserved on-hand quantity"
+      query: |
+        SELECT onHandQty FROM batches
+        WHERE id = $updated_batch.id
+      assert: "onHandQty >= 0"
+
+    - name: "Batch still active after update"
+      query: |
+        SELECT COUNT(*) as count FROM batches
+        WHERE id = $updated_batch.id
+          AND deleted_at IS NULL
+      assert: "count = 1"

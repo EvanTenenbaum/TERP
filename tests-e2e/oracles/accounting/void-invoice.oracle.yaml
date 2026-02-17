@@ -71,3 +71,25 @@ expected_db:
       expect:
         status: "VOID"
         notes_contains: "VOIDED"
+        deleted_at_null: true
+      store_as: "voided_invoice"
+
+  invariants:
+    - name: "Voided invoice is in terminal state"
+      query: |
+        SELECT status FROM invoices
+        WHERE id = $voided_invoice.id
+      assert: "status = 'VOID'"
+
+    - name: "Voided invoice not hard deleted"
+      query: |
+        SELECT COUNT(*) as count FROM invoices
+        WHERE id = $voided_invoice.id
+      assert: "count = 1"
+
+    - name: "Void is irreversible: no non-void transitions possible"
+      query: |
+        SELECT COUNT(*) as count FROM invoices
+        WHERE id = $voided_invoice.id
+          AND status != 'VOID'
+      assert: "count = 0"

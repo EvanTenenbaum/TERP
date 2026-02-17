@@ -56,8 +56,13 @@ const MIN_TIER1_COUNT = 34;
 /**
  * Minimum number of mutation flows with expected_db contracts.
  * Prevents silent removal of DB assertion requirements.
+ * Last updated: 2026-02-17 (TER-249: strengthened oracle DB assertions,
+ * added mutation tag to CRM.Clients.CreateClient, deepened assertions
+ * across 11 existing oracles). Count reflects valid oracle files only
+ * (procurement/gf-002-procure-to-pay.oracle.yaml excluded due to pre-existing
+ * YAML parse error: duplicated mapping key "bills").
  */
-const MIN_MUTATION_WITH_DB_COUNT = 20;
+const MIN_MUTATION_WITH_DB_COUNT = 30;
 
 describe("oracle metadata contract", () => {
   const oracles = loadOraclesFromDir(ORACLES_ROOT);

@@ -70,14 +70,31 @@ expected_ui:
 expected_db:
   batches:
     - where:
-        sku_like: "ORAC-DELE%"
+        sku: "{{temp:test_batch_to_delete.sku}}"
       expect:
         batchStatus: "CLOSED"
+        onHandQty_gte: 0
+      store_as: "deleted_batch"
 
-  audit_logs:
+  auditLogs:
     - where:
         entity: "Batch"
         action_in: ["DELETE", "STATUS_CHANGE"]
+        entityId: "$deleted_batch.id"
       expect:
         actorId_not_null: true
       count_gte: 1
+
+  invariants:
+    - name: "Soft delete preserves batch record"
+      query: |
+        SELECT COUNT(*) as count FROM batches
+        WHERE id = $deleted_batch.id
+      assert: "count = 1"
+
+    - name: "Closed batch excluded from live inventory"
+      query: |
+        SELECT COUNT(*) as count FROM batches
+        WHERE id = $deleted_batch.id
+          AND batchStatus = 'LIVE'
+      assert: "count = 0"

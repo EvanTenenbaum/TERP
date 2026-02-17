@@ -74,6 +74,16 @@ expected_db:
   client_communications:
     - where:
         client_id: "$seed:client.test_buyer.id"
+        notes_contains: "Discussed delivery"
       expect:
-        id_not_null: true
+        logged_by_not_null: true
+        communication_type_not_null: true
+      store_as: "added_communication"
       count_gte: 1
+
+  invariants:
+    - name: "Communication linked to correct client"
+      query: |
+        SELECT client_id FROM client_communications
+        WHERE id = $added_communication.id
+      assert: "client_id = $seed:client.test_buyer.id"

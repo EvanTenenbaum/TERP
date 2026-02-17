@@ -60,4 +60,20 @@ expected_db:
     - where:
         id: "$seed:invoice.reminder_target.id"
       expect:
-        deletedAt_null: true
+        status_in: ["SENT", "VIEWED", "PARTIAL", "OVERDUE"]
+        deleted_at_null: true
+      store_as: "reminded_invoice"
+
+  invariants:
+    - name: "Invoice still accessible after reminder"
+      query: |
+        SELECT COUNT(*) as count FROM invoices
+        WHERE id = $reminded_invoice.id
+          AND deleted_at IS NULL
+      assert: "count = 1"
+
+    - name: "Invoice in valid post-reminder status"
+      query: |
+        SELECT status FROM invoices
+        WHERE id = $reminded_invoice.id
+      assert: "status IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')"
