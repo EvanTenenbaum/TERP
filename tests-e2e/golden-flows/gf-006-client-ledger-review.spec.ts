@@ -15,76 +15,85 @@ test.describe("Golden Flow: GF-006 Client Ledger Review", (): void => {
   test("should navigate to client ledger and show ledger tools", async ({
     page,
   }): Promise<void> => {
+    // Phase 1: Navigate to clients list
     await page.goto("/clients");
     await page.waitForLoadState("networkidle");
 
-    const clientRow = page.locator('[role="row"], tr').first();
-    if (await clientRow.isVisible().catch(() => false)) {
-      await clientRow.click();
+    // Phase 2: Check if we have client data to test with
+    const clientRow = page
+      .locator('[role="row"]')
+      .or(page.locator("tr"))
+      .first();
+    const hasClients = await clientRow.isVisible().catch(() => false);
+    if (!hasClients) {
+      test.skip(true, "No client data available — seed clients first");
+      return;
+    }
 
-      const ledgerTab = page.locator(
-        'a:has-text("Ledger"), button:has-text("Ledger"), [data-testid="ledger-tab"]'
-      );
-      if (
-        await ledgerTab
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await ledgerTab.first().click();
-      } else {
-        const openClientButton = page
-          .locator('button[aria-label*="Open"], td button, [aria-label*="View"]')
+    // Phase 3: Navigate to a client's ledger
+    await clientRow.click();
+    await page.waitForLoadState("networkidle");
+
+    // Try direct ledger tab first
+    const ledgerTab = page
+      .locator('[data-testid="ledger-tab"]')
+      .or(page.locator('a:has-text("Ledger")'))
+      .or(page.locator('button:has-text("Ledger")'));
+
+    if (await ledgerTab.first().isVisible().catch(() => false)) {
+      await ledgerTab.first().click();
+      await page.waitForLoadState("networkidle");
+    } else {
+      // Try the open-client button then the profile ledger button
+      const openClientButton = page
+        .locator('[aria-label*="View"]')
+        .or(page.locator('button[aria-label*="Open"]'))
+        .or(page.locator("td button"))
+        .first();
+
+      if (await openClientButton.isVisible().catch(() => false)) {
+        await openClientButton.click();
+        await page.waitForLoadState("networkidle");
+
+        const profileLedgerButton = page
+          .locator('button:has-text("View Ledger")')
+          .or(page.locator('a:has-text("View Ledger")'))
           .first();
-        if (await openClientButton.isVisible().catch(() => false)) {
-          await openClientButton.click();
-          const profileLedgerButton = page
-            .locator('button:has-text("View Ledger"), a:has-text("View Ledger")')
-            .first();
-          if (await profileLedgerButton.isVisible().catch(() => false)) {
-            await profileLedgerButton.click();
-          }
-        } else {
-          await page.goto("/client-ledger");
+
+        if (await profileLedgerButton.isVisible().catch(() => false)) {
+          await profileLedgerButton.click();
           await page.waitForLoadState("networkidle");
         }
-      }
-
-      const ledgerHeader = page.locator(
-        'h1:has-text("Ledger"), h2:has-text("Ledger"), :text("Client Ledger"), [data-testid="client-ledger"]'
-      );
-      const hasLedgerHeader = await ledgerHeader
-        .first()
-        .isVisible()
-        .catch(() => false);
-      if (!hasLedgerHeader) {
-        test.skip(true, "Ledger surface not reachable in this deployment flow");
-        return;
-      }
-
-      const filterControl = page.locator(
-        '[data-testid="ledger-filter"], select:has-text("All"), button:has-text("Filter")'
-      );
-      if (
-        await filterControl
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(filterControl.first()).toBeVisible();
-      }
-
-      const exportButton = page.locator(
-        'button:has-text("Export"), button:has-text("Download"), [data-testid="ledger-export"]'
-      );
-      if (
-        await exportButton
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await expect(exportButton.first()).toBeVisible();
+      } else {
+        // Fall back to direct URL
+        await page.goto("/client-ledger");
+        await page.waitForLoadState("networkidle");
       }
     }
+
+    // Phase 4: ASSERT the ledger is visible — test FAILS if ledger is unreachable
+    const ledgerHeader = page
+      .locator('[data-testid="client-ledger"]')
+      .or(page.locator('h1:has-text("Ledger")'))
+      .or(page.locator('h2:has-text("Ledger")'))
+      .or(page.locator(':text("Client Ledger")'));
+
+    await expect(ledgerHeader.first()).toBeVisible({ timeout: 10000 });
+
+    // Phase 5: Verify ledger tools exist (filter + export)
+    const filterControl = page
+      .locator('[data-testid="ledger-filter"]')
+      .or(page.locator('select:has-text("All")'))
+      .or(page.locator('button:has-text("Filter")'));
+
+    const exportButton = page
+      .locator('[data-testid="ledger-export"]')
+      .or(page.locator('button:has-text("Export")'))
+      .or(page.locator('button:has-text("Download")'));
+
+    // At least one of filter or export must be present
+    const hasFilter = await filterControl.first().isVisible().catch(() => false);
+    const hasExport = await exportButton.first().isVisible().catch(() => false);
+    expect(hasFilter || hasExport).toBeTruthy();
   });
 });
