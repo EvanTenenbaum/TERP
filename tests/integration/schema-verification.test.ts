@@ -44,6 +44,16 @@ const TABLES_PENDING_MIGRATION: string[] = [
  */
 const COLUMNS_PENDING_MIGRATION: string[] = [
   // All previously-pending columns have been migrated (TER-248)
+  // SCHEMA-010: referral_settings has two conflicting Drizzle definitions
+  // (referralCreditSettings in schema.ts vs referralGamificationSettings in schema-gamification.ts).
+  // The credit-specific columns below exist in the referralCreditSettings definition but
+  // drizzle-kit push creates the table from the gamification definition. These columns
+  // are added via autoMigrate at runtime. Skip until the dual-definition conflict is resolved.
+  "referral_settings.client_tier",
+  "referral_settings.credit_percentage",
+  "referral_settings.min_order_amount",
+  "referral_settings.max_credit_amount",
+  "referral_settings.credit_expiry_days",
 ];
 
 // ============================================================================
