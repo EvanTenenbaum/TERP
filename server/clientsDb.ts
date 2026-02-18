@@ -3,7 +3,7 @@
  * Handles all database operations for the Client Management System
  */
 
-import { eq, and, desc, like, or, sql, SQL } from "drizzle-orm";
+import { eq, and, desc, like, or, sql, SQL, isNull } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   clients,
@@ -530,11 +530,30 @@ export async function deleteClient(clientId: number, userId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Soft delete by setting deletedAt timestamp
-  await db
+  // TER-255: Atomic conditional soft-delete — prevents TOCTOU race
+  // Only updates if client exists AND is not already archived
+  const result = await db
     .update(clients)
     .set({ deletedAt: new Date() })
-    .where(eq(clients.id, clientId));
+    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)));
+
+  const rowsAffected =
+    (result as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+
+  if (rowsAffected === 0) {
+    // Distinguish between not-found and already-archived
+    const existing = await db
+      .select({ id: clients.id, deletedAt: clients.deletedAt })
+      .from(clients)
+      .where(eq(clients.id, clientId))
+      .limit(1)
+      .then((rows) => rows[0]);
+
+    if (!existing) {
+      throw new Error(`Client with ID ${clientId} not found`);
+    }
+    throw new Error(`Client with ID ${clientId} is already archived`);
+  }
 
   // Log activity if userId provided
   if (userId) {
