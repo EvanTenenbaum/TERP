@@ -1,6 +1,15 @@
 # SCHEMA-016: Root Cause and Required Migration
 
-## Root Cause Identified
+> **⚠️ ARCHIVED — 2026-02-18**
+> This issue was resolved by **TER-248** (merged 2026-02-17, commit `b517d86`).
+> The `products.strainId` column is now applied automatically via `server/autoMigrate.ts`
+> on every server startup (idempotent `ADD COLUMN IF NOT EXISTS`). The graceful-degradation
+> workaround (`safeProductSelect`) and `COLUMNS_PENDING_MIGRATION` skip-list have been
+> removed. No manual migration is required.
+
+---
+
+## Root Cause Identified (Historical)
 
 **The `products.strainId` column migration EXISTS but was NEVER EXECUTED on production.**
 
