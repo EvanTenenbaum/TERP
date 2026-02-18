@@ -162,6 +162,13 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       throw new Error(`Client ${input.clientId} not found`);
     }
 
+    // TER-253: Reject orders for archived (soft-deleted) clients
+    if (client.deletedAt !== null) {
+      throw new Error(
+        `Cannot create order for archived client ${input.clientId}`
+      );
+    }
+
     // 2. Process each item and calculate COGS
     // IMPORTANT: Lock batches with FOR UPDATE to prevent race conditions
     const processedItems: OrderItem[] = [];

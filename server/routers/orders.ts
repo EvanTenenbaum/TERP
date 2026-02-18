@@ -147,24 +147,29 @@ export const ordersRouter = router({
         orderType: z.enum(["QUOTE", "SALE"]),
         isDraft: z.boolean().optional(),
         clientId: z.number(),
-        items: z.array(
-          z.object({
-            batchId: z.number(),
-            displayName: z.string().optional(),
-            // ORD-002: Quantity and prices must be positive/non-negative
-            quantity: z.number().positive("Quantity must be greater than 0"),
-            unitPrice: z.number().nonnegative("Unit price cannot be negative"),
-            isSample: z.boolean(),
-            overridePrice: z
-              .number()
-              .nonnegative("Override price cannot be negative")
-              .optional(),
-            overrideCogs: z
-              .number()
-              .nonnegative("Override COGS cannot be negative")
-              .optional(),
-          })
-        ),
+        // TER-251: Require at least one item to prevent $0 orders
+        items: z
+          .array(
+            z.object({
+              batchId: z.number(),
+              displayName: z.string().optional(),
+              // ORD-002: Quantity and prices must be positive/non-negative
+              quantity: z.number().positive("Quantity must be greater than 0"),
+              unitPrice: z
+                .number()
+                .nonnegative("Unit price cannot be negative"),
+              isSample: z.boolean(),
+              overridePrice: z
+                .number()
+                .nonnegative("Override price cannot be negative")
+                .optional(),
+              overrideCogs: z
+                .number()
+                .nonnegative("Override COGS cannot be negative")
+                .optional(),
+            })
+          )
+          .min(1, "At least one item is required"),
         validUntil: z.string().optional(),
         paymentTerms: z
           .enum(["NET_7", "NET_15", "NET_30", "COD", "PARTIAL", "CONSIGNMENT"])
@@ -306,6 +311,16 @@ export const ordersRouter = router({
     .use(requirePermission("orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
+      // TER-252: Verify order exists before deleting
+      const existing = await ordersDb.getOrderById(input.id);
+
+      if (!existing || existing.deletedAt !== null) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Order with ID ${input.id} not found`,
+        });
+      }
+
       const rowsAffected = await softDelete(orders, input.id);
       return { success: rowsAffected > 0 };
     }),

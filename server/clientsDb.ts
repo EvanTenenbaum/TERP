@@ -530,6 +530,22 @@ export async function deleteClient(clientId: number, userId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // TER-255: Verify client exists and is not already deleted
+  const existing = await db
+    .select({ id: clients.id, deletedAt: clients.deletedAt })
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1)
+    .then(rows => rows[0]);
+
+  if (!existing) {
+    throw new Error(`Client with ID ${clientId} not found`);
+  }
+
+  if (existing.deletedAt !== null) {
+    throw new Error(`Client with ID ${clientId} is already archived`);
+  }
+
   // Soft delete by setting deletedAt timestamp
   await db
     .update(clients)
