@@ -13,11 +13,11 @@
  * - Export functionality
  */
 
-import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { trpc } from '@/lib/trpc';
-import { cn, formatCurrency, formatDate } from '@/lib/utils';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import React, { useState, useCallback, useRef, useMemo } from "react";
+import { trpc } from "@/lib/trpc";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   BookOpen,
   TrendingUp,
@@ -33,20 +33,26 @@ import {
   Calendar,
   User,
   ExternalLink,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -54,19 +60,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { ClientCombobox, type ClientOption } from '@/components/ui/client-combobox';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useWorkSurfaceKeyboard } from '@/hooks/work-surface/useWorkSurfaceKeyboard';
-import { useSaveState } from '@/hooks/work-surface/useSaveState';
-import { InspectorPanel } from '@/components/work-surface/InspectorPanel';
-import { WorkSurfaceStatusBar } from '@/components/work-surface/WorkSurfaceStatusBar';
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  ClientCombobox,
+  type ClientOption,
+} from "@/components/ui/client-combobox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
+import { useSaveState } from "@/hooks/work-surface/useSaveState";
+import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
+import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 
 // ============================================================================
 // Types
@@ -85,15 +94,23 @@ interface LedgerTransaction {
   createdBy: string;
 }
 
-type AdjustmentType = 'CREDIT' | 'DEBIT';
+type AdjustmentType = "CREDIT" | "DEBIT";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 const ADJUSTMENT_TYPES = [
-  { value: 'CREDIT', label: 'Credit Adjustment', description: 'Decrease what they owe' },
-  { value: 'DEBIT', label: 'Debit Adjustment', description: 'Increase what they owe' },
+  {
+    value: "CREDIT",
+    label: "Credit Adjustment",
+    description: "Decrease what they owe",
+  },
+  {
+    value: "DEBIT",
+    label: "Debit Adjustment",
+    description: "Increase what they owe",
+  },
 ] as const;
 
 const ITEMS_PER_PAGE = 50;
@@ -104,15 +121,36 @@ const ITEMS_PER_PAGE = 50;
 
 function TransactionTypeBadge({ type }: { type: string }) {
   const variants: Record<string, { className: string; label: string }> = {
-    SALE: { className: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Sale' },
-    PURCHASE: { className: 'bg-purple-100 text-purple-700 border-purple-200', label: 'Purchase' },
-    PAYMENT_RECEIVED: { className: 'bg-green-100 text-green-700 border-green-200', label: 'Payment Received' },
-    PAYMENT_SENT: { className: 'bg-orange-100 text-orange-700 border-orange-200', label: 'Payment Sent' },
-    CREDIT: { className: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Credit' },
-    DEBIT: { className: 'bg-red-100 text-red-700 border-red-200', label: 'Debit' },
+    SALE: {
+      className: "bg-blue-100 text-blue-700 border-blue-200",
+      label: "Sale",
+    },
+    PURCHASE: {
+      className: "bg-purple-100 text-purple-700 border-purple-200",
+      label: "Purchase",
+    },
+    PAYMENT_RECEIVED: {
+      className: "bg-green-100 text-green-700 border-green-200",
+      label: "Payment Received",
+    },
+    PAYMENT_SENT: {
+      className: "bg-orange-100 text-orange-700 border-orange-200",
+      label: "Payment Sent",
+    },
+    CREDIT: {
+      className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      label: "Credit",
+    },
+    DEBIT: {
+      className: "bg-red-100 text-red-700 border-red-200",
+      label: "Debit",
+    },
   };
 
-  const variant = variants[type] || { className: 'bg-gray-100 text-gray-700 border-gray-200', label: type };
+  const variant = variants[type] || {
+    className: "bg-gray-100 text-gray-700 border-gray-200",
+    label: type,
+  };
 
   return (
     <Badge variant="outline" className={variant.className}>
@@ -133,16 +171,22 @@ interface TransactionRowProps {
   onDoubleClick: () => void;
 }
 
-function TransactionRow({ transaction, isFocused, isSelected, onClick, onDoubleClick }: TransactionRowProps) {
+function TransactionRow({
+  transaction,
+  isFocused,
+  isSelected,
+  onClick,
+  onDoubleClick,
+}: TransactionRowProps) {
   return (
     <tr
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       className={cn(
-        'cursor-pointer transition-colors',
-        isFocused && 'bg-blue-50 ring-2 ring-inset ring-blue-400',
-        isSelected && !isFocused && 'bg-blue-100',
-        !isFocused && !isSelected && 'hover:bg-gray-50'
+        "cursor-pointer transition-colors",
+        isFocused && "bg-blue-50 ring-2 ring-inset ring-blue-400",
+        isSelected && !isFocused && "bg-blue-100",
+        !isFocused && !isSelected && "hover:bg-gray-50"
       )}
       role="row"
       tabIndex={-1}
@@ -168,14 +212,18 @@ function TransactionRow({ transaction, isFocused, isSelected, onClick, onDoubleC
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm">
         {transaction.debitAmount ? (
-          <span className="text-red-600">{formatCurrency(transaction.debitAmount)}</span>
+          <span className="text-red-600">
+            {formatCurrency(transaction.debitAmount)}
+          </span>
         ) : (
           <span className="text-gray-400">-</span>
         )}
       </td>
       <td className="px-4 py-3 text-right font-mono text-sm">
         {transaction.creditAmount ? (
-          <span className="text-green-600">{formatCurrency(transaction.creditAmount)}</span>
+          <span className="text-green-600">
+            {formatCurrency(transaction.creditAmount)}
+          </span>
         ) : (
           <span className="text-gray-400">-</span>
         )}
@@ -184,10 +232,10 @@ function TransactionRow({ transaction, isFocused, isSelected, onClick, onDoubleC
         <span
           className={cn(
             transaction.runningBalance > 0
-              ? 'text-red-600'
+              ? "text-red-600"
               : transaction.runningBalance < 0
-              ? 'text-green-600'
-              : ''
+                ? "text-green-600"
+                : ""
           )}
         >
           {formatCurrency(transaction.runningBalance)}
@@ -207,7 +255,11 @@ interface TransactionInspectorProps {
   onNavigateToReference: () => void;
 }
 
-function TransactionInspector({ transaction, onClose, onNavigateToReference }: TransactionInspectorProps) {
+function TransactionInspector({
+  transaction,
+  onClose,
+  onNavigateToReference,
+}: TransactionInspectorProps) {
   const hasReference = transaction.referenceType && transaction.referenceId;
 
   return (
@@ -223,7 +275,9 @@ function TransactionInspector({ transaction, onClose, onNavigateToReference }: T
 
         {/* Description */}
         <div>
-          <h4 className="text-sm font-medium text-gray-500 mb-1">Description</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-1">
+            Description
+          </h4>
           <p className="text-sm">{transaction.description}</p>
         </div>
 
@@ -253,15 +307,17 @@ function TransactionInspector({ transaction, onClose, onNavigateToReference }: T
 
         {/* Running Balance */}
         <div>
-          <h4 className="text-sm font-medium text-gray-500 mb-1">Running Balance</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-1">
+            Running Balance
+          </h4>
           <p
             className={cn(
-              'text-xl font-bold',
+              "text-xl font-bold",
               transaction.runningBalance > 0
-                ? 'text-red-600'
+                ? "text-red-600"
                 : transaction.runningBalance < 0
-                ? 'text-green-600'
-                : ''
+                  ? "text-green-600"
+                  : ""
             )}
           >
             {formatCurrency(transaction.runningBalance)}
@@ -271,7 +327,9 @@ function TransactionInspector({ transaction, onClose, onNavigateToReference }: T
         {/* Reference */}
         {hasReference && (
           <div>
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Reference</h4>
+            <h4 className="text-sm font-medium text-gray-500 mb-1">
+              Reference
+            </h4>
             <Button variant="outline" size="sm" onClick={onNavigateToReference}>
               <ExternalLink className="w-4 h-4 mr-2" />
               {transaction.referenceType} #{transaction.referenceId}
@@ -290,7 +348,9 @@ function TransactionInspector({ transaction, onClose, onNavigateToReference }: T
 
         {/* Transaction ID */}
         <div>
-          <h4 className="text-sm font-medium text-gray-500 mb-1">Transaction ID</h4>
+          <h4 className="text-sm font-medium text-gray-500 mb-1">
+            Transaction ID
+          </h4>
           <p className="text-sm font-mono text-gray-600">{transaction.id}</p>
         </div>
       </div>
@@ -317,38 +377,38 @@ function AddAdjustmentDialog({
   clientName,
   onSuccess,
 }: AddAdjustmentDialogProps) {
-  const [type, setType] = useState<AdjustmentType>('CREDIT');
-  const [amount, setAmount] = useState('');
-  const [notes, setNotes] = useState('');
+  const [type, setType] = useState<AdjustmentType>("CREDIT");
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
 
   const addAdjustment = trpc.clientLedger.addLedgerAdjustment.useMutation({
     onSuccess: () => {
-      toast.success('Adjustment added successfully');
+      toast.success("Adjustment added successfully");
       onSuccess();
       resetForm();
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to add adjustment: ${error.message}`);
     },
   });
 
   const resetForm = () => {
-    setType('CREDIT');
-    setAmount('');
-    setNotes('');
+    setType("CREDIT");
+    setAmount("");
+    setNotes("");
   };
 
   const handleSubmit = () => {
     if (!notes.trim()) {
-      toast.error('Notes are required for adjustments');
+      toast.error("Notes are required for adjustments");
       return;
     }
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      toast.error('Please enter a valid positive amount');
+      toast.error("Please enter a valid positive amount");
       return;
     }
 
@@ -365,7 +425,7 @@ function AddAdjustmentDialog({
     setShowConfirm(false);
   };
 
-  const selectedType = ADJUSTMENT_TYPES.find((t) => t.value === type);
+  const selectedType = ADJUSTMENT_TYPES.find(t => t.value === type);
 
   return (
     <>
@@ -383,13 +443,13 @@ function AddAdjustmentDialog({
               <Label htmlFor="adjustment-type">Adjustment Type *</Label>
               <Select
                 value={type}
-                onValueChange={(v) => setType(v as AdjustmentType)}
+                onValueChange={v => setType(v as AdjustmentType)}
               >
                 <SelectTrigger id="adjustment-type">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ADJUSTMENT_TYPES.map((t) => (
+                  {ADJUSTMENT_TYPES.map(t => (
                     <SelectItem key={t.value} value={t.value}>
                       <div className="flex flex-col">
                         <span>{t.label}</span>
@@ -414,7 +474,7 @@ function AddAdjustmentDialog({
                   min="0.01"
                   placeholder="0.00"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={e => setAmount(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -426,7 +486,7 @@ function AddAdjustmentDialog({
                 id="adjustment-notes"
                 placeholder="Reason for adjustment (required)..."
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 rows={3}
               />
               <p className="text-xs text-muted-foreground">
@@ -453,7 +513,7 @@ function AddAdjustmentDialog({
                   Adding...
                 </>
               ) : (
-                'Add Adjustment'
+                "Add Adjustment"
               )}
             </Button>
           </DialogFooter>
@@ -468,9 +528,16 @@ function AddAdjustmentDialog({
           <div className="space-y-2">
             <p>Are you sure you want to add this adjustment?</p>
             <div className="bg-muted p-3 rounded-md text-sm space-y-1">
-              <p><strong>Type:</strong> {selectedType?.label}</p>
-              <p><strong>Amount:</strong> {formatCurrency(parseFloat(amount) || 0)}</p>
-              <p><strong>Client:</strong> {clientName}</p>
+              <p>
+                <strong>Type:</strong> {selectedType?.label}
+              </p>
+              <p>
+                <strong>Amount:</strong>{" "}
+                {formatCurrency(parseFloat(amount) || 0)}
+              </p>
+              <p>
+                <strong>Client:</strong> {clientName}
+              </p>
             </div>
           </div>
         }
@@ -494,12 +561,20 @@ interface SummaryCardsProps {
   balanceDescription?: string;
 }
 
-function SummaryCards({ totalCount, totalDebits, totalCredits, currentBalance, balanceDescription }: SummaryCardsProps) {
+function SummaryCards({
+  totalCount,
+  totalDebits,
+  totalCredits,
+  currentBalance,
+  balanceDescription,
+}: SummaryCardsProps) {
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Total Transactions
+          </CardTitle>
           <BookOpen className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -539,14 +614,20 @@ function SummaryCards({ totalCount, totalDebits, totalCredits, currentBalance, b
         <CardContent>
           <div
             className={cn(
-              'text-2xl font-bold',
-              currentBalance > 0 ? 'text-red-600' : currentBalance < 0 ? 'text-green-600' : ''
+              "text-2xl font-bold",
+              currentBalance > 0
+                ? "text-red-600"
+                : currentBalance < 0
+                  ? "text-green-600"
+                  : ""
             )}
           >
             {formatCurrency(currentBalance)}
           </div>
           {balanceDescription && (
-            <p className="text-xs text-muted-foreground mt-1">{balanceDescription}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {balanceDescription}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -561,16 +642,22 @@ function SummaryCards({ totalCount, totalDebits, totalCredits, currentBalance, b
 export function ClientLedgerWorkSurface() {
   // State
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
     from: undefined,
     to: undefined,
   });
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [focusedRowIndex, setFocusedRowIndex] = useState(0);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<
+    string | null
+  >(null);
   const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
-  const [inspectorTransaction, setInspectorTransaction] = useState<LedgerTransaction | null>(null);
+  const [inspectorTransaction, setInspectorTransaction] =
+    useState<LedgerTransaction | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   // Refs
@@ -578,14 +665,22 @@ export function ClientLedgerWorkSurface() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Save state
-  const { saveState: _saveState, setSaving: _setSaving, setSaved: _setSaved, setError: _setError, SaveStateIndicator } = useSaveState();
+  const {
+    saveState: _saveState,
+    setSaving: _setSaving,
+    setSaved: _setSaved,
+    setError: _setError,
+    SaveStateIndicator,
+  } = useSaveState();
 
   // Queries
-  const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({
-    limit: 1000,
-  });
+  const { data: clientsData, isLoading: clientsLoading } =
+    trpc.clients.list.useQuery({
+      limit: 1000,
+    });
 
-  const { data: transactionTypes } = trpc.clientLedger.getTransactionTypes.useQuery();
+  const { data: transactionTypes } =
+    trpc.clientLedger.getTransactionTypes.useQuery();
 
   const {
     data: ledgerData,
@@ -620,18 +715,22 @@ export function ClientLedgerWorkSurface() {
   // Transform clients for combobox
   const clientOptions: ClientOption[] = useMemo(() => {
     if (!clientsData?.items) return [];
-    return clientsData.items.map((client) => ({
+    return clientsData.items.map(client => ({
       id: client.id,
       name: client.name,
       email: client.email,
       phone: client.phone,
-      clientType: client.isBuyer ? 'buyer' : client.isSeller ? 'seller' : undefined,
+      clientType: client.isBuyer
+        ? "buyer"
+        : client.isSeller
+          ? "seller"
+          : undefined,
     }));
   }, [clientsData]);
 
   // Get selected client
   const selectedClient = useMemo(() => {
-    return clientOptions.find((c) => c.id === selectedClientId);
+    return clientOptions.find(c => c.id === selectedClientId);
   }, [clientOptions, selectedClientId]);
 
   // Get transactions
@@ -640,7 +739,9 @@ export function ClientLedgerWorkSurface() {
   }, [ledgerData]);
 
   // Pagination
-  const totalPages = ledgerData ? Math.ceil(ledgerData.totalCount / ITEMS_PER_PAGE) : 0;
+  const totalPages = ledgerData
+    ? Math.ceil(ledgerData.totalCount / ITEMS_PER_PAGE)
+    : 0;
   const hasFilters = dateRange.from || dateRange.to || selectedTypes.length > 0;
 
   // Handlers
@@ -652,8 +753,8 @@ export function ClientLedgerWorkSurface() {
   }, []);
 
   const handleTypeToggle = useCallback((type: string) => {
-    setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    setSelectedTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
     setPage(0);
     setFocusedRowIndex(0);
@@ -668,7 +769,7 @@ export function ClientLedgerWorkSurface() {
 
   const handleExport = useCallback(async () => {
     if (!selectedClientId) {
-      toast.error('Please select a client first');
+      toast.error("Please select a client first");
       return;
     }
 
@@ -676,12 +777,14 @@ export function ClientLedgerWorkSurface() {
     try {
       const result = await exportQuery.refetch();
       if (result.data) {
-        const blob = new Blob([result.data.content], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
+        const blob = new Blob([result.data.content], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', result.data.filename);
-        link.style.visibility = 'hidden';
+        link.setAttribute("href", url);
+        link.setAttribute("download", result.data.filename);
+        link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -689,7 +792,7 @@ export function ClientLedgerWorkSurface() {
         toast.success(`Exported ${result.data.totalTransactions} transactions`);
       }
     } catch {
-      toast.error('Failed to export ledger');
+      toast.error("Failed to export ledger");
     } finally {
       setIsExporting(false);
     }
@@ -705,18 +808,21 @@ export function ClientLedgerWorkSurface() {
   }, []);
 
   const navigateToReference = useCallback(() => {
-    if (inspectorTransaction?.referenceType && inspectorTransaction?.referenceId) {
+    if (
+      inspectorTransaction?.referenceType &&
+      inspectorTransaction?.referenceId
+    ) {
       const type = inspectorTransaction.referenceType;
       const id = inspectorTransaction.referenceId;
-      let path = '';
+      let path = "";
       switch (type) {
-        case 'ORDER':
+        case "ORDER":
           path = `/orders?id=${id}`;
           break;
-        case 'PAYMENT':
+        case "PAYMENT":
           path = `/accounting/payments?id=${id}`;
           break;
-        case 'PURCHASE_ORDER':
+        case "PURCHASE_ORDER":
           path = `/purchase-orders?id=${id}`;
           break;
       }
@@ -727,70 +833,82 @@ export function ClientLedgerWorkSurface() {
   }, [inspectorTransaction]);
 
   // Keyboard configuration
-  const keyboardConfig = useMemo(() => ({
-    customHandlers: {
-      arrowup: () => {
-        setFocusedRowIndex((prev) => Math.max(0, prev - 1));
+  const keyboardConfig = useMemo(
+    () => ({
+      customHandlers: {
+        arrowup: () => {
+          setFocusedRowIndex(prev => Math.max(0, prev - 1));
+        },
+        arrowdown: () => {
+          setFocusedRowIndex(prev =>
+            Math.min(transactions.length - 1, prev + 1)
+          );
+        },
+        enter: () => {
+          if (transactions[focusedRowIndex]) {
+            openInspector(transactions[focusedRowIndex]);
+          }
+        },
+        tab: () => {
+          // Move to next page if at end
+          if (
+            focusedRowIndex === transactions.length - 1 &&
+            page < totalPages - 1
+          ) {
+            setPage(p => p + 1);
+            setFocusedRowIndex(0);
+          }
+        },
+        "cmd+k": () => {
+          searchInputRef.current?.focus();
+        },
+        "ctrl+k": () => {
+          searchInputRef.current?.focus();
+        },
+        a: () => setShowAdjustmentDialog(true),
+        e: () => handleExport(),
+        "[": () => setPage(p => Math.max(0, p - 1)),
+        "]": () => setPage(p => Math.min(totalPages - 1, p + 1)),
+        c: () => handleClearFilters(),
       },
-      arrowdown: () => {
-        setFocusedRowIndex((prev) => Math.min(transactions.length - 1, prev + 1));
-      },
-      enter: () => {
-        if (transactions[focusedRowIndex]) {
-          openInspector(transactions[focusedRowIndex]);
+      onCancel: () => {
+        if (inspectorTransaction) {
+          closeInspector();
+        } else {
+          setSelectedTransactionId(null);
         }
       },
-      tab: () => {
-        // Move to next page if at end
-        if (focusedRowIndex === transactions.length - 1 && page < totalPages - 1) {
-          setPage((p) => p + 1);
-          setFocusedRowIndex(0);
-        }
-      },
-      'cmd+k': () => {
-        searchInputRef.current?.focus();
-      },
-      'ctrl+k': () => {
-        searchInputRef.current?.focus();
-      },
-      'a': () => setShowAdjustmentDialog(true),
-      'e': () => handleExport(),
-      '[': () => setPage((p) => Math.max(0, p - 1)),
-      ']': () => setPage((p) => Math.min(totalPages - 1, p + 1)),
-      'c': () => handleClearFilters(),
-    },
-    onCancel: () => {
-      if (inspectorTransaction) {
-        closeInspector();
-      } else {
-        setSelectedTransactionId(null);
-      }
-    },
-    containerRef,
-  }), [
-    focusedRowIndex,
-    transactions,
-    page,
-    totalPages,
-    inspectorTransaction,
-    openInspector,
-    closeInspector,
-    handleExport,
-    handleClearFilters,
-    containerRef,
-  ]);
+      containerRef,
+    }),
+    [
+      focusedRowIndex,
+      transactions,
+      page,
+      totalPages,
+      inspectorTransaction,
+      openInspector,
+      closeInspector,
+      handleExport,
+      handleClearFilters,
+      containerRef,
+    ]
+  );
 
   useWorkSurfaceKeyboard(keyboardConfig);
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-background" tabIndex={0}>
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full bg-background"
+      tabIndex={0}
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 border-b">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
             <BookOpen className="w-8 h-8 text-blue-600" />
             Client Ledger
-          </h1>
+          </h2>
           <p className="text-muted-foreground mt-1">
             View all transactions and balance history for a client
           </p>
@@ -846,19 +964,19 @@ export function ClientLedgerWorkSurface() {
                   <Button
                     variant="outline"
                     className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !dateRange.from && 'text-muted-foreground'
+                      "w-full justify-start text-left font-normal",
+                      !dateRange.from && "text-muted-foreground"
                     )}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
                     {dateRange.from ? (
                       dateRange.to ? (
                         <>
-                          {format(dateRange.from, 'LLL dd')} -{' '}
-                          {format(dateRange.to, 'LLL dd, yyyy')}
+                          {format(dateRange.from, "LLL dd")} -{" "}
+                          {format(dateRange.to, "LLL dd, yyyy")}
                         </>
                       ) : (
-                        format(dateRange.from, 'LLL dd, yyyy')
+                        format(dateRange.from, "LLL dd, yyyy")
                       )
                     ) : (
                       <span>Select date range</span>
@@ -871,7 +989,7 @@ export function ClientLedgerWorkSurface() {
                     mode="range"
                     defaultMonth={dateRange.from}
                     selected={{ from: dateRange.from, to: dateRange.to }}
-                    onSelect={(range) => {
+                    onSelect={range => {
                       setDateRange({ from: range?.from, to: range?.to });
                       setPage(0);
                     }}
@@ -885,9 +1003,9 @@ export function ClientLedgerWorkSurface() {
             <div className="space-y-2">
               <Label>Transaction Types</Label>
               <Select
-                value={selectedTypes.length > 0 ? selectedTypes[0] : 'all'}
-                onValueChange={(v) => {
-                  if (v === 'all') {
+                value={selectedTypes.length > 0 ? selectedTypes[0] : "all"}
+                onValueChange={v => {
+                  if (v === "all") {
                     setSelectedTypes([]);
                   } else {
                     handleTypeToggle(v);
@@ -897,12 +1015,14 @@ export function ClientLedgerWorkSurface() {
                 <SelectTrigger>
                   <div className="flex items-center">
                     <Filter className="h-4 w-4 mr-2" />
-                    {selectedTypes.length > 0 ? `${selectedTypes.length} selected` : 'All types'}
+                    {selectedTypes.length > 0
+                      ? `${selectedTypes.length} selected`
+                      : "All types"}
                   </div>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {transactionTypes?.map((type) => (
+                  {transactionTypes?.map(type => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
@@ -935,7 +1055,8 @@ export function ClientLedgerWorkSurface() {
               <BookOpen className="w-16 h-16 mx-auto text-gray-300 mb-4" />
               <p className="text-lg font-medium">Select a Client</p>
               <p className="text-sm text-muted-foreground">
-                Choose a client from the dropdown above to view their ledger history.
+                Choose a client from the dropdown above to view their ledger
+                history.
               </p>
             </div>
           </Card>
@@ -961,7 +1082,7 @@ export function ClientLedgerWorkSurface() {
                   <div>
                     <CardTitle>Ledger History</CardTitle>
                     <CardDescription>
-                      {selectedClient?.name} - Showing {transactions.length} of{' '}
+                      {selectedClient?.name} - Showing {transactions.length} of{" "}
                       {ledgerData?.totalCount || 0} transactions
                     </CardDescription>
                   </div>
@@ -974,8 +1095,8 @@ export function ClientLedgerWorkSurface() {
                     <p className="text-lg font-medium">No transactions found</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {hasFilters
-                        ? 'Try adjusting your filters'
-                        : 'This client has no ledger entries yet'}
+                        ? "Try adjusting your filters"
+                        : "This client has no ledger entries yet"}
                     </p>
                   </div>
                 ) : (
@@ -983,13 +1104,27 @@ export function ClientLedgerWorkSurface() {
                     <table className="w-full" role="grid">
                       <thead className="sticky top-0 bg-background border-b">
                         <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Type</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Description</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Reference</th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Debit</th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Credit</th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Balance</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                            Date
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                            Type
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                            Description
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                            Reference
+                          </th>
+                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                            Debit
+                          </th>
+                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                            Credit
+                          </th>
+                          <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                            Balance
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1018,7 +1153,7 @@ export function ClientLedgerWorkSurface() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPage((p) => Math.max(0, p - 1))}
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
                         disabled={page === 0}
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -1027,7 +1162,9 @@ export function ClientLedgerWorkSurface() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                        onClick={() =>
+                          setPage(p => Math.min(totalPages - 1, p + 1))
+                        }
                         disabled={page >= totalPages - 1}
                       >
                         Next (])
@@ -1044,7 +1181,11 @@ export function ClientLedgerWorkSurface() {
 
       {/* Status Bar */}
       <WorkSurfaceStatusBar
-        left={selectedClient ? `Client: ${selectedClient.name}` : 'No client selected'}
+        left={
+          selectedClient
+            ? `Client: ${selectedClient.name}`
+            : "No client selected"
+        }
         center={`Row ${focusedRowIndex + 1} of ${transactions.length}`}
         right="↑↓ Navigate • Enter Inspect • A Adjust • E Export • [ ] Page"
       />

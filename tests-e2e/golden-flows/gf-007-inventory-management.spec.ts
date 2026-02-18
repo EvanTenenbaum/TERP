@@ -20,8 +20,7 @@ test.describe("Golden Flow: GF-007 Inventory Management", (): void => {
 
     const header = page
       .locator('[data-testid="inventory-header"]')
-      .or(page.locator('main h1:has-text("Inventory")'))
-      .or(page.locator('h1:has-text("Inventory")'));
+      .or(page.locator('h1:has-text("Inventory")').first());
     await expect(header).toBeVisible({ timeout: 5000 });
 
     const batchRow = page
