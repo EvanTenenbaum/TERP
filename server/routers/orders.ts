@@ -114,7 +114,9 @@ const orderAdjustmentSchema = z.object({
 const createOrderInputSchema = z.object({
   orderType: z.enum(["QUOTE", "SALE"]),
   clientId: z.number(),
-  lineItems: z.array(lineItemInputSchema),
+  lineItems: z
+    .array(lineItemInputSchema)
+    .min(1, "At least one line item is required"),
   orderLevelAdjustment: orderAdjustmentSchema.optional(),
   showAdjustmentOnDocument: z.boolean().default(true),
   notes: z.string().optional(),
@@ -903,7 +905,9 @@ export const ordersRouter = router({
       z.object({
         orderId: z.number(),
         version: z.number(), // Optimistic locking
-        lineItems: z.array(lineItemInputSchema),
+        lineItems: z
+          .array(lineItemInputSchema)
+          .min(1, "At least one line item is required"),
         orderLevelAdjustment: orderAdjustmentSchema.optional(),
         showAdjustmentOnDocument: z.boolean().optional(),
         notes: z.string().optional(),
