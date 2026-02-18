@@ -859,10 +859,12 @@ export function ClientLedgerWorkSurface() {
             setFocusedRowIndex(0);
           }
         },
-        "cmd+k": () => {
+        "cmd+k": (e: React.KeyboardEvent) => {
+          e.preventDefault();
           searchInputRef.current?.focus();
         },
-        "ctrl+k": () => {
+        "ctrl+k": (e: React.KeyboardEvent) => {
+          e.preventDefault();
           searchInputRef.current?.focus();
         },
         a: () => setShowAdjustmentDialog(true),

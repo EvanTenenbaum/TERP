@@ -769,10 +769,12 @@ export function PickPackWorkSurface() {
             setFocusZone("list");
           }
         },
-        "cmd+k": () => {
+        "cmd+k": (e: React.KeyboardEvent) => {
+          e.preventDefault();
           searchInputRef.current?.focus();
         },
-        "ctrl+k": () => {
+        "ctrl+k": (e: React.KeyboardEvent) => {
+          e.preventDefault();
           searchInputRef.current?.focus();
         },
         " ": () => {
