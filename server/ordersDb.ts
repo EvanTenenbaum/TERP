@@ -1865,12 +1865,12 @@ export async function updateOrderStatus(input: {
       await updateClientCreditExposure(order.clientId);
     }
 
-    // TER-258: Handle CANCELLED — restore reserved inventory when cancelling a PACKED order
+    // TER-258: Handle CANCELLED — restore reserved inventory
     if (newStatus === "CANCELLED") {
-      if (oldStatus === "PACKED") {
-        // When cancelling a PACKED order, release the reserved quantities for each item.
-        // PENDING → CANCELLED requires no inventory changes (nothing was reserved yet
-        // at the fulfillmentStatus level; allocations are handled separately).
+      if (oldStatus === "PACKED" || oldStatus === "PENDING") {
+        // When cancelling a PACKED or PENDING order, release the reserved quantities
+        // for each item. TER-259 reserves inventory at creation/confirmation time,
+        // so both PENDING and PACKED orders may have active reservations.
         const cancelledItems = (
           typeof order.items === "string"
             ? (JSON.parse(order.items) as unknown[])
