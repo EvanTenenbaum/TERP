@@ -1,6 +1,6 @@
 /**
  * VIP Portal Admin Service
- * 
+ *
  * Extracted business logic from vipPortalAdmin router to improve maintainability
  * and reduce file size. Contains all VIP portal management functions.
  */
@@ -41,7 +41,10 @@ const DEFAULT_LIMIT = 50;
  * SECURITY: Validate and sanitize pagination parameters
  * Prevents DoS attacks via excessive limit values
  */
-function validatePagination(limit?: number, offset?: number): { limit: number; offset: number } {
+function validatePagination(
+  limit?: number,
+  offset?: number
+): { limit: number; offset: number } {
   const safeLimit = Math.min(Math.max(1, limit ?? DEFAULT_LIMIT), MAX_LIMIT);
   const safeOffset = Math.max(0, offset ?? 0);
   return { limit: safeLimit, offset: safeOffset };
@@ -60,7 +63,11 @@ export async function getVipClients(options: VipClientListOptions = {}) {
   // SECURITY: Validate pagination parameters
   const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const vipClients = await db.query.clients.findMany({
     where: eq(clients.vipPortalEnabled, true),
@@ -81,7 +88,11 @@ export interface EnableVipPortalOptions {
 export async function enableVipPortal(options: EnableVipPortalOptions) {
   const { clientId, email, initialPassword } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Check if client exists
   const client = await db.query.clients.findFirst({
@@ -96,7 +107,8 @@ export async function enableVipPortal(options: EnableVipPortalOptions) {
   }
 
   // Enable VIP portal on client
-  await db.update(clients)
+  await db
+    .update(clients)
     .set({ vipPortalEnabled: true })
     .where(eq(clients.id, clientId));
 
@@ -192,9 +204,14 @@ export async function enableVipPortal(options: EnableVipPortalOptions) {
 
 export async function disableVipPortal(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
-  await db.update(clients)
+  await db
+    .update(clients)
     .set({ vipPortalEnabled: false })
     .where(eq(clients.id, clientId));
 
@@ -203,7 +220,11 @@ export async function disableVipPortal(clientId: number) {
 
 export async function getClientLastLogin(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const client = await db.query.clients.findFirst({
     where: eq(clients.id, clientId),
@@ -223,14 +244,21 @@ export async function getClientLastLogin(clientId: number) {
  * Create an impersonation session for an admin to view the portal as a client
  * This creates a temporary session token that allows viewing the portal
  * without affecting the client's actual session or login count
- * 
+ *
  * IMPORTANT: Impersonation sessions are stored in localStorage on the admin's browser
  * and validated by checking the token prefix. We do NOT overwrite the client's
  * actual session token to avoid logging them out.
  */
-export async function createImpersonationSession(clientId: number, adminUserId?: number) {
+export async function createImpersonationSession(
+  clientId: number,
+  adminUserId?: number
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Verify client exists and has VIP portal enabled
   const client = await db.query.clients.findFirst({
@@ -269,7 +297,9 @@ export async function createImpersonationSession(clientId: number, adminUserId?:
   const sessionExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours for impersonation
 
   // Log the impersonation for audit purposes
-  logger.info(`[VIP Portal] Admin ${adminUserId || 'unknown'} started impersonation session for client ${clientId} (${client.name})`);
+  logger.info(
+    `[VIP Portal] Admin ${adminUserId || "unknown"} started impersonation session for client ${clientId} (${client.name})`
+  );
 
   return {
     sessionToken,
@@ -286,7 +316,11 @@ export async function createImpersonationSession(clientId: number, adminUserId?:
 
 export async function getVipPortalConfiguration(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const config = await db.query.vipPortalConfigurations.findFirst({
     where: eq(vipPortalConfigurations.clientId, clientId),
@@ -314,40 +348,60 @@ export interface UpdateVipPortalConfigOptions {
   moduleMarketplaceSupplyEnabled?: boolean;
   moduleLiveCatalogEnabled?: boolean;
   moduleLeaderboardEnabled?: boolean;
-  featuresConfig?: any;
-  advancedOptions?: any;
+  featuresConfig?: Record<string, unknown>;
+  advancedOptions?: Record<string, unknown>;
 }
 
-export async function updateVipPortalConfiguration(options: UpdateVipPortalConfigOptions) {
+export async function updateVipPortalConfiguration(
+  options: UpdateVipPortalConfigOptions
+) {
   const { clientId, moduleLeaderboardEnabled, ...updateData } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Handle moduleLeaderboardEnabled specially - store in featuresConfig.leaderboard.enabled
   if (moduleLeaderboardEnabled !== undefined) {
     const existingConfig = await db.query.vipPortalConfigurations.findFirst({
       where: eq(vipPortalConfigurations.clientId, clientId),
     });
-    const featuresConfig = (existingConfig?.featuresConfig as Record<string, unknown>) || {};
+    const featuresConfig =
+      (existingConfig?.featuresConfig as Record<string, unknown>) || {};
     if (!featuresConfig.leaderboard) {
       featuresConfig.leaderboard = {};
     }
-    (featuresConfig.leaderboard as Record<string, unknown>).enabled = moduleLeaderboardEnabled;
+    (featuresConfig.leaderboard as Record<string, unknown>).enabled =
+      moduleLeaderboardEnabled;
     updateData.featuresConfig = featuresConfig;
   }
 
-  await db.update(vipPortalConfigurations)
+  await db
+    .update(vipPortalConfigurations)
     .set(updateData)
     .where(eq(vipPortalConfigurations.clientId, clientId));
 
   return { success: true };
 }
 
-export type ConfigTemplate = "FULL_ACCESS" | "FINANCIAL_ONLY" | "MARKETPLACE_ONLY" | "BASIC";
+export type ConfigTemplate =
+  | "FULL_ACCESS"
+  | "FINANCIAL_ONLY"
+  | "MARKETPLACE_ONLY"
+  | "BASIC";
 
-export async function applyConfigurationTemplate(clientId: number, template: ConfigTemplate) {
+export async function applyConfigurationTemplate(
+  clientId: number,
+  template: ConfigTemplate
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   let templateConfig: Record<string, boolean> = {};
 
@@ -405,16 +459,24 @@ export async function applyConfigurationTemplate(clientId: number, template: Con
       break;
   }
 
-  await db.update(vipPortalConfigurations)
+  await db
+    .update(vipPortalConfigurations)
     .set(templateConfig)
     .where(eq(vipPortalConfigurations.clientId, clientId));
 
   return { success: true };
 }
 
-export async function copyConfiguration(sourceClientId: number, targetClientId: number) {
+export async function copyConfiguration(
+  sourceClientId: number,
+  targetClientId: number
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const sourceConfig = await db.query.vipPortalConfigurations.findFirst({
     where: eq(vipPortalConfigurations.clientId, sourceClientId),
@@ -427,9 +489,16 @@ export async function copyConfiguration(sourceClientId: number, targetClientId: 
     });
   }
 
-  const { id: _id, clientId: _clientId, createdAt: _createdAt, updatedAt: _updatedAt, ...configData } = sourceConfig;
+  const {
+    id: _id,
+    clientId: _clientId,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...configData
+  } = sourceConfig;
 
-  await db.update(vipPortalConfigurations)
+  await db
+    .update(vipPortalConfigurations)
     .set(configData)
     .where(eq(vipPortalConfigurations.clientId, targetClientId));
 
@@ -442,7 +511,11 @@ export async function copyConfiguration(sourceClientId: number, targetClientId: 
 
 export async function getVipTierConfiguration() {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Get all active tiers sorted by level
   const tiers = await db.query.vipTiers.findMany({
@@ -476,7 +549,11 @@ export interface UpdateVipTierOptions {
 export async function updateVipTier(options: UpdateVipTierOptions) {
   const { id, ...updateData } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Check if tier exists
   const existingTier = await db.query.vipTiers.findFirst({
@@ -493,25 +570,34 @@ export async function updateVipTier(options: UpdateVipTierOptions) {
   // Convert decimal fields from number to string for schema compatibility
   // The vipTiers schema uses decimal type which expects string values
   const convertedData: Record<string, unknown> = { ...updateData };
-  const decimalFields = ['minSpendYtd', 'minPaymentOnTimeRate', 'discountPercentage', 'creditLimitMultiplier'];
+  const decimalFields = [
+    "minSpendYtd",
+    "minPaymentOnTimeRate",
+    "discountPercentage",
+    "creditLimitMultiplier",
+  ];
   for (const field of decimalFields) {
-    if (field in convertedData && typeof convertedData[field] === 'number') {
+    if (field in convertedData && typeof convertedData[field] === "number") {
       convertedData[field] = String(convertedData[field]);
     }
   }
 
   // Update tier
-  await db.update(vipTiers)
-    .set(convertedData)
-    .where(eq(vipTiers.id, id));
+  await db.update(vipTiers).set(convertedData).where(eq(vipTiers.id, id));
 
   return { success: true };
 }
 
 // Legacy function for backward compatibility
-export async function updateVipTierConfiguration(tiers: UpdateVipTierOptions[]) {
+export async function updateVipTierConfiguration(
+  tiers: UpdateVipTierOptions[]
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Update each tier
   for (const tier of tiers) {
@@ -545,7 +631,11 @@ export interface CreateVipTierOptions {
 
 export async function createVipTier(options: CreateVipTierOptions) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Check if tier name already exists
   const existingTier = await db.query.vipTiers.findFirst({
@@ -562,22 +652,36 @@ export async function createVipTier(options: CreateVipTierOptions) {
   // Convert decimal fields from number to string for schema compatibility
   // The vipTiers schema uses decimal type which expects string values
   const convertedOptions: Record<string, unknown> = { ...options };
-  const decimalFields = ['minSpendYtd', 'minPaymentOnTimeRate', 'discountPercentage', 'creditLimitMultiplier'];
+  const decimalFields = [
+    "minSpendYtd",
+    "minPaymentOnTimeRate",
+    "discountPercentage",
+    "creditLimitMultiplier",
+  ];
   for (const field of decimalFields) {
-    if (field in convertedOptions && typeof convertedOptions[field] === 'number') {
+    if (
+      field in convertedOptions &&
+      typeof convertedOptions[field] === "number"
+    ) {
       convertedOptions[field] = String(convertedOptions[field]);
     }
   }
 
   // Create tier
-  const [newTier] = await db.insert(vipTiers).values(convertedOptions as InsertVipTier);
+  const [newTier] = await db
+    .insert(vipTiers)
+    .values(convertedOptions as InsertVipTier);
 
   return { success: true, tier: newTier };
 }
 
 export async function deleteVipTier(tierId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Check if tier exists
   const tier = await db.query.vipTiers.findFirst({
@@ -612,7 +716,11 @@ export async function deleteVipTier(tierId: number) {
 
 export async function getVipTierById(tierId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const tier = await db.query.vipTiers.findFirst({
     where: eq(vipTiers.id, tierId),
@@ -634,7 +742,11 @@ export async function getVipTierById(tierId: number) {
 
 export async function getLeaderboardConfiguration(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const config = await db.query.vipPortalConfigurations.findFirst({
     where: eq(vipPortalConfigurations.clientId, clientId),
@@ -642,13 +754,13 @@ export async function getLeaderboardConfiguration(clientId: number) {
 
   // Read leaderboard settings from featuresConfig JSON
   const leaderboardConfig = config?.featuresConfig?.leaderboard;
-  
+
   if (!config) {
     return {
       moduleLeaderboardEnabled: false,
       leaderboardMetrics: [],
-      leaderboardDisplayMode: 'black_box',
-      leaderboardType: 'ytd_spend',
+      leaderboardDisplayMode: "black_box",
+      leaderboardType: "ytd_spend",
       minimumClients: 5,
     };
   }
@@ -656,8 +768,8 @@ export async function getLeaderboardConfiguration(clientId: number) {
   return {
     moduleLeaderboardEnabled: leaderboardConfig?.enabled ?? false,
     leaderboardMetrics: leaderboardConfig?.metrics ?? [],
-    leaderboardDisplayMode: leaderboardConfig?.displayMode ?? 'black_box',
-    leaderboardType: leaderboardConfig?.type ?? 'ytd_spend',
+    leaderboardDisplayMode: leaderboardConfig?.displayMode ?? "black_box",
+    leaderboardType: leaderboardConfig?.type ?? "ytd_spend",
     minimumClients: leaderboardConfig?.minimumClients ?? 5,
   };
 }
@@ -666,14 +778,25 @@ export interface UpdateLeaderboardConfigOptions {
   clientId: number;
   moduleLeaderboardEnabled: boolean;
   leaderboardMetrics: string[];
-  leaderboardDisplayMode: 'black_box' | 'transparent';
-  leaderboardType?: 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
+  leaderboardDisplayMode: "black_box" | "transparent";
+  leaderboardType?:
+    | "ytd_spend"
+    | "payment_speed"
+    | "order_frequency"
+    | "credit_utilization"
+    | "ontime_payment_rate";
   minimumClients?: number;
 }
 
-export async function updateLeaderboardConfiguration(options: UpdateLeaderboardConfigOptions) {
+export async function updateLeaderboardConfiguration(
+  options: UpdateLeaderboardConfigOptions
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Get existing config
   const existingConfig = await db.query.vipPortalConfigurations.findFirst({
@@ -681,12 +804,13 @@ export async function updateLeaderboardConfiguration(options: UpdateLeaderboardC
   });
 
   // Store all leaderboard settings in featuresConfig.leaderboard JSON
-  const featuresConfig = (existingConfig?.featuresConfig as Record<string, unknown>) || {};
+  const featuresConfig =
+    (existingConfig?.featuresConfig as Record<string, unknown>) || {};
   featuresConfig.leaderboard = {
     enabled: options.moduleLeaderboardEnabled,
     metrics: options.leaderboardMetrics,
     displayMode: options.leaderboardDisplayMode,
-    type: options.leaderboardType ?? 'ytd_spend',
+    type: options.leaderboardType ?? "ytd_spend",
     minimumClients: options.minimumClients ?? 5,
     showSuggestions: true,
     showRankings: true,
@@ -732,27 +856,33 @@ export interface SaveLiveCatalogConfigOptions {
   enablePriceAlerts?: boolean;
 }
 
-export async function saveLiveCatalogConfiguration(options: SaveLiveCatalogConfigOptions) {
+export async function saveLiveCatalogConfiguration(
+  options: SaveLiveCatalogConfigOptions
+) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+
   // Check if client exists
   const client = await db.query.clients.findFirst({
     where: eq(clients.id, options.clientId),
   });
-  
+
   if (!client) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Client not found",
     });
   }
-  
+
   // Check if configuration exists
   const existingConfig = await db.query.vipPortalConfigurations.findFirst({
     where: eq(vipPortalConfigurations.clientId, options.clientId),
   });
-  
+
   const liveCatalogConfig = {
     visibleCategories: options.visibleCategories,
     visibleSubcategories: options.visibleSubcategories,
@@ -766,14 +896,14 @@ export async function saveLiveCatalogConfiguration(options: SaveLiveCatalogConfi
     showMarkup: options.showMarkup,
     enablePriceAlerts: options.enablePriceAlerts,
   };
-  
+
   if (existingConfig) {
     // Update existing configuration
     const updatedFeaturesConfig = {
       ...existingConfig.featuresConfig,
       liveCatalog: liveCatalogConfig,
     };
-    
+
     await db
       .update(vipPortalConfigurations)
       .set({
@@ -789,21 +919,25 @@ export async function saveLiveCatalogConfiguration(options: SaveLiveCatalogConfi
       moduleLiveCatalogEnabled: options.enabled,
       featuresConfig: {
         liveCatalog: liveCatalogConfig,
-      } as typeof vipPortalConfigurations.$inferInsert.featuresConfig
+      } as typeof vipPortalConfigurations.$inferInsert.featuresConfig,
     });
   }
-  
+
   return { success: true };
 }
 
 export async function getLiveCatalogConfiguration(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+
   const config = await db.query.vipPortalConfigurations.findFirst({
     where: eq(vipPortalConfigurations.clientId, clientId),
   });
-  
+
   return config || null;
 }
 
@@ -813,18 +947,24 @@ export async function getLiveCatalogConfiguration(clientId: number) {
 
 export interface GetInterestListsByClientOptions {
   clientId: number;
-  status?: 'NEW' | 'REVIEWED' | 'CONVERTED' | 'ARCHIVED';
+  status?: "NEW" | "REVIEWED" | "CONVERTED" | "ARCHIVED";
   limit?: number;
   offset?: number;
 }
 
-export async function getInterestListsByClient(options: GetInterestListsByClientOptions) {
+export async function getInterestListsByClient(
+  options: GetInterestListsByClientOptions
+) {
   const { clientId, status } = options;
   // SECURITY: Validate pagination parameters
   const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+
   // Build where clause
   let whereClause = eq(clientInterestLists.clientId, clientId);
   if (status) {
@@ -835,40 +975,46 @@ export async function getInterestListsByClient(options: GetInterestListsByClient
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     whereClause = statusClause as any;
   }
-  
+
   const lists = await db.query.clientInterestLists.findMany({
     where: whereClause,
     limit,
     offset,
-    orderBy: (clientInterestLists, { desc }) => [desc(clientInterestLists.submittedAt)],
+    orderBy: (clientInterestLists, { desc }) => [
+      desc(clientInterestLists.submittedAt),
+    ],
   });
-  
+
   // Get total count
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(clientInterestLists)
     .where(whereClause);
-  
+
   const total = countResult[0]?.count || 0;
-  
+
   return { lists, total };
 }
 
 export async function getInterestListById(listId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+
   const list = await db.query.clientInterestLists.findFirst({
     where: eq(clientInterestLists.id, listId),
   });
-  
+
   if (!list) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Interest list not found",
     });
   }
-  
+
   // Get items
   const items = await db.query.clientInterestListItems.findMany({
     where: eq(clientInterestListItems.interestListId, listId),
@@ -900,10 +1046,10 @@ export async function getInterestListById(listId: number) {
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .where(inArray(batches.id, batchIds));
-  
+
   // Get client pricing
   const clientRules = await pricingEngine.getClientPricingRules(list.clientId);
-  
+
   // Calculate current prices
   const inventoryItems = batchesData.map(({ batch, product }) => ({
     id: batch.id,
@@ -911,15 +1057,18 @@ export async function getInterestListById(listId: number) {
     category: product?.category,
     subcategory: product?.subcategory || undefined,
     strain: undefined,
-    basePrice: parseFloat(batch.unitCogs || '0'),
-    quantity: parseFloat(batch.onHandQty || '0'),
+    basePrice: parseFloat(batch.unitCogs || "0"),
+    quantity: parseFloat(batch.onHandQty || "0"),
     grade: batch.grade || undefined,
     vendor: undefined,
   }));
-  
+
   let pricedItems;
   try {
-    pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
+    pricedItems = await pricingEngine.calculateRetailPrices(
+      inventoryItems,
+      clientRules
+    );
   } catch (_error) {
     pricedItems = inventoryItems.map(item => ({
       ...item,
@@ -933,7 +1082,7 @@ export async function getInterestListById(listId: number) {
   const itemsWithChangeDetection = items.map(item => {
     const pricedItem = pricedItems.find(p => p.id === item.batchId);
     const batchData = batchesData.find(b => b.batch.id === item.batchId);
-    
+
     if (!pricedItem || !batchData) {
       return {
         ...item,
@@ -944,16 +1093,16 @@ export async function getInterestListById(listId: number) {
         quantityChanged: false,
       };
     }
-    
+
     const currentPrice = pricedItem.retailPrice;
     const currentQuantity = pricedItem.quantity ?? 0;
-    const snapshotPrice = parseFloat(item.priceAtInterest || '0');
-    const snapshotQuantity = parseFloat(item.quantityAtInterest || '0');
-    
+    const snapshotPrice = parseFloat(item.priceAtInterest || "0");
+    const snapshotQuantity = parseFloat(item.quantityAtInterest || "0");
+
     const priceChanged = Math.abs(currentPrice - snapshotPrice) > 0.01;
     const quantityChanged = Math.abs(currentQuantity - snapshotQuantity) > 0.01;
     const currentlyAvailable = currentQuantity > 0;
-    
+
     return {
       ...item,
       currentPrice: currentPrice.toFixed(2),
@@ -963,7 +1112,7 @@ export async function getInterestListById(listId: number) {
       quantityChanged,
     };
   });
-  
+
   return {
     ...list,
     items: itemsWithChangeDetection,
@@ -972,36 +1121,42 @@ export async function getInterestListById(listId: number) {
 
 export interface UpdateInterestListStatusOptions {
   listId: number;
-  status: 'NEW' | 'REVIEWED' | 'CONVERTED' | 'ARCHIVED';
+  status: "NEW" | "REVIEWED" | "CONVERTED" | "ARCHIVED";
   notes?: string;
 }
 
-export async function updateInterestListStatus(options: UpdateInterestListStatusOptions) {
+export async function updateInterestListStatus(
+  options: UpdateInterestListStatusOptions
+) {
   const { listId, status, notes } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+
   const list = await db.query.clientInterestLists.findFirst({
     where: eq(clientInterestLists.id, listId),
   });
-  
+
   if (!list) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Interest list not found",
     });
   }
-  
+
   await db
     .update(clientInterestLists)
     .set({
       status,
       notes,
-      reviewedAt: status === 'REVIEWED' ? new Date() : list.reviewedAt,
+      reviewedAt: status === "REVIEWED" ? new Date() : list.reviewedAt,
       updatedAt: new Date(),
     })
     .where(eq(clientInterestLists.id, listId));
-  
+
   return { success: true };
 }
 
@@ -1011,8 +1166,12 @@ export async function updateInterestListStatus(options: UpdateInterestListStatus
 
 export async function getDraftInterestsByClient(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-  
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
+
   const drafts = await db.query.clientDraftInterests.findMany({
     where: eq(clientDraftInterests.clientId, clientId),
   });
@@ -1021,7 +1180,7 @@ export async function getDraftInterestsByClient(clientId: number) {
     return {
       items: [],
       totalItems: 0,
-      totalValue: '0.00',
+      totalValue: "0.00",
     };
   }
 
@@ -1033,7 +1192,7 @@ export async function getDraftInterestsByClient(clientId: number) {
     return {
       items: [],
       totalItems: 0,
-      totalValue: '0.00',
+      totalValue: "0.00",
     };
   }
 
@@ -1045,10 +1204,10 @@ export async function getDraftInterestsByClient(clientId: number) {
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
     .where(inArray(batches.id, batchIds));
-  
+
   // Get client pricing
   const clientRules = await pricingEngine.getClientPricingRules(clientId);
-  
+
   // Calculate current prices
   const inventoryItems = batchesData.map(({ batch, product }) => ({
     id: batch.id,
@@ -1056,15 +1215,18 @@ export async function getDraftInterestsByClient(clientId: number) {
     category: product?.category,
     subcategory: product?.subcategory || undefined,
     strain: undefined,
-    basePrice: parseFloat(batch.unitCogs || '0'),
-    quantity: parseFloat(batch.onHandQty || '0'),
+    basePrice: parseFloat(batch.unitCogs || "0"),
+    quantity: parseFloat(batch.onHandQty || "0"),
     grade: batch.grade || undefined,
     vendor: undefined,
   }));
-  
+
   let pricedItems;
   try {
-    pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
+    pricedItems = await pricingEngine.calculateRetailPrices(
+      inventoryItems,
+      clientRules
+    );
   } catch (_error) {
     pricedItems = inventoryItems.map(item => ({
       ...item,
@@ -1075,28 +1237,33 @@ export async function getDraftInterestsByClient(clientId: number) {
   }
 
   // Build items
-  const items = drafts.map(draft => {
-    const pricedItem = pricedItems.find(p => p.id === draft.batchId);
-    const batchData = batchesData.find(b => b.batch.id === draft.batchId);
-    
-    if (!pricedItem || !batchData) {
-      return null;
-    }
-    
-    return {
-      id: draft.id,
-      batchId: draft.batchId,
-      itemName: pricedItem.name,
-      category: pricedItem.category,
-      subcategory: pricedItem.subcategory,
-      retailPrice: pricedItem.retailPrice.toFixed(2),
-      quantity: (pricedItem.quantity ?? 0).toFixed(2),
-      addedAt: draft.addedAt,
-    };
-  }).filter(item => item !== null);
-  
-  const totalValue = items.reduce((sum, item) => sum + parseFloat(item.retailPrice), 0);
-  
+  const items = drafts
+    .map(draft => {
+      const pricedItem = pricedItems.find(p => p.id === draft.batchId);
+      const batchData = batchesData.find(b => b.batch.id === draft.batchId);
+
+      if (!pricedItem || !batchData) {
+        return null;
+      }
+
+      return {
+        id: draft.id,
+        batchId: draft.batchId,
+        itemName: pricedItem.name,
+        category: pricedItem.category,
+        subcategory: pricedItem.subcategory,
+        retailPrice: pricedItem.retailPrice.toFixed(2),
+        quantity: (pricedItem.quantity ?? 0).toFixed(2),
+        addedAt: draft.addedAt,
+      };
+    })
+    .filter(item => item !== null);
+
+  const totalValue = items.reduce(
+    (sum, item) => sum + parseFloat(item.retailPrice),
+    0
+  );
+
   return {
     items,
     totalItems: items.length,
@@ -1110,25 +1277,36 @@ export async function getDraftInterestsByClient(clientId: number) {
 
 export async function getClientPriceAlerts(clientId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
-  const { getClientPriceAlerts } = await import('./priceAlertsService');
+  const { getClientPriceAlerts } = await import("./priceAlertsService");
   return await getClientPriceAlerts(clientId);
 }
 
 export async function deactivateClientPriceAlert(alertId: number) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
-  const { deactivatePriceAlert } = await import('./priceAlertsService');
-  
+  const { deactivatePriceAlert } = await import("./priceAlertsService");
+
   // Get the alert to find the clientId
   const alert = await db.query.clientPriceAlerts.findFirst({
     where: eq(clientPriceAlerts.id, alertId),
   });
 
   if (!alert) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Price alert not found" });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Price alert not found",
+    });
   }
 
   await deactivatePriceAlert(alertId, alert.clientId);
@@ -1139,8 +1317,6 @@ export async function deactivateClientPriceAlert(alertId: number) {
 // ============================================================================
 // ADMIN IMPERSONATION AUDIT SERVICES (FEATURE-012)
 // ============================================================================
-
-
 
 export interface CreateImpersonationSessionOptions {
   adminUserId: number;
@@ -1154,10 +1330,22 @@ export interface CreateImpersonationSessionOptions {
  * Creates a new impersonation session with full audit tracking.
  * Returns a one-time-use token that must be exchanged for a portal session.
  */
-export async function createAuditedImpersonationSession(options: CreateImpersonationSessionOptions) {
-  const { adminUserId, clientId, reason: _reason, ipAddress, userAgent } = options;
+export async function createAuditedImpersonationSession(
+  options: CreateImpersonationSessionOptions
+) {
+  const {
+    adminUserId,
+    clientId,
+    reason: _reason,
+    ipAddress,
+    userAgent,
+  } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Verify client exists and has VIP portal enabled
   const client = await db.query.clients.findFirst({
@@ -1169,7 +1357,10 @@ export async function createAuditedImpersonationSession(options: CreateImpersona
   }
 
   if (!client.vipPortalEnabled) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "VIP Portal is not enabled for this client" });
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "VIP Portal is not enabled for this client",
+    });
   }
 
   // Check if auth record exists
@@ -1178,7 +1369,10 @@ export async function createAuditedImpersonationSession(options: CreateImpersona
   });
 
   if (!authRecord) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "VIP Portal authentication not configured for this client" });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "VIP Portal authentication not configured for this client",
+    });
   }
 
   // Generate a unique session GUID
@@ -1201,7 +1395,9 @@ export async function createAuditedImpersonationSession(options: CreateImpersona
   const oneTimeToken = `imp_ot_${sessionGuid}_${Date.now()}`;
   const tokenExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  logger.info(`[VIP Portal Audit] Admin ${adminUserId} started impersonation session ${sessionGuid} for client ${clientId} (${client.name})`);
+  logger.info(
+    `[VIP Portal Audit] Admin ${adminUserId} started impersonation session ${sessionGuid} for client ${clientId} (${client.name})`
+  );
 
   return {
     oneTimeToken,
@@ -1220,19 +1416,31 @@ export interface ExchangeImpersonationTokenOptions {
  * Exchanges a one-time impersonation token for a full portal session.
  * This is called from the VIP portal auth page.
  */
-export async function exchangeImpersonationToken(options: ExchangeImpersonationTokenOptions) {
+export async function exchangeImpersonationToken(
+  options: ExchangeImpersonationTokenOptions
+) {
   const { oneTimeToken } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Parse the one-time token
   if (!oneTimeToken.startsWith("imp_ot_")) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid impersonation token" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid impersonation token",
+    });
   }
 
   const parts = oneTimeToken.split("_");
   if (parts.length < 4) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid impersonation token format" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Invalid impersonation token format",
+    });
   }
 
   const sessionGuid = parts[2];
@@ -1240,7 +1448,10 @@ export async function exchangeImpersonationToken(options: ExchangeImpersonationT
 
   // Check if token has expired (5 minute window)
   if (Date.now() - timestamp > 5 * 60 * 1000) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Impersonation token has expired" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Impersonation token has expired",
+    });
   }
 
   // Find the session
@@ -1249,11 +1460,17 @@ export async function exchangeImpersonationToken(options: ExchangeImpersonationT
   });
 
   if (!session) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Impersonation session not found" });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Impersonation session not found",
+    });
   }
 
   if (session.status !== "ACTIVE") {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: `Impersonation session is ${session.status.toLowerCase()}` });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: `Impersonation session is ${session.status.toLowerCase()}`,
+    });
   }
 
   // Get client info
@@ -1262,7 +1479,10 @@ export async function exchangeImpersonationToken(options: ExchangeImpersonationT
   });
 
   if (!client || !client.vipPortalEnabled) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Client portal is no longer available" });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Client portal is no longer available",
+    });
   }
 
   // Generate the actual session token for the VIP portal
@@ -1276,7 +1496,9 @@ export async function exchangeImpersonationToken(options: ExchangeImpersonationT
     actionType: "TOKEN_EXCHANGE",
     actionPath: "/vip-portal/auth/impersonate",
     actionMethod: "POST",
-    actionDetails: { description: "One-time token exchanged for session token" },
+    actionDetails: {
+      description: "One-time token exchanged for session token",
+    },
   });
 
   return {
@@ -1300,10 +1522,17 @@ export interface LogImpersonationActionOptions {
 /**
  * Logs an action taken during an impersonation session.
  */
-export async function logImpersonationAction(options: LogImpersonationActionOptions) {
-  const { sessionId, actionType, actionPath, actionMethod, actionDetails } = options;
+export async function logImpersonationAction(
+  options: LogImpersonationActionOptions
+) {
+  const { sessionId, actionType, actionPath, actionMethod, actionDetails } =
+    options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const actionData: InsertAdminImpersonationAction = {
     sessionId,
@@ -1329,10 +1558,17 @@ export interface LogImpersonationActionByGuidOptions {
 /**
  * Logs an action by session GUID (extracted from the session token).
  */
-export async function logImpersonationActionByGuid(options: LogImpersonationActionByGuidOptions) {
-  const { sessionGuid, actionType, actionPath, actionMethod, actionDetails } = options;
+export async function logImpersonationActionByGuid(
+  options: LogImpersonationActionByGuidOptions
+) {
+  const { sessionGuid, actionType, actionPath, actionMethod, actionDetails } =
+    options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Find the session by GUID
   const session = await db.query.adminImpersonationSessions.findFirst({
@@ -1341,7 +1577,9 @@ export async function logImpersonationActionByGuid(options: LogImpersonationActi
 
   if (!session) {
     // Don't throw - just log a warning and return
-    console.warn(`[VIP Portal Audit] Could not find session ${sessionGuid} to log action ${actionType}`);
+    console.warn(
+      `[VIP Portal Audit] Could not find session ${sessionGuid} to log action ${actionType}`
+    );
     return { success: false, reason: "Session not found" };
   }
 
@@ -1361,25 +1599,35 @@ export interface EndImpersonationSessionOptions {
 /**
  * Ends an impersonation session normally.
  */
-export async function endImpersonationSession(options: EndImpersonationSessionOptions) {
+export async function endImpersonationSession(
+  options: EndImpersonationSessionOptions
+) {
   const { sessionGuid } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const session = await db.query.adminImpersonationSessions.findFirst({
     where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
   });
 
   if (!session) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Impersonation session not found" });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Impersonation session not found",
+    });
   }
 
   if (session.status !== "ACTIVE") {
     return { success: true, alreadyEnded: true };
   }
 
-  await db.update(adminImpersonationSessions)
-    .set({ 
+  await db
+    .update(adminImpersonationSessions)
+    .set({
       status: "ENDED",
       endAt: new Date(),
     })
@@ -1406,25 +1654,38 @@ export interface RevokeImpersonationSessionOptions {
 /**
  * Revokes an impersonation session (admin action).
  */
-export async function revokeImpersonationSession(options: RevokeImpersonationSessionOptions) {
+export async function revokeImpersonationSession(
+  options: RevokeImpersonationSessionOptions
+) {
   const { sessionGuid, revokedByUserId, reason } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const session = await db.query.adminImpersonationSessions.findFirst({
     where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
   });
 
   if (!session) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Impersonation session not found" });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Impersonation session not found",
+    });
   }
 
   if (session.status !== "ACTIVE") {
-    throw new TRPCError({ code: "BAD_REQUEST", message: `Session is already ${session.status.toLowerCase()}` });
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Session is already ${session.status.toLowerCase()}`,
+    });
   }
 
-  await db.update(adminImpersonationSessions)
-    .set({ 
+  await db
+    .update(adminImpersonationSessions)
+    .set({
       status: "REVOKED",
       endAt: new Date(),
       revokedBy: revokedByUserId,
@@ -1437,14 +1698,16 @@ export async function revokeImpersonationSession(options: RevokeImpersonationSes
   await logImpersonationAction({
     sessionId: session.id,
     actionType: "SESSION_REVOKED",
-    actionDetails: { 
+    actionDetails: {
       description: "Session revoked by admin",
       revokedBy: revokedByUserId,
       reason: reason || "No reason provided",
     },
   });
 
-  logger.info(`[VIP Portal Audit] Impersonation session ${sessionGuid} revoked by user ${revokedByUserId}`);
+  logger.info(
+    `[VIP Portal Audit] Impersonation session ${sessionGuid} revoked by user ${revokedByUserId}`
+  );
 
   return { success: true };
 }
@@ -1459,19 +1722,25 @@ export interface GetActiveImpersonationSessionsOptions {
 /**
  * Gets active impersonation sessions for monitoring.
  */
-export async function getActiveImpersonationSessions(options: GetActiveImpersonationSessionsOptions = {}) {
+export async function getActiveImpersonationSessions(
+  options: GetActiveImpersonationSessionsOptions = {}
+) {
   const { adminUserId, clientId } = options;
   // SECURITY: Validate pagination parameters
   const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const conditions = [eq(adminImpersonationSessions.status, "ACTIVE")];
-  
+
   if (adminUserId) {
     conditions.push(eq(adminImpersonationSessions.adminUserId, adminUserId));
   }
-  
+
   if (clientId) {
     conditions.push(eq(adminImpersonationSessions.clientId, clientId));
   }
@@ -1497,23 +1766,29 @@ export interface GetImpersonationSessionHistoryOptions {
 /**
  * Gets impersonation session history for audit purposes.
  */
-export async function getImpersonationSessionHistory(options: GetImpersonationSessionHistoryOptions = {}) {
+export async function getImpersonationSessionHistory(
+  options: GetImpersonationSessionHistoryOptions = {}
+) {
   const { sessionGuid, adminUserId, clientId } = options;
   // SECURITY: Validate pagination parameters
   const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const conditions = [];
-  
+
   if (sessionGuid) {
     conditions.push(eq(adminImpersonationSessions.sessionGuid, sessionGuid));
   }
-  
+
   if (adminUserId) {
     conditions.push(eq(adminImpersonationSessions.adminUserId, adminUserId));
   }
-  
+
   if (clientId) {
     conditions.push(eq(adminImpersonationSessions.clientId, clientId));
   }
@@ -1537,10 +1812,16 @@ export interface GetImpersonationSessionActionsOptions {
 /**
  * Gets actions for a specific impersonation session.
  */
-export async function getImpersonationSessionActions(options: GetImpersonationSessionActionsOptions) {
+export async function getImpersonationSessionActions(
+  options: GetImpersonationSessionActionsOptions
+) {
   const { sessionId, limit = 100, offset = 0 } = options;
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   const actions = await db.query.adminImpersonationActions.findMany({
     where: eq(adminImpersonationActions.sessionId, sessionId),
@@ -1558,7 +1839,11 @@ export async function getImpersonationSessionActions(options: GetImpersonationSe
  */
 export async function validateImpersonationSession(sessionToken: string) {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+  if (!db)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database not available",
+    });
 
   // Parse the session token: imp_{clientId}_{timestamp}_{sessionGuid}
   if (!sessionToken.startsWith("imp_")) {
@@ -1589,15 +1874,18 @@ export async function validateImpersonationSession(sessionToken: string) {
   }
 
   if (session.status !== "ACTIVE") {
-    return { valid: false, reason: `Session is ${session.status.toLowerCase()}` };
+    return {
+      valid: false,
+      reason: `Session is ${session.status.toLowerCase()}`,
+    };
   }
 
   if (session.clientId !== clientId) {
     return { valid: false, reason: "Client ID mismatch" };
   }
 
-  return { 
-    valid: true, 
+  return {
+    valid: true,
     session,
     sessionGuid,
     clientId,

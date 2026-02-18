@@ -11,14 +11,9 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import {
-  router,
-  protectedProcedure,
-  getAuthenticatedUserId,
-} from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
-
 
 import { batches, products } from "../../drizzle/schema";
 import { productGrades } from "../../drizzle/schema-sprint5-trackd";
@@ -61,12 +56,20 @@ export const productGradesRouter = router({
    */
   list: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({
-      includeInactive: z.boolean().default(false),
-    }).optional())
+    .input(
+      z
+        .object({
+          includeInactive: z.boolean().default(false),
+        })
+        .optional()
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(productGrades.deletedAt)];
 
@@ -90,7 +93,9 @@ export const productGradesRouter = router({
         .where(isNull(batches.deletedAt))
         .groupBy(batches.grade);
 
-      const countMap = new Map(batchCounts.map(b => [b.grade, Number(b.count)]));
+      const countMap = new Map(
+        batchCounts.map(b => [b.grade, Number(b.count)])
+      );
 
       return grades.map(g => ({
         ...g,
@@ -106,16 +111,17 @@ export const productGradesRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [grade] = await db
         .select()
         .from(productGrades)
         .where(
-          and(
-            eq(productGrades.id, input.id),
-            isNull(productGrades.deletedAt)
-          )
+          and(eq(productGrades.id, input.id), isNull(productGrades.deletedAt))
         )
         .limit(1);
 
@@ -134,7 +140,11 @@ export const productGradesRouter = router({
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [grade] = await db
         .select()
@@ -158,7 +168,11 @@ export const productGradesRouter = router({
     .input(createGradeSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Check for duplicate code
       const [existing] = await db
@@ -201,7 +215,11 @@ export const productGradesRouter = router({
     .input(updateGradeSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const { id, ...updates } = input;
 
@@ -234,18 +252,23 @@ export const productGradesRouter = router({
 
       const updateData: Record<string, unknown> = {};
 
-      if (updates.code !== undefined) updateData.code = updates.code.toUpperCase();
+      if (updates.code !== undefined)
+        updateData.code = updates.code.toUpperCase();
       if (updates.name !== undefined) updateData.name = updates.name;
-      if (updates.description !== undefined) updateData.description = updates.description;
-      if (updates.sortOrder !== undefined) updateData.sortOrder = updates.sortOrder;
+      if (updates.description !== undefined)
+        updateData.description = updates.description;
+      if (updates.sortOrder !== undefined)
+        updateData.sortOrder = updates.sortOrder;
       if (updates.color !== undefined) updateData.color = updates.color;
       if (updates.pricingMultiplier !== undefined) {
         updateData.pricingMultiplier = updates.pricingMultiplier.toFixed(4);
       }
       if (updates.suggestedMarkupPercent !== undefined) {
-        updateData.suggestedMarkupPercent = updates.suggestedMarkupPercent.toFixed(2);
+        updateData.suggestedMarkupPercent =
+          updates.suggestedMarkupPercent.toFixed(2);
       }
-      if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+      if (updates.isActive !== undefined)
+        updateData.isActive = updates.isActive;
 
       await db
         .update(productGrades)
@@ -269,7 +292,11 @@ export const productGradesRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Check how many batches use this grade
       const [grade] = await db
@@ -285,12 +312,7 @@ export const productGradesRouter = router({
       const [batchCount] = await db
         .select({ count: sql<number>`COUNT(*)` })
         .from(batches)
-        .where(
-          and(
-            eq(batches.grade, grade.code),
-            isNull(batches.deletedAt)
-          )
-        );
+        .where(and(eq(batches.grade, grade.code), isNull(batches.deletedAt)));
 
       if (Number(batchCount?.count || 0) > 0) {
         throw new TRPCError({
@@ -318,13 +340,19 @@ export const productGradesRouter = router({
    */
   calculateSuggestedPrice: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({
-      gradeCode: z.string(),
-      basePrice: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        gradeCode: z.string(),
+        basePrice: z.number().positive(),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [grade] = await db
         .select()
@@ -372,14 +400,20 @@ export const productGradesRouter = router({
    */
   getBatchesByGrade: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({
-      gradeCode: z.string(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        gradeCode: z.string(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const batchList = await db
         .select({
@@ -392,10 +426,7 @@ export const productGradesRouter = router({
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
         .where(
-          and(
-            eq(batches.grade, input.gradeCode),
-            isNull(batches.deletedAt)
-          )
+          and(eq(batches.grade, input.gradeCode), isNull(batches.deletedAt))
         )
         .orderBy(desc(batches.createdAt))
         .limit(input.limit)
@@ -405,10 +436,7 @@ export const productGradesRouter = router({
         .select({ count: sql<number>`COUNT(*)` })
         .from(batches)
         .where(
-          and(
-            eq(batches.grade, input.gradeCode),
-            isNull(batches.deletedAt)
-          )
+          and(eq(batches.grade, input.gradeCode), isNull(batches.deletedAt))
         );
 
       return {
@@ -427,17 +455,18 @@ export const productGradesRouter = router({
     .use(requirePermission("inventory:read"))
     .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Get all grades
       const grades = await db
         .select()
         .from(productGrades)
         .where(
-          and(
-            eq(productGrades.isActive, true),
-            isNull(productGrades.deletedAt)
-          )
+          and(eq(productGrades.isActive, true), isNull(productGrades.deletedAt))
         )
         .orderBy(asc(productGrades.sortOrder));
 
@@ -477,12 +506,18 @@ export const productGradesRouter = router({
    */
   reorder: protectedProcedure
     .use(requirePermission("settings:update"))
-    .input(z.object({
-      gradeIds: z.array(z.number()),
-    }))
+    .input(
+      z.object({
+        gradeIds: z.array(z.number()),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (let i = 0; i < input.gradeIds.length; i++) {
         await db

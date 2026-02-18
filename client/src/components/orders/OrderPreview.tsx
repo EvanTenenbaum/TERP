@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,7 +24,6 @@ import {
   Calendar,
   DollarSign,
   TrendingUp,
-  AlertCircle,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -73,18 +71,21 @@ export function OrderPreview({
   onUpdateItem,
   _clientDetails,
 }: OrderPreviewProps) {
-  const [, setLocation] = useLocation();
+  const [, _setLocation] = useLocation();
   const [validUntil, setValidUntil] = useState<string>("");
-  const [paymentTerms, setPaymentTerms] = useState<"COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL">("NET_30");
+  const [paymentTerms, setPaymentTerms] = useState<
+    "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL"
+  >("NET_30");
   const [cashPayment, setCashPayment] = useState<number>(0);
   const [notes, setNotes] = useState<string>("");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedItemForCogs, setSelectedItemForCogs] = useState<any>(null);
+
+  const [selectedItemForCogs, setSelectedItemForCogs] =
+    useState<OrderItem | null>(null);
   const [showTotalsBreakdown, setShowTotalsBreakdown] = useState(false);
-  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [_showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   const createOrderMutation = trpc.orders.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(
         orderType === "QUOTE"
           ? `Quote ${data.orderNumber} created successfully!`
@@ -96,14 +97,22 @@ export function OrderPreview({
       setValidUntil("");
       setCashPayment(0);
     },
-    onError: (error) => {
-      toast.error(`Failed to create ${orderType.toLowerCase()}: ${error.message}`);
+    onError: error => {
+      toast.error(
+        `Failed to create ${orderType.toLowerCase()}: ${error.message}`
+      );
     },
   });
 
   // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + (item as any).lineTotal, 0);
-  const totalCogs = items.reduce((sum, item) => sum + (item as any).lineCogs, 0);
+  const subtotal = items.reduce(
+    (sum, item) => sum + (item as any).lineTotal,
+    0
+  );
+  const totalCogs = items.reduce(
+    (sum, item) => sum + (item as any).lineCogs,
+    0
+  );
   const totalMargin = subtotal - totalCogs;
   const avgMarginPercent = subtotal > 0 ? (totalMargin / subtotal) * 100 : 0;
 
@@ -131,7 +140,7 @@ export function OrderPreview({
       orderType,
       isDraft,
       clientId,
-      items: items.map((item) => ({
+      items: items.map(item => ({
         batchId: item.batchId,
         displayName: item.displayName,
         quantity: item.quantity,
@@ -143,8 +152,20 @@ export function OrderPreview({
         lineCogs: (item as any).lineCogs,
       })),
       validUntil: orderType === "QUOTE" ? validUntil : undefined,
-      paymentTerms: !isDraft && orderType === "SALE" ? (paymentTerms as "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL") : undefined,
-      cashPayment: !isDraft && orderType === "SALE" && paymentTerms === "PARTIAL" ? cashPayment : undefined,
+      paymentTerms:
+        !isDraft && orderType === "SALE"
+          ? (paymentTerms as
+              | "COD"
+              | "NET_7"
+              | "NET_15"
+              | "NET_30"
+              | "CONSIGNMENT"
+              | "PARTIAL")
+          : undefined,
+      cashPayment:
+        !isDraft && orderType === "SALE" && paymentTerms === "PARTIAL"
+          ? cashPayment
+          : undefined,
       notes,
     });
   };
@@ -171,12 +192,12 @@ export function OrderPreview({
             {/* Items List */}
             <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-3">
-                {items.map((item) => (
+                {items.map(item => (
                   <OrderItemCard
                     key={item.batchId}
                     item={item}
                     onRemove={() => onRemoveItem(item.batchId)}
-                    onUpdate={(updates) => onUpdateItem(item.batchId, updates)}
+                    onUpdate={updates => onUpdateItem(item.batchId, updates)}
                     onAdjustCogs={() => setSelectedItemForCogs(item as any)}
                   />
                 ))}
@@ -189,9 +210,11 @@ export function OrderPreview({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-medium">Total</span>
-                <span className="text-xl font-bold">${subtotal.toFixed(2)}</span>
+                <span className="text-xl font-bold">
+                  ${subtotal.toFixed(2)}
+                </span>
               </div>
-              
+
               {/* Level 1: Just show margin (default) */}
               <div className="flex items-center justify-between">
                 <button
@@ -201,7 +224,9 @@ export function OrderPreview({
                   <TrendingUp className="h-4 w-4" />
                   <span>Profit Margin</span>
                 </button>
-                <span className={`text-lg font-semibold ${getMarginColor(avgMarginPercent)}`}>
+                <span
+                  className={`text-lg font-semibold ${getMarginColor(avgMarginPercent)}`}
+                >
                   {avgMarginPercent.toFixed(1)}%
                 </span>
               </div>
@@ -215,7 +240,9 @@ export function OrderPreview({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Margin</span>
-                    <span className="text-green-600">${totalMargin.toFixed(2)}</span>
+                    <span className="text-green-600">
+                      ${totalMargin.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Items</span>
@@ -234,7 +261,10 @@ export function OrderPreview({
             {/* Quote-specific fields */}
             {orderType === "QUOTE" && (
               <div className="space-y-2">
-                <Label htmlFor="valid-until" className="flex items-center gap-2">
+                <Label
+                  htmlFor="valid-until"
+                  className="flex items-center gap-2"
+                >
                   <Calendar className="h-4 w-4" />
                   Valid Until
                 </Label>
@@ -242,7 +272,7 @@ export function OrderPreview({
                   id="valid-until"
                   type="date"
                   value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
+                  onChange={e => setValidUntil(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
                 />
               </div>
@@ -252,11 +282,17 @@ export function OrderPreview({
             {orderType === "SALE" && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="payment-terms" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="payment-terms"
+                    className="flex items-center gap-2"
+                  >
                     <DollarSign className="h-4 w-4" />
                     Payment Terms
                   </Label>
-                  <Select value={paymentTerms} onValueChange={(v) => setPaymentTerms(v as any)}>
+                  <Select
+                    value={paymentTerms}
+                    onValueChange={v => setPaymentTerms(v as any)}
+                  >
                     <SelectTrigger id="payment-terms">
                       <SelectValue />
                     </SelectTrigger>
@@ -281,7 +317,9 @@ export function OrderPreview({
                       max={subtotal}
                       step="0.01"
                       value={cashPayment}
-                      onChange={(e) => setCashPayment(parseFloat(e.target.value) || 0)}
+                      onChange={e =>
+                        setCashPayment(parseFloat(e.target.value) || 0)
+                      }
                       placeholder="0.00"
                     />
                     {cashPayment > 0 && (
@@ -300,7 +338,7 @@ export function OrderPreview({
               <Textarea
                 id="notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 placeholder="Add any additional notes..."
                 rows={3}
               />
@@ -363,4 +401,3 @@ export function OrderPreview({
     </Card>
   );
 }
-

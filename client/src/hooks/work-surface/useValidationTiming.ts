@@ -66,7 +66,10 @@ export interface UseValidationTimingOptions<T extends z.ZodType> {
   /** Initial values */
   initialValues?: Partial<z.infer<T>>;
   /** Called when overall validation state changes */
-  onValidationChange?: (isValid: boolean, errors: Record<string, string>) => void;
+  onValidationChange?: (
+    isValid: boolean,
+    errors: Record<string, string>
+  ) => void;
   /** Debounce delay for typing indicator (ms) */
   typingDebounce?: number;
   /** Fields to validate immediately on change (e.g., format validators) */
@@ -125,10 +128,14 @@ export function useValidationTiming<T extends z.ZodType>({
   const valuesRef = useRef<FormValues>(initialValues);
 
   // Field states
-  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>({});
+  const [fieldStates, setFieldStates] = useState<Record<string, FieldState>>(
+    {}
+  );
 
   // Typing timeout refs
-  const typingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const typingTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {}
+  );
 
   // ============================================================================
   // Validate a single field against schema
@@ -146,7 +153,7 @@ export function useValidationTiming<T extends z.ZodType>({
 
         // Find error for this specific field
         const fieldError = result.error.issues.find(
-          (issue) => issue.path[0] === field
+          issue => issue.path[0] === field
         );
 
         if (fieldError) {
@@ -179,7 +186,7 @@ export function useValidationTiming<T extends z.ZodType>({
       }
 
       // Set typing state (no errors shown)
-      setFieldStates((prev) => ({
+      setFieldStates(prev => ({
         ...prev,
         [fieldKey]: {
           ...defaultFieldState,
@@ -195,7 +202,7 @@ export function useValidationTiming<T extends z.ZodType>({
         typingTimeouts.current[fieldKey] = setTimeout(() => {
           const { isValid } = validateField(fieldKey, value);
           if (isValid) {
-            setFieldStates((prev) => ({
+            setFieldStates(prev => ({
               ...prev,
               [fieldKey]: {
                 ...prev[fieldKey],
@@ -227,7 +234,7 @@ export function useValidationTiming<T extends z.ZodType>({
       // Validate on blur
       const { isValid, error } = validateField(fieldKey, value);
 
-      setFieldStates((prev) => ({
+      setFieldStates(prev => ({
         ...prev,
         [fieldKey]: {
           status: isValid ? "valid" : "invalid",
@@ -238,7 +245,11 @@ export function useValidationTiming<T extends z.ZodType>({
         },
       }));
     },
-    [values, validateField]
+    // `values` is intentionally excluded: handleBlur reads from valuesRef.current
+    // (which is always up-to-date) rather than the `values` state variable.
+    // Including `values` here would cause unnecessary re-creation of this callback
+    // on every keystroke.
+    [validateField]
   );
 
   // ============================================================================
@@ -253,7 +264,7 @@ export function useValidationTiming<T extends z.ZodType>({
     if (result.success) {
       // All valid - update all field states
       const newStates: Record<string, FieldState> = {};
-      Object.keys(values).forEach((key) => {
+      Object.keys(values).forEach(key => {
         newStates[key] = {
           status: "valid",
           showSuccess: true,
@@ -271,7 +282,7 @@ export function useValidationTiming<T extends z.ZodType>({
     const errors: Record<string, string> = {};
     const newStates: Record<string, FieldState> = { ...fieldStates };
 
-    result.error.issues.forEach((issue) => {
+    result.error.issues.forEach(issue => {
       const field = String(issue.path[0]);
       errors[field] = issue.message;
       newStates[field] = {
@@ -284,7 +295,7 @@ export function useValidationTiming<T extends z.ZodType>({
     });
 
     // Mark valid fields
-    Object.keys(values).forEach((key) => {
+    Object.keys(values).forEach(key => {
       if (!errors[key]) {
         newStates[key] = {
           status: "valid",

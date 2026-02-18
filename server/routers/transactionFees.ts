@@ -19,7 +19,6 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 
-
 import { clients, orders } from "../../drizzle/schema";
 import {
   clientTransactionFees,
@@ -92,7 +91,11 @@ export const transactionFeesRouter = router({
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [fee] = await db
         .select()
@@ -116,7 +119,11 @@ export const transactionFeesRouter = router({
     .input(setClientFeeSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -195,7 +202,11 @@ export const transactionFeesRouter = router({
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .update(clientTransactionFees)
@@ -210,13 +221,19 @@ export const transactionFeesRouter = router({
    */
   calculateOrderFee: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({
-      clientId: z.number(),
-      orderSubtotal: z.number().positive(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        orderSubtotal: z.number().positive(),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [feeConfig] = await db
         .select()
@@ -265,7 +282,11 @@ export const transactionFeesRouter = router({
     .input(applyOrderFeeSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -370,7 +391,11 @@ export const transactionFeesRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [fee] = await db
         .select()
@@ -386,14 +411,20 @@ export const transactionFeesRouter = router({
    */
   listClientFees: protectedProcedure
     .use(requirePermission("clients:read"))
-    .input(z.object({
-      onlyActive: z.boolean().default(true),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        onlyActive: z.boolean().default(true),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(clientTransactionFees.deletedAt)];
 
@@ -436,14 +467,20 @@ export const transactionFeesRouter = router({
    */
   getFeeReport: protectedProcedure
     .use(requirePermission("accounting:read"))
-    .input(z.object({
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      clientId: z.number().optional(),
-    }))
-    .query(async ({ input }) => {
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        clientId: z.number().optional(),
+      })
+    )
+    .query(async () => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const query = sql`
         SELECT
@@ -457,7 +494,12 @@ export const transactionFeesRouter = router({
       `;
 
       const result = await db.execute(query);
-      const rows = result[0] as unknown as { total_orders?: number; total_fees?: string; avg_fee?: string; override_count?: number }[];
+      const rows = result[0] as unknown as {
+        total_orders?: number;
+        total_fees?: string;
+        avg_fee?: string;
+        override_count?: number;
+      }[];
 
       return {
         totalOrders: Number(rows?.[0]?.total_orders || 0),

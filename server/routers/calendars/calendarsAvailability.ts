@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../../_core/trpc";
 import { getDb } from "../../db";
 import {
   calendarAvailability,
@@ -21,7 +25,6 @@ export const calendarsAvailabilityRouter = router({
   listAvailability: protectedProcedure
     .input(z.object({ calendarId: z.number() }))
     .query(async ({ ctx, input }) => {
-
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -97,7 +100,7 @@ export const calendarsAvailabilityRouter = router({
       // Insert new slots
       if (input.slots.length > 0) {
         await db.insert(calendarAvailability).values(
-          input.slots.map((slot) => ({
+          input.slots.map(slot => ({
             calendarId: input.calendarId,
             dayOfWeek: input.dayOfWeek,
             startTime: slot.startTime,
@@ -139,12 +142,18 @@ export const calendarsAvailabilityRouter = router({
         throw new Error("Access denied to this calendar");
       }
 
-      const conditions = [eq(calendarBlockedDates.calendarId, input.calendarId)];
+      const conditions = [
+        eq(calendarBlockedDates.calendarId, input.calendarId),
+      ];
       if (input.startDate) {
-        conditions.push(gte(calendarBlockedDates.date, new Date(input.startDate)));
+        conditions.push(
+          gte(calendarBlockedDates.date, new Date(input.startDate))
+        );
       }
       if (input.endDate) {
-        conditions.push(lte(calendarBlockedDates.date, new Date(input.endDate)));
+        conditions.push(
+          lte(calendarBlockedDates.date, new Date(input.endDate))
+        );
       }
 
       const blocked = await db
@@ -250,7 +259,7 @@ export const calendarsAvailabilityRouter = router({
         slotIntervalMinutes: z.number().min(5).max(60).default(30),
       })
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -294,7 +303,11 @@ export const calendarsAvailabilityRouter = router({
         );
 
       const blockedDateSet = new Set(
-        blockedDates.map((b) => b.date instanceof Date ? b.date.toISOString().split("T")[0] : String(b.date))
+        blockedDates.map(b =>
+          b.date instanceof Date
+            ? b.date.toISOString().split("T")[0]
+            : String(b.date)
+        )
       );
 
       // Get existing events
@@ -335,16 +348,25 @@ export const calendarsAvailabilityRouter = router({
         );
 
       // Convert time-off to blocked time ranges per date
-      const timeOffByDate: Map<string, Array<{ start: number; end: number }>> = new Map();
+      const timeOffByDate: Map<
+        string,
+        Array<{ start: number; end: number }>
+      > = new Map();
       for (const timeOff of approvedTimeOff) {
-        const toStartDate = timeOff.startDate instanceof Date
-          ? timeOff.startDate
-          : new Date(timeOff.startDate);
-        const toEndDate = timeOff.endDate instanceof Date
-          ? timeOff.endDate
-          : new Date(timeOff.endDate);
+        const toStartDate =
+          timeOff.startDate instanceof Date
+            ? timeOff.startDate
+            : new Date(timeOff.startDate);
+        const toEndDate =
+          timeOff.endDate instanceof Date
+            ? timeOff.endDate
+            : new Date(timeOff.endDate);
 
-        for (let d = new Date(toStartDate); d <= toEndDate; d.setDate(d.getDate() + 1)) {
+        for (
+          let d = new Date(toStartDate);
+          d <= toEndDate;
+          d.setDate(d.getDate() + 1)
+        ) {
           const dStr = d.toISOString().split("T")[0];
 
           const timeOffList = timeOffByDate.get(dStr);
@@ -352,7 +374,10 @@ export const calendarsAvailabilityRouter = router({
             timeOffByDate.set(dStr, []);
           }
 
-          const list = timeOffByDate.get(dStr) as Array<{ start: number; end: number }>;
+          const list = timeOffByDate.get(dStr) as Array<{
+            start: number;
+            end: number;
+          }>;
           if (timeOff.isFullDay) {
             list.push({ start: 0, end: 1440 });
           } else if (timeOff.startTime && timeOff.endTime) {
@@ -367,7 +392,10 @@ export const calendarsAvailabilityRouter = router({
       }
 
       // Build availability map by day of week
-      const availabilityByDay: Map<number, Array<{ start: string; end: string }>> = new Map();
+      const availabilityByDay: Map<
+        number,
+        Array<{ start: string; end: string }>
+      > = new Map();
       for (const rule of availabilityRules) {
         const day = rule.dayOfWeek;
         let dayRules = availabilityByDay.get(day);
@@ -383,14 +411,21 @@ export const calendarsAvailabilityRouter = router({
 
       // Calculate minimum booking time
       const now = new Date();
-      const minBookingTime = new Date(now.getTime() + appointmentType.minNoticeHours * 60 * 60 * 1000);
+      const minBookingTime = new Date(
+        now.getTime() + appointmentType.minNoticeHours * 60 * 60 * 1000
+      );
 
       // Calculate maximum booking date
       const maxBookingDate = new Date(now);
-      maxBookingDate.setDate(maxBookingDate.getDate() + appointmentType.maxAdvanceDays);
+      maxBookingDate.setDate(
+        maxBookingDate.getDate() + appointmentType.maxAdvanceDays
+      );
 
       // Total slot duration including buffers
-      const totalDuration = appointmentType.bufferBefore + appointmentType.duration + appointmentType.bufferAfter;
+      const totalDuration =
+        appointmentType.bufferBefore +
+        appointmentType.duration +
+        appointmentType.bufferAfter;
 
       // Generate slots
       const slots: Record<string, string[]> = {};
@@ -404,7 +439,11 @@ export const calendarsAvailabilityRouter = router({
         throw new Error("Date range cannot exceed 3 months");
       }
 
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      for (
+        let date = new Date(startDate);
+        date <= endDate;
+        date.setDate(date.getDate() + 1)
+      ) {
         const dateStr = date.toISOString().split("T")[0];
 
         if (blockedDateSet.has(dateStr)) continue;
@@ -443,9 +482,10 @@ export const calendarsAvailabilityRouter = router({
 
             // Check event conflicts
             for (const event of existingEvents) {
-              const eventDateStr = event.startDate instanceof Date
-                ? event.startDate.toISOString().split("T")[0]
-                : String(event.startDate);
+              const eventDateStr =
+                event.startDate instanceof Date
+                  ? event.startDate.toISOString().split("T")[0]
+                  : String(event.startDate);
 
               if (eventDateStr !== dateStr) continue;
 
@@ -454,13 +494,20 @@ export const calendarsAvailabilityRouter = router({
                 break;
               }
 
-              const [eventStartHour, eventStartMin] = event.startTime.split(":").map(Number);
-              const [eventEndHour, eventEndMin] = event.endTime.split(":").map(Number);
+              const [eventStartHour, eventStartMin] = event.startTime
+                .split(":")
+                .map(Number);
+              const [eventEndHour, eventEndMin] = event.endTime
+                .split(":")
+                .map(Number);
 
               const eventStartMinutes = eventStartHour * 60 + eventStartMin;
               const eventEndMinutes = eventEndHour * 60 + eventEndMin;
 
-              if (slotStart < eventEndMinutes && slotEndMinutes > eventStartMinutes) {
+              if (
+                slotStart < eventEndMinutes &&
+                slotEndMinutes > eventStartMinutes
+              ) {
                 hasConflict = true;
                 break;
               }

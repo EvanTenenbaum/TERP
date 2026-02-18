@@ -1,12 +1,11 @@
 import { getDb } from "./db";
-import { 
+import {
   salesSheetTemplates,
   salesSheetVersions,
   salesSheetHistory,
   orders,
-  type InsertSalesSheetVersion,
   type SalesSheetTemplate,
-  type SalesSheetVersion
+  type SalesSheetVersion,
 } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -24,7 +23,8 @@ export async function createSalesSheetVersion(
 
   try {
     // Get current template
-    const [template] = await db.select()
+    const [template] = await db
+      .select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.id, templateId))
       .limit(1);
@@ -34,13 +34,15 @@ export async function createSalesSheetVersion(
     }
 
     // Get latest version number
-    const versions = await db.select()
+    const versions = await db
+      .select()
       .from(salesSheetVersions)
       .where(eq(salesSheetVersions.templateId, templateId))
       .orderBy(desc(salesSheetVersions.versionNumber))
       .limit(1);
 
-    const newVersionNumber = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
+    const newVersionNumber =
+      versions.length > 0 ? versions[0].versionNumber + 1 : 1;
 
     // Create new version
     const [version] = await db.insert(salesSheetVersions).values({
@@ -52,22 +54,26 @@ export async function createSalesSheetVersion(
       selectedItems: template.selectedItems as Record<string, unknown>[],
       columnVisibility: template.columnVisibility as Record<string, boolean>,
       changes,
-      createdBy: userId
+      createdBy: userId,
     });
 
     // Update template's current version
-    await db.update(salesSheetTemplates)
+    await db
+      .update(salesSheetTemplates)
       .set({ currentVersion: newVersionNumber })
       .where(eq(salesSheetTemplates.id, templateId));
 
-    const [newVersion] = await db.select()
+    const [newVersion] = await db
+      .select()
       .from(salesSheetVersions)
       .where(eq(salesSheetVersions.id, version.insertId))
       .limit(1);
 
     return newVersion;
   } catch (error) {
-    throw new Error(`Failed to create sales sheet version: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create sales sheet version: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -81,14 +87,17 @@ export async function getSalesSheetVersionHistory(
   if (!db) throw new Error("Database not available");
 
   try {
-    const versions = await db.select()
+    const versions = await db
+      .select()
       .from(salesSheetVersions)
       .where(eq(salesSheetVersions.templateId, templateId))
       .orderBy(desc(salesSheetVersions.versionNumber));
 
     return versions;
   } catch (error) {
-    throw new Error(`Failed to get version history: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get version history: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -104,7 +113,8 @@ export async function restoreSalesSheetVersion(
 
   try {
     // Get the version to restore
-    const [version] = await db.select()
+    const [version] = await db
+      .select()
       .from(salesSheetVersions)
       .where(eq(salesSheetVersions.id, versionId))
       .limit(1);
@@ -114,13 +124,14 @@ export async function restoreSalesSheetVersion(
     }
 
     // Update the template with version data
-    await db.update(salesSheetTemplates)
+    await db
+      .update(salesSheetTemplates)
       .set({
         name: version.name,
         description: version.description,
-        filters: version.filters as any,
-        selectedItems: version.selectedItems as any,
-        columnVisibility: version.columnVisibility as any
+        filters: version.filters,
+        selectedItems: version.selectedItems,
+        columnVisibility: version.columnVisibility,
       })
       .where(eq(salesSheetTemplates.id, version.templateId));
 
@@ -131,14 +142,17 @@ export async function restoreSalesSheetVersion(
       `Restored from version ${version.versionNumber}`
     );
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.id, version.templateId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to restore version: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to restore version: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -156,7 +170,8 @@ export async function cloneSalesSheetTemplate(
 
   try {
     // Get original template
-    const [original] = await db.select()
+    const [original] = await db
+      .select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.id, templateId))
       .limit(1);
@@ -175,17 +190,20 @@ export async function cloneSalesSheetTemplate(
       columnVisibility: original.columnVisibility as Record<string, boolean>,
       createdBy: userId,
       isActive: 1,
-      currentVersion: 1
+      currentVersion: 1,
     });
 
-    const [created] = await db.select()
+    const [created] = await db
+      .select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.id, newTemplate.insertId))
       .limit(1);
 
     return created;
   } catch (error) {
-    throw new Error(`Failed to clone template: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to clone template: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -200,11 +218,14 @@ export async function setSalesSheetExpiration(
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.update(salesSheetTemplates)
+    await db
+      .update(salesSheetTemplates)
       .set({ expirationDate })
       .where(eq(salesSheetTemplates.id, templateId));
   } catch (error) {
-    throw new Error(`Failed to set expiration date: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to set expiration date: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -218,18 +239,23 @@ export async function deactivateExpiredSalesSheets(): Promise<number> {
 
   try {
     const today = new Date();
-    
-    const result = await db.update(salesSheetTemplates)
+
+    const _result = await db
+      .update(salesSheetTemplates)
       .set({ isActive: 0 })
-      .where(and(
-        sql`${salesSheetTemplates.expirationDate} IS NOT NULL`,
-        sql`${salesSheetTemplates.expirationDate} < ${today}`,
-        eq(salesSheetTemplates.isActive, 1)
-      ));
+      .where(
+        and(
+          sql`${salesSheetTemplates.expirationDate} IS NOT NULL`,
+          sql`${salesSheetTemplates.expirationDate} < ${today}`,
+          eq(salesSheetTemplates.isActive, 1)
+        )
+      );
 
     return 0; // Return count of deactivated sheets
   } catch (error) {
-    throw new Error(`Failed to deactivate expired sales sheets: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to deactivate expired sales sheets: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -240,17 +266,29 @@ export async function deactivateExpiredSalesSheets(): Promise<number> {
 export async function createBulkOrdersFromSalesSheet(
   templateId: number,
   clientOrders: Array<{
-    clientId: number,
-    items: Array<{itemId: number, quantity: string, price: string}>,
-    notes?: string
+    clientId: number;
+    items: Array<{ itemId: number; quantity: string; price: string }>;
+    notes?: string;
   }>,
   createdBy: number
-): Promise<any[]> {
+): Promise<
+  Array<{
+    orderId: number;
+    orderNumber: string;
+    clientId: number;
+    total: number;
+  }>
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    const createdOrders = [];
+    const createdOrders: Array<{
+      orderId: number;
+      orderNumber: string;
+      clientId: number;
+      total: number;
+    }> = [];
 
     for (const clientOrder of clientOrders) {
       // Calculate totals
@@ -273,21 +311,25 @@ export async function createBulkOrdersFromSalesSheet(
         discount: "0",
         total: subtotal.toString(),
         paymentTerms: "NET_30",
-        notes: clientOrder.notes || `Created from sales sheet template #${templateId}`,
-        createdBy
+        notes:
+          clientOrder.notes ||
+          `Created from sales sheet template #${templateId}`,
+        createdBy,
       });
 
       createdOrders.push({
         orderId: order.insertId,
         orderNumber,
         clientId: clientOrder.clientId,
-        total: subtotal
+        total: subtotal,
       });
     }
 
     return createdOrders;
   } catch (error) {
-    throw new Error(`Failed to create bulk orders: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create bulk orders: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -298,13 +340,20 @@ export async function createBulkOrdersFromSalesSheet(
 export async function getClientSpecificPricing(
   templateId: number,
   clientId: number
-): Promise<any> {
+): Promise<{
+  templateId: number;
+  clientId: number;
+  items: Array<Record<string, unknown>>;
+  appliedDiscounts: never[];
+  notes: string;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
     // Get template
-    const [template] = await db.select()
+    const [template] = await db
+      .select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.id, templateId))
       .limit(1);
@@ -316,18 +365,20 @@ export async function getClientSpecificPricing(
     // Get client to determine tier/discount
     // This would integrate with pricing rules if they existed
     // For now, return base pricing
-    
-    const items = template.selectedItems as Array<Record<string, unknown>>
-    
+
+    const items = template.selectedItems as Array<Record<string, unknown>>;
+
     return {
       templateId,
       clientId,
       items,
       appliedDiscounts: [],
-      notes: "Client-specific pricing applied"
+      notes: "Client-specific pricing applied",
     };
   } catch (error) {
-    throw new Error(`Failed to get client-specific pricing: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get client-specific pricing: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -341,7 +392,8 @@ export async function getActiveSalesSheets(
   if (!db) throw new Error("Database not available");
 
   try {
-    const query = db.select()
+    const query = db
+      .select()
       .from(salesSheetTemplates)
       .where(eq(salesSheetTemplates.isActive, 1));
 
@@ -352,32 +404,41 @@ export async function getActiveSalesSheets(
 
     return await query;
   } catch (error) {
-    throw new Error(`Failed to get active sales sheets: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get active sales sheets: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
 /**
  * Get sales sheet usage statistics
  */
-export async function getSalesSheetUsageStats(
-  templateId: number
-): Promise<any> {
+export async function getSalesSheetUsageStats(templateId: number): Promise<{
+  templateId: number;
+  usageCount: number;
+  ordersCreated: number;
+  totalRevenue: string;
+  lastUsed: Date | null;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
     // Get usage from history
-    const history = await db.select()
+    const history = await db
+      .select()
       .from(salesSheetHistory)
       .where(eq(salesSheetHistory.templateId, templateId));
 
     // Get orders created from this template
-    const ordersFromTemplate = await db.select()
+    const ordersFromTemplate = await db
+      .select()
       .from(orders)
       .where(sql`${orders.notes} LIKE '%template #${templateId}%'`);
 
-    const totalRevenue = ordersFromTemplate.reduce((sum, order) => 
-      sum + parseFloat(order.total.toString()), 0
+    const totalRevenue = ordersFromTemplate.reduce(
+      (sum, order) => sum + parseFloat(order.total.toString()),
+      0
     );
 
     return {
@@ -385,9 +446,11 @@ export async function getSalesSheetUsageStats(
       usageCount: history.length,
       ordersCreated: ordersFromTemplate.length,
       totalRevenue: totalRevenue.toFixed(2),
-      lastUsed: history.length > 0 ? history[0].createdAt : null
+      lastUsed: history.length > 0 ? history[0].createdAt : null,
     };
   } catch (error) {
-    throw new Error(`Failed to get usage stats: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get usage stats: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }

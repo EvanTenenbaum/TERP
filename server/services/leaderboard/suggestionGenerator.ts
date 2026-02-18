@@ -4,11 +4,11 @@
  */
 
 import type { MetricType, RankedClient, ClientType } from "./types";
-import { METRIC_CONFIGS, formatMetricValue, getRankSuffix } from "./constants";
-import { 
-  generateLeaderboardRecommendations, 
+import { METRIC_CONFIGS, getRankSuffix } from "./constants";
+import {
+  generateLeaderboardRecommendations,
   type LeaderboardData,
-  type LeaderboardType 
+  type LeaderboardType,
 } from "../../lib/leaderboardRecommendations";
 
 /**
@@ -72,7 +72,11 @@ export function generateSuggestions(
 function getTierSuggestions(tier: Tier, clientType: ClientType): Suggestion[] {
   const suggestions: Suggestion[] = [];
 
-  if (clientType === "CUSTOMER" || clientType === "DUAL" || clientType === "ALL") {
+  if (
+    clientType === "CUSTOMER" ||
+    clientType === "DUAL" ||
+    clientType === "ALL"
+  ) {
     switch (tier) {
       case "top":
         suggestions.push({
@@ -148,7 +152,7 @@ function getTierSuggestions(tier: Tier, clientType: ClientType): Suggestion[] {
 function getMetricSuggestions(
   client: RankedClient,
   allClients: RankedClient[],
-  clientType: ClientType
+  _clientType: ClientType
 ): Suggestion[] {
   const suggestions: Suggestion[] = [];
   const weakMetrics = findWeakMetrics(client, allClients);
@@ -224,34 +228,34 @@ function getMetricImprovementSuggestion(
     case "ytd_revenue":
     case "lifetime_value":
       return `Your spending is ${severity} below average. Consider consolidating purchases with us for better pricing.`;
-    
+
     case "average_order_value":
       return `Your average order size is ${severity} below average. Larger orders may qualify for volume discounts.`;
-    
+
     case "order_frequency":
       return `You order less frequently than most clients. Setting up recurring orders could improve your ranking.`;
-    
+
     case "recency":
       return `It's been a while since your last order. Check out our latest inventory!`;
-    
+
     case "on_time_payment_rate":
       return `Your on-time payment rate could be improved. Consider setting up automatic payments.`;
-    
+
     case "average_days_to_pay":
       return `Paying invoices faster would improve your reliability score.`;
-    
+
     case "credit_utilization":
       return `Your credit utilization is outside the optimal range. Contact us to discuss adjusting your credit limit.`;
-    
+
     case "yoy_growth":
       return `Your year-over-year growth is below average. Let's discuss how to grow your business together.`;
-    
+
     case "delivery_reliability":
       return `Improving delivery times would boost your supplier ranking.`;
-    
+
     case "product_variety":
       return `Expanding your product offerings could improve your supplier score.`;
-    
+
     default:
       return null;
   }
@@ -267,7 +271,8 @@ function getGapSuggestion(
   if (client.rank === 1) return null;
 
   const nextClient = allClients.find(c => c.rank === client.rank - 1);
-  if (!nextClient || !client.masterScore || !nextClient.masterScore) return null;
+  if (!nextClient || !client.masterScore || !nextClient.masterScore)
+    return null;
 
   const scoreDiff = nextClient.masterScore - client.masterScore;
   const nextRank = client.rank - 1;
@@ -321,7 +326,10 @@ export function generateVipPortalSuggestions(
     })),
   };
 
-  const recommendations = generateLeaderboardRecommendations(leaderboardData, true);
+  const recommendations = generateLeaderboardRecommendations(
+    leaderboardData,
+    true
+  );
   return recommendations.suggestions;
 }
 

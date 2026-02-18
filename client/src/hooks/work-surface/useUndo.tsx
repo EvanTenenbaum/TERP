@@ -14,8 +14,8 @@
  * @see ATOMIC_UX_STRATEGY.md for undo requirements
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useState, useCallback, useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 // ============================================================================
 // Types
@@ -56,7 +56,13 @@ export interface UseUndoOptions {
   enableKeyboard?: boolean;
   /** Custom toast options */
   toastOptions?: {
-    position?: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+    position?:
+      | "top-left"
+      | "top-center"
+      | "top-right"
+      | "bottom-left"
+      | "bottom-center"
+      | "bottom-right";
   };
 }
 
@@ -64,7 +70,9 @@ export interface UseUndoReturn {
   /** Current undo state */
   state: UndoState;
   /** Register an undoable action */
-  registerAction: <T = unknown>(action: Omit<UndoAction<T>, 'id' | 'createdAt'>) => string;
+  registerAction: <T = unknown>(
+    action: Omit<UndoAction<T>, "id" | "createdAt">
+  ) => string;
   /** Undo a specific action by ID */
   undoAction: (id: string) => Promise<void>;
   /** Undo the most recent action */
@@ -127,44 +135,57 @@ export function useUndo(options: UseUndoOptions = {}): UseUndoReturn {
   } = options;
 
   const [actions, setActions] = useState<UndoAction[]>([]);
-  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map()
+  );
   const toastIdsRef = useRef<Map<string, string | number>>(new Map());
+  // Ref to always hold the latest undoAction so registerAction's closure
+  // (which is created before undoAction is declared) can call the latest version
+  // without creating a circular dependency in the useCallback deps arrays.
+  const undoActionRef = useRef<(id: string) => Promise<void>>(async () => {});
 
-  // Clean up timers on unmount
+  // Clean up timers on unmount.
+  // Capture timersRef.current in a local variable so the cleanup closure
+  // uses the same Map instance that existed when the effect ran, rather than
+  // whatever timersRef.current points to at the time cleanup executes.
   useEffect(() => {
+    const timers = timersRef.current;
     return () => {
-      timersRef.current.forEach((timer) => clearTimeout(timer));
-      timersRef.current.clear();
+      timers.forEach(timer => clearTimeout(timer));
+      timers.clear();
     };
   }, []);
 
-  // Keyboard shortcut (Cmd+Z)
+  // Keyboard shortcut (Cmd+Z).
+  // Uses undoActionRef so the handler always calls the latest undoAction
+  // without needing undoAction in the deps array (which would be defined
+  // after this effect in hook ordering).
   useEffect(() => {
     if (!enableKeyboard) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         if (actions.length > 0) {
           const lastAction = actions[actions.length - 1];
-          undoAction(lastAction.id);
+          undoActionRef.current(lastAction.id);
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [enableKeyboard, actions]);
 
   // Remove action from queue
   const removeAction = useCallback((id: string, executeConfirm = false) => {
-    setActions((prev) => {
-      const action = prev.find((a) => a.id === id);
+    setActions(prev => {
+      const action = prev.find(a => a.id === id);
       if (action && executeConfirm && action.onConfirm) {
         // Execute confirm callback asynchronously
         Promise.resolve(action.onConfirm()).catch(console.error);
       }
-      return prev.filter((a) => a.id !== id);
+      return prev.filter(a => a.id !== id);
     });
 
     // Clear timer
@@ -182,77 +203,91 @@ export function useUndo(options: UseUndoOptions = {}): UseUndoReturn {
     }
   }, []);
 
-  // Register an undoable action
-  const registerAction = useCallback(<T = unknown>(
-    actionConfig: Omit<UndoAction<T>, 'id' | 'createdAt'>
-  ): string => {
-    const id = generateId();
-    const duration = actionConfig.duration ?? defaultDuration;
+  // Register an undoable action.
+  // Uses undoActionRef.current in the toast onClick so we always call the
+  // latest undoAction without needing it in this callback's deps array.
+  // (undoAction is defined after registerAction in hook ordering, so we
+  // cannot reference it directly without a ref indirection.)
+  const registerAction = useCallback(
+    <T = unknown,>(
+      actionConfig: Omit<UndoAction<T>, "id" | "createdAt">
+    ): string => {
+      const id = generateId();
+      const duration = actionConfig.duration ?? defaultDuration;
 
-    const action: UndoAction<T> = {
-      ...actionConfig,
-      id,
-      createdAt: Date.now(),
-      duration,
-    };
+      const action: UndoAction<T> = {
+        ...actionConfig,
+        id,
+        createdAt: Date.now(),
+        duration,
+      };
 
-    // Add to queue (with max size enforcement)
-    setActions((prev) => {
-      const newActions = [...prev, action as UndoAction];
-      // Remove oldest actions if over limit
-      while (newActions.length > maxQueueSize) {
-        const oldest = newActions.shift();
-        if (oldest) {
-          removeAction(oldest.id, true);
+      // Add to queue (with max size enforcement)
+      setActions(prev => {
+        const newActions = [...prev, action as UndoAction];
+        // Remove oldest actions if over limit
+        while (newActions.length > maxQueueSize) {
+          const oldest = newActions.shift();
+          if (oldest) {
+            removeAction(oldest.id, true);
+          }
         }
-      }
-      return newActions;
-    });
+        return newActions;
+      });
 
-    // Set timer for auto-confirm
-    const timer = setTimeout(() => {
-      removeAction(id, true);
-    }, duration);
-    timersRef.current.set(id, timer);
+      // Set timer for auto-confirm
+      const timer = setTimeout(() => {
+        removeAction(id, true);
+      }, duration);
+      timersRef.current.set(id, timer);
 
-    // Show toast with countdown
-    const toastId = toast(action.description, {
-      duration: duration,
-      action: {
-        label: 'Undo',
-        onClick: () => undoAction(id),
-      },
-      onDismiss: () => {
-        // Only confirm if not already undone
-        if (timersRef.current.has(id)) {
-          removeAction(id, true);
-        }
-      },
-      ...toastOptions,
-    });
-    toastIdsRef.current.set(id, toastId);
+      // Show toast with countdown
+      const toastId = toast(action.description, {
+        duration: duration,
+        action: {
+          label: "Undo",
+          onClick: () => undoActionRef.current(id),
+        },
+        onDismiss: () => {
+          // Only confirm if not already undone
+          if (timersRef.current.has(id)) {
+            removeAction(id, true);
+          }
+        },
+        ...toastOptions,
+      });
+      toastIdsRef.current.set(id, toastId);
 
-    return id;
-  }, [defaultDuration, maxQueueSize, removeAction, toastOptions]);
+      return id;
+    },
+    [defaultDuration, maxQueueSize, removeAction, toastOptions]
+  );
 
   // Undo a specific action
-  const undoAction = useCallback(async (id: string): Promise<void> => {
-    const action = actions.find((a) => a.id === id);
-    if (!action) return;
+  const undoAction = useCallback(
+    async (id: string): Promise<void> => {
+      const action = actions.find(a => a.id === id);
+      if (!action) return;
 
-    try {
-      // Execute undo
-      await Promise.resolve(action.undo());
+      try {
+        // Execute undo
+        await Promise.resolve(action.undo());
 
-      // Remove from queue (don't execute confirm)
-      removeAction(id, false);
+        // Remove from queue (don't execute confirm)
+        removeAction(id, false);
 
-      toast.success('Action undone');
-    } catch (error) {
-      console.error('Undo failed:', error);
-      toast.error('Failed to undo action');
-    }
-  }, [actions, removeAction]);
+        toast.success("Action undone");
+      } catch (error) {
+        console.error("Undo failed:", error);
+        toast.error("Failed to undo action");
+      }
+    },
+    [actions, removeAction]
+  );
+
+  // Keep the ref in sync so registerAction's toast onClick and the keyboard
+  // handler always call the latest version of undoAction.
+  undoActionRef.current = undoAction;
 
   // Undo the most recent action
   const undoLast = useCallback(async (): Promise<void> => {
@@ -262,13 +297,16 @@ export function useUndo(options: UseUndoOptions = {}): UseUndoReturn {
   }, [actions, undoAction]);
 
   // Cancel an action (remove without executing)
-  const cancelAction = useCallback((id: string): void => {
-    removeAction(id, false);
-  }, [removeAction]);
+  const cancelAction = useCallback(
+    (id: string): void => {
+      removeAction(id, false);
+    },
+    [removeAction]
+  );
 
   // Clear all pending actions
   const clearAll = useCallback((): void => {
-    actions.forEach((action) => {
+    actions.forEach(action => {
       removeAction(action.id, true);
     });
   }, [actions, removeAction]);
@@ -294,7 +332,7 @@ export function useUndo(options: UseUndoOptions = {}): UseUndoReturn {
 // Undo Context (For App-Wide Undo)
 // ============================================================================
 
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from "react";
 
 const UndoContext = createContext<UseUndoReturn | null>(null);
 
@@ -320,11 +358,7 @@ export interface UndoProviderProps {
 export function UndoProvider({ children, options }: UndoProviderProps) {
   const undo = useUndo(options);
 
-  return (
-    <UndoContext.Provider value={undo}>
-      {children}
-    </UndoContext.Provider>
-  );
+  return <UndoContext.Provider value={undo}>{children}</UndoContext.Provider>;
 }
 
 /**
@@ -333,7 +367,7 @@ export function UndoProvider({ children, options }: UndoProviderProps) {
 export function useUndoContext(): UseUndoReturn {
   const context = useContext(UndoContext);
   if (!context) {
-    throw new Error('useUndoContext must be used within an UndoProvider');
+    throw new Error("useUndoContext must be used within an UndoProvider");
   }
   return context;
 }
@@ -359,7 +393,7 @@ export function UndoToast({ action, onUndo, onDismiss }: UndoToastProps) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(interval);
           return 0;

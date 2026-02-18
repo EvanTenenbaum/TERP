@@ -3,14 +3,14 @@
  * Generates actionable ranking improvement suggestions
  */
 
-export type LeaderboardType = 
-  | 'ytd_spend' 
-  | 'payment_speed' 
-  | 'order_frequency' 
-  | 'credit_utilization' 
-  | 'ontime_payment_rate';
+export type LeaderboardType =
+  | "ytd_spend"
+  | "payment_speed"
+  | "order_frequency"
+  | "credit_utilization"
+  | "ontime_payment_rate";
 
-export type DisplayMode = 'blackbox' | 'transparent';
+export type DisplayMode = "blackbox" | "transparent";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -30,7 +30,7 @@ export interface LeaderboardData {
 
 export interface LeaderboardRecommendations {
   suggestions: string[];
-  tier: 'top' | 'middle' | 'bottom';
+  tier: "top" | "middle" | "bottom";
   percentile: number;
 }
 
@@ -55,7 +55,7 @@ const PHRASES = {
       "Talk to your account manager about volume discounts that could increase your spend.",
     ],
   },
-  
+
   payment_speed: {
     top: [
       "Excellent payment speed! You're one of our fastest-paying clients.",
@@ -73,7 +73,7 @@ const PHRASES = {
       "Contact us if you need help setting up faster payment methods.",
     ],
   },
-  
+
   order_frequency: {
     top: [
       "You're one of our most frequent buyers! Keep it up.",
@@ -91,7 +91,7 @@ const PHRASES = {
       "Talk to your account manager about your regular needs to increase order frequency.",
     ],
   },
-  
+
   credit_utilization: {
     top: [
       "Your credit utilization is in the optimal range. Well done!",
@@ -109,7 +109,7 @@ const PHRASES = {
       "Contact us to discuss adjusting your credit limit to better match your needs.",
     ],
   },
-  
+
   ontime_payment_rate: {
     top: [
       "Excellent on-time payment rate! You're a model client.",
@@ -132,17 +132,20 @@ const PHRASES = {
 /**
  * Calculate percentile and tier
  */
-function calculateTier(rank: number, totalClients: number): {
+function calculateTier(
+  rank: number,
+  totalClients: number
+): {
   percentile: number;
-  tier: 'top' | 'middle' | 'bottom';
+  tier: "top" | "middle" | "bottom";
 } {
   const percentile = (rank / totalClients) * 100;
-  
-  let tier: 'top' | 'middle' | 'bottom';
-  if (percentile <= 25) tier = 'top';
-  else if (percentile <= 75) tier = 'middle';
-  else tier = 'bottom';
-  
+
+  let tier: "top" | "middle" | "bottom";
+  if (percentile <= 25) tier = "top";
+  else if (percentile <= 75) tier = "middle";
+  else tier = "bottom";
+
   return { percentile, tier };
 }
 
@@ -157,27 +160,31 @@ function generateGapSuggestion(
 ): string | null {
   const gap = Math.abs(nextRankMetricValue - clientMetricValue);
   const nextRank = clientRank - 1;
-  
+
   switch (leaderboardType) {
-    case 'ytd_spend':
+    case "ytd_spend":
       return `You're $${gap.toLocaleString()} away from ${nextRank}${getRankSuffix(nextRank)} place. Place one more large order this month.`;
-    
-    case 'payment_speed':
+
+    case "payment_speed": {
       const days = Math.round(gap);
-      return `Pay invoices ${days} day${days !== 1 ? 's' : ''} faster to move up to ${nextRank}${getRankSuffix(nextRank)} place.`;
-    
-    case 'order_frequency':
+      return `Pay invoices ${days} day${days !== 1 ? "s" : ""} faster to move up to ${nextRank}${getRankSuffix(nextRank)} place.`;
+    }
+
+    case "order_frequency": {
       const orders = Math.ceil(gap);
-      return `Place ${orders} more order${orders !== 1 ? 's' : ''} this quarter to reach ${nextRank}${getRankSuffix(nextRank)} place.`;
-    
-    case 'credit_utilization':
+      return `Place ${orders} more order${orders !== 1 ? "s" : ""} this quarter to reach ${nextRank}${getRankSuffix(nextRank)} place.`;
+    }
+
+    case "credit_utilization": {
       const utilizationGap = gap.toFixed(1);
       return `Adjust your credit utilization by ${utilizationGap}% to move up to ${nextRank}${getRankSuffix(nextRank)} place.`;
-    
-    case 'ontime_payment_rate':
+    }
+
+    case "ontime_payment_rate": {
       const rateGap = gap.toFixed(1);
       return `Improve your on-time payment rate by ${rateGap}% to reach ${nextRank}${getRankSuffix(nextRank)} place.`;
-    
+    }
+
     default:
       return null;
   }
@@ -187,12 +194,16 @@ function generateGapSuggestion(
  * Get rank suffix (1st, 2nd, 3rd, 4th, etc.)
  */
 function getRankSuffix(rank: number): string {
-  if (rank % 100 >= 11 && rank % 100 <= 13) return 'th';
+  if (rank % 100 >= 11 && rank % 100 <= 13) return "th";
   switch (rank % 10) {
-    case 1: return 'st';
-    case 2: return 'nd';
-    case 3: return 'rd';
-    default: return 'th';
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
   }
 }
 
@@ -206,23 +217,28 @@ export function generateLeaderboardRecommendations(
   if (!showSuggestions) {
     return {
       suggestions: [],
-      tier: 'middle',
+      tier: "middle",
       percentile: 50,
     };
   }
-  
-  const { percentile, tier } = calculateTier(data.clientRank, data.totalClients);
+
+  const { percentile, tier } = calculateTier(
+    data.clientRank,
+    data.totalClients
+  );
   const suggestions: string[] = [];
-  
+
   // Get base suggestions for this leaderboard type and tier
   const basePhrases = PHRASES[data.leaderboardType]?.[tier] || [];
   if (basePhrases.length > 0) {
     suggestions.push(basePhrases[0]);
   }
-  
+
   // Add gap-based suggestion if in transparent mode and not in 1st place
-  if (data.displayMode === 'transparent' && data.clientRank > 1) {
-    const nextRankEntry = data.entries.find(e => e.rank === data.clientRank - 1);
+  if (data.displayMode === "transparent" && data.clientRank > 1) {
+    const nextRankEntry = data.entries.find(
+      e => e.rank === data.clientRank - 1
+    );
     if (nextRankEntry) {
       const gapSuggestion = generateGapSuggestion(
         data.leaderboardType,
@@ -235,12 +251,12 @@ export function generateLeaderboardRecommendations(
       }
     }
   }
-  
+
   // Add second base phrase if we have room
   if (suggestions.length < 3 && basePhrases.length > 1) {
     suggestions.push(basePhrases[1]);
   }
-  
+
   // Limit to top 3 suggestions
   return {
     suggestions: suggestions.slice(0, 3),
@@ -257,21 +273,21 @@ export function formatMetricValue(
   value: number
 ): string {
   switch (leaderboardType) {
-    case 'ytd_spend':
+    case "ytd_spend":
       return `$${value.toLocaleString()}`;
-    
-    case 'payment_speed':
+
+    case "payment_speed":
       return `${Math.round(value)} days`;
-    
-    case 'order_frequency':
+
+    case "order_frequency":
       return `${Math.round(value)} orders`;
-    
-    case 'credit_utilization':
+
+    case "credit_utilization":
       return `${value.toFixed(1)}%`;
-    
-    case 'ontime_payment_rate':
+
+    case "ontime_payment_rate":
       return `${value.toFixed(1)}%`;
-    
+
     default:
       return value.toString();
   }
@@ -280,20 +296,22 @@ export function formatMetricValue(
 /**
  * Get leaderboard type display name
  */
-export function getLeaderboardTypeName(leaderboardType: LeaderboardType): string {
+export function getLeaderboardTypeName(
+  leaderboardType: LeaderboardType
+): string {
   switch (leaderboardType) {
-    case 'ytd_spend':
-      return 'YTD Spend';
-    case 'payment_speed':
-      return 'Payment Speed';
-    case 'order_frequency':
-      return 'Order Frequency';
-    case 'credit_utilization':
-      return 'Credit Utilization';
-    case 'ontime_payment_rate':
-      return 'On-Time Payment Rate';
+    case "ytd_spend":
+      return "YTD Spend";
+    case "payment_speed":
+      return "Payment Speed";
+    case "order_frequency":
+      return "Order Frequency";
+    case "credit_utilization":
+      return "Credit Utilization";
+    case "ontime_payment_rate":
+      return "On-Time Payment Rate";
     default:
-      return 'Leaderboard';
+      return "Leaderboard";
   }
 }
 
@@ -302,9 +320,13 @@ export function getLeaderboardTypeName(leaderboardType: LeaderboardType): string
  */
 export function getMedalEmoji(rank: number): string {
   switch (rank) {
-    case 1: return '🥇';
-    case 2: return '🥈';
-    case 3: return '🥉';
-    default: return '';
+    case 1:
+      return "🥇";
+    case 2:
+      return "🥈";
+    case 3:
+      return "🥉";
+    default:
+      return "";
   }
 }

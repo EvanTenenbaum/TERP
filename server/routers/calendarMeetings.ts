@@ -1,11 +1,13 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
-import { requirePermission } from "../_core/permissionMiddleware";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarEvents, clientMeetingHistory } from "../../drizzle/schema";
 import { and, eq, lt, isNull, inArray } from "drizzle-orm";
-
 
 /**
  * Calendar Meetings Router
@@ -14,40 +16,74 @@ import { and, eq, lt, isNull, inArray } from "drizzle-orm";
  * PRODUCTION-READY - No placeholders
  */
 
-type MeetingType = "sales" | "support" | "onboarding" | "review" | "collections" | "other";
+type MeetingType =
+  | "sales"
+  | "support"
+  | "onboarding"
+  | "review"
+  | "collections"
+  | "other";
 
 /**
  * Determine meeting type from event context and participants
  */
 function determineMeetingType(
-  event: { title: string; description?: string | null; entityType?: string | null },
+  event: {
+    title: string;
+    description?: string | null;
+    entityType?: string | null;
+  },
   _participants: Array<{ role?: string | null }>
 ): MeetingType {
   const text = `${event.title} ${event.description ?? ""}`.toLowerCase();
-  
+
   // Check title/description for keywords
-  if (text.includes("sales") || text.includes("demo") || text.includes("pitch")) {
+  if (
+    text.includes("sales") ||
+    text.includes("demo") ||
+    text.includes("pitch")
+  ) {
     return "sales";
   }
-  if (text.includes("support") || text.includes("help") || text.includes("issue") || text.includes("problem")) {
+  if (
+    text.includes("support") ||
+    text.includes("help") ||
+    text.includes("issue") ||
+    text.includes("problem")
+  ) {
     return "support";
   }
-  if (text.includes("onboard") || text.includes("welcome") || text.includes("setup") || text.includes("training")) {
+  if (
+    text.includes("onboard") ||
+    text.includes("welcome") ||
+    text.includes("setup") ||
+    text.includes("training")
+  ) {
     return "onboarding";
   }
-  if (text.includes("review") || text.includes("check-in") || text.includes("quarterly") || text.includes("monthly")) {
+  if (
+    text.includes("review") ||
+    text.includes("check-in") ||
+    text.includes("quarterly") ||
+    text.includes("monthly")
+  ) {
     return "review";
   }
-  if (text.includes("collection") || text.includes("payment") || text.includes("overdue") || text.includes("debt")) {
+  if (
+    text.includes("collection") ||
+    text.includes("payment") ||
+    text.includes("overdue") ||
+    text.includes("debt")
+  ) {
     return "collections";
   }
-  
+
   // Check entity type
   if (event.entityType === "client") {
     // Default client meetings to sales
     return "sales";
   }
-  
+
   return "other";
 }
 
@@ -56,7 +92,7 @@ export const calendarMeetingsRouter = router({
   getUnconfirmedMeetings: protectedProcedure.query(async ({ ctx }) => {
     const userId = getAuthenticatedUserId(ctx);
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     // Get past meetings that are still in SCHEDULED or IN_PROGRESS status
@@ -80,7 +116,7 @@ export const calendarMeetingsRouter = router({
     const userMeetings = [];
     for (const event of events) {
       const participants = await calendarDb.getEventParticipants(event.id);
-      const isParticipant = participants.some((p) => p.userId === userId);
+      const isParticipant = participants.some(p => p.userId === userId);
       const isAssigned = event.assignedTo === userId;
       const isCreator = event.createdBy === userId;
 
@@ -114,7 +150,6 @@ export const calendarMeetingsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
-
       // Get event
       const event = await calendarDb.getEventById(input.eventId);
       if (!event) {
@@ -137,7 +172,7 @@ export const calendarMeetingsRouter = router({
 
       // Get participants for meeting history
       const participants = await calendarDb.getEventParticipants(input.eventId);
-      const attendees = participants.map((p) => ({
+      const attendees = participants.map(p => ({
         userId: p.userId,
         name: `User ${p.userId}`, // Name will be resolved from user lookup if needed
       }));
@@ -214,9 +249,8 @@ export const calendarMeetingsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
-
+      if (!db) throw new Error("Database not available");
 
       const future = new Date();
       future.setDate(future.getDate() + input.daysAhead);
@@ -246,11 +280,9 @@ export const calendarMeetingsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-
-
       // Get meeting history entry
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [entry] = await db
@@ -264,7 +296,11 @@ export const calendarMeetingsRouter = router({
       }
 
       // Update action item
-      const actionItems = entry.actionItems as Array<{ text: string; completed: boolean; assignedTo?: number }> | null;
+      const actionItems = entry.actionItems as Array<{
+        text: string;
+        completed: boolean;
+        assignedTo?: number;
+      }> | null;
       if (actionItems && actionItems[input.actionItemIndex]) {
         actionItems[input.actionItemIndex].completed = true;
 

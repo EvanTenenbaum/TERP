@@ -15,12 +15,6 @@ interface AvailabilitySlot {
   endTime: string;
 }
 
-interface BlockedDate {
-  id: number;
-  date: string;
-  reason?: string;
-}
-
 /**
  * CalendarAvailabilitySettings Component
  * CAL-002: Availability and blocked dates management
@@ -38,10 +32,14 @@ const DAYS_OF_WEEK = [
 ];
 
 export function CalendarAvailabilitySettings() {
-  const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(
+    null
+  );
   const [blockedDateInput, setBlockedDateInput] = useState("");
   const [blockedReasonInput, setBlockedReasonInput] = useState("");
-  const [deleteBlockedConfirm, setDeleteBlockedConfirm] = useState<number | null>(null);
+  const [deleteBlockedConfirm, setDeleteBlockedConfirm] = useState<
+    number | null
+  >(null);
 
   const { data: calendars } = trpc.calendarsManagement.list.useQuery({});
   const { data: availability, refetch: refetchAvailability } =
@@ -55,37 +53,40 @@ export function CalendarAvailabilitySettings() {
       { enabled: !!selectedCalendarId }
     );
 
-  const setAvailabilityMutation = trpc.calendarsManagement.setAvailability.useMutation({
-    onSuccess: () => {
-      toast.success("Availability updated");
-      refetchAvailability();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update availability");
-    },
-  });
+  const setAvailabilityMutation =
+    trpc.calendarsManagement.setAvailability.useMutation({
+      onSuccess: () => {
+        toast.success("Availability updated");
+        refetchAvailability();
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to update availability");
+      },
+    });
 
-  const addBlockedMutation = trpc.calendarsManagement.addBlockedDate.useMutation({
-    onSuccess: () => {
-      toast.success("Blocked date added");
-      setBlockedDateInput("");
-      setBlockedReasonInput("");
-      refetchBlocked();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to add blocked date");
-    },
-  });
+  const addBlockedMutation =
+    trpc.calendarsManagement.addBlockedDate.useMutation({
+      onSuccess: () => {
+        toast.success("Blocked date added");
+        setBlockedDateInput("");
+        setBlockedReasonInput("");
+        refetchBlocked();
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to add blocked date");
+      },
+    });
 
-  const removeBlockedMutation = trpc.calendarsManagement.removeBlockedDate.useMutation({
-    onSuccess: () => {
-      toast.success("Blocked date removed");
-      refetchBlocked();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to remove blocked date");
-    },
-  });
+  const removeBlockedMutation =
+    trpc.calendarsManagement.removeBlockedDate.useMutation({
+      onSuccess: () => {
+        toast.success("Blocked date removed");
+        refetchBlocked();
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to remove blocked date");
+      },
+    });
 
   // Auto-select first calendar if none selected
   if (!selectedCalendarId && calendars && calendars.length > 0) {
@@ -93,7 +94,10 @@ export function CalendarAvailabilitySettings() {
   }
 
   // Group availability by day
-  const availabilityByDay: Record<number, Array<{ id: number; startTime: string; endTime: string }>> = {};
+  const availabilityByDay: Record<
+    number,
+    Array<{ id: number; startTime: string; endTime: string }>
+  > = {};
   for (let i = 0; i < 7; i++) {
     availabilityByDay[i] = [];
   }
@@ -108,7 +112,10 @@ export function CalendarAvailabilitySettings() {
   const handleAddSlot = (dayOfWeek: number) => {
     const currentSlots = availabilityByDay[dayOfWeek] || [];
     const newSlots = [
-      ...currentSlots.map((s) => ({ startTime: s.startTime, endTime: s.endTime })),
+      ...currentSlots.map(s => ({
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })),
       { startTime: "09:00", endTime: "17:00" },
     ];
     setAvailabilityMutation.mutate({
@@ -122,7 +129,7 @@ export function CalendarAvailabilitySettings() {
     const currentSlots = availabilityByDay[dayOfWeek] || [];
     const newSlots = currentSlots
       .filter((_, i) => i !== index)
-      .map((s) => ({ startTime: s.startTime, endTime: s.endTime }));
+      .map(s => ({ startTime: s.startTime, endTime: s.endTime }));
     setAvailabilityMutation.mutate({
       calendarId: selectedCalendarId ?? 0,
       dayOfWeek,
@@ -159,7 +166,7 @@ export function CalendarAvailabilitySettings() {
             id="avail-calendar-select"
             className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2"
             value={selectedCalendarId || ""}
-            onChange={(e) => setSelectedCalendarId(Number(e.target.value))}
+            onChange={e => setSelectedCalendarId(Number(e.target.value))}
           >
             {calendars?.map((cal: { id: number; name: string }) => (
               <option key={cal.id} value={cal.id}>
@@ -182,12 +189,20 @@ export function CalendarAvailabilitySettings() {
               <div className="w-24 pt-2 font-medium text-sm">{day}</div>
               <div className="flex-1 space-y-2">
                 {(availabilityByDay[dayIndex] || []).map((slot, slotIndex) => (
-                  <div key={slotIndex} className="flex items-center gap-2">
+                  <div
+                    key={`${day}-${slot.startTime}-${slot.endTime}`}
+                    className="flex items-center gap-2"
+                  >
                     <Input
                       type="time"
                       value={slot.startTime}
-                      onChange={(e) =>
-                        handleUpdateSlot(dayIndex, slotIndex, "startTime", e.target.value)
+                      onChange={e =>
+                        handleUpdateSlot(
+                          dayIndex,
+                          slotIndex,
+                          "startTime",
+                          e.target.value
+                        )
                       }
                       className="w-28"
                     />
@@ -195,8 +210,13 @@ export function CalendarAvailabilitySettings() {
                     <Input
                       type="time"
                       value={slot.endTime}
-                      onChange={(e) =>
-                        handleUpdateSlot(dayIndex, slotIndex, "endTime", e.target.value)
+                      onChange={e =>
+                        handleUpdateSlot(
+                          dayIndex,
+                          slotIndex,
+                          "endTime",
+                          e.target.value
+                        )
                       }
                       className="w-28"
                     />
@@ -210,7 +230,9 @@ export function CalendarAvailabilitySettings() {
                   </div>
                 ))}
                 {(availabilityByDay[dayIndex]?.length || 0) === 0 && (
-                  <span className="text-sm text-muted-foreground">Unavailable</span>
+                  <span className="text-sm text-muted-foreground">
+                    Unavailable
+                  </span>
                 )}
               </div>
               <Button
@@ -238,7 +260,7 @@ export function CalendarAvailabilitySettings() {
               id="blocked-date"
               type="date"
               value={blockedDateInput}
-              onChange={(e) => setBlockedDateInput(e.target.value)}
+              onChange={e => setBlockedDateInput(e.target.value)}
             />
           </div>
           <div className="space-y-2 flex-1">
@@ -246,7 +268,7 @@ export function CalendarAvailabilitySettings() {
             <Input
               id="blocked-reason"
               value={blockedReasonInput}
-              onChange={(e) => setBlockedReasonInput(e.target.value)}
+              onChange={e => setBlockedReasonInput(e.target.value)}
               placeholder="e.g., Company Holiday"
             />
           </div>
@@ -266,13 +288,18 @@ export function CalendarAvailabilitySettings() {
         </div>
         <div className="border rounded-lg divide-y">
           {blockedDates?.map((blocked: any) => (
-            <div key={blocked.id} className="p-3 flex items-center justify-between">
+            <div
+              key={blocked.id}
+              className="p-3 flex items-center justify-between"
+            >
               <div>
                 <span className="font-medium">
                   {new Date(blocked.date).toLocaleDateString()}
                 </span>
                 {blocked.reason && (
-                  <span className="ml-2 text-muted-foreground">- {blocked.reason}</span>
+                  <span className="ml-2 text-muted-foreground">
+                    - {blocked.reason}
+                  </span>
                 )}
               </div>
               <Button
@@ -293,7 +320,7 @@ export function CalendarAvailabilitySettings() {
       </div>
       <ConfirmDialog
         open={deleteBlockedConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteBlockedConfirm(null)}
+        onOpenChange={open => !open && setDeleteBlockedConfirm(null)}
         title="Delete Blocked Date"
         description="Are you sure you want to remove this blocked date? This action cannot be undone."
         confirmLabel="Delete"

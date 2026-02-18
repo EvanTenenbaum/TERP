@@ -20,10 +20,10 @@
 
 import { getDb } from "../db";
 import { roles, permissions, rolePermissions } from "../../drizzle/schema";
-import { count, eq } from "drizzle-orm";
+import { count } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { seedRBACDefaults } from "./seedRBAC";
-import { ROLES, PERMISSIONS, ROLE_PERMISSION_MAPPINGS } from "./rbacDefinitions";
+import { ROLES, PERMISSIONS } from "./rbacDefinitions";
 
 /**
  * RBAC validation result
@@ -108,7 +108,9 @@ export async function validateRBACConfig(): Promise<RBACValidationResult> {
     result.permissionsExist = result.permissionCount > 0;
 
     // Count existing role-permission mappings
-    const mappingResult = await db.select({ count: count() }).from(rolePermissions);
+    const mappingResult = await db
+      .select({ count: count() })
+      .from(rolePermissions);
     result.mappingCount = mappingResult[0]?.count || 0;
     result.mappingsExist = result.mappingCount > 0;
 
@@ -127,7 +129,9 @@ export async function validateRBACConfig(): Promise<RBACValidationResult> {
       for (const expectedRole of ROLES) {
         if (!existingRoleNames.has(expectedRole.name)) {
           if (!CRITICAL_ROLES.includes(expectedRole.name)) {
-            result.warnings.push(`Non-critical role missing: ${expectedRole.name}`);
+            result.warnings.push(
+              `Non-critical role missing: ${expectedRole.name}`
+            );
           }
         }
       }
@@ -135,7 +139,9 @@ export async function validateRBACConfig(): Promise<RBACValidationResult> {
 
     // Check for critical permissions
     if (result.permissionsExist) {
-      const existingPermissions = await db.select({ name: permissions.name }).from(permissions);
+      const existingPermissions = await db
+        .select({ name: permissions.name })
+        .from(permissions);
       const existingPermNames = new Set(existingPermissions.map(p => p.name));
 
       for (const criticalPerm of CRITICAL_PERMISSIONS) {
@@ -151,12 +157,16 @@ export async function validateRBACConfig(): Promise<RBACValidationResult> {
       result.errors.push("No roles found in database");
     } else if (result.roleCount < MINIMUM_ROLE_COUNT) {
       result.isValid = false;
-      result.errors.push(`Insufficient roles: ${result.roleCount}/${MINIMUM_ROLE_COUNT} minimum`);
+      result.errors.push(
+        `Insufficient roles: ${result.roleCount}/${MINIMUM_ROLE_COUNT} minimum`
+      );
     }
 
     if (result.missingRoles.length > 0) {
       result.isValid = false;
-      result.errors.push(`Missing critical roles: ${result.missingRoles.join(", ")}`);
+      result.errors.push(
+        `Missing critical roles: ${result.missingRoles.join(", ")}`
+      );
     }
 
     if (!result.permissionsExist) {
@@ -164,29 +174,40 @@ export async function validateRBACConfig(): Promise<RBACValidationResult> {
       result.errors.push("No permissions found in database");
     } else if (result.permissionCount < MINIMUM_PERMISSION_COUNT) {
       result.isValid = false;
-      result.errors.push(`Insufficient permissions: ${result.permissionCount}/${MINIMUM_PERMISSION_COUNT} minimum`);
+      result.errors.push(
+        `Insufficient permissions: ${result.permissionCount}/${MINIMUM_PERMISSION_COUNT} minimum`
+      );
     }
 
     if (result.missingPermissions.length > 0) {
-      result.warnings.push(`Missing critical permissions: ${result.missingPermissions.join(", ")}`);
+      result.warnings.push(
+        `Missing critical permissions: ${result.missingPermissions.join(", ")}`
+      );
     }
 
     if (!result.mappingsExist && result.rolesExist && result.permissionsExist) {
-      result.warnings.push("No role-permission mappings found - roles may not have any permissions");
+      result.warnings.push(
+        "No role-permission mappings found - roles may not have any permissions"
+      );
     }
 
     // Add completeness warnings
     if (result.roleCount < EXPECTED_ROLE_COUNT) {
-      result.warnings.push(`Partial role setup: ${result.roleCount}/${EXPECTED_ROLE_COUNT} roles`);
+      result.warnings.push(
+        `Partial role setup: ${result.roleCount}/${EXPECTED_ROLE_COUNT} roles`
+      );
     }
 
     if (result.permissionCount < EXPECTED_PERMISSION_COUNT) {
-      result.warnings.push(`Partial permission setup: ${result.permissionCount}/${EXPECTED_PERMISSION_COUNT} permissions`);
+      result.warnings.push(
+        `Partial permission setup: ${result.permissionCount}/${EXPECTED_PERMISSION_COUNT} permissions`
+      );
     }
-
   } catch (error) {
     result.isValid = false;
-    result.errors.push(`RBAC validation error: ${error instanceof Error ? error.message : String(error)}`);
+    result.errors.push(
+      `RBAC validation error: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 
   return result;
@@ -241,7 +262,9 @@ export async function performRBACStartupCheck(): Promise<boolean> {
   const shouldAutoSeed = autoSeed === "true" || autoSeed === "1";
 
   if (shouldAutoSeed) {
-    logger.info("🌱 RBAC_AUTO_SEED is enabled - attempting to seed RBAC defaults...");
+    logger.info(
+      "🌱 RBAC_AUTO_SEED is enabled - attempting to seed RBAC defaults..."
+    );
     try {
       await seedRBACDefaults();
 
@@ -251,7 +274,9 @@ export async function performRBACStartupCheck(): Promise<boolean> {
         logger.info("✅ RBAC auto-seeding successful");
         return true;
       } else {
-        logger.error("❌ RBAC auto-seeding completed but validation still fails");
+        logger.error(
+          "❌ RBAC auto-seeding completed but validation still fails"
+        );
         for (const error of revalidation.errors) {
           logger.error(`❌ RBAC: ${error}`);
         }
@@ -268,8 +293,12 @@ export async function performRBACStartupCheck(): Promise<boolean> {
 
   // No auto-seeding - warn and continue in degraded mode
   logger.warn("⚠️ RBAC configuration is invalid - running in degraded mode");
-  logger.warn("⚠️ Some permission checks may fail until RBAC is properly seeded");
-  logger.warn("💡 To enable auto-seeding, set RBAC_AUTO_SEED=true in environment");
+  logger.warn(
+    "⚠️ Some permission checks may fail until RBAC is properly seeded"
+  );
+  logger.warn(
+    "💡 To enable auto-seeding, set RBAC_AUTO_SEED=true in environment"
+  );
   logger.warn("💡 Or run: pnpm seed:new to manually seed RBAC defaults");
 
   // Return true to allow server to start (degraded mode)

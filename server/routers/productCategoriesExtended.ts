@@ -11,11 +11,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import {
-  router,
-  protectedProcedure,
-  getAuthenticatedUserId,
-} from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 import { getDb } from "../db";
@@ -23,9 +19,10 @@ import { getDb } from "../db";
 import {
   productCategories,
   productCategoryAssignments,
+  type InsertProductCategory,
 } from "../../drizzle/schema-sprint5-trackd";
 import { products } from "../../drizzle/schema";
-import { eq, and, sql, isNull, desc, asc, like } from "drizzle-orm";
+import { eq, and, sql, isNull, asc, like } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { withTransaction } from "../dbTransaction";
 
@@ -97,14 +94,20 @@ export const productCategoriesExtendedRouter = router({
    */
   list: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({
-      parentId: z.number().nullable().optional(),
-      includeInactive: z.boolean().default(false),
-      asTree: z.boolean().default(false),
-    }))
+    .input(
+      z.object({
+        parentId: z.number().nullable().optional(),
+        includeInactive: z.boolean().default(false),
+        asTree: z.boolean().default(false),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [isNull(productCategories.deletedAt)];
 
@@ -128,8 +131,13 @@ export const productCategoriesExtendedRouter = router({
 
       if (input.asTree && input.parentId === undefined) {
         // Build tree structure
-        const categoryMap = new Map<number, typeof categories[0] & { children: typeof categories }>();
-        const rootCategories: (typeof categories[0] & { children: typeof categories })[] = [];
+        const categoryMap = new Map<
+          number,
+          (typeof categories)[0] & { children: typeof categories }
+        >();
+        const rootCategories: ((typeof categories)[0] & {
+          children: typeof categories;
+        })[] = [];
 
         // First pass: create map
         for (const cat of categories) {
@@ -164,7 +172,11 @@ export const productCategoriesExtendedRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [category] = await db
         .select()
@@ -178,11 +190,14 @@ export const productCategoriesExtendedRouter = router({
         .limit(1);
 
       if (!category) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
       }
 
       // Get parent chain
-      const parents: typeof category[] = [];
+      const parents: (typeof category)[] = [];
       let currentParentId = category.parentId;
       while (currentParentId) {
         const [parent] = await db
@@ -233,7 +248,11 @@ export const productCategoriesExtendedRouter = router({
     .input(createCategorySchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Generate unique slug
       let slug = generateSlug(input.name);
@@ -267,7 +286,10 @@ export const productCategoriesExtendedRouter = router({
           .limit(1);
 
         if (!parent) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Parent category not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Parent category not found",
+          });
         }
 
         level = (parent.level || 0) + 1;
@@ -308,7 +330,11 @@ export const productCategoriesExtendedRouter = router({
     .input(updateCategorySchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const { id, ...updates } = input;
 
@@ -320,10 +346,13 @@ export const productCategoriesExtendedRouter = router({
         .limit(1);
 
       if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
       }
 
-      const updateData: Record<string, any> = {};
+      const updateData: Partial<InsertProductCategory> = {};
 
       if (updates.name !== undefined) {
         updateData.name = updates.name;
@@ -352,7 +381,10 @@ export const productCategoriesExtendedRouter = router({
             .limit(1);
 
           if (!parent) {
-            throw new TRPCError({ code: "NOT_FOUND", message: "Parent category not found" });
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Parent category not found",
+            });
           }
 
           updateData.parentId = updates.parentId;
@@ -363,10 +395,13 @@ export const productCategoriesExtendedRouter = router({
         }
       }
 
-      if (updates.iconName !== undefined) updateData.iconName = updates.iconName;
+      if (updates.iconName !== undefined)
+        updateData.iconName = updates.iconName;
       if (updates.color !== undefined) updateData.color = updates.color;
-      if (updates.sortOrder !== undefined) updateData.sortOrder = updates.sortOrder;
-      if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+      if (updates.sortOrder !== undefined)
+        updateData.sortOrder = updates.sortOrder;
+      if (updates.isActive !== undefined)
+        updateData.isActive = updates.isActive;
 
       await db
         .update(productCategories)
@@ -387,13 +422,19 @@ export const productCategoriesExtendedRouter = router({
    */
   delete: protectedProcedure
     .use(requirePermission("inventory:delete"))
-    .input(z.object({
-      id: z.number(),
-      reassignTo: z.number().optional(), // Reassign products to this category
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        reassignTo: z.number().optional(), // Reassign products to this category
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Check for children
       const [childCount] = await db
@@ -409,12 +450,13 @@ export const productCategoriesExtendedRouter = router({
       if (Number(childCount?.count || 0) > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Cannot delete category with subcategories. Delete or move them first.",
+          message:
+            "Cannot delete category with subcategories. Delete or move them first.",
         });
       }
 
       // DI-003: Wrap cascading operations in transaction to prevent orphaned records
-      await withTransaction(async (tx) => {
+      await withTransaction(async tx => {
         // Handle product reassignment
         if (input.reassignTo) {
           await tx
@@ -452,7 +494,11 @@ export const productCategoriesExtendedRouter = router({
     .input(assignProductSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Verify product exists
       const [product] = await db
@@ -462,7 +508,10 @@ export const productCategoriesExtendedRouter = router({
         .limit(1);
 
       if (!product) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Product not found",
+        });
       }
 
       // Verify category exists
@@ -478,7 +527,10 @@ export const productCategoriesExtendedRouter = router({
         .limit(1);
 
       if (!category) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
       }
 
       // Check if assignment already exists
@@ -527,13 +579,19 @@ export const productCategoriesExtendedRouter = router({
    */
   unassignProduct: protectedProcedure
     .use(requirePermission("inventory:update"))
-    .input(z.object({
-      productId: z.number(),
-      categoryId: z.number(),
-    }))
+    .input(
+      z.object({
+        productId: z.number(),
+        categoryId: z.number(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       await db
         .delete(productCategoryAssignments)
@@ -552,15 +610,21 @@ export const productCategoriesExtendedRouter = router({
    */
   getProducts: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({
-      categoryId: z.number(),
-      includeSubcategories: z.boolean().default(false),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+    .input(
+      z.object({
+        categoryId: z.number(),
+        includeSubcategories: z.boolean().default(false),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       let categoryIds = [input.categoryId];
 
@@ -585,9 +649,15 @@ export const productCategoriesExtendedRouter = router({
           product: products,
         })
         .from(productCategoryAssignments)
-        .innerJoin(products, eq(productCategoryAssignments.productId, products.id))
+        .innerJoin(
+          products,
+          eq(productCategoryAssignments.productId, products.id)
+        )
         .where(
-          sql`${productCategoryAssignments.categoryId} IN (${sql.join(categoryIds.map(id => sql`${id}`), sql`, `)})`
+          sql`${productCategoryAssignments.categoryId} IN (${sql.join(
+            categoryIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
         )
         .limit(input.limit)
         .offset(input.offset);
@@ -596,7 +666,10 @@ export const productCategoriesExtendedRouter = router({
         .select({ count: sql<number>`COUNT(DISTINCT product_id)` })
         .from(productCategoryAssignments)
         .where(
-          sql`category_id IN (${sql.join(categoryIds.map(id => sql`${id}`), sql`, `)})`
+          sql`category_id IN (${sql.join(
+            categoryIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
         );
 
       return {
@@ -616,7 +689,11 @@ export const productCategoriesExtendedRouter = router({
     .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const assignments = await db
         .select({
@@ -624,7 +701,10 @@ export const productCategoriesExtendedRouter = router({
           category: productCategories,
         })
         .from(productCategoryAssignments)
-        .innerJoin(productCategories, eq(productCategoryAssignments.categoryId, productCategories.id))
+        .innerJoin(
+          productCategories,
+          eq(productCategoryAssignments.categoryId, productCategories.id)
+        )
         .where(eq(productCategoryAssignments.productId, input.productId));
 
       return assignments.map(a => ({
@@ -638,14 +718,20 @@ export const productCategoriesExtendedRouter = router({
    */
   bulkAssign: protectedProcedure
     .use(requirePermission("inventory:update"))
-    .input(z.object({
-      productIds: z.array(z.number()),
-      categoryId: z.number(),
-      isPrimary: z.boolean().default(false),
-    }))
+    .input(
+      z.object({
+        productIds: z.array(z.number()),
+        categoryId: z.number(),
+        isPrimary: z.boolean().default(false),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Verify category exists
       const [category] = await db
@@ -655,7 +741,10 @@ export const productCategoriesExtendedRouter = router({
         .limit(1);
 
       if (!category) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
       }
 
       let assignedCount = 0;
@@ -705,12 +794,18 @@ export const productCategoriesExtendedRouter = router({
    */
   reorder: protectedProcedure
     .use(requirePermission("inventory:update"))
-    .input(z.object({
-      categoryIds: z.array(z.number()),
-    }))
+    .input(
+      z.object({
+        categoryIds: z.array(z.number()),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (let i = 0; i < input.categoryIds.length; i++) {
         await db

@@ -1,7 +1,7 @@
 /**
  * Instance Generation Service
  * Generates materialized recurrence instances for recurring events
- * 
+ *
  * Critical for Calendar & Scheduling Module Performance
  * Version 2.0 - Post-Adversarial QA
  */
@@ -31,7 +31,7 @@ export class InstanceGenerationService {
     daysAhead: number = 90
   ): Promise<number> {
     const db = await getDb();
-  if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
 
     // Get the event
     const [event] = await db
@@ -90,7 +90,13 @@ export class InstanceGenerationService {
    * Calculate recurrence instances based on rule
    */
   private static calculateInstances(
-    event: { id: number; startDate: Date; startTime: string | null; endTime: string | null; timezone: string | null },
+    event: {
+      id: number;
+      startDate: Date;
+      startTime: string | null;
+      endTime: string | null;
+      timezone: string | null;
+    },
     rule: CalendarRecurrenceRule,
     endDate: Date
   ): Array<{
@@ -157,12 +163,13 @@ export class InstanceGenerationService {
       case "DAILY":
         return true; // Every day matches
 
-      case "WEEKLY":
+      case "WEEKLY": {
         if (!rule.byDay || rule.byDay.length === 0) {
           return true; // If no specific days, match all
         }
         const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
         return rule.byDay.includes(dayOfWeek);
+      }
 
       case "MONTHLY":
         if (rule.byMonthDay && rule.byMonthDay.length > 0) {
@@ -220,7 +227,7 @@ export class InstanceGenerationService {
         date.setDate(date.getDate() + interval);
         break;
       case "WEEKLY":
-        date.setDate(date.getDate() + (7 * interval));
+        date.setDate(date.getDate() + 7 * interval);
         break;
       case "MONTHLY":
         date.setMonth(date.getMonth() + interval);
@@ -237,7 +244,7 @@ export class InstanceGenerationService {
    */
   static async regenerateAllInstances(daysAhead: number = 90): Promise<number> {
     const db = await getDb();
-  if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
 
     // Get all recurring events
     const recurringEvents = await db
@@ -252,7 +259,10 @@ export class InstanceGenerationService {
         const count = await this.generateInstances(event.id, daysAhead);
         totalGenerated += count;
       } catch (error) {
-        console.error(`Failed to generate instances for event ${event.id}:`, error);
+        console.error(
+          `Failed to generate instances for event ${event.id}:`,
+          error
+        );
       }
     }
 
@@ -276,7 +286,7 @@ export class InstanceGenerationService {
     modifiedBy: number
   ): Promise<void> {
     const db = await getDb();
-  if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
 
     // Find the instance
     const [instance] = await db
@@ -319,7 +329,7 @@ export class InstanceGenerationService {
     instanceDate: string
   ): Promise<void> {
     const db = await getDb();
-  if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
 
     await db
       .update(calendarRecurrenceInstances)
@@ -343,7 +353,7 @@ export class InstanceGenerationService {
     endDate: string
   ) {
     const db = await getDb();
-  if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
 
     return await db
       .select()
@@ -363,7 +373,7 @@ export class InstanceGenerationService {
    */
   static async cleanupOldInstances(daysToKeep: number = 30): Promise<number> {
     const db = await getDb();
-  if (!db) throw new Error("Database not available");
+    if (!db) throw new Error("Database not available");
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -373,8 +383,8 @@ export class InstanceGenerationService {
       .where(lte(calendarRecurrenceInstances.instanceDate, cutoffDate));
 
     // MySQL returns result as array, extract affected rows
-    const affectedRows = Array.isArray(result) 
-      ? (result[0] as { affectedRows?: number })?.affectedRows ?? 0 
+    const affectedRows = Array.isArray(result)
+      ? ((result[0] as { affectedRows?: number })?.affectedRows ?? 0)
       : 0;
     return affectedRows;
   }

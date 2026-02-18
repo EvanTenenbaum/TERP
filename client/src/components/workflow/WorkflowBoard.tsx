@@ -1,6 +1,6 @@
 /**
  * Workflow Board Component
- * 
+ *
  * Kanban-style board with drag-and-drop functionality for managing batch workflow.
  * Uses @dnd-kit for accessible drag-and-drop interactions.
  */
@@ -34,7 +34,10 @@ interface WorkflowBoardProps {
 }
 
 export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
-  const [activeBatch, setActiveBatch] = useState<Record<string, unknown> | null>(null);
+  const [activeBatch, setActiveBatch] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const utils = trpc.useUtils();
 
   // Mutation for updating batch status
@@ -44,7 +47,7 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
       // Invalidate and refetch queues
       utils.workflowQueue.getQueues.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update batch status: ${error.message}`);
     },
   });
@@ -64,7 +67,9 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
 
     // Find the batch being dragged
     for (const statusId in queues) {
-      const batch = queues[statusId].find((b: Record<string, unknown>) => b.id === batchId);
+      const batch = queues[statusId].find(
+        (b: Record<string, unknown>) => b.id === batchId
+      );
       if (batch) {
         setActiveBatch(batch);
         break;
@@ -85,7 +90,11 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
     let targetStatusId = newStatusId;
     if (!statuses.some(s => s.id === targetStatusId)) {
       for (const statusId in queues) {
-        if (queues[statusId].some((b: Record<string, unknown>) => b.id === targetStatusId)) {
+        if (
+          queues[statusId].some(
+            (b: Record<string, unknown>) => b.id === targetStatusId
+          )
+        ) {
           targetStatusId = parseInt(statusId);
           break;
         }
@@ -95,7 +104,9 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
     // Find current status
     let currentStatusId: number | null = null;
     for (const statusId in queues) {
-      if (queues[statusId].some((b: Record<string, unknown>) => b.id === batchId)) {
+      if (
+        queues[statusId].some((b: Record<string, unknown>) => b.id === batchId)
+      ) {
         currentStatusId = parseInt(statusId);
         break;
       }
@@ -129,9 +140,11 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
       {/* UX-003: Responsive kanban board - stacks vertically on mobile, horizontal scroll on desktop */}
       <div className="h-full max-w-full overflow-x-auto md:overflow-visible -webkit-overflow-scrolling-touch">
         <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 h-full md:min-w-max">
-          {sortedStatuses.map((status) => {
+          {sortedStatuses.map(status => {
             const batches = queues[status.id] || [];
-            const batchIds = batches.map((b: any) => b.id) as number[];
+            const batchIds = batches.map(
+              (b: Record<string, unknown>) => b.id
+            ) as number[];
 
             return (
               <WorkflowColumn
@@ -149,7 +162,12 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
       <DragOverlay>
         {activeBatch ? (
           <div className="opacity-80">
-            <WorkflowBatchCard batch={activeBatch} isDragging />
+            <WorkflowBatchCard
+              batch={
+                activeBatch as { id: string | number; [key: string]: unknown }
+              }
+              isDragging
+            />
           </div>
         ) : null}
       </DragOverlay>

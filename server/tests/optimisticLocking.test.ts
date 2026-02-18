@@ -8,7 +8,7 @@
  * - Invoices
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TRPCError } from "@trpc/server";
 import {
   checkVersion,
@@ -16,6 +16,9 @@ import {
   OptimisticLockError,
   incrementVersion,
 } from "../_core/optimisticLocking";
+
+type MockDb = Parameters<typeof checkVersion>[0];
+type MockTable = Parameters<typeof checkVersion>[1];
 
 // Mock database
 const createMockDb = () => ({
@@ -63,8 +66,8 @@ describe("checkVersion", () => {
     mockDb.limit.mockResolvedValue([mockRecord]);
 
     const result = await checkVersion(
-      mockDb as any,
-      mockTable as any,
+      mockDb as unknown as MockDb,
+      mockTable as unknown as MockTable,
       "Order",
       1,
       5
@@ -78,11 +81,23 @@ describe("checkVersion", () => {
     mockDb.limit.mockResolvedValue([mockRecord]);
 
     await expect(
-      checkVersion(mockDb as any, mockTable as any, "Order", 1, 5)
+      checkVersion(
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
+        "Order",
+        1,
+        5
+      )
     ).rejects.toThrow(OptimisticLockError);
 
     try {
-      await checkVersion(mockDb as any, mockTable as any, "Order", 1, 5);
+      await checkVersion(
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
+        "Order",
+        1,
+        5
+      );
     } catch (error) {
       expect(error).toBeInstanceOf(OptimisticLockError);
       expect((error as OptimisticLockError).code).toBe("CONFLICT");
@@ -93,11 +108,23 @@ describe("checkVersion", () => {
     mockDb.limit.mockResolvedValue([]);
 
     await expect(
-      checkVersion(mockDb as any, mockTable as any, "Order", 999, 1)
+      checkVersion(
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
+        "Order",
+        999,
+        1
+      )
     ).rejects.toThrow(TRPCError);
 
     try {
-      await checkVersion(mockDb as any, mockTable as any, "Order", 999, 1);
+      await checkVersion(
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
+        "Order",
+        999,
+        1
+      );
     } catch (error) {
       expect((error as TRPCError).code).toBe("NOT_FOUND");
     }
@@ -116,8 +143,8 @@ describe("updateWithVersion", () => {
     mockDb.where.mockResolvedValue([{ affectedRows: 1 }]);
 
     const result = await updateWithVersion(
-      mockDb as any,
-      mockTable as any,
+      mockDb as unknown as MockDb,
+      mockTable as unknown as MockTable,
       "Client",
       1,
       5,
@@ -135,8 +162,8 @@ describe("updateWithVersion", () => {
 
     await expect(
       updateWithVersion(
-        mockDb as any,
-        mockTable as any,
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
         "Client",
         1,
         5,
@@ -153,8 +180,8 @@ describe("updateWithVersion", () => {
 
     await expect(
       updateWithVersion(
-        mockDb as any,
-        mockTable as any,
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
         "Batch",
         999,
         1,
@@ -168,8 +195,8 @@ describe("updateWithVersion", () => {
       mockDb.limit.mockResolvedValueOnce([]);
 
       await updateWithVersion(
-        mockDb as any,
-        mockTable as any,
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
         "Batch",
         999,
         1,
@@ -194,7 +221,13 @@ describe("Concurrent Edit Scenarios", () => {
     mockDb.where.mockReturnValue({ limit: mockDb.limit });
 
     await expect(
-      checkVersion(mockDb as any, mockTable as any, "Order", 1, 1) // User B's version is 1
+      checkVersion(
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
+        "Order",
+        1,
+        1
+      ) // User B's version is 1
     ).rejects.toThrow(OptimisticLockError);
   });
 
@@ -203,13 +236,25 @@ describe("Concurrent Edit Scenarios", () => {
 
     // First edit: version 1 -> 2
     mockDb.limit.mockResolvedValueOnce([{ id: 1, version: 1 }]);
-    const first = await checkVersion(mockDb as any, mockTable as any, "Order", 1, 1);
+    const first = await checkVersion(
+      mockDb as unknown as MockDb,
+      mockTable as unknown as MockTable,
+      "Order",
+      1,
+      1
+    );
     expect(first.version).toBe(1);
 
     // After save, version is now 2
     // Second edit: version 2 -> 3
     mockDb.limit.mockResolvedValueOnce([{ id: 1, version: 2 }]);
-    const second = await checkVersion(mockDb as any, mockTable as any, "Order", 1, 2);
+    const second = await checkVersion(
+      mockDb as unknown as MockDb,
+      mockTable as unknown as MockTable,
+      "Order",
+      1,
+      2
+    );
     expect(second.version).toBe(2);
 
     // Both should succeed when using updated version
@@ -228,10 +273,18 @@ describe("Entity-specific Tests", () => {
   describe("Orders", () => {
     it("should reject order update with stale version", async () => {
       const mockDb = createMockDb();
-      mockDb.limit.mockResolvedValue([{ id: 1, version: 3, orderNumber: "ORD-001" }]);
+      mockDb.limit.mockResolvedValue([
+        { id: 1, version: 3, orderNumber: "ORD-001" },
+      ]);
 
       await expect(
-        checkVersion(mockDb as any, mockTable as any, "Order", 1, 2)
+        checkVersion(
+          mockDb as unknown as MockDb,
+          mockTable as unknown as MockTable,
+          "Order",
+          1,
+          2
+        )
       ).rejects.toThrow("Order #1 has been modified by another user");
     });
   });
@@ -239,10 +292,18 @@ describe("Entity-specific Tests", () => {
   describe("Clients", () => {
     it("should reject client update with stale version", async () => {
       const mockDb = createMockDb();
-      mockDb.limit.mockResolvedValue([{ id: 5, version: 10, name: "Test Client" }]);
+      mockDb.limit.mockResolvedValue([
+        { id: 5, version: 10, name: "Test Client" },
+      ]);
 
       await expect(
-        checkVersion(mockDb as any, mockTable as any, "Client", 5, 9)
+        checkVersion(
+          mockDb as unknown as MockDb,
+          mockTable as unknown as MockTable,
+          "Client",
+          5,
+          9
+        )
       ).rejects.toThrow("Client #5 has been modified by another user");
     });
   });
@@ -250,10 +311,18 @@ describe("Entity-specific Tests", () => {
   describe("Batches", () => {
     it("should reject batch update with stale version", async () => {
       const mockDb = createMockDb();
-      mockDb.limit.mockResolvedValue([{ id: 100, version: 5, sku: "BATCH-001" }]);
+      mockDb.limit.mockResolvedValue([
+        { id: 100, version: 5, sku: "BATCH-001" },
+      ]);
 
       await expect(
-        checkVersion(mockDb as any, mockTable as any, "Batch", 100, 4)
+        checkVersion(
+          mockDb as unknown as MockDb,
+          mockTable as unknown as MockTable,
+          "Batch",
+          100,
+          4
+        )
       ).rejects.toThrow("Batch #100 has been modified by another user");
     });
   });
@@ -261,10 +330,18 @@ describe("Entity-specific Tests", () => {
   describe("Invoices", () => {
     it("should reject invoice update with stale version", async () => {
       const mockDb = createMockDb();
-      mockDb.limit.mockResolvedValue([{ id: 50, version: 2, invoiceNumber: "INV-001" }]);
+      mockDb.limit.mockResolvedValue([
+        { id: 50, version: 2, invoiceNumber: "INV-001" },
+      ]);
 
       await expect(
-        checkVersion(mockDb as any, mockTable as any, "Invoice", 50, 1)
+        checkVersion(
+          mockDb as unknown as MockDb,
+          mockTable as unknown as MockTable,
+          "Invoice",
+          50,
+          1
+        )
       ).rejects.toThrow("Invoice #50 has been modified by another user");
     });
   });
@@ -275,7 +352,13 @@ describe("Edge Cases", () => {
     const mockDb = createMockDb();
     mockDb.limit.mockResolvedValue([{ id: 1, version: 0 }]);
 
-    const result = await checkVersion(mockDb as any, mockTable as any, "Order", 1, 0);
+    const result = await checkVersion(
+      mockDb as unknown as MockDb,
+      mockTable as unknown as MockTable,
+      "Order",
+      1,
+      0
+    );
     expect(result.version).toBe(0);
   });
 
@@ -284,7 +367,13 @@ describe("Edge Cases", () => {
     const largeVersion = 999999999;
     mockDb.limit.mockResolvedValue([{ id: 1, version: largeVersion }]);
 
-    const result = await checkVersion(mockDb as any, mockTable as any, "Order", 1, largeVersion);
+    const result = await checkVersion(
+      mockDb as unknown as MockDb,
+      mockTable as unknown as MockTable,
+      "Order",
+      1,
+      largeVersion
+    );
     expect(result.version).toBe(largeVersion);
   });
 
@@ -294,7 +383,13 @@ describe("Edge Cases", () => {
 
     // Attempting to update with lower version should fail
     await expect(
-      checkVersion(mockDb as any, mockTable as any, "Order", 1, 3)
+      checkVersion(
+        mockDb as unknown as MockDb,
+        mockTable as unknown as MockTable,
+        "Order",
+        1,
+        3
+      )
     ).rejects.toThrow(OptimisticLockError);
   });
 });

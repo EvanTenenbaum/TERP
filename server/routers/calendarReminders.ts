@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { getDb } from "../db";
@@ -19,7 +23,8 @@ import { idSchema } from "../_core/validationSchemas";
 const reminderMethodSchema = z.enum(["IN_APP", "EMAIL", "BOTH"]);
 
 // Relative minutes validation (reasonable range: 0 to 1 week in minutes)
-const relativeMinutesSchema = z.number()
+const relativeMinutesSchema = z
+  .number()
   .int("Minutes must be a whole number")
   .min(0, "Minutes cannot be negative")
   .max(10080, "Reminder cannot be more than 1 week before event");
@@ -73,9 +78,13 @@ export const calendarRemindersRouter = router({
       if (!event) throw new Error("Event not found");
 
       // Calculate absolute reminder time
-      const eventDateTime = new Date(`${event.startDate}T${event.startTime || "00:00:00"}`);
+      const eventDateTime = new Date(
+        `${event.startDate}T${event.startTime || "00:00:00"}`
+      );
       const reminderTime = new Date(eventDateTime);
-      reminderTime.setMinutes(reminderTime.getMinutes() - input.relativeMinutes);
+      reminderTime.setMinutes(
+        reminderTime.getMinutes() - input.relativeMinutes
+      );
 
       // Create reminder
       const reminder = await calendarDb.createReminder({
@@ -94,11 +103,11 @@ export const calendarRemindersRouter = router({
   deleteReminder: protectedProcedure
     .input(z.object({ reminderId: idSchema }))
     .mutation(async ({ input, ctx }) => {
-      const userId = getAuthenticatedUserId(ctx);
+      const _userId = getAuthenticatedUserId(ctx);
 
       // Delete reminder
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       await db
@@ -126,7 +135,10 @@ export const calendarRemindersRouter = router({
     .input(
       z.object({
         reminderId: idSchema,
-        failureReason: z.string().min(1, "Failure reason is required").max(500, "Failure reason too long"),
+        failureReason: z
+          .string()
+          .min(1, "Failure reason is required")
+          .max(500, "Failure reason too long"),
       })
     )
     .mutation(async ({ input }) => {
@@ -141,7 +153,12 @@ export const calendarRemindersRouter = router({
   getMyUpcomingReminders: protectedProcedure
     .input(
       z.object({
-        hoursAhead: z.number().int().min(1, "Hours must be at least 1").max(168, "Cannot look more than 1 week ahead").default(24),
+        hoursAhead: z
+          .number()
+          .int()
+          .min(1, "Hours must be at least 1")
+          .max(168, "Cannot look more than 1 week ahead")
+          .default(24),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -151,7 +168,7 @@ export const calendarRemindersRouter = router({
       future.setHours(future.getHours() + input.hoursAhead);
 
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const reminders = await db

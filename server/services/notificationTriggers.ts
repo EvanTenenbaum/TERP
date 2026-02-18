@@ -10,10 +10,13 @@
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 import { roles, userRoles } from "../../drizzle/schema-rbac";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
-import { sendNotification, sendBulkNotification, type NotificationRequest } from "./notificationService";
-import type { NotificationType, NotificationCategory } from "./notificationRepository";
+import { sendNotification, sendBulkNotification } from "./notificationService";
+import type {
+  NotificationType,
+  NotificationCategory,
+} from "./notificationRepository";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -128,7 +131,11 @@ async function getUserIdsByRoleName(roleName: string): Promise<number[]> {
 
     return userRecords.map(u => u.id);
   } catch (error) {
-    logger.warn({ msg: "[NotificationTriggers] Failed to get users by role", roleName, error: String(error) });
+    logger.warn({
+      msg: "[NotificationTriggers] Failed to get users by role",
+      roleName,
+      error: String(error),
+    });
     return [];
   }
 }
@@ -189,7 +196,10 @@ async function getInventoryUserIds(): Promise<number[]> {
  * Trigger notification when a new order is created
  */
 export async function onOrderCreated(order: OrderInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onOrderCreated", orderId: order.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onOrderCreated",
+    orderId: order.id,
+  });
 
   try {
     // Notify sales team about new order
@@ -228,7 +238,10 @@ export async function onOrderCreated(order: OrderInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Order created notifications sent", orderId: order.id });
+    logger.info({
+      msg: "[NotificationTriggers] Order created notifications sent",
+      orderId: order.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send order created notifications",
@@ -242,7 +255,10 @@ export async function onOrderCreated(order: OrderInfo): Promise<void> {
  * Trigger notification when order is confirmed
  */
 export async function onOrderConfirmed(order: OrderInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onOrderConfirmed", orderId: order.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onOrderConfirmed",
+    orderId: order.id,
+  });
 
   try {
     // Notify the client
@@ -262,7 +278,10 @@ export async function onOrderConfirmed(order: OrderInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Order confirmed notification sent", orderId: order.id });
+    logger.info({
+      msg: "[NotificationTriggers] Order confirmed notification sent",
+      orderId: order.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send order confirmed notification",
@@ -276,7 +295,10 @@ export async function onOrderConfirmed(order: OrderInfo): Promise<void> {
  * Trigger notification when order is shipped
  */
 export async function onOrderShipped(order: OrderInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onOrderShipped", orderId: order.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onOrderShipped",
+    orderId: order.id,
+  });
 
   try {
     // Notify the client
@@ -296,7 +318,10 @@ export async function onOrderShipped(order: OrderInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Order shipped notification sent", orderId: order.id });
+    logger.info({
+      msg: "[NotificationTriggers] Order shipped notification sent",
+      orderId: order.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send order shipped notification",
@@ -310,7 +335,10 @@ export async function onOrderShipped(order: OrderInfo): Promise<void> {
  * Trigger notification when order is delivered
  */
 export async function onOrderDelivered(order: OrderInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onOrderDelivered", orderId: order.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onOrderDelivered",
+    orderId: order.id,
+  });
 
   try {
     // Notify the client
@@ -330,7 +358,10 @@ export async function onOrderDelivered(order: OrderInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Order delivered notification sent", orderId: order.id });
+    logger.info({
+      msg: "[NotificationTriggers] Order delivered notification sent",
+      orderId: order.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send order delivered notification",
@@ -348,7 +379,10 @@ export async function onOrderDelivered(order: OrderInfo): Promise<void> {
  * Trigger notification when a new invoice is created
  */
 export async function onInvoiceCreated(invoice: InvoiceInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onInvoiceCreated", invoiceId: invoice.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onInvoiceCreated",
+    invoiceId: invoice.id,
+  });
 
   try {
     // Notify the client
@@ -385,7 +419,10 @@ export async function onInvoiceCreated(invoice: InvoiceInfo): Promise<void> {
       });
     }
 
-    logger.info({ msg: "[NotificationTriggers] Invoice created notifications sent", invoiceId: invoice.id });
+    logger.info({
+      msg: "[NotificationTriggers] Invoice created notifications sent",
+      invoiceId: invoice.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send invoice created notifications",
@@ -399,7 +436,10 @@ export async function onInvoiceCreated(invoice: InvoiceInfo): Promise<void> {
  * Trigger notification when an invoice is overdue
  */
 export async function onInvoiceOverdue(invoice: InvoiceInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onInvoiceOverdue", invoiceId: invoice.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onInvoiceOverdue",
+    invoiceId: invoice.id,
+  });
 
   try {
     // Notify accounting team with high priority
@@ -439,7 +479,10 @@ export async function onInvoiceOverdue(invoice: InvoiceInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Invoice overdue notifications sent", invoiceId: invoice.id });
+    logger.info({
+      msg: "[NotificationTriggers] Invoice overdue notifications sent",
+      invoiceId: invoice.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send invoice overdue notifications",
@@ -457,7 +500,10 @@ export async function onInvoiceOverdue(invoice: InvoiceInfo): Promise<void> {
  * Trigger notification when a payment is received
  */
 export async function onPaymentReceived(payment: PaymentInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onPaymentReceived", paymentId: payment.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onPaymentReceived",
+    paymentId: payment.id,
+  });
 
   try {
     // Notify accounting team
@@ -496,7 +542,10 @@ export async function onPaymentReceived(payment: PaymentInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Payment received notifications sent", paymentId: payment.id });
+    logger.info({
+      msg: "[NotificationTriggers] Payment received notifications sent",
+      paymentId: payment.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send payment received notifications",
@@ -514,7 +563,10 @@ export async function onPaymentReceived(payment: PaymentInfo): Promise<void> {
  * Trigger notification when inventory is low
  */
 export async function onInventoryLow(batch: BatchInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onInventoryLow", batchId: batch.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onInventoryLow",
+    batchId: batch.id,
+  });
 
   try {
     // Notify inventory team with high priority
@@ -537,7 +589,10 @@ export async function onInventoryLow(batch: BatchInfo): Promise<void> {
       });
     }
 
-    logger.info({ msg: "[NotificationTriggers] Inventory low notification sent", batchId: batch.id });
+    logger.info({
+      msg: "[NotificationTriggers] Inventory low notification sent",
+      batchId: batch.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send inventory low notification",
@@ -551,7 +606,10 @@ export async function onInventoryLow(batch: BatchInfo): Promise<void> {
  * Trigger notification when a new batch is received
  */
 export async function onBatchReceived(batch: BatchInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onBatchReceived", batchId: batch.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onBatchReceived",
+    batchId: batch.id,
+  });
 
   try {
     // Notify inventory team
@@ -573,7 +631,10 @@ export async function onBatchReceived(batch: BatchInfo): Promise<void> {
       });
     }
 
-    logger.info({ msg: "[NotificationTriggers] Batch received notification sent", batchId: batch.id });
+    logger.info({
+      msg: "[NotificationTriggers] Batch received notification sent",
+      batchId: batch.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send batch received notification",
@@ -591,7 +652,11 @@ export async function onBatchReceived(batch: BatchInfo): Promise<void> {
  * Trigger notification when a task is assigned
  */
 export async function onTaskAssigned(task: TaskInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onTaskAssigned", taskId: task.id, assigneeId: task.assigneeId });
+  logger.debug({
+    msg: "[NotificationTriggers] onTaskAssigned",
+    taskId: task.id,
+    assigneeId: task.assigneeId,
+  });
 
   try {
     await sendNotification({
@@ -609,7 +674,10 @@ export async function onTaskAssigned(task: TaskInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Task assigned notification sent", taskId: task.id });
+    logger.info({
+      msg: "[NotificationTriggers] Task assigned notification sent",
+      taskId: task.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send task assigned notification",
@@ -623,7 +691,10 @@ export async function onTaskAssigned(task: TaskInfo): Promise<void> {
  * Trigger notification when a task is due soon
  */
 export async function onTaskDueSoon(task: TaskInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onTaskDueSoon", taskId: task.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onTaskDueSoon",
+    taskId: task.id,
+  });
 
   try {
     await sendNotification({
@@ -641,7 +712,10 @@ export async function onTaskDueSoon(task: TaskInfo): Promise<void> {
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Task due soon notification sent", taskId: task.id });
+    logger.info({
+      msg: "[NotificationTriggers] Task due soon notification sent",
+      taskId: task.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send task due soon notification",
@@ -658,8 +732,13 @@ export async function onTaskDueSoon(task: TaskInfo): Promise<void> {
 /**
  * Trigger notification for appointment reminder
  */
-export async function onAppointmentReminder(appointment: AppointmentInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onAppointmentReminder", appointmentId: appointment.id });
+export async function onAppointmentReminder(
+  appointment: AppointmentInfo
+): Promise<void> {
+  logger.debug({
+    msg: "[NotificationTriggers] onAppointmentReminder",
+    appointmentId: appointment.id,
+  });
 
   try {
     // Notify the user
@@ -697,7 +776,10 @@ export async function onAppointmentReminder(appointment: AppointmentInfo): Promi
       });
     }
 
-    logger.info({ msg: "[NotificationTriggers] Appointment reminder notifications sent", appointmentId: appointment.id });
+    logger.info({
+      msg: "[NotificationTriggers] Appointment reminder notifications sent",
+      appointmentId: appointment.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send appointment reminder notifications",
@@ -715,7 +797,10 @@ export async function onAppointmentReminder(appointment: AppointmentInfo): Promi
  * Trigger notification when a credit is issued
  */
 export async function onCreditIssued(credit: CreditInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onCreditIssued", creditId: credit.id });
+  logger.debug({
+    msg: "[NotificationTriggers] onCreditIssued",
+    creditId: credit.id,
+  });
 
   try {
     // Notify the client
@@ -753,7 +838,10 @@ export async function onCreditIssued(credit: CreditInfo): Promise<void> {
       });
     }
 
-    logger.info({ msg: "[NotificationTriggers] Credit issued notifications sent", creditId: credit.id });
+    logger.info({
+      msg: "[NotificationTriggers] Credit issued notifications sent",
+      creditId: credit.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send credit issued notifications",
@@ -770,8 +858,13 @@ export async function onCreditIssued(credit: CreditInfo): Promise<void> {
 /**
  * Trigger notification when a new interest list is submitted
  */
-export async function onInterestListSubmitted(interestList: InterestListInfo): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onInterestListSubmitted", interestListId: interestList.id });
+export async function onInterestListSubmitted(
+  interestList: InterestListInfo
+): Promise<void> {
+  logger.debug({
+    msg: "[NotificationTriggers] onInterestListSubmitted",
+    interestListId: interestList.id,
+  });
 
   try {
     // Notify sales team
@@ -809,7 +902,10 @@ export async function onInterestListSubmitted(interestList: InterestListInfo): P
       },
     });
 
-    logger.info({ msg: "[NotificationTriggers] Interest list submitted notifications sent", interestListId: interestList.id });
+    logger.info({
+      msg: "[NotificationTriggers] Interest list submitted notifications sent",
+      interestListId: interestList.id,
+    });
   } catch (error) {
     logger.error({
       msg: "[NotificationTriggers] Failed to send interest list submitted notifications",
@@ -829,10 +925,17 @@ export async function onAppointmentRequestStatusChanged(
   appointmentTypeName?: string,
   requestedSlot?: Date | string
 ): Promise<void> {
-  logger.debug({ msg: "[NotificationTriggers] onAppointmentRequestStatusChanged", requestId, newStatus });
+  logger.debug({
+    msg: "[NotificationTriggers] onAppointmentRequestStatusChanged",
+    requestId,
+    newStatus,
+  });
 
   try {
-    const statusMessages: Record<string, { title: string; message: string; type: NotificationType }> = {
+    const statusMessages: Record<
+      string,
+      { title: string; message: string; type: NotificationType }
+    > = {
       approved: {
         title: "Appointment Confirmed",
         message: `Your appointment request${appointmentTypeName ? ` for "${appointmentTypeName}"` : ""} has been approved${requestedSlot ? ` for ${new Date(requestedSlot).toLocaleString()}` : ""}.`,

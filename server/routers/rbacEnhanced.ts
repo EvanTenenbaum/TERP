@@ -20,7 +20,6 @@ import {
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
 
-
 import {
   roles,
   permissions,
@@ -462,7 +461,10 @@ export const rbacEnhancedRouter = router({
           .select()
           .from(userRoles)
           .where(
-            and(eq(userRoles.userId, userId), eq(userRoles.roleId, input.roleId))
+            and(
+              eq(userRoles.userId, userId),
+              eq(userRoles.roleId, input.roleId)
+            )
           )
           .limit(1);
 
@@ -531,7 +533,7 @@ export const rbacEnhancedRouter = router({
         });
       }
 
-      const result = await db
+      const _result = await db
         .delete(userRoles)
         .where(
           and(
@@ -748,8 +750,7 @@ export const rbacEnhancedRouter = router({
       // Create new role
       const [roleResult] = await db.insert(roles).values({
         name: input.newName,
-        description:
-          input.newDescription || `Cloned from ${sourceRole.name}`,
+        description: input.newDescription || `Cloned from ${sourceRole.name}`,
         isSystemRole: 0,
       });
 
@@ -830,7 +831,10 @@ export const rbacEnhancedRouter = router({
           module: permissions.module,
         })
         .from(rolePermissions)
-        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .innerJoin(
+          permissions,
+          eq(rolePermissions.permissionId, permissions.id)
+        )
         .where(eq(rolePermissions.roleId, input.roleId1));
 
       const perms2 = await db
@@ -840,7 +844,10 @@ export const rbacEnhancedRouter = router({
           module: permissions.module,
         })
         .from(rolePermissions)
-        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .innerJoin(
+          permissions,
+          eq(rolePermissions.permissionId, permissions.id)
+        )
         .where(eq(rolePermissions.roleId, input.roleId2));
 
       const permIds1 = new Set(perms1.map(p => p.permId));

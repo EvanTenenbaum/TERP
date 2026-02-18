@@ -1,24 +1,14 @@
 import { getDb } from "./db";
 import { strains } from "../drizzle/schema";
 import * as fs from "fs";
-import * as path from "path";
 import { logger } from "./_core/logger";
-
-interface StrainCSVRow {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  effects: string;
-  ailment: string;
-  flavor: string;
-}
 
 export async function seedStrainsFromCSV() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const csvPath = "/home/ubuntu/cannabis-dataset/Dataset/Strains/strains-kushy_api.2017-11-14.csv";
-  
+  const csvPath =
+    "/home/ubuntu/cannabis-dataset/Dataset/Strains/strains-kushy_api.2017-11-14.csv";
+
   if (!fs.existsSync(csvPath)) {
     logger.error({ csvPath }, "CSV file not found");
     return { success: false, message: "CSV file not found" };
@@ -27,12 +17,12 @@ export async function seedStrainsFromCSV() {
   logger.info("Reading strain CSV file...");
   const csvContent = fs.readFileSync(csvPath, "utf-8");
   const lines = csvContent.split("\n");
-  
+
   // Skip header
   const dataLines = lines.slice(1);
-  
+
   logger.info(`Found ${dataLines.length} strains in CSV`);
-  
+
   const strainsToInsert: Array<{
     name: string;
     standardizedName: string;
@@ -45,11 +35,11 @@ export async function seedStrainsFromCSV() {
 
   for (const line of dataLines) {
     if (!line.trim()) continue;
-    
+
     try {
       // Parse CSV line (handling quoted fields)
       const fields = parseCSVLine(line);
-      
+
       if (fields.length < 3) {
         skippedCount++;
         continue;
@@ -74,7 +64,7 @@ export async function seedStrainsFromCSV() {
       } else if (type?.toLowerCase().includes("sativa")) {
         normalizedCategory = "sativa";
       }
-      
+
       // Standardize the name
       const standardizedName = name.toLowerCase().trim();
 
@@ -107,7 +97,7 @@ export async function seedStrainsFromCSV() {
         logger.info(`Inserted ${processedCount} strains...`);
         strainsToInsert.length = 0; // Clear array
       }
-    } catch (error) {
+    } catch (_error) {
       skippedCount++;
       continue;
     }
@@ -165,4 +155,3 @@ function parseCSVLine(line: string): string[] {
 
   return fields;
 }
-

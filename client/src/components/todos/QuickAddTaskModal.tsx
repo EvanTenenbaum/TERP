@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,13 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
 
   // Fetch user's lists - handle paginated response
   const { data: listsData } = trpc.todoLists.getMyLists.useQuery();
-  const lists = Array.isArray(listsData) ? listsData : (listsData?.items ?? []);
+  // Wrap in useMemo to stabilize the array reference. Without this, the conditional
+  // expression produces a new array on every render even when listsData hasn't changed,
+  // which causes the useEffect below (which lists `lists` in its deps) to run on every render.
+  const lists = useMemo(
+    () => (Array.isArray(listsData) ? listsData : (listsData?.items ?? [])),
+    [listsData]
+  );
 
   // Create task mutation
   const createTask = trpc.todoTasks.create.useMutation({
@@ -43,7 +49,7 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
       utils.todoLists.invalidate();
       handleClose();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to create task: ${error.message}`);
     },
   });
@@ -81,7 +87,7 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
     if (isOpen) {
       setTimeout(() => {
         const input = document.querySelector(
-          '[data-quick-add-title]'
+          "[data-quick-add-title]"
         ) as HTMLInputElement | null;
         input?.focus();
       }, 100);
@@ -111,7 +117,7 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
               data-quick-add-title
               placeholder="What needs to be done?"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={e => setTitle(e.target.value)}
               autoComplete="off"
             />
           </div>
@@ -128,7 +134,7 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
                     No lists yet. Create one first!
                   </div>
                 ) : (
-                  lists.map((list) => (
+                  lists.map(list => (
                     <SelectItem key={list.id} value={String(list.id)}>
                       {list.name}
                     </SelectItem>

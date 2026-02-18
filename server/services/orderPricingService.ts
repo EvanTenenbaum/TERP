@@ -11,7 +11,7 @@
  * - Price history tracking
  */
 
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   clients,
@@ -268,7 +268,9 @@ export async function getClientPricingContext(
       pricingProfileId: client.pricingProfileId,
       pricingProfileName,
       pricingRules: pricingRulesArray,
-      cogsAdjustmentType: (client.cogsAdjustmentType as "NONE" | "PERCENTAGE" | "FIXED_AMOUNT") || "NONE",
+      cogsAdjustmentType:
+        (client.cogsAdjustmentType as "NONE" | "PERCENTAGE" | "FIXED_AMOUNT") ||
+        "NONE",
       cogsAdjustmentValue: client.cogsAdjustmentValue
         ? parseFloat(client.cogsAdjustmentValue.toString())
         : null,
@@ -276,7 +278,8 @@ export async function getClientPricingContext(
       totalOwed,
       availableCredit,
       oldestDebtDays: client.oldestDebtDays || 0,
-      creditLimitSource: (client.creditLimitSource as "CALCULATED" | "MANUAL") || "CALCULATED",
+      creditLimitSource:
+        (client.creditLimitSource as "CALCULATED" | "MANUAL") || "CALCULATED",
     },
     userMaxDiscount,
     canOverrideCredit,
@@ -325,8 +328,8 @@ export async function calculateOrderPricing(params: {
   const client = clientResult[0];
 
   // Get pricing rules for this client
-  let pricingRulesArray: typeof pricingRules.$inferSelect[] = [];
-  let variableRules: typeof variableMarkupRules.$inferSelect[] = [];
+  let pricingRulesArray: (typeof pricingRules.$inferSelect)[] = [];
+  let variableRules: (typeof variableMarkupRules.$inferSelect)[] = [];
 
   if (client.pricingProfileId) {
     const profileResult = await db
@@ -408,10 +411,21 @@ export async function calculateOrderPricing(params: {
     const appliedRules: string[] = [];
 
     for (const rule of pricingRulesArray) {
-      if (matchesConditions(product, batch, rule.conditions as Record<string, unknown>, rule.logicType || "AND")) {
+      if (
+        matchesConditions(
+          product,
+          batch,
+          rule.conditions as Record<string, unknown>,
+          rule.logicType || "AND"
+        )
+      ) {
         const adjustment = applyAdjustment(
           profilePrice,
-          rule.adjustmentType as "PERCENT_MARKUP" | "PERCENT_MARKDOWN" | "DOLLAR_MARKUP" | "DOLLAR_MARKDOWN",
+          rule.adjustmentType as
+            | "PERCENT_MARKUP"
+            | "PERCENT_MARKDOWN"
+            | "DOLLAR_MARKUP"
+            | "DOLLAR_MARKDOWN",
           parseFloat(rule.adjustmentValue.toString())
         );
         profilePrice = adjustment;
@@ -420,9 +434,13 @@ export async function calculateOrderPricing(params: {
     }
 
     // Calculate batch age
-    const createdDate = batch.createdAt ? new Date(batch.createdAt) : new Date();
+    const createdDate = batch.createdAt
+      ? new Date(batch.createdAt)
+      : new Date();
     const now = new Date();
-    const batchAge = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    const batchAge = Math.floor(
+      (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     // Apply age-based adjustments (MEET-014)
     let ageAdjustment = 0;
@@ -451,7 +469,8 @@ export async function calculateOrderPricing(params: {
       if (rule.category && rule.category !== category) continue;
 
       const minOk = item.quantity >= rule.thresholdMin;
-      const maxOk = rule.thresholdMax === null || item.quantity <= rule.thresholdMax;
+      const maxOk =
+        rule.thresholdMax === null || item.quantity <= rule.thresholdMax;
 
       if (minOk && maxOk) {
         const adjValue = parseFloat(rule.adjustmentValue.toString());
@@ -478,15 +497,20 @@ export async function calculateOrderPricing(params: {
     }
 
     // Calculate price after profile rules and before item override
-    const priceAfterAdjustments = profilePrice + categoryAdjustment + ageAdjustment + quantityAdjustment;
+    const priceAfterAdjustments =
+      profilePrice + categoryAdjustment + ageAdjustment + quantityAdjustment;
 
     // Apply item-level override if provided
-    const itemAdjustment = item.priceOverride !== undefined
-      ? item.priceOverride - priceAfterAdjustments
-      : 0;
+    const itemAdjustment =
+      item.priceOverride !== undefined
+        ? item.priceOverride - priceAfterAdjustments
+        : 0;
 
     // Final price (floor at $0.01)
-    const finalPrice = Math.max(0.01, item.priceOverride ?? priceAfterAdjustments);
+    const finalPrice = Math.max(
+      0.01,
+      item.priceOverride ?? priceAfterAdjustments
+    );
     const lineTotal = finalPrice * item.quantity;
 
     lineItemResults.push({
@@ -521,7 +545,8 @@ export async function calculateOrderPricing(params: {
 
   if (params.orderAdjustment) {
     if (params.orderAdjustment.adjustmentMode === "PERCENT") {
-      orderAdjustmentTotal = subtotal * (params.orderAdjustment.adjustmentValue / 100);
+      orderAdjustmentTotal =
+        subtotal * (params.orderAdjustment.adjustmentValue / 100);
     } else {
       orderAdjustmentTotal = params.orderAdjustment.adjustmentValue;
     }
@@ -573,7 +598,9 @@ export async function checkClientCredit(
     throw new Error(`Client ${clientId} not found`);
   }
 
-  const creditLimit = parseFloat(clientResult[0].creditLimit?.toString() || "0");
+  const creditLimit = parseFloat(
+    clientResult[0].creditLimit?.toString() || "0"
+  );
   const totalOwed = parseFloat(clientResult[0].totalOwed?.toString() || "0");
   const availableCredit = creditLimit - totalOwed;
 
@@ -615,7 +642,10 @@ export async function applyPriceAdjustment(params: {
   // Validate user's discount authority
   const maxDiscount = DISCOUNT_LIMITS[params.userRole] || 15;
 
-  if (params.adjustmentMode === "PERCENT" && Math.abs(params.adjustmentValue) > maxDiscount) {
+  if (
+    params.adjustmentMode === "PERCENT" &&
+    Math.abs(params.adjustmentValue) > maxDiscount
+  ) {
     throw new Error(
       `Discount exceeds your authority. Maximum: ${maxDiscount}%, Requested: ${Math.abs(params.adjustmentValue)}%`
     );
@@ -638,12 +668,16 @@ export async function applyPriceAdjustment(params: {
   const order = orderResult[0];
 
   // Parse items to calculate original price
-  const items = typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+  const items =
+    typeof order.items === "string" ? JSON.parse(order.items) : order.items;
   let originalPrice: number | null = null;
   let adjustedPrice: number | null = null;
 
   if (params.adjustmentType === "ITEM" && params.targetId) {
-    const item = items.find((i: { batchId: number; unitPrice?: number }) => i.batchId === params.targetId);
+    const item = items.find(
+      (i: { batchId: number; unitPrice?: number }) =>
+        i.batchId === params.targetId
+    );
     if (item) {
       const itemOriginalPrice = item.unitPrice || 0;
       originalPrice = itemOriginalPrice;
@@ -652,10 +686,11 @@ export async function applyPriceAdjustment(params: {
       } else {
         // SECURITY FIX: Validate fixed-amount discounts against max percentage limit
         if (itemOriginalPrice > 0 && params.adjustmentValue < 0) {
-          const effectivePercent = (Math.abs(params.adjustmentValue) / itemOriginalPrice) * 100;
+          const effectivePercent =
+            (Math.abs(params.adjustmentValue) / itemOriginalPrice) * 100;
           if (effectivePercent > maxDiscount) {
             throw new Error(
-              `Fixed discount exceeds your authority. Maximum: ${maxDiscount}% (${(itemOriginalPrice * maxDiscount / 100).toFixed(2)}), Requested: ${Math.abs(params.adjustmentValue).toFixed(2)} (${effectivePercent.toFixed(1)}%)`
+              `Fixed discount exceeds your authority. Maximum: ${maxDiscount}% (${((itemOriginalPrice * maxDiscount) / 100).toFixed(2)}), Requested: ${Math.abs(params.adjustmentValue).toFixed(2)} (${effectivePercent.toFixed(1)}%)`
             );
           }
         }
@@ -816,7 +851,9 @@ export async function approveCreditOverride(params: {
     .limit(1);
 
   if (!requestResult[0]) {
-    throw new Error(`No pending credit override request for order ${params.orderId}`);
+    throw new Error(
+      `No pending credit override request for order ${params.orderId}`
+    );
   }
 
   const overrideRequest = requestResult[0];
@@ -957,21 +994,27 @@ export async function getLastSalePrice(params: {
 
   // Get last price to this specific client
   let lastPriceToClient: number | null = null;
-  let clientPriceHistory: Array<{ date: Date; price: number; quantity: number }> = [];
+  let clientPriceHistory: Array<{
+    date: Date;
+    price: number;
+    quantity: number;
+  }> = [];
 
   if (params.clientId) {
-    const clientHistory = params.clientId ? await db
-      .select()
-      .from(priceHistory)
-      .where(
-        and(
-          eq(priceHistory.productId, params.productId),
-          eq(priceHistory.clientId, params.clientId),
-          eq(priceHistory.transactionType, "SALE")
-        )
-      )
-      .orderBy(desc(priceHistory.createdAt))
-      .limit(10) : [];
+    const clientHistory = params.clientId
+      ? await db
+          .select()
+          .from(priceHistory)
+          .where(
+            and(
+              eq(priceHistory.productId, params.productId),
+              eq(priceHistory.clientId, params.clientId),
+              eq(priceHistory.transactionType, "SALE")
+            )
+          )
+          .orderBy(desc(priceHistory.createdAt))
+          .limit(10)
+      : [];
 
     if (clientHistory.length > 0) {
       lastPriceToClient = parseFloat(clientHistory[0].unitPrice.toString());
@@ -997,7 +1040,11 @@ export async function getLastSalePrice(params: {
     .limit(10);
 
   let lastPriceOverall: number | null = null;
-  let overallPriceHistoryResult: Array<{ date: Date; price: number; quantity: number }> = [];
+  let overallPriceHistoryResult: Array<{
+    date: Date;
+    price: number;
+    quantity: number;
+  }> = [];
 
   if (overallHistory.length > 0) {
     lastPriceOverall = parseFloat(overallHistory[0].unitPrice.toString());
@@ -1009,8 +1056,12 @@ export async function getLastSalePrice(params: {
   }
 
   return {
-    lastPriceToClient: lastPriceToClient ? Math.round(lastPriceToClient * 100) / 100 : null,
-    lastPriceOverall: lastPriceOverall ? Math.round(lastPriceOverall * 100) / 100 : null,
+    lastPriceToClient: lastPriceToClient
+      ? Math.round(lastPriceToClient * 100) / 100
+      : null,
+    lastPriceOverall: lastPriceOverall
+      ? Math.round(lastPriceOverall * 100) / 100
+      : null,
     clientPriceHistory,
     overallPriceHistory: overallPriceHistoryResult,
   };
@@ -1056,16 +1107,18 @@ export async function getSupplierReceiptHistory(params: {
   supplierId: number;
   productId?: number;
   limit?: number;
-}): Promise<Array<{
-  id: number;
-  productId: number;
-  productName: string;
-  batchId: number | null;
-  unitPrice: number;
-  quantity: number;
-  totalPrice: number;
-  date: Date;
-}>> {
+}): Promise<
+  Array<{
+    id: number;
+    productId: number;
+    productName: string;
+    batchId: number | null;
+    unitPrice: number;
+    quantity: number;
+    totalPrice: number;
+    date: Date;
+  }>
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1164,8 +1217,14 @@ function matchesConditions(
   // Price range check
   if (conditions.priceMin !== undefined || conditions.priceMax !== undefined) {
     const price = parseFloat(batch.unitCogs?.toString() || "0");
-    const minCheck = conditions.priceMin !== undefined ? price >= (conditions.priceMin as number) : true;
-    const maxCheck = conditions.priceMax !== undefined ? price <= (conditions.priceMax as number) : true;
+    const minCheck =
+      conditions.priceMin !== undefined
+        ? price >= (conditions.priceMin as number)
+        : true;
+    const maxCheck =
+      conditions.priceMax !== undefined
+        ? price <= (conditions.priceMax as number)
+        : true;
     checks.push(minCheck && maxCheck);
   }
 
@@ -1179,7 +1238,11 @@ function matchesConditions(
  */
 function applyAdjustment(
   basePrice: number,
-  adjustmentType: "PERCENT_MARKUP" | "PERCENT_MARKDOWN" | "DOLLAR_MARKUP" | "DOLLAR_MARKDOWN",
+  adjustmentType:
+    | "PERCENT_MARKUP"
+    | "PERCENT_MARKDOWN"
+    | "DOLLAR_MARKUP"
+    | "DOLLAR_MARKDOWN",
   adjustmentValue: number
 ): number {
   switch (adjustmentType) {
@@ -1214,7 +1277,8 @@ async function recalculateOrderTotal(orderId: number): Promise<number> {
   }
 
   const order = orderResult[0];
-  const items = typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+  const items =
+    typeof order.items === "string" ? JSON.parse(order.items) : order.items;
 
   // Get all adjustments for this order
   const adjustments = await db
@@ -1269,20 +1333,22 @@ async function recalculateOrderTotal(orderId: number): Promise<number> {
 /**
  * Get order adjustments for display
  */
-export async function getOrderAdjustments(orderId: number): Promise<Array<{
-  id: number;
-  adjustmentType: string;
-  targetId: number | null;
-  targetCategory: string | null;
-  adjustmentMode: string;
-  adjustmentValue: number;
-  originalPrice: number | null;
-  adjustedPrice: number | null;
-  reason: string | null;
-  notes: string | null;
-  adjustedByName: string | null;
-  createdAt: Date;
-}>> {
+export async function getOrderAdjustments(orderId: number): Promise<
+  Array<{
+    id: number;
+    adjustmentType: string;
+    targetId: number | null;
+    targetCategory: string | null;
+    adjustmentMode: string;
+    adjustmentValue: number;
+    originalPrice: number | null;
+    adjustedPrice: number | null;
+    reason: string | null;
+    notes: string | null;
+    adjustedByName: string | null;
+    createdAt: Date;
+  }>
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1314,8 +1380,12 @@ export async function getOrderAdjustments(orderId: number): Promise<Array<{
     targetCategory: a.targetCategory,
     adjustmentMode: a.adjustmentMode,
     adjustmentValue: parseFloat(a.adjustmentValue.toString()),
-    originalPrice: a.originalPrice ? parseFloat(a.originalPrice.toString()) : null,
-    adjustedPrice: a.adjustedPrice ? parseFloat(a.adjustedPrice.toString()) : null,
+    originalPrice: a.originalPrice
+      ? parseFloat(a.originalPrice.toString())
+      : null,
+    adjustedPrice: a.adjustedPrice
+      ? parseFloat(a.adjustedPrice.toString())
+      : null,
     reason: a.reason,
     notes: a.notes,
     adjustedByName: a.adjustedByName,

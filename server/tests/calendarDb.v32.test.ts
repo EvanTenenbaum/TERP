@@ -40,11 +40,13 @@ describe("Calendar Database v3.2 - New Functions", () => {
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
-      transaction: vi.fn((callback) => callback(mockDb)),
+      transaction: vi.fn(callback => callback(mockDb)),
       $returningId: vi.fn().mockResolvedValue([{ id: 1 }]),
     };
 
-    vi.mocked(getDb).mockResolvedValue(mockDb as any);
+    vi.mocked(getDb).mockResolvedValue(
+      mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+    );
   });
 
   afterEach(() => {
@@ -76,7 +78,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
       // Create thenable mock
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve(mockEvents),
+        then: (resolve: (value: unknown) => void) => resolve(mockEvents),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
 
@@ -95,7 +97,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
       // Arrange
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve([]),
+        then: (resolve: (value: unknown) => void) => resolve([]),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
 
@@ -119,7 +121,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve(mockEvents),
+        then: (resolve: (value: unknown) => void) => resolve(mockEvents),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
 
@@ -148,7 +150,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve(mockEvents),
+        then: (resolve: (value: unknown) => void) => resolve(mockEvents),
       };
       mockDb.orderBy.mockReturnValue(thenableMock);
 
@@ -166,7 +168,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
       // Arrange
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve([]),
+        then: (resolve: (value: unknown) => void) => resolve([]),
       };
       mockDb.where.mockReturnValue(thenableMock);
 
@@ -198,7 +200,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve(mockConflicts),
+        then: (resolve: (value: unknown) => void) => resolve(mockConflicts),
       };
       mockDb.where.mockReturnValue(thenableMock);
 
@@ -219,7 +221,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
       // Arrange - returns empty when the specific event is excluded
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve([]),
+        then: (resolve: (value: unknown) => void) => resolve([]),
       };
       mockDb.where.mockReturnValue(thenableMock);
 
@@ -240,7 +242,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
       // Arrange
       const thenableMock = {
         ...mockDb,
-        then: (resolve: any) => resolve([]),
+        then: (resolve: (value: unknown) => void) => resolve([]),
       };
       mockDb.where.mockReturnValue(thenableMock);
 
@@ -260,7 +262,7 @@ describe("Calendar Database v3.2 - New Functions", () => {
   describe("withTransaction", () => {
     it("should execute callback within transaction", async () => {
       // Arrange
-      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
+      const mockTransaction = vi.fn().mockImplementation(async callback => {
         return await callback({});
       });
 
@@ -279,12 +281,8 @@ describe("Calendar Database v3.2 - New Functions", () => {
 
     it("should rollback transaction on error", async () => {
       // Arrange
-      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
-        try {
-          return await callback({});
-        } catch (error) {
-          throw error;
-        }
+      const mockTransaction = vi.fn().mockImplementation(async callback => {
+        return await callback({});
       });
 
       mockDb.transaction = mockTransaction;

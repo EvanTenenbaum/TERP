@@ -6,13 +6,25 @@ import { GripVertical, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { memo } from "react";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface WorkflowBatchItem {
+  id: string | number;
+  code?: string;
+  strain?: string;
+  quantity?: string | number;
+  status?: string;
+  updatedAt?: string | Date;
+  [key: string]: unknown;
+}
+
 interface WorkflowBatchCardProps {
-  batch: any;
+  batch: WorkflowBatchItem;
   isDragging?: boolean;
 }
 
-export const WorkflowBatchCard = memo(function WorkflowBatchCard({ batch, isDragging = false }: WorkflowBatchCardProps) {
+export const WorkflowBatchCard = memo(function WorkflowBatchCard({
+  batch,
+  isDragging = false,
+}: WorkflowBatchCardProps) {
   const {
     attributes,
     listeners,
@@ -67,7 +79,10 @@ export const WorkflowBatchCard = memo(function WorkflowBatchCard({ batch, isDrag
             )}
             {batch.updatedAt && (
               <div className="text-gray-400">
-                Updated {formatDistanceToNow(new Date(batch.updatedAt), { addSuffix: true })}
+                Updated{" "}
+                {formatDistanceToNow(new Date(batch.updatedAt), {
+                  addSuffix: true,
+                })}
               </div>
             )}
           </div>

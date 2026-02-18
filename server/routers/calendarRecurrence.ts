@@ -1,11 +1,20 @@
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as calendarDb from "../calendarDb";
 import InstanceGenerationService from "../_core/instanceGenerationService";
 import PermissionService from "../_core/permissionService";
 
-import { idSchema, dateStringSchema, nameSchema, descriptionSchema } from "../_core/validationSchemas";
+import {
+  idSchema,
+  dateStringSchema,
+  nameSchema,
+  descriptionSchema,
+} from "../_core/validationSchemas";
 
 /**
  * Calendar Recurrence Router
@@ -15,10 +24,16 @@ import { idSchema, dateStringSchema, nameSchema, descriptionSchema } from "../_c
  */
 
 // Recurrence frequency enum
-const recurrenceFrequencySchema = z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]);
+const recurrenceFrequencySchema = z.enum([
+  "DAILY",
+  "WEEKLY",
+  "MONTHLY",
+  "YEARLY",
+]);
 
 // Days ahead validation (reasonable range: 1 to 365 days)
-const daysAheadSchema = z.number()
+const daysAheadSchema = z
+  .number()
   .int("Days must be a whole number")
   .min(1, "Days ahead must be at least 1")
   .max(365, "Cannot generate instances more than 1 year ahead")
@@ -30,18 +45,34 @@ const instanceModificationsSchema = z.object({
   description: descriptionSchema,
   location: z.string().max(500, "Location too long").optional(),
   assignedTo: idSchema.optional(),
-  startTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Time must be in HH:MM or HH:MM:SS format").optional(),
-  endTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Time must be in HH:MM or HH:MM:SS format").optional(),
+  startTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/, "Time must be in HH:MM or HH:MM:SS format")
+    .optional(),
+  endTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}(:\d{2})?$/, "Time must be in HH:MM or HH:MM:SS format")
+    .optional(),
 });
 
 // Recurrence rule updates schema
 const recurrenceRuleUpdatesSchema = z.object({
   frequency: recurrenceFrequencySchema.optional(),
-  interval: z.number().int().min(1, "Interval must be at least 1").max(99, "Interval too large").optional(),
+  interval: z
+    .number()
+    .int()
+    .min(1, "Interval must be at least 1")
+    .max(99, "Interval too large")
+    .optional(),
   byDay: z.array(z.number().int().min(0).max(6)).optional(),
   byMonthDay: z.array(z.number().int().min(1).max(31)).optional(),
   endDate: dateStringSchema.optional(),
-  count: z.number().int().min(1, "Count must be at least 1").max(999, "Count too large").optional(),
+  count: z
+    .number()
+    .int()
+    .min(1, "Count must be at least 1")
+    .max(999, "Count too large")
+    .optional(),
 });
 
 export const calendarRecurrenceRouter = router({
@@ -52,7 +83,11 @@ export const calendarRecurrenceRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "VIEW");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "VIEW"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -74,7 +109,11 @@ export const calendarRecurrenceRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "VIEW");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "VIEW"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -89,7 +128,7 @@ export const calendarRecurrenceRouter = router({
 
   // Modify a specific instance
   modifyInstance: protectedProcedure
-    .use(requirePermission('calendar:write'))
+    .use(requirePermission("calendar:write"))
     .input(
       z.object({
         eventId: idSchema,
@@ -101,7 +140,11 @@ export const calendarRecurrenceRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "EDIT"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -131,7 +174,7 @@ export const calendarRecurrenceRouter = router({
 
   // Cancel a specific instance
   cancelInstance: protectedProcedure
-    .use(requirePermission('calendar:write'))
+    .use(requirePermission("calendar:write"))
     .input(
       z.object({
         eventId: idSchema,
@@ -142,7 +185,11 @@ export const calendarRecurrenceRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "EDIT"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -170,7 +217,7 @@ export const calendarRecurrenceRouter = router({
 
   // Regenerate instances (admin/background job)
   regenerateInstances: protectedProcedure
-    .use(requirePermission('calendar:write'))
+    .use(requirePermission("calendar:write"))
     .input(
       z.object({
         eventId: idSchema,
@@ -181,7 +228,11 @@ export const calendarRecurrenceRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "MANAGE");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "MANAGE"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied - requires MANAGE permission");
@@ -216,7 +267,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = getAuthenticatedUserId(ctx);
+      const _userId = getAuthenticatedUserId(ctx);
 
       // Regenerate all instances
       const count = await InstanceGenerationService.regenerateAllInstances(
@@ -228,7 +279,7 @@ export const calendarRecurrenceRouter = router({
 
   // Update recurrence rule
   updateRecurrenceRule: protectedProcedure
-    .use(requirePermission('calendar:write'))
+    .use(requirePermission("calendar:write"))
     .input(
       z.object({
         eventId: idSchema,
@@ -239,7 +290,11 @@ export const calendarRecurrenceRouter = router({
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "EDIT"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -252,7 +307,10 @@ export const calendarRecurrenceRouter = router({
       }
 
       // Update recurrence rule
-      await calendarDb.updateRecurrenceRule(input.eventId, dbUpdates as Parameters<typeof calendarDb.updateRecurrenceRule>[1]);
+      await calendarDb.updateRecurrenceRule(
+        input.eventId,
+        dbUpdates as Parameters<typeof calendarDb.updateRecurrenceRule>[1]
+      );
 
       // Regenerate instances with new rule
       await InstanceGenerationService.generateInstances(input.eventId, 90);
@@ -273,13 +331,17 @@ export const calendarRecurrenceRouter = router({
 
   // Delete recurrence rule (convert to single event)
   deleteRecurrenceRule: protectedProcedure
-    .use(requirePermission('calendar:write'))
+    .use(requirePermission("calendar:write"))
     .input(z.object({ eventId: idSchema }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
-      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
+      const hasPermission = await PermissionService.hasPermission(
+        userId,
+        input.eventId,
+        "EDIT"
+      );
 
       if (!hasPermission) {
         throw new Error("Permission denied");

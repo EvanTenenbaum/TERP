@@ -6,13 +6,11 @@ import {
   batches,
   orders,
   inventoryMovements,
-  type InsertSampleRequest,
-  type InsertSampleAllocation,
   type SampleRequest,
+  type SampleAllocation,
   type SampleLocationHistory,
-  type InsertSampleLocationHistory
 } from "../drizzle/schema";
-import { eq, and, gte, lte, desc, sql, or, isNull } from "drizzle-orm";
+import { eq, and, lte, desc, sql } from "drizzle-orm";
 
 /**
  * Create a new sample request
@@ -21,7 +19,7 @@ import { eq, and, gte, lte, desc, sql, or, isNull } from "drizzle-orm";
 export async function createSampleRequest(
   clientId: number,
   requestedBy: number,
-  products: Array<{productId: number, quantity: string}>,
+  products: Array<{ productId: number; quantity: string }>,
   notes?: string
 ): Promise<SampleRequest> {
   const db = await getDb();
@@ -29,10 +27,16 @@ export async function createSampleRequest(
 
   try {
     // Check monthly allocation
-    const currentMonth = new Date().toISOString().slice(0, 7); // "2025-10"
-    const totalRequested = products.reduce((sum, p) => sum + parseFloat(p.quantity), 0);
-    
-    const canAllocate = await checkMonthlyAllocation(clientId, totalRequested.toString());
+    const _currentMonth = new Date().toISOString().slice(0, 7); // "2025-10"
+    const totalRequested = products.reduce(
+      (sum, p) => sum + parseFloat(p.quantity),
+      0
+    );
+
+    const canAllocate = await checkMonthlyAllocation(
+      clientId,
+      totalRequested.toString()
+    );
     if (!canAllocate) {
       throw new Error("Monthly sample allocation exceeded");
     }
@@ -44,17 +48,20 @@ export async function createSampleRequest(
       requestDate: new Date(),
       products: products as { productId: number; quantity: string }[],
       sampleRequestStatus: "PENDING",
-      notes
+      notes,
     });
 
-    const newRequest = await db.select()
+    const newRequest = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, request.insertId))
       .limit(1);
 
     return newRequest[0];
   } catch (error) {
-    throw new Error(`Failed to create sample request: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create sample request: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -73,7 +80,8 @@ export async function fulfillSampleRequest(
 
   try {
     // Get sample request
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -86,45 +94,56 @@ export async function fulfillSampleRequest(
       throw new Error("Sample request is not pending");
     }
 
-    const products = JSON.parse(request.products as any) as Array<{productId: number, quantity: string}>;
+    const products: Array<{ productId: number; quantity: string }> =
+      request.products;
     let totalCost = 0;
 
     // BUG-117 FIX: Wrap batch allocation in transaction with FOR UPDATE lock
     // This prevents race conditions when multiple requests try to allocate from the same batch
-    await db.transaction(async (tx) => {
+    await db.transaction(async tx => {
       // Allocate inventory for each product
       for (const product of products) {
         // Find sample-available batches for this product with FOR UPDATE lock
-        const availableBatches = await tx.select()
+        const availableBatches = await tx
+          .select()
           .from(batches)
-          .where(and(
-            eq(batches.productId, product.productId),
-            sql`${batches.sampleAvailable} = 1 OR ${batches.sampleOnly} = 1`,
-            sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) >= ${product.quantity}`
-          ))
+          .where(
+            and(
+              eq(batches.productId, product.productId),
+              sql`${batches.sampleAvailable} = 1 OR ${batches.sampleOnly} = 1`,
+              sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) >= ${product.quantity}`
+            )
+          )
           .orderBy(desc(batches.sampleOnly)) // Prefer sample-only batches first
           .limit(1)
           .for("update"); // Lock the row to prevent concurrent modifications
 
         if (availableBatches.length === 0) {
-          throw new Error(`Insufficient sample inventory for product ${product.productId}`);
+          throw new Error(
+            `Insufficient sample inventory for product ${product.productId}`
+          );
         }
 
         const batch = availableBatches[0];
 
         // Double-check quantity after acquiring lock (another request may have modified it)
         if (parseFloat(batch.sampleQty) < parseFloat(product.quantity)) {
-          throw new Error(`Insufficient sample quantity for product ${product.productId} after lock acquisition`);
+          throw new Error(
+            `Insufficient sample quantity for product ${product.productId} after lock acquisition`
+          );
         }
 
         const quantityBefore = batch.sampleQty;
-        const quantityAfter = (parseFloat(batch.sampleQty) - parseFloat(product.quantity)).toString();
+        const quantityAfter = (
+          parseFloat(batch.sampleQty) - parseFloat(product.quantity)
+        ).toString();
 
         // Reduce sample quantity
-        await tx.update(batches)
+        await tx
+          .update(batches)
           .set({
             sampleQty: quantityAfter,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(batches.id, batch.id));
 
@@ -138,44 +157,58 @@ export async function fulfillSampleRequest(
           referenceType: "SAMPLE_REQUEST",
           referenceId: requestId,
           notes: `Sample request #${requestId}`,
-          performedBy: fulfilledBy
+          performedBy: fulfilledBy,
         });
 
         // Calculate cost (use batch COGS)
-        const unitCogs = batch.cogsMode === "FIXED"
-          ? parseFloat(batch.unitCogs || "0")
-          : (parseFloat(batch.unitCogsMin || "0") + parseFloat(batch.unitCogsMax || "0")) / 2;
+        const unitCogs =
+          batch.cogsMode === "FIXED"
+            ? parseFloat(batch.unitCogs || "0")
+            : (parseFloat(batch.unitCogsMin || "0") +
+                parseFloat(batch.unitCogsMax || "0")) /
+              2;
 
         totalCost += unitCogs * parseFloat(product.quantity);
       }
 
       // QA-002 FIX: Move sample request status update INSIDE transaction
       // This ensures atomicity - if status update fails, batch changes are rolled back
-      await tx.update(sampleRequests)
+      await tx
+        .update(sampleRequests)
         .set({
           sampleRequestStatus: "FULFILLED",
           fulfilledDate: new Date(),
           fulfilledBy,
           totalCost: totalCost.toFixed(2),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(sampleRequests.id, requestId));
     });
 
     // Update monthly allocation
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const totalQuantity = products.reduce((sum, p) => sum + parseFloat(p.quantity), 0);
-    await updateMonthlyAllocation(request.clientId, currentMonth, totalQuantity.toString());
+    const totalQuantity = products.reduce(
+      (sum, p) => sum + parseFloat(p.quantity),
+      0
+    );
+    await updateMonthlyAllocation(
+      request.clientId,
+      currentMonth,
+      totalQuantity.toString()
+    );
 
     // Return updated request
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to fulfill sample request: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to fulfill sample request: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -191,24 +224,28 @@ export async function cancelSampleRequest(
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "CANCELLED",
         cancelledDate: new Date(),
         cancelledBy,
         cancellationReason: reason,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to cancel sample request: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to cancel sample request: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -224,20 +261,24 @@ export async function linkOrderToSample(
 
   try {
     // Update order
-    await db.update(orders)
+    await db
+      .update(orders)
       .set({ relatedSampleRequestId: sampleRequestId })
       .where(eq(orders.id, orderId));
 
     // Update sample request
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         relatedOrderId: orderId,
         conversionDate: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, sampleRequestId));
   } catch (error) {
-    throw new Error(`Failed to link order to sample: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to link order to sample: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -253,14 +294,17 @@ export async function checkMonthlyAllocation(
 
   try {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    
+
     // Get or create allocation for this month
-    const [allocation] = await db.select()
+    const [allocation] = await db
+      .select()
       .from(sampleAllocations)
-      .where(and(
-        eq(sampleAllocations.clientId, clientId),
-        eq(sampleAllocations.monthYear, currentMonth)
-      ))
+      .where(
+        and(
+          eq(sampleAllocations.clientId, clientId),
+          eq(sampleAllocations.monthYear, currentMonth)
+        )
+      )
       .limit(1);
 
     if (!allocation) {
@@ -270,7 +314,7 @@ export async function checkMonthlyAllocation(
         monthYear: currentMonth,
         allocatedQuantity: "7.0",
         usedQuantity: "0",
-        remainingQuantity: "7.0"
+        remainingQuantity: "7.0",
       });
       return parseFloat(requestedQuantity) <= 7.0;
     }
@@ -280,7 +324,9 @@ export async function checkMonthlyAllocation(
 
     return requested <= remaining;
   } catch (error) {
-    throw new Error(`Failed to check monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to check monthly allocation: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -296,12 +342,15 @@ async function updateMonthlyAllocation(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [allocation] = await db.select()
+    const [allocation] = await db
+      .select()
       .from(sampleAllocations)
-      .where(and(
-        eq(sampleAllocations.clientId, clientId),
-        eq(sampleAllocations.monthYear, monthYear)
-      ))
+      .where(
+        and(
+          eq(sampleAllocations.clientId, clientId),
+          eq(sampleAllocations.monthYear, monthYear)
+        )
+      )
       .limit(1);
 
     if (!allocation) {
@@ -311,23 +360,27 @@ async function updateMonthlyAllocation(
         monthYear,
         allocatedQuantity: "7.0",
         usedQuantity,
-        remainingQuantity: (7.0 - parseFloat(usedQuantity)).toString()
+        remainingQuantity: (7.0 - parseFloat(usedQuantity)).toString(),
       });
     } else {
       // Update existing allocation
-      const newUsed = parseFloat(allocation.usedQuantity) + parseFloat(usedQuantity);
+      const newUsed =
+        parseFloat(allocation.usedQuantity) + parseFloat(usedQuantity);
       const newRemaining = parseFloat(allocation.allocatedQuantity) - newUsed;
 
-      await db.update(sampleAllocations)
+      await db
+        .update(sampleAllocations)
         .set({
           usedQuantity: newUsed.toString(),
           remainingQuantity: newRemaining.toString(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(sampleAllocations.id, allocation.id));
     }
   } catch (error) {
-    throw new Error(`Failed to update monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to update monthly allocation: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -342,7 +395,8 @@ export async function getSampleRequestsByClient(
   if (!db) throw new Error("Database not available");
 
   try {
-    const requests = await db.select()
+    const requests = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.clientId, clientId))
       .orderBy(desc(sampleRequests.requestDate))
@@ -350,7 +404,9 @@ export async function getSampleRequestsByClient(
 
     return requests;
   } catch (error) {
-    throw new Error(`Failed to get sample requests: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get sample requests: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -362,14 +418,17 @@ export async function getPendingSampleRequests(): Promise<SampleRequest[]> {
   if (!db) throw new Error("Database not available");
 
   try {
-    const requests = await db.select()
+    const requests = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.sampleRequestStatus, "PENDING"))
       .orderBy(desc(sampleRequests.requestDate));
 
     return requests;
   } catch (error) {
-    throw new Error(`Failed to get pending sample requests: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get pending sample requests: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -379,19 +438,31 @@ export async function getPendingSampleRequests(): Promise<SampleRequest[]> {
 export async function getMonthlyAllocation(
   clientId: number,
   monthYear?: string
-): Promise<any> {
+): Promise<
+  | SampleAllocation
+  | {
+      clientId: number;
+      monthYear: string;
+      allocatedQuantity: string;
+      usedQuantity: string;
+      remainingQuantity: string;
+    }
+> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
     const month = monthYear || new Date().toISOString().slice(0, 7);
-    
-    const [allocation] = await db.select()
+
+    const [allocation] = await db
+      .select()
       .from(sampleAllocations)
-      .where(and(
-        eq(sampleAllocations.clientId, clientId),
-        eq(sampleAllocations.monthYear, month)
-      ))
+      .where(
+        and(
+          eq(sampleAllocations.clientId, clientId),
+          eq(sampleAllocations.monthYear, month)
+        )
+      )
       .limit(1);
 
     if (!allocation) {
@@ -401,13 +472,15 @@ export async function getMonthlyAllocation(
         monthYear: month,
         allocatedQuantity: "7.0",
         usedQuantity: "0",
-        remainingQuantity: "7.0"
+        remainingQuantity: "7.0",
       };
     }
 
     return allocation;
   } catch (error) {
-    throw new Error(`Failed to get monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get monthly allocation: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -423,22 +496,27 @@ export async function setMonthlyAllocation(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [existing] = await db.select()
+    const [existing] = await db
+      .select()
       .from(sampleAllocations)
-      .where(and(
-        eq(sampleAllocations.clientId, clientId),
-        eq(sampleAllocations.monthYear, monthYear)
-      ))
+      .where(
+        and(
+          eq(sampleAllocations.clientId, clientId),
+          eq(sampleAllocations.monthYear, monthYear)
+        )
+      )
       .limit(1);
 
     if (existing) {
       // Update existing
-      const newRemaining = parseFloat(allocatedQuantity) - parseFloat(existing.usedQuantity);
-      await db.update(sampleAllocations)
+      const newRemaining =
+        parseFloat(allocatedQuantity) - parseFloat(existing.usedQuantity);
+      await db
+        .update(sampleAllocations)
         .set({
           allocatedQuantity,
           remainingQuantity: newRemaining.toString(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(sampleAllocations.id, existing.id));
     } else {
@@ -448,11 +526,13 @@ export async function setMonthlyAllocation(
         monthYear,
         allocatedQuantity,
         usedQuantity: "0",
-        remainingQuantity: allocatedQuantity
+        remainingQuantity: allocatedQuantity,
       });
     }
   } catch (error) {
-    throw new Error(`Failed to set monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to set monthly allocation: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -474,7 +554,8 @@ export async function requestSampleReturn(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -487,7 +568,8 @@ export async function requestSampleReturn(
       throw new Error("Only fulfilled samples can be returned");
     }
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "RETURN_REQUESTED",
         returnRequestedDate: new Date(),
@@ -495,18 +577,21 @@ export async function requestSampleReturn(
         returnReason: reason,
         returnCondition: condition,
         returnDate: returnDate || null,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to request sample return: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to request sample return: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -521,7 +606,8 @@ export async function approveSampleReturn(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -534,23 +620,27 @@ export async function approveSampleReturn(
       throw new Error("Sample is not in return requested status");
     }
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "RETURN_APPROVED",
         returnApprovedDate: new Date(),
         returnApprovedBy: approvedBy,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to approve sample return: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to approve sample return: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -565,7 +655,8 @@ export async function completeSampleReturn(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -578,12 +669,13 @@ export async function completeSampleReturn(
       throw new Error("Sample return is not approved");
     }
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "RETURNED",
         returnDate: new Date(),
         location: "RETURNED",
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
@@ -593,17 +685,20 @@ export async function completeSampleReturn(
       fromLocation: request.location || "WITH_CLIENT",
       toLocation: "RETURNED",
       changedBy: completedBy,
-      notes: "Sample returned"
+      notes: "Sample returned",
     });
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to complete sample return: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to complete sample return: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -623,7 +718,8 @@ export async function requestVendorReturn(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -633,28 +729,37 @@ export async function requestVendorReturn(
     }
 
     // Can initiate vendor return from RETURNED status or FULFILLED status
-    if (request.sampleRequestStatus !== "RETURNED" && request.sampleRequestStatus !== "FULFILLED") {
-      throw new Error("Sample must be returned or fulfilled to initiate vendor return");
+    if (
+      request.sampleRequestStatus !== "RETURNED" &&
+      request.sampleRequestStatus !== "FULFILLED"
+    ) {
+      throw new Error(
+        "Sample must be returned or fulfilled to initiate vendor return"
+      );
     }
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "VENDOR_RETURN_REQUESTED",
         returnReason: reason,
         returnRequestedBy: requestedBy,
         returnRequestedDate: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to request vendor return: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to request vendor return: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -670,7 +775,8 @@ export async function shipToVendor(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -683,23 +789,27 @@ export async function shipToVendor(
       throw new Error("Sample is not in vendor return requested status");
     }
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "SHIPPED_TO_VENDOR",
         vendorReturnTrackingNumber: trackingNumber,
         vendorShippedDate: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to ship to vendor: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to ship to vendor: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -708,13 +818,14 @@ export async function shipToVendor(
  */
 export async function confirmVendorReturn(
   requestId: number,
-  confirmedBy: number
+  _confirmedBy: number
 ): Promise<SampleRequest> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -727,22 +838,26 @@ export async function confirmVendorReturn(
       throw new Error("Sample is not shipped to vendor");
     }
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         sampleRequestStatus: "VENDOR_CONFIRMED",
         vendorConfirmedDate: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to confirm vendor return: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to confirm vendor return: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -750,7 +865,12 @@ export async function confirmVendorReturn(
 // LOCATION TRACKING (SAMPLE-008)
 // ============================================================================
 
-type SampleLocation = "WAREHOUSE" | "WITH_CLIENT" | "WITH_SALES_REP" | "RETURNED" | "LOST";
+type SampleLocation =
+  | "WAREHOUSE"
+  | "WITH_CLIENT"
+  | "WITH_SALES_REP"
+  | "RETURNED"
+  | "LOST";
 
 /**
  * Update sample location
@@ -765,7 +885,8 @@ export async function updateSampleLocation(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
@@ -776,10 +897,11 @@ export async function updateSampleLocation(
 
     const oldLocation = request.location;
 
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         location: newLocation,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
@@ -789,17 +911,20 @@ export async function updateSampleLocation(
       fromLocation: oldLocation,
       toLocation: newLocation,
       changedBy,
-      notes
+      notes,
     });
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to update sample location: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to update sample location: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -813,14 +938,17 @@ export async function getSampleLocationHistory(
   if (!db) throw new Error("Database not available");
 
   try {
-    const history = await db.select()
+    const history = await db
+      .select()
       .from(sampleLocationHistory)
       .where(eq(sampleLocationHistory.sampleRequestId, requestId))
       .orderBy(desc(sampleLocationHistory.changedAt));
 
     return history;
   } catch (error) {
-    throw new Error(`Failed to get location history: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get location history: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -839,23 +967,30 @@ export async function getExpiringSamples(
 
   try {
     const now = new Date();
-    const futureDate = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const futureDate = new Date(
+      now.getTime() + daysAhead * 24 * 60 * 60 * 1000
+    );
 
-    const samples = await db.select()
+    const samples = await db
+      .select()
       .from(sampleRequests)
-      .where(and(
-        // Has expiration date
-        sql`${sampleRequests.expirationDate} IS NOT NULL`,
-        // Not already fully returned or vendor confirmed
-        sql`${sampleRequests.sampleRequestStatus} NOT IN ('RETURNED', 'VENDOR_CONFIRMED', 'CANCELLED')`,
-        // Expiring within the specified days
-        lte(sampleRequests.expirationDate, futureDate)
-      ))
+      .where(
+        and(
+          // Has expiration date
+          sql`${sampleRequests.expirationDate} IS NOT NULL`,
+          // Not already fully returned or vendor confirmed
+          sql`${sampleRequests.sampleRequestStatus} NOT IN ('RETURNED', 'VENDOR_CONFIRMED', 'CANCELLED')`,
+          // Expiring within the specified days
+          lte(sampleRequests.expirationDate, futureDate)
+        )
+      )
       .orderBy(sampleRequests.expirationDate);
 
     return samples;
   } catch (error) {
-    throw new Error(`Failed to get expiring samples: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get expiring samples: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -870,21 +1005,25 @@ export async function setSampleExpirationDate(
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.update(sampleRequests)
+    await db
+      .update(sampleRequests)
       .set({
         expirationDate,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(sampleRequests.id, requestId));
 
-    const [updated] = await db.select()
+    const [updated] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return updated;
   } catch (error) {
-    throw new Error(`Failed to set expiration date: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to set expiration date: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -898,12 +1037,15 @@ export async function getAllSampleRequests(
   const db = await getDb();
   if (!db) {
     // BUG-099 FIX: Log warning and return empty array instead of throwing
-    console.warn('[samplesDb.getAllSampleRequests] Database not available - returning empty array');
+    console.warn(
+      "[samplesDb.getAllSampleRequests] Database not available - returning empty array"
+    );
     return [];
   }
 
   try {
-    const requests = await db.select()
+    const requests = await db
+      .select()
       .from(sampleRequests)
       .orderBy(desc(sampleRequests.requestDate))
       .limit(limit);
@@ -912,8 +1054,13 @@ export async function getAllSampleRequests(
   } catch (error) {
     // BUG-099 FIX: Log error but return empty array to prevent page crash
     // This allows the UI to show "no samples" state instead of error state
-    console.error('[samplesDb.getAllSampleRequests] Query failed:', error instanceof Error ? error.message : String(error));
-    console.error('[samplesDb.getAllSampleRequests] Possible causes: sampleRequests table missing or schema mismatch');
+    console.error(
+      "[samplesDb.getAllSampleRequests] Query failed:",
+      error instanceof Error ? error.message : String(error)
+    );
+    console.error(
+      "[samplesDb.getAllSampleRequests] Possible causes: sampleRequests table missing or schema mismatch"
+    );
     return [];
   }
 }
@@ -928,14 +1075,16 @@ export async function getSampleRequestById(
   if (!db) throw new Error("Database not available");
 
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.id, requestId))
       .limit(1);
 
     return request || null;
   } catch (error) {
-    throw new Error(`Failed to get sample request: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get sample request: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
-

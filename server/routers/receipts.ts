@@ -23,20 +23,20 @@ async function generateReceiptNumber(retryCount = 0): Promise<string> {
   const result = await db
     .select({ receiptNumber: receipts.receiptNumber })
     .from(receipts)
-    .where(sql`${receipts.receiptNumber} LIKE ${prefix + '%'}`)
+    .where(sql`${receipts.receiptNumber} LIKE ${prefix + "%"}`)
     .orderBy(desc(receipts.receiptNumber))
     .limit(1);
 
   let nextNum = 1;
   if (result.length > 0) {
-    const lastNum = parseInt(result[0].receiptNumber.replace(prefix, ''), 10);
+    const lastNum = parseInt(result[0].receiptNumber.replace(prefix, ""), 10);
     nextNum = lastNum + 1;
   }
 
   // Add retry offset to handle concurrent requests
   nextNum += retryCount;
 
-  return `${prefix}${String(nextNum).padStart(6, '0')}`;
+  return `${prefix}${String(nextNum).padStart(6, "0")}`;
 }
 
 // Generate HTML receipt template
@@ -52,22 +52,23 @@ function generateReceiptHtml(data: {
   date: Date;
 }): string {
   const formatCurrency = (amount: number) => {
-    const formatted = Math.abs(amount).toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    const formatted = Math.abs(amount).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
     return amount < 0 ? `-${formatted}` : formatted;
   };
 
-  const transactionLabel = data.transactionType === 'PAYMENT' 
-    ? 'Payment Received' 
-    : data.transactionType === 'CREDIT'
-    ? 'Credit Applied'
-    : data.transactionType === 'ADJUSTMENT'
-    ? 'Balance Adjustment'
-    : 'Statement';
+  const transactionLabel =
+    data.transactionType === "PAYMENT"
+      ? "Payment Received"
+      : data.transactionType === "CREDIT"
+        ? "Credit Applied"
+        : data.transactionType === "ADJUSTMENT"
+          ? "Balance Adjustment"
+          : "Statement";
 
-  const transactionClass = data.transactionAmount < 0 ? 'credit' : 'debit';
+  const transactionClass = data.transactionAmount < 0 ? "credit" : "debit";
 
   return `
 <!DOCTYPE html>
@@ -102,17 +103,17 @@ function generateReceiptHtml(data: {
     <div class="header">
       <h1>Payment Receipt</h1>
       <p class="receipt-number">#${data.receiptNumber}</p>
-      <p class="date">${data.date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      <p class="date">${data.date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       })}</p>
     </div>
     
     <div class="client-info">
       <h2>${data.clientName}</h2>
-      ${data.clientAddress ? `<p>${data.clientAddress}</p>` : ''}
+      ${data.clientAddress ? `<p>${data.clientAddress}</p>` : ""}
     </div>
     
     <table class="transaction-table">
@@ -130,11 +131,15 @@ function generateReceiptHtml(data: {
       </tr>
     </table>
     
-    ${data.note ? `
+    ${
+      data.note
+        ? `
     <div class="note">
       <p><strong>Note:</strong> ${data.note}</p>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
     
     <div class="footer">
       <p>Thank you for your business!</p>
@@ -162,55 +167,61 @@ async function generateReceiptPdf(data: {
   date: Date;
 }): Promise<string> {
   // Dynamic import of jsPDF for server-side usage
-  const { jsPDF } = await import('jspdf');
-  
+  const { jsPDF } = await import("jspdf");
+
   const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
   });
 
   const formatCurrency = (amount: number) => {
-    const formatted = Math.abs(amount).toLocaleString('en-US', {
+    const formatted = Math.abs(amount).toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-    return (amount < 0 ? '-$' : '$') + formatted;
+    return (amount < 0 ? "-$" : "$") + formatted;
   };
 
-  const transactionLabel = data.transactionType === 'PAYMENT' 
-    ? 'Payment Received' 
-    : data.transactionType === 'CREDIT'
-    ? 'Credit Applied'
-    : data.transactionType === 'ADJUSTMENT'
-    ? 'Balance Adjustment'
-    : 'Statement';
+  const transactionLabel =
+    data.transactionType === "PAYMENT"
+      ? "Payment Received"
+      : data.transactionType === "CREDIT"
+        ? "Credit Applied"
+        : data.transactionType === "ADJUSTMENT"
+          ? "Balance Adjustment"
+          : "Statement";
 
   // Page dimensions
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
-  const contentWidth = pageWidth - (margin * 2);
+  const contentWidth = pageWidth - margin * 2;
   let y = margin;
 
   // Header
   doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Payment Receipt', pageWidth / 2, y, { align: 'center' });
+  doc.setFont("helvetica", "bold");
+  doc.text("Payment Receipt", pageWidth / 2, y, { align: "center" });
   y += 10;
 
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
-  doc.text(`#${data.receiptNumber}`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`#${data.receiptNumber}`, pageWidth / 2, y, { align: "center" });
   y += 7;
 
   doc.setFontSize(10);
-  doc.text(data.date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  }), pageWidth / 2, y, { align: 'center' });
+  doc.text(
+    data.date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    pageWidth / 2,
+    y,
+    { align: "center" }
+  );
   y += 10;
 
   // Divider line
@@ -222,13 +233,13 @@ async function generateReceiptPdf(data: {
   // Client info
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont("helvetica", "bold");
   doc.text(data.clientName, margin, y);
   y += 7;
 
   if (data.clientAddress) {
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 100);
     doc.text(data.clientAddress, margin, y);
     y += 7;
@@ -238,11 +249,13 @@ async function generateReceiptPdf(data: {
   // Transaction table
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont("helvetica", "normal");
 
   // Previous Balance
-  doc.text('Previous Balance:', margin, y);
-  doc.text(formatCurrency(data.previousBalance), pageWidth - margin, y, { align: 'right' });
+  doc.text("Previous Balance:", margin, y);
+  doc.text(formatCurrency(data.previousBalance), pageWidth - margin, y, {
+    align: "right",
+  });
   y += 8;
 
   // Divider
@@ -253,9 +266,16 @@ async function generateReceiptPdf(data: {
 
   // Transaction
   doc.text(`${transactionLabel}:`, margin, y);
-  const transactionColor = data.transactionAmount < 0 ? [34, 197, 94] : [239, 68, 68];
-  doc.setTextColor(transactionColor[0], transactionColor[1], transactionColor[2]);
-  doc.text(formatCurrency(data.transactionAmount), pageWidth - margin, y, { align: 'right' });
+  const transactionColor =
+    data.transactionAmount < 0 ? [34, 197, 94] : [239, 68, 68];
+  doc.setTextColor(
+    transactionColor[0],
+    transactionColor[1],
+    transactionColor[2]
+  );
+  doc.text(formatCurrency(data.transactionAmount), pageWidth - margin, y, {
+    align: "right",
+  });
   y += 8;
 
   // Divider
@@ -265,20 +285,22 @@ async function generateReceiptPdf(data: {
   y += 8;
 
   // New Balance (bold)
-  doc.setFont('helvetica', 'bold');
+  doc.setFont("helvetica", "bold");
   doc.setDrawColor(50, 50, 50);
   doc.setLineWidth(0.5);
   doc.line(margin, y - 2, pageWidth - margin, y - 2);
   y += 5;
-  doc.text('New Balance:', margin, y);
-  doc.text(formatCurrency(data.newBalance), pageWidth - margin, y, { align: 'right' });
+  doc.text("New Balance:", margin, y);
+  doc.text(formatCurrency(data.newBalance), pageWidth - margin, y, {
+    align: "right",
+  });
   y += 15;
 
   // Note section
   if (data.note) {
-    doc.setFont('helvetica', 'normal');
+    doc.setFont("helvetica", "normal");
     doc.setFillColor(249, 249, 249);
-    doc.roundedRect(margin, y, contentWidth, 20, 3, 3, 'F');
+    doc.roundedRect(margin, y, contentWidth, 20, 3, 3, "F");
     y += 8;
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
@@ -295,12 +317,16 @@ async function generateReceiptPdf(data: {
 
   doc.setFontSize(10);
   doc.setTextColor(150, 150, 150);
-  doc.text('Thank you for your business!', pageWidth / 2, y, { align: 'center' });
+  doc.text("Thank you for your business!", pageWidth / 2, y, {
+    align: "center",
+  });
   y += 5;
-  doc.text('Questions? Contact us at support@terp.app', pageWidth / 2, y, { align: 'center' });
+  doc.text("Questions? Contact us at support@terp.app", pageWidth / 2, y, {
+    align: "center",
+  });
 
   // Return as base64
-  return doc.output('datauristring');
+  return doc.output("datauristring");
 }
 
 export const receiptsRouter = router({
@@ -308,15 +334,22 @@ export const receiptsRouter = router({
    * Generate a receipt for a transaction
    */
   generate: adminProcedure
-    .input(z.object({
-      clientId: z.number(),
-      transactionType: z.enum(['PAYMENT', 'CREDIT', 'ADJUSTMENT', 'STATEMENT']),
-      transactionId: z.number().optional(),
-      previousBalance: z.number(),
-      transactionAmount: z.number(),
-      newBalance: z.number(),
-      note: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        transactionType: z.enum([
+          "PAYMENT",
+          "CREDIT",
+          "ADJUSTMENT",
+          "STATEMENT",
+        ]),
+        transactionId: z.number().optional(),
+        previousBalance: z.number(),
+        transactionAmount: z.number(),
+        newBalance: z.number(),
+        note: z.string().optional(),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       // Get client info
       const client = await db
@@ -324,9 +357,9 @@ export const receiptsRouter = router({
         .from(clients)
         .where(eq(clients.id, input.clientId))
         .limit(1);
-      
+
       if (!client.length) {
-        throw new Error('Client not found');
+        throw new Error("Client not found");
       }
 
       // Generate unique receipt number
@@ -349,7 +382,7 @@ export const receiptsRouter = router({
       try {
         pdfDataUri = await generateReceiptPdf(receiptData);
       } catch (error) {
-        console.error('Failed to generate PDF:', error);
+        console.error("Failed to generate PDF:", error);
         // Continue without PDF - will use HTML fallback
       }
 
@@ -409,7 +442,7 @@ export const receiptsRouter = router({
         .limit(1);
 
       if (!receipt.length) {
-        throw new Error('Receipt not found');
+        throw new Error("Receipt not found");
       }
 
       return receipt[0];
@@ -439,13 +472,13 @@ export const receiptsRouter = router({
         .limit(1);
 
       if (!receipt.length) {
-        throw new Error('Receipt not found');
+        throw new Error("Receipt not found");
       }
 
       const r = receipt[0];
       return generateReceiptHtml({
         receiptNumber: r.receiptNumber,
-        clientName: r.clientName || 'Unknown Client',
+        clientName: r.clientName || "Unknown Client",
         clientAddress: r.clientAddress || undefined,
         transactionType: r.transactionType,
         previousBalance: parseFloat(r.previousBalance as string),
@@ -461,17 +494,20 @@ export const receiptsRouter = router({
    * NOTE: Email integration not configured - this endpoint throws NOT_IMPLEMENTED
    */
   sendEmail: adminProcedure
-    .input(z.object({
-      receiptId: z.number(),
-      email: z.string().email(),
-      customMessage: z.string().optional(),
-    }))
-    .mutation(async ({ input }) => {
+    .input(
+      z.object({
+        receiptId: z.number(),
+        email: z.string().email(),
+        customMessage: z.string().optional(),
+      })
+    )
+    .mutation(async () => {
       // Email integration is not configured
       // To enable: Set FEATURE_EMAIL_ENABLED=true and configure RESEND_API_KEY
       throw new TRPCError({
         code: "NOT_IMPLEMENTED",
-        message: "Email integration not configured. Please contact your system administrator to enable email functionality.",
+        message:
+          "Email integration not configured. Please contact your system administrator to enable email functionality.",
       });
     }),
 
@@ -480,16 +516,19 @@ export const receiptsRouter = router({
    * NOTE: SMS integration not configured - this endpoint throws NOT_IMPLEMENTED
    */
   sendSms: adminProcedure
-    .input(z.object({
-      receiptId: z.number(),
-      phoneNumber: z.string(),
-    }))
-    .mutation(async ({ input }) => {
+    .input(
+      z.object({
+        receiptId: z.number(),
+        phoneNumber: z.string(),
+      })
+    )
+    .mutation(async () => {
       // SMS integration is not configured
       // To enable: Set FEATURE_SMS_ENABLED=true and configure Twilio credentials
       throw new TRPCError({
         code: "NOT_IMPLEMENTED",
-        message: "SMS integration not configured. Please contact your system administrator to enable SMS functionality.",
+        message:
+          "SMS integration not configured. Please contact your system administrator to enable SMS functionality.",
       });
     }),
 
@@ -506,7 +545,7 @@ export const receiptsRouter = router({
         .limit(1);
 
       if (!receipt.length) {
-        throw new Error('Receipt not found');
+        throw new Error("Receipt not found");
       }
 
       // Generate public URL (no expiry for now)
@@ -524,10 +563,12 @@ export const receiptsRouter = router({
    * Get receipt history for a client
    */
   getClientHistory: adminProcedure
-    .input(z.object({
-      clientId: z.number(),
-      limit: z.number().default(20),
-    }))
+    .input(
+      z.object({
+        clientId: z.number(),
+        limit: z.number().default(20),
+      })
+    )
     .query(async ({ input }) => {
       const history = await db
         .select({
@@ -578,13 +619,13 @@ export const receiptsRouter = router({
         .limit(1);
 
       if (!receipt.length) {
-        throw new Error('Receipt not found');
+        throw new Error("Receipt not found");
       }
 
       const r = receipt[0];
       const receiptData = {
         receiptNumber: r.receiptNumber,
-        clientName: r.clientName || 'Unknown Client',
+        clientName: r.clientName || "Unknown Client",
         clientAddress: r.clientAddress || undefined,
         transactionType: r.transactionType,
         previousBalance: parseFloat(r.previousBalance as string),
@@ -627,14 +668,14 @@ export const receiptsRouter = router({
         .limit(1);
 
       if (!receipt.length) {
-        throw new Error('Receipt not found');
+        throw new Error("Receipt not found");
       }
 
       const r = receipt[0];
       // SECURITY FIX: Public receipt only shows transaction details, not balances
       return {
         receiptNumber: r.receiptNumber,
-        clientName: r.clientName || 'Client',
+        clientName: r.clientName || "Client",
         transactionType: r.transactionType,
         transactionAmount: parseFloat(r.transactionAmount as string),
         note: r.note,
@@ -642,7 +683,7 @@ export const receiptsRouter = router({
         // Public HTML doesn't include balance information
         html: generateReceiptHtml({
           receiptNumber: r.receiptNumber,
-          clientName: r.clientName || 'Client',
+          clientName: r.clientName || "Client",
           transactionType: r.transactionType,
           previousBalance: 0, // Hidden for public view
           transactionAmount: parseFloat(r.transactionAmount as string),

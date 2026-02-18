@@ -3,20 +3,13 @@
  * Patched for Phase 1 Live Shopping: Draft Exposure Calculation
  */
 
-import { performance } from "perf_hooks";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { getDb } from "../db";
-import {
-  clients,
-  clientTransactions,
-  clientCreditLimits,
-  creditSignalHistory,
-  creditAuditLog,
-} from "../../drizzle/schema";
+import { clientTransactions } from "../../drizzle/schema";
 // Phase 1 Imports
-import { 
-  liveShoppingSessions, 
-  sessionCartItems 
+import {
+  liveShoppingSessions,
+  sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { financialMath } from "../utils/financialMath";
 
@@ -49,7 +42,7 @@ export async function getDraftExposure(clientId: number): Promise<number> {
 
   if (activeSessions.length === 0) return 0;
 
-  const sessionIds = activeSessions.map((s) => s.id);
+  const sessionIds = activeSessions.map(s => s.id);
 
   // Sum cart items: quantity * unitPrice
   const draftItems = await db
@@ -80,14 +73,16 @@ export async function getDraftExposure(clientId: number): Promise<number> {
  * 2. Open Sales Orders (Committed Inventory)
  * 3. [NEW] Live Shopping Draft Carts (Draft Inventory)
  */
-export async function calculateTotalExposure(clientId: number): Promise<number> {
+export async function calculateTotalExposure(
+  clientId: number
+): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
 
   // 1. AR Balance (Unpaid Invoices)
   const arBalanceResult = await db
-    .select({ 
-      total: sql<number>`SUM(${clientTransactions.amount} - ${clientTransactions.paymentAmount})` 
+    .select({
+      total: sql<number>`SUM(${clientTransactions.amount} - ${clientTransactions.paymentAmount})`,
     })
     .from(clientTransactions)
     .where(
@@ -97,7 +92,7 @@ export async function calculateTotalExposure(clientId: number): Promise<number> 
         sql`${clientTransactions.amount} > ${clientTransactions.paymentAmount}`
       )
     );
-  
+
   const arBalance = Number(arBalanceResult[0]?.total || 0);
 
   // 2. Open Orders (Not yet invoiced)
@@ -118,7 +113,7 @@ export async function calculateTotalExposure(clientId: number): Promise<number> 
 
   // Sum using Financial Math to avoid float drift, then return number
   const total = financialMath.add(
-    financialMath.add(arBalance, openOrders), 
+    financialMath.add(arBalance, openOrders),
     draftExposure
   );
 
@@ -130,12 +125,12 @@ export async function calculateTotalExposure(clientId: number): Promise<number> 
  */
 export async function calculateCreditLimit(clientId: number) {
   // Existing logic to get signals...
-  
+
   // Replace direct exposure calculation with new comprehensive function
   const currentExposure = await calculateTotalExposure(clientId);
-  
+
   // ... Rest of the credit engine logic (get limit, calc utilization, etc) ...
-  
+
   // For the sake of this patch file, we return a partial object illustrating the usage
   return {
     currentExposure,
