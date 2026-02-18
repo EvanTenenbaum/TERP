@@ -2050,6 +2050,15 @@ async function decrementInventoryForOrder(
     const quantityBefore = parseFloat(batch?.onHandQty || "0");
     const quantityAfter = quantityBefore - item.quantity;
 
+    // Defensive: reject if decrement would go negative (belt-and-suspenders
+    // with the upstream availability check in updateOrderStatus).
+    if (quantityAfter < 0) {
+      throw new Error(
+        `Cannot ship: batch ${item.batchId} has ${quantityBefore} on hand ` +
+          `but ${item.quantity} units requested (order #${orderId})`
+      );
+    }
+
     // TER-259: Release reservation AND decrement onHandQty atomically on shipment.
     // reservedQty was incremented at confirmation (soft lock); now we release it
     // and record the actual physical deduction against onHandQty.
