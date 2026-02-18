@@ -969,3 +969,232 @@ describe("Wire Payment Recording (TER-39)", () => {
     });
   });
 });
+
+/**
+ * TER-256: recordPayment status validation regression tests
+ * Covers: SENT, PARTIAL, PAID, VOID, DRAFT invoice states and edge cases.
+ */
+describe("recordPayment - TER-256 Status Validation", () => {
+  let caller: Awaited<ReturnType<typeof createCaller>>;
+  let mockDb: MockDb;
+
+  // Helper that builds a mock invoice select returning the provided invoice data
+  const buildInvoiceSelectMock = (
+    invoiceData: Record<string, unknown> | null
+  ) =>
+    vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue(invoiceData ? [invoiceData] : []),
+        }),
+      }),
+    });
+
+  // A successful transaction mock that simulates a full payment flow
+  const buildSuccessfulTransactionMock = (
+    selectMock: ReturnType<typeof vi.fn>
+  ) =>
+    vi.fn(async (callback: MockTxCallback) => {
+      const mockTx = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            $returningId: vi.fn().mockResolvedValue([{ id: 42 }]),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+        select: selectMock,
+      };
+      return await callback(mockTx);
+    });
+
+  beforeEach(async () => {
+    caller = await createCaller();
+    mockDb = await getDb();
+    vi.clearAllMocks();
+  });
+
+  it("should succeed for a SENT invoice with a valid payment amount", async () => {
+    // Arrange
+    const invoice = {
+      id: 1,
+      invoiceNumber: "INV-2026-0001",
+      customerId: 5,
+      status: "SENT",
+      totalAmount: "500.00",
+      amountPaid: "0.00",
+      amountDue: "500.00",
+    };
+    const selectMock = buildInvoiceSelectMock(invoice);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildSuccessfulTransactionMock(selectMock);
+
+    // Act
+    const result = await caller.payments.recordPayment({
+      invoiceId: 1,
+      amount: 500,
+      paymentMethod: "CASH",
+    });
+
+    // Assert
+    expect(result.invoiceStatus).toBe("PAID");
+    expect(result.paymentId).toBe(42);
+    expect(result.amount).toBe(500);
+  });
+
+  it("should succeed for a PARTIAL invoice with an additional payment", async () => {
+    // Arrange
+    const invoice = {
+      id: 2,
+      invoiceNumber: "INV-2026-0002",
+      customerId: 5,
+      status: "PARTIAL",
+      totalAmount: "300.00",
+      amountPaid: "100.00",
+      amountDue: "200.00",
+    };
+    const selectMock = buildInvoiceSelectMock(invoice);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+    mockDb.transaction = buildSuccessfulTransactionMock(selectMock);
+
+    // Act
+    const result = await caller.payments.recordPayment({
+      invoiceId: 2,
+      amount: 100,
+      paymentMethod: "CHECK",
+    });
+
+    // Assert — partial payment leaves invoice PARTIAL
+    expect(result.invoiceStatus).toBe("PARTIAL");
+    expect(result.amount).toBe(100);
+  });
+
+  it("should reject payment on a PAID invoice with BAD_REQUEST", async () => {
+    // Arrange
+    const invoice = {
+      id: 3,
+      invoiceNumber: "INV-2026-0003",
+      customerId: 5,
+      status: "PAID",
+      totalAmount: "200.00",
+      amountPaid: "200.00",
+      amountDue: "0.00",
+    };
+    const selectMock = buildInvoiceSelectMock(invoice);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+
+    // Act & Assert
+    await expect(
+      caller.payments.recordPayment({
+        invoiceId: 3,
+        amount: 50,
+        paymentMethod: "CASH",
+      })
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("already paid"),
+    });
+  });
+
+  it("should reject payment on a VOID invoice with BAD_REQUEST", async () => {
+    // Arrange
+    const invoice = {
+      id: 4,
+      invoiceNumber: "INV-2026-0004",
+      customerId: 5,
+      status: "VOID",
+      totalAmount: "150.00",
+      amountPaid: "0.00",
+      amountDue: "150.00",
+    };
+    const selectMock = buildInvoiceSelectMock(invoice);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+
+    // Act & Assert
+    await expect(
+      caller.payments.recordPayment({
+        invoiceId: 4,
+        amount: 50,
+        paymentMethod: "ACH",
+      })
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("voided"),
+    });
+  });
+
+  it("should reject payment on a DRAFT invoice with BAD_REQUEST", async () => {
+    // Arrange: DRAFT invoices have not been sent yet and cannot receive payments
+    const invoice = {
+      id: 5,
+      invoiceNumber: "INV-2026-0005",
+      customerId: 5,
+      status: "DRAFT",
+      totalAmount: "400.00",
+      amountPaid: "0.00",
+      amountDue: "400.00",
+    };
+    const selectMock = buildInvoiceSelectMock(invoice);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+
+    // Act & Assert
+    await expect(
+      caller.payments.recordPayment({
+        invoiceId: 5,
+        amount: 100,
+        paymentMethod: "WIRE",
+      })
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("draft"),
+    });
+  });
+
+  it("should reject payment amount that exceeds amount due with BAD_REQUEST", async () => {
+    // Arrange
+    const invoice = {
+      id: 6,
+      invoiceNumber: "INV-2026-0006",
+      customerId: 5,
+      status: "SENT",
+      totalAmount: "100.00",
+      amountPaid: "0.00",
+      amountDue: "100.00",
+    };
+    const selectMock = buildInvoiceSelectMock(invoice);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+
+    // Act & Assert — $200 > $100 due (exceeds tolerance of 0.01)
+    await expect(
+      caller.payments.recordPayment({
+        invoiceId: 6,
+        amount: 200,
+        paymentMethod: "CASH",
+      })
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("exceeds amount due"),
+    });
+  });
+
+  it("should reject payment for a non-existent invoiceId with NOT_FOUND", async () => {
+    // Arrange: invoice lookup returns empty array
+    const selectMock = buildInvoiceSelectMock(null);
+    (mockDb as unknown as { select: Mock }).select = selectMock;
+
+    // Act & Assert
+    await expect(
+      caller.payments.recordPayment({
+        invoiceId: 9999,
+        amount: 50,
+        paymentMethod: "CASH",
+      })
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Invoice not found",
+    });
+  });
+});

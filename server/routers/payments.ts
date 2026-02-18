@@ -260,6 +260,14 @@ export const paymentsRouter = router({
         });
       }
 
+      if (invoice.status === "DRAFT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Cannot apply payment to a draft invoice. Invoice must be sent first.",
+        });
+      }
+
       if (invoice.status === "PAID") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -290,7 +298,11 @@ export const paymentsRouter = router({
       const effectiveAmount =
         input.amount > amountDue ? amountDue : input.amount;
 
-      // Get account IDs for GL entries
+      // Resolve GL account IDs before the transaction so that missing accounts
+      // produce descriptive TRPCErrors rather than a generic INTERNAL_SERVER_ERROR
+      // from inside the transaction. getAccountIdByName throws TRPCError(NOT_FOUND)
+      // if the chart of accounts is not seeded, which would be re-thrown as-is from
+      // the catch block — but resolving here makes the failure point explicit.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
