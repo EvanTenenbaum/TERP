@@ -29,7 +29,7 @@
 
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, and, isNull } from "drizzle-orm";
 import { batches } from "../../drizzle/schema";
 
 async function main() {
@@ -116,6 +116,7 @@ async function main() {
     );
 
     try {
+      // Guard against concurrent soft-delete between SELECT and UPDATE
       await db
         .update(batches)
         .set({
@@ -123,7 +124,7 @@ async function main() {
           sampleQty: newSample.toFixed(4),
           reservedQty: newReserved.toFixed(4),
         })
-        .where(eq(batches.id, batch.id));
+        .where(and(eq(batches.id, batch.id), isNull(batches.deletedAt)));
 
       console.info(`  Fixed batch ${batch.id} successfully`);
       fixCount++;

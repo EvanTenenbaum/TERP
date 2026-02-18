@@ -185,12 +185,12 @@ export const tagsRouter = router({
 
       const { id, ...updates } = input;
 
-      // If name is being updated, check for duplicates
+      // If name is being updated, check for duplicates among OTHER active tags
       if (updates.name) {
         const [existing] = await db
           .select()
           .from(tags)
-          .where(and(eq(tags.name, updates.name), eq(tags.id, id)))
+          .where(and(eq(tags.name, updates.name), isNull(tags.deletedAt)))
           .limit(1);
 
         if (existing && existing.id !== id) {

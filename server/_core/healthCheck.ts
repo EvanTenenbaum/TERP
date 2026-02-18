@@ -14,20 +14,27 @@ interface VersionInfo {
 }
 
 /**
- * Read version.json on each call to return current deploy info.
- * Reads fresh from disk to avoid stale cached values after deployments.
+ * Read version.json to return current deploy info.
+ * Checks production path (dist/public/) first, falls back to dev path (client/public/).
+ * In production Docker containers, Vite copies client/public/ → dist/public/ at build time;
+ * the client/ directory is not present in the container.
  */
 function readVersionInfo(): VersionInfo | null {
-  try {
-    const versionPath = path.resolve(
-      process.cwd(),
-      "client/public/version.json"
-    );
-    const raw = fs.readFileSync(versionPath, "utf8");
-    return JSON.parse(raw) as VersionInfo;
-  } catch {
-    return null;
+  const candidates = [
+    path.resolve(process.cwd(), "dist/public/version.json"), // production (Docker)
+    path.resolve(process.cwd(), "client/public/version.json"), // development
+  ];
+  for (const versionPath of candidates) {
+    try {
+      if (fs.existsSync(versionPath)) {
+        const raw = fs.readFileSync(versionPath, "utf8");
+        return JSON.parse(raw) as VersionInfo;
+      }
+    } catch {
+      // try next candidate
+    }
   }
+  return null;
 }
 
 // SECURITY: Public-facing health status (minimal info)
