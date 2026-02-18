@@ -1,0 +1,267 @@
+{
+  "_comment": "Maps source code paths (glob patterns) to the E2E test specs that validate them. Used by the CI pipeline to run only the E2E tests affected by a PR's changes. Patterns are matched against the list of changed files in a PR.",
+
+  "domains": {
+    "accounting": {
+      "source_patterns": [
+        "server/routers/accounting*",
+        "server/routers/cashAudit*",
+        "server/routers/invoices*",
+        "server/routers/payments*",
+        "server/routers/badDebt*",
+        "server/routers/cogs*",
+        "server/routers/vendorPayables*",
+        "server/routers/transactionFees*",
+        "server/routers/installmentPayments*",
+        "server/routers/cryptoPayments*",
+        "server/routers/serviceBilling*",
+        "client/src/pages/Account*",
+        "client/src/pages/CogsSettings*",
+        "client/src/components/**/accounting/**"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/accounting-quick-payment.spec.ts"
+      ]
+    },
+
+    "calendar": {
+      "source_patterns": [
+        "server/routers/calendar*",
+        "server/routers/scheduling*",
+        "server/routers/appointmentRequests*",
+        "server/routers/timeOffRequests*",
+        "client/src/pages/Calendar*",
+        "client/src/pages/Scheduling*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/calendar-events.spec.ts"
+      ]
+    },
+
+    "clients": {
+      "source_patterns": [
+        "server/routers/clients*",
+        "server/routers/clientLedger*",
+        "server/routers/client360*",
+        "server/routers/clientNeeds*",
+        "server/routers/clientWants*",
+        "server/routers/credit*",
+        "server/routers/credits*",
+        "client/src/pages/Client*",
+        "client/src/pages/Credit*",
+        "client/src/hooks/useClientsData*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/client-credit-workflow.spec.ts",
+        "tests-e2e/critical-paths/sales-client-management.spec.ts"
+      ]
+    },
+
+    "orders": {
+      "source_patterns": [
+        "server/routers/orders*",
+        "server/routers/orderEnhancements*",
+        "server/routers/quotes*",
+        "client/src/pages/Orders*",
+        "client/src/pages/Quotes*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/order-fulfillment-workflow.spec.ts",
+        "tests-e2e/critical-paths/control-action-contracts.spec.ts",
+        "tests-e2e/critical-paths/returns-workflow.spec.ts"
+      ]
+    },
+
+    "inventory": {
+      "source_patterns": [
+        "server/routers/inventory*",
+        "server/routers/productIntake*",
+        "server/routers/intakeReceipts*",
+        "server/routers/warehouseTransfers*",
+        "server/routers/photography*",
+        "server/routers/productCategories*",
+        "server/routers/productGrades*",
+        "server/routers/productCatalogue*",
+        "server/routers/strains*",
+        "client/src/pages/Inventory*",
+        "client/src/pages/IntakeReceipts*",
+        "client/src/hooks/useInventory*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/inventory-intake.spec.ts",
+        "tests-e2e/critical-paths/control-action-contracts.spec.ts"
+      ]
+    },
+
+    "pick-pack": {
+      "source_patterns": [
+        "server/routers/pickPack*",
+        "client/src/pages/PickPack*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/pick-pack.spec.ts"
+      ]
+    },
+
+    "sales-sheets": {
+      "source_patterns": [
+        "server/routers/salesSheet*",
+        "server/routers/catalog*",
+        "server/routers/unifiedSalesPortal*",
+        "client/src/pages/SalesSheet*",
+        "client/src/pages/SalesPortal*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/sales-sheet-workflow.spec.ts",
+        "tests-e2e/critical-paths/sales-sheets-workflow.spec.ts"
+      ]
+    },
+
+    "locations": {
+      "source_patterns": [
+        "server/routers/locations*",
+        "server/routers/storage*",
+        "client/src/pages/Locations*",
+        "client/src/pages/CashLocations*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/locations-management.spec.ts"
+      ]
+    },
+
+    "returns": {
+      "source_patterns": [
+        "server/routers/returns*",
+        "server/routers/refunds*",
+        "client/src/pages/Returns*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/returns-workflow.spec.ts"
+      ]
+    },
+
+    "settings-admin": {
+      "source_patterns": [
+        "server/routers/featureFlags*",
+        "server/routers/settings*",
+        "server/routers/configuration*",
+        "server/routers/organizationSettings*",
+        "server/routers/admin*",
+        "client/src/pages/Settings*",
+        "client/src/pages/AdminSetup*",
+        "client/src/pages/FeatureFlags*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/feature-flags-workflow.spec.ts",
+        "tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"
+      ]
+    },
+
+    "vip-portal": {
+      "source_patterns": [
+        "server/routers/vipPortal*",
+        "server/routers/vipTiers*",
+        "server/routers/liveShopping*",
+        "client/src/pages/VIP*",
+        "client/src/pages/LiveShopping*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"
+      ]
+    },
+
+    "dashboard-analytics": {
+      "source_patterns": [
+        "server/routers/dashboard*",
+        "server/routers/analytics*",
+        "server/routers/leaderboard*",
+        "server/routers/dataCardMetrics*",
+        "server/routers/gamification*",
+        "client/src/pages/Dashboard*",
+        "client/src/pages/Analytics*",
+        "client/src/pages/Leaderboard*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/kpi-actionability.spec.ts",
+        "tests-e2e/critical-paths/leaderboard.spec.ts"
+      ]
+    },
+
+    "auth-rbac": {
+      "source_patterns": [
+        "server/routers/auth*",
+        "server/routers/rbac*",
+        "server/routers/userManagement*",
+        "server/routers/users*",
+        "server/_core/trpc*",
+        "server/_core/auth*",
+        "client/src/pages/Login*",
+        "client/src/pages/Users*",
+        "client/src/hooks/useAuth*",
+        "tests-e2e/fixtures/auth*"
+      ],
+      "e2e_specs": [
+        "tests-e2e/critical-paths/vip-admin-impersonation.spec.ts"
+      ]
+    },
+
+    "vendors-purchasing": {
+      "source_patterns": [
+        "server/routers/vendors*",
+        "server/routers/vendorSupply*",
+        "server/routers/vendorPayables*",
+        "server/routers/vendorReminders*",
+        "server/routers/purchaseOrders*",
+        "server/routers/poReceiving*",
+        "client/src/pages/Vendors*",
+        "client/src/pages/PurchaseOrders*"
+      ],
+      "e2e_specs": []
+    }
+  },
+
+  "shared_infrastructure": {
+    "_comment": "Changes to these paths affect the whole system — run a broader smoke set",
+    "patterns": [
+      "drizzle/schema.ts",
+      "server/_core/**",
+      "server/routers.ts",
+      "shared/**",
+      "client/src/lib/trpc.ts",
+      "client/src/lib/api-utils.ts",
+      "client/src/App.tsx",
+      "client/src/main.tsx",
+      "package.json",
+      "pnpm-lock.yaml",
+      "vite.config.ts",
+      "tsconfig.json"
+    ],
+    "e2e_specs": [
+      "tests-e2e/critical-paths/order-fulfillment-workflow.spec.ts",
+      "tests-e2e/critical-paths/inventory-intake.spec.ts",
+      "tests-e2e/critical-paths/accounting-quick-payment.spec.ts",
+      "tests-e2e/critical-paths/client-credit-workflow.spec.ts"
+    ]
+  },
+
+  "skip_e2e_patterns": {
+    "_comment": "Changes ONLY to these paths skip E2E tests entirely",
+    "patterns": [
+      "docs/**",
+      "*.md",
+      ".github/**",
+      ".manus/**",
+      "scripts/linear_helpers*",
+      "scripts/legacy/**",
+      "testing/**",
+      "tests/**",
+      "tests-e2e/**",
+      "*.yml",
+      "*.yaml",
+      ".eslintrc*",
+      ".prettierrc*",
+      "CHANGELOG*",
+      "LICENSE*"
+    ]
+  }
+}

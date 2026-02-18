@@ -10,18 +10,21 @@ permissions:
   pull-requests: write
 
 jobs:
+  # ================================================================
+  # JOB 1: Fast checks — always runs, no DB needed (~2 min)
+  # ================================================================
   quality-gate:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142  # v2
         with:
           egress-policy: audit
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for git diff to compare with main
+          fetch-depth: 0
 
       - name: Extract Task ID
         id: extract_task
@@ -33,16 +36,21 @@ jobs:
             echo "task_id=" >> $GITHUB_OUTPUT
           fi
 
-      # =================================================================
+      # ---------------------------------------------------------------
       # SECURITY PATTERN ENFORCEMENT (Only checks CHANGED files)
-      # =================================================================
+      # ---------------------------------------------------------------
       - name: Get Changed Files
         id: changed_files
         run: |
-          # Get list of changed .ts/.tsx files in this PR
           CHANGED=$(git diff --name-only origin/main...HEAD -- '*.ts' '*.tsx' 2>/dev/null || true)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Also get ALL changed files (not just TS) for domain mapping
+          ALL_CHANGED=$(git diff --name-only origin/main...HEAD 2>/dev/null || true)
+          echo "all_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$ALL_CHANGED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Check for Forbidden Security Patterns
@@ -51,14 +59,12 @@ jobs:
           VIOLATIONS=""
           CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
 
-          # Skip if no TypeScript files changed
           if [ -z "$CHANGED_FILES" ]; then
             echo "has_violations=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           # Pattern 1: Fallback user ID (BUG-PATTERN: POST-002)
-          # Matches: ctx.user?.id || 1, ctx.user.id || 1, ctx.user?.id ?? 1, etc.
           FALLBACK_MATCHES=""
           for file in $CHANGED_FILES; do
             if [ -f "$file" ]; then
@@ -69,11 +75,14 @@ jobs:
             fi
           done
           if [ -n "$FALLBACK_MATCHES" ]; then
-            VIOLATIONS="${VIOLATIONS}### ❌ Fallback User ID Pattern\n\nFound forbidden pattern \`ctx.user?.id || 1\`. Use \`getAuthenticatedUserId(ctx)\` instead.\n\n\`\`\`\n${FALLBACK_MATCHES}\`\`\`\n\n"
+            MSG="### ❌ Fallback User ID Pattern\n\n"
+            MSG+="Found forbidden pattern \`ctx.user?.id || 1\`. "
+            MSG+="Use \`getAuthenticatedUserId(ctx)\` instead.\n\n"
+            MSG+="\`\`\`\n${FALLBACK_MATCHES}\`\`\`\n\n"
+            VIOLATIONS="${VIOLATIONS}${MSG}"
           fi
 
           # Pattern 2: Actor from input (BUG-PATTERN: POST-003)
-          # Only blocks NEW code in routers (legacy Db files are grandfathered)
           ACTOR_INPUT=""
           for file in $CHANGED_FILES; do
             if [[ "$file" == server/routers/* ]] && [ -f "$file" ]; then
@@ -87,7 +96,6 @@ jobs:
             VIOLATIONS="${VIOLATIONS}### ❌ Actor Attribution from Input\n\nFound \`createdBy: input.createdBy\` - actor must come from \`ctx.user.id\`, not input.\n\n\`\`\`\n${ACTOR_INPUT}\`\`\`\n\n"
           fi
 
-          # Save violations for comment
           if [ -n "$VIOLATIONS" ]; then
             echo "has_violations=true" >> $GITHUB_OUTPUT
             VIOLATIONS="${VIOLATIONS//'%'/'%25'}"
@@ -117,9 +125,9 @@ jobs:
           fi
 
           ROADMAP_FILE=""
-          if grep -q "${TASK_ID}" docs/roadmaps/MASTER_ROADMAP.md; then
+          if grep -q "${TASK_ID}" docs/roadmaps/MASTER_ROADMAP.md 2>/dev/null; then
             ROADMAP_FILE="docs/roadmaps/MASTER_ROADMAP.md"
-          elif grep -q "${TASK_ID}" docs/roadmaps/TESTING_ROADMAP.md; then
+          elif grep -q "${TASK_ID}" docs/roadmaps/TESTING_ROADMAP.md 2>/dev/null; then
             echo "status=testing_task" >> $GITHUB_OUTPUT
             exit 0
           else
@@ -136,6 +144,28 @@ jobs:
             echo "status=no_status_field" >> $GITHUB_OUTPUT
           fi
 
+      # ---------------------------------------------------------------
+      # DOMAIN-AWARE E2E RESOLUTION
+      # ---------------------------------------------------------------
+      - name: Resolve Affected E2E Tests
+        id: resolve_e2e
+        run: |
+          ALL_CHANGED="${{ steps.changed_files.outputs.all_files }}"
+          echo "$ALL_CHANGED" > /tmp/changed-files.txt
+
+          RESULT=$(bash scripts/ci/resolve-affected-tests.sh /tmp/changed-files.txt)
+          echo "e2e_decision=$RESULT" >> $GITHUB_OUTPUT
+
+          if [ "$RESULT" = "SKIP" ]; then
+            echo "🟢 No E2E tests needed for this PR (docs/config/test-only changes)"
+          elif [ "$RESULT" = "SMOKE" ]; then
+            echo "🟡 Shared infrastructure changed — smoke E2E subset will run"
+          else
+            SPEC_COUNT=$(echo "$RESULT" | tr ' ' '\n' | wc -l)
+            echo "🔵 $SPEC_COUNT targeted E2E spec(s) will run:"
+            echo "$RESULT" | tr ' ' '\n'
+          fi
+
       - name: Post Status Comment
         uses: actions/github-script@v7
         with:
@@ -145,6 +175,7 @@ jobs:
             const taskId = '${{ steps.extract_task.outputs.task_id }}';
             const hasViolations = '${{ steps.security_check.outputs.has_violations }}' === 'true';
             const violations = decodeURIComponent('${{ steps.security_check.outputs.violations }}' || '');
+            const e2eDecision = '${{ steps.resolve_e2e.outputs.e2e_decision }}';
 
             let sections = [];
 
@@ -154,6 +185,18 @@ jobs:
             } else {
               sections.push(`## ✅ Security Patterns\n\nNo forbidden security patterns detected.`);
             }
+
+            // E2E section
+            let e2eSummary = '';
+            if (e2eDecision === 'SKIP') {
+              e2eSummary = '⏭️ **E2E Tests:** Skipped (no application code changes detected)';
+            } else if (e2eDecision === 'SMOKE') {
+              e2eSummary = '🔶 **E2E Tests:** Smoke subset (shared infrastructure changes detected)';
+            } else {
+              const specs = e2eDecision.split(' ').map(s => `\`${s.split('/').pop()}\``).join(', ');
+              e2eSummary = `🎯 **E2E Tests:** Targeted — ${specs}`;
+            }
+            sections.push(`## E2E Test Strategy\n\n${e2eSummary}`);
 
             // Roadmap section (advisory)
             let roadmapSummary = "";
@@ -209,31 +252,18 @@ jobs:
           echo "Fix the patterns listed in the PR comment before merging."
           exit 1
 
-  critical-interactions:
+    outputs:
+      e2e_decision: ${{ steps.resolve_e2e.outputs.e2e_decision }}
+
+  # ================================================================
+  # JOB 2: Static analysis — TypeScript + lint (~3 min)
+  # ================================================================
+  static-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: terp_test
-          MYSQL_USER: terp_test
-          MYSQL_PASSWORD: terp_test_password
-        ports:
-          - 3307:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    env:
-      DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -257,6 +287,77 @@ jobs:
             echo "$CHANGED" | xargs pnpm eslint --max-warnings=0 || true
           fi
 
+  # ================================================================
+  # JOB 3: Unit tests — vitest, no DB needed (~2 min)
+  # ================================================================
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test --run
+
+  # ================================================================
+  # JOB 4: Targeted E2E — only runs specs affected by this PR
+  # Skips entirely for docs-only, config-only, or test-only changes
+  # ================================================================
+  targeted-e2e:
+    runs-on: ubuntu-latest
+    needs: [quality-gate]
+    # Only run if the quality gate determined E2E tests are needed
+    if: |
+      needs.quality-gate.outputs.e2e_decision != 'SKIP'
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: terp_test
+          MYSQL_USER: terp_test
+          MYSQL_PASSWORD: terp_test_password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Wait for MySQL
         run: |
           MAX_ATTEMPTS=30
@@ -273,14 +374,35 @@ jobs:
       - name: Push schema and seed
         run: pnpm drizzle-kit push --force && pnpm seed:light
 
-      - name: Unit tests
-        run: pnpm test --run
-
       - name: Install Playwright
-        run: pnpm exec playwright install --with-deps
+        run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run critical-path E2E tests
-        run: pnpm exec playwright test tests-e2e/critical-paths/ --reporter=list
+      - name: Resolve affected E2E specs
+        id: resolve
+        run: |
+          ALL_CHANGED=$(git diff --name-only origin/main...HEAD 2>/dev/null || true)
+          echo "$ALL_CHANGED" > /tmp/changed-files.txt
+          RESULT=$(bash scripts/ci/resolve-affected-tests.sh /tmp/changed-files.txt)
+          echo "specs=$RESULT" >> $GITHUB_OUTPUT
+
+      - name: Run targeted E2E tests
+        id: e2e
+        run: |
+          SPECS="${{ steps.resolve.outputs.specs }}"
+
+          if [ "$SPECS" = "SMOKE" ]; then
+            echo "Running smoke E2E subset (shared infrastructure changed)..."
+            pnpm exec playwright test \
+              tests-e2e/critical-paths/order-fulfillment-workflow.spec.ts \
+              tests-e2e/critical-paths/inventory-intake.spec.ts \
+              tests-e2e/critical-paths/accounting-quick-payment.spec.ts \
+              tests-e2e/critical-paths/client-credit-workflow.spec.ts \
+              --reporter=list
+          else
+            echo "Running targeted E2E specs: $SPECS"
+            # shellcheck disable=SC2086
+            pnpm exec playwright test $SPECS --reporter=list
+          fi
         env:
           CI: true
           E2E_USE_LIVE_DB: '1'
@@ -289,6 +411,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: critical-paths-report
+          name: targeted-e2e-report
           path: playwright-report/
           retention-days: 7
