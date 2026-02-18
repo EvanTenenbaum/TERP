@@ -1,0 +1,185 @@
+name: Nightly Full E2E Suite
+
+on:
+  schedule:
+    # Run every night at 3:00 AM UTC (10 PM ET)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Which E2E suite to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - critical-paths
+          - golden-flows
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
+  ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
+
+jobs:
+  nightly-e2e:
+    runs-on: ubuntu-latest
+    # Guard: only run on schedule or manual dispatch
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 45
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: terp_test
+          MYSQL_USER: terp_test
+          MYSQL_PASSWORD: terp_test_password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          MAX_ATTEMPTS=30
+          ATTEMPTS=0
+          until mysqladmin ping -h 127.0.0.1 -P 3307 --silent 2>/dev/null; do
+            ATTEMPTS=$((ATTEMPTS + 1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "MySQL failed to start after $MAX_ATTEMPTS attempts"
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Push schema and seed
+        run: pnpm drizzle-kit push --force && pnpm seed:light
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Determine suite
+        id: suite
+        run: |
+          SUITE="${{ github.event.inputs.suite || 'full' }}"
+          echo "suite=$SUITE" >> $GITHUB_OUTPUT
+
+      - name: Run E2E tests
+        id: e2e
+        run: |
+          SUITE="${{ steps.suite.outputs.suite }}"
+
+          case "$SUITE" in
+            critical-paths)
+              echo "Running critical-paths E2E suite..."
+              pnpm exec playwright test tests-e2e/critical-paths/ --reporter=list 2>&1 | tee e2e-output.txt
+              ;;
+            golden-flows)
+              echo "Running golden-flows E2E suite..."
+              pnpm exec playwright test tests-e2e/golden-flows/ --reporter=list 2>&1 | tee e2e-output.txt
+              ;;
+            full)
+              echo "Running FULL E2E suite..."
+              CI=true pnpm playwright test 2>&1 | tee e2e-output.txt
+              ;;
+          esac
+
+          EXIT_CODE=$?
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+          exit $EXIT_CODE
+        env:
+          CI: true
+        continue-on-error: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-report-${{ steps.suite.outputs.suite }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-results-${{ steps.suite.outputs.suite }}
+          path: test-results.json
+          retention-days: 30
+
+      - name: Create issue on failure
+        if: steps.e2e.outputs.status == 'failed'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const suite = '${{ steps.suite.outputs.suite }}';
+
+            let failureDetails = '';
+            if (fs.existsSync('e2e-output.txt')) {
+              const output = fs.readFileSync('e2e-output.txt', 'utf8');
+              const lastLines = output.split('\n').slice(-80).join('\n');
+              failureDetails = `\n\n<details><summary>Test output (last 80 lines)</summary>\n\n\`\`\`\n${lastLines}\n\`\`\`\n</details>`;
+            }
+
+            const title = `🌙 Nightly E2E Failure: ${suite} suite — ${new Date().toISOString().split('T')[0]}`;
+            const body = `## Nightly E2E Test Failure\n\n` +
+              `**Suite:** ${suite}\n` +
+              `**Date:** ${new Date().toISOString()}\n` +
+              `**Commit:** \`${context.sha.substring(0, 7)}\`\n` +
+              `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
+              `The nightly E2E test suite detected failures that may not have been caught by targeted PR tests.\n\n` +
+              `**Action Required:**\n` +
+              `1. Review the Playwright report artifact\n` +
+              `2. Identify which tests failed and which recent merges may have caused them\n` +
+              `3. Create a fix PR\n` +
+              failureDetails;
+
+            try {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['ci/cd', 'e2e-failure', 'automated']
+              });
+              console.log('✅ Created nightly failure issue');
+            } catch (error) {
+              console.error('❌ Failed to create issue:', error.message);
+            }
+
+      - name: Write step summary
+        if: always()
+        run: |
+          echo "## Nightly E2E Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Suite:** ${{ steps.suite.outputs.suite }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.e2e.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY

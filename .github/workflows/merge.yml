@@ -12,12 +12,15 @@ permissions:
 
 env:
   DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
-  ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
 
 jobs:
-  test-and-deploy:
+  # ================================================================
+  # JOB 1: Integration tests + build verification
+  # These validate that the merge didn't break core data operations.
+  # ================================================================
+  test-and-verify:
     runs-on: ubuntu-latest
-    
+
     services:
       mysql:
         image: mysql:8.0
@@ -33,10 +36,10 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
@@ -48,7 +51,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Wait for MySQL
         run: |
           MAX_ATTEMPTS=30
@@ -82,7 +85,7 @@ jobs:
             exit 1
           }
           echo "status=passed" >> $GITHUB_OUTPUT
-      
+
       - name: Run integration tests
         id: integration
         if: steps.schema.outputs.status == 'passed' && steps.seed.outputs.status == 'passed'
@@ -95,33 +98,6 @@ jobs:
           echo "status=passed" >> $GITHUB_OUTPUT
         continue-on-error: true
 
-      - name: Install Playwright browsers
-        if: steps.schema.outputs.status == 'passed' && steps.seed.outputs.status == 'passed'
-        run: pnpm exec playwright install --with-deps
-
-      - name: Run E2E tests with Argos
-        id: e2e
-        if: steps.schema.outputs.status == 'passed' && steps.seed.outputs.status == 'passed'
-        run: |
-          echo "Running E2E tests..."
-          CI=true pnpm playwright test 2>&1 | tee e2e-output.txt || {
-            echo "status=failed" >> $GITHUB_OUTPUT
-            exit 1
-          }
-          echo "status=passed" >> $GITHUB_OUTPUT
-        env:
-          CI: true
-        continue-on-error: true
-      
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-        continue-on-error: true
-      
       - name: Check test coverage
         id: coverage
         run: |
@@ -141,7 +117,7 @@ jobs:
             echo "status=skipped" >> $GITHUB_OUTPUT
           fi
         continue-on-error: true
-      
+
       - name: Post Results Comment
         uses: actions/github-script@v7
         if: always()
@@ -152,22 +128,19 @@ jobs:
               schema: '${{ steps.schema.outputs.status }}',
               seed: '${{ steps.seed.outputs.status }}',
               integration: '${{ steps.integration.outputs.status }}',
-              e2e: '${{ steps.e2e.outputs.status }}',
-              coverage: '${{ steps.coverage.outputs.status }}'
             };
-            
+
             const coveragePct = '${{ steps.coverage.outputs.coverage }}';
-            
-            let allPassed = steps.schema === 'passed' && 
-                           steps.seed === 'passed' && 
-                           steps.integration === 'passed' && 
-                           steps.e2e === 'passed';
-            
-            let body = allPassed ? '## ✅ All Tests Passed\n\n' : '## ❌ Tests Failed\n\n';
+
+            let allPassed = steps.schema === 'passed' &&
+                           steps.seed === 'passed' &&
+                           steps.integration === 'passed';
+
+            let body = allPassed ? '## ✅ Post-Merge Checks Passed\n\n' : '## ❌ Post-Merge Checks Failed\n\n';
             body += `**Commit:** \`${context.sha.substring(0, 7)}\`\n`;
             body += `**Branch:** \`main\`\n\n`;
             body += '---\n\n';
-            
+
             // Schema push results
             body += steps.schema === 'passed' ? '**Database Schema:** ✅ Pushed\n' : '**Database Schema:** ❌ Failed\n';
             if (steps.schema === 'failed' && fs.existsSync('schema-output.txt')) {
@@ -175,7 +148,7 @@ jobs:
               const lastLines = output.split('\n').slice(-30).join('\n');
               body += '<details><summary>View schema errors</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
             }
-            
+
             // Seed results
             body += steps.seed === 'passed' ? '**Database Seed:** ✅ Completed\n' : '**Database Seed:** ❌ Failed\n';
             if (steps.seed === 'failed' && fs.existsSync('seed-output.txt')) {
@@ -183,7 +156,7 @@ jobs:
               const lastLines = output.split('\n').slice(-30).join('\n');
               body += '<details><summary>View seed errors</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
             }
-            
+
             // Integration test results
             body += steps.integration === 'passed' ? '**Integration Tests:** ✅ Passed\n' : '**Integration Tests:** ❌ Failed\n';
             if (steps.integration === 'failed' && fs.existsSync('integration-output.txt')) {
@@ -191,22 +164,17 @@ jobs:
               const lastLines = output.split('\n').slice(-100).join('\n');
               body += '<details><summary>View integration test failures</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
             }
-            
-            // E2E test results
-            body += steps.e2e === 'passed' ? '**E2E Tests:** ✅ Passed\n' : '**E2E Tests:** ❌ Failed\n';
-            if (steps.e2e === 'failed' && fs.existsSync('e2e-output.txt')) {
-              const output = fs.readFileSync('e2e-output.txt', 'utf8');
-              const lastLines = output.split('\n').slice(-100).join('\n');
-              body += '<details><summary>View E2E test failures</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
-            }
-            
+
             // Coverage
             if (coveragePct) {
               body += `**Test Coverage:** ${coveragePct}%\n\n`;
             }
-            
+
+            // E2E note
+            body += '\n**E2E Tests:** Full suite runs nightly. Targeted E2E ran during PR review.\n\n';
+
             body += '---\n\n';
-            
+
             if (!allPassed) {
               body += '## 🚨 Action Required\n\n';
               body += 'The main branch build has failed. **All agents must stop work immediately** and check this status.\n\n';
@@ -228,23 +196,22 @@ jobs:
               body += '**Do not push more changes to main until this is fixed.**';
             } else {
               body += '## 🎉 Build Successful\n\n';
-              body += 'All tests passed! The main branch is healthy.\n\n';
-              body += '📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)';
+              body += 'All post-merge checks passed! The main branch is healthy.\n';
             }
-            
+
             // Write build status to a file for agent verification
             const statusFile = '.github/BUILD_STATUS.md';
             const timestamp = new Date().toISOString();
-            
+
             const statusContent = `# Latest Build Status\n\n` +
               `**Last Updated:** ${timestamp}\n` +
               `**Commit:** \`${context.sha}\`\n` +
               `**Status:** ${allPassed ? '✅ SUCCESS' : '❌ FAILED'}\n\n` +
               body;
-            
+
             fs.writeFileSync(statusFile, statusContent);
             console.log('✅ Wrote build status to', statusFile);
-            
+
             // Try to post commit comment (best effort)
             try {
               const comment = await github.rest.repos.createCommitComment({
@@ -258,18 +225,11 @@ jobs:
               console.warn('⚠️ Could not post commit comment:', error.message);
               console.log('Build status is available in', statusFile);
             }
-      
+
       - name: Update build status on separate branch
         if: always()
         run: |
-          # Push build status to a separate branch to avoid triggering DigitalOcean deployments
-          # DigitalOcean only monitors 'main' branch, so this won't trigger deployments
-
-          # Save the freshly generated BUILD_STATUS.md BEFORE switching branches.
-          # The prior step wrote it to the working directory but didn't commit it,
-          # so `git checkout main -- ...` would grab the stale committed version.
           if [ ! -f .github/BUILD_STATUS.md ]; then
-            echo "No BUILD_STATUS.md found — skipping update."
             exit 0
           fi
           cp .github/BUILD_STATUS.md /tmp/BUILD_STATUS.md
@@ -277,20 +237,14 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Fetch to ensure we have remote branches
           git fetch origin build-status:build-status 2>/dev/null || true
 
-          # Checkout build-status branch (create if it doesn't exist).
-          # Use -f because the working tree has the uncommitted BUILD_STATUS.md
-          # written by "Post Results Comment" — without -f, git refuses to switch
-          # when the tracked file differs between branches.
           if git show-ref --verify --quiet refs/heads/build-status; then
             git checkout -f build-status
           else
             git checkout -b build-status
           fi
 
-          # Restore the FRESH file (not from main's committed history)
           mkdir -p .github
           cp /tmp/BUILD_STATUS.md .github/BUILD_STATUS.md
           git add .github/BUILD_STATUS.md || true
@@ -302,9 +256,8 @@ jobs:
             echo "No changes to BUILD_STATUS.md"
           fi
 
-          # Return to main branch for any subsequent steps
           git checkout main
-      
+
       - name: Create fallback issue if comment failed
         uses: actions/github-script@v7
         if: failure() && steps.schema.outputs.status != ''
@@ -314,18 +267,16 @@ jobs:
               schema: '${{ steps.schema.outputs.status }}',
               seed: '${{ steps.seed.outputs.status }}',
               integration: '${{ steps.integration.outputs.status }}',
-              e2e: '${{ steps.e2e.outputs.status }}',
             };
-            
-            let allPassed = steps.schema === 'passed' && 
-                           steps.seed === 'passed' && 
-                           steps.integration === 'passed' && 
-                           steps.e2e === 'passed';
-            
-            const title = allPassed 
+
+            let allPassed = steps.schema === 'passed' &&
+                           steps.seed === 'passed' &&
+                           steps.integration === 'passed';
+
+            const title = allPassed
               ? `✅ Build ${context.sha.substring(0, 7)} succeeded (comment posting failed)`
               : `❌ Build ${context.sha.substring(0, 7)} failed`;
-            
+
             const body = `## Build Status Notification\n\n` +
               `⚠️ **This issue was created because the automated commit comment failed to post.**\n\n` +
               `**Commit:** \`${context.sha}\`\n` +
@@ -334,10 +285,9 @@ jobs:
               `### Test Results\n\n` +
               `- Database Schema: ${steps.schema === 'passed' ? '✅' : '❌'} ${steps.schema}\n` +
               `- Database Seed: ${steps.seed === 'passed' ? '✅' : '❌'} ${steps.seed}\n` +
-              `- Integration Tests: ${steps.integration === 'passed' ? '✅' : '❌'} ${steps.integration}\n` +
-              `- E2E Tests: ${steps.e2e === 'passed' ? '✅' : '❌'} ${steps.e2e}\n\n` +
+              `- Integration Tests: ${steps.integration === 'passed' ? '✅' : '❌'} ${steps.integration}\n\n` +
               `**Action Required:** Fix the workflow permissions to allow commit comments.`;
-            
+
             try {
               await github.rest.issues.create({
                 owner: context.repo.owner,
@@ -350,31 +300,20 @@ jobs:
             } catch (error) {
               console.error('❌ Failed to create fallback issue:', error.message);
             }
-      
+
       - name: Fail if any test failed
-        if: steps.schema.outputs.status == 'failed' || steps.seed.outputs.status == 'failed' || steps.integration.outputs.status == 'failed' || steps.e2e.outputs.status == 'failed'
+        if: steps.schema.outputs.status == 'failed' || steps.seed.outputs.status == 'failed' || steps.integration.outputs.status == 'failed'
         run: |
           echo "❌ One or more tests failed. See the commit comment for details."
           exit 1
-      
+
       - name: Verify DigitalOcean deployment
         id: deploy
         if: success()
         run: |
-          # DigitalOcean auto-deploys on push to main (configured in .do/app.yaml).
-          # This step verifies a FRESH deployment is live by checking the /health
-          # endpoint's "uptime" field — a low uptime (< 300s) means the server
-          # recently restarted, i.e. a new deployment replaced the old one.
-          #
-          # Why not just curl /health/live?  That endpoint returns 200 as long as
-          # any instance is running — including the OLD deployment before DO swaps
-          # it out.  Checking uptime avoids that false-positive.
-
           APP_URL="https://terp-app-b9s35.ondigitalocean.app"
 
           echo "Waiting for DigitalOcean auto-deploy to start..."
-          # DO needs time to detect the push and begin the build.
-          # initial_delay_seconds=120 in .do/app.yaml, plus build time.
           sleep 60
 
           MAX_ATTEMPTS=20
@@ -382,7 +321,6 @@ jobs:
           while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            # /health returns { status, uptime, ... } and always 200 (see server/_core/index.ts)
             RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null) || {
               echo "App unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
               sleep 30
@@ -393,7 +331,7 @@ jobs:
             STATUS=$(echo "$RESPONSE" | jq -r '.status // empty' 2>/dev/null)
 
             if [ -n "$UPTIME" ]; then
-              UPTIME_INT=${UPTIME%.*}  # truncate decimals
+              UPTIME_INT=${UPTIME%.*}
               if [ "$UPTIME_INT" -lt 300 ] 2>/dev/null; then
                 echo "✅ Fresh deployment verified (uptime: ${UPTIME_INT}s, status: ${STATUS})"
                 echo "deployment_status=verified" >> $GITHUB_OUTPUT
@@ -411,4 +349,4 @@ jobs:
           echo "⚠️ Could not confirm fresh deployment after $MAX_ATTEMPTS attempts (~10 min)"
           echo "The deploy may still be in progress. Check DigitalOcean dashboard."
           echo "deployment_status=unverified" >> $GITHUB_OUTPUT
-          exit 0  # Don't fail the build
+          exit 0
