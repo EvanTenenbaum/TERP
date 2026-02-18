@@ -900,12 +900,16 @@ export function ClientLedgerWorkSurface() {
     <div
       ref={containerRef}
       className="flex flex-col h-full bg-background"
+      data-testid="client-ledger"
       tabIndex={0}
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 border-b">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+          <h2
+            data-testid="client-ledger-header"
+            className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3"
+          >
             <BookOpen className="w-8 h-8 text-blue-600" />
             Client Ledger
           </h2>
@@ -919,6 +923,7 @@ export function ClientLedgerWorkSurface() {
             variant="outline"
             onClick={handleExport}
             disabled={!selectedClientId || isExporting}
+            data-testid="ledger-export"
           >
             {isExporting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -938,7 +943,7 @@ export function ClientLedgerWorkSurface() {
       </div>
 
       {/* Filters */}
-      <Card className="mx-6 mt-6">
+      <Card className="mx-6 mt-6" data-testid="ledger-filter">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filters</CardTitle>
         </CardHeader>
