@@ -76,7 +76,9 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       await page.waitForLoadState("networkidle");
 
       // STRICT: Search should exist (may be hidden behind a button)
-      const searchInput = page.locator('[data-testid="pick-pack-search-input"]');
+      const searchInput = page.locator(
+        '[data-testid="pick-pack-search-input"]'
+      );
       const searchButton = page.locator(
         'button[aria-label*="search" i], button:has-text("Search")'
       );
@@ -238,9 +240,10 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
 
       // STRICT: Should either show empty state or no rows
       const rows = page.locator('[data-testid="order-queue-row"]');
-      const emptyMessage = page.locator(
-        '[data-testid="order-queue-empty"], text=/no.*found/i, text=/no orders/i'
-      );
+      const emptyMessage = page
+        .locator('[data-testid="order-queue-empty"]')
+        .or(page.getByText(/no.*found/i))
+        .or(page.getByText(/no orders/i));
 
       const rowCount = await rows.count();
       const hasEmptyMessage = await emptyMessage.isVisible();
@@ -385,9 +388,7 @@ test.describe("TER-40: Complete Pick & Pack Flow", () => {
       expect(hasContent).toBeGreaterThan(0);
 
       // STRICT: Should not show uncaught error
-      const uncaughtError = page.locator(
-        '[data-testid="error-boundary"]'
-      );
+      const uncaughtError = page.locator('[data-testid="error-boundary"]');
       await expect(uncaughtError).not.toBeVisible();
       await expect(
         page.getByText(/uncaught|unhandled|crash/i).first()

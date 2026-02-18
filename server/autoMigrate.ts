@@ -2390,6 +2390,137 @@ export async function runAutoMigrations() {
       );
     }
 
+    // =========================================================================
+    // PARTY-004: vendor_supply soft delete column (drizzle/0058)
+    // vendorSupplyDb.ts uses isNull(vendorSupply.deletedAt) in WHERE clauses —
+    // if this column is missing the queries throw at runtime.
+    // =========================================================================
+    try {
+      await db.execute(sql`
+        ALTER TABLE vendor_supply
+          ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL DEFAULT NULL
+      `);
+      console.info("  ✅ PARTY-004: vendor_supply.deleted_at column ready");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  PARTY-004: vendor_supply.deleted_at already exists");
+      } else {
+        logger.error({ error: errMsg }, "PARTY-004: vendor_supply.deleted_at migration failed");
+      }
+    }
+    try {
+      const [vsIdxCheck] = await db.execute(sql`
+        SELECT COUNT(*) AS cnt FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'vendor_supply'
+          AND INDEX_NAME = 'idx_deleted_at_vs'
+      `);
+      const vsIdxCount = (vsIdxCheck as unknown as Record<string, number>).cnt ?? 0;
+      if (!vsIdxCount) {
+        await db.execute(sql`
+          CREATE INDEX idx_deleted_at_vs ON vendor_supply (deleted_at)
+        `);
+        console.info("  ✅ PARTY-004: idx_deleted_at_vs index created");
+      } else {
+        console.info("  ℹ️  PARTY-004: idx_deleted_at_vs index already exists");
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error({ error: errMsg }, "PARTY-004: idx_deleted_at_vs index creation failed");
+    }
+
+    // =========================================================================
+    // ST-057: GL entry single-direction constraint (drizzle/0057)
+    // Adds indexes + CHECK constraint ensuring each ledgerEntry has debit XOR
+    // credit (never both). App layer already enforces this; DB constraint is
+    // belt-and-suspenders against direct DB writes. Fixes any existing
+    // violations before adding the constraint.
+    // =========================================================================
+    // Step 1: debit index
+    try {
+      const [debitIdxCheck] = await db.execute(sql`
+        SELECT COUNT(*) AS cnt FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'ledgerEntries'
+          AND INDEX_NAME = 'idx_ledger_entries_debit'
+      `);
+      const debitIdxCount = (debitIdxCheck as unknown as Record<string, number>).cnt ?? 0;
+      if (!debitIdxCount) {
+        await db.execute(sql`CREATE INDEX idx_ledger_entries_debit ON ledgerEntries(debit)`);
+        console.info("  ✅ ST-057: idx_ledger_entries_debit created");
+      } else {
+        console.info("  ℹ️  ST-057: idx_ledger_entries_debit already exists");
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error({ error: errMsg }, "ST-057: debit index creation failed");
+    }
+    // Step 2: credit index
+    try {
+      const [creditIdxCheck] = await db.execute(sql`
+        SELECT COUNT(*) AS cnt FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'ledgerEntries'
+          AND INDEX_NAME = 'idx_ledger_entries_credit'
+      `);
+      const creditIdxCount = (creditIdxCheck as unknown as Record<string, number>).cnt ?? 0;
+      if (!creditIdxCount) {
+        await db.execute(sql`CREATE INDEX idx_ledger_entries_credit ON ledgerEntries(credit)`);
+        console.info("  ✅ ST-057: idx_ledger_entries_credit created");
+      } else {
+        console.info("  ℹ️  ST-057: idx_ledger_entries_credit already exists");
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error({ error: errMsg }, "ST-057: credit index creation failed");
+    }
+    // Step 3: fix any existing debit+credit violations before adding constraint
+    try {
+      const [violationCheck] = await db.execute(sql`
+        SELECT COUNT(*) AS cnt FROM ledgerEntries WHERE debit > 0 AND credit > 0
+      `);
+      const violations = (violationCheck as unknown as Record<string, number>).cnt ?? 0;
+      if (violations > 0) {
+        await db.execute(sql`
+          UPDATE ledgerEntries
+          SET
+            debit  = CASE WHEN debit  > credit THEN debit - credit ELSE 0.00 END,
+            credit = CASE WHEN credit > debit  THEN credit - debit ELSE 0.00 END
+          WHERE debit > 0 AND credit > 0
+        `);
+        console.info(`  ✅ ST-057: Fixed ${violations} debit+credit violation(s) in ledgerEntries`);
+      } else {
+        console.info("  ℹ️  ST-057: No debit+credit violations found");
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error({ error: errMsg }, "ST-057: violation fix failed");
+    }
+    // Step 4: add CHECK constraint
+    try {
+      const [constraintCheck] = await db.execute(sql`
+        SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'ledgerEntries'
+          AND CONSTRAINT_NAME = 'chk_single_direction'
+      `);
+      const constraintCount = (constraintCheck as unknown as Record<string, number>).cnt ?? 0;
+      if (!constraintCount) {
+        await db.execute(sql`
+          ALTER TABLE ledgerEntries
+            ADD CONSTRAINT chk_single_direction
+            CHECK (NOT (debit > 0 AND credit > 0))
+        `);
+        console.info("  ✅ ST-057: chk_single_direction CHECK constraint added");
+      } else {
+        console.info("  ℹ️  ST-057: chk_single_direction constraint already exists");
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error({ error: errMsg }, "ST-057: CHECK constraint creation failed");
+    }
+
     const duration = Date.now() - startTime;
     console.info(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;

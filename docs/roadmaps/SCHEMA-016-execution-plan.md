@@ -1,5 +1,9 @@
 # SCHEMA-016 Execution Plan
 
+> **⚠️ ARCHIVED — 2026-02-18**
+> Resolved by **TER-248** (merged 2026-02-17). The `products.strainId` column is now
+> auto-applied via `server/autoMigrate.ts`. This execution plan is no longer relevant.
+
 **Task:** Systematic strainId Schema Drift Fix
 **Estimate:** 8h
 **Created:** 2026-01-30
