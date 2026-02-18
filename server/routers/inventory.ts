@@ -279,6 +279,7 @@ export const inventoryRouter = router({
               quarantineQty: quarantine,
               holdQty: hold,
               availableQty: available,
+              totalQty: inventoryUtils.computeTotalQty(batch),
 
               // Costing
               unitCogs: batch.unitCogs ? parseFloat(batch.unitCogs) : null,
@@ -751,13 +752,22 @@ export const inventoryRouter = router({
           );
         }
 
+        // Add computed totalQty to each batch in the result
+        const itemsWithTotalQty = result.items.map(item => ({
+          ...item,
+          batch: {
+            ...item.batch,
+            totalQty: inventoryUtils.computeTotalQty(item.batch),
+          },
+        }));
+
         inventoryLogger.operationSuccess("list", {
           itemCount: result.items.length,
           hasMore: result.hasMore,
           nextCursor: result.nextCursor,
         });
 
-        return result;
+        return { ...result, items: itemsWithTotalQty };
       } catch (error) {
         inventoryLogger.operationFailure("list", error as Error, {
           cursor: input.cursor,
