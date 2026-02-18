@@ -5,12 +5,21 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { tags, productTags, clientTags } from "../../drizzle/schema";
 import { eq, like, or, and, isNull, desc } from "drizzle-orm";
 
-const tagCategoryEnum = z.enum(["STATUS", "PRIORITY", "TYPE", "CUSTOM", "STRAIN", "FLAVOR", "EFFECT"]);
+const tagCategoryEnum = z.enum([
+  "STATUS",
+  "PRIORITY",
+  "TYPE",
+  "CUSTOM",
+  "STRAIN",
+  "FLAVOR",
+  "EFFECT",
+]);
 
 export const tagsRouter = router({
   /**
@@ -28,7 +37,11 @@ export const tagsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const conditions = [];
 
@@ -52,7 +65,8 @@ export const tagsRouter = router({
         conditions.push(isNull(tags.deletedAt));
       }
 
-      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      const whereClause =
+        conditions.length > 0 ? and(...conditions) : undefined;
 
       const allTags = await db
         .select()
@@ -70,7 +84,11 @@ export const tagsRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const [tag] = await db
         .select()
@@ -79,7 +97,7 @@ export const tagsRouter = router({
         .limit(1);
 
       if (!tag) {
-        throw new Error("Tag not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found" });
       }
 
       return tag;
@@ -94,13 +112,21 @@ export const tagsRouter = router({
         name: z.string().min(1, "Tag name is required"),
         standardizedName: z.string().min(1),
         category: tagCategoryEnum.optional().default("CUSTOM"),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional().default("#6B7280"),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color")
+          .optional()
+          .default("#6B7280"),
         description: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Check if tag with same name already exists
       const [existing] = await db
@@ -110,7 +136,10 @@ export const tagsRouter = router({
         .limit(1);
 
       if (existing) {
-        throw new Error("A tag with this name already exists");
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A tag with this name already exists",
+        });
       }
 
       const [result] = await db.insert(tags).values({
@@ -139,26 +168,36 @@ export const tagsRouter = router({
         id: z.number(),
         name: z.string().min(1).optional(),
         category: tagCategoryEnum.optional(),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color").optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color")
+          .optional(),
         description: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const { id, ...updates } = input;
 
-      // If name is being updated, check for duplicates
+      // If name is being updated, check for duplicates among OTHER active tags
       if (updates.name) {
         const [existing] = await db
           .select()
           .from(tags)
-          .where(and(eq(tags.name, updates.name), eq(tags.id, id)))
+          .where(and(eq(tags.name, updates.name), isNull(tags.deletedAt)))
           .limit(1);
 
         if (existing && existing.id !== id) {
-          throw new Error("A tag with this name already exists");
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "A tag with this name already exists",
+          });
         }
       }
 
@@ -166,7 +205,9 @@ export const tagsRouter = router({
         .update(tags)
         .set({
           ...updates,
-          ...(updates.name && { standardizedName: updates.name.toLowerCase().replace(/\s+/g, "-") }),
+          ...(updates.name && {
+            standardizedName: updates.name.toLowerCase().replace(/\s+/g, "-"),
+          }),
         })
         .where(eq(tags.id, id));
 
@@ -186,7 +227,11 @@ export const tagsRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       // Soft delete the tag
       await db
@@ -215,7 +260,11 @@ export const tagsRouter = router({
     .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const productTagsData = await db
         .select({
@@ -231,7 +280,7 @@ export const tagsRouter = router({
           )
         );
 
-      return productTagsData.map((pt) => pt.tag);
+      return productTagsData.map(pt => pt.tag);
     }),
 
   /**
@@ -241,7 +290,11 @@ export const tagsRouter = router({
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       const clientTagsData = await db
         .select({
@@ -257,7 +310,7 @@ export const tagsRouter = router({
           )
         );
 
-      return clientTagsData.map((ct) => ct.tag);
+      return clientTagsData.map(ct => ct.tag);
     }),
 
   /**
@@ -272,7 +325,11 @@ export const tagsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (const tagId of input.tagIds) {
         // Check if already tagged
@@ -311,7 +368,11 @@ export const tagsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (const tagId of input.tagIds) {
         // Check if already tagged
@@ -350,7 +411,11 @@ export const tagsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (const tagId of input.tagIds) {
         await db
@@ -379,7 +444,11 @@ export const tagsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
 
       for (const tagId of input.tagIds) {
         await db

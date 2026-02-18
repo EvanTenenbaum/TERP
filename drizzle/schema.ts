@@ -7337,7 +7337,7 @@ export const shiftAuditsRelations = relations(shiftAudits, ({ one }) => ({
  * Vendor Payable Status Enum (MEET-005)
  * Tracks the status of payables to vendors for consigned inventory
  */
-export const vendorPayableStatusEnum = mysqlEnum("vendor_payable_status", [
+export const vendorPayableStatusEnum = mysqlEnum("status", [
   "PENDING", // Inventory still on hand, payable not yet due
   "DUE", // Inventory sold out, payable is now due to vendor
   "PARTIAL", // Some payment made, balance remaining
@@ -7350,7 +7350,7 @@ export const vendorPayableStatusEnum = mysqlEnum("vendor_payable_status", [
  * Types of notifications for payables
  */
 export const payableNotificationTypeEnum = mysqlEnum(
-  "payable_notification_type",
+  "notification_type",
   [
     "GRACE_PERIOD_WARNING", // Warning before payable becomes due
     "PAYABLE_DUE", // Payable is now due

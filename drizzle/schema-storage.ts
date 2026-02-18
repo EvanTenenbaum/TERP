@@ -41,7 +41,7 @@ export const temperatureControlEnum = mysqlEnum("temperature_control", [
 /**
  * Access level enum for zones
  */
-export const zoneAccessLevelEnum = mysqlEnum("zone_access_level", [
+export const zoneAccessLevelEnum = mysqlEnum("access_level", [
   "public",
   "restricted",
   "secure",
@@ -237,7 +237,7 @@ export type InsertSite = typeof sites.$inferInsert;
 /**
  * Site transfer status enum
  */
-export const siteTransferStatusEnum = mysqlEnum("site_transfer_status", [
+export const siteTransferStatusEnum = mysqlEnum("status", [
   "pending",
   "in_transit",
   "received",
