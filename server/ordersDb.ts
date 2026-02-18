@@ -1779,7 +1779,7 @@ export async function updateOrderStatus(input: {
       ) as Array<{ batchId: number; quantity: number; isSample?: boolean }>;
 
       // Check inventory availability before shipping
-      // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
+      // Verifies onHandQty is sufficient for each item
       for (const item of orderItemsParsed) {
         if (item.isSample) continue; // Skip samples
 
@@ -1799,15 +1799,14 @@ export async function updateOrderStatus(input: {
           throw new Error(`Batch ${item.batchId} not found`);
         }
 
-        // Under the reservation model (TER-259), this order's own reservation
-        // is subtracted from available qty by calculateAvailableQty. Add it back
-        // since shipping will release the reservation and deduct onHandQty atomically.
-        const baseAvailable = calculateAvailableQty(batch);
-        const effectiveAvailable = baseAvailable + item.quantity;
-        if (effectiveAvailable < item.quantity) {
+        // Under the reservation model (TER-259), shipping releases the
+        // reservation AND decrements onHandQty. The real constraint is that
+        // onHandQty must be >= item.quantity (physically enough stock to ship).
+        const onHand = parseFloat(batch.onHandQty || "0");
+        if (onHand < item.quantity) {
           throw new Error(
             `Insufficient inventory for batch ${item.batchId}. ` +
-              `Required: ${item.quantity}, Available: ${baseAvailable}`
+              `Required: ${item.quantity}, On-hand: ${onHand}`
           );
         }
       }

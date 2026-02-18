@@ -255,6 +255,43 @@ describe("TER-259 Scenario 4: SHIPPED decrements both reservedQty and onHandQty"
 });
 
 // ---------------------------------------------------------------------------
+// Scenario 4b: SHIPPED — rejects when onHandQty is insufficient
+// ---------------------------------------------------------------------------
+
+describe("TER-259 Scenario 4b: SHIPPED rejects insufficient on-hand inventory", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("SHIPPED rejects when onHandQty < item.quantity", async () => {
+    // Batch has only 5 on-hand but order wants 10
+    const insufficientBatch = makeBatchRow({
+      onHandQty: "5",
+      reservedQty: "10",
+    });
+
+    const selectResults: unknown[][] = [
+      [makeOrderRow({ fulfillmentStatus: "PACKED" })], // order fetch
+      [insufficientBatch], // availability check
+    ];
+
+    const tx = buildMockTx(selectResults);
+    const db = buildMockDb(tx);
+    vi.mocked(getDb).mockResolvedValue(
+      db as unknown as Awaited<ReturnType<typeof getDb>>
+    );
+
+    await expect(
+      updateOrderStatus({
+        orderId: 1,
+        newStatus: "SHIPPED",
+        userId: 99,
+      })
+    ).rejects.toThrow(/Insufficient inventory for batch/);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Scenario 5: CANCELLED — reservedQty restored (TER-258, verified still works)
 // ---------------------------------------------------------------------------
 

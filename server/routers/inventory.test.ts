@@ -185,14 +185,24 @@ describe("Inventory Router", () => {
       vi.mocked(inventoryDb.getBatchesWithDetails).mockResolvedValue(
         mockBatches
       );
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("0.0000");
 
       // Act
       const result = await caller.inventory.list({ limit: 50 });
 
-      // Assert
-      expect(result).toEqual(mockBatches);
+      // Assert — router adds computed batch.totalQty to each item
       expect(result.items).toHaveLength(2);
       expect(result.hasMore).toBe(true);
+      expect(result.items[0]).toMatchObject({
+        id: 1,
+        code: "BATCH-001",
+        batch: { totalQty: "0.0000" },
+      });
+      expect(result.items[1]).toMatchObject({
+        id: 2,
+        code: "BATCH-002",
+        batch: { totalQty: "0.0000" },
+      });
     });
 
     it("should search batches by query", async () => {
@@ -307,12 +317,13 @@ describe("Inventory Router", () => {
         mockAuditLogs
       );
       vi.mocked(inventoryUtils.calculateAvailableQty).mockReturnValue(90);
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("110.0000");
 
       // Act
       const result = await caller.inventory.getById(1);
 
-      // Assert
-      expect(result.batch).toEqual(mockBatch);
+      // Assert — batch now includes computed totalQty
+      expect(result.batch).toEqual({ ...mockBatch, totalQty: "110.0000" });
       expect(result.locations).toEqual(mockLocations);
       expect(result.auditLogs).toEqual(mockAuditLogs);
       expect(result.availableQty).toBe(90);
@@ -766,6 +777,7 @@ describe("Inventory Router", () => {
       };
 
       vi.mocked(inventoryDb.getBatchesWithDetails).mockResolvedValue(mockPage2);
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("0.0000");
 
       // Act
       const result = await caller.inventory.list({
@@ -773,8 +785,15 @@ describe("Inventory Router", () => {
         cursor: 123, // cursor is a number (batch ID), not a string
       });
 
-      // Assert
-      expect(result).toEqual(mockPage2);
+      // Assert — router adds computed batch.totalQty to each item
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toMatchObject({
+        id: 3,
+        code: "BATCH-003",
+        batch: { totalQty: "0.0000" },
+      });
+      expect(result.hasMore).toBe(false);
+      expect(result.nextCursor).toBeNull();
       expect(inventoryDb.getBatchesWithDetails).toHaveBeenCalledWith(50, 123, {
         status: undefined,
         category: undefined,
