@@ -643,7 +643,7 @@ export const paymentsRouter = router({
         .where(
           and(
             eq(invoices.customerId, input.clientId),
-            sql`${invoices.status} NOT IN ('PAID', 'VOID')`,
+            sql`${invoices.status} NOT IN ('PAID', 'VOID', 'DRAFT')`,
             isNull(invoices.deletedAt)
           )
         )
@@ -761,6 +761,26 @@ export const paymentsRouter = router({
               throw new TRPCError({
                 code: "NOT_FOUND",
                 message: `Invoice ${allocation.invoiceId} not found`,
+              });
+            }
+
+            // Reject DRAFT, PAID, and VOID invoices
+            if (invoice.status === "DRAFT") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Invoice #${invoice.invoiceNumber} is still in DRAFT status. Send it before recording payment.`,
+              });
+            }
+            if (invoice.status === "PAID") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Invoice #${invoice.invoiceNumber} is already paid in full`,
+              });
+            }
+            if (invoice.status === "VOID") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Cannot apply payment to voided invoice #${invoice.invoiceNumber}`,
               });
             }
 
@@ -948,6 +968,14 @@ export const paymentsRouter = router({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Invoice not found",
+        });
+      }
+
+      if (invoice.status === "DRAFT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Invoice is still in DRAFT status. Send it before recording payment.",
         });
       }
 
