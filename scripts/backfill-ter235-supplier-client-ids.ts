@@ -54,13 +54,15 @@ async function backfillPurchaseOrderItems(
   console.log("\n--- purchaseOrderItems.supplier_client_id ---");
 
   // Select items where supplier_client_id is NULL but parent PO has a vendorId
+  // NOTE: purchaseOrderItems.deletedAt column may not exist in production yet
+  // (ST-059 pattern, not yet migrated via autoMigrate). Safe to backfill all rows
+  // including soft-deleted ones — the mapping is still correct.
   const [rows] = (await connection.query(`
     SELECT poi.id, po.vendorId
     FROM purchaseOrderItems poi
     JOIN purchaseOrders po ON poi.purchaseOrderId = po.id
     WHERE poi.supplier_client_id IS NULL
       AND po.vendorId IS NOT NULL
-      AND poi.deletedAt IS NULL
   `)) as [RowWithId[], unknown];
 
   console.log(`  Rows needing backfill: ${rows.length}`);
