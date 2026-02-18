@@ -830,6 +830,7 @@ git push origin main
 | `docs/roadmaps/MASTER_ROADMAP.md`         | Single source of truth for tasks |
 | `docs/ACTIVE_SESSIONS.md`                 | Currently active agent work      |
 | `docs/protocols/CANONICAL_DICTIONARY.md`  | Term definitions                 |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | How to run prod migrations   |
 | `.kiro/steering/07-deprecated-systems.md` | What NOT to use                  |
 
 ### Valid Values Quick Reference
@@ -871,6 +872,20 @@ curl https://terp-app-b9s35.ondigitalocean.app/api/health
 
 # 8. Only then mark task complete
 ```
+
+### Production Migrations (One-Off Scripts)
+
+For running migration scripts, backfills, or data fixes against the DigitalOcean Managed Database, use **temporary App Platform job components** — NOT direct database connections.
+
+**Full runbook**: `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md`
+
+Key rules:
+- **Never connect directly** from external environments (rotating IPs make firewall rules unreliable)
+- **Use temporary job components** that run inside the VPC with `${db.DATABASE_URL}` binding
+- **Run one script per job** (chained `&&` commands are unreliable in `run_command`)
+- **Clean up jobs immediately** after success (otherwise they re-run on every push due to `deploy_on_push: true`)
+- **Auto-rollback**: If a job exits non-zero, DigitalOcean rolls back the entire deployment including the web service
+- **Deployment cycle**: ~8-12 minutes total (build 4-5min, deploy 3-5min, job 1-2min)
 
 ### Rollback Procedure
 

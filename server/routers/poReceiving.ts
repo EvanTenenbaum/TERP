@@ -85,7 +85,8 @@ export const poReceivingRouter = router({
           : "NET_30";
         const [intakeSession] = await tx.insert(intakeSessions).values({
           sessionNumber,
-          vendorId: po.vendorId,
+          // TER-97: po.vendorId is now nullable; fall back to supplierClientId (same clients.id space)
+          vendorId: po.vendorId ?? po.supplierClientId ?? 0,
           receiveDate: new Date(),
           status: "COMPLETED",
           internalNotes: input.notes || `Receiving PO #${po.poNumber}`,
@@ -480,7 +481,8 @@ export const poReceivingRouter = router({
         const lotCode = await generateLotCode(db);
         const [newLot] = await tx.insert(lots).values({
           code: lotCode,
-          vendorId: po.vendorId,
+          // TER-97: po.vendorId is now nullable; fall back to supplierClientId for legacy column
+          vendorId: po.vendorId ?? po.supplierClientId ?? 0,
           supplierClientId: po.supplierClientId,
           date: new Date(),
           notes: input.receivingNotes || `Receiving from PO #${po.poNumber}`,

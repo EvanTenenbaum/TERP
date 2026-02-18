@@ -28,6 +28,7 @@ import {
   Inbox, // TERP-0005: Inbox navigation
   Download, // TERP-0005: Direct Intake
   MapPin, // TERP-0005: Locations
+  BookOpen, // TER-99: Client Ledger navigation
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -180,6 +181,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Coins,
     group: "finance",
     ariaLabel: CREDITS_WORKSPACE.description,
+  },
+  // TER-99: Client Ledger — direct access to client transaction history
+  {
+    name: "Client Ledger",
+    path: "/client-ledger",
+    icon: BookOpen,
+    group: "finance",
+    ariaLabel: "View client transaction history and balance",
   },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
   // NAV-012: Pricing Rules for managing pricing strategies

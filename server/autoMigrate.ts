@@ -2171,6 +2171,212 @@ export async function runAutoMigrations() {
       }
     }
 
+    // ========================================================================
+    // TER-97: Make purchaseOrders.vendorId nullable for supplierClientId-only PO creation
+    // ========================================================================
+    // The vendorId column is DEPRECATED (TER-235) — supplierClientId is canonical.
+    // During the deprecation period, POs with only supplierClientId must not fail
+    // due to the NOT NULL constraint on vendorId.
+    const [poVendorIdCol] = await db.execute(sql`
+      SELECT IS_NULLABLE FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'purchaseOrders'
+        AND COLUMN_NAME = 'vendorId'
+    `);
+    if (
+      poVendorIdCol &&
+      (poVendorIdCol as unknown as Record<string, string>).IS_NULLABLE === "NO"
+    ) {
+      await db.execute(
+        sql`ALTER TABLE purchaseOrders MODIFY COLUMN vendorId INT NULL`
+      );
+      logger.info(
+        "[autoMigrate] TER-97: Made purchaseOrders.vendorId nullable"
+      );
+    }
+
+    // ========================================================================
+    // TER-98: Sample Schema Migrations
+    // ========================================================================
+    // The drizzle/schema.ts was extended for SAMPLE-006 through SAMPLE-009
+    // (return workflow, location tracking) but no migration was ever run.
+    // These blocks bring the DB up to match the existing schema.ts definitions.
+
+    // Block 1: Expand sampleRequestStatus enum from 3 values to 9 values
+    // Check if the column currently only has the original 3 values
+    try {
+      const [sampleStatusCol] = await db.execute(sql`
+        SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'sampleRequests'
+          AND COLUMN_NAME = 'sampleRequestStatus'
+      `);
+      const colType = sampleStatusCol
+        ? (sampleStatusCol as unknown as Record<string, string>).COLUMN_TYPE
+        : "";
+      if (colType && !colType.includes("RETURN_REQUESTED")) {
+        await db.execute(sql`
+          ALTER TABLE sampleRequests
+            MODIFY COLUMN sampleRequestStatus
+            ENUM('PENDING','FULFILLED','CANCELLED','RETURN_REQUESTED','RETURN_APPROVED',
+                 'RETURNED','VENDOR_RETURN_REQUESTED','SHIPPED_TO_VENDOR','VENDOR_CONFIRMED')
+            NOT NULL DEFAULT 'PENDING'
+        `);
+        logger.info(
+          "[autoMigrate] TER-98: Expanded sampleRequestStatus enum to 9 values"
+        );
+        console.info(
+          "  ✅ TER-98: Expanded sampleRequestStatus enum to 9 values"
+        );
+      } else if (colType) {
+        console.info(
+          "  ℹ️  TER-98: sampleRequestStatus enum already has extended values"
+        );
+      } else {
+        console.info(
+          "  ℹ️  TER-98: sampleRequests.sampleRequestStatus column not found — skipping enum expansion"
+        );
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error(
+        { error: errMsg, fullError: error },
+        "TER-98: sampleRequestStatus enum expansion failed"
+      );
+    }
+
+    // Block 2: Add location column with sampleLocation enum
+    try {
+      await db.execute(sql`
+        ALTER TABLE sampleRequests
+          ADD COLUMN location ENUM('WAREHOUSE','WITH_CLIENT','WITH_SALES_REP','RETURNED','LOST')
+          DEFAULT 'WAREHOUSE'
+      `);
+      console.info("  ✅ TER-98: Added location column to sampleRequests");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  TER-98: sampleRequests.location already exists");
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "TER-98: sampleRequests.location migration failed"
+        );
+      }
+    }
+
+    // Block 3: Add return workflow columns to sampleRequests
+    // Check sentinel column returnRequestedDate; if missing, add all return columns at once
+    try {
+      const [returnColCheck] = await db.execute(sql`
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'sampleRequests'
+          AND COLUMN_NAME = 'returnRequestedDate'
+      `);
+      if (!returnColCheck) {
+        await db.execute(sql`
+          ALTER TABLE sampleRequests
+            ADD COLUMN returnRequestedDate TIMESTAMP NULL,
+            ADD COLUMN returnRequestedBy INT NULL,
+            ADD COLUMN returnReason TEXT NULL,
+            ADD COLUMN returnCondition VARCHAR(50) NULL,
+            ADD COLUMN returnApprovedDate TIMESTAMP NULL,
+            ADD COLUMN returnApprovedBy INT NULL,
+            ADD COLUMN returnDate TIMESTAMP NULL,
+            ADD COLUMN vendorReturnTrackingNumber VARCHAR(100) NULL,
+            ADD COLUMN vendorShippedDate TIMESTAMP NULL,
+            ADD COLUMN vendorConfirmedDate TIMESTAMP NULL,
+            ADD COLUMN expirationDate TIMESTAMP NULL
+        `);
+        console.info(
+          "  ✅ TER-98: Added return workflow columns to sampleRequests"
+        );
+      } else {
+        console.info(
+          "  ℹ️  TER-98: sampleRequests return workflow columns already exist"
+        );
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error(
+        { error: errMsg, fullError: error },
+        "TER-98: sampleRequests return workflow columns migration failed"
+      );
+    }
+
+    // Block 4: Create sampleLocationHistory table if it doesn't exist
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS sampleLocationHistory (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          sampleRequestId INT NOT NULL,
+          fromLocation ENUM('WAREHOUSE','WITH_CLIENT','WITH_SALES_REP','RETURNED','LOST'),
+          toLocation ENUM('WAREHOUSE','WITH_CLIENT','WITH_SALES_REP','RETURNED','LOST') NOT NULL,
+          changedBy INT NOT NULL,
+          changedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          notes TEXT,
+          INDEX idx_sample_location_history_sample (sampleRequestId),
+          INDEX idx_sample_location_history_date (changedAt)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.info("  ✅ TER-98: Created sampleLocationHistory table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.info(
+          "  ℹ️  TER-98: sampleLocationHistory table already exists"
+        );
+      } else {
+        logger.error(
+          { error: errMsg, fullError: error },
+          "TER-98: sampleLocationHistory table creation failed"
+        );
+      }
+    }
+
+    // Block 5: Fix sampleAllocations column types from varchar(20) to decimal(15,4)
+    // Check current type of allocatedQuantity; if varchar, modify all three quantity columns
+    try {
+      const [allocColCheck] = await db.execute(sql`
+        SELECT DATA_TYPE FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'sampleAllocations'
+          AND COLUMN_NAME = 'allocatedQuantity'
+      `);
+      const dataType = allocColCheck
+        ? (allocColCheck as unknown as Record<string, string>).DATA_TYPE
+        : "";
+      if (dataType && dataType.toLowerCase() === "varchar") {
+        await db.execute(sql`
+          ALTER TABLE sampleAllocations
+            MODIFY COLUMN allocatedQuantity DECIMAL(15,4) NOT NULL,
+            MODIFY COLUMN usedQuantity DECIMAL(15,4) NOT NULL DEFAULT 0,
+            MODIFY COLUMN remainingQuantity DECIMAL(15,4) NOT NULL
+        `);
+        logger.info(
+          "[autoMigrate] TER-98: Converted sampleAllocations quantity columns from varchar to decimal"
+        );
+        console.info(
+          "  ✅ TER-98: Converted sampleAllocations quantity columns to DECIMAL(15,4)"
+        );
+      } else if (dataType) {
+        console.info(
+          "  ℹ️  TER-98: sampleAllocations quantity columns already decimal"
+        );
+      } else {
+        console.info(
+          "  ℹ️  TER-98: sampleAllocations.allocatedQuantity column not found — skipping type fix"
+        );
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error(
+        { error: errMsg, fullError: error },
+        "TER-98: sampleAllocations column type migration failed"
+      );
+    }
+
     const duration = Date.now() - startTime;
     console.info(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;

@@ -249,9 +249,10 @@ export const purchaseOrders = mysqlTable(
     // DEPRECATED (TER-235): Use supplierClientId instead.
     // This column will be dropped in Phase 3 (after TER-248 completes).
     // Kept for backward compatibility during migration
-    vendorId: int("vendorId")
-      .notNull()
-      .references(() => vendors.id, { onDelete: "restrict" }),
+    // TER-97: Made nullable — vendorId is best-effort during supplierClientId migration
+    vendorId: int("vendorId").references(() => vendors.id, {
+      onDelete: "restrict",
+    }),
 
     // Optional link to intake session (if PO created from intake)
     intakeSessionId: int("intakeSessionId").references(
