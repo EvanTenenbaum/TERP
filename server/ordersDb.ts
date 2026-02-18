@@ -20,7 +20,6 @@ import {
   createInvoiceFromOrder,
   recordOrderCashPayment,
   updateClientCreditExposure,
-  restoreInventoryFromOrderTx,
   reverseOrderAccountingEntriesTx,
 } from "./services/orderAccountingService";
 import { syncClientBalance } from "./services/clientBalanceService";
@@ -320,8 +319,10 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       .limit(1)
       .then(rows => rows[0]);
 
-    // 8. If confirmed order (not draft), reduce inventory
-    // Batches are already locked from step 2, so updates are safe
+    // 8. If confirmed order (not draft), reserve inventory
+    // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
+    // Draft orders make no inventory changes — reservation happens at confirmation.
+    // Batches are already locked from step 2, so updates are safe.
     if (!isDraft) {
       for (const item of processedItems) {
         // Re-fetch with lock to ensure we have latest quantity
@@ -355,7 +356,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         }
 
         if (item.isSample) {
-          // Reduce sample_qty
+          // Reduce sample_qty for sample items
           await tx
             .update(batches)
             .set({
@@ -372,22 +373,15 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
             createdBy: actorId,
           });
         } else {
-          // Reduce onHandQty
+          // TER-259: Reserve inventory by incrementing reservedQty (soft lock).
+          // onHandQty is decremented only when the order ships (updateOrderStatus SHIPPED).
+          // This is the standard ERP pattern: reserve on confirm, deduct on ship.
           await tx
             .update(batches)
             .set({
-              onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}`,
+              reservedQty: sql`CAST(${batches.reservedQty} AS DECIMAL(15,4)) + ${item.quantity}`,
             })
             .where(eq(batches.id, item.batchId));
-
-          // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
-          // If payables update fails, the entire order creation is rolled back
-          // This ensures financial consistency between orders and payables
-          await payablesService.updatePayableOnSale(
-            item.batchId,
-            item.quantity
-          );
-          await payablesService.checkInventoryZeroThreshold(item.batchId);
         }
       }
 
@@ -542,7 +536,8 @@ export async function getAllOrders(filters?: {
 
   const normalizedQuoteStatus = normalizeOptionalStatus(quoteStatus);
   const normalizedSaleStatus = normalizeOptionalStatus(saleStatus);
-  const normalizedFulfillmentStatus = normalizeOptionalStatus(fulfillmentStatus);
+  const normalizedFulfillmentStatus =
+    normalizeOptionalStatus(fulfillmentStatus);
 
   const conditions: ReturnType<typeof eq>[] = [];
 
@@ -634,7 +629,9 @@ export async function getAllOrders(filters?: {
     }
   }
 
-  const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 50;
+  const safeLimit = Number.isFinite(limit)
+    ? Math.min(Math.max(limit, 1), 200)
+    : 50;
   const safeOffset = Number.isFinite(offset) ? Math.max(offset, 0) : 0;
 
   // BUG-078: Explicitly select columns from both tables to avoid ambiguous column names
@@ -804,15 +801,45 @@ export async function deleteOrder(
         .set({ saleStatus: "CANCELLED" })
         .where(eq(orders.id, id));
 
-      // Step 2: Restore inventory (critical - must succeed)
+      // Step 2: Release inventory reservation (critical - must succeed)
+      // TER-259: With the new reservation model, confirmed orders have reservedQty incremented
+      // (not onHandQty decremented). Cancellation must release the reservation by decrementing
+      // reservedQty. For sample items, sampleQty is still decremented at confirmation, so restore it.
       const orderItems =
         typeof order.items === "string" ? JSON.parse(order.items) : order.items;
 
       if (Array.isArray(orderItems) && orderItems.length > 0) {
-        await restoreInventoryFromOrderTx(tx, {
-          items: orderItems,
-          orderId: id,
-        });
+        for (const item of orderItems as OrderItem[]) {
+          if (item.isSample) {
+            // Restore sample quantity (still decremented at confirmation for samples)
+            await tx
+              .update(batches)
+              .set({
+                sampleQty: sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) + ${item.quantity}`,
+              })
+              .where(eq(batches.id, item.batchId));
+          } else {
+            // TER-259: Release reservation by decrementing reservedQty.
+            // onHandQty was NOT decremented at confirmation, so do not restore it here.
+            const [lockedBatch] = await tx
+              .select({ reservedQty: batches.reservedQty })
+              .from(batches)
+              .where(eq(batches.id, item.batchId))
+              .for("update")
+              .limit(1);
+
+            if (lockedBatch) {
+              const currentReserved = parseFloat(
+                lockedBatch.reservedQty || "0"
+              );
+              const newReserved = Math.max(0, currentReserved - item.quantity);
+              await tx
+                .update(batches)
+                .set({ reservedQty: newReserved.toString() })
+                .where(eq(batches.id, item.batchId));
+            }
+          }
+        }
       }
 
       // Step 3: INV-004: Release any reserved quantities from allocations
@@ -977,7 +1004,9 @@ export async function convertQuoteToSale(
       .limit(1)
       .then(rows => rows[0]);
 
-    // 6. Reduce inventory with row-level locking to prevent race conditions
+    // 6. Reserve inventory with row-level locking to prevent race conditions
+    // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
+    // This is the standard ERP pattern: reserve on confirm, deduct on ship.
     for (const item of quoteItems) {
       // Lock batch row to prevent concurrent modifications
       const batch = await tx
@@ -1023,18 +1052,14 @@ export async function convertQuoteToSale(
           createdBy: quote.createdBy,
         });
       } else {
+        // TER-259: Increment reservedQty (soft lock) instead of decrementing onHandQty.
+        // onHandQty is decremented only when the order ships (updateOrderStatus SHIPPED).
         await tx
           .update(batches)
           .set({
-            onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}`,
+            reservedQty: sql`CAST(${batches.reservedQty} AS DECIMAL(15,4)) + ${item.quantity}`,
           })
           .where(eq(batches.id, item.batchId));
-
-        // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
-        // If payables update fails, the entire quote-to-sale conversion is rolled back
-        // This ensures financial consistency between orders and payables
-        await payablesService.updatePayableOnSale(item.batchId, item.quantity);
-        await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
 
@@ -1265,7 +1290,9 @@ export async function confirmDraftOrder(input: {
       })
       .where(eq(orders.id, input.orderId));
 
-    // 7. Reduce inventory
+    // 7. Reserve inventory
+    // TER-259: Reserve on confirm (increment reservedQty), deduct on ship (decrement onHandQty).
+    // This is the standard ERP pattern: reserve on confirm, deduct on ship.
     for (const item of draftItems) {
       if (item.isSample) {
         await tx
@@ -1283,18 +1310,14 @@ export async function confirmDraftOrder(input: {
           createdBy: confirmActorId,
         });
       } else {
+        // TER-259: Increment reservedQty (soft lock) instead of decrementing onHandQty.
+        // onHandQty is decremented only when the order ships (updateOrderStatus SHIPPED).
         await tx
           .update(batches)
           .set({
-            onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}`,
+            reservedQty: sql`CAST(${batches.reservedQty} AS DECIMAL(15,4)) + ${item.quantity}`,
           })
           .where(eq(batches.id, item.batchId));
-
-        // ST-050: MEET-005 payables tracking - errors now propagate to rollback transaction
-        // If payables update fails, the entire order confirmation is rolled back
-        // This ensures financial consistency between orders and payables
-        await payablesService.updatePayableOnSale(item.batchId, item.quantity);
-        await payablesService.checkInventoryZeroThreshold(item.batchId);
       }
     }
 
@@ -1748,15 +1771,25 @@ export async function updateOrderStatus(input: {
       updateData.shippedAt = new Date();
       updateData.shippedBy = userId;
 
+      // TER-257: Safely parse order.items — it may be a JSON string from the DB
+      const orderItemsParsed = (
+        typeof order.items === "string"
+          ? (JSON.parse(order.items) as unknown[])
+          : ((order.items as unknown[]) ?? [])
+      ) as Array<{ batchId: number; quantity: number; isSample?: boolean }>;
+
       // Check inventory availability before shipping
       // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
-      const orderItems = order.items as Array<{
-        batchId: number;
-        quantity: number;
-        isSample?: boolean;
-      }>;
-      for (const item of orderItems) {
+      for (const item of orderItemsParsed) {
         if (item.isSample) continue; // Skip samples
+
+        // TER-257: Defensive check — a missing batchId produces "Batch undefined not found"
+        if (!item.batchId) {
+          throw new Error(
+            `Order ${orderId} contains an item with a missing batchId. ` +
+              `Cannot ship order with incomplete item data.`
+          );
+        }
 
         const [batch] = await tx
           .select()
@@ -1775,10 +1808,8 @@ export async function updateOrderStatus(input: {
         }
       }
 
-      // Decrement inventory when shipped
-      const orderItemsForDecrement = (
-        typeof order.items === "string" ? JSON.parse(order.items) : order.items
-      ) as OrderItem[];
+      // Decrement inventory when shipped (reuse the already-parsed array)
+      const orderItemsForDecrement = orderItemsParsed as OrderItem[];
       await decrementInventoryForOrder(
         tx,
         orderId,
@@ -1834,19 +1865,56 @@ export async function updateOrderStatus(input: {
       await updateClientCreditExposure(order.clientId);
     }
 
+    // TER-258: Handle CANCELLED — restore reserved inventory when cancelling a PACKED order
+    if (newStatus === "CANCELLED") {
+      if (oldStatus === "PACKED") {
+        // When cancelling a PACKED order, release the reserved quantities for each item.
+        // PENDING → CANCELLED requires no inventory changes (nothing was reserved yet
+        // at the fulfillmentStatus level; allocations are handled separately).
+        const cancelledItems = (
+          typeof order.items === "string"
+            ? (JSON.parse(order.items) as unknown[])
+            : ((order.items as unknown[]) ?? [])
+        ) as Array<{ batchId: number; quantity: number; isSample?: boolean }>;
+
+        for (const item of cancelledItems) {
+          if (item.isSample || !item.batchId) continue;
+
+          // Lock the batch row and release the reservation
+          const [batch] = await tx
+            .select({ reservedQty: batches.reservedQty })
+            .from(batches)
+            .where(eq(batches.id, item.batchId))
+            .for("update")
+            .limit(1);
+
+          if (batch) {
+            const currentReserved = parseFloat(batch.reservedQty || "0");
+            const newReserved = Math.max(0, currentReserved - item.quantity);
+            await tx
+              .update(batches)
+              .set({ reservedQty: newReserved.toString() })
+              .where(eq(batches.id, item.batchId));
+          }
+        }
+      }
+    }
+
     // Update order status with version increment (DATA-005)
     updateData.version = sql`version + 1`;
     await tx.update(orders).set(updateData).where(eq(orders.id, orderId));
 
     // Log status change in history
     const { orderStatusHistory } = await import("../drizzle/schema");
-    // Map status to valid fulfillmentStatus enum values
-    const validStatus =
+    // TER-258: CANCELLED is a valid fulfillmentStatus enum value — include it explicitly.
+    // The fulfillmentStatusEnum includes: PENDING, PACKED, SHIPPED, CANCELLED (and others).
+    const validStatus: "PENDING" | "PACKED" | "SHIPPED" | "CANCELLED" =
       newStatus === "PENDING" ||
       newStatus === "PACKED" ||
-      newStatus === "SHIPPED"
+      newStatus === "SHIPPED" ||
+      newStatus === "CANCELLED"
         ? newStatus
-        : "PENDING"; // Default to PENDING for unsupported statuses
+        : "PENDING";
     await tx.insert(orderStatusHistory).values({
       orderId,
       fulfillmentStatus: validStatus,
@@ -1966,9 +2034,12 @@ async function decrementInventoryForOrder(
   for (const item of items) {
     if (!item.batchId || item.isSample) continue; // Skip samples
 
-    // Get current batch quantity before update (for audit trail)
+    // Get current batch quantities before update (for audit trail and reservedQty release)
     const [batch] = await tx
-      .select({ onHandQty: batches.onHandQty })
+      .select({
+        onHandQty: batches.onHandQty,
+        reservedQty: batches.reservedQty,
+      })
       .from(batches)
       .where(eq(batches.id, item.batchId))
       .for("update");
@@ -1976,10 +2047,18 @@ async function decrementInventoryForOrder(
     const quantityBefore = parseFloat(batch?.onHandQty || "0");
     const quantityAfter = quantityBefore - item.quantity;
 
-    // Decrement batch quantity
+    // TER-259: Release reservation AND decrement onHandQty atomically on shipment.
+    // reservedQty was incremented at confirmation (soft lock); now we release it
+    // and record the actual physical deduction against onHandQty.
+    const currentReserved = parseFloat(batch?.reservedQty || "0");
+    const newReserved = Math.max(0, currentReserved - item.quantity);
+
     await tx
       .update(batches)
-      .set({ onHandQty: String(quantityAfter) })
+      .set({
+        onHandQty: String(quantityAfter),
+        reservedQty: String(newReserved),
+      })
       .where(eq(batches.id, item.batchId));
 
     // Log inventory movement
@@ -1991,9 +2070,15 @@ async function decrementInventoryForOrder(
       quantityAfter: String(quantityAfter),
       referenceType: "ORDER",
       referenceId: orderId,
-      notes: `Shipped order #${orderId}`,
+      notes: `Shipped order #${orderId} — reservation released, onHandQty decremented`,
       performedBy: performedBy,
     });
+
+    // ST-050 / MEET-005: Track vendor payables at shipment time.
+    // With the reservation model, payables are tracked when the sale is physically fulfilled
+    // (i.e. when the goods leave the warehouse), not at confirmation.
+    await payablesService.updatePayableOnSale(item.batchId, item.quantity);
+    await payablesService.checkInventoryZeroThreshold(item.batchId);
   }
 }
 
