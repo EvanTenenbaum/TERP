@@ -182,10 +182,23 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
-      const order = await ordersDb.createOrder({
-        ...input,
-        createdBy: userId,
-      });
+      let order;
+      try {
+        order = await ordersDb.createOrder({
+          ...input,
+          createdBy: userId,
+        });
+      } catch (error) {
+        // TER-253: Convert archived/missing client errors to proper TRPCError
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes("not found")) {
+          throw new TRPCError({ code: "NOT_FOUND", message: msg });
+        }
+        if (msg.includes("archived")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: msg });
+        }
+        throw error;
+      }
 
       // Trigger notification for new order
       onOrderCreated({
@@ -725,6 +738,28 @@ export const ordersRouter = router({
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
+
+      // TER-253: Reject orders for archived (soft-deleted) clients
+      const client = await db
+        .select({ id: clients.id, deletedAt: clients.deletedAt })
+        .from(clients)
+        .where(eq(clients.id, input.clientId))
+        .limit(1)
+        .then(rows => rows[0]);
+
+      if (!client) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Client ${input.clientId} not found`,
+        });
+      }
+
+      if (client.deletedAt !== null) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot create order for archived client ${input.clientId}`,
+        });
+      }
 
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(

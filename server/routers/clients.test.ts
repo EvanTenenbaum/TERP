@@ -389,6 +389,30 @@ describe("Clients Router", () => {
       // deleteClient now takes (clientId, userId)
       expect(clientsDb.deleteClient).toHaveBeenCalledWith(1, 1);
     });
+
+    it("should throw NOT_FOUND for non-existent client", async () => {
+      // Arrange - TER-255: clientsDb throws when client not found
+      vi.mocked(clientsDb.deleteClient).mockRejectedValue(
+        new Error("Client with ID 999 not found")
+      );
+
+      // Act & Assert
+      await expect(caller.clients.delete({ clientId: 999 })).rejects.toThrow(
+        /not found/i
+      );
+    });
+
+    it("should throw NOT_FOUND for already-archived client", async () => {
+      // Arrange - TER-255: clientsDb throws when client already archived
+      vi.mocked(clientsDb.deleteClient).mockRejectedValue(
+        new Error("Client with ID 1 is already archived")
+      );
+
+      // Act & Assert
+      await expect(caller.clients.delete({ clientId: 1 })).rejects.toThrow(
+        /already archived/i
+      );
+    });
   });
 
   // NOTE: Removed tests for "transactions.list" sub-router.
