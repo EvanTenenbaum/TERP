@@ -417,8 +417,15 @@ describe("Orders Router", () => {
 
   describe("delete", () => {
     it("should soft delete an order", async () => {
-      // Arrange
-      // Mock softDelete to return 1 affected row
+      // TER-252: Mock getOrderById to return existing order
+      vi.mocked(ordersDb.getOrderById).mockResolvedValueOnce({
+        id: 1,
+        orderNumber: "Q-2024-001",
+        orderType: "QUOTE",
+        clientId: 1,
+        deletedAt: null,
+        items: [],
+      });
       vi.mocked(softDelete).mockResolvedValue(1);
 
       // Act
@@ -427,6 +434,30 @@ describe("Orders Router", () => {
       // Assert
       expect(result.success).toBe(true);
       expect(softDelete).toHaveBeenCalledWith(expect.anything(), 1);
+    });
+
+    // TER-252: Adversarial tests for NOT_FOUND behavior
+    it("should return NOT_FOUND for non-existent order ID", async () => {
+      vi.mocked(ordersDb.getOrderById).mockResolvedValueOnce(null);
+
+      await expect(caller.orders.delete({ id: 999999 })).rejects.toThrow(
+        "Order with ID 999999 not found"
+      );
+    });
+
+    it("should return NOT_FOUND for already-deleted order", async () => {
+      vi.mocked(ordersDb.getOrderById).mockResolvedValueOnce({
+        id: 888,
+        orderNumber: "Q-2024-DEL",
+        orderType: "QUOTE",
+        clientId: 1,
+        deletedAt: new Date(),
+        items: [],
+      });
+
+      await expect(caller.orders.delete({ id: 888 })).rejects.toThrow(
+        "Order with ID 888 not found"
+      );
     });
   });
 
@@ -517,27 +548,16 @@ describe("Orders Router", () => {
   });
 
   describe("Edge Cases", () => {
-    it("should handle empty items array", async () => {
-      // Arrange
+    it("should reject empty items array", async () => {
+      // TER-251: Empty items arrays are now rejected by Zod validation
       const input = {
         orderType: "QUOTE" as const,
         clientId: 1,
         items: [],
       };
 
-      const mockOrder = {
-        id: 1,
-        ...input,
-        createdBy: 1,
-      };
-
-      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
-
-      // Act
-      const result = await caller.orders.create(input);
-
-      // Assert
-      expect(result.items).toHaveLength(0);
+      // Act & Assert
+      await expect(caller.orders.create(input)).rejects.toThrow();
     });
 
     it("should handle orders with override prices", async () => {

@@ -19,6 +19,9 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import { storagePut, storageDelete, isStorageConfigured } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { getDb } from "../db";
+import { batches, inventoryMovements } from "../../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { env } from "../_core/env";
 import {
   buildDemoMediaUrl,
@@ -1160,58 +1163,74 @@ export const inventoryRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const batch = await inventoryDb.getBatchById(input.id);
-      if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-      const currentQty = inventoryUtils.parseQty(batch[input.field]);
-      const newQty = currentQty + input.adjustment;
+      // TER-254: Wrap read-calculate-write in transaction with row-level lock
+      const result = await db.transaction(async tx => {
+        // Lock batch row before reading to prevent race conditions
+        const [batch] = await tx
+          .select()
+          .from(batches)
+          .where(eq(batches.id, input.id))
+          .for("update")
+          .limit(1);
 
-      // TERP-0018: Prevent negative inventory quantities
-      if (newQty < 0) {
-        throw new Error(
-          `Adjustment would result in negative inventory. Current ${input.field}: ${currentQty}, adjustment: ${input.adjustment}`
-        );
-      }
+        if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
 
-      const before = inventoryUtils.createAuditSnapshot(batch);
-      await inventoryDb.updateBatchQty(
-        input.id,
-        input.field,
-        inventoryUtils.formatQty(newQty)
-      );
+        const currentQty = inventoryUtils.parseQty(batch[input.field]);
+        const newQty = currentQty + input.adjustment;
 
-      // Quarantine-status synchronization:
-      // When quarantineQty changes, check if we need to update batch status
-      if (input.field === "quarantineQty") {
-        const onHandQty = inventoryUtils.parseQty(batch.onHandQty);
-        const currentStatus = batch.batchStatus;
-
-        // If all inventory is now quarantined (onHand = 0, quarantine > 0)
-        // and we're increasing quarantine, auto-set status to QUARANTINED
-        if (
-          newQty > 0 &&
-          onHandQty === 0 &&
-          currentStatus !== "QUARANTINED" &&
-          currentStatus !== "CLOSED" &&
-          currentStatus !== "SOLD_OUT"
-        ) {
-          await inventoryDb.updateBatchStatus(input.id, "QUARANTINED");
+        // TERP-0018: Prevent negative inventory quantities
+        if (newQty < 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Adjustment would result in negative inventory. Current ${input.field}: ${currentQty}, adjustment: ${input.adjustment}`,
+          });
         }
 
-        // If quarantine is being reduced to 0 from QUARANTINED status,
-        // and there's on-hand inventory available, release to LIVE
-        if (newQty === 0 && currentStatus === "QUARANTINED" && onHandQty > 0) {
-          await inventoryDb.updateBatchStatus(input.id, "LIVE");
-        }
+        const newQtyStr = inventoryUtils.formatQty(newQty);
+        const before = inventoryUtils.createAuditSnapshot(batch);
 
-        // Record inventory movement for quarantine changes
-        const { inventoryMovements } = await import("../../drizzle/schema");
-        const { getDb } = await import("../db");
-        const db = await getDb();
-        if (db) {
+        // Update within the locked transaction
+        await tx
+          .update(batches)
+          .set({ [input.field]: newQtyStr, version: sql`version + 1` })
+          .where(eq(batches.id, input.id));
+
+        // Quarantine-status synchronization within the same transaction
+        if (input.field === "quarantineQty") {
+          const onHandQty = inventoryUtils.parseQty(batch.onHandQty);
+          const currentStatus = batch.batchStatus;
+
+          if (
+            newQty > 0 &&
+            onHandQty === 0 &&
+            currentStatus !== "QUARANTINED" &&
+            currentStatus !== "CLOSED" &&
+            currentStatus !== "SOLD_OUT"
+          ) {
+            await tx
+              .update(batches)
+              .set({ batchStatus: "QUARANTINED" })
+              .where(eq(batches.id, input.id));
+          }
+
+          if (
+            newQty === 0 &&
+            currentStatus === "QUARANTINED" &&
+            onHandQty > 0
+          ) {
+            await tx
+              .update(batches)
+              .set({ batchStatus: "LIVE" })
+              .where(eq(batches.id, input.id));
+          }
+
+          // Record inventory movement for quarantine changes within transaction
           const movementType =
             input.adjustment > 0 ? "QUARANTINE" : "RELEASE_FROM_QUARANTINE";
-          await db.insert(inventoryMovements).values({
+          await tx.insert(inventoryMovements).values({
             batchId: input.id,
             inventoryMovementType: movementType,
             quantityChange:
@@ -1225,31 +1244,35 @@ export const inventoryRouter = router({
             performedBy: getAuthenticatedUserId(ctx),
           });
         }
-      }
 
-      const after = await inventoryDb.getBatchById(input.id);
+        // Re-fetch updated batch within transaction
+        const [after] = await tx
+          .select()
+          .from(batches)
+          .where(eq(batches.id, input.id));
 
-      // Create audit log
+        return { before, after };
+      });
+
+      // Audit log outside transaction (non-critical, should not block)
       await inventoryDb.createAuditLog({
         actorId: getAuthenticatedUserId(ctx),
         entity: "Batch",
         entityId: input.id,
         action: "QTY_ADJUST",
-        before,
+        before: result.before,
         after: inventoryUtils.createAuditSnapshot(
-          after as unknown as Record<string, unknown>
+          result.after as unknown as Record<string, unknown>
         ),
         reason: input.reason,
       });
 
-      // Return the updated batch with computed totalQty so callers can reflect
-      // the new quantities without a separate refetch.
       return {
         success: true,
-        batch: after
+        batch: result.after
           ? {
-              ...after,
-              totalQty: inventoryUtils.computeTotalQty(after),
+              ...result.after,
+              totalQty: inventoryUtils.computeTotalQty(result.after),
             }
           : null,
       };

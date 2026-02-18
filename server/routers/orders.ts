@@ -114,7 +114,9 @@ const orderAdjustmentSchema = z.object({
 const createOrderInputSchema = z.object({
   orderType: z.enum(["QUOTE", "SALE"]),
   clientId: z.number(),
-  lineItems: z.array(lineItemInputSchema),
+  lineItems: z
+    .array(lineItemInputSchema)
+    .min(1, "At least one line item is required"),
   orderLevelAdjustment: orderAdjustmentSchema.optional(),
   showAdjustmentOnDocument: z.boolean().default(true),
   notes: z.string().optional(),
@@ -147,24 +149,29 @@ export const ordersRouter = router({
         orderType: z.enum(["QUOTE", "SALE"]),
         isDraft: z.boolean().optional(),
         clientId: z.number(),
-        items: z.array(
-          z.object({
-            batchId: z.number(),
-            displayName: z.string().optional(),
-            // ORD-002: Quantity and prices must be positive/non-negative
-            quantity: z.number().positive("Quantity must be greater than 0"),
-            unitPrice: z.number().nonnegative("Unit price cannot be negative"),
-            isSample: z.boolean(),
-            overridePrice: z
-              .number()
-              .nonnegative("Override price cannot be negative")
-              .optional(),
-            overrideCogs: z
-              .number()
-              .nonnegative("Override COGS cannot be negative")
-              .optional(),
-          })
-        ),
+        // TER-251: Require at least one item to prevent $0 orders
+        items: z
+          .array(
+            z.object({
+              batchId: z.number(),
+              displayName: z.string().optional(),
+              // ORD-002: Quantity and prices must be positive/non-negative
+              quantity: z.number().positive("Quantity must be greater than 0"),
+              unitPrice: z
+                .number()
+                .nonnegative("Unit price cannot be negative"),
+              isSample: z.boolean(),
+              overridePrice: z
+                .number()
+                .nonnegative("Override price cannot be negative")
+                .optional(),
+              overrideCogs: z
+                .number()
+                .nonnegative("Override COGS cannot be negative")
+                .optional(),
+            })
+          )
+          .min(1, "At least one item is required"),
         validUntil: z.string().optional(),
         paymentTerms: z
           .enum(["NET_7", "NET_15", "NET_30", "COD", "PARTIAL", "CONSIGNMENT"])
@@ -175,10 +182,23 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
-      const order = await ordersDb.createOrder({
-        ...input,
-        createdBy: userId,
-      });
+      let order;
+      try {
+        order = await ordersDb.createOrder({
+          ...input,
+          createdBy: userId,
+        });
+      } catch (error) {
+        // TER-253: Convert archived/missing client errors to proper TRPCError
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes("not found")) {
+          throw new TRPCError({ code: "NOT_FOUND", message: msg });
+        }
+        if (msg.includes("archived")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: msg });
+        }
+        throw error;
+      }
 
       // Trigger notification for new order
       onOrderCreated({
@@ -306,6 +326,16 @@ export const ordersRouter = router({
     .use(requirePermission("orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
+      // TER-252: Verify order exists before deleting
+      const existing = await ordersDb.getOrderById(input.id);
+
+      if (!existing || existing.deletedAt !== null) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Order with ID ${input.id} not found`,
+        });
+      }
+
       const rowsAffected = await softDelete(orders, input.id);
       return { success: rowsAffected > 0 };
     }),
@@ -709,6 +739,28 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
+      // TER-253: Reject orders for archived (soft-deleted) clients
+      const client = await db
+        .select({ id: clients.id, deletedAt: clients.deletedAt })
+        .from(clients)
+        .where(eq(clients.id, input.clientId))
+        .limit(1)
+        .then(rows => rows[0]);
+
+      if (!client) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Client ${input.clientId} not found`,
+        });
+      }
+
+      if (client.deletedAt !== null) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot create order for archived client ${input.clientId}`,
+        });
+      }
+
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
         input.lineItems.map(async item => {
@@ -888,7 +940,9 @@ export const ordersRouter = router({
       z.object({
         orderId: z.number(),
         version: z.number(), // Optimistic locking
-        lineItems: z.array(lineItemInputSchema),
+        lineItems: z
+          .array(lineItemInputSchema)
+          .min(1, "At least one line item is required"),
         orderLevelAdjustment: orderAdjustmentSchema.optional(),
         showAdjustmentOnDocument: z.boolean().optional(),
         notes: z.string().optional(),

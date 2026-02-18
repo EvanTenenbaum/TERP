@@ -428,30 +428,44 @@ describe("Inventory Router", () => {
   });
 
   describe("adjustQty", () => {
+    // TER-254: adjustQty now uses db.transaction with SELECT FOR UPDATE
+    // Tests seed batch data directly in the mock DB instead of mocking inventoryDb.getBatchById
+
+    async function seedBatch(data: Record<string, unknown>) {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      const { batches: batchesTable } = await import("../../drizzle/schema");
+      await db.insert(batchesTable).values(data);
+    }
+
+    // TER-254: Adversarial test — must run FIRST before any data is seeded
+    it("should throw BATCH_NOT_FOUND for non-existent batchId", async () => {
+      await expect(
+        caller.inventory.adjustQty({
+          id: 999999,
+          field: "onHandQty",
+          adjustment: 10,
+          reason: "Test non-existent",
+        })
+      ).rejects.toThrow();
+    });
+
     it("should adjust batch quantity and create audit log", async () => {
-      // Arrange
-      const mockBatch = {
+      // Arrange: seed batch data for transaction SELECT
+      await seedBatch({
         id: 1,
         onHandQty: "100",
-      };
-      const mockAfterBatch = {
-        id: 1,
-        onHandQty: "110",
         sampleQty: "0",
         reservedQty: "0",
         quarantineQty: "0",
         holdQty: "0",
         defectiveQty: "0",
-      };
-
-      vi.mocked(inventoryDb.getBatchById)
-        .mockResolvedValueOnce(mockBatch)
-        .mockResolvedValueOnce(mockAfterBatch);
+        version: 1,
+      });
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(100);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("110");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
       vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("110.0000");
-      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
       // Act
@@ -464,29 +478,27 @@ describe("Inventory Router", () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(inventoryDb.updateBatchQty).toHaveBeenCalledWith(
-        1,
-        "onHandQty",
-        "110"
-      );
       expect(inventoryDb.createAuditLog).toHaveBeenCalled();
     });
 
     it("should reject negative quantity adjustment", async () => {
-      // Arrange
-      const mockBatch = {
-        id: 1,
+      // Arrange: seed batch with low quantity
+      await seedBatch({
+        id: 10,
         onHandQty: "10",
-      };
-
-      vi.mocked(inventoryDb.getBatchById).mockResolvedValue(mockBatch);
+        sampleQty: "0",
+        reservedQty: "0",
+        quarantineQty: "0",
+        holdQty: "0",
+        defectiveQty: "0",
+        version: 1,
+      });
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(10);
 
       // Act & Assert
-      // TERP-0018: Updated error message to be more descriptive
       await expect(
         caller.inventory.adjustQty({
-          id: 1,
+          id: 10,
           field: "onHandQty",
           adjustment: -20, // Would result in negative
           reason: "Test",
@@ -496,33 +508,25 @@ describe("Inventory Router", () => {
 
     it("should handle different quantity fields", async () => {
       // Arrange
-      const mockBatch = {
-        id: 1,
-        reservedQty: "50",
-      };
-      const mockAfterBatch = {
-        id: 1,
+      await seedBatch({
+        id: 20,
         onHandQty: "0",
         sampleQty: "0",
-        reservedQty: "45",
+        reservedQty: "50",
         quarantineQty: "0",
         holdQty: "0",
         defectiveQty: "0",
-      };
-
-      vi.mocked(inventoryDb.getBatchById)
-        .mockResolvedValueOnce(mockBatch)
-        .mockResolvedValueOnce(mockAfterBatch);
+        version: 1,
+      });
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(50);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("45");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
       vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("45.0000");
-      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
       // Act
       const result = await caller.inventory.adjustQty({
-        id: 1,
+        id: 20,
         field: "reservedQty",
         adjustment: -5,
         reason: "Released reservation",
@@ -530,49 +534,30 @@ describe("Inventory Router", () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(inventoryDb.updateBatchQty).toHaveBeenCalledWith(
-        1,
-        "reservedQty",
-        "45"
-      );
     });
 
     // TER-260 regression tests: totalQty must be returned after adjustQty
     it("should return batch with totalQty after adjustment", async () => {
       // Arrange: batch with only onHandQty set
-      const mockBeforeBatch = {
-        id: 1,
+      await seedBatch({
+        id: 30,
         onHandQty: "0.0000",
         sampleQty: "0.0000",
         reservedQty: "0.0000",
         quarantineQty: "0.0000",
         holdQty: "0.0000",
         defectiveQty: "0.0000",
-      };
-      const mockAfterBatch = {
-        id: 1,
-        onHandQty: "25.0000",
-        sampleQty: "0.0000",
-        reservedQty: "0.0000",
-        quarantineQty: "0.0000",
-        holdQty: "0.0000",
-        defectiveQty: "0.0000",
-      };
-
-      vi.mocked(inventoryDb.getBatchById)
-        .mockResolvedValueOnce(mockBeforeBatch)
-        .mockResolvedValueOnce(mockAfterBatch);
+        version: 1,
+      });
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(0);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("25.0000");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
-      // computeTotalQty: onHandQty=25 + rest=0 => "25.0000"
       vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("25.0000");
-      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
       // Act
       const result = await caller.inventory.adjustQty({
-        id: 1,
+        id: 30,
         field: "onHandQty",
         adjustment: 25,
         reason: "Cycle count correction",
@@ -582,49 +567,33 @@ describe("Inventory Router", () => {
       expect(result.success).toBe(true);
       expect(result.batch).toBeDefined();
       expect(result.batch?.totalQty).toBe("25.0000");
-      expect(inventoryUtils.computeTotalQty).toHaveBeenCalledWith(
-        mockAfterBatch
-      );
     });
 
     it("should return totalQty as sum of all 6 component fields after adjustment", async () => {
       // Arrange: batch with all 6 qty fields populated
-      const mockBeforeBatch = {
-        id: 2,
+      await seedBatch({
+        id: 40,
         onHandQty: "10.0000",
         sampleQty: "2.0000",
         reservedQty: "3.0000",
         quarantineQty: "1.0000",
         holdQty: "0.0000",
         defectiveQty: "0.0000",
-      };
-      const mockAfterBatch = {
-        id: 2,
-        onHandQty: "35.0000", // +25 adjustment
-        sampleQty: "2.0000",
-        reservedQty: "3.0000",
-        quarantineQty: "1.0000",
-        holdQty: "0.0000",
-        defectiveQty: "0.0000",
-      };
-      // totalQty = 35 + 2 + 3 + 1 + 0 + 0 = 41
+        version: 1,
+      });
       const expectedTotalQty = "41.0000";
 
-      vi.mocked(inventoryDb.getBatchById)
-        .mockResolvedValueOnce(mockBeforeBatch)
-        .mockResolvedValueOnce(mockAfterBatch);
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(10);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("35.0000");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
       vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue(
         expectedTotalQty
       );
-      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
       // Act
       const result = await caller.inventory.adjustQty({
-        id: 2,
+        id: 40,
         field: "onHandQty",
         adjustment: 25,
         reason: "Recount",
@@ -637,29 +606,25 @@ describe("Inventory Router", () => {
 
     it("should return batch with totalQty of 0.0000 when all fields are zero", async () => {
       // Arrange: freshly created batch with all zeros
-      const mockZeroBatch = {
-        id: 3,
+      await seedBatch({
+        id: 50,
         onHandQty: "0.0000",
         sampleQty: "0.0000",
         reservedQty: "0.0000",
         quarantineQty: "0.0000",
         holdQty: "0.0000",
         defectiveQty: "0.0000",
-      };
-
-      vi.mocked(inventoryDb.getBatchById)
-        .mockResolvedValueOnce(mockZeroBatch)
-        .mockResolvedValueOnce(mockZeroBatch);
+        version: 1,
+      });
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(0);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("0.0000");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
       vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("0.0000");
-      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
       // Act - adjust by 0 (edge case: no-op adjustment)
       const result = await caller.inventory.adjustQty({
-        id: 3,
+        id: 50,
         field: "onHandQty",
         adjustment: 0,
         reason: "Verify zero state",

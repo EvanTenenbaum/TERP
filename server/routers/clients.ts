@@ -256,7 +256,19 @@ export const clientsRouter = router({
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+      try {
+        return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+      } catch (e) {
+        // TER-255: Convert not-found/already-archived errors to NOT_FOUND
+        if (
+          e instanceof Error &&
+          (e.message.includes("not found") ||
+            e.message.includes("already archived"))
+        ) {
+          throw new TRPCError({ code: "NOT_FOUND", message: e.message });
+        }
+        throw e;
+      }
     }),
 
   // Archive client (soft delete using deletedAt timestamp)
@@ -266,7 +278,19 @@ export const clientsRouter = router({
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+      try {
+        return await clientsDb.deleteClient(input.clientId, ctx.user.id);
+      } catch (e) {
+        // TER-255: Convert not-found/already-archived errors to NOT_FOUND
+        if (
+          e instanceof Error &&
+          (e.message.includes("not found") ||
+            e.message.includes("already archived"))
+        ) {
+          throw new TRPCError({ code: "NOT_FOUND", message: e.message });
+        }
+        throw e;
+      }
     }),
 
   // Restore archived client (clear deletedAt timestamp)
