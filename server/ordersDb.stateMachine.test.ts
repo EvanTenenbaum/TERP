@@ -253,10 +253,50 @@ describe("Fulfillment Status State Machine", () => {
       );
     });
 
-    it("should NOT allow transitions from CANCELLED", () => {
+    // TER-258 regression: CANCELLED is a terminal state
+    it("should allow PENDING -> CANCELLED (TER-258)", () => {
+      expect(
+        isValidStatusTransition("fulfillment", "PENDING", "CANCELLED")
+      ).toBe(true);
+    });
+
+    it("should allow PACKED -> CANCELLED (TER-258)", () => {
+      expect(
+        isValidStatusTransition("fulfillment", "PACKED", "CANCELLED")
+      ).toBe(true);
+    });
+
+    it("should NOT allow transitions from CANCELLED (terminal state)", () => {
       expect(
         isValidStatusTransition("fulfillment", "CANCELLED", "PENDING")
       ).toBe(false);
+      expect(
+        isValidStatusTransition("fulfillment", "CANCELLED", "PACKED")
+      ).toBe(false);
+      expect(
+        isValidStatusTransition("fulfillment", "CANCELLED", "SHIPPED")
+      ).toBe(false);
+    });
+
+    it("should NOT allow transitions from SHIPPED (terminal state)", () => {
+      expect(isValidStatusTransition("fulfillment", "SHIPPED", "PENDING")).toBe(
+        false
+      );
+      expect(
+        isValidStatusTransition("fulfillment", "SHIPPED", "CANCELLED")
+      ).toBe(false);
+    });
+  });
+
+  describe("getTransitionError for fulfillment", () => {
+    it("should return terminal state message for CANCELLED (TER-258)", () => {
+      const error = getTransitionError("fulfillment", "CANCELLED", "PENDING");
+      expect(error).toContain("terminal state");
+    });
+
+    it("should return terminal state message for SHIPPED", () => {
+      const error = getTransitionError("fulfillment", "SHIPPED", "PENDING");
+      expect(error).toContain("terminal state");
     });
   });
 });

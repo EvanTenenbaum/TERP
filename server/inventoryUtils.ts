@@ -298,6 +298,31 @@ export function formatQty(qty: number): string {
   return qty.toFixed(2);
 }
 
+/**
+ * Compute totalQty as the total physical units across all pools.
+ * totalQty is NOT stored in the database — it is always derived.
+ *
+ * onHandQty already INCLUDES reserved, quarantine, and hold as sub-buckets
+ * (see calculateAvailableQty: available = onHand - reserved - quarantine - hold).
+ * Only sampleQty and defectiveQty are genuinely separate pools.
+ *
+ * Formula: onHandQty + sampleQty + defectiveQty
+ *
+ * Returns a decimal string with 4 places, e.g. "125.0000".
+ * Null or missing fields default to 0.
+ */
+export function computeTotalQty(batch: {
+  onHandQty?: string | null;
+  sampleQty?: string | null;
+  defectiveQty?: string | null;
+}): string {
+  const total =
+    parseFloat(batch.onHandQty || "0") +
+    parseFloat(batch.sampleQty || "0") +
+    parseFloat(batch.defectiveQty || "0");
+  return total.toFixed(4);
+}
+
 // ============================================================================
 // AUDIT HELPERS
 // ============================================================================
@@ -463,6 +488,7 @@ export default {
   isPriceValid,
   parseQty,
   formatQty,
+  computeTotalQty,
   createAuditSnapshot,
   validateMetadata,
   parseMetadata,

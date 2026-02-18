@@ -260,6 +260,14 @@ export const paymentsRouter = router({
         });
       }
 
+      if (invoice.status === "DRAFT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Cannot apply payment to a draft invoice. Invoice must be sent first.",
+        });
+      }
+
       if (invoice.status === "PAID") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -290,7 +298,11 @@ export const paymentsRouter = router({
       const effectiveAmount =
         input.amount > amountDue ? amountDue : input.amount;
 
-      // Get account IDs for GL entries
+      // Resolve GL account IDs before the transaction so that missing accounts
+      // produce descriptive TRPCErrors rather than a generic INTERNAL_SERVER_ERROR
+      // from inside the transaction. getAccountIdByName throws TRPCError(NOT_FOUND)
+      // if the chart of accounts is not seeded, which would be re-thrown as-is from
+      // the catch block — but resolving here makes the failure point explicit.
       const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
       const arAccountId = await getAccountIdByName(
         ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE
@@ -631,7 +643,7 @@ export const paymentsRouter = router({
         .where(
           and(
             eq(invoices.customerId, input.clientId),
-            sql`${invoices.status} NOT IN ('PAID', 'VOID')`,
+            sql`${invoices.status} NOT IN ('PAID', 'VOID', 'DRAFT')`,
             isNull(invoices.deletedAt)
           )
         )
@@ -749,6 +761,26 @@ export const paymentsRouter = router({
               throw new TRPCError({
                 code: "NOT_FOUND",
                 message: `Invoice ${allocation.invoiceId} not found`,
+              });
+            }
+
+            // Reject DRAFT, PAID, and VOID invoices
+            if (invoice.status === "DRAFT") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Invoice #${invoice.invoiceNumber} is still in DRAFT status. Send it before recording payment.`,
+              });
+            }
+            if (invoice.status === "PAID") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Invoice #${invoice.invoiceNumber} is already paid in full`,
+              });
+            }
+            if (invoice.status === "VOID") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Cannot apply payment to voided invoice #${invoice.invoiceNumber}`,
               });
             }
 
@@ -936,6 +968,14 @@ export const paymentsRouter = router({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Invoice not found",
+        });
+      }
+
+      if (invoice.status === "DRAFT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Invoice is still in DRAFT status. Send it before recording payment.",
         });
       }
 

@@ -279,6 +279,7 @@ export const inventoryRouter = router({
               quarantineQty: quarantine,
               holdQty: hold,
               availableQty: available,
+              totalQty: inventoryUtils.computeTotalQty(batch),
 
               // Costing
               unitCogs: batch.unitCogs ? parseFloat(batch.unitCogs) : null,
@@ -751,13 +752,22 @@ export const inventoryRouter = router({
           );
         }
 
+        // Add computed totalQty to each batch in the result
+        const itemsWithTotalQty = result.items.map(item => ({
+          ...item,
+          batch: {
+            ...item.batch,
+            totalQty: inventoryUtils.computeTotalQty(item.batch),
+          },
+        }));
+
         inventoryLogger.operationSuccess("list", {
           itemCount: result.items.length,
           hasMore: result.hasMore,
           nextCursor: result.nextCursor,
         });
 
-        return result;
+        return { ...result, items: itemsWithTotalQty };
       } catch (error) {
         inventoryLogger.operationFailure("list", error as Error, {
           cursor: input.cursor,
@@ -838,7 +848,10 @@ export const inventoryRouter = router({
         }
 
         return {
-          batch,
+          batch: {
+            ...batch,
+            totalQty: inventoryUtils.computeTotalQty(batch),
+          },
           locations,
           auditLogs,
           availableQty: inventoryUtils.calculateAvailableQty(batch),
@@ -1229,7 +1242,17 @@ export const inventoryRouter = router({
         reason: input.reason,
       });
 
-      return { success: true };
+      // Return the updated batch with computed totalQty so callers can reflect
+      // the new quantities without a separate refetch.
+      return {
+        success: true,
+        batch: after
+          ? {
+              ...after,
+              totalQty: inventoryUtils.computeTotalQty(after),
+            }
+          : null,
+      };
     }),
 
   // TERP-SS-009: Update batch fields (ticket/unitCogs, notes) for spreadsheet editing
