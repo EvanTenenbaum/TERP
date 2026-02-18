@@ -1469,10 +1469,10 @@ export function DirectIntakeWorkSurface() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <Package className="h-6 w-6" />
             Direct Intake
-          </h1>
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Add new inventory batches with full validation
           </p>

@@ -134,13 +134,19 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
   // Always show Supplier badge for vendors
   badges.push({ label: "Supplier", className: "bg-green-100 text-green-800" });
 
-  if (vendor.isBuyer) badges.push({ label: "Buyer", className: "bg-blue-100 text-blue-800" });
-  if (vendor.isBrand) badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
+  if (vendor.isBuyer)
+    badges.push({ label: "Buyer", className: "bg-blue-100 text-blue-800" });
+  if (vendor.isBrand)
+    badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
 
   return (
     <div className="flex gap-1 flex-wrap">
-      {badges.map((badge) => (
-        <Badge key={badge.label} variant="outline" className={cn("text-xs", badge.className)}>
+      {badges.map(badge => (
+        <Badge
+          key={badge.label}
+          variant="outline"
+          className={cn("text-xs", badge.className)}
+        >
           {badge.label}
         </Badge>
       ))}
@@ -176,13 +182,18 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
 
         {vendor.teriCode && (
           <InspectorField label="TERI Code">
-            <Badge variant="outline" className="font-mono">{vendor.teriCode}</Badge>
+            <Badge variant="outline" className="font-mono">
+              {vendor.teriCode}
+            </Badge>
           </InspectorField>
         )}
 
         {vendor.email && (
           <InspectorField label="Email">
-            <a href={`mailto:${vendor.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
+            <a
+              href={`mailto:${vendor.email}`}
+              className="flex items-center gap-2 text-blue-600 hover:underline"
+            >
               <Mail className="h-4 w-4" />
               {vendor.email}
             </a>
@@ -191,7 +202,10 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
 
         {vendor.phone && (
           <InspectorField label="Phone">
-            <a href={`tel:${vendor.phone}`} className="flex items-center gap-2 text-blue-600 hover:underline">
+            <a
+              href={`tel:${vendor.phone}`}
+              className="flex items-center gap-2 text-blue-600 hover:underline"
+            >
               <Phone className="h-4 w-4" />
               {vendor.phone}
             </a>
@@ -213,7 +227,9 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Lifetime Value</p>
-            <p className="font-semibold text-green-600">{formatCurrency(vendor.lifetimeValue)}</p>
+            <p className="font-semibold text-green-600">
+              {formatCurrency(vendor.lifetimeValue)}
+            </p>
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Orders</p>
@@ -221,11 +237,19 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Credit Limit</p>
-            <p className="font-semibold">{formatCurrency(vendor.creditLimit)}</p>
+            <p className="font-semibold">
+              {formatCurrency(vendor.creditLimit)}
+            </p>
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">Current Balance</p>
-            <p className={cn("font-semibold", parseFloat(String(vendor.currentDebt || 0)) > 0 && "text-red-600")}>
+            <p
+              className={cn(
+                "font-semibold",
+                parseFloat(String(vendor.currentDebt || 0)) > 0 &&
+                  "text-red-600"
+              )}
+            >
               {formatCurrency(vendor.currentDebt)}
             </p>
           </div>
@@ -233,20 +257,26 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
 
         {vendor.lastOrderDate && (
           <InspectorField label="Last Order">
-            <p className="text-sm text-muted-foreground">{formatDate(vendor.lastOrderDate)}</p>
+            <p className="text-sm text-muted-foreground">
+              {formatDate(vendor.lastOrderDate)}
+            </p>
           </InspectorField>
         )}
 
         {vendor.createdAt && (
           <InspectorField label="Vendor Since">
-            <p className="text-sm text-muted-foreground">{formatDate(vendor.createdAt)}</p>
+            <p className="text-sm text-muted-foreground">
+              {formatDate(vendor.createdAt)}
+            </p>
           </InspectorField>
         )}
       </InspectorSection>
 
       {vendor.notes && (
         <InspectorSection title="Notes">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{vendor.notes}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {vendor.notes}
+          </p>
         </InspectorSection>
       )}
 
@@ -256,7 +286,7 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
             type="button"
             variant="outline"
             className="w-full justify-start"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               e.preventDefault();
               if (vendor?.id !== null && vendor?.id !== undefined) {
@@ -271,7 +301,7 @@ function VendorInspectorContent({ vendor, onNavigate }: VendorInspectorProps) {
             type="button"
             variant="outline"
             className="w-full justify-start"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               e.preventDefault();
               toast.info("View purchase orders functionality coming soon");
@@ -324,9 +354,13 @@ export function VendorsWorkSurface() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const vendorsResponse = vendorsData as any;
-  const vendors: Vendor[] = Array.isArray(vendorsResponse)
-    ? vendorsResponse
-    : vendorsResponse?.items ?? [];
+  const vendors: Vendor[] = useMemo(
+    () =>
+      Array.isArray(vendorsResponse)
+        ? vendorsResponse
+        : (vendorsResponse?.items ?? []),
+    [vendorsResponse]
+  );
 
   const { data: totalCount } = trpc.clients.count.useQuery({
     search: search || undefined,
@@ -337,7 +371,7 @@ export function VendorsWorkSurface() {
 
   // Selected vendor
   const selectedVendor = useMemo(
-    () => vendors.find((v) => v.id === selectedVendorId) || null,
+    () => vendors.find(v => v.id === selectedVendorId) || null,
     [vendors, selectedVendorId]
   );
 
@@ -353,8 +387,14 @@ export function VendorsWorkSurface() {
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
 
-      const aNum = typeof aVal === "string" && !isNaN(parseFloat(aVal)) ? parseFloat(aVal) : aVal;
-      const bNum = typeof bVal === "string" && !isNaN(parseFloat(bVal)) ? parseFloat(bVal) : bVal;
+      const aNum =
+        typeof aVal === "string" && !isNaN(parseFloat(aVal))
+          ? parseFloat(aVal)
+          : aVal;
+      const bNum =
+        typeof bVal === "string" && !isNaN(parseFloat(bVal))
+          ? parseFloat(bVal)
+          : bVal;
 
       if (aNum < bNum) return sortDirection === "asc" ? -1 : 1;
       if (aNum > bNum) return sortDirection === "asc" ? 1 : -1;
@@ -367,7 +407,10 @@ export function VendorsWorkSurface() {
     return {
       total: totalCount || 0,
       active: vendors.length,
-      totalValue: vendors.reduce((sum, v) => sum + parseFloat(String(v.lifetimeValue || 0)), 0),
+      totalValue: vendors.reduce(
+        (sum, v) => sum + parseFloat(String(v.lifetimeValue || 0)),
+        0
+      ),
     };
   }, [vendors, totalCount]);
 
@@ -395,13 +438,16 @@ export function VendorsWorkSurface() {
       },
       arrowdown: (e: React.KeyboardEvent) => {
         e.preventDefault();
-        setSelectedIndex((prev) => Math.min(displayVendors.length - 1, prev + 1));
-        const vendor = displayVendors[Math.min(displayVendors.length - 1, selectedIndex + 1)];
+        setSelectedIndex(prev => Math.min(displayVendors.length - 1, prev + 1));
+        const vendor =
+          displayVendors[
+            Math.min(displayVendors.length - 1, selectedIndex + 1)
+          ];
         if (vendor) setSelectedVendorId(vendor.id);
       },
       arrowup: (e: React.KeyboardEvent) => {
         e.preventDefault();
-        setSelectedIndex((prev) => Math.max(0, prev - 1));
+        setSelectedIndex(prev => Math.max(0, prev - 1));
         const vendor = displayVendors[Math.max(0, selectedIndex - 1)];
         if (vendor) setSelectedVendorId(vendor.id);
       },
@@ -422,7 +468,7 @@ export function VendorsWorkSurface() {
   // Handlers
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortColumn(column);
       setSortDirection("desc");
@@ -431,16 +477,22 @@ export function VendorsWorkSurface() {
 
   const handleAddVendor = useCallback(() => {
     // Navigate to client creation with isSeller pre-selected
-    toast.info("Add Vendor functionality - navigate to client wizard with supplier type pre-selected");
+    toast.info(
+      "Add Vendor functionality - navigate to client wizard with supplier type pre-selected"
+    );
     // Future: setLocation('/clients/new?type=seller');
   }, []);
 
-  const handleNavigate = useCallback((vendorId: number) => {
-    setLocation(`/clients/${vendorId}`);
-  }, [setLocation]);
+  const handleNavigate = useCallback(
+    (vendorId: number) => {
+      setLocation(`/clients/${vendorId}`);
+    },
+    [setLocation]
+  );
 
   const SortIcon = ({ column }: { column: string }) => {
-    if (sortColumn !== column) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    if (sortColumn !== column)
+      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
     return sortDirection === "asc" ? (
       <ArrowUp className="h-3 w-3 ml-1" />
     ) : (
@@ -454,10 +506,10 @@ export function VendorsWorkSurface() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-3">
             <Store className="h-6 w-6" />
             Vendors
-          </h1>
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Manage suppliers and vendor relationships
           </p>
@@ -466,13 +518,22 @@ export function VendorsWorkSurface() {
           {SaveStateIndicator}
           <div className="text-sm text-muted-foreground flex gap-4">
             <span>
-              Total: <span className="font-semibold text-foreground">{stats.total}</span>
+              Total:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.total}
+              </span>
             </span>
             <span>
-              Active: <span className="font-semibold text-foreground">{stats.active}</span>
+              Active:{" "}
+              <span className="font-semibold text-foreground">
+                {stats.active}
+              </span>
             </span>
             <span>
-              Value: <span className="font-semibold text-foreground">{formatCurrency(stats.totalValue)}</span>
+              Value:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(stats.totalValue)}
+              </span>
             </span>
           </div>
         </div>
@@ -487,19 +548,25 @@ export function VendorsWorkSurface() {
               ref={searchInputRef}
               placeholder="Search vendors... (Cmd+K)"
               value={search}
-              onChange={(e) => {
+              onChange={e => {
                 setSearch(e.target.value);
                 setPage(0);
               }}
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+          <Select
+            value={statusFilter}
+            onValueChange={v => {
+              setStatusFilter(v);
+              setPage(0);
+            }}
+          >
             <SelectTrigger className="w-36">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              {VENDOR_STATUS_FILTERS.map((filter) => (
+              {VENDOR_STATUS_FILTERS.map(filter => (
                 <SelectItem key={filter.value} value={filter.value}>
                   {filter.label}
                 </SelectItem>
@@ -519,7 +586,12 @@ export function VendorsWorkSurface() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Table Area */}
-        <div className={cn("flex-1 overflow-auto transition-all duration-200", inspector.isOpen && "mr-96")}>
+        <div
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-200",
+            inspector.isOpen && "mr-96"
+          )}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -529,7 +601,11 @@ export function VendorsWorkSurface() {
               <div className="text-center">
                 <Store className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <p className="font-medium">Failed to load vendors</p>
-                <Button variant="outline" onClick={() => refetch()} className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => refetch()}
+                  className="mt-4"
+                >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry
                 </Button>
@@ -541,7 +617,9 @@ export function VendorsWorkSurface() {
                 <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="font-medium">No vendors found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {search || statusFilter !== "all" ? "Try adjusting your filters" : "Add your first vendor"}
+                  {search || statusFilter !== "all"
+                    ? "Try adjusting your filters"
+                    : "Add your first vendor"}
                 </p>
               </div>
             </div>
@@ -550,16 +628,31 @@ export function VendorsWorkSurface() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
-                      <span className="flex items-center">Name <SortIcon column="name" /></span>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span className="flex items-center">
+                        Name <SortIcon column="name" />
+                      </span>
                     </TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead className="cursor-pointer text-right" onClick={() => handleSort("lifetimeValue")}>
-                      <span className="flex items-center justify-end">Value <SortIcon column="lifetimeValue" /></span>
+                    <TableHead
+                      className="cursor-pointer text-right"
+                      onClick={() => handleSort("lifetimeValue")}
+                    >
+                      <span className="flex items-center justify-end">
+                        Value <SortIcon column="lifetimeValue" />
+                      </span>
                     </TableHead>
-                    <TableHead className="cursor-pointer text-right" onClick={() => handleSort("orderCount")}>
-                      <span className="flex items-center justify-end">Orders <SortIcon column="orderCount" /></span>
+                    <TableHead
+                      className="cursor-pointer text-right"
+                      onClick={() => handleSort("orderCount")}
+                    >
+                      <span className="flex items-center justify-end">
+                        Orders <SortIcon column="orderCount" />
+                      </span>
                     </TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -571,7 +664,8 @@ export function VendorsWorkSurface() {
                       className={cn(
                         "cursor-pointer hover:bg-muted/50",
                         selectedVendorId === vendor.id && "bg-muted",
-                        selectedIndex === index && "ring-1 ring-inset ring-primary"
+                        selectedIndex === index &&
+                          "ring-1 ring-inset ring-primary"
                       )}
                       onClick={() => {
                         setSelectedVendorId(vendor.id);
@@ -583,18 +677,24 @@ export function VendorsWorkSurface() {
                         <div>
                           <p>{vendor.name}</p>
                           {vendor.teriCode && (
-                            <p className="text-xs text-muted-foreground font-mono">{vendor.teriCode}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {vendor.teriCode}
+                            </p>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell><VendorTypeBadges vendor={vendor} /></TableCell>
+                      <TableCell>
+                        <VendorTypeBadges vendor={vendor} />
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {vendor.email || vendor.phone || "-"}
                       </TableCell>
                       <TableCell className="text-right font-medium text-green-600">
                         {formatCurrency(vendor.lifetimeValue)}
                       </TableCell>
-                      <TableCell className="text-right">{vendor.orderCount || 0}</TableCell>
+                      <TableCell className="text-right">
+                        {vendor.orderCount || 0}
+                      </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <ChevronRight className="h-4 w-4" />
@@ -615,7 +715,7 @@ export function VendorsWorkSurface() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      onClick={() => setPage(p => Math.max(0, p - 1))}
                       disabled={page === 0}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -623,7 +723,9 @@ export function VendorsWorkSurface() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                      onClick={() =>
+                        setPage(p => Math.min(totalPages - 1, p + 1))
+                      }
                       disabled={page >= totalPages - 1}
                     >
                       <ChevronRight className="h-4 w-4" />

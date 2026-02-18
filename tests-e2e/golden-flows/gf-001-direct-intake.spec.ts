@@ -19,7 +19,7 @@ const createBrandName = (): string => `E2E Brand ${new Date().toISOString()}`;
 test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
   let brandName: string | null = null;
 
-  const gotoDirectIntake = async (page: Page): Promise<void> => {
+  const _gotoDirectIntake = async (page: Page): Promise<void> => {
     await page.goto("/intake");
     await page.waitForLoadState("networkidle");
 
@@ -51,11 +51,21 @@ test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
 
     await page.goto("/direct-intake");
     await page.waitForLoadState("networkidle");
-    if (await page.getByText("404").isVisible().catch(() => false)) {
+    if (
+      await page
+        .getByText("404")
+        .isVisible()
+        .catch(() => false)
+    ) {
       await page.goto("/inventory/intake");
     }
     await page.waitForLoadState("networkidle");
-    if (await page.getByText("404").isVisible().catch(() => false)) {
+    if (
+      await page
+        .getByText("404")
+        .isVisible()
+        .catch(() => false)
+    ) {
       await page.goto("/inventory/intake");
     }
     await page.waitForLoadState("networkidle");
@@ -70,13 +80,22 @@ test.describe("Golden Flow: GF-001 Direct Intake", (): void => {
       return;
     }
     const rows = page.locator(".ag-center-cols-container .ag-row");
+
+    // Wait for AG Grid to finish rendering initial rows before snapshotting count.
+    await expect(rows.first()).toBeVisible({ timeout: 10_000 });
     const initialRowCount = await rows.count();
 
     await addRowButton.click();
 
-    await expect(rows).toHaveCount(initialRowCount + 1);
+    // Wait for at least one new row to appear.
+    await expect(rows).toHaveCount(initialRowCount + 1, { timeout: 10_000 });
 
-    const rowIndex = initialRowCount; // index of the newly added row
+    // Derive the new row's AG Grid row-index from the DOM instead of assuming
+    // it equals initialRowCount.
+    const lastRow = rows.last();
+    const rowIndexAttr = await lastRow.getAttribute("row-index");
+    const rowIndex =
+      rowIndexAttr !== null ? parseInt(rowIndexAttr, 10) : initialRowCount;
 
     await selectAgGridFirstOption(page, rowIndex, "vendorName");
     await fillAgGridTextCell(page, rowIndex, "brandName", brandName);
