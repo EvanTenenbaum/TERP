@@ -18,12 +18,15 @@ test.describe("Golden Flow: GF-005 Pick & Pack @dev-only @golden-flow", (): void
     await page.goto("/pick-pack");
     await page.waitForLoadState("networkidle");
 
-    const header = page.locator('h1:has-text("Pick")').or(page.locator('h1:has-text("Pack")'));
+    const header = page
+      .locator('h1:has-text("Pick")')
+      .or(page.locator('h1:has-text("Pack")'));
     await expect(header).toBeVisible({ timeout: 5000 });
 
-    const queue = page.locator('[data-testid="order-queue"]')
+    const queue = page
+      .locator('[data-testid="order-queue"]')
       .or(page.locator('[role="listbox"]'))
-      .or(page.locator(':text("No orders to pick")'));
+      .or(page.getByText("No orders to pick"));
     await expect(queue.first()).toBeVisible({ timeout: 5000 });
   });
 
@@ -37,7 +40,8 @@ test.describe("Golden Flow: GF-005 Pick & Pack @dev-only @golden-flow", (): void
     if (await orderRow.isVisible().catch(() => false)) {
       await orderRow.click();
 
-      const packButton = page.locator('button:has-text("Pack")')
+      const packButton = page
+        .locator('button:has-text("Pack")')
         .or(page.locator('button:has-text("Ready")'));
       if (
         await packButton
@@ -48,7 +52,8 @@ test.describe("Golden Flow: GF-005 Pick & Pack @dev-only @golden-flow", (): void
         await expect(packButton.first()).toBeVisible();
       }
 
-      const shipButton = page.locator('button:has-text("Ship")')
+      const shipButton = page
+        .locator('button:has-text("Ship")')
         .or(page.locator('button:has-text("Mark Shipped")'));
       if (
         await shipButton

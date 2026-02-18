@@ -16,7 +16,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
   });
 
   test.describe("Pick List Navigation", () => {
-    test("should display pick list with Work Surface pattern", async ({ page }) => {
+    test("should display pick list with Work Surface pattern", async ({
+      page,
+    }) => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
@@ -25,7 +27,10 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await expect(header).toBeVisible({ timeout: 5000 });
 
       // Stats should be visible
-      const stats = page.locator(':text("Pending"), :text("Picking"), :text("Packed")');
+      const stats = page
+        .getByText("Pending")
+        .or(page.getByText("Picking"))
+        .or(page.getByText("Packed"));
       await expect(stats.first()).toBeVisible({ timeout: 5000 });
     });
 
@@ -43,7 +48,7 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.waitForTimeout(300);
 
       // Order details should appear on right
-      const details = page.locator(':text("Order"), :text("Items")');
+      const details = page.getByText("Order").or(page.getByText("Items"));
       await expect(details.first()).toBeVisible({ timeout: 5000 });
     });
 
@@ -51,8 +56,15 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.goto("/pick-pack");
       await page.waitForLoadState("networkidle");
 
-      const statusFilter = page.locator('select, [data-testid="status-filter"]');
-      if (await statusFilter.first().isVisible().catch(() => false)) {
+      const statusFilter = page.locator(
+        'select, [data-testid="status-filter"]'
+      );
+      if (
+        await statusFilter
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
         await expect(statusFilter.first()).toBeVisible();
       }
     });
@@ -65,7 +77,9 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       const isMac = process.platform === "darwin";
       await page.keyboard.press(isMac ? "Meta+k" : "Control+k");
 
-      const searchInput = page.locator('input[placeholder*="Search"], input[type="search"]');
+      const searchInput = page.locator(
+        'input[placeholder*="Search"], input[type="search"]'
+      );
       await expect(searchInput.first()).toBeFocused({ timeout: 3000 });
     });
   });
@@ -83,7 +97,12 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
         // Items should be visible
         const items = page.locator('[role="checkbox"], input[type="checkbox"]');
-        if (await items.first().isVisible().catch(() => false)) {
+        if (
+          await items
+            .first()
+            .isVisible()
+            .catch(() => false)
+        ) {
           await expect(items.first()).toBeVisible();
         }
       }
@@ -99,8 +118,15 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
         await page.waitForTimeout(500);
 
         // Select All button
-        const selectAll = page.locator('button:has-text("Select All"), button:has-text("All")');
-        if (await selectAll.first().isVisible().catch(() => false)) {
+        const selectAll = page.locator(
+          'button:has-text("Select All"), button:has-text("All")'
+        );
+        if (
+          await selectAll
+            .first()
+            .isVisible()
+            .catch(() => false)
+        ) {
           await expect(selectAll.first()).toBeVisible();
         }
       }
@@ -114,7 +140,12 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
 
       // Pack button should be visible when items selected
       const packButton = page.locator('button:has-text("Pack")');
-      if (await packButton.first().isVisible().catch(() => false)) {
+      if (
+        await packButton
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
         await expect(packButton.first()).toBeVisible();
       }
     });
@@ -124,10 +155,20 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.waitForLoadState("networkidle");
 
       // Mark Ready button
-      const readyButton = page.locator('button:has-text("Ready"), button:has-text("Mark Ready")');
-      if (await readyButton.first().isVisible().catch(() => false)) {
+      const readyButton = page.locator(
+        'button:has-text("Ready"), button:has-text("Mark Ready")'
+      );
+      if (
+        await readyButton
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
         // Should be disabled until all items packed
-        const isDisabled = await readyButton.first().isDisabled().catch(() => true);
+        const _isDisabled = await readyButton
+          .first()
+          .isDisabled()
+          .catch(() => true);
         // Just verify button exists
         await expect(readyButton.first()).toBeVisible();
       }
@@ -145,12 +186,18 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
         await page.waitForTimeout(300);
 
         // View Details should open inspector
-        const viewDetails = page.locator('button:has-text("View Details"), button:has-text("Details")');
+        const viewDetails = page.locator(
+          'button:has-text("View Details"), button:has-text("Details")'
+        );
         if (await viewDetails.isVisible().catch(() => false)) {
           await viewDetails.click();
 
-          const inspector = page.locator('[data-testid="inspector-panel"], [role="complementary"]');
-          await expect(inspector).toBeVisible({ timeout: 5000 }).catch(() => true);
+          const inspector = page.locator(
+            '[data-testid="inspector-panel"], [role="complementary"]'
+          );
+          await expect(inspector)
+            .toBeVisible({ timeout: 5000 })
+            .catch(() => true);
         }
       }
     });
@@ -170,7 +217,10 @@ test.describe("Golden Flow: Pick & Pack Fulfillment", () => {
       await page.waitForTimeout(300);
 
       // Some detail view should appear
-      const details = page.locator(':text("Details"), :text("Location"), :text("Quantity")');
+      const details = page
+        .getByText("Details")
+        .or(page.getByText("Location"))
+        .or(page.getByText("Quantity"));
       expect(await details.count()).toBeGreaterThanOrEqual(0);
     });
   });
