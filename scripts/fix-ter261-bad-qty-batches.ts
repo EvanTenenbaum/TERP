@@ -13,6 +13,14 @@
  *   npx tsx scripts/fix-ter261-bad-qty-batches.ts --confirm-production
  *
  * Run via DO temporary job per docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md
+ *
+ * DB column mapping (from drizzle/schema.ts):
+ *   code        → varchar("code")       (NOT "batchCode")
+ *   batchStatus → mysqlEnum("batchStatus") (NOT "status")
+ *   onHandQty   → decimal("onHandQty")
+ *   reservedQty → decimal("reservedQty")
+ *   quarantineQty → decimal("quarantineQty")
+ *   productId   → int("productId")
  */
 
 import mysql from "mysql2/promise";
@@ -25,12 +33,11 @@ const DRY_RUN = !process.argv.includes("--confirm-production");
 
 interface BadBatch {
   id: number;
-  batchCode: string;
-  status: string;
+  code: string;
+  batchStatus: string;
   onHandQty: string;
   reservedQty: string;
   quarantineQty: string;
-  totalQty: string;
   productId: number;
 }
 
@@ -50,15 +57,14 @@ async function main() {
     const [badBatches] = await connection.execute<mysql.RowDataPacket[]>(`
       SELECT
         id,
-        batchCode,
-        status,
+        code,
+        batchStatus,
         onHandQty,
         reservedQty,
         quarantineQty,
-        totalQty,
         productId
       FROM batches
-      WHERE status = 'LIVE'
+      WHERE batchStatus = 'LIVE'
         AND CAST(onHandQty AS DECIMAL(15,4)) <= 0
       ORDER BY id
     `);
@@ -72,8 +78,8 @@ async function main() {
     }
 
     // Print diagnostic table
-    console.log("  ID   | batchCode           | onHandQty | reservedQty | quarantineQty | totalQty | Action");
-    console.log("  -----|---------------------|-----------|-------------|---------------|----------|--------");
+    console.log("  ID   | code                | onHandQty | reservedQty | quarantineQty | Action");
+    console.log("  -----|---------------------|-----------|-------------|---------------|--------");
 
     const toSoldOut: number[] = [];
     const toZero: number[] = [];
@@ -95,7 +101,7 @@ async function main() {
       }
 
       console.log(
-        `  ${String(batch.id).padEnd(5)}| ${String(batch.batchCode).padEnd(20)}| ${String(onHand).padEnd(10)}| ${String(reserved).padEnd(12)}| ${String(quarantine).padEnd(14)}| ${String(batch.totalQty).padEnd(9)}| ${action}`
+        `  ${String(batch.id).padEnd(5)}| ${String(batch.code).padEnd(20)}| ${String(onHand).padEnd(10)}| ${String(reserved).padEnd(12)}| ${String(quarantine).padEnd(14)}| ${action}`
       );
     }
 
@@ -111,7 +117,7 @@ async function main() {
     if (toSoldOut.length > 0) {
       await connection.execute(
         `UPDATE batches
-         SET status = 'SOLD_OUT', onHandQty = '0.0000', updatedAt = NOW()
+         SET batchStatus = 'SOLD_OUT', onHandQty = '0.0000', updatedAt = NOW()
          WHERE id IN (${toSoldOut.map(() => "?").join(",")})`,
         toSoldOut
       );
@@ -132,7 +138,7 @@ async function main() {
     const [afterFix] = await connection.execute<mysql.RowDataPacket[]>(`
       SELECT COUNT(*) AS cnt
       FROM batches
-      WHERE status = 'LIVE'
+      WHERE batchStatus = 'LIVE'
         AND CAST(onHandQty AS DECIMAL(15,4)) <= 0
     `);
     const remaining = (afterFix[0] as { cnt: number }).cnt;
