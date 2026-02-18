@@ -2,11 +2,43 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * MOBILE-UX: Table container with overflow detection.
+ * Adds a scroll-hint gradient when the table overflows its container,
+ * giving mobile users a visual cue that horizontal scrolling is available.
+ */
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    function checkOverflow() {
+      if (!el) return;
+      const hasOverflow = el.scrollWidth > el.clientWidth;
+      const isScrolledToEnd =
+        el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+      el.classList.toggle("has-overflow", hasOverflow && !isScrolledToEnd);
+    }
+
+    checkOverflow();
+    el.addEventListener("scroll", checkOverflow, { passive: true });
+    // Re-check on resize
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", checkOverflow);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="table-scroll-container relative w-full overflow-x-auto"
     >
       <table
         data-slot="table"

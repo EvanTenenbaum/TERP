@@ -38,7 +38,7 @@ export const DataTablePagination = React.memo(function DataTablePagination({
       <div className="text-sm text-muted-foreground">
         Showing {total === 0 ? 0 : startItem} - {endItem} of {total}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select
           value={String(pageSize)}
           onValueChange={value => onPageSizeChange?.(Number(value))}
@@ -65,7 +65,7 @@ export const DataTablePagination = React.memo(function DataTablePagination({
           >
             Previous
           </Button>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
             Page {clampedPage} of {totalPages}
           </div>
           <Button

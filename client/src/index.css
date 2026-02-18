@@ -247,6 +247,62 @@
   .table-scroll-container.has-overflow::after {
     opacity: 1;
   }
+
+  /**
+   * MOBILE-UX-AUDIT: Global mobile touch target enforcement
+   * Ensures all interactive elements meet WCAG 44x44px minimum on touch devices.
+   * Applied only below the md breakpoint (< 768px) to avoid affecting desktop.
+   */
+  @media (max-width: 767px) {
+    /* Select triggers - ensure adequate touch area */
+    [data-slot="select-trigger"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    /* Checkbox and radio - expand hit area via padding */
+    [data-slot="checkbox"],
+    input[type="checkbox"],
+    input[type="radio"] {
+      min-height: 24px;
+      min-width: 24px;
+      /* The actual touch target is expanded by the parent label/container */
+    }
+
+    /* Dropdown menu items - ensure comfortable tap targets */
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    /* Tab triggers - ensure tappable */
+    [role="tab"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    /* Links that function as navigation - ensure tappable */
+    nav a {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* Input elements - ensure comfortable height on mobile */
+    [data-slot="input"],
+    [data-slot="textarea"] {
+      min-height: 44px;
+    }
+
+    /* Pagination controls - ensure buttons are tappable */
+    [data-slot="table-pagination"] button {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
 }
 
 @layer utilities {

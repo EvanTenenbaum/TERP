@@ -259,7 +259,7 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
       </div>
 
       {/* Returns Table */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

@@ -38,9 +38,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit, Trash, Search, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash,
+  Search,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errorHandling";
@@ -50,7 +63,11 @@ import type { PricingRule } from "../../../drizzle/schema";
 interface RuleFormData {
   name: string;
   description: string;
-  adjustmentType: "PERCENT_MARKUP" | "PERCENT_MARKDOWN" | "DOLLAR_MARKUP" | "DOLLAR_MARKDOWN";
+  adjustmentType:
+    | "PERCENT_MARKUP"
+    | "PERCENT_MARKDOWN"
+    | "DOLLAR_MARKUP"
+    | "DOLLAR_MARKDOWN";
   adjustmentValue: string;
   conditions: Record<string, unknown>;
   logicType: "AND" | "OR";
@@ -75,11 +92,13 @@ export default function PricingRulesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState<PricingRule | null>(null);
   const [formData, setFormData] = useState<RuleFormData>(emptyFormData);
-  
+
   // Condition builder state
   const [conditionKey, setConditionKey] = useState("");
   const [conditionValue, setConditionValue] = useState("");
-  const [deleteConditionConfirm, setDeleteConditionConfirm] = useState<string | null>(null);
+  const [deleteConditionConfirm, setDeleteConditionConfirm] = useState<
+    string | null
+  >(null);
 
   // Fetch pricing rules
   const { data: rules, isLoading } = trpc.pricing.listRules.useQuery();
@@ -93,7 +112,7 @@ export default function PricingRulesPage() {
       setCreateDialogOpen(false);
       setFormData(emptyFormData);
     },
-    onError: (error) => {
+    onError: error => {
       showErrorToast(error, { action: "create", resource: "pricing rule" });
     },
   });
@@ -107,7 +126,7 @@ export default function PricingRulesPage() {
       setSelectedRule(null);
       setFormData(emptyFormData);
     },
-    onError: (error) => {
+    onError: error => {
       showErrorToast(error, { action: "update", resource: "pricing rule" });
     },
   });
@@ -120,16 +139,18 @@ export default function PricingRulesPage() {
       setDeleteDialogOpen(false);
       setSelectedRule(null);
     },
-    onError: (error) => {
+    onError: error => {
       showErrorToast(error, { action: "delete", resource: "pricing rule" });
     },
   });
 
   // Filter rules by search
-  const filteredRules = rules?.filter((rule) =>
-    rule.name.toLowerCase().includes(search.toLowerCase()) ||
-    rule.description?.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const filteredRules =
+    rules?.filter(
+      rule =>
+        rule.name.toLowerCase().includes(search.toLowerCase()) ||
+        rule.description?.toLowerCase().includes(search.toLowerCase())
+    ) || [];
 
   // Handle create
   const handleCreate = () => {
@@ -147,7 +168,7 @@ export default function PricingRulesPage() {
   // Handle edit
   const handleEdit = () => {
     if (!selectedRule) return;
-    
+
     updateMutation.mutate({
       ruleId: selectedRule.id,
       name: formData.name,
@@ -190,7 +211,7 @@ export default function PricingRulesPage() {
   // Add condition
   const addCondition = () => {
     if (!conditionKey || !conditionValue) return;
-    
+
     setFormData({
       ...formData,
       conditions: {
@@ -211,7 +232,8 @@ export default function PricingRulesPage() {
 
   // Get adjustment icon
   const getAdjustmentIcon = (type: string) => {
-    if (type.includes("MARKUP")) return <TrendingUp className="h-4 w-4 text-green-600" />;
+    if (type.includes("MARKUP"))
+      return <TrendingUp className="h-4 w-4 text-green-600" />;
     return <TrendingDown className="h-4 w-4 text-red-600" />;
   };
 
@@ -222,10 +244,12 @@ export default function PricingRulesPage() {
     const variant = isMarkup ? "default" : "destructive";
     const symbol = isPercent ? "%" : "$";
     const sign = isMarkup ? "+" : "-";
-    
+
     return (
       <Badge variant={variant}>
-        {sign}{value}{symbol}
+        {sign}
+        {value}
+        {symbol}
       </Badge>
     );
   };
@@ -238,7 +262,7 @@ export default function PricingRulesPage() {
         <Input
           id="name"
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          onChange={e => setFormData({ ...formData, name: e.target.value })}
           placeholder="e.g., Premium Flower Markup"
         />
       </div>
@@ -248,7 +272,9 @@ export default function PricingRulesPage() {
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={e =>
+            setFormData({ ...formData, description: e.target.value })
+          }
           placeholder="Describe when this rule applies..."
           rows={2}
         />
@@ -259,7 +285,9 @@ export default function PricingRulesPage() {
           <Label htmlFor="adjustmentType">Adjustment Type</Label>
           <Select
             value={formData.adjustmentType}
-            onValueChange={(value: string) => setFormData({ ...formData, adjustmentType: value as any })}
+            onValueChange={(value: string) =>
+              setFormData({ ...formData, adjustmentType: value as any })
+            }
           >
             <SelectTrigger id="adjustmentType">
               <SelectValue />
@@ -280,7 +308,9 @@ export default function PricingRulesPage() {
             type="number"
             step="0.01"
             value={formData.adjustmentValue}
-            onChange={(e) => setFormData({ ...formData, adjustmentValue: e.target.value })}
+            onChange={e =>
+              setFormData({ ...formData, adjustmentValue: e.target.value })
+            }
             placeholder="0.00"
           />
         </div>
@@ -290,7 +320,10 @@ export default function PricingRulesPage() {
         <Label>Conditions</Label>
         <div className="space-y-2 mt-2">
           {Object.entries(formData.conditions).map(([key, value]) => (
-            <div key={key} className="flex items-center gap-2 p-2 bg-muted rounded">
+            <div
+              key={key}
+              className="flex items-center gap-2 p-2 bg-muted rounded"
+            >
               <span className="text-sm flex-1">
                 <strong>{key}:</strong> {value as any}
               </span>
@@ -304,17 +337,17 @@ export default function PricingRulesPage() {
               </Button>
             </div>
           ))}
-          
+
           <div className="flex gap-2">
             <Input
               placeholder="Condition key (e.g., category)"
               value={conditionKey}
-              onChange={(e) => setConditionKey(e.target.value)}
+              onChange={e => setConditionKey(e.target.value)}
             />
             <Input
               placeholder="Value (e.g., Flower)"
               value={conditionValue}
-              onChange={(e) => setConditionValue(e.target.value)}
+              onChange={e => setConditionValue(e.target.value)}
             />
             <Button type="button" variant="outline" onClick={addCondition}>
               <Plus className="h-4 w-4" />
@@ -328,13 +361,17 @@ export default function PricingRulesPage() {
           <Label htmlFor="logicType">Logic Type</Label>
           <Select
             value={formData.logicType}
-            onValueChange={(value: string) => setFormData({ ...formData, logicType: value as any })}
+            onValueChange={(value: string) =>
+              setFormData({ ...formData, logicType: value as any })
+            }
           >
             <SelectTrigger id="logicType">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="AND">AND (all conditions must match)</SelectItem>
+              <SelectItem value="AND">
+                AND (all conditions must match)
+              </SelectItem>
               <SelectItem value="OR">OR (any condition can match)</SelectItem>
             </SelectContent>
           </Select>
@@ -346,7 +383,9 @@ export default function PricingRulesPage() {
             id="priority"
             type="number"
             value={formData.priority}
-            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+            onChange={e =>
+              setFormData({ ...formData, priority: e.target.value })
+            }
             placeholder="0"
           />
         </div>
@@ -387,13 +426,13 @@ export default function PricingRulesPage() {
               <Input
                 placeholder="Search rules..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -409,23 +448,34 @@ export default function PricingRulesPage() {
               <TableBody>
                 {filteredRules.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center text-muted-foreground"
+                    >
                       No pricing rules found. Create one to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRules.map((rule) => (
+                  filteredRules.map(rule => (
                     <TableRow key={rule.id}>
                       <TableCell className="font-medium">{rule.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getAdjustmentIcon(rule.adjustmentType)}
-                          {getAdjustmentBadge(rule.adjustmentType, rule.adjustmentValue.toString())}
+                          {getAdjustmentBadge(
+                            rule.adjustmentType,
+                            rule.adjustmentValue.toString()
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {Object.keys((rule.conditions as Record<string, unknown>) || {}).length} condition(s)
+                          {
+                            Object.keys(
+                              (rule.conditions as Record<string, unknown>) || {}
+                            ).length
+                          }{" "}
+                          condition(s)
                         </div>
                       </TableCell>
                       <TableCell>
@@ -433,7 +483,9 @@ export default function PricingRulesPage() {
                       </TableCell>
                       <TableCell>{rule.priority}</TableCell>
                       <TableCell>
-                        <Badge variant={rule.isActive ? "default" : "secondary"}>
+                        <Badge
+                          variant={rule.isActive ? "default" : "secondary"}
+                        >
                           {rule.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
@@ -475,10 +527,16 @@ export default function PricingRulesPage() {
           </DialogHeader>
           {renderRuleForm()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={!formData.name || createMutation.isPending}>
+            <Button
+              onClick={handleCreate}
+              disabled={!formData.name || createMutation.isPending}
+            >
               {createMutation.isPending ? "Creating..." : "Create Rule"}
             </Button>
           </DialogFooter>
@@ -499,7 +557,10 @@ export default function PricingRulesPage() {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEdit} disabled={!formData.name || updateMutation.isPending}>
+            <Button
+              onClick={handleEdit}
+              disabled={!formData.name || updateMutation.isPending}
+            >
               {updateMutation.isPending ? "Updating..." : "Update Rule"}
             </Button>
           </DialogFooter>
@@ -512,12 +573,16 @@ export default function PricingRulesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Pricing Rule</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedRule?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedRule?.name}"? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteMutation.isPending}>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -527,7 +592,7 @@ export default function PricingRulesPage() {
       {/* Condition Delete Confirmation */}
       <ConfirmDialog
         open={deleteConditionConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteConditionConfirm(null)}
+        onOpenChange={open => !open && setDeleteConditionConfirm(null)}
         title="Remove Condition"
         description="Are you sure you want to remove this condition from the pricing rule?"
         confirmLabel="Remove"
@@ -542,4 +607,3 @@ export default function PricingRulesPage() {
     </div>
   );
 }
-
