@@ -1892,16 +1892,17 @@ export const ordersRouter = router({
           const currentReserved = parseMoneyOrZero(batch.reservedQty);
           const currentOnHand = parseMoneyOrZero(batch.onHandQty);
 
-          // INV-001: Release reserved quantity
+          // TER-259: Release reservation AND decrement onHandQty atomically on shipment.
+          // reservedQty was incremented at confirmation (soft lock); now we release it
+          // and record the actual physical deduction against onHandQty.
           const newReserved = Math.max(0, currentReserved - allocatedQty);
+          const newOnHand = Math.max(0, currentOnHand - allocatedQty);
 
-          // INV-001: Update batch - release reservation
-          // Note: onHandQty was already deducted at order confirmation for most flows
-          // We only release the reservation here to fix the "reserved forever" issue
           await tx
             .update(batches)
             .set({
               reservedQty: newReserved.toString(),
+              onHandQty: newOnHand.toString(),
             })
             .where(eq(batches.id, allocation.batchId));
 
@@ -1911,10 +1912,10 @@ export const ordersRouter = router({
             inventoryMovementType: "SALE",
             quantityChange: `-${allocatedQty}`,
             quantityBefore: currentOnHand.toString(),
-            quantityAfter: currentOnHand.toString(), // onHand unchanged here, just recording shipment
+            quantityAfter: newOnHand.toString(),
             referenceType: "ORDER_SHIPMENT",
             referenceId: input.id,
-            notes: `Order shipped - reservation released. Reserved: ${currentReserved} → ${newReserved}`,
+            notes: `Order shipped — reservation released, onHandQty decremented. Reserved: ${currentReserved} → ${newReserved}`,
             performedBy: userId,
           });
 
