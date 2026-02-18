@@ -1799,11 +1799,15 @@ export async function updateOrderStatus(input: {
           throw new Error(`Batch ${item.batchId} not found`);
         }
 
-        const available = calculateAvailableQty(batch);
-        if (available < item.quantity) {
+        // Under the reservation model (TER-259), this order's own reservation
+        // is subtracted from available qty by calculateAvailableQty. Add it back
+        // since shipping will release the reservation and deduct onHandQty atomically.
+        const baseAvailable = calculateAvailableQty(batch);
+        const effectiveAvailable = baseAvailable + item.quantity;
+        if (effectiveAvailable < item.quantity) {
           throw new Error(
             `Insufficient inventory for batch ${item.batchId}. ` +
-              `Required: ${item.quantity}, Available: ${available}`
+              `Required: ${item.quantity}, Available: ${baseAvailable}`
           );
         }
       }

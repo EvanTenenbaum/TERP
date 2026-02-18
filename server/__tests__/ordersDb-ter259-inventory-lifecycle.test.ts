@@ -383,9 +383,9 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
       // Acceptable: mock may not fully satisfy all internals.
     }
 
-    // For PENDING -> CANCELLED, the reservation-release block should NOT be entered
-    // (it's gated on oldStatus === "PACKED"). The update should only touch order status.
-    // We verify that no batch update for reservedQty specifically was made.
+    // Under TER-259, PENDING orders have active reservations (reservedQty was
+    // incremented at creation/confirmation). Cancelling a PENDING order SHOULD
+    // release the reservation by decrementing reservedQty.
     const setCalls = setFn.mock.calls;
     const batchReservationRelease = setCalls.find(
       (call: unknown[]) =>
@@ -394,8 +394,8 @@ describe("TER-259 Scenario 5: CANCELLED restores reservedQty", () => {
         "reservedQty" in (call[0] as Record<string, unknown>)
     );
 
-    // PENDING -> CANCELLED should not produce a batch reservedQty update
-    expect(batchReservationRelease).toBeUndefined();
+    // PENDING -> CANCELLED SHOULD release reservedQty (QA-001 fix)
+    expect(batchReservationRelease).toBeDefined();
   });
 });
 
