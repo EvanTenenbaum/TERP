@@ -202,17 +202,36 @@ export const purchaseOrdersRouter = router({
 
       // If only supplierClientId provided, try to resolve vendorId for backward compat
       if (resolvedSupplierClientId && !resolvedVendorId) {
-        resolvedVendorId = await resolveOrCreateLegacyVendorId(
-          resolvedSupplierClientId
-        );
+        try {
+          const resolved = await resolveOrCreateLegacyVendorId(
+            resolvedSupplierClientId
+          );
+          if (resolved === null) {
+            // Legacy vendor mapping is best-effort during deprecation period
+            logger.warn(
+              { supplierClientId: resolvedSupplierClientId },
+              "[PO] Could not resolve legacy vendorId — proceeding with supplierClientId only"
+            );
+            resolvedVendorId = undefined;
+          } else {
+            resolvedVendorId = resolved;
+          }
+        } catch (e) {
+          // Legacy vendor mapping is best-effort during deprecation period
+          logger.warn(
+            { supplierClientId: resolvedSupplierClientId, error: e },
+            "[PO] Could not resolve legacy vendorId — proceeding with supplierClientId only"
+          );
+          resolvedVendorId = undefined;
+        }
       }
 
-      // Validate that we have at least vendorId (required by schema for now)
-      if (!resolvedVendorId) {
+      // Only fail if NEITHER identifier is available
+      if (!resolvedVendorId && !resolvedSupplierClientId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message:
-            "Unable to resolve vendor mapping for this supplier. Please verify supplier setup.",
+            "A supplier must be specified. Provide supplierClientId or vendorId.",
         });
       }
 

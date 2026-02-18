@@ -404,93 +404,119 @@ export async function migrateAllVendors(
  */
 export async function resolveOrCreateLegacyVendorId(
   supplierClientId: number
-): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const [supplierClient] = await db
-    .select({ id: clients.id, name: clients.name })
-    .from(clients)
-    .where(eq(clients.id, supplierClientId))
-    .limit(1);
-
-  if (!supplierClient) {
-    throw new Error(`Client with ID ${supplierClientId} not found`);
-  }
-
-  const [existingProfile] = await db
-    .select({
-      id: supplierProfiles.id,
-      legacyVendorId: supplierProfiles.legacyVendorId,
-    })
-    .from(supplierProfiles)
-    .where(eq(supplierProfiles.clientId, supplierClientId))
-    .limit(1);
-
-  if (existingProfile?.legacyVendorId) {
-    return existingProfile.legacyVendorId;
-  }
-
-  let resolvedVendorId: number | null = null;
-  const [existingVendor] = await db
-    .select({ id: vendors.id })
-    .from(vendors)
-    .where(eq(vendors.name, supplierClient.name))
-    .limit(1);
-
-  if (existingVendor) {
-    resolvedVendorId = existingVendor.id;
-  } else {
-    try {
-      const [createdVendor] = await db
-        .insert(vendors)
-        .values({ name: supplierClient.name })
-        .$returningId();
-      resolvedVendorId = createdVendor.id;
-
+): Promise<number | null> {
+  try {
+    const db = await getDb();
+    if (!db) {
       logger.warn(
-        {
-          supplierClientId,
-          vendorId: resolvedVendorId,
-          supplierName: supplierClient.name,
-        },
-        "[PO] Auto-provisioned legacy vendor mapping for supplier"
+        { supplierClientId },
+        "[vendorMapping] resolveOrCreateLegacyVendorId: Database not available"
       );
-    } catch (error) {
-      const [vendorAfterRace] = await db
-        .select({ id: vendors.id })
-        .from(vendors)
-        .where(eq(vendors.name, supplierClient.name))
-        .limit(1);
-      if (!vendorAfterRace) {
-        throw error;
-      }
-      resolvedVendorId = vendorAfterRace.id;
+      return null;
     }
+
+    const [supplierClient] = await db
+      .select({ id: clients.id, name: clients.name })
+      .from(clients)
+      .where(eq(clients.id, supplierClientId))
+      .limit(1);
+
+    if (!supplierClient) {
+      logger.warn(
+        { supplierClientId },
+        "[vendorMapping] resolveOrCreateLegacyVendorId: Client not found"
+      );
+      return null;
+    }
+
+    const [existingProfile] = await db
+      .select({
+        id: supplierProfiles.id,
+        legacyVendorId: supplierProfiles.legacyVendorId,
+      })
+      .from(supplierProfiles)
+      .where(eq(supplierProfiles.clientId, supplierClientId))
+      .limit(1);
+
+    if (existingProfile?.legacyVendorId) {
+      return existingProfile.legacyVendorId;
+    }
+
+    let resolvedVendorId: number | null = null;
+    const [existingVendor] = await db
+      .select({ id: vendors.id })
+      .from(vendors)
+      .where(eq(vendors.name, supplierClient.name))
+      .limit(1);
+
+    if (existingVendor) {
+      resolvedVendorId = existingVendor.id;
+    } else {
+      try {
+        const [createdVendor] = await db
+          .insert(vendors)
+          .values({ name: supplierClient.name })
+          .$returningId();
+        resolvedVendorId = createdVendor.id;
+
+        logger.warn(
+          {
+            supplierClientId,
+            vendorId: resolvedVendorId,
+            supplierName: supplierClient.name,
+          },
+          "[PO] Auto-provisioned legacy vendor mapping for supplier"
+        );
+      } catch (error) {
+        const [vendorAfterRace] = await db
+          .select({ id: vendors.id })
+          .from(vendors)
+          .where(eq(vendors.name, supplierClient.name))
+          .limit(1);
+        if (!vendorAfterRace) {
+          logger.warn(
+            { supplierClientId, error },
+            "[vendorMapping] resolveOrCreateLegacyVendorId: Race condition — could not insert or find vendor"
+          );
+          return null;
+        }
+        resolvedVendorId = vendorAfterRace.id;
+      }
+    }
+
+    if (!resolvedVendorId) {
+      logger.warn(
+        { supplierClientId },
+        "[vendorMapping] resolveOrCreateLegacyVendorId: Unable to create or resolve legacy vendor mapping"
+      );
+      return null;
+    }
+
+    if (existingProfile) {
+      await db
+        .update(supplierProfiles)
+        .set({ legacyVendorId: resolvedVendorId })
+        .where(eq(supplierProfiles.id, existingProfile.id));
+    } else {
+      await db.insert(supplierProfiles).values({
+        clientId: supplierClientId,
+        legacyVendorId: resolvedVendorId,
+      });
+    }
+
+    logger.info(
+      { supplierClientId, vendorId: resolvedVendorId },
+      "[PO] Linked supplier profile to legacy vendor"
+    );
+
+    return resolvedVendorId;
+  } catch (e) {
+    logger.warn(
+      { supplierClientId, error: e },
+      "[vendorMapping] resolveOrCreateLegacyVendorId: Unexpected failure — returning null"
+    );
+    return null;
   }
-
-  if (!resolvedVendorId) {
-    throw new Error("Unable to create or resolve legacy vendor mapping");
-  }
-
-  if (existingProfile) {
-    await db
-      .update(supplierProfiles)
-      .set({ legacyVendorId: resolvedVendorId })
-      .where(eq(supplierProfiles.id, existingProfile.id));
-  } else {
-    await db.insert(supplierProfiles).values({
-      clientId: supplierClientId,
-      legacyVendorId: resolvedVendorId,
-    });
-  }
-
-  logger.info(
-    { supplierClientId, vendorId: resolvedVendorId },
-    "[PO] Linked supplier profile to legacy vendor"
-  );
-
-  return resolvedVendorId;
 }
 
 // ============================================================================
