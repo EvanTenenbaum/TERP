@@ -200,9 +200,17 @@ export const vendorPayablesRouter = router({
         vendorClientId: input.vendorClientId,
       });
 
-      const payableId = await payablesService.createPayable(input, userId);
-
-      return { id: payableId };
+      try {
+        const payableId = await payablesService.createPayable(input, userId);
+        return { id: payableId };
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Failed to create payable",
+          cause: error,
+        });
+      }
     }),
 
   /**

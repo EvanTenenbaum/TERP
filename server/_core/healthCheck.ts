@@ -3,11 +3,39 @@ import { logger } from "./logger";
 import { getPoolStats } from "./connectionPool";
 import { spawn } from "child_process";
 import { getMemoryStats } from "../utils/memoryOptimizer";
+import * as fs from "fs";
+import * as path from "path";
+
+interface VersionInfo {
+  version: string;
+  commit: string;
+  date: string;
+  branch?: string;
+}
+
+/**
+ * Read version.json on each call to return current deploy info.
+ * Reads fresh from disk to avoid stale cached values after deployments.
+ */
+function readVersionInfo(): VersionInfo | null {
+  try {
+    const versionPath = path.resolve(
+      process.cwd(),
+      "client/public/version.json"
+    );
+    const raw = fs.readFileSync(versionPath, "utf8");
+    return JSON.parse(raw) as VersionInfo;
+  } catch {
+    return null;
+  }
+}
 
 // SECURITY: Public-facing health status (minimal info)
 export interface PublicHealthStatus {
   status: "healthy" | "degraded" | "unhealthy";
   timestamp: string;
+  version?: string;
+  commit?: string;
 }
 
 // SECURITY: Detailed health check for authenticated admin endpoints only
@@ -16,6 +44,8 @@ export interface HealthCheckResult {
   timestamp: string;
   uptime: number;
   responseTime: number;
+  version?: string;
+  commit?: string;
   checks: {
     database: {
       status: "ok" | "error";
@@ -51,6 +81,7 @@ export interface HealthCheckResult {
 export async function performPublicHealthCheck(): Promise<PublicHealthStatus> {
   const dbCheck = await checkDatabase();
   const memoryCheck = checkMemory();
+  const versionInfo = readVersionInfo();
 
   let status: "healthy" | "degraded" | "unhealthy" = "healthy";
 
@@ -63,6 +94,10 @@ export async function performPublicHealthCheck(): Promise<PublicHealthStatus> {
   return {
     status,
     timestamp: new Date().toISOString(),
+    ...(versionInfo && {
+      version: versionInfo.version,
+      commit: versionInfo.commit,
+    }),
   };
 }
 
@@ -84,6 +119,7 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 
   // Memory check (synchronous)
   const memoryCheck = checkMemory();
+  const versionInfo = readVersionInfo();
 
   // Determine overall status
   let status: "healthy" | "degraded" | "unhealthy" = "healthy";
@@ -120,6 +156,10 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     responseTime,
+    ...(versionInfo && {
+      version: versionInfo.version,
+      commit: versionInfo.commit,
+    }),
     checks: {
       database: {
         status: dbCheck.status,
