@@ -838,7 +838,10 @@ export const inventoryRouter = router({
         }
 
         return {
-          batch,
+          batch: {
+            ...batch,
+            totalQty: inventoryUtils.computeTotalQty(batch),
+          },
           locations,
           auditLogs,
           availableQty: inventoryUtils.calculateAvailableQty(batch),
@@ -1229,7 +1232,17 @@ export const inventoryRouter = router({
         reason: input.reason,
       });
 
-      return { success: true };
+      // Return the updated batch with computed totalQty so callers can reflect
+      // the new quantities without a separate refetch.
+      return {
+        success: true,
+        batch: after
+          ? {
+              ...after,
+              totalQty: inventoryUtils.computeTotalQty(after),
+            }
+          : null,
+      };
     }),
 
   // TERP-SS-009: Update batch fields (ticket/unitCogs, notes) for spreadsheet editing

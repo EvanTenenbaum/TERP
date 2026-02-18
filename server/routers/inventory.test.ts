@@ -423,11 +423,23 @@ describe("Inventory Router", () => {
         id: 1,
         onHandQty: "100",
       };
+      const mockAfterBatch = {
+        id: 1,
+        onHandQty: "110",
+        sampleQty: "0",
+        reservedQty: "0",
+        quarantineQty: "0",
+        holdQty: "0",
+        defectiveQty: "0",
+      };
 
-      vi.mocked(inventoryDb.getBatchById).mockResolvedValue(mockBatch);
+      vi.mocked(inventoryDb.getBatchById)
+        .mockResolvedValueOnce(mockBatch)
+        .mockResolvedValueOnce(mockAfterBatch);
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(100);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("110");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("110.0000");
       vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
@@ -477,11 +489,23 @@ describe("Inventory Router", () => {
         id: 1,
         reservedQty: "50",
       };
+      const mockAfterBatch = {
+        id: 1,
+        onHandQty: "0",
+        sampleQty: "0",
+        reservedQty: "45",
+        quarantineQty: "0",
+        holdQty: "0",
+        defectiveQty: "0",
+      };
 
-      vi.mocked(inventoryDb.getBatchById).mockResolvedValue(mockBatch);
+      vi.mocked(inventoryDb.getBatchById)
+        .mockResolvedValueOnce(mockBatch)
+        .mockResolvedValueOnce(mockAfterBatch);
       vi.mocked(inventoryUtils.parseQty).mockReturnValue(50);
       vi.mocked(inventoryUtils.formatQty).mockReturnValue("45");
       vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("45.0000");
       vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
       vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
 
@@ -500,6 +524,139 @@ describe("Inventory Router", () => {
         "reservedQty",
         "45"
       );
+    });
+
+    // TER-260 regression tests: totalQty must be returned after adjustQty
+    it("should return batch with totalQty after adjustment", async () => {
+      // Arrange: batch with only onHandQty set
+      const mockBeforeBatch = {
+        id: 1,
+        onHandQty: "0.0000",
+        sampleQty: "0.0000",
+        reservedQty: "0.0000",
+        quarantineQty: "0.0000",
+        holdQty: "0.0000",
+        defectiveQty: "0.0000",
+      };
+      const mockAfterBatch = {
+        id: 1,
+        onHandQty: "25.0000",
+        sampleQty: "0.0000",
+        reservedQty: "0.0000",
+        quarantineQty: "0.0000",
+        holdQty: "0.0000",
+        defectiveQty: "0.0000",
+      };
+
+      vi.mocked(inventoryDb.getBatchById)
+        .mockResolvedValueOnce(mockBeforeBatch)
+        .mockResolvedValueOnce(mockAfterBatch);
+      vi.mocked(inventoryUtils.parseQty).mockReturnValue(0);
+      vi.mocked(inventoryUtils.formatQty).mockReturnValue("25.0000");
+      vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
+      // computeTotalQty: onHandQty=25 + rest=0 => "25.0000"
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("25.0000");
+      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
+      vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
+
+      // Act
+      const result = await caller.inventory.adjustQty({
+        id: 1,
+        field: "onHandQty",
+        adjustment: 25,
+        reason: "Cycle count correction",
+      });
+
+      // Assert: success flag AND batch.totalQty must be present and correct
+      expect(result.success).toBe(true);
+      expect(result.batch).toBeDefined();
+      expect(result.batch?.totalQty).toBe("25.0000");
+      expect(inventoryUtils.computeTotalQty).toHaveBeenCalledWith(
+        mockAfterBatch
+      );
+    });
+
+    it("should return totalQty as sum of all 6 component fields after adjustment", async () => {
+      // Arrange: batch with all 6 qty fields populated
+      const mockBeforeBatch = {
+        id: 2,
+        onHandQty: "10.0000",
+        sampleQty: "2.0000",
+        reservedQty: "3.0000",
+        quarantineQty: "1.0000",
+        holdQty: "0.0000",
+        defectiveQty: "0.0000",
+      };
+      const mockAfterBatch = {
+        id: 2,
+        onHandQty: "35.0000", // +25 adjustment
+        sampleQty: "2.0000",
+        reservedQty: "3.0000",
+        quarantineQty: "1.0000",
+        holdQty: "0.0000",
+        defectiveQty: "0.0000",
+      };
+      // totalQty = 35 + 2 + 3 + 1 + 0 + 0 = 41
+      const expectedTotalQty = "41.0000";
+
+      vi.mocked(inventoryDb.getBatchById)
+        .mockResolvedValueOnce(mockBeforeBatch)
+        .mockResolvedValueOnce(mockAfterBatch);
+      vi.mocked(inventoryUtils.parseQty).mockReturnValue(10);
+      vi.mocked(inventoryUtils.formatQty).mockReturnValue("35.0000");
+      vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue(
+        expectedTotalQty
+      );
+      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
+      vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
+
+      // Act
+      const result = await caller.inventory.adjustQty({
+        id: 2,
+        field: "onHandQty",
+        adjustment: 25,
+        reason: "Recount",
+      });
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.batch?.totalQty).toBe(expectedTotalQty);
+    });
+
+    it("should return batch with totalQty of 0.0000 when all fields are zero", async () => {
+      // Arrange: freshly created batch with all zeros
+      const mockZeroBatch = {
+        id: 3,
+        onHandQty: "0.0000",
+        sampleQty: "0.0000",
+        reservedQty: "0.0000",
+        quarantineQty: "0.0000",
+        holdQty: "0.0000",
+        defectiveQty: "0.0000",
+      };
+
+      vi.mocked(inventoryDb.getBatchById)
+        .mockResolvedValueOnce(mockZeroBatch)
+        .mockResolvedValueOnce(mockZeroBatch);
+      vi.mocked(inventoryUtils.parseQty).mockReturnValue(0);
+      vi.mocked(inventoryUtils.formatQty).mockReturnValue("0.0000");
+      vi.mocked(inventoryUtils.createAuditSnapshot).mockReturnValue({});
+      vi.mocked(inventoryUtils.computeTotalQty).mockReturnValue("0.0000");
+      vi.mocked(inventoryDb.updateBatchQty).mockResolvedValue(undefined);
+      vi.mocked(inventoryDb.createAuditLog).mockResolvedValue(undefined);
+
+      // Act - adjust by 0 (edge case: no-op adjustment)
+      const result = await caller.inventory.adjustQty({
+        id: 3,
+        field: "onHandQty",
+        adjustment: 0,
+        reason: "Verify zero state",
+      });
+
+      // Assert: totalQty is "0.0000", not null/undefined/0
+      expect(result.success).toBe(true);
+      expect(result.batch?.totalQty).toBe("0.0000");
     });
   });
 
