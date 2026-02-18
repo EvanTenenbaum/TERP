@@ -2030,7 +2030,9 @@ export async function runAutoMigrations() {
       await db.execute(
         sql`ALTER TABLE purchaseOrderItems ADD COLUMN supplier_client_id INT NULL`
       );
-      console.info("  ✅ Added supplier_client_id column to purchaseOrderItems");
+      console.info(
+        "  ✅ Added supplier_client_id column to purchaseOrderItems"
+      );
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
@@ -2177,21 +2179,30 @@ export async function runAutoMigrations() {
     // The vendorId column is DEPRECATED (TER-235) — supplierClientId is canonical.
     // During the deprecation period, POs with only supplierClientId must not fail
     // due to the NOT NULL constraint on vendorId.
-    const [poVendorIdCol] = await db.execute(sql`
-      SELECT IS_NULLABLE FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'purchaseOrders'
-        AND COLUMN_NAME = 'vendorId'
-    `);
-    if (
-      poVendorIdCol &&
-      (poVendorIdCol as unknown as Record<string, string>).IS_NULLABLE === "NO"
-    ) {
-      await db.execute(
-        sql`ALTER TABLE purchaseOrders MODIFY COLUMN vendorId INT NULL`
-      );
-      logger.info(
-        "[autoMigrate] TER-97: Made purchaseOrders.vendorId nullable"
+    try {
+      const [poVendorIdCol] = await db.execute(sql`
+        SELECT IS_NULLABLE FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'purchaseOrders'
+          AND COLUMN_NAME = 'vendorId'
+      `);
+      if (
+        poVendorIdCol &&
+        (poVendorIdCol as unknown as Record<string, string>).IS_NULLABLE ===
+          "NO"
+      ) {
+        await db.execute(
+          sql`ALTER TABLE purchaseOrders MODIFY COLUMN vendorId INT NULL`
+        );
+        logger.info(
+          "[autoMigrate] TER-97: Made purchaseOrders.vendorId nullable"
+        );
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger.error(
+        { error: errMsg, fullError: error },
+        "TER-97: purchaseOrders.vendorId nullable migration failed"
       );
     }
 
@@ -2317,7 +2328,9 @@ export async function runAutoMigrations() {
           changedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           notes TEXT,
           INDEX idx_sample_location_history_sample (sampleRequestId),
-          INDEX idx_sample_location_history_date (changedAt)
+          INDEX idx_sample_location_history_date (changedAt),
+          FOREIGN KEY (sampleRequestId) REFERENCES sampleRequests(id) ON DELETE CASCADE,
+          FOREIGN KEY (changedBy) REFERENCES users(id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
       console.info("  ✅ TER-98: Created sampleLocationHistory table");

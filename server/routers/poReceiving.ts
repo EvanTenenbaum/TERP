@@ -83,10 +83,17 @@ export const poReceivingRouter = router({
         )
           ? (po.paymentTerms as (typeof validPaymentTerms)[number])
           : "NET_30";
+        // TER-97: po.vendorId is now nullable; fall back to supplierClientId (same clients.id space)
+        const receivingVendorId = po.vendorId ?? po.supplierClientId;
+        if (!receivingVendorId) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `PO #${po.poNumber} has no vendorId or supplierClientId — cannot receive`,
+          });
+        }
         const [intakeSession] = await tx.insert(intakeSessions).values({
           sessionNumber,
-          // TER-97: po.vendorId is now nullable; fall back to supplierClientId (same clients.id space)
-          vendorId: po.vendorId ?? po.supplierClientId ?? 0,
+          vendorId: receivingVendorId,
           receiveDate: new Date(),
           status: "COMPLETED",
           internalNotes: input.notes || `Receiving PO #${po.poNumber}`,
@@ -149,12 +156,7 @@ export const poReceivingRouter = router({
             const [batch] = await tx
               .select()
               .from(batches)
-              .where(
-                and(
-                  eq(batches.id, batchId),
-                  isNull(batches.deletedAt)
-                )
-              )
+              .where(and(eq(batches.id, batchId), isNull(batches.deletedAt)))
               .for("update");
 
             if (!batch) {
@@ -479,10 +481,17 @@ export const poReceivingRouter = router({
       await db.transaction(async tx => {
         // Create or get lot for this receiving
         const lotCode = await generateLotCode(db);
+        // TER-97: po.vendorId is now nullable; fall back to supplierClientId for legacy column
+        const lotVendorId = po.vendorId ?? po.supplierClientId;
+        if (!lotVendorId) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `PO #${po.poNumber} has no vendorId or supplierClientId — cannot create lot`,
+          });
+        }
         const [newLot] = await tx.insert(lots).values({
           code: lotCode,
-          // TER-97: po.vendorId is now nullable; fall back to supplierClientId for legacy column
-          vendorId: po.vendorId ?? po.supplierClientId ?? 0,
+          vendorId: lotVendorId,
           supplierClientId: po.supplierClientId,
           date: new Date(),
           notes: input.receivingNotes || `Receiving from PO #${po.poNumber}`,
@@ -711,12 +720,7 @@ export const poReceivingRouter = router({
     const availableLocations = await db
       .select()
       .from(locations)
-      .where(
-        and(
-          eq(locations.isActive, 1),
-          isNull(locations.deletedAt)
-        )
-      )
+      .where(and(eq(locations.isActive, 1), isNull(locations.deletedAt)))
       .orderBy(
         locations.site,
         locations.zone,

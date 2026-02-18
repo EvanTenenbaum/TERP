@@ -434,9 +434,27 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         if (vendor) {
           event.node.setDataValue("vendorId", vendor.id);
           // Auto-populate brand with vendor name if empty
+          const brandUpdate = !event.data.brandName
+            ? vendor.name
+            : event.data.brandName;
           if (!event.data.brandName) {
             event.node.setDataValue("brandName", vendor.name);
           }
+          // Explicitly include resolved values in React state — event.data
+          // still has the old values when setDataValue was called above
+          setRows(prevRows =>
+            prevRows.map(row =>
+              row.id === event.data?.id
+                ? {
+                    ...row,
+                    ...event.data,
+                    vendorId: vendor.id,
+                    brandName: brandUpdate,
+                  }
+                : row
+            )
+          );
+          return; // Skip generic setRows below
         }
       }
 
@@ -451,7 +469,12 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
           setRows(prevRows =>
             prevRows.map(row =>
               row.id === event.data?.id
-                ? { ...row, ...event.data, site: location.site, locationId: location.id }
+                ? {
+                    ...row,
+                    ...event.data,
+                    site: location.site,
+                    locationId: location.id,
+                  }
                 : row
             )
           );
