@@ -475,7 +475,7 @@ export const productGradesRouter = router({
         .select({
           grade: batches.grade,
           count: sql<number>`COUNT(*)`,
-          totalQuantity: sql<string>`SUM(CAST(on_hand_qty AS DECIMAL(15,2)))`,
+          totalQuantity: sql<string>`SUM(CAST(onHandQty AS DECIMAL(15,2)))`,
         })
         .from(batches)
         .where(isNull(batches.deletedAt))

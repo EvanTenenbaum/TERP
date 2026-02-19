@@ -528,7 +528,7 @@ export const paymentsRouter = router({
       // Get outstanding balance
       const [outstanding] = await db
         .select({
-          totalDue: sql<string>`SUM(amount_due)`,
+          totalDue: sql<string>`SUM(amountDue)`,
         })
         .from(invoices)
         .where(

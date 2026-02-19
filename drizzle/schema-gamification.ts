@@ -727,6 +727,11 @@ export type InsertCouchTaxPayout = typeof couchTaxPayouts.$inferInsert;
  * Referral Settings
  * Global configuration for the referral program
  */
+// ⚠️ SCHEMA CONFLICT: This table ("referral_settings") has a DUAL DEFINITION.
+// See also: drizzle/schema.ts ~line 6690 (referralCreditSettings)
+// Both Drizzle objects point to the same physical DB table with different column sets.
+// Resolution: Merge into a single definition in a future migration (RED mode).
+// Tracked: P1-2 in Schema Audit Report 2026-02-19
 // SCHEMA-010 FIX: Renamed export from referralSettings to referralGamificationSettings
 // NOTE: Table name kept as "referral_settings" to match existing migration 0050
 // The schema.ts referralCreditSettings uses the same table name but different columns
@@ -770,8 +775,10 @@ export const referralGamificationSettings = mysqlTable("referral_settings", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export type ReferralGamificationSettings = typeof referralGamificationSettings.$inferSelect;
-export type InsertReferralGamificationSettings = typeof referralGamificationSettings.$inferInsert;
+export type ReferralGamificationSettings =
+  typeof referralGamificationSettings.$inferSelect;
+export type InsertReferralGamificationSettings =
+  typeof referralGamificationSettings.$inferInsert;
 // Backwards compatibility aliases for gamification settings
 export type ReferralSettings = ReferralGamificationSettings;
 export type InsertReferralSettings = InsertReferralGamificationSettings;
