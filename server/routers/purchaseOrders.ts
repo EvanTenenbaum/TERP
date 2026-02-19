@@ -277,6 +277,7 @@ export const purchaseOrdersRouter = router({
             quantityOrdered: item.quantityOrdered.toString(),
             unitCost: item.unitCost.toString(),
             totalCost: (item.quantityOrdered * item.unitCost).toString(),
+            notes: null, // Explicit null for nullable column (BUG-002)
           }))
         );
       }
