@@ -58,20 +58,29 @@ This section is the source of truth for the QA remediation stream.
   - `tests/contracts/oracle-metadata-contract.test.ts`
   - `tests/unit/server/oracles/auth-fixtures.test.ts`
 
-### Latest verification snapshot (non-lint)
+### Latest verification snapshot
 
 - `pnpm check`: PASS
 - `pnpm test`: PASS (5448 tests, 196 files)
 - `pnpm build`: PASS
-- `pnpm lint`: FAIL (1568 errors — pre-existing, out of scope)
+- `pnpm lint`: PASS (0 errors, 0 warnings) — **RESOLVED 2026-02-19**
 - Contract tests: 5/5 PASS (including 3 new criticality guards)
+
+### Lint Zero — Completed 2026-02-19
+
+The long-standing lint debt (previously 1568 errors, reduced to 346 after Prettier pass) has been fully resolved:
+
+- **Branch:** `claude/fix-lint-issues-plan-65ofn`
+- **Commits:** `790c42a` (main fix), `39f6f4f` (P0 infinite loop fix + remaining `any` types), `3d4a47a` (version bump)
+- **Scope:** 93 files changed — unused vars/imports, `any` type replacements, React hooks deps, ESLint config, eqeqeq, case declarations, useless-catch, constant binary expressions
+- **QA Note:** P0 infinite loop in `DashboardPreferencesContext.tsx` caught during review and fixed before merge
+- **Linear:** Needs TER ticket creation to track this completed work
 
 ### Remaining work for next wave
 
 1. **Live E2E validation**: Deploy and run `ORACLE_RUN_MODE=tier1` against production
 2. **Backend stabilization**: Order-domain 500 errors still block order-derived oracle paths
 3. **Invoice flow end-to-end**: Verify `materializeInvoiceEnsure` creation path works against live env
-4. **Lint debt**: 1568 lint errors remain (deferred to dedicated lint wave)
 
 ## Linear Task Map
 
