@@ -196,8 +196,6 @@ export function DashboardPreferencesProvider({
   }, [serverPreferences]);
 
   // Debounced auto-save to server whenever state changes.
-  // updateMutation is a stable reference from React Query's useMutation,
-  // so including it in deps is safe and correct.
   useEffect(() => {
     // Don't sync if we're still loading from server
     if (isLoading) return;
@@ -232,7 +230,8 @@ export function DashboardPreferencesProvider({
         clearTimeout(timeoutId);
       }
     };
-  }, [state, isLoading, updateMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, isLoading]); // Intentionally excluding updateMutation - it's not referentially stable in TanStack Query v5
 
   const setActiveLayout = useCallback((layoutId: string) => {
     const preset = LAYOUT_PRESETS[layoutId];

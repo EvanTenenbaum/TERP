@@ -53,6 +53,53 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+interface CatalogItem {
+  id: number;
+  name: string;
+  category: string | undefined;
+  subcategory: string | undefined;
+  brand: string | undefined;
+  grade: string | undefined;
+  retailPrice: string;
+  basePrice: string | undefined;
+  quantity: string | undefined;
+  stockLevel: string | undefined;
+  imageUrl: string | undefined;
+}
+
+interface DraftItem {
+  id: number;
+  batchId: number;
+  itemName: string;
+  category: string | undefined;
+  subcategory: string | undefined;
+  retailPrice: string;
+  quantity: string;
+  addedAt: Date;
+  priceChanged: boolean;
+  priceAtAdd: undefined;
+  quantityChanged: boolean;
+  quantityAtAdd: undefined;
+  stillAvailable: boolean;
+}
+
+interface SavedView {
+  id: number;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  filters: {
+    search?: string;
+    category?: string | null;
+    brand?: string[];
+    grade?: string[];
+    stockLevel?: "all" | "in_stock" | "low_stock" | undefined;
+    priceMin?: number;
+    priceMax?: number;
+  };
+  clientId: number;
+}
+
 interface LiveCatalogProps {
   clientId: number;
 }
@@ -81,9 +128,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [saveViewDialogOpen, setSaveViewDialogOpen] = useState(false);
   const [newViewName, setNewViewName] = useState("");
   const [priceAlertDialogOpen, setPriceAlertDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedProductForAlert, setSelectedProductForAlert] =
-    useState<any>(null);
+    useState<CatalogItem | null>(null);
   const [targetPrice, setTargetPrice] = useState<string>("");
   const [showClearDraftConfirm, setShowClearDraftConfirm] = useState(false);
   const [deleteViewId, setDeleteViewId] = useState<number | null>(null);
@@ -300,9 +346,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     // Check for changes
 
     const hasChanges = draftData.items.some(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (item: any) =>
-        item.priceChanged || item.quantityChanged || !item.currentlyAvailable
+      (item: DraftItem) =>
+        item.priceChanged || item.quantityChanged || !item.stillAvailable
     );
 
     if (hasChanges) {
@@ -316,8 +361,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     submitInterestListMutation.mutate();
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleOpenPriceAlertDialog = (item: any) => {
+  const handleOpenPriceAlertDialog = (item: CatalogItem) => {
     setSelectedProductForAlert(item);
     setTargetPrice(item.retailPrice.toString());
     setPriceAlertDialogOpen(true);
@@ -373,15 +417,14 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleLoadView = (view: any) => {
+  const handleLoadView = (view: SavedView) => {
     setSearch(view.filters.search || "");
     setCategoryFilter(view.filters.category || undefined);
     setBrandFilter(view.filters.brand || []);
     setGradeFilter(view.filters.grade || []);
-    setStockFilter(view.filters.stockLevel);
+    setStockFilter(view.filters.stockLevel ?? undefined);
     setPriceRange([view.filters.priceMin || 0, view.filters.priceMax || 1000]);
-    setSortBy(view.sortBy || "name");
+    setSortBy("name");
     setSavedViewsOpen(false);
     toast({
       title: "View loaded",
@@ -401,8 +444,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   };
 
   const isInDraft = (batchId: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return draftData?.items.some((item: any) => item.batchId === batchId);
+    return draftData?.items.some((item: DraftItem) => item.batchId === batchId);
   };
 
   const activeFiltersCount = [
@@ -645,27 +687,21 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
                   {savedViews && savedViews.length > 0 ? (
                     <div className="space-y-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {savedViews.map((view: any) => (
+                      {savedViews.map((view: SavedView) => (
                         <Card
-                          key={view.id as number}
+                          key={view.id}
                           className="cursor-pointer hover:bg-accent"
                         >
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div
                                 className="flex-1"
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                onClick={() => handleLoadView(view as any)}
+                                onClick={() => handleLoadView(view)}
                               >
-                                {}
-                                <p className="font-medium">
-                                  {view.name as string}
-                                </p>
+                                <p className="font-medium">{view.name}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {}
                                   {new Date(
-                                    view.createdAt as string
+                                    view.createdAt
                                   ).toLocaleDateString()}
                                 </p>
                               </div>
@@ -674,8 +710,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                                 size="icon"
                                 onClick={e => {
                                   e.stopPropagation();
-
-                                  setDeleteViewId(view.id as number);
+                                  setDeleteViewId(view.id);
                                 }}
                               >
                                 <X className="h-4 w-4" />
@@ -767,25 +802,20 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
         ) : catalogData && catalogData.items.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {catalogData.items.map((item: any) => (
+              {catalogData.items.map((item: CatalogItem) => (
                 <Card
-                  key={item.id as number}
+                  key={item.id}
                   className={cn(
                     "relative overflow-hidden transition-all hover:shadow-md",
-
-                    isInDraft(item.id as number) && "ring-2 ring-primary"
+                    isInDraft(item.id) && "ring-2 ring-primary"
                   )}
                 >
                   {/* Product Image - Mobile Optimized */}
                   <div className="relative aspect-square w-full bg-muted">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(item as any).imageUrl ? (
+                    {item.imageUrl ? (
                       <img
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        src={(item as any).imageUrl as string}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        alt={((item as any).name as string) || "Product image"}
+                        src={item.imageUrl}
+                        alt={item.name || "Product image"}
                         loading="lazy"
                         className="h-full w-full object-cover"
                         onError={e => {
@@ -800,8 +830,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                     <div
                       className={cn(
                         "absolute inset-0 flex items-center justify-center bg-muted",
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (item as any).imageUrl && "hidden"
+                        item.imageUrl && "hidden"
                       )}
                     >
                       <div className="text-center text-muted-foreground">
@@ -810,8 +839,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                       </div>
                     </div>
                     {/* Stock badge overlay */}
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(item as any).stockLevel === "low_stock" && (
+                    {item.stockLevel === "low_stock" && (
                       <Badge
                         variant="destructive"
                         className="absolute top-2 right-2 text-xs"
@@ -823,32 +851,25 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base line-clamp-2">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(item as any).name as string}
+                        {item.name}
                       </CardTitle>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {isInDraft((item as any).id as number) && (
+                      {isInDraft(item.id) && (
                         <Badge variant="default" className="shrink-0">
                           <Check className="h-3 w-3" />
                         </Badge>
                       )}
                     </div>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(item as any).category && (
+                    {item.category && (
                       <CardDescription className="text-sm">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(item as any).category as string}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(item as any).subcategory &&
-                          ` • ${(item as any).subcategory as string}`}
+                        {item.category}
+                        {item.subcategory && ` • ${item.subcategory}`}
                       </CardDescription>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {/* Price */}
                     <div className="text-2xl font-bold text-primary">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      ${(item as any).retailPrice as number}
+                      ${item.retailPrice}
                       <span className="text-sm font-normal text-muted-foreground">
                         {" "}
                         / lb
@@ -857,36 +878,26 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 
                     {/* Attributes */}
                     <div className="space-y-1 text-sm">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(item as any).quantity !== undefined && (
+                      {item.quantity !== undefined && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
                             Available:
                           </span>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                           <span className="font-medium">
-                            {(item as any).quantity as number} lbs
+                            {item.quantity} lbs
                           </span>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(item as any).brand && (
+                      {item.brand && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Brand:</span>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <span className="font-medium">
-                            {(item as any).brand as string}
-                          </span>
+                          <span className="font-medium">{item.brand}</span>
                         </div>
                       )}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(item as any).grade && (
+                      {item.grade && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Grade:</span>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <span className="font-medium">
-                            {(item as any).grade as string}
-                          </span>
+                          <span className="font-medium">{item.grade}</span>
                         </div>
                       )}
                     </div>
@@ -895,31 +906,18 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                     <div className="space-y-2">
                       <Button
                         onClick={() =>
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          isInDraft((item as any).id as number)
-                            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              handleRemoveFromInterestList(
-                                (item as any).id as number
-                              )
-                            : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              handleAddToInterestList(
-                                (item as any).id as number
-                              )
+                          isInDraft(item.id)
+                            ? handleRemoveFromInterestList(item.id)
+                            : handleAddToInterestList(item.id)
                         }
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        variant={
-                          isInDraft((item as any).id as number)
-                            ? "outline"
-                            : "default"
-                        }
+                        variant={isInDraft(item.id) ? "outline" : "default"}
                         className="w-full"
                         disabled={
                           addToDraftMutation.isPending ||
                           removeFromDraftMutation.isPending
                         }
                       >
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {isInDraft((item as any).id as number) ? (
+                        {isInDraft(item.id) ? (
                           <>
                             <Check className="h-4 w-4 mr-2" />
                             In Interest List
@@ -1046,36 +1044,30 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           <div className="mt-6 space-y-4 overflow-y-auto max-h-[calc(80vh-200px)]">
             {draftData && draftData.items.length > 0 ? (
               <>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {draftData.items.map((item: any) => (
-                  <Card key={item.id as number}>
+                {draftData.items.map((item: DraftItem) => (
+                  <Card key={item.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          {}
                           <p className="font-medium line-clamp-2">
-                            {item.itemName as string}
+                            {item.itemName}
                           </p>
-                          {}
                           {item.category && (
                             <p className="text-sm text-muted-foreground">
-                              {}
-                              {item.category as string}
+                              {item.category}
                             </p>
                           )}
                           <div className="mt-2 space-y-1">
                             <p className="text-lg font-bold text-primary">
-                              {}${item.retailPrice as number}
+                              ${item.retailPrice}
                               <span className="text-sm font-normal text-muted-foreground">
                                 {" "}
                                 / lb
                               </span>
                             </p>
-                            {}
                             {item.quantity !== undefined && (
                               <p className="text-sm text-muted-foreground">
-                                {}
-                                {item.quantity as number} lbs available
+                                {item.quantity} lbs available
                               </p>
                             )}
                           </div>
@@ -1083,23 +1075,19 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                           {/* Change Indicators */}
                           {(item.priceChanged ||
                             item.quantityChanged ||
-                            !item.currentlyAvailable) && (
+                            !item.stillAvailable) && (
                             <div className="mt-2 space-y-1">
                               {item.priceChanged && (
                                 <p className="text-sm font-bold text-red-600">
-                                  {}
-                                  Price changed to $
-                                  {item.currentPrice as number}
+                                  Price changed
                                 </p>
                               )}
                               {item.quantityChanged && (
                                 <p className="text-sm font-bold text-red-600">
-                                  {}
-                                  Quantity changed to{" "}
-                                  {item.currentQuantity as number} lbs
+                                  Quantity changed
                                 </p>
                               )}
-                              {!item.currentlyAvailable && (
+                              {!item.stillAvailable && (
                                 <p className="text-sm font-bold text-red-600">
                                   Out of stock
                                 </p>
@@ -1111,7 +1099,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            handleRemoveFromInterestList(item.batchId as number)
+                            handleRemoveFromInterestList(item.batchId)
                           }
                         >
                           <X className="h-4 w-4" />
@@ -1190,17 +1178,14 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
               <div className="text-sm">
                 <p className="font-medium">Changes detected:</p>
                 <ul className="list-disc list-inside mt-1 text-muted-foreground">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {draftData?.items.some((item: any) => item.priceChanged) && (
-                    <li>Price changes</li>
-                  )}
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {draftData?.items.some(
-                    (item: any) => item.quantityChanged
+                    (item: DraftItem) => item.priceChanged
+                  ) && <li>Price changes</li>}
+                  {draftData?.items.some(
+                    (item: DraftItem) => item.quantityChanged
                   ) && <li>Quantity changes</li>}
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {draftData?.items.some(
-                    (item: any) => !item.currentlyAvailable
+                    (item: DraftItem) => !item.stillAvailable
                   ) && <li>Items out of stock</li>}
                 </ul>
               </div>
@@ -1275,12 +1260,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           <div className="space-y-4">
             {selectedProductForAlert && (
               <div>
-                {}
-                <Label>Product: {selectedProductForAlert.name as string}</Label>
+                <Label>Product: {selectedProductForAlert.name}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {}
-                  Current Price: $
-                  {selectedProductForAlert.retailPrice as number}
+                  Current Price: ${selectedProductForAlert.retailPrice}
                 </p>
               </div>
             )}

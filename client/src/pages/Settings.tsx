@@ -441,6 +441,34 @@ function DatabaseManager() {
   );
 }
 
+interface LocationData {
+  id: number;
+  site: string;
+  zone?: string | null;
+  rack?: string | null;
+  shelf?: string | null;
+  bin?: string | null;
+}
+
+interface CategoryData {
+  id: number;
+  name: string;
+  description: string | null;
+  subcategories?: SubcategoryData[];
+}
+
+interface SubcategoryData {
+  id: number;
+  name: string;
+  categoryId: number;
+}
+
+interface GradeData {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
 function LocationsManager() {
   const [newLocation, setNewLocation] = useState({
     site: "",
@@ -450,8 +478,7 @@ function LocationsManager() {
     bin: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editData, setEditData] = useState<any>(null);
+  const [editData, setEditData] = useState<LocationData | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
@@ -512,7 +539,14 @@ function LocationsManager() {
 
   const handleUpdate = () => {
     if (editData && editingId) {
-      updateMutation.mutate({ id: editingId, ...editData });
+      updateMutation.mutate({
+        id: editingId,
+        site: editData.site || undefined,
+        zone: editData.zone || undefined,
+        rack: editData.rack || undefined,
+        shelf: editData.shelf || undefined,
+        bin: editData.bin || undefined,
+      });
     }
   };
 
@@ -619,44 +653,43 @@ function LocationsManager() {
         <div className="space-y-2">
           <h3 className="font-semibold">Existing Locations</h3>
           <div className="border rounded-lg divide-y">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {locations?.map((location: any) => (
+            {locations?.map((location: LocationData) => (
               <div
                 key={location.id}
                 className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2"
               >
-                {editingId === location.id ? (
+                {editingId === location.id && editData ? (
                   <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                     <Input
-                      value={editData?.site || ""}
+                      value={editData.site || ""}
                       onChange={e =>
                         setEditData({ ...editData, site: e.target.value })
                       }
                       placeholder="Site"
                     />
                     <Input
-                      value={editData?.zone || ""}
+                      value={editData.zone || ""}
                       onChange={e =>
                         setEditData({ ...editData, zone: e.target.value })
                       }
                       placeholder="Zone"
                     />
                     <Input
-                      value={editData?.rack || ""}
+                      value={editData.rack || ""}
                       onChange={e =>
                         setEditData({ ...editData, rack: e.target.value })
                       }
                       placeholder="Rack"
                     />
                     <Input
-                      value={editData?.shelf || ""}
+                      value={editData.shelf || ""}
                       onChange={e =>
                         setEditData({ ...editData, shelf: e.target.value })
                       }
                       placeholder="Shelf"
                     />
                     <Input
-                      value={editData?.bin || ""}
+                      value={editData.bin || ""}
                       onChange={e =>
                         setEditData({ ...editData, bin: e.target.value })
                       }
@@ -665,17 +698,15 @@ function LocationsManager() {
                   </div>
                 ) : (
                   <div className="flex-1 min-w-0">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <p className="font-medium text-sm sm:text-base truncate">
-                      {(location as any).site}
+                      {location.site}
                     </p>
                     <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {[
-                        (location as any).zone,
-                        (location as any).rack,
-                        (location as any).shelf,
-                        (location as any).bin,
+                        location.zone,
+                        location.rack,
+                        location.shelf,
+                        location.bin,
                       ]
                         .filter(Boolean)
                         .join(" > ") || "No sub-locations"}
@@ -705,8 +736,7 @@ function LocationsManager() {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setEditingId((location as any).id);
+                          setEditingId(location.id);
                           setEditData(location);
                         }}
                       >
@@ -715,8 +745,7 @@ function LocationsManager() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        onClick={() => setDeleteConfirm((location as any).id)}
+                        onClick={() => setDeleteConfirm(location.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -861,8 +890,7 @@ function CategoriesManager() {
             </Button>
           </div>
           <div className="border rounded-lg divide-y">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {categories?.map((category: any) => (
+            {categories?.map((category: CategoryData) => (
               <div
                 key={category.id}
                 className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
@@ -881,13 +909,10 @@ function CategoriesManager() {
                 <div className="flex gap-2 self-end sm:self-auto">
                   {editingId === category.id ? (
                     <>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
-                          handleUpdateCategory((category as any).id)
-                        }
+                        onClick={() => handleUpdateCategory(category.id)}
                       >
                         <Save className="h-4 w-4" />
                       </Button>
@@ -905,21 +930,16 @@ function CategoriesManager() {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setEditingId((category as any).id);
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          setEditName((category as any).name);
+                          setEditingId(category.id);
+                          setEditName(category.name);
                         }}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
-                          setDeleteCategoryConfirm((category as any).id)
-                        }
+                        onClick={() => setDeleteCategoryConfirm(category.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -952,12 +972,9 @@ function CategoriesManager() {
               }
             >
               <option value={0}>Select category</option>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {categories?.map((cat: any) => (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                <option key={(cat as any).id} value={(cat as any).id}>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(cat as any).name}
+              {categories?.map((cat: CategoryData) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
@@ -977,33 +994,24 @@ function CategoriesManager() {
             </Button>
           </div>
           <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {categories?.map((category: any) => (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              <div key={(category as any).id}>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {categories?.map((category: CategoryData) => (
+              <div key={category.id}>
                 <div className="p-2 bg-muted font-semibold text-xs sm:text-sm">
-                  {(category as any).name}
+                  {category.name}
                 </div>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(category as any).subcategories?.map((sub: any) => (
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                {category.subcategories?.map((sub: SubcategoryData) => (
                   <div
-                    key={(sub as any).id}
+                    key={sub.id}
                     className="p-2 pl-4 sm:pl-6 flex items-center justify-between gap-2"
                   >
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <span className="text-xs sm:text-sm truncate flex-1 min-w-0">
-                      {(sub as any).name}
+                      {sub.name}
                     </span>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="flex-shrink-0"
-                      onClick={() =>
-                        setDeleteSubcategoryConfirm((sub as any).id)
-                      }
+                      onClick={() => setDeleteSubcategoryConfirm(sub.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -1121,14 +1129,12 @@ function GradesManager() {
           </Button>
         </div>
         <div className="border rounded-lg divide-y">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {grades?.map((grade: any) => (
+          {grades?.map((grade: GradeData) => (
             <div
-              key={grade.id as number}
+              key={grade.id}
               className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
             >
-              {}
-              {editingId === (grade.id as number) ? (
+              {editingId === grade.id ? (
                 <Input
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
@@ -1136,18 +1142,16 @@ function GradesManager() {
                 />
               ) : (
                 <span className="font-medium text-sm sm:text-base truncate flex-1 min-w-0">
-                  {grade.name as string}
+                  {grade.name}
                 </span>
               )}
               <div className="flex gap-2 self-end sm:self-auto">
-                {}
-                {editingId === (grade.id as number) ? (
+                {editingId === grade.id ? (
                   <>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleUpdate((grade as any).id)}
+                      onClick={() => handleUpdate(grade.id)}
                     >
                       <Save className="h-4 w-4" />
                     </Button>
@@ -1165,18 +1169,16 @@ function GradesManager() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        setEditingId(grade.id as number);
-
-                        setEditName(grade.name as string);
+                        setEditingId(grade.id);
+                        setEditName(grade.name);
                       }}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    {}
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setDeleteConfirm(grade.id as number)}
+                      onClick={() => setDeleteConfirm(grade.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

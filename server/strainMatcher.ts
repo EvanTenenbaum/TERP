@@ -21,6 +21,18 @@ import { generateStrainULID } from "./ulid";
 import { extractBaseStrainName } from "./strainFamilyDetector";
 import { logger } from "./_core/logger";
 
+/** Extract insert ID from MySQL result (handles both array and direct result formats) */
+function extractInsertId(result: unknown): number {
+  if (Array.isArray(result)) {
+    const header = result[0] as { insertId?: number };
+    return header?.insertId ?? 0;
+  }
+  if (result && typeof result === "object" && "insertId" in result) {
+    return (result as { insertId: number }).insertId;
+  }
+  return 0;
+}
+
 /**
  * Normalize strain name for matching
  * Removes special characters, extra spaces, and converts to lowercase
@@ -460,11 +472,7 @@ export async function getOrCreateStrain(
             baseStrainName: baseName,
             parentStrainId: null,
           });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          parentStrainId = Number(
-            (parentResult as any).insertId ||
-              (parentResult as any[])[0]?.insertId
-          );
+          parentStrainId = extractInsertId(parentResult);
         }
       }
 
@@ -482,10 +490,7 @@ export async function getOrCreateStrain(
       });
 
       return {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        strainId: Number(
-          (newStrain as any).insertId || (newStrain as any[])[0]?.insertId
-        ),
+        strainId: extractInsertId(newStrain),
         wasCreated: true,
       };
     });

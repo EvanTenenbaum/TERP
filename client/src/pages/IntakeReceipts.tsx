@@ -107,6 +107,60 @@ interface VerificationItem {
   notes?: string;
 }
 
+interface ReceiptItem {
+  id: number;
+  productName: string;
+  expectedQuantity: string | number;
+  actualQuantity: string | number | null;
+  unit: string;
+  verificationStatus: VerificationStatus;
+  expectedPrice?: number | null;
+}
+
+interface ReceiptDiscrepancy {
+  id: number;
+  itemId: number;
+  expectedQuantity: string | number;
+  actualQuantity: string | number;
+  difference: string | number;
+  resolution: string | null;
+  notes?: string;
+}
+
+interface ReceiptDetail {
+  id: number;
+  receiptNumber: string;
+  status: ReceiptStatus;
+  supplierId: number;
+  notes?: string | null;
+  shareableToken?: string | null;
+  createdAt: string | Date | null;
+  farmerVerifiedAt?: string | Date | null;
+  stackerVerifiedAt?: string | Date | null;
+  finalizedAt?: string | Date | null;
+  supplier?: { name: string } | null;
+  creator?: { name: string } | null;
+  items?: ReceiptItem[];
+  discrepancies?: ReceiptDiscrepancy[];
+}
+
+interface ReceiptListItem {
+  id: number;
+  receiptNumber: string;
+  status: ReceiptStatus;
+  supplierName: string | null;
+  createdAt: string | null;
+  itemCount: number | null;
+}
+
+interface ClientOption {
+  id: number;
+  name: string;
+  email: string | undefined;
+  phone: string | undefined;
+  clientType: string | undefined;
+}
+
 // ============================================================================
 // STATUS BADGE COMPONENT
 // ============================================================================
@@ -205,18 +259,19 @@ function CreateReceiptDialog({
   // Fetch clients for supplier selection
   const { data: clientsData, isLoading: loadingClients } =
     trpc.clients.list.useQuery({ limit: 1000 });
-  const clients = useMemo(() => {
+  const clients = useMemo((): ClientOption[] => {
     const raw = Array.isArray(clientsData)
       ? clientsData
       : (clientsData?.items ?? []);
     // Filter to suppliers/vendors if there's a clientType field
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return raw.map((c: any) => ({
+    return raw.map(c => ({
       id: c.id as number,
       name: c.name as string,
       email: c.email as string | undefined,
       phone: c.phone as string | undefined,
-      clientType: c.clientType as string | undefined,
+      clientType: (c as Record<string, unknown>).clientType as
+        | string
+        | undefined,
     }));
   }, [clientsData]);
 
@@ -431,8 +486,7 @@ function CreateReceiptDialog({
 
 interface StackerVerificationSectionProps {
   receiptId: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  items: any[];
+  items: ReceiptItem[];
   onSuccess: () => void;
 }
 
@@ -445,10 +499,9 @@ function StackerVerificationSection({
     Record<number, { actualQty: number; notes: string }>
   >(() => {
     const initial: Record<number, { actualQty: number; notes: string }> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    items.forEach((item: any) => {
-      initial[item.id as number] = {
-        actualQty: parseFloat(item.expectedQuantity as string) || 0,
+    items.forEach((item: ReceiptItem) => {
+      initial[item.id] = {
+        actualQty: parseFloat(String(item.expectedQuantity)) || 0,
         notes: "",
       };
     });
@@ -483,21 +536,22 @@ function StackerVerificationSection({
   };
 
   const handleSubmitVerification = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const verificationItems: VerificationItem[] = items.map((item: any) => {
-      const expected = parseFloat(item.expectedQuantity as string) || 0;
-      const actual = verifications[item.id as number]?.actualQty || 0;
-      const hasDiscrepancy = Math.abs(expected - actual) > 0.0001;
+    const verificationItems: VerificationItem[] = items.map(
+      (item: ReceiptItem) => {
+        const expected = parseFloat(String(item.expectedQuantity)) || 0;
+        const actual = verifications[item.id]?.actualQty || 0;
+        const hasDiscrepancy = Math.abs(expected - actual) > 0.0001;
 
-      return {
-        itemId: item.id as number,
-        actualQuantity: actual,
-        status: hasDiscrepancy
-          ? ("DISCREPANCY" as const)
-          : ("VERIFIED" as const),
-        notes: verifications[item.id as number]?.notes || undefined,
-      };
-    });
+        return {
+          itemId: item.id,
+          actualQuantity: actual,
+          status: hasDiscrepancy
+            ? ("DISCREPANCY" as const)
+            : ("VERIFIED" as const),
+          notes: verifications[item.id]?.notes || undefined,
+        };
+      }
+    );
 
     verifyMutation.mutate({
       receiptId,
@@ -516,23 +570,19 @@ function StackerVerificationSection({
       </p>
 
       <div className="space-y-3">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {items.map((item: any) => {
-          const expected = parseFloat(item.expectedQuantity as string) || 0;
+        {items.map((item: ReceiptItem) => {
+          const expected = parseFloat(String(item.expectedQuantity)) || 0;
 
-          const actual = verifications[item.id as number]?.actualQty || 0;
+          const actual = verifications[item.id]?.actualQty || 0;
           const hasDiscrepancy = Math.abs(expected - actual) > 0.0001;
 
           return (
             <div
-              key={item.id as number}
+              key={item.id}
               className={`p-3 border rounded-lg ${hasDiscrepancy ? "border-red-300 bg-red-50" : "bg-muted/30"}`}
             >
               <div className="flex items-center justify-between mb-2">
-                {}
-                <span className="font-medium">
-                  {item.productName as string}
-                </span>
+                <span className="font-medium">{item.productName}</span>
                 {hasDiscrepancy && (
                   <Badge
                     variant="outline"
@@ -548,8 +598,7 @@ function StackerVerificationSection({
                     Expected
                   </Label>
                   <div className="font-medium">
-                    {}
-                    {expected} {item.unit as string}
+                    {expected} {item.unit}
                   </div>
                 </div>
                 <div>
@@ -563,7 +612,7 @@ function StackerVerificationSection({
                     value={actual}
                     onChange={e =>
                       handleVerificationChange(
-                        item.id as number,
+                        item.id,
                         "actualQty",
                         parseFloat(e.target.value) || 0
                       )
@@ -579,13 +628,9 @@ function StackerVerificationSection({
                   </Label>
                   <Input
                     placeholder="Explain the discrepancy..."
-                    value={verifications[item.id as number]?.notes || ""}
+                    value={verifications[item.id]?.notes || ""}
                     onChange={e =>
-                      handleVerificationChange(
-                        item.id as number,
-                        "notes",
-                        e.target.value
-                      )
+                      handleVerificationChange(item.id, "notes", e.target.value)
                     }
                   />
                 </div>
@@ -613,8 +658,7 @@ function StackerVerificationSection({
 interface DiscrepancyResolutionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  discrepancy: any;
+  discrepancy: ReceiptDiscrepancy | null;
   onSuccess: () => void;
 }
 
@@ -641,8 +685,9 @@ function DiscrepancyResolutionDialog({
   });
 
   const handleSubmit = () => {
+    if (!discrepancy) return;
     resolveMutation.mutate({
-      discrepancyId: discrepancy.id as number,
+      discrepancyId: discrepancy.id,
       resolution,
       notes: notes || undefined,
     });
@@ -650,9 +695,9 @@ function DiscrepancyResolutionDialog({
 
   if (!discrepancy) return null;
 
-  const expected = parseFloat(discrepancy.expectedQuantity as string) || 0;
+  const expected = parseFloat(String(discrepancy.expectedQuantity)) || 0;
 
-  const actual = parseFloat(discrepancy.actualQuantity as string) || 0;
+  const actual = parseFloat(String(discrepancy.actualQuantity)) || 0;
   const difference = actual - expected;
 
   return (
@@ -748,8 +793,8 @@ function ReceiptDetailSheet({
   onRefresh,
 }: ReceiptDetailSheetProps) {
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedDiscrepancy, setSelectedDiscrepancy] = useState<any>(null);
+  const [selectedDiscrepancy, setSelectedDiscrepancy] =
+    useState<ReceiptDiscrepancy | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
   const {
@@ -774,10 +819,9 @@ function ReceiptDetailSheet({
   });
 
   const handleCopyShareLink = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((receipt as any)?.shareableToken) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const url = `${window.location.origin}/intake/verify/${(receipt as any).shareableToken}`;
+    const typedR = receipt as ReceiptDetail | undefined;
+    if (typedR?.shareableToken) {
+      const url = `${window.location.origin}/intake/verify/${typedR.shareableToken}`;
       navigator.clipboard.writeText(url);
       setCopiedUrl(true);
       toast.success("Share link copied to clipboard!");
@@ -792,27 +836,24 @@ function ReceiptDetailSheet({
 
   if (!receiptId) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const typedReceipt = receipt as any;
+  const typedReceipt = receipt as ReceiptDetail | undefined;
 
   const canVerifyAsStacker =
     typedReceipt?.status === "PENDING" ||
     typedReceipt?.status === "FARMER_VERIFIED";
   const canFinalize =
     typedReceipt?.status === "STACKER_VERIFIED" &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (typedReceipt?.discrepancies || []).filter((d: any) => !d.resolution)
-      .length === 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (typedReceipt?.discrepancies || []).filter(
+      (d: ReceiptDiscrepancy) => !d.resolution
+    ).length === 0;
   const unresolvedDiscrepancies = (typedReceipt?.discrepancies || []).filter(
-    (d: any) => !d.resolution
+    (d: ReceiptDiscrepancy) => !d.resolution
   );
 
   // Calculate totals
   const totalExpectedQty = (typedReceipt?.items || []).reduce(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (sum: number, item: any) =>
-      sum + (parseFloat(item.expectedQuantity as string) || 0),
+    (sum: number, item: ReceiptItem) =>
+      sum + (parseFloat(String(item.expectedQuantity)) || 0),
     0
   );
 
@@ -823,10 +864,8 @@ function ReceiptDetailSheet({
           <SheetHeader>
             <SheetTitle className="flex items-center gap-3">
               <span>{typedReceipt?.receiptNumber || "Loading..."}</span>
-              {receipt && (
-                <IntakeStatusBadge
-                  status={typedReceipt.status as ReceiptStatus}
-                />
+              {receipt && typedReceipt && (
+                <IntakeStatusBadge status={typedReceipt.status} />
               )}
             </SheetTitle>
           </SheetHeader>
@@ -835,7 +874,7 @@ function ReceiptDetailSheet({
             <div className="mt-6">
               <TableSkeleton rows={5} columns={3} />
             </div>
-          ) : receipt ? (
+          ) : receipt && typedReceipt ? (
             <div className="mt-6 space-y-6">
               {/* Receipt Info */}
               <div>
@@ -945,29 +984,22 @@ function ReceiptDetailSheet({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {typedReceipt.items?.map((item: any) => (
-                      <TableRow key={item.id as number}>
-                        {}
+                    {typedReceipt.items?.map((item: ReceiptItem) => (
+                      <TableRow key={item.id}>
                         <TableCell className="font-medium">
-                          {item.productName as string}
+                          {item.productName}
                         </TableCell>
                         <TableCell className="text-right">
-                          {}
-                          {item.expectedQuantity as number}{" "}
-                          {item.unit as string}
+                          {item.expectedQuantity} {item.unit}
                         </TableCell>
                         <TableCell className="text-right">
-                          {}
                           {item.actualQuantity
-                            ? `${item.actualQuantity as number} ${item.unit as string}`
+                            ? `${item.actualQuantity} ${item.unit}`
                             : "-"}
                         </TableCell>
                         <TableCell>
                           <VerificationStatusBadge
-                            status={
-                              item.verificationStatus as VerificationStatus
-                            }
+                            status={item.verificationStatus}
                           />
                         </TableCell>
                       </TableRow>
@@ -993,56 +1025,54 @@ function ReceiptDetailSheet({
               )}
 
               {/* Discrepancies */}
-              {(typedReceipt.discrepancies?.length || 0) > 0 && (
+              {(typedReceipt?.discrepancies?.length || 0) > 0 && (
                 <>
                   <Separator />
                   <div>
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      Discrepancies ({typedReceipt.discrepancies.length})
+                      Discrepancies ({typedReceipt?.discrepancies?.length ?? 0})
                     </h3>
                     <div className="space-y-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {typedReceipt.discrepancies.map((d: any) => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const item = typedReceipt.items?.find(
-                          (i: any) => i.id === d.itemId
-                        );
-                        return (
-                          <div
-                            key={d.id as number}
-                            className={`p-3 border rounded-lg ${d.resolution ? "bg-gray-50" : "bg-amber-50 border-amber-200"}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <div className="font-medium">
-                                  {(item as any)?.productName || "Unknown Item"}
+                      {typedReceipt?.discrepancies?.map(
+                        (d: ReceiptDiscrepancy) => {
+                          const item = typedReceipt?.items?.find(
+                            (i: ReceiptItem) => i.id === d.itemId
+                          );
+                          return (
+                            <div
+                              key={d.id}
+                              className={`p-3 border rounded-lg ${d.resolution ? "bg-gray-50" : "bg-amber-50 border-amber-200"}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium">
+                                    {item?.productName || "Unknown Item"}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Expected: {d.expectedQuantity} | Actual:{" "}
+                                    {d.actualQuantity} | Diff: {d.difference}
+                                  </div>
+                                  {d.resolution && (
+                                    <Badge variant="outline" className="mt-1">
+                                      Resolved: {d.resolution}
+                                    </Badge>
+                                  )}
                                 </div>
-                                <div className="text-sm text-muted-foreground">
-                                  Expected: {d.expectedQuantity as number} |
-                                  Actual: {d.actualQuantity as number} | Diff:{" "}
-                                  {d.difference as number}
-                                </div>
-                                {d.resolution && (
-                                  <Badge variant="outline" className="mt-1">
-                                    Resolved: {d.resolution as string}
-                                  </Badge>
+                                {!d.resolution && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setSelectedDiscrepancy(d)}
+                                  >
+                                    Resolve
+                                  </Button>
                                 )}
                               </div>
-                              {!d.resolution && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setSelectedDiscrepancy(d)}
-                                >
-                                  Resolve
-                                </Button>
-                              )}
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        }
+                      )}
                     </div>
                   </div>
                 </>
@@ -1082,7 +1112,7 @@ function ReceiptDetailSheet({
               )}
 
               {/* Status Messages */}
-              {typedReceipt.status === "DISPUTED" &&
+              {typedReceipt?.status === "DISPUTED" &&
                 unresolvedDiscrepancies.length > 0 && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="font-medium text-amber-800">
@@ -1095,7 +1125,7 @@ function ReceiptDetailSheet({
                   </div>
                 )}
 
-              {typedReceipt.status === "FINALIZED" && (
+              {typedReceipt?.status === "FINALIZED" && (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                   <div className="font-medium text-gray-800">
                     Receipt Finalized
@@ -1179,9 +1209,8 @@ export default function IntakeReceipts() {
   // expression `receiptsData?.items || []` creates a new array on every render
   // even when receiptsData hasn't changed, causing the stats useMemo below to
   // recalculate unnecessarily.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const receipts = useMemo(
-    () => (receiptsData?.items || []) as any[],
+    () => (receiptsData?.items || []) as ReceiptListItem[],
     [receiptsData]
   );
   const totalCount = receiptsData?.pagination?.total ?? receipts.length;
@@ -1191,16 +1220,16 @@ export default function IntakeReceipts() {
     const all = receipts || [];
     return {
       total: totalCount,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      pending: all.filter((r: any) => r.status === "PENDING").length,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pending: all.filter((r: ReceiptListItem) => r.status === "PENDING")
+        .length,
       awaitingVerification: all.filter(
-        (r: any) => r.status === "PENDING" || r.status === "FARMER_VERIFIED"
+        (r: ReceiptListItem) =>
+          r.status === "PENDING" || r.status === "FARMER_VERIFIED"
       ).length,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      disputed: all.filter((r: any) => r.status === "DISPUTED").length,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      finalized: all.filter((r: any) => r.status === "FINALIZED").length,
+      disputed: all.filter((r: ReceiptListItem) => r.status === "DISPUTED")
+        .length,
+      finalized: all.filter((r: ReceiptListItem) => r.status === "FINALIZED")
+        .length,
     };
   }, [receipts, totalCount]);
 
@@ -1356,38 +1385,26 @@ export default function IntakeReceipts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {receipts.map((receipt: any) => (
+                  {receipts.map((receipt: ReceiptListItem) => (
                     <TableRow
-                      key={receipt.id as number}
+                      key={receipt.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedReceiptId(receipt.id as number)}
+                      onClick={() => setSelectedReceiptId(receipt.id)}
                     >
-                      {}
                       <TableCell className="font-medium">
-                        {receipt.receiptNumber as string}
+                        {receipt.receiptNumber}
                       </TableCell>
-                      {}
+                      <TableCell>{receipt.supplierName || "Unknown"}</TableCell>
                       <TableCell>
-                        {(receipt.supplierName as string) || "Unknown"}
-                      </TableCell>
-                      <TableCell>
-                        {}
                         {receipt.createdAt
-                          ? format(
-                              new Date(receipt.createdAt as string),
-                              "MMM d, yyyy"
-                            )
+                          ? format(new Date(receipt.createdAt), "MMM d, yyyy")
                           : "N/A"}
                       </TableCell>
                       <TableCell>
-                        <IntakeStatusBadge
-                          status={receipt.status as ReceiptStatus}
-                        />
+                        <IntakeStatusBadge status={receipt.status} />
                       </TableCell>
-                      {}
                       <TableCell className="text-right">
-                        {(receipt.itemCount as number) ?? "-"}
+                        {receipt.itemCount ?? "-"}
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm">
