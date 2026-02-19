@@ -46,6 +46,13 @@ interface CreateInvoiceFromOrderInput {
 /**
  * Create an invoice from a finalized order
  * Uses transaction to ensure invoice, line items, and GL entries are atomic
+ *
+ * DEPENDENCY: Requires chart of accounts seeded (seedDefaults.ts)
+ * Required accounts:
+ * - Accounts Receivable (#1100) - ASSET, DEBIT normal balance
+ * - Sales Revenue (#4000) - REVENUE, CREDIT normal balance
+ * - Cost of Goods Sold (#5000) - EXPENSE, DEBIT normal balance
+ * - Inventory (#1200) - ASSET, DEBIT normal balance
  */
 export async function createInvoiceFromOrder(
   input: CreateInvoiceFromOrderInput
